@@ -5,17 +5,20 @@ import jobs
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 def _worldSaleScoreTableColumns(
-        originalColumns: typing.List[gui.WorldTable.ColumnType]
-        ) -> typing.List[typing.Union[gui.WorldTradeScoreTableColumnType, gui.WorldTable.ColumnType]]:
+        originalColumns: typing.List[gui.HexTable.ColumnType]
+        ) -> typing.List[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]]:
     columns = originalColumns.copy()
     if gui.WorldTradeScoreTableColumnType.PurchaseScore in columns:
         columns.remove(gui.WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
+# TODO: Why is this needed? It doesn't look like it adds anything over gui.WorldTradeScoreTable.
+# Maybe some subtlety in what it's doing with columns over the base
 class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
     AllColumns = _worldSaleScoreTableColumns(gui.WorldTradeScoreTable.AllColumns)
     SystemColumns = _worldSaleScoreTableColumns(gui.WorldTradeScoreTable.SystemColumns)
@@ -26,7 +29,7 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
 
     def __init__(
             self,
-            columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.WorldTable.ColumnType]] = AllColumns) -> None:
+            columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns) -> None:
         super().__init__(columns)
 
 
@@ -295,11 +298,16 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             tradeOption: logic.TradeOption
             ) -> None:
+        purchaseWorld = tradeOption.purchaseWorld()
+        saleWorld = tradeOption.saleWorld()
         try:
+            # TODO: This should really pass the jump route that was created for
+            # the trade option. Probably something to fix when I make an effort
+            # to remove these horrible configureControls functions
             jumpRouteWindow = gui.WindowManager.instance().showJumpRouteWindow()
             jumpRouteWindow.configureControls(
-                startWorld=tradeOption.purchaseWorld(),
-                finishWorld=tradeOption.saleWorld(),
+                startHex=purchaseWorld.hex() if purchaseWorld else None,
+                finishHex=saleWorld.hex() if saleWorld else None,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -322,7 +330,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addWorlds(worlds=worlds)
+        detailsWindow.addHexes(hexes=worlds)
 
     def _showTradeOptionCalculations(
             self,
@@ -442,8 +450,8 @@ class _BaseTraderWindow(gui.WindowWidget):
     def _updateTradeOptionTableColumns(self, index: int) -> None:
         self._tradeOptionsTable.setVisibleColumns(self._tradeOptionColumns())
 
-    def _showTradeOptionsTableContextMenu(self, position: QtCore.QPoint) -> None:
-        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(position)
+    def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
         selectedTradeOptions = self._tradeOptionsTable.selectedTradeOptions()
         selectedPurchaseWorlds = None
         selectedSaleWorlds = None
@@ -507,7 +515,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._tradeOptionsTable.viewport().mapToGlobal(position)
+            self._tradeOptionsTable.viewport().mapToGlobal(point)
         )
 
     def _createCargoManifest(self) -> None:
@@ -655,10 +663,11 @@ class WorldTraderWindow(_BaseTraderWindow):
         if currentCargo:
             self._removeAllCurrentCargo()
         if saleWorlds:
-            self._saleWorldsWidget.removeAllWorlds()
+            self._saleWorldsWidget.removeAllRows()
 
         if purchaseWorld != None:
-            self._purchaseWorldWidget.setWorld(world=purchaseWorld)
+            self._purchaseWorldWidget.setSelectedHex(
+                hex=purchaseWorld.hex() if purchaseWorld else None)
         if playerBrokerDm != None:
             self._playerBrokerDmSpinBox.setValue(int(playerBrokerDm))
         if minSellerDm != None:
@@ -831,7 +840,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupPurchaseWorldControls(self) -> None:
-        self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -845,9 +854,9 @@ class WorldTraderWindow(_BaseTraderWindow):
     def _setupSaleWorldControls(self) -> None:
         self._saleWorldsTable = _WorldSaleScoreTable()
 
-        self._saleWorldsWidget = gui.WorldTableManagerWidget(
-            worldTable=self._saleWorldsTable,
-            allowWorldCallback=self._allowSaleWorld)
+        self._saleWorldsWidget = gui.HexTableManagerWidget(
+            hexTable=self._saleWorldsTable,
+            allowHexCallback=self._allowSaleWorld)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._saleWorldsWidget)
@@ -1089,7 +1098,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._purchaseWorldGroupBox.setDisabled(False)
 
             # Disable all other controls until purchase world is selected
-            disable = not self._purchaseWorldWidget.hasSelection()
+            disable = not self._purchaseWorldWidget.selectedWorld()
             self._configurationGroupBox.setDisabled(disable)
             self._cargoGroupBox.setDisabled(disable)
             self._saleWorldsGroupBox.setDisabled(disable)
@@ -1171,7 +1180,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _regenerateSpeculativeCargo(self):
-        world = self._purchaseWorldWidget.world()
+        world = self._purchaseWorldWidget.selectedWorld()
         if not world:
             self._removeAllSpeculativeCargo()
             return
@@ -1244,9 +1253,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         return cargoRecords
 
-    def _allowSaleWorld(self, world: traveller.World) -> bool:
+    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._saleWorldsWidget.containsWorld(world)
+        return not self._saleWorldsWidget.containsHex(hex)
 
     def _updateSaleWorldTradeScores(self) -> None:
         tradeGoods = set()
@@ -1282,7 +1291,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _purchaseWorldChanged(self) -> None:
         self._enableDisableControls()
-        self._saleWorldsWidget.setRelativeWorld(world=self._purchaseWorldWidget.world())
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
+        if purchaseWorld:
+            self._saleWorldsWidget.setRelativeHex(hex=purchaseWorld.hex())
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():
@@ -1301,7 +1312,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
             localBrokerDm=self._localPurchaseBrokerWidget.value(),
@@ -1344,7 +1355,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
             localBrokerDm=self._localPurchaseBrokerWidget.value(),
@@ -1355,7 +1366,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         for cargoRecord in cargoRecords:
             self._addSpeculativeCargo(cargoRecord)
 
-    def _showSpeculativeCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Current World Cargo...',
@@ -1388,7 +1399,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._speculativeCargoTable.viewport().mapToGlobal(position)
+            self._speculativeCargoTable.viewport().mapToGlobal(point)
         )
 
     def _speculativeCargoTableKeyPressed(self, key: int) -> None:
@@ -1446,7 +1457,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -1475,7 +1486,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1517,7 +1528,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         dlg = gui.PurchaseCargoDialog(
             parent=self,
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             availableCargo=affordableCargo,
             availableFunds=self._availableFundsSpinBox.value(),
             freeCargoCapacity=self._freeCargoSpaceSpinBox.value())
@@ -1547,7 +1558,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._freeCargoSpaceSpinBox.setValue(
             self._freeCargoSpaceSpinBox.value() - int(totalQuantity))
 
-    def _showAvailableCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Cargo...',
@@ -1586,7 +1597,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._availableCargoTable.viewport().mapToGlobal(position)
+            self._availableCargoTable.viewport().mapToGlobal(point)
         )
 
     def _availableCargoTableKeyPressed(self, key: int) -> None:
@@ -1654,7 +1665,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Current Cargo',
-            world=self._purchaseWorldWidget.world())
+            world=self._purchaseWorldWidget.selectedWorld())
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1682,7 +1693,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Current Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1697,7 +1708,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._currentCargoTable.setCargoRecord(row, cargoRecord)
         self._updateSaleWorldTradeScores()
 
-    def _showCurrentCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Cargo...',
@@ -1730,7 +1741,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._currentCargoTable.viewport().mapToGlobal(position)
+            self._currentCargoTable.viewport().mapToGlobal(point)
         )
 
     def _currentCargoTableKeyPressed(self, key: int) -> None:
@@ -1803,7 +1814,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         # strategy. No options will be generated unless the ship has enough
         #current fuel
         if not pitCostCalculator.refuellingType(
-                world=self._purchaseWorldWidget.world()):
+                world=self._purchaseWorldWidget.selectedWorld()):
             message = \
                 'The purchase world doesn\'t support the selected refuelling ' \
                 'strategy. It will only be possibly to generate trade ' \
@@ -1847,7 +1858,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                purchaseWorld=self._purchaseWorldWidget.world(),
+                purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 currentCargo=self._currentCargoTable.cargoRecords(),
                 possibleCargo=self._speculativeCargoTable.cargoRecords() + self._availableCargoTable.cargoRecords(),
@@ -2096,10 +2107,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         if perJumpOverheads != None:
             self._perJumpOverheadsSpinBox.setValue(int(perJumpOverheads))
         if purchaseWorlds != None:
-            self._purchaseWorldsWidget.removeAllWorlds()
+            self._purchaseWorldsWidget.removeAllRows()
             self._purchaseWorldsWidget.addWorlds(worlds=purchaseWorlds)
         if saleWorlds != None:
-            self._saleWorldsWidget.removeAllWorlds()
+            self._saleWorldsWidget.removeAllRows()
             self._saleWorldsWidget.addWorlds(worlds=saleWorlds)
 
     def loadSettings(self) -> None:
@@ -2180,8 +2191,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupSaleWorldControls(self) -> None:
-        self._saleWorldsWidget = gui.WorldTableManagerWidget(
-            allowWorldCallback=self._allowSaleWorld)
+        self._saleWorldsWidget = gui.HexTableManagerWidget(
+            allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.enableContextMenuEvent(True)
         self._saleWorldsWidget.contextMenuRequested.connect(self._showSaleWorldTableContextMenu)
 
@@ -2192,8 +2203,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._saleWorldsGroupBox.setLayout(layout)
 
     def _setupPurchaseWorldControls(self) -> None:
-        self._purchaseWorldsWidget = gui.WorldTableManagerWidget(
-            allowWorldCallback=self._allowPurchaseWorld)
+        self._purchaseWorldsWidget = gui.HexTableManagerWidget(
+            allowHexCallback=self._allowPurchaseWorld)
         self._purchaseWorldsWidget.enableContextMenuEvent(True)
         self._purchaseWorldsWidget.contextMenuRequested.connect(self._showPurchaseWorldTableContextMenu)
 
@@ -2213,29 +2224,29 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
-    def _allowPurchaseWorld(self, world: traveller.World) -> bool:
+    def _allowPurchaseWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._purchaseWorldsWidget.containsWorld(world)
+        return not self._purchaseWorldsWidget.containsHex(hex)
 
-    def _allowSaleWorld(self, world: traveller.World) -> bool:
+    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._saleWorldsWidget.containsWorld(world)
+        return not self._saleWorldsWidget.containsHex(hex)
 
     def _copyBetweenWorldWidgets(
             self,
-            srcWidget: gui.WorldTableManagerWidget,
-            dstWidget: gui.WorldTableManagerWidget
+            srcWidget: gui.HexTableManagerWidget,
+            dstWidget: gui.HexTableManagerWidget
             ) -> None:
-        if dstWidget.worldCount() > 0:
+        if dstWidget.rowCount() > 0:
             answer = gui.MessageBoxEx.question(
                 parent=self,
                 text='Remove current worlds before copying?')
             if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                dstWidget.removeAllWorlds()
+                dstWidget.removeAllRows()
         dstWidget.addWorlds(worlds=srcWidget.worlds())
 
-    def _showPurchaseWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._purchaseWorldsWidget.worldAt(position=position)
+    def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedHex = self._purchaseWorldsWidget.hexAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -2246,29 +2257,29 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             None, # Separator
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddWorld(),
+                callback=lambda: self._purchaseWorldsWidget.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddNearbyWorlds(initialWorld=world),
+                callback=lambda: self._purchaseWorldsWidget.promptAddNearbyWorlds(initialHex=clickedHex),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Remove Selected Worlds',
-                callback=lambda: self._purchaseWorldsWidget.removeSelectedWorlds(),
+                callback=lambda: self._purchaseWorldsWidget.removeSelectedRows(),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
                 text='Remove All Worlds',
-                callback=lambda: self._purchaseWorldsWidget.removeAllWorlds(),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                callback=lambda: self._purchaseWorldsWidget.removeAllRows(),
+                enabled=self._purchaseWorldsWidget.rowCount() > 0
             ),
             None, # Separator
             gui.MenuItem(
                 text='Copy Sale Worlds',
                 callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                enabled=self._saleWorldsWidget.rowCount() > 0
             ),
             None, # Separator
             gui.MenuItem(
@@ -2279,7 +2290,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Show All World Details...',
                 callback=lambda: self._showWorldDetails(worlds=self._purchaseWorldsWidget.worlds()),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                enabled=self._purchaseWorldsWidget.rowCount() > 0
             ),
             None, # Separator
             gui.MenuItem(
@@ -2290,18 +2301,18 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map...',
                 callback=lambda: self._showWorldsInTravellerMap(worlds=self._purchaseWorldsWidget.worlds()),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                enabled=self._purchaseWorldsWidget.rowCount() > 0
             )
         ]
 
         gui.displayMenu(
             self,
             menuItems,
-            self._purchaseWorldsWidget.mapToGlobal(position)
+            self._purchaseWorldsWidget.mapToGlobal(point)
         )
 
-    def _showSaleWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._saleWorldsWidget.worldAt(position=position)
+    def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedHex = self._saleWorldsWidget.hexAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -2312,29 +2323,29 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             None, # Separator
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._saleWorldsWidget.promptAddWorld(),
+                callback=lambda: self._saleWorldsWidget.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._saleWorldsWidget.promptAddNearbyWorlds(initialWorld=world),
+                callback=lambda: self._saleWorldsWidget.promptAddNearbyWorlds(initialHex=clickedHex),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Remove Selected Worlds',
-                callback=lambda: self._saleWorldsWidget.removeSelectedWorlds(),
+                callback=lambda: self._saleWorldsWidget.removeSelectedRows(),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
                 text='Remove All Worlds',
-                callback=lambda: self._saleWorldsWidget.removeAllWorlds(),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                callback=lambda: self._saleWorldsWidget.removeAllRows(),
+                enabled=self._saleWorldsWidget.rowCount() > 0
             ),
             None, # Separator
             gui.MenuItem(
                 text='Copy Purchase Worlds',
                 callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                enabled=self._purchaseWorldsWidget.rowCount() > 0
             ),
             None, # Separator
             gui.MenuItem(
@@ -2345,7 +2356,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Show All World Details...',
                 callback=lambda: self._showWorldDetails(worlds=self._saleWorldsWidget.worlds()),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                enabled=self._saleWorldsWidget.rowCount() > 0
             ),
             None, # Separator
             gui.MenuItem(
@@ -2356,14 +2367,14 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map...',
                 callback=lambda: self._showWorldsInTravellerMap(worlds=self._saleWorldsWidget.worlds()),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                enabled=self._saleWorldsWidget.rowCount() > 0
             )
         ]
 
         gui.displayMenu(
             self,
             menuItems,
-            self._saleWorldsWidget.mapToGlobal(position)
+            self._saleWorldsWidget.mapToGlobal(point)
         )
 
     def _calculateTradeOptions(self) -> None:

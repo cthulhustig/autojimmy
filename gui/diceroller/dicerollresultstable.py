@@ -264,7 +264,7 @@ class DiceRollResultsTable(gui.ListTable):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -276,7 +276,7 @@ class DiceRollResultsTable(gui.ListTable):
         gui.displayMenu(
             self,
             menuItems,
-            self.viewport().mapToGlobal(position))
+            self.viewport().mapToGlobal(point))
 
     def _copyToClipboard(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()

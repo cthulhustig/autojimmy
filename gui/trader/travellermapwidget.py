@@ -97,7 +97,7 @@ class _MapOptionToggleAction(QtWidgets.QAction):
             option=self._option,
             enabled=self.isChecked())
 
-class _SearchComboBox(gui.WorldSelectComboBox):
+class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -251,10 +251,14 @@ class _InfoWidget(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setAutoFillBackground(True)
 
-    def setWorld(
+    def setHex(
             self,
-            world: typing.Optional[traveller.World]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
+        world = None
+        if hex != None:
+            world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+
         self._world = world
 
         self._updateContent(self._label.width())
@@ -341,8 +345,8 @@ class _InfoWidget(QtWidgets.QWidget):
         self._label.setFixedWidth(width)
 
         if self._world:
-            text = gui.createWorldToolTip(
-                world=self._world,
+            text = gui.createHexToolTip(
+                hex=self._world,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
                 noThumbnail=True,
                 width=width - _InfoWidget._ContentRightMargin)
@@ -798,9 +802,10 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._initOptionActions()
 
         self._selectionMode = TravellerMapWidget.SelectionMode.NoSelect
-        self._selectedWorlds: typing.List[traveller.World] = []
+        self._enableDeadSpaceSelection = False
+        self._selectedHexes: typing.List[travellermap.HexPosition] = []
 
-        self._infoWorld = None
+        self._infoHex = None
 
         fontMetrics = QtGui.QFontMetrics(QtWidgets.QApplication.font())
         controlHeights = int(fontMetrics.lineSpacing() * 2)
@@ -813,8 +818,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._searchWidget = _SearchComboBox(self)
         self._searchWidget.setFixedSize(searchWidth, controlHeights)
         self._searchWidget.installEventFilter(self)
-        self._searchWidget.editTextChanged.connect(self._searchWorldTextEdited)
-        self._searchWidget.worldChanged.connect(self._searchWorldSelected)
+        self._searchWidget.editTextChanged.connect(self._searchHexTextEdited)
+        self._searchWidget.hexChanged.connect(self._searchHexSelected)
 
         self._searchButton = _CustomIconButton(
             icon=gui.loadIcon(id=gui.Icon.Search),
@@ -895,61 +900,68 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             for action in TravellerMapWidget._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
-    def selectedWorlds(self) -> typing.Iterable[traveller.World]:
-        return self._selectedWorlds
+    def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+        return list(self._selectedHexes)
 
-    def selectWorld(
+    def selectHex(
             self,
-            world: traveller.World,
-            centerOnWorld: bool = True,
-            setInfoWorld: bool = True
+            hex: travellermap.HexPosition,
+            centerOnHex: bool = True,
+            setInfoHex: bool = True
             ) -> None:
+        world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+        if not world and not self._enableDeadSpaceSelection:
+            return
+
         if self._selectionMode == TravellerMapWidget.SelectionMode.NoSelect or \
-                world in self._selectedWorlds:
+                hex in self._selectedHexes:
             return
 
         if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect and \
-                self._selectedWorlds:
+                self._selectedHexes:
             with gui.SignalBlocker(widget=self):
-                self.clearSelectedWorlds()
+                self.clearSelectedHexes()
 
-        self._selectedWorlds.append(world)
+        self._selectedHexes.append(hex)
 
         with gui.SignalBlocker(widget=self._searchWidget):
-            self._searchWidget.setCurrentWorld(world=world)
+            self._searchWidget.setCurrentHex(hex=hex)
 
-        self.highlightWorld(world=world)
+        self.highlightHex(hex=hex)
 
-        if centerOnWorld:
-            self.centerOnWorld(world=world)
+        if centerOnHex:
+            self.centerOnHex(hex=hex)
 
-        if setInfoWorld:
-            self.setInfoWorld(world=world)
+        if setInfoHex:
+            self.setInfoHex(hex=hex)
 
         self.selectionChanged.emit()
 
-    def deselectWorld(
+    def deselectHex(
             self,
-            world: traveller.World
+            hex: travellermap.HexPosition
             ) -> None:
-        if world not in self._selectedWorlds:
+        if hex not in self._selectedHexes:
             return
 
-        self.clearWorldHighlight(world=world)
-        self._selectedWorlds.remove(world)
+        self.clearHexHighlight(hex=hex)
+        self._selectedHexes.remove(hex)
 
         if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
             self.selectionChanged.emit()
 
-    def clearSelectedWorlds(self) -> None:
-        if not self._selectedWorlds:
+    def clearSelectedHexes(self) -> None:
+        if not self._selectedHexes:
             return # Nothing to do
 
-        for world in self._selectedWorlds:
-            self.clearWorldHighlight(world=world)
-        self._selectedWorlds.clear()
+        for hex in self._selectedHexes:
+            self.clearHexHighlight(hex=hex)
+        self._selectedHexes.clear()
 
         self.selectionChanged.emit()
+
+    def selectionMode(self) -> 'TravellerMapWidget.SelectionMode':
+        return self._selectionMode
 
     def setSelectionMode(
             self,
@@ -958,27 +970,48 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._selectionMode = mode
 
         if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
-            if self._selectedWorlds:
-                for index in range(len(self._selectedWorlds)):
-                    self.clearWorldHighlight(world=self._selectedWorlds[index])
-                self._selectedWorlds.clear()
+            if self._selectedHexes:
+                for index in range(len(self._selectedHexes)):
+                    self.clearHexHighlight(hex=self._selectedHexes[index])
+                self._selectedHexes.clear()
                 self.selectionChanged.emit()
         elif self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
             # When single selection is enabled make sure there's one world at most selected
-            if len(self._selectedWorlds) > 1:
-                for index in range(len(self._selectedWorlds) - 1):
-                    self.clearWorldHighlight(world=self._selectedWorlds[index])
-                self._selectedWorlds = [self._selectedWorlds[-1]]
+            if len(self._selectedHexes) > 1:
+                for index in range(len(self._selectedHexes) - 1):
+                    self.clearHexHighlight(hex=self._selectedHexes[index])
+                self._selectedHexes = [self._selectedHexes[-1]]
                 self.selectionChanged.emit()
 
-    def setInfoWorld(
+    def enableDeadSpaceSelection(self, enable: bool) -> None:
+        self._enableDeadSpaceSelection = enable
+        self._searchWidget.enableDeadSpaceSelection(enable=enable)
+
+        if not self._enableDeadSpaceSelection:
+            # Deselect any dead space
+            selectionChanged = False
+            for index in range(len(self._selectedHexes) - 1, -1, -1):
+                hex = self._selectedHexes[index]
+                world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+                if not world:
+                    self.clearHexHighlight(hex=hex)
+                    self._selectedHexes.pop(index)
+                    selectionChanged = True
+
+            if selectionChanged:
+                self.selectionChanged.emit()
+
+    def isDeadSpaceSelectionEnabled(self) -> bool:
+        return self._enableDeadSpaceSelection
+
+    def setInfoHex(
             self,
-            world: typing.Optional[traveller.World]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._infoWidget.setWorld(world if self._infoButton.isChecked() else None)
-        # Update the stored info world even if the world info isn't being shown. This is done so
-        # the info for this world would be shown if the user enabled the info box
-        self._infoWorld = world
+        self._infoWidget.setHex(hex if self._infoButton.isChecked() else None)
+        # Update the stored info hex even if the info widget isn't being shown. This is done so
+        # the info for this hex would be shown if the user enabled the info widget
+        self._infoHex = hex
 
     def setInfoEnabled(self, enabled: bool) -> None:
         self._infoButton.setChecked(enabled)
@@ -1191,33 +1224,26 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
     def _handleLeftClickEvent(
             self,
-            sectorHex: typing.Optional[str]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        world = None
-        if sectorHex:
-            try:
-                world = traveller.WorldManager.instance().world(sectorHex=sectorHex)
-            except Exception:
-                pass
-
         # Show info for the world the user clicked on or hide any current world info if there
         # is no world in the hex the user clicked
         if self._infoButton.isChecked():
-            self.setInfoWorld(world=world)
+            self.setInfoHex(hex=hex)
 
         # Update selection if enabled
-        if world and (self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect):
-            if world not in self._selectedWorlds:
-                self.selectWorld(
-                    world=world,
-                    centerOnWorld=False, # Don't center as user is interacting with map
-                    setInfoWorld=False) # Updating info world has already been handled
+        if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
+            if hex not in self._selectedHexes:
+                self.selectHex(
+                    hex=hex,
+                    centerOnHex=False, # Don't center as user is interacting with map
+                    setInfoHex=False) # Updating info world has already been handled
             else:
                 # Clicking a selected worlds deselects it
-                self.deselectWorld(world=world)
+                self.deselectHex(hex=hex)
 
         # Call base implementation to generate left click event
-        super()._handleLeftClickEvent(sectorHex=sectorHex)
+        super()._handleLeftClickEvent(hex=hex)
 
     def _displayOptionChanged(self) -> None:
         self._legendWidget.syncContent()
@@ -1317,48 +1343,47 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                             configSize.width()),
             vertOffset)
 
-    def _searchWorldTextEdited(self) -> None:
-        # Clear the current info world (and hide the widget) as soon as the user starts editing the
-        # search world text. This is done to prevent the selection drop down from being hard to read
+    def _searchHexTextEdited(self) -> None:
+        # Clear the current info hex (and hide the widget) as soon as the user starts editing the
+        # search hex text. This is done to prevent the selection drop down from being hard to read
         # due to it overlapping the info widget. This behaviour is consistent with Traveller Map
-        self.setInfoWorld(world=None)
+        self.setInfoHex(hex=None)
 
-    def _searchWorldSelected(
+    def _searchHexSelected(
             self,
-            world: typing.Optional[traveller.World]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if self._infoButton.isChecked():
-            self.setInfoWorld(world)
+            self.setInfoHex(hex=hex)
 
-        if not world:
-            return # Nothing more to do
+        if hex:
+            self.centerOnHex(hex=hex)
 
-        self.centerOnWorld(world=world)
+            # Add the selected world to the recently used list
+            app.HexHistory.instance().addHex(hex=hex)
 
-        # Add the selected world to the recently used list
-        app.RecentWorlds.instance().addWorld(world)
+            if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
+                self.selectHex(
+                    hex=hex,
+                    centerOnHex=False, # Centring on the world has already been handled
+                    setInfoHex=False) # Updating info world has already been handled
 
-        if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
-            self.selectWorld(
-                world=world,
-                centerOnWorld=False, # Centring on the world has already been handled
-                setInfoWorld=False) # Updating info world has already been handled
+        self._searchButton.setEnabled(hex != None)
 
     def _searchButtonClicked(self) -> None:
-        world = self._searchWidget.currentWorld()
-        if not world:
-            worlds = traveller.WorldManager.instance().searchForWorlds(
-                searchString=self._searchWidget.currentText())
-            if worlds:
-                worlds.sort(key=lambda x: x.name(includeSubsector=True))
-                world = worlds[0]
-        self._searchWorldSelected(world=world)
+        # TODO: This function has changed a lot. I think the old implementation
+        # might have been left over from before I did the last big update to
+        # world selection but it might have actually been there for a reason. In
+        # fact it seems to have some undesirable behaviour in it causes the map
+        # to jump to an unexpected location if you type a name that doesn't match
+        # anything and click the search button
+        self._searchHexSelected(hex=self._searchWidget.currentHex())
 
     def _showInfoToggled(self) -> None:
         # Update info widget directly rather than calling setInfoWorld. This is done as we don't
         # want to clear the info world. If the user was to re-enable the info widget straight away
         # they would expect to see the same world as it was previously showing
-        self._infoWidget.setWorld(self._infoWorld if self._infoButton.isChecked() else None)
+        self._infoWidget.setHex(self._infoHex if self._infoButton.isChecked() else None)
 
     def _showLegendToggled(self) -> None:
         if self._legendButton.isChecked():

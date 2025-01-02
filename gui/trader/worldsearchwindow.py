@@ -4,6 +4,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -133,7 +134,10 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         subsectorNames.sort(key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
-class _WorldRadiusSearchWidget(QtWidgets.QWidget):
+# TODO: This will need labels updated to use hex when selecting dead space
+class _HexSearchRadiusWidget(QtWidgets.QWidget):
+    # TODO: I suspect I'll need to leave this string as is for backwards
+    # compatibility
     _StateVersion = '_WorldRadiusSearchWidget_v1'
 
     _MinWorldWidgetWidth = 350
@@ -144,9 +148,10 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._worldWidget = gui.WorldSelectWidget('Origin World:')
-        self._worldWidget.enableMapSelectButton(True)
-        self._worldWidget.enableShowInfoButton(True)
+        self._hexWidget = gui.HexSelectToolWidget(
+            labelText='Center Hex:')
+        self._hexWidget.enableMapSelectButton(True)
+        self._hexWidget.enableShowInfoButton(True)
         # Setting this to a fixed size is horrible, but no mater what I try I
         # can't get this f*cking thing to expand to fill available space. I
         # suspect it might be something to do with one of layers of widgets or
@@ -157,9 +162,12 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
         # happening for this window and what is happening for something like the
         # jump route planner window where the start/finish world combo boxes do
         # expand to fil available space.
-        self._worldWidget.setMinimumWidth(
-            int(_WorldRadiusSearchWidget._MinWorldWidgetWidth *
+        self._hexWidget.setMinimumWidth(
+            int(_HexSearchRadiusWidget._MinWorldWidgetWidth *
                 app.Config.instance().interfaceScale()))
+        # Enable dead space selection so the user can find things centred around
+        # a dead space hex
+        self._hexWidget.enableDeadSpaceSelection(enable=True)
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(1, 32)
@@ -171,23 +179,23 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self._worldWidget)
+        layout.addWidget(self._hexWidget)
         layout.addLayout(radiusLayout)
 
         self.setLayout(layout)
 
-    def world(self) -> typing.Optional[traveller.World]:
-        return self._worldWidget.world()
+    def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
+        return self._hexWidget.selectedHex()
 
-    def radius(self) -> int:
+    def searchRadius(self) -> int:
         return self._radiusSpinBox.value()
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(_WorldRadiusSearchWidget._StateVersion)
+        stream.writeQString(_HexSearchRadiusWidget._StateVersion)
 
-        bytes = self._worldWidget.saveState()
+        bytes = self._hexWidget.saveState()
         stream.writeUInt32(bytes.count() if bytes else 0)
         if bytes:
             stream.writeRawData(bytes.data())
@@ -205,14 +213,14 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
             ) -> None:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != _WorldRadiusSearchWidget._StateVersion:
+        if version != _HexSearchRadiusWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore _WorldRadiusSearchWidget state (Incorrect version)')
+            logging.debug(f'Failed to restore _HexSearchRadiusWidget state (Incorrect version)')
             return False
 
         count = stream.readUInt32()
         if count > 0:
-            if not self._worldWidget.restoreState(
+            if not self._hexWidget.restoreState(
                     QtCore.QByteArray(stream.readRawData(count))):
                 return False
 
@@ -399,7 +407,7 @@ class WorldSearchWindow(gui.WindowWidget):
         return super().firstShowEvent(e)
 
     def _setupAreaControls(self) -> None:
-        self._worldRadiusSearchWidget = _WorldRadiusSearchWidget()
+        self._worldRadiusSearchWidget = _HexSearchRadiusWidget()
         self._worldRadiusSearchRadioButton = gui.RadioButtonEx()
         self._worldRadiusSearchRadioButton.setToolTip('Search for worlds in the area surrounding the specified world.')
         self._worldRadiusSearchRadioButton.toggled.connect(self._worldRadiusSearchToggled)
@@ -501,7 +509,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
         self._resultsCountLabel = gui.PrefixLabel(prefix='Results Count: ')
 
-        self._worldTableDisplayModeTabs = gui.WorldTableTabBar()
+        self._worldTableDisplayModeTabs = gui.HexTableTabBar()
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
         self._worldTable = gui.WorldTradeScoreTable()
@@ -519,6 +527,7 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget.setLayout(tableLayout)
 
         self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget.enableDeadSpaceSelection(enable=True)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
@@ -545,19 +554,19 @@ class WorldSearchWindow(gui.WindowWidget):
             self._travellerMapWidget.resize(size)
             self._travellerMapWidget.show()
 
-    def _worldColumns(self) -> typing.List[gui.WorldTable.ColumnType]:
+    def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._worldTableDisplayModeTabs.currentDisplayMode()
-        if displayMode == gui.WorldTableTabBar.DisplayMode.AllColumns:
+        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
             return gui.WorldTradeScoreTable.AllColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.SystemColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
             return gui.WorldTradeScoreTable.SystemColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.UWPColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
             return gui.WorldTradeScoreTable.UWPColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.EconomicsColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
             return gui.WorldTradeScoreTable.EconomicsColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.CultureColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
             return gui.WorldTradeScoreTable.CultureColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.RefuellingColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
             return gui.WorldTradeScoreTable.RefuellingColumns
         else:
             assert(False) # I missed a case
@@ -615,16 +624,15 @@ class WorldSearchWindow(gui.WindowWidget):
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
             elif self._worldRadiusSearchRadioButton.isChecked():
-                world = self._worldRadiusSearchWidget.world()
-                if not world:
+                hex = self._worldRadiusSearchWidget.centerHex()
+                if not hex:
                     gui.MessageBoxEx.information(
                         parent=self,
-                        text='Select a world to center the search radius around')
+                        text='Select a hex to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchArea(
-                    centerX=world.absoluteX(),
-                    centerY=world.absoluteY(),
-                    searchRadius=self._worldRadiusSearchWidget.radius())
+                    centerHex=hex,
+                    searchRadius=self._worldRadiusSearchWidget.searchRadius())
         except Exception as ex:
             message = 'Failed to find nearby worlds'
             logging.error(message, exc_info=ex)
@@ -657,8 +665,8 @@ class WorldSearchWindow(gui.WindowWidget):
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setVisibleColumns(self._worldColumns())
 
-    def _showWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._worldTable.worldAt(position)
+    def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        world = self._worldTable.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -704,7 +712,7 @@ class WorldSearchWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._worldTable.viewport().mapToGlobal(position)
+            self._worldTable.viewport().mapToGlobal(point)
         )
 
     def _findTradeOptions(
@@ -729,14 +737,14 @@ class WorldSearchWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addWorlds(worlds=worlds)
+        infoWindow.addHexes(hexes=worlds)
 
     def _showTradeScoreCalculations(
             self,
-            world: traveller.World
+            row: int
             ) -> None:
         try:
-            tradeScore = self._worldTable.tradeScore(world=world)
+            tradeScore = self._worldTable.tradeScore(row=row)
             calculations = [tradeScore.totalPurchaseScore(), tradeScore.totalSaleScore()]
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(calculations=calculations)

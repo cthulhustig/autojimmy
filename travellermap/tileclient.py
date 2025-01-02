@@ -37,17 +37,14 @@ class TileClient(object):
             self,
             milieu: travellermap.Milieu,
             style: travellermap.Style,
-            absoluteX: int,
-            absoluteY: int,
+            hex: travellermap.HexPosition,
             options: typing.Iterable[travellermap.Option],
             linearScale: float = 64,
             width: int = 256,
             height: int = 256,
             timeout: typing.Optional[typing.Union[int, float]] = None,
             ) -> typing.Tuple[bytes, travellermap.MapFormat]:
-        mapX, mapY = travellermap.absoluteHexToMapSpace(
-            absoluteX=absoluteX,
-            absoluteY=absoluteY)
+        mapX, mapY = hex.mapSpace()
 
         # Calculate position to center tile on map position
         tilePosition = (

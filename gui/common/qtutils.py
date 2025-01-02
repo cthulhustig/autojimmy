@@ -29,7 +29,7 @@ class MenuItem(object):
 def displayMenu(
         parent: QtWidgets.QWidget,
         items: typing.Iterable[typing.Union[MenuItem, QtWidgets.QAction, QtWidgets.QMenu, None]],
-        globalPosition: QtCore.QPoint
+        globalPoint: QtCore.QPoint
         ) -> None:
     menu = QtWidgets.QMenu(parent)
 
@@ -47,7 +47,7 @@ def displayMenu(
         else:
             menu.addSeparator()
 
-    menu.exec(globalPosition)
+    menu.exec(globalPoint)
 
 def safeLoadSetting(
         settings: QtCore.QSettings,

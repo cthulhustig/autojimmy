@@ -38,11 +38,9 @@ class WorldFilterTable(gui.ListTable):
             worlds.append(world)
         return worlds
 
-    def filterAt(self, position: QtCore.QPoint) -> typing.Optional[logic.WorldFilter]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.filter(item.row())
+    def filterAt(self, y: int) -> typing.Optional[logic.WorldFilter]:
+        row = self.rowAt(y)
+        return self.filter(row) if row >= 0 else None
 
     def insertFilter(self, row: int, filter: logic.WorldFilter) -> int:
         self.insertRow(row)

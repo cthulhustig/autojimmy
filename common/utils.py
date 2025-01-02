@@ -295,4 +295,4 @@ class DebugTimer():
 
     def __exit__(self, type, value, traceback):
         delta = utcnow() - self._startTime
-        print(f'{self._string}: {delta.microseconds / 1000}ms')
+        print(f'{self._string}: {delta.total_seconds() * 1000}ms')

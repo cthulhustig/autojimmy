@@ -307,7 +307,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -321,7 +321,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._historyTable.viewport().mapToGlobal(position))
+            self._historyTable.viewport().mapToGlobal(point))
 
     def _copyToClipboard(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()

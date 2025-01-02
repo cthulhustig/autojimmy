@@ -9,7 +9,7 @@ class World(object):
             name: str,
             sectorName: str,
             subsectorName: str,
-            hex: str,
+            hex: travellermap.HexPosition,
             allegiance: str,
             uwp: str,
             economics: str,
@@ -20,9 +20,7 @@ class World(object):
             stellar: str,
             pbg: str,
             systemWorlds: str,
-            bases: str,
-            sectorX: int,
-            sectorY: int
+            bases: str
             ) -> None:
         self._name = name
         self._sectorName = sectorName
@@ -45,15 +43,6 @@ class World(object):
         # There is always 1 system world (the main world)
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
         self._bases = traveller.Bases(bases)
-        self._x = int(self._hex[:2])
-        self._y = int(self._hex[-2:])
-        self._sectorX = sectorX
-        self._sectorY = sectorY
-        self._absoluteX, self._absoluteY = travellermap.relativeHexToAbsoluteHex(
-            sectorX=self._sectorX,
-            sectorY=self._sectorY,
-            worldX=self._x,
-            worldY=self._y)
 
     def name(self, includeSubsector: bool = False) -> str:
         if includeSubsector:
@@ -66,11 +55,12 @@ class World(object):
     def subsectorName(self) -> str:
         return self._subsectorName
 
-    def hex(self) -> str:
+    def hex(self) -> travellermap.HexPosition:
         return self._hex
 
     def sectorHex(self) -> str:
-        return f'{self._sectorName} {self._hex}'
+        _, _, offsetX, offsetY = self._hex.relative()
+        return f'{self._sectorName} {int(offsetX):02d}{int(offsetY):02d}'
 
     def allegiance(self) -> str:
         return self._allegiance
@@ -232,23 +222,15 @@ class World(object):
     def hasWildernessRefuelling(self) -> bool:
         return self.hasGasGiantRefuelling() or self.hasWaterRefuelling()
 
-    def x(self) -> int:
-        return self._x
-
-    def y(self) -> int:
-        return self._y
-
-    def sectorX(self) -> int:
-        return self._sectorX
-
-    def sectorY(self) -> int:
-        return self._sectorY
-
-    def absoluteX(self) -> int:
-        return self._absoluteX
-
-    def absoluteY(self) -> int:
-        return self._absoluteY
+    def parsecsTo(
+            self,
+            dest: typing.Union[
+                'World',
+                travellermap.HexPosition
+            ]
+            ) -> int:
+        return self._hexPosition.parsecsTo(
+            dest.hex() if isinstance(dest, World) else dest)
 
     # Prevent deep and shallow copies of world objects some code
     # (specifically the jump route calculations) expect there to

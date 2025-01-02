@@ -2,6 +2,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore, QtWidgets
 
@@ -50,29 +51,35 @@ class TravellerMapWindow(gui.WindowWidget):
 
     def centerOnHex(
             self,
-            sectorX: int,
-            sectorY: int,
-            worldX: int,
-            worldY: int,
+            hex: travellermap.HexPosition,
             linearScale: typing.Optional[float] = 64, # None keeps current scale
             clearOverlays: bool = False,
             highlightHex: bool = False,
             highlightRadius: float = 0.5
             ) -> None:
         self._mapWidget.centerOnHex(
-            self,
-            sectorX=sectorX,
-            sectorY=sectorY,
-            worldX=worldX,
-            worldY=worldY,
+            hex=hex,
             linearScale=linearScale,
             clearOverlays=clearOverlays,
             highlightHex=highlightHex,
             highlightRadius=highlightRadius)
 
+    def centerOnHexes(
+            self,
+            hexes: travellermap.HexPosition,
+            clearOverlays: bool = False,
+            highlightHexes: bool = False,
+            highlightRadius: float = 0.5
+            ) -> None:
+        self._mapWidget.centerOnHexes(
+            hexes=hexes,
+            clearOverlays=clearOverlays,
+            highlightHexes=highlightHexes,
+            highlightRadius=highlightRadius)
+
     def showJumpRoute(
             self,
-            jumpRoute: typing.Iterable[traveller.World],
+            jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
             zoomToArea: bool = True,
             clearOverlays: bool = True,
@@ -91,25 +98,16 @@ class TravellerMapWindow(gui.WindowWidget):
             radius: float = 0.5
             ) -> None:
         self.highlightHex(
-            sectorX=world.sectorX(),
-            sectorY=world.sectorY(),
-            worldX=world.x(),
-            worldY=world.y(),
+            hex=world.hex(),
             radius=radius)
 
     def highlightHex(
             self,
-            sectorX: int,
-            sectorY: int,
-            worldX: int,
-            worldY: int,
+            hex: travellermap.HexPosition,
             radius: float = 0.5
             ) -> None:
         self._mapWidget.highlightHex(
-            sectorX=sectorX,
-            sectorY=sectorY,
-            worldX=worldX,
-            worldY=worldY,
+            hex=hex,
             radius=radius)
 
     def clearWorldHighlight(
@@ -120,16 +118,9 @@ class TravellerMapWindow(gui.WindowWidget):
 
     def clearHexHighlight(
             self,
-            sectorX: int,
-            sectorY: int,
-            worldX: int,
-            worldY: int
+            hex: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.clearWorldHighlight(
-            sectorX=sectorX,
-            sectorY=sectorY,
-            hexX=worldX,
-            hexY=worldY)
+        self._mapWidget.clearHexHighlight(hex=hex)
 
     def clearOverlays(self) -> None:
         self._mapWidget.clearOverlays()

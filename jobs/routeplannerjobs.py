@@ -17,7 +17,7 @@ class RoutePlannerJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            worldSequence: typing.List[traveller.World],
+            hexSequence: typing.Sequence[traveller.World],
             shipTonnage: int,
             shipJumpRating: int,
             shipFuelCapacity: int,
@@ -25,7 +25,8 @@ class RoutePlannerJob(QtCore.QThread):
             shipFuelPerParsec: typing.Optional[float],
             jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator], # This will be called from the worker thread
-            worldFilterCallback: typing.Callable[[traveller.World], bool] = None, # This will be called from the worker thread
+            hexFilter: typing.Optional[logic.HexFilterInterface] = None, # This will be called from the worker thread
+            useDeadSpace: bool = False,
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None
             ) -> None:
@@ -35,7 +36,7 @@ class RoutePlannerJob(QtCore.QThread):
         # to prevent issues if they are modified while the thread is running. The
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
-        self._worldSequence = worldSequence.copy()
+        self._hexSequence = list(hexSequence)
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipFuelCapacity = shipFuelCapacity
@@ -43,7 +44,8 @@ class RoutePlannerJob(QtCore.QThread):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
-        self._worldFilterCallback = worldFilterCallback
+        self._useDeadSpace = useDeadSpace
+        self._hexFilter = hexFilter
 
         self._planner = logic.RoutePlanner()
         self._lastProgressTimestamp = None
@@ -77,7 +79,7 @@ class RoutePlannerJob(QtCore.QThread):
     def run(self) -> None:
         try:
             jumpRoute = self._planner.calculateSequenceRoute(
-                worldSequence=self._worldSequence,
+                hexSequence=self._hexSequence,
                 shipTonnage=self._shipTonnage,
                 shipJumpRating=self._shipJumpRating,
                 shipFuelCapacity=self._shipFuelCapacity,
@@ -85,7 +87,8 @@ class RoutePlannerJob(QtCore.QThread):
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
-                worldFilterCallback=self._worldFilterCallback,
+                hexFilter=self._hexFilter,
+                useDeadSpace=self._useDeadSpace,
                 progressCallback=self._handleProgress,
                 isCancelledCallback=self.isCancelled)
 

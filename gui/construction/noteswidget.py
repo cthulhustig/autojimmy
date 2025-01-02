@@ -238,7 +238,7 @@ class NotesWidget(QtWidgets.QWidget):
 
     def _tableContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -249,7 +249,7 @@ class NotesWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._table.viewport().mapToGlobal(position))
+            self._table.viewport().mapToGlobal(point))
 
     def _copyToClipboard(self):
         clipboard = QtWidgets.QApplication.clipboard()

@@ -474,7 +474,7 @@ class ListTable(gui.TableWidgetEx):
             ) -> None:
         self._checkRowFiltering(row=item.row())
 
-    def _checkForHeaderIconClick(self, pos: QtCore.QPoint) -> int:
+    def _checkForHeaderIconClick(self, point: QtCore.QPoint) -> int:
         header = self.horizontalHeader()
         for column in range(self.columnCount()):
             if self.isColumnHidden(column):
@@ -495,7 +495,7 @@ class ListTable(gui.TableWidgetEx):
 
             # Check if the click position is inside the icon rect. Don't include the edges of the
             # rect as I was finding i was getting false clicks when resizing columns
-            if iconRect.contains(pos, True):
+            if iconRect.contains(point, True):
                 return column
 
         return -1
@@ -839,8 +839,8 @@ class FrozenColumnListTable(ListTable):
     # To use cell widgets the derived class will need to override setFrozenColumnVisualIndex
     # so it can remove the old cell widgets before the update and add new ones after the update.
     # This is necessary as there is no way to detach a cell widget from one table and move it to
-    # another table (removeCellWidget causes the widget to be destroyed). See WorldBerthingTable
-    # for an example
+    # another table (removeCellWidget causes the widget to be destroyed). See WaypointTable for
+    # an example
     def setCellWidget(self, row: int, column: int, widget: QtWidgets.QWidget) -> None:
         if self._frozenColumnVisualIndex != None:
             visualIndex = self.visualColumn(column)
@@ -1027,9 +1027,9 @@ class FrozenColumnListTable(ListTable):
 
     def _frozenContextMenuRequested(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
-        self.customContextMenuRequested.emit(position)
+        self.customContextMenuRequested.emit(point)
 
     def _columnMoved(
             self,

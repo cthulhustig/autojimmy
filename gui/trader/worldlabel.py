@@ -61,7 +61,7 @@ class WorldLabel(QtWidgets.QLabel):
                 # widget it will also be applied to the tool tip background
                 style = f'QLabel{{background-color: {app.tagColour(tagLevel)}}}'
 
-            toolTip = gui.createWorldToolTip(self._world)
+            toolTip = gui.createHexToolTip(self._world)
         elif self._noWorldText:
             text = self._noWorldText
 

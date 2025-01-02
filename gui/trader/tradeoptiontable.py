@@ -179,11 +179,9 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             options.append(tradeOption)
         return options
 
-    def tradeOptionAt(self, position: QtCore.QPoint) -> typing.Optional[logic.TradeOption]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.tradeOption(item.row())
+    def tradeOptionAt(self, y: int) -> typing.Optional[logic.TradeOption]:
+        row = self.rowAt(y)
+        return self.tradeOption(row) if row >= 0 else None
 
     def insertTradeOption(self, row: int, tradeOption: logic.TradeOption) -> int:
         self.insertRow(row)
@@ -426,11 +424,11 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         if columnType == self.ColumnType.PurchaseWorld or \
                 columnType == self.ColumnType.PurchaseSector:
             purchaseWorld = tradeOption.purchaseWorld()
-            return gui.createWorldToolTip(purchaseWorld)
+            return gui.createHexToolTip(purchaseWorld)
         elif columnType == self.ColumnType.SaleWorld or \
                 columnType == self.ColumnType.SaleSector:
             saleWorld = tradeOption.saleWorld()
-            return gui.createWorldToolTip(saleWorld)
+            return gui.createHexToolTip(saleWorld)
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()
             if notes:
