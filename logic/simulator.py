@@ -77,6 +77,7 @@ class Simulator(object):
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
+            deadSpaceRouting: bool,
             searchRadius: int,
             minSellerDm: int,
             maxSellerDm: int,
@@ -97,6 +98,7 @@ class Simulator(object):
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
+        self._deadSpaceRouting = deadSpaceRouting
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -342,6 +344,7 @@ class Simulator(object):
             shipFuelPerParsec=self._shipFuelPerParsec,
             jumpCostCalculator=self._jumpCostCalculator,
             pitCostCalculator=self._pitCostCalculator,
+            deadSpaceRouting=self._deadSpaceRouting,
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
             includeSaleWorldBerthing=True)

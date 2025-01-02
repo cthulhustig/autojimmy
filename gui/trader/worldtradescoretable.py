@@ -54,8 +54,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
         try:
             for row in range(self.rowCount()):
-                world = self.world(row)
-                self._fillRow(row, world)
+                self._fillRow(row, self.hex(row), self.world(row))
         finally:
             self.setSortingEnabled(sortingEnabled)
 

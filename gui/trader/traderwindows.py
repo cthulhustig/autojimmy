@@ -127,6 +127,7 @@ class _BaseTraderWindow(gui.WindowWidget):
 
         # Right column of controls
         self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
+        self._deadSpaceRoutingCheckBox = gui.SharedDeadSpaceRoutingCheckBox()
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
         self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
         self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
@@ -145,20 +146,21 @@ class _BaseTraderWindow(gui.WindowWidget):
         centerLayout = gui.FormLayoutEx()
         centerLayout.setContentsMargins(0, 0, 0, 0)
         centerLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
+        centerLayout.addRow('Dead Space Routing:', self._deadSpaceRoutingCheckBox)
         centerLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         centerLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         centerLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
         centerLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
-        centerLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
-        centerLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
-        centerLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
-        centerLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
 
         self._includeLogisticsCostsCheckBox = gui.SharedIncludeLogisticsCostsCheckBox()
         self._includeUnprofitableTradesCheckBox = gui.SharedIncludeUnprofitableCheckBox()
 
         rightLayout = gui.FormLayoutEx()
         rightLayout.setContentsMargins(0, 0, 0, 0)
+        rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
+        rightLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
+        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Include Logistics Costs:', self._includeLogisticsCostsCheckBox)
         rightLayout.addRow('Include Unprofitable Trades:', self._includeUnprofitableTradesCheckBox)
 
@@ -1863,6 +1865,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
+                deadSpaceRouting=self._deadSpaceRoutingCheckBox.isChecked(),
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
@@ -2496,6 +2499,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
+                deadSpaceRouting=self._deadSpaceRoutingCheckBox.isChecked(),
                 includeIllegal=True, # Always include illegal trade options for multi-world
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),

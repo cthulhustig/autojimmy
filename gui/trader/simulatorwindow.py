@@ -657,6 +657,7 @@ class SimulatorWindow(gui.WindowWidget):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
+                deadSpaceRouting=False,
                 searchRadius=self._searchRadiusSpinBox.value(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 playerStreetwiseDm=self._playerStreetwiseDmSpinBox.value(),

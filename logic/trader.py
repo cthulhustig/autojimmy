@@ -39,6 +39,7 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
+            deadSpaceRouting: bool = False,
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             useLocalSaleBroker: bool = False,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
@@ -157,6 +158,7 @@ class Trader(object):
             perJumpOverheads=perJumpOverheads,
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
+            deadSpaceRouting=deadSpaceRouting,
             useLocalSaleBroker=useLocalSaleBroker,
             localSaleBrokerDm=localSaleBrokerDm,
             includePurchaseWorldBerthing=includePurchaseWorldBerthing,
@@ -183,6 +185,7 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
+            deadSpaceRouting: bool = False,
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             useLocalPurchaseBroker: bool = False,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
@@ -344,6 +347,7 @@ class Trader(object):
                 perJumpOverheads=perJumpOverheads,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
+                deadSpaceRouting=deadSpaceRouting,
                 useLocalSaleBroker=useLocalSaleBroker,
                 localSaleBrokerDm=localSaleBrokerDm,
                 includePurchaseWorldBerthing=includePurchaseWorldBerthing,
@@ -369,6 +373,7 @@ class Trader(object):
             perJumpOverheads: common.ScalarCalculation,
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
+            deadSpaceRouting: bool = False,
             useLocalSaleBroker: bool = False,
             localSaleBrokerDm: typing.Optional[common.ScalarCalculation] = None, # Only used for 1e & 2e
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
@@ -390,6 +395,7 @@ class Trader(object):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=None,
+                useDeadSpace=deadSpaceRouting,
                 isCancelledCallback=self._isCancelledCallback)
             if not jumpRoute:
                 if self._isCancelledCallback and self._isCancelledCallback():

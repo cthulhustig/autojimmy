@@ -369,7 +369,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._zoomToJumpRoute = False
         self._jumpOverlayHandles = set()
 
-        self._setupJumpWorldsControls()
+        self._setupStartFinishControls()
         self._setupConfigurationControls()
         self._setupWaypointWorldsControls()
         self._setupAvoidWorldsControls()
@@ -614,7 +614,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._travellerMapWidget.resize(size)
             self._travellerMapWidget.show()
 
-    def _setupJumpWorldsControls(self) -> None:
+    def _setupStartFinishControls(self) -> None:
         self._selectStartFinishWidget = _StartFinishSelectWidget()
         self._selectStartFinishWidget.enableDeadSpaceSelection(
             enable=app.Config.instance().deadSpaceRouting())
@@ -624,8 +624,7 @@ class JumpRouteWindow(gui.WindowWidget):
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._selectStartFinishWidget)
 
-        # TODO: Not sure what this should be called, possibly Locations, Nodes or Hexes instead of worlds
-        self._jumpWorldsGroupBox = QtWidgets.QGroupBox('Jump Worlds')
+        self._jumpWorldsGroupBox = QtWidgets.QGroupBox('Start/Finish')
         self._jumpWorldsGroupBox.setLayout(groupLayout)
 
     def _setupConfigurationControls(self) -> None:
@@ -801,7 +800,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._jumpRouteTable = gui.HexTable()
         self._jumpRouteTable.setVisibleColumns(self._jumpRouteColumns())
-        self._jumpRouteTable.setMinimumHeight(100) # TODO: Should this have interface scaling applied?
+        self._jumpRouteTable.setMinimumHeight(100)
         self._jumpRouteTable.setSortingEnabled(False) # Disable sorting as we only want to display in jump route order
         self._jumpRouteTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._jumpRouteTable.customContextMenuRequested.connect(self._showJumpRouteTableContextMenu)
@@ -913,7 +912,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 message = 'You need to select a start world before calculating a route.'
             else:
                 message = 'You need to select a finish world before calculating a route.'
-            gui.MessageBoxEx.information(parent=self, text=message)
+            gui.MessageBoxEx.critical(parent=self, text=message)
             return
 
         # Fuel based route calculation
@@ -932,14 +931,12 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            # TODO: This should also highlight the case where the ship has no fuel
-            # and the start world is dead space
             startWorld = traveller.WorldManager.instance().worldByPosition(hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
                     message += ' In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
-                    gui.MessageBoxEx.information(parent=self, text=message)
+                    gui.MessageBoxEx.critical(parent=self, text=message)
                     return
 
                 message += 'The ability to generate a route and refuelling plan will be limited by the the amount of fuel the ship currently has.\n\nDo you want to continue?'
@@ -950,6 +947,19 @@ class JumpRouteWindow(gui.WindowWidget):
                     # Only remember if the user clicked yes
                     rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
+
+            # Highlight the case where the start hex is dead space and the ship doesn't
+            # have fuel to make a parsec 1 jump
+            if deadSpaceRouting and not startWorld:
+                currentFuel = self._shipCurrentFuelSpinBox.value()
+                oneParsecFuel = traveller.calculateFuelRequiredForJump(
+                    jumpDistance=1,
+                    shipTonnage=self._shipTonnageSpinBox.value())
+                if currentFuel < oneParsecFuel.value():
+                    gui.MessageBoxEx.critical(
+                        parent=self,
+                        text='The starting hex is dead space but the ship doesn\'t have enough fuel to jump.')
                     return
 
             fuelIssueWorldStrings = []
@@ -1761,7 +1771,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 if waypoints[waypointIndex][1]:
                     # Berthing is required if any of the instances of the world in the sequence are
                     # marked as requiring berthing
-                    # TODO: This doesn't feel right, should probably check it
                     waypoints[waypointIndex - 1] = waypoints[waypointIndex]
                 waypoints.pop(waypointIndex)
 

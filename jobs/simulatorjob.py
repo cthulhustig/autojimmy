@@ -26,6 +26,7 @@ class SimulatorJob(QtCore.QThread):
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
+            deadSpaceRouting: bool,
             searchRadius: int,
             playerBrokerDm: int,
             playerStreetwiseDm: typing.Optional[int],
@@ -56,6 +57,7 @@ class SimulatorJob(QtCore.QThread):
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
         self._perJumpOverheads = perJumpOverheads
+        self._deadSpaceRouting = deadSpaceRouting
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -108,6 +110,7 @@ class SimulatorJob(QtCore.QThread):
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheads,
+                deadSpaceRouting=self._deadSpaceRouting,
                 searchRadius=self._searchRadius,
                 playerBrokerDm=self._playerBrokerDm,
                 playerStreetwiseDm=self._playerStreetwiseDm,
