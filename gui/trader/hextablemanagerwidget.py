@@ -233,13 +233,17 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         return self._hexTable.worlds()
 
     def rowAt(self, y: int) -> int:
-        return self._hexTable.rowAt(y)
+        translated = self.mapToGlobal(QtCore.QPoint(self.x(), y))
+        translated = self._hexTable.viewport().mapFromGlobal(translated)
+        return self._hexTable.rowAt(translated.y())
 
     def hexAt(self, y: int) -> typing.Optional[travellermap.HexPosition]:
-        return self._hexTable.hexAt(y)
+        row = self.rowAt(y)
+        return self.hex(row) if row >= 0 else None
 
     def worldAt(self, y: int) -> typing.Optional[traveller.World]:
-        return self._hexTable.worldAt(y)
+        row = self.rowAt(y)
+        return self.world(row) if row >= 0 else None
 
     def hasSelection(self) -> bool:
         return self._hexTable.hasSelection()
@@ -461,20 +465,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         else:
             assert(False) # I missed a case
 
-    def _showWorldDetails(
+    def _showDetails(
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        # TODO: Need to switch this to use hexes
-        gui.MessageBoxEx.critical(
-            parent=self,
-            text='Implement me!')
-        return
-
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addWorlds(worlds=worlds)
+        detailsWindow.addHexes(hexes=worlds)
 
-    def _showWorldsInTravellerMap(
+    def _showInTravellerMap(
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
@@ -537,23 +535,23 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(self._hexTable.selectedWorlds()),
+                callback=lambda: self._showDetails(self._hexTable.selectedWorlds()),
                 enabled=self._hexTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(self._hexTable.worlds()),
+                callback=lambda: self._showDetails(self._hexTable.worlds()),
                 enabled=not self._hexTable.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.selectedHexes()),
+                callback=lambda: self._showInTravellerMap(self._hexTable.selectedHexes()),
                 enabled=self._hexTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.hexes()),
+                callback=lambda: self._showInTravellerMap(self._hexTable.hexes()),
                 enabled=not self._hexTable.isEmpty()
             )
         ]

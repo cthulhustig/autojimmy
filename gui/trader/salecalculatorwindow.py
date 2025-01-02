@@ -595,8 +595,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._cargoTable.setCargoRecord(row, cargoRecord)
 
-    def _showCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
-        cargoRecord = self._cargoTable.cargoRecordAt(position)
+    def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
+        cargoRecord = self._cargoTable.cargoRecordAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -624,7 +624,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoTable.viewport().mapToGlobal(position))
+            self._cargoTable.viewport().mapToGlobal(point))
 
     def _cargoTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
@@ -751,8 +751,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.removeAllRows()
         self._updateTotalSalePrice()
 
-    def _showSalePricesTableContextMenu(self, position: QtCore.QPoint) -> None:
-        salePrice = self._salePricesTable.cargoRecordAt(position)
+    def _showSalePricesTableContextMenu(self, point: QtCore.QPoint) -> None:
+        salePrice = self._salePricesTable.cargoRecordAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -781,7 +781,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._salePricesTable.viewport().mapToGlobal(position))
+            self._salePricesTable.viewport().mapToGlobal(point))
 
     def _salePricesTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:

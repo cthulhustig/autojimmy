@@ -474,7 +474,7 @@ class ListTable(gui.TableWidgetEx):
             ) -> None:
         self._checkRowFiltering(row=item.row())
 
-    def _checkForHeaderIconClick(self, pos: QtCore.QPoint) -> int:
+    def _checkForHeaderIconClick(self, point: QtCore.QPoint) -> int:
         header = self.horizontalHeader()
         for column in range(self.columnCount()):
             if self.isColumnHidden(column):
@@ -495,7 +495,7 @@ class ListTable(gui.TableWidgetEx):
 
             # Check if the click position is inside the icon rect. Don't include the edges of the
             # rect as I was finding i was getting false clicks when resizing columns
-            if iconRect.contains(pos, True):
+            if iconRect.contains(point, True):
                 return column
 
         return -1

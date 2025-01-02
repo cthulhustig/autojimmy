@@ -494,8 +494,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
-        cargoRecord = self._cargoTable.cargoRecordAt(position)
+    def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
+        cargoRecord = self._cargoTable.cargoRecordAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -540,7 +540,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoTable.viewport().mapToGlobal(position)
+            self._cargoTable.viewport().mapToGlobal(point)
         )
 
     def _cargoTableKeyPressed(self, key: int) -> None:

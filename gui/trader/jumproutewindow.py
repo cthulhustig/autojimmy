@@ -157,13 +157,11 @@ class _RefuellingPlanTable(gui.HexTable):
         for pitStop in self._pitStops:
             self.addHex(hex=pitStop.world())
 
-    def pitStopAt(self, position: QtCore.QPoint) -> typing.Optional[logic.PitStop]:
-        item = self.itemAt(position)
-        if not item:
+    def pitStopAt(self, y: int) -> typing.Optional[logic.PitStop]:
+        row = self.rowAt(y)
+        if row < 0 or row >= len(self._pitStops):
             return None
-        if item.row() < 0 or item.row() >= len(self._pitStops):
-            return None
-        return self._pitStops[item.row()]
+        return self._pitStops[row]
 
     def _fillRow(
             self,
@@ -769,7 +767,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointWorldsWidget.enableDisplayModeChangedEvent(enable=True)
         self._waypointWorldsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
         self._waypointWorldsWidget.enableShowInTravellerMapEvent(enable=True)
-        self._waypointWorldsWidget.showInTravellerMap.connect(self._showWorldsInTravellerMap)
+        self._waypointWorldsWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._waypointWorldsWidget)
@@ -785,7 +783,7 @@ class JumpRouteWindow(gui.WindowWidget):
             enable=True) # Always allow dead space on avoid list
         self._avoidWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._avoidWorldsWidget.enableShowInTravellerMapEvent(enable=True)
-        self._avoidWorldsWidget.showInTravellerMap.connect(self._showWorldsInTravellerMap)
+        self._avoidWorldsWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
 
         self._avoidWorldsFilterWidget = gui.WorldFilterTableManagerWidget()
 
@@ -1104,7 +1102,7 @@ class JumpRouteWindow(gui.WindowWidget):
     # will actually be dealing with nodes so some options might not apply (e.g.
     # show world details only makes sense if a world node is selected)
     # TODO: Remember to update the text strings
-    def _showJumpRouteTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showJumpRouteTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Selected Worlds to Waypoints',
@@ -1130,12 +1128,12 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._jumpRouteTable.selectedHexes()),
+                callback=lambda: self._showHexesInTravellerMap(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._jumpRouteTable.hexes()),
+                callback=lambda: self._showHexesInTravellerMap(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             )
         ]
@@ -1143,11 +1141,13 @@ class JumpRouteWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._jumpRouteTable.viewport().mapToGlobal(position)
+            self._jumpRouteTable.viewport().mapToGlobal(point)
         )
 
     # TODO: This at a minimum will need some rewording as waypoints could be hexes
-    def _showRefuellingPlanTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showRefuellingPlanTableContextMenu(self, point: QtCore.QPoint) -> None:
+        pitStop = self._refuellingPlanTable.pitStopAt(point.y())
+
         menuItems = [
             gui.MenuItem(
                 text='Add Selected Worlds to Waypoints',
@@ -1173,19 +1173,19 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._refuellingPlanTable.selectedHexes()),
+                callback=lambda: self._showHexesInTravellerMap(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._refuellingPlanTable.hexes()),
+                callback=lambda: self._showHexesInTravellerMap(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Pit Stop Calculations...',
-                callback=lambda: self._showCalculations(self._refuellingPlanTable.pitStopAt(position).totalCost()),
-                enabled=self._refuellingPlanTable.pitStopAt(position) != None
+                callback=lambda: pitStop.totalCost(),
+                enabled=pitStop != None
             ),
             gui.MenuItem(
                 text='Show All Refuelling Calculations...',
@@ -1197,7 +1197,7 @@ class JumpRouteWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._refuellingPlanTable.viewport().mapToGlobal(position)
+            self._refuellingPlanTable.viewport().mapToGlobal(point)
         )
 
     # TODO: This will need updated to allow setting start/finish/waypoints
@@ -1479,10 +1479,10 @@ class JumpRouteWindow(gui.WindowWidget):
         if not self._jumpRoute:
             return
 
-        self._showWorldsInTravellerMap(
+        self._showHexesInTravellerMap(
             hexes=[hex for hex, _ in self._jumpRoute])
 
-    def _showWorldsInTravellerMap(
+    def _showHexesInTravellerMap(
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
@@ -1493,7 +1493,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 clearOverlays=False,
                 highlightHexes=False)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show hexes(s) in Traveller Map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

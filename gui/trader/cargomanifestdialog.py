@@ -416,8 +416,8 @@ class CargoManifestDialog(gui.DialogEx):
         for tradeOption in cargoManifest.tradeOptions():
             self._cargoBreakdownTable.addTradeOption(tradeOption)
 
-    def _showCargoManifestTableContextMenu(self, position: QtCore.QPoint) -> None:
-        cargoManifest = self._cargoManifestsTable.cargoManifestAt(position)
+    def _showCargoManifestTableContextMenu(self, point: QtCore.QPoint) -> None:
+        cargoManifest = self._cargoManifestsTable.cargoManifestAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -467,10 +467,10 @@ class CargoManifestDialog(gui.DialogEx):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoManifestsTable.viewport().mapToGlobal(position))
+            self._cargoManifestsTable.viewport().mapToGlobal(point))
 
-    def _showCargoBreakdownTableContextMenu(self, position: QtCore.QPoint) -> None:
-        tradeOption = self._cargoBreakdownTable.tradeOptionAt(position)
+    def _showCargoBreakdownTableContextMenu(self, point: QtCore.QPoint) -> None:
+        tradeOption = self._cargoBreakdownTable.tradeOptionAt(point.y())
 
         menuItems = [
             # When showing trade option calculation we show the calculation for the gross profit
@@ -486,7 +486,7 @@ class CargoManifestDialog(gui.DialogEx):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoBreakdownTable.viewport().mapToGlobal(position))
+            self._cargoBreakdownTable.viewport().mapToGlobal(point))
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

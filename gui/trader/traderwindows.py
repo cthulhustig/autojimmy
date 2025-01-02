@@ -450,8 +450,8 @@ class _BaseTraderWindow(gui.WindowWidget):
     def _updateTradeOptionTableColumns(self, index: int) -> None:
         self._tradeOptionsTable.setVisibleColumns(self._tradeOptionColumns())
 
-    def _showTradeOptionsTableContextMenu(self, position: QtCore.QPoint) -> None:
-        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(position)
+    def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
         selectedTradeOptions = self._tradeOptionsTable.selectedTradeOptions()
         selectedPurchaseWorlds = None
         selectedSaleWorlds = None
@@ -515,7 +515,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._tradeOptionsTable.viewport().mapToGlobal(position)
+            self._tradeOptionsTable.viewport().mapToGlobal(point)
         )
 
     def _createCargoManifest(self) -> None:
@@ -1366,7 +1366,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         for cargoRecord in cargoRecords:
             self._addSpeculativeCargo(cargoRecord)
 
-    def _showSpeculativeCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Current World Cargo...',
@@ -1399,7 +1399,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._speculativeCargoTable.viewport().mapToGlobal(position)
+            self._speculativeCargoTable.viewport().mapToGlobal(point)
         )
 
     def _speculativeCargoTableKeyPressed(self, key: int) -> None:
@@ -1558,7 +1558,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._freeCargoSpaceSpinBox.setValue(
             self._freeCargoSpaceSpinBox.value() - int(totalQuantity))
 
-    def _showAvailableCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Cargo...',
@@ -1597,7 +1597,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._availableCargoTable.viewport().mapToGlobal(position)
+            self._availableCargoTable.viewport().mapToGlobal(point)
         )
 
     def _availableCargoTableKeyPressed(self, key: int) -> None:
@@ -1708,7 +1708,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._currentCargoTable.setCargoRecord(row, cargoRecord)
         self._updateSaleWorldTradeScores()
 
-    def _showCurrentCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Cargo...',
@@ -1741,7 +1741,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._currentCargoTable.viewport().mapToGlobal(position)
+            self._currentCargoTable.viewport().mapToGlobal(point)
         )
 
     def _currentCargoTableKeyPressed(self, key: int) -> None:

@@ -130,11 +130,9 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             manifests.append(cargoManifest)
         return manifests
 
-    def cargoManifestAt(self, position: QtCore.QPoint) -> typing.Optional[logic.CargoManifest]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.cargoManifest(item.row())
+    def cargoManifestAt(self, y: int) -> typing.Optional[logic.CargoManifest]:
+        row = self.rowAt(y)
+        return self.cargoManifest(row) if row >= 0 else None
 
     def insertCargoManifest(self, row: int, cargoManifest: logic.CargoManifest) -> int:
         self.insertRow(row)
