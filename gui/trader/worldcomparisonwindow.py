@@ -1,5 +1,6 @@
 import app
 import gui
+import logic
 import logging
 import traveller
 import travellermap
@@ -258,8 +259,11 @@ class WorldComparisonWindow(gui.WindowWidget):
                 if hex not in oldSelection:
                     self._worldManagementWidget.addHex(hex=hex)
 
-    def _showWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._worldManagementWidget.worldAt(position=position)
+    def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedRow = self._worldManagementWidget.rowAt(y=point.y())
+        clickedHex = self._worldTable.hex(row=clickedRow)
+        clickedScore = self._worldTable.tradeScore(row=clickedRow)
+
         menuItems = [
             gui.MenuItem(
                 text='Select Worlds with Traveller Map...',
@@ -274,7 +278,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._worldManagementWidget.promptAddNearbyWorlds(initialWorld=world),
+                callback=lambda: self._worldManagementWidget.promptAddNearbyWorlds(initialHex=clickedHex),
                 enabled=True
             ),
             gui.MenuItem(
@@ -323,15 +327,15 @@ class WorldComparisonWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Trade Score Calculations...',
-                callback=lambda: self._showTradeScoreCalculations(world),
-                enabled=world != None
+                callback=lambda: self._showTradeScoreCalculations(clickedScore),
+                enabled=clickedScore != None
             ),
         ]
 
         gui.displayMenu(
             self,
             menuItems,
-            self._worldManagementWidget.mapToGlobal(position)
+            self._worldManagementWidget.mapToGlobal(point)
         )
 
     def _findTradeOptions(
@@ -353,10 +357,9 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showTradeScoreCalculations(
             self,
-            world: traveller.World
+            tradeScore: logic.TradeScore
             ) -> None:
         try:
-            tradeScore = self._worldTable.tradeScore(world=world)
             calculations = [tradeScore.totalPurchaseScore(), tradeScore.totalSaleScore()]
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(calculations=calculations)

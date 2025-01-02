@@ -2245,8 +2245,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 dstWidget.removeAllRows()
         dstWidget.addWorlds(worlds=srcWidget.worlds())
 
-    def _showPurchaseWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._purchaseWorldsWidget.worldAt(position=position)
+    def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedHex = self._purchaseWorldsWidget.hexAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -2262,7 +2262,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddNearbyWorlds(initialWorld=world),
+                callback=lambda: self._purchaseWorldsWidget.promptAddNearbyWorlds(initialHex=clickedHex),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2308,11 +2308,11 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._purchaseWorldsWidget.mapToGlobal(position)
+            self._purchaseWorldsWidget.mapToGlobal(point)
         )
 
-    def _showSaleWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._saleWorldsWidget.worldAt(position=position)
+    def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedHex = self._saleWorldsWidget.hexAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -2328,7 +2328,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._saleWorldsWidget.promptAddNearbyWorlds(initialWorld=world),
+                callback=lambda: self._saleWorldsWidget.promptAddNearbyWorlds(initialHex=clickedHex),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2374,7 +2374,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._saleWorldsWidget.mapToGlobal(position)
+            self._saleWorldsWidget.mapToGlobal(point)
         )
 
     def _calculateTradeOptions(self) -> None:

@@ -661,8 +661,8 @@ class WorldSearchWindow(gui.WindowWidget):
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setVisibleColumns(self._worldColumns())
 
-    def _showWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._worldTable.worldAt(position)
+    def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        world = self._worldTable.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -708,7 +708,7 @@ class WorldSearchWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._worldTable.viewport().mapToGlobal(position)
+            self._worldTable.viewport().mapToGlobal(point)
         )
 
     def _findTradeOptions(
@@ -737,10 +737,10 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showTradeScoreCalculations(
             self,
-            world: traveller.World
+            row: int
             ) -> None:
         try:
-            tradeScore = self._worldTable.tradeScore(world=world)
+            tradeScore = self._worldTable.tradeScore(row=row)
             calculations = [tradeScore.totalPurchaseScore(), tradeScore.totalSaleScore()]
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(calculations=calculations)

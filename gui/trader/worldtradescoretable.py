@@ -61,14 +61,15 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def tradeScore(
             self,
-            world: traveller.World
-            ) -> logic.TradeScore:
-        return self._tradeScoreMap[world]
+            row: int
+            ) -> typing.Optional[logic.TradeScore]:
+        hex = self.hex(row)
+        return self._tradeScoreMap.get(hex)
 
     def removeRow(self, row: int):
-        world = self.world(row)
-        if world in self._tradeScoreMap:
-            del self._tradeScoreMap[world]
+        hex = self.hex(row)
+        if hex in self._tradeScoreMap:
+            del self._tradeScoreMap[hex]
         super().removeRow(row)
 
     def removeAllRows(self) -> None:
@@ -79,14 +80,11 @@ class WorldTradeScoreTable(gui.HexTable):
             self,
             item: QtWidgets.QTableWidgetItem
             ) -> typing.Optional[str]:
-        world = self.world(item.row())
-
-        if world:
-            columnType = self.columnHeader(item.column())
-            if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-                return gui.createPurchaseTradeScoreToolTip(self.tradeScore(world))
-            elif columnType == WorldTradeScoreTableColumnType.SaleScore:
-                return gui.createSaleTradeScoreToolTip(self.tradeScore(world))
+        columnType = self.columnHeader(item.column())
+        if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
+            return gui.createPurchaseTradeScoreToolTip(self.tradeScore(item.row()))
+        elif columnType == WorldTradeScoreTableColumnType.SaleScore:
+            return gui.createSaleTradeScoreToolTip(self.tradeScore(item.row()))
 
         return super()._createToolTip(item=item)
 
@@ -98,8 +96,8 @@ class WorldTradeScoreTable(gui.HexTable):
             ) -> int:
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called
-        if world and (world not in self._tradeScoreMap):
-            self._tradeScoreMap[world] = logic.TradeScore(
+        if world and (hex not in self._tradeScoreMap):
+            self._tradeScoreMap[hex] = logic.TradeScore(
                 rules=app.Config.instance().rules(),
                 world=world,
                 tradeGoods=self._tradeGoods)
@@ -118,7 +116,7 @@ class WorldTradeScoreTable(gui.HexTable):
                     tableItem = None
                     if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
                             columnType == WorldTradeScoreTableColumnType.SaleScore:
-                        tradeScore: logic.TradeScore = self._tradeScoreMap[world]
+                        tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
                         if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
                             tradeScore = tradeScore.totalPurchaseScore()
                         else:

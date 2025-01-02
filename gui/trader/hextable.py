@@ -265,7 +265,8 @@ class HexTable(gui.FrozenColumnListTable):
                 self.setColumnWidth(index, 100)
 
     # TODO: It would be nice to get rid of the world versions of all these
-    # functions so the external interface only deals in hexes
+    # functions so the external interface only deals in hexes or at least
+    # have the hex functions take worlds or hex positions
     def hex(self, row: int) -> typing.Optional[travellermap.HexPosition]:
         tableItem = self.item(row, 0)
         if not tableItem:
@@ -290,17 +291,13 @@ class HexTable(gui.FrozenColumnListTable):
             worlds.append(self.world(row))
         return worlds
 
-    def hexAt(self, position: QtCore.QPoint) -> typing.Optional[traveller.World]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.hex(item.row())
+    def hexAt(self, y: int) -> typing.Optional[travellermap.HexPosition]:
+        row = self.rowAt(y)
+        return self.hex(row) if row >= 0 else None
 
-    def worldAt(self, position: QtCore.QPoint) -> typing.Optional[traveller.World]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.world(item.row())
+    def worldAt(self, y: int) -> typing.Optional[traveller.World]:
+        row = self.rowAt(y)
+        return self.world(row) if row >= 0 else None
 
     def insertHex(
             self,

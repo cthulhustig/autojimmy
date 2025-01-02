@@ -232,15 +232,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def worlds(self) -> typing.List[traveller.World]:
         return self._hexTable.worlds()
 
-    def hexAt(self, position: QtCore.QPoint) -> typing.List[travellermap.HexPosition]:
-        translated = self.mapToGlobal(position)
-        translated = self._hexTable.viewport().mapFromGlobal(translated)
-        return self._hexTable.hexAt(position=translated)
+    def rowAt(self, y: int) -> int:
+        return self._hexTable.rowAt(y)
 
-    def worldAt(self, position: QtCore.QPoint) -> typing.Optional[traveller.World]:
-        translated = self.mapToGlobal(position)
-        translated = self._hexTable.viewport().mapFromGlobal(translated)
-        return self._hexTable.worldAt(position=translated)
+    def hexAt(self, y: int) -> typing.Optional[travellermap.HexPosition]:
+        return self._hexTable.hexAt(y)
+
+    def worldAt(self, y: int) -> typing.Optional[traveller.World]:
+        return self._hexTable.worldAt(y)
 
     def hasSelection(self) -> bool:
         return self._hexTable.hasSelection()
@@ -366,10 +365,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def promptAddNearbyWorlds(
             self,
-            initialWorld: typing.Optional[traveller.World] = None
+            initialHex: typing.Optional[travellermap.HexPosition] = None
             ) -> None:
         dlg = gui.HexSearchRadiusDialog(parent=self)
-        dlg.setCenterHex(hex=initialWorld.hex() if initialWorld else self._relativeHex)
+        dlg.setCenterHex(hex=initialHex if initialHex else self._relativeHex)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -393,7 +392,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 stateKey='HexTableNoNearbyWorldsFound')
             return
 
-        self.addWorlds(worlds=worlds)
+        self.addHexes(hexes=worlds)
 
     def promptSelectWithTravellerMap(self) -> None:
         # TODO: Need to switch this to use hexes
@@ -498,14 +497,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 exception=ex)
 
     # TODO: The menu option text for this menu need updated
-    def _showHexTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showHexTableContextMenu(self, point: QtCore.QPoint) -> None:
         if self._enableContextMenuEvent:
-            translated = self._hexTable.viewport().mapToGlobal(position)
+            translated = self._hexTable.viewport().mapToGlobal(point)
             translated = self.mapFromGlobal(translated)
             self.contextMenuRequested.emit(translated)
             return
 
-        world = self._hexTable.worldAt(position=position)
+        clickedHex = self._hexTable.hexAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -521,7 +520,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self.promptAddNearbyWorlds(initialWorld=world),
+                callback=lambda: self.promptAddNearbyWorlds(initialHex=clickedHex),
                 enabled=True,
                 displayed=self._addNearbyButton != None
             ),
@@ -562,7 +561,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._hexTable.viewport().mapToGlobal(position)
+            self._hexTable.viewport().mapToGlobal(point)
         )
 
     def _hexTableKeyPressed(self, key: int) -> None:
