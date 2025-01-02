@@ -95,6 +95,18 @@ class SignalBlocker():
     def __exit__(self, type, value, traceback):
         self._widget.blockSignals(self._old)
 
+class UpdateBlocker():
+    def __init__(self, widget: QtWidgets.QWidget):
+        self._widget = widget
+
+    def __enter__(self) -> 'UpdateBlocker':
+        self._old = self._widget.updatesEnabled()
+        self._widget.setUpdatesEnabled(False)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._widget.setUpdatesEnabled(self._old)
+
 # This generates a list of values for a PyQt enum. For example, to get all values for
 # QtWidgets.QMessageBox.StandardButton:
 # pyQtEnumValues(QtWidgets.QMessageBox, QtWidgets.QMessageBox.StandardButton)

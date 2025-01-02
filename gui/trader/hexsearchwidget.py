@@ -34,7 +34,7 @@ class HexSearchWidget(QtWidgets.QWidget):
         searchLayout.addWidget(QtWidgets.QLabel('World/Hex:'))
         searchLayout.addWidget(self._searchComboBox, 1) # Stretch to take up all free space
 
-        self._resultsList = QtWidgets.QListWidget()
+        self._resultsList = gui.ListWidgetEx()
         self._resultsList.installEventFilter(self)
         self._resultsList.selectionModel().selectionChanged.connect(self._listSelectionChanged)
 
@@ -249,7 +249,7 @@ class HexSearchWidget(QtWidgets.QWidget):
     # TODO: How controls are updated by this function has changed quite
     # a bit so I need to make sure there are no regressions
     def _performSearch(self) -> None:
-        oldSelection = self.selectedHex()
+        oldSelectedHex = self.selectedHex()
 
         searchString = self._searchComboBox.currentText()
         matches: typing.List[travellermap.HexPosition] = []
@@ -284,30 +284,35 @@ class HexSearchWidget(QtWidgets.QWidget):
                         f'Search for sector hex "{searchString}" failed',
                         exc_info=ex)
 
-        newSelection = None
-        with gui.SignalBlocker(self._resultsList):
+        newSelectedHex = None
+        with gui.SignalBlocker(self._resultsList) and gui.UpdateBlocker(self._resultsList):
             self._resultsList.clear()
 
             for hex in matches:
                 item = self._createListItem(hex)
                 self._resultsList.addItem(item)
-                if hex == oldSelection:
+                if hex == oldSelectedHex:
                     item.setSelected(True)
+
+            if not self._resultsList.hasSelection() and not self._resultsList.isEmpty():
+                item = self._resultsList.item(0)
+                item.setSelected(True)
 
             selection = self._resultsList.selectedItems()
             if selection:
-                newSelection = selection[0].data(QtCore.Qt.ItemDataRole.UserRole)
+                newSelectedHex = selection[0].data(QtCore.Qt.ItemDataRole.UserRole)
+        self._resultsList.repaint() # Needed as updates were blocked
 
         with gui.SignalBlocker(self._mapWidget):
-            if newSelection:
+            if newSelectedHex:
                 self._mapWidget.selectHex(
-                    hex=newSelection,
+                    hex=newSelectedHex,
                     centerOnHex=True,
                     setInfoHex=True)
             else:
                 self._mapWidget.clearSelectedHexes()
 
-        if oldSelection != newSelection:
+        if oldSelectedHex != newSelectedHex:
             self.selectionChanged.emit()
 
     def _tabBarChanged(self, index: int) -> None:
