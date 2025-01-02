@@ -17,7 +17,9 @@ def _formatHexName(hex: travellermap.HexPosition) -> str:
         return _formatWorldName(world=world)
 
     try:
-        return traveller.WorldManager.instance().positionToSectorHex(hex=hex)
+        sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
+        subsector = traveller.WorldManager.instance().subsectorByPosition(hex=hex)
+        return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
     except:
         return ''
 
@@ -31,10 +33,7 @@ def _formatHexHtml(hex: travellermap.HexPosition) -> str:
     world = traveller.WorldManager.instance().worldByPosition(hex=hex)
     if world:
         return _formatWorldHtml(world=world)
-    try:
-        return traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-    except:
-        return html.escape('')
+    return html.escape(_formatHexName(hex=hex))
 
 # Based on code from here
 # https://stackoverflow.com/questions/21141757/pyqt-different-colors-in-a-single-row-in-a-combobox
