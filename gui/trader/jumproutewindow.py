@@ -1273,7 +1273,7 @@ class JumpRouteWindow(gui.WindowWidget):
         gui.displayMenu(
             parent=self,
             items=menuItems,
-            globalPosition=QtGui.QCursor.pos())
+            globalPoint=QtGui.QCursor.pos())
 
     def _formatMapToolTip(
             self,

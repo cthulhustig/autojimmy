@@ -233,9 +233,9 @@ class ManifestTable(gui.ListTable):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
-        item = self.itemAt(position)
+        item = self.itemAt(point)
         calculations = []
         if item:
             column = self.columnHeader(column=item.column())
@@ -276,7 +276,7 @@ class ManifestTable(gui.ListTable):
         gui.displayMenu(
             self,
             menuItems,
-            self.viewport().mapToGlobal(position))
+            self.viewport().mapToGlobal(point))
 
     def _showCalculations(
             self,

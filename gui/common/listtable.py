@@ -1027,9 +1027,9 @@ class FrozenColumnListTable(ListTable):
 
     def _frozenContextMenuRequested(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
-        self.customContextMenuRequested.emit(position)
+        self.customContextMenuRequested.emit(point)
 
     def _columnMoved(
             self,

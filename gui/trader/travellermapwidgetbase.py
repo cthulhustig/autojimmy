@@ -777,7 +777,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def _hexAt(
             self,
-            position: QtCore.QPoint,
+            point: QtCore.QPoint,
             callback: typing.Callable[[typing.Optional[travellermap.HexPosition]], None]
             ) -> None:
         script = """
@@ -785,7 +785,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             var worldPos = Traveller.Astrometrics.mapToWorld(mapPos.x, mapPos.y);
             var sectorHex = Traveller.Astrometrics.worldToSectorHex(worldPos.x, worldPos.y);
             `${{sectorHex.sx}} ${{sectorHex.sy}} ${{sectorHex.hx}} ${{sectorHex.hy}}`;
-            """.format(x=position.x(), y=position.y())
+            """.format(x=point.x(), y=point.y())
 
         self._runScript(
             script=script,
@@ -868,18 +868,18 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def _primeLeftClickEvent(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         self._hexAt(
-            position=position,
+            point=point,
             callback=self._handleLeftClickEvent)
 
     def _primeRightClickEvent(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         self._hexAt(
-            position=position,
+            point=point,
             callback=self._handleRightClickEvent)
 
     def _handleLeftClickEvent(
@@ -921,7 +921,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self._toolTipQueuePos = None
             self._toolTipScriptRunning = True
             self._hexAt(
-                position=cursorPos,
+                point=cursorPos,
                 callback=self._handleToolTipEvent)
         else:
             self._toolTipQueuePos = cursorPos
