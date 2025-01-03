@@ -174,7 +174,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._purchaseWorldWidget = gui.HexChooserToolWidget(labelText='Select World:')
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)

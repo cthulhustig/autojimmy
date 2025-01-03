@@ -232,13 +232,13 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self._startWidget = gui.HexChooserToolWidget()
+        self._startWidget = gui.HexSelectToolWidget()
         self._startWidget.enableShowHexButton(True)
         self._startWidget.enableShowInfoButton(True)
         self._startWidget.selectionChanged.connect(self.selectionChanged.emit)
         self._startWidget.showHex.connect(self._handleShowHex)
 
-        self._finishWidget = gui.HexChooserToolWidget()
+        self._finishWidget = gui.HexSelectToolWidget()
         self._finishWidget.enableShowHexButton(True)
         self._finishWidget.enableShowInfoButton(True)
         self._finishWidget.selectionChanged.connect(self.selectionChanged.emit)

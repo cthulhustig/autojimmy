@@ -148,7 +148,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._hexWidget = gui.HexChooserToolWidget(
+        self._hexWidget = gui.HexSelectToolWidget(
             labelText='Center Hex:')
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)

@@ -365,7 +365,7 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
-        self._startWorldWidget = gui.HexChooserToolWidget(
+        self._startWorldWidget = gui.HexSelectToolWidget(
             labelText='Start World:')
         self._startWorldWidget.enableShowHexButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
