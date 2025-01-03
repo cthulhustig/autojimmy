@@ -40,10 +40,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._showInTravellerMap = None
 
-        # An instance of TravellerMapWorldSelectDialog is created on demand then maintained. This
-        # is done to prevent the web widget being recreated and data being re-requested from
-        # Traveller Map
-        self._worldSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
+        # Instance of dialogs are created on demand then maintained. This is
+        # done to prevent the web widget being recreated
+        self._hexSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
+        self._radiusSelectDialog: typing.Optional[gui.HexRadiusSelectDialog] = None
 
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
@@ -350,10 +350,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def enableDeadSpace(self, enable: bool) -> None:
         self._enableDeadSpace = enable
 
-        if self._worldSelectDialog:
-            self._worldSelectDialog.configureSelection(
+        if self._hexSelectDialog:
+            self._hexSelectDialog.configureSelection(
                 singleSelect=False,
                 includeDeadSpace=enable)
+
+        if self._radiusSelectDialog:
+            self._radiusSelectDialog.enableDeadSpaceSelection(
+                enable=enable)
 
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
@@ -371,32 +375,16 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             initialHex: typing.Optional[travellermap.HexPosition] = None
             ) -> None:
-        dlg = gui.HexSearchRadiusDialog(parent=self)
-        dlg.setCenterHex(hex=initialHex if initialHex else self._relativeHex)
-        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if not self._radiusSelectDialog:
+            self._radiusSelectDialog = gui.HexRadiusSelectDialog()
+            self._radiusSelectDialog.enableDeadSpaceSelection(
+                enable=self._enableDeadSpace)
+        self._radiusSelectDialog.setCenterHex(
+            hex=initialHex if initialHex else self._relativeHex)
+        if self._radiusSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        try:
-            worlds = traveller.WorldManager.instance().worldsInArea(
-                center=dlg.centerHex(),
-                searchRadius=dlg.searchRadius())
-        except Exception as ex:
-            message = 'Failed to find nearby worlds'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        if not worlds:
-            gui.AutoSelectMessageBox.information(
-                parent=self,
-                text='No nearby worlds found.',
-                stateKey='HexTableNoNearbyWorldsFound')
-            return
-
-        self.addHexes(hexes=worlds)
+        self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
 
     def promptSelectWithTravellerMap(self) -> None:
         # TODO: Need to switch this to use hexes
@@ -406,14 +394,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         return
 
         currentWorlds = self.worlds()
-        if not self._worldSelectDialog:
-            self._worldSelectDialog = gui.TravellerMapSelectDialog(parent=self)
-            self._worldSelectDialog.setSingleSelect(False)
-        self._worldSelectDialog.setSelectedWorlds(currentWorlds)
-        if self._worldSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if not self._hexSelectDialog:
+            self._hexSelectDialog = gui.TravellerMapSelectDialog(parent=self)
+            self._hexSelectDialog.setSingleSelect(False)
+        self._hexSelectDialog.setSelectedWorlds(currentWorlds)
+        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        newWorlds = self._worldSelectDialog.selectedWorlds()
+        newWorlds = self._hexSelectDialog.selectedWorlds()
         updated = False
 
         sortingEnabled = self._hexTable.isSortingEnabled()

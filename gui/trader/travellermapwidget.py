@@ -900,9 +900,16 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             for action in TravellerMapWidget._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
+    def hasSelection(self) -> bool:
+        return len(self._selectedHexes) > 0
+
     def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
         return list(self._selectedHexes)
 
+    # TODO: This uses a standard overlay for the selection highlight, it means
+    # the current clearOverlays implementation (on the base class) clears the
+    # selection overlay (but not the actual selection). Ideally clearOverlays
+    # shouldn't clear the selection highlight
     def selectHex(
             self,
             hex: travellermap.HexPosition,
