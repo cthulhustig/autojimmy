@@ -38,12 +38,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._enableShowInTravellerMapEvent = False
         self._enableDeadSpace = False
 
-        self._showInTravellerMap = None
-
         # Instance of dialogs are created on demand then maintained. This is
         # done to prevent the web widget being recreated
-        self._hexSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
+        self._hexSelectDialog: typing.Optional[gui.HexSelectDialog] = None
         self._radiusSelectDialog: typing.Optional[gui.HexRadiusSelectDialog] = None
+        self._mapSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
 
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
@@ -351,13 +350,17 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._enableDeadSpace = enable
 
         if self._hexSelectDialog:
-            self._hexSelectDialog.configureSelection(
-                singleSelect=False,
-                includeDeadSpace=enable)
+            self._hexSelectDialog.enableDeadSpaceSelection(
+                enable=enable)
 
         if self._radiusSelectDialog:
             self._radiusSelectDialog.enableDeadSpaceSelection(
                 enable=enable)
+
+        if self._mapSelectDialog:
+            self._mapSelectDialog.configureSelection(
+                singleSelect=False,
+                includeDeadSpace=enable)
 
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
@@ -387,21 +390,21 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
 
     def promptSelectWithTravellerMap(self) -> None:
-        # TODO: Need to switch this to use hexes
-        gui.MessageBoxEx.critical(
-            parent=self,
-            text='Implement me!')
-        return
+        currentHexes = self.hexes()
 
-        currentWorlds = self.worlds()
-        if not self._hexSelectDialog:
-            self._hexSelectDialog = gui.TravellerMapSelectDialog(parent=self)
-            self._hexSelectDialog.setSingleSelect(False)
-        self._hexSelectDialog.setSelectedWorlds(currentWorlds)
-        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if not self._mapSelectDialog:
+            self._mapSelectDialog = gui.TravellerMapSelectDialog(parent=self)
+            self._mapSelectDialog.configureSelection(
+                singleSelect=False,
+                includeDeadSpace=self._enableDeadSpace)
+
+        for hex in currentHexes:
+            self._mapSelectDialog.selectHex(hex=hex, centerOnWorld=False)
+
+        if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        newWorlds = self._hexSelectDialog.selectedWorlds()
+        newHexes = self._mapSelectDialog.selectedHexes()
         updated = False
 
         sortingEnabled = self._hexTable.isSortingEnabled()
@@ -409,19 +412,19 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         try:
             # Remove worlds that are no longer selected
-            for world in currentWorlds:
-                if world not in newWorlds:
-                    self._hexTable.removeWorld(world=world)
+            for hex in currentHexes:
+                if hex not in newHexes:
+                    self._hexTable.removeHex(hex=hex)
                     updated = True
 
             # Add newly selected worlds
-            for world in newWorlds:
-                if world not in currentWorlds:
-                    if self._allowHexCallback and not self._allowHexCallback(world):
+            for hex in newHexes:
+                if hex not in currentHexes:
+                    if self._allowHexCallback and not self._allowHexCallback(hex):
                         # Silently ignore worlds that are filtered out
                         continue
 
-                    self._hexTable.addWorld(world=world)
+                    self._hexTable.addHex(hex=hex)
                     updated = True
         finally:
             self._hexTable.setSortingEnabled(sortingEnabled)
@@ -430,11 +433,13 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
 
     def promptAddHex(self) -> None:
-        dlg = gui.HexSearchDialog(parent=self)
-        dlg.enableDeadSpaceSelection(enable=self._enableDeadSpace)
-        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if not self._hexSelectDialog:
+            self._hexSelectDialog = gui.HexSelectDialog()
+            self._hexSelectDialog.enableDeadSpaceSelection(
+                enable=self._enableDeadSpace)
+        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        self.addHex(dlg.selectedHex())
+        self.addHex(self._hexSelectDialog.selectedHex())
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()

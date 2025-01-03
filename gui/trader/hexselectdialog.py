@@ -1,3 +1,4 @@
+import app
 import gui
 import logging
 import traveller
@@ -5,19 +6,15 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Rename this to HexSelectWidget
-# - Do this after I've renamed what is currently HexSelectComboBox & HexSelectToolWidget
-class HexSearchWidget(QtWidgets.QWidget):
-    selectionChanged = QtCore.pyqtSignal()
-
-    # NOTE: This state string doesn't match the class name so the user doesn't
-    # lose the last selected history due to the updates made to add dead space
-    # support. It was already writing a sector hex so previous data should load
-    # correctly
-    _StateVersion = 'WorldSearchWidget_v1'
-
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
-        super().__init__(parent)
+class HexSelectDialog(gui.DialogEx):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(
+            title='Select',
+            configSection='HexSelectDialog',
+            parent=parent)
 
         self._searchTimer = QtCore.QTimer()
         self._searchTimer.setInterval(500)
@@ -60,13 +57,30 @@ class HexSearchWidget(QtWidgets.QWidget):
         self._tabBar = gui.TabWidgetEx()
         self._tabBar.addTab(self._offlineWidget, 'Offline Search')
         self._tabBar.addTab(self._onlineWidget, 'Traveller Map')
-        self._tabBar.currentChanged.connect(self._tabBarChanged)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
         widgetLayout.addWidget(self._tabBar)
 
-        self.setLayout(widgetLayout)
+        self._okButton = QtWidgets.QPushButton('OK')
+        self._okButton.setDisabled(True)
+        self._okButton.setDefault(True)
+        self._okButton.clicked.connect(self.accept)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self.reject)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.addStretch()
+        buttonLayout.addWidget(self._okButton)
+        buttonLayout.addWidget(self._cancelButton)
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addLayout(widgetLayout)
+        windowLayout.addLayout(buttonLayout)
+
+        self.setLayout(windowLayout)
 
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
         currentWidget = self._tabBar.currentWidget()
@@ -79,6 +93,14 @@ class HexSearchWidget(QtWidgets.QWidget):
             selection = self._mapWidget.selectedHexes()
             return selection[0] if selection else None
         return None
+
+    def hasSelection(self) -> bool:
+        currentWidget = self._tabBar.currentWidget()
+        if currentWidget == self._offlineWidget:
+            return self._resultsList.hasSelection()
+        elif currentWidget == self._onlineWidget:
+            return self._mapWidget.hasSelection()
+        return False
 
     def setSelectedHex(
             self,
@@ -103,7 +125,7 @@ class HexSearchWidget(QtWidgets.QWidget):
             else:
                 self._mapWidget.clearSelectedHexes()
 
-        self.selectionChanged.emit()
+        self._handleSelectionChanged()
 
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
@@ -133,10 +155,57 @@ class HexSearchWidget(QtWidgets.QWidget):
                         self._resultsList.takeItem(row=index)
 
             if selectionChanged:
-                self.selectionChanged.emit()
+                self._handleSelectionChanged()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._searchComboBox.isDeadSpaceSelectionEnabled()
+
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='TabBarState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._tabBar.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SearchState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._searchComboBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='MapState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._mapWidget.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def saveSettings(self) -> None:
+        self._settings.beginGroup(self._configSection)
+        self._settings.setValue('TabBarState', self._tabBar.saveState())
+        self._settings.setValue('SearchState', self._searchComboBox.saveState())
+        self._settings.setValue('MapState', self._mapWidget.saveState())
+        self._settings.endGroup()
+
+        super().saveSettings()
+
+    def accept(self) -> None:
+        hex = self.selectedHex()
+        if not hex:
+            return # A valid hex must be selected to accept
+
+        # Add the selected hex to the selection history
+        app.HexHistory.instance().addHex(hex=hex)
+
+        super().accept()
 
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._searchComboBox:
@@ -187,52 +256,6 @@ class HexSearchWidget(QtWidgets.QWidget):
                         QtWidgets.QToolTip.showText(event.globalPos(), toolTip)
 
         return super().eventFilter(object, event)
-
-    def showEvent(self, a0: QtGui.QShowEvent) -> None:
-        self._searchComboBox.setFocus()
-        return super().showEvent(a0)
-
-    def saveState(self) -> QtCore.QByteArray:
-        state = QtCore.QByteArray()
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(HexSearchWidget._StateVersion)
-
-        subState = self._tabBar.saveState()
-        stream.writeUInt32(subState.count() if subState else 0)
-        if subState:
-            stream.writeRawData(subState.data())
-
-        subState = self._mapWidget.saveState()
-        stream.writeUInt32(subState.count() if subState else 0)
-        if subState:
-            stream.writeRawData(subState.data())
-
-        return state
-
-    def restoreState(
-            self,
-            state: QtCore.QByteArray
-            ) -> bool:
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
-        version = stream.readQString()
-        if version != HexSearchWidget._StateVersion:
-            # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore HexSearchWidget state (Incorrect version)')
-            return False
-
-        count = stream.readUInt32()
-        if count > 0:
-            subState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._tabBar.restoreState(subState):
-                return False
-
-        count = stream.readUInt32()
-        if count > 0:
-            subState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._mapWidget.restoreState(subState):
-                return False
-
-        return True
 
     def _createListItem(
             self,
@@ -313,10 +336,7 @@ class HexSearchWidget(QtWidgets.QWidget):
                 self._mapWidget.clearSelectedHexes()
 
         if oldSelectedHex != newSelectedHex:
-            self.selectionChanged.emit()
-
-    def _tabBarChanged(self, index: int) -> None:
-        self.selectionChanged.emit()
+            self._handleSelectionChanged()
 
     def _listSelectionChanged(self) -> None:
         hex = self.selectedHex()
@@ -330,7 +350,7 @@ class HexSearchWidget(QtWidgets.QWidget):
             else:
                 self._mapWidget.clearSelectedHexes()
 
-        self.selectionChanged.emit()
+        self._handleSelectionChanged()
 
     def _mapSelectionChanged(self) -> None:
         hex = self.selectedHex()
@@ -345,4 +365,7 @@ class HexSearchWidget(QtWidgets.QWidget):
                 self._resultsList.addItem(item)
                 item.setSelected(True)
 
-        self.selectionChanged.emit()
+        self._handleSelectionChanged()
+
+    def _handleSelectionChanged(self):
+        self._okButton.setDisabled(not self.hasSelection())
