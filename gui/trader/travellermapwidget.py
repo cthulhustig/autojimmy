@@ -97,7 +97,7 @@ class _MapOptionToggleAction(QtWidgets.QAction):
             option=self._option,
             enabled=self.isChecked())
 
-class _SearchComboBox(gui.HexSelectComboBox):
+class _SearchComboBox(gui.HexChooserComboBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

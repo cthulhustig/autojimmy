@@ -6,10 +6,9 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: Rename this to HexChooserToolWidget
 # TODO: The tooltips of widgets should update to say world/hex depending on if dead
 # space selection is enabled
-class HexSelectToolWidget(QtWidgets.QWidget):
+class HexChooserToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHex = QtCore.pyqtSignal(travellermap.HexPosition)
 
@@ -34,10 +33,10 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
         self._mapSelectDialog = None
 
-        self._searchComboBox = gui.HexSelectComboBox()
+        self._searchComboBox = gui.HexChooserComboBox()
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(int(
-            HexSelectToolWidget._MinWoldSelectWidth *
+            HexChooserToolWidget._MinWoldSelectWidth *
             app.Config.instance().interfaceScale()))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
@@ -137,7 +136,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(HexSelectToolWidget._StateVersion)
+        stream.writeQString(HexChooserToolWidget._StateVersion)
 
         hex = self.selectedHex()
         sectorHex = ''
@@ -158,7 +157,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != HexSelectToolWidget._StateVersion:
+        if version != HexChooserToolWidget._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore HexSelectToolWidget state (Incorrect version)')
             return False

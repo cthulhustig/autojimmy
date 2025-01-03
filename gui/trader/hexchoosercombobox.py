@@ -89,8 +89,7 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
-# TODO: Rename this to HexChooserComboBox
-class HexSelectComboBox(gui.ComboBoxEx):
+class HexChooserComboBox(gui.ComboBoxEx):
     hexChanged = QtCore.pyqtSignal(object)
 
     # NOTE: This controls the max number of results added to the completer
@@ -243,7 +242,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(HexSelectComboBox._StateVersion)
+        stream.writeQString(HexChooserComboBox._StateVersion)
 
         current = self.currentHex()
         stream.writeBool(current != None)
@@ -259,7 +258,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != HexSelectComboBox._StateVersion:
+        if version != HexChooserComboBox._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore HexSearchComboBox state (Incorrect version)')
             return False
@@ -496,6 +495,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 matches.remove(self._selectedHex)
                 matches.insert(0, self._selectedHex)
 
-        if len(matches) > HexSelectComboBox._MaxCompleterResults:
-            matches = matches[:HexSelectComboBox._MaxCompleterResults]
+        if len(matches) > HexChooserComboBox._MaxCompleterResults:
+            matches = matches[:HexChooserComboBox._MaxCompleterResults]
         return matches

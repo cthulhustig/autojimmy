@@ -24,7 +24,7 @@ class HexSearchWidget(QtWidgets.QWidget):
         self._searchTimer.setSingleShot(True)
         self._searchTimer.timeout.connect(self._performSearch)
 
-        self._searchComboBox = gui.HexSelectComboBox()
+        self._searchComboBox = gui.HexChooserComboBox()
         self._searchComboBox.enableAutoComplete(False)
         self._searchComboBox.installEventFilter(self)
         self._searchComboBox.currentTextChanged.connect(self._primeSearch)
