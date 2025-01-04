@@ -640,7 +640,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._deadSpaceRoutingCheckBox = gui.SharedDeadSpaceRoutingCheckBox()
         self._deadSpaceRoutingCheckBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
-        self._deadSpaceRoutingCheckBox.stateChanged.connect(self._deadSpaceRoutingToggled)
+        self._deadSpaceRoutingCheckBox.stateChanged.connect(
+            self._deadSpaceRoutingToggled)
 
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._refuellingStrategyComboBox.setEnabled(
@@ -1635,6 +1636,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._updateJumpOverlays()
 
     def _fuelBasedRoutingToggled(self) -> None:
+        if not self._fuelBasedRoutingCheckBox.isChecked():
+            # Dead space routing requires fuel based routing
+            self._deadSpaceRoutingCheckBox.setChecked(False)
         self._enableDisableControls()
 
     def _deadSpaceRoutingToggled(self) ->None:
