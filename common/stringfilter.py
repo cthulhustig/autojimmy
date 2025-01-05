@@ -45,6 +45,10 @@ class StringFilter(object):
                 pattern = f'^{re.escape(filterString)}$'
         elif filterType == StringFilterType.Regex:
             pattern = filterString
+            # Set flag so '.' matches \n. This is important for the pattern
+            # to match instances of the string that appear after a \n (which
+            # can happen when using this to filter notes on robots)
+            flags |= re.DOTALL
         elif filterType == StringFilterType.Wildcard:
             if filterString:
                 pattern = fnmatch.translate(filterString)
