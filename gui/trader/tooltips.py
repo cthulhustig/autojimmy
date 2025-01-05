@@ -103,18 +103,18 @@ RefuellingStrategyToolTip = createStringToolTip(
     'if it results in a more optimal jump route.</li>'
     '<li><b>Gas Giant Preferred</b> - Ideally refuel by skimming gas giants, '
     'but allow refuelling at star ports if it results in a more optimal jump '
-    'route. If refuelling at a star port with refined and unrefined fuel, '
+    'route. If refuelling at a star port that has refined and unrefined fuel, '
     'unrefined fuel costs will be used for logistics calculations.</li>'
     '<li><b>Water Preferred</b> - Ideally refuel by extracting hydrogen from '
     'water or ice, but allow refuelling at star ports if it results in a more '
-    'optimal jump route. If refuelling at a star port with refined and '
+    'optimal jump route. If refuelling at a star port that has refined and '
     'unrefined fuel, unrefined fuel costs will be used for logistics '
     'calculations.</li>'
     '<li><b>Wilderness Preferred</b> - Ideally refuel by skimming gas giants '
     'or extracting hydrogen from water or ice, but allow refuelling at star '
     'ports if it results in a more optimal jump route. If refuelling at a '
-    'star port with refined and unrefined fuel, unrefined fuel costs will be '
-    'used for logistics calculations.</li>'
+    'star port that has refined and unrefined fuel, unrefined fuel costs will '
+    'be used for logistics calculations.</li>'
     '</ul>',
     escape=False)
 UseFuelCachesToolTip = createStringToolTip(
