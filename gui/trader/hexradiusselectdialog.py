@@ -30,7 +30,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self._radiusSpinBox.setValue(2)
         self._radiusSpinBox.valueChanged.connect(self._handleConfigChange)
 
-        self._includeDeadSpaceCheckBox = gui.CheckBoxEx()
+        self._includeDeadSpaceCheckBox = gui.CheckBoxEx('Include Dead Space: ')
+        self._includeDeadSpaceCheckBox.setTextOnLeft(True)
         self._includeDeadSpaceCheckBox.setHidden(True)
         self._includeDeadSpaceCheckBox.stateChanged.connect(self._handleConfigChange)
 
@@ -38,7 +39,6 @@ class HexRadiusSelectDialog(gui.DialogEx):
         selectionRadiusLayout.setContentsMargins(0, 0, 0, 0)
         selectionRadiusLayout.addWidget(QtWidgets.QLabel('Selection Radius (Parsecs): '))
         selectionRadiusLayout.addWidget(self._radiusSpinBox)
-        selectionRadiusLayout.addWidget(QtWidgets.QLabel('Include Dead Space: '))
         selectionRadiusLayout.addWidget(self._includeDeadSpaceCheckBox)
         selectionRadiusLayout.addStretch()
 

@@ -653,6 +653,12 @@ class TabBarEx(QtWidgets.QTabBar):
 class CheckBoxEx(QtWidgets.QCheckBox):
     _StateVersion = 'CheckBoxEx_v1'
 
+    def setTextOnLeft(self, enable: bool) -> None:
+        self.setLayoutDirection(
+            QtCore.Qt.LayoutDirection.RightToLeft
+            if enable else
+            QtCore.Qt.LayoutDirection.LeftToRight)
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)

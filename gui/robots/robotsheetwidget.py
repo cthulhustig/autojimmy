@@ -57,7 +57,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._robot = None
 
         self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include DMs in Skill Levels:')
-        self._applySkillModifiersCheckBox.setLayoutDirection(QtCore.Qt.LayoutDirection.RightToLeft)
+        self._applySkillModifiersCheckBox.setTextOnLeft(True)
         self._applySkillModifiersCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
         self._applySkillModifiersCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
 
