@@ -29,12 +29,16 @@ class StringFilter(object):
             filterString: typing.Optional[str] = None,
             ignoreCase: bool = True
             ) -> None:
+        flags = re.IGNORECASE if ignoreCase else 0
         pattern = None
         if filterType == StringFilterType.NoFilter:
             pass
         elif filterType == StringFilterType.ContainsString:
             if filterString:
                 pattern = f'.*{re.escape(filterString)}.*'
+                # Set flag so '.' matches \n. This is important for the pattern
+                # to match instances of the string that appear after a \n
+                flags |= re.DOTALL
         elif filterType == StringFilterType.ExactString:
             if filterString:
                 pattern = f'^{re.escape(filterString)}$'
@@ -47,9 +51,7 @@ class StringFilter(object):
             raise ValueError(f'Invalid filter type {filterType}')
 
         if pattern:
-            self._filterRegex = re.compile(
-                pattern,
-                re.IGNORECASE if ignoreCase else 0)
+            self._filterRegex = re.compile(pattern, flags)
         else:
             self._filterRegex = None
 
