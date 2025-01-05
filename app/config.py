@@ -1274,7 +1274,7 @@ class Config(object):
         self._routingType = self._loadEnumSetting(
             key=self._RoutingTypeKeyName,
             default=logic.RoutingType.FuelBased,
-            members=logic.RouteOptimisation.__members__)
+            members=logic.RoutingType.__members__)
         self._routeOptimisation = self._loadEnumSetting(
             key=Config._RouteOptimisationKeyName,
             default=logic.RouteOptimisation.ShortestDistance,
@@ -1618,7 +1618,7 @@ class Config(object):
                 assert(maxValue != None)
                 reason = f'{value} is not less than or equal to {maxValue}'
 
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({reason})')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({reason})')
             return default
         return value
 
@@ -1642,7 +1642,7 @@ class Config(object):
                 assert(maxValue != None)
                 reason = f'{value} is not less than or equal to {maxValue}'
 
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({reason})')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({reason})')
             return default
         return value
 
@@ -1657,7 +1657,7 @@ class Config(object):
             default=default.name,
             type=str)
         if value not in members:
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({value} is not a valid {type(default).__name__})')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({value} is not a valid {type(default).__name__})')
             return default
         return members[value]
 
@@ -1671,7 +1671,7 @@ class Config(object):
             default=default,
             type=str)
         if not urllib.parse.urlparse(value):
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({value} is not a valid URL)')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({value} is not a valid URL)')
             return default
         return value
 
@@ -1685,7 +1685,7 @@ class Config(object):
             default=default,
             type=str)
         if not re.match(r'^#[0-9a-fA-F]{8}$', value):
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({value} is not a valid #AARRGGBB colour)')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({value} is not a valid #AARRGGBB colour)')
             return default
         return value
 
