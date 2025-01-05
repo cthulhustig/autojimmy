@@ -24,17 +24,22 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         self._overlays: typing.List[str] = []
         self._selectedHexes: typing.List[travellermap.HexPosition] = []
-        self._enableDeadSpaceSelection = False
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(app.MinPossibleJumpRating, app.MaxSearchRadius)
         self._radiusSpinBox.setValue(2)
         self._radiusSpinBox.valueChanged.connect(self._handleConfigChange)
 
+        self._includeDeadSpaceCheckBox = gui.CheckBoxEx()
+        self._includeDeadSpaceCheckBox.setHidden(True)
+        self._includeDeadSpaceCheckBox.stateChanged.connect(self._handleConfigChange)
+
         selectionRadiusLayout = QtWidgets.QHBoxLayout()
         selectionRadiusLayout.setContentsMargins(0, 0, 0, 0)
         selectionRadiusLayout.addWidget(QtWidgets.QLabel('Selection Radius (Parsecs): '))
         selectionRadiusLayout.addWidget(self._radiusSpinBox)
+        selectionRadiusLayout.addWidget(QtWidgets.QLabel('Include Dead Space: '))
+        selectionRadiusLayout.addWidget(self._includeDeadSpaceCheckBox)
         selectionRadiusLayout.addStretch()
 
         self._travellerMapWidget = gui.TravellerMapWidget()
@@ -91,6 +96,15 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self._radiusSpinBox.restoreState(storedValue)
         self._settings.endGroup()
 
+        self._settings.beginGroup(self._configSection)
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeDeadSpaceState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeDeadSpaceCheckBox.restoreState(storedValue)
+        self._settings.endGroup()
+
     def selectedHexes(self) -> typing.Collection[travellermap.HexPosition]:
         return list(self._selectedHexes)
 
@@ -125,14 +139,11 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self._handleConfigChange()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
-        if enable == self._enableDeadSpaceSelection:
-            return # Nothing to do
-
-        self._enableDeadSpaceSelection = enable
+        self._includeDeadSpaceCheckBox.setHidden(not enable)
         self._handleConfigChange()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
-        return self._enableDeadSpaceSelection
+        return not self._includeDeadSpaceCheckBox.isHidden()
 
     def accept(self) -> None:
         hex = self.centerHex()
@@ -145,6 +156,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('SelectHexState', self._travellerMapWidget.saveState())
         self._settings.setValue('SelectRadiusState', self._radiusSpinBox.saveState())
+        self._settings.setValue('IncludeDeadSpaceState', self._includeDeadSpaceCheckBox.saveState())
         self._settings.endGroup()
 
         super().accept()
@@ -168,7 +180,10 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 radiusColour = HexRadiusSelectDialog._RadiusOverlayLightStyleColour
                 selectionColour = HexRadiusSelectDialog._SelectionOverlayLightStyleColour
 
-            if self._enableDeadSpaceSelection:
+            includeDeadSpace = not self._includeDeadSpaceCheckBox.isHidden() and \
+                self._includeDeadSpaceCheckBox.isChecked()
+
+            if includeDeadSpace:
                 for hex in centerHex.yieldRadiusHexes(radius=searchRadius):
                     self._selectedHexes.append(hex)
 
