@@ -397,6 +397,7 @@ class JumpRouteWindow(gui.WindowWidget):
         windowLayout.addWidget(self._mainSplitter)
 
         self.setLayout(windowLayout)
+        self._enableDisableControls()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -617,7 +618,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _setupStartFinishControls(self) -> None:
         self._selectStartFinishWidget = _StartFinishSelectWidget()
         self._selectStartFinishWidget.enableDeadSpaceSelection(
-            enable=app.Config.instance().deadSpaceRouting())
+            enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._selectStartFinishWidget.selectionChanged.connect(self._startFinishChanged)
         self._selectStartFinishWidget.showHexRequested.connect(self._showHexInTravellerMap)
 
@@ -631,51 +632,23 @@ class JumpRouteWindow(gui.WindowWidget):
         #
         # Route Configuration
         #
+        self._routingTypeComboBox = gui.SharedRoutingTypeComboBox()
+        self._routingTypeComboBox.currentIndexChanged.connect(self._routingTypeChanged)
         self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
-
-        self._fuelBasedRoutingCheckBox = gui.SharedFuelBasedRoutingCheckBox()
-        self._fuelBasedRoutingCheckBox.stateChanged.connect(
-            self._fuelBasedRoutingToggled)
-
-        self._deadSpaceRoutingCheckBox = gui.SharedDeadSpaceRoutingCheckBox()
-        self._deadSpaceRoutingCheckBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked())
-        self._deadSpaceRoutingCheckBox.stateChanged.connect(
-            self._deadSpaceRoutingToggled)
-
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
-        self._refuellingStrategyComboBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked())
-
         self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
-        self._useFuelCachesCheckBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked())
-
         self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
-        self._useAnomalyRefuellingCheckBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked())
         self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
-
         self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
-        self._anomalyFuelCostSpinBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked() and
-            self._useAnomalyRefuellingCheckBox.isChecked())
-
         self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
-        self._anomalyBerthingCostSpinBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked() and
-            self._useAnomalyRefuellingCheckBox.isChecked())
-
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
-
         self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
         self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
 
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
+        leftLayout.addRow('Routing Type:', self._routingTypeComboBox)
         leftLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
-        leftLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
-        leftLayout.addRow('Dead Space Routing:', self._deadSpaceRoutingCheckBox)
         leftLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         leftLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         leftLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
@@ -736,7 +709,7 @@ class JumpRouteWindow(gui.WindowWidget):
             showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
             showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
         self._waypointHexesWidget.enableDeadSpace(
-            enable=app.Config.instance().deadSpaceRouting())
+            enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._waypointHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._waypointHexesWidget.enableDisplayModeChangedEvent(enable=True)
         self._waypointHexesWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
@@ -822,7 +795,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._travellerMapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._travellerMapWidget.setToolTipCallback(self._formatMapToolTip)
         self._travellerMapWidget.enableDeadSpaceSelection(
-            enable=app.Config.instance().deadSpaceRouting())
+            enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
 
         self._jumpRatingOverlayAction = QtWidgets.QAction('Jump Rating', self)
@@ -917,11 +890,9 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         # Fuel based route calculation
+        routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
-        deadSpaceRouting = False
-        if self._fuelBasedRoutingCheckBox.isChecked():
-            deadSpaceRouting = self._deadSpaceRoutingCheckBox.isChecked()
-
+        if routingType is not logic.RoutingType.Basic:
             useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
@@ -952,7 +923,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight the case where the start hex is dead space and the ship doesn't
             # have fuel to make a parsec 1 jump
-            if deadSpaceRouting and not startWorld:
+            if (routingType is logic.RoutingType.DeadSpace) and (not startWorld):
                 currentFuel = self._shipCurrentFuelSpinBox.value()
                 oneParsecFuel = traveller.calculateFuelRequiredForJump(
                     jumpDistance=1,
@@ -1016,6 +987,7 @@ class JumpRouteWindow(gui.WindowWidget):
         try:
             self._jumpRouteJob = jobs.RoutePlannerJob(
                 parent=self,
+                routingType=routingType,
                 hexSequence=hexSequence,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -1025,7 +997,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
-                useDeadSpace=deadSpaceRouting,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
         except Exception as ex:
@@ -1064,7 +1035,7 @@ class JumpRouteWindow(gui.WindowWidget):
             # Only calculate logistics if fuel based routing is enabled. If it's
             # disabled the route will most likely contain worlds that don't
             # match the refuelling strategy
-            if self._fuelBasedRoutingCheckBox.isChecked():
+            if self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic:
                 self._generateLogistics()
 
             self._updateRouteLabels()
@@ -1515,7 +1486,7 @@ class JumpRouteWindow(gui.WindowWidget):
         startHex, finishHex = self._selectStartFinishWidget.hexes()
         jumpRating = self._shipJumpRatingSpinBox.value()
 
-        if showJumpRatingOverlay:
+        if startHex and showJumpRatingOverlay:
             isDarkMapStyle = travellermap.isDarkStyle(
                 style=app.Config.instance().mapStyle())
             colour = self._JumpRatingOverlayDarkStyleColour \
@@ -1528,7 +1499,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 lineWidth=self._JumpRatingOverlayLineWidth)
             self._jumpOverlayHandles.add(handle)
 
-        if showWorldTaggingOverlay:
+        if startHex and showWorldTaggingOverlay:
             try:
                 worlds = traveller.WorldManager.instance().worldsInArea(
                     center=startHex,
@@ -1635,27 +1606,11 @@ class JumpRouteWindow(gui.WindowWidget):
     def _shipJumpRatingChanged(self) -> None:
         self._updateJumpOverlays()
 
-    def _fuelBasedRoutingToggled(self) -> None:
-        if not self._fuelBasedRoutingCheckBox.isChecked():
-            # Dead space routing requires fuel based routing
-            self._deadSpaceRoutingCheckBox.setChecked(False)
-        self._enableDisableControls()
-
-    def _deadSpaceRoutingToggled(self) ->None:
-        # TODO: This is a potential source of bugs. Just having dead space routing
-        # checked isn't enough, fuel based routing also needs to be enabled. It
-        # would be better dead space routing was always forced off if fuel based
-        # routing is disabled.
-        # - IMPORTANT: Doing this has problems though as the dead space routing
-        #   is shown on the trader window but the fuel based routing check isn't
-        #   as fuel based routing is always on for the trader. As shared controls
-        #   are used checking the box there will cause it to become checked on the
-        #   jump route window even if fuel based routing is off
-        isEnabled = self._deadSpaceRoutingCheckBox.isEnabled() and \
-              self._deadSpaceRoutingCheckBox.isChecked()
-        self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isEnabled)
-        self._waypointHexesWidget.enableDeadSpace(enable=isEnabled)
-        self._travellerMapWidget.enableDeadSpaceSelection(enable=isEnabled)
+    def _routingTypeChanged(self) -> None:
+        isDeadSpaceRouting = self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace
+        self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
+        self._waypointHexesWidget.enableDeadSpace(enable=isDeadSpaceRouting)
+        self._travellerMapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
         self._enableDisableControls()
 
     def _anomalyRefuellingToggled(self) -> None:
@@ -1669,14 +1624,13 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointWorldsGroupBox.setDisabled(runningJob)
         self._avoidWorldsGroupBox.setDisabled(runningJob)
 
-        fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
-        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        self._deadSpaceRoutingCheckBox.setEnabled(fuelBasedRouting)
-        self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
-        self._useFuelCachesCheckBox.setEnabled(fuelBasedRouting)
-        self._useAnomalyRefuellingCheckBox.setEnabled(fuelBasedRouting)
-        self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
-        self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
+        isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
+        isAnomalyRefuelling = isFuelAwareRouting and self._useAnomalyRefuellingCheckBox.isChecked()
+        self._refuellingStrategyComboBox.setEnabled(isFuelAwareRouting)
+        self._useFuelCachesCheckBox.setEnabled(isFuelAwareRouting)
+        self._useAnomalyRefuellingCheckBox.setEnabled(isFuelAwareRouting)
+        self._anomalyFuelCostSpinBox.setEnabled(isAnomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(isAnomalyRefuelling)
 
     def _allowAvoidHex(self, hex: travellermap.HexPosition) -> bool:
         if self._avoidHexesWidget.containsHex(hex):

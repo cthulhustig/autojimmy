@@ -109,7 +109,7 @@ class _EnumComboBoxUpdater(QtCore.QObject):
         self._ignoreNotifications = False
 
     def attach(self, widget: gui.EnumComboBox) -> None:
-        widget.setCurrentEnum(self._loadValue())
+        widget.setCurrentEnum(self.loadValue())
         widget.currentIndexChanged.connect(lambda: self._indexChanged(widget))
         widget.destroyed.connect(self.detach)
         self._widgets.add(widget)
@@ -118,6 +118,12 @@ class _EnumComboBoxUpdater(QtCore.QObject):
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
+
+    def loadValue(self) -> enum.Enum:
+        raise RuntimeError('The loadValue method should be overridden by derived _EnumComboBoxUpdater')
+
+    def saveValue(self, value: enum.Enum) -> None:
+        raise RuntimeError('The saveValue method should be overridden by derived _EnumComboBoxUpdater')
 
     def _indexChanged(
             self,
@@ -129,7 +135,7 @@ class _EnumComboBoxUpdater(QtCore.QObject):
         value = widget.currentEnum()
 
         # Save the setting
-        self._saveValue(value=value)
+        self.saveValue(value=value)
 
         # Push new value to other attached widgets. Blocking signals can't be used as we want
         # the widget being updated to still notify other observers
@@ -141,12 +147,6 @@ class _EnumComboBoxUpdater(QtCore.QObject):
                     other.setCurrentEnum(value)
         finally:
             self._ignoreNotifications = False
-
-    def _loadValue(self) -> enum.Enum:
-        raise RuntimeError('The _loadValue method should be overridden by derived _EnumComboBoxUpdater')
-
-    def _saveValue(self, value: enum.Enum) -> None:
-        raise RuntimeError('The _saveValue method should be overridden by derived _EnumComboBoxUpdater')
 
 class _CheckBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
@@ -548,41 +548,12 @@ class SharedAvailableFundsSpinBox(_SharedSpinBox):
             toolTip=gui.AvailableFundsToolTip,
             parent=parent)
 
-class SharedFuelBasedRoutingCheckBox(_SharedCheckBox):
-    class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
-            return app.Config.instance().fuelBasedRouting()
-
-        def _saveValue(self, value: bool) -> None:
-            return app.Config.instance().setFuelBasedRouting(value)
-
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
-        super().__init__(
-            updaterType=SharedFuelBasedRoutingCheckBox._SettingUpdater,
-            toolTip=gui.FuelBasedRoutingToolTip,
-            parent=parent)
-
-# TODO: This might need adding to other windows (trader maybe??)
-class SharedDeadSpaceRoutingCheckBox(_SharedCheckBox):
-    class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
-            return app.Config.instance().deadSpaceRouting()
-
-        def _saveValue(self, value: bool) -> None:
-            return app.Config.instance().setDeadSpaceRouting(value)
-
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
-        super().__init__(
-            updaterType=SharedDeadSpaceRoutingCheckBox._SettingUpdater,
-            toolTip='TODO', # TODO: Dead space routing tooltip
-            parent=parent)
-
 class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
-        def _loadValue(self) -> logic.RefuellingStrategy:
+        def loadValue(self) -> logic.RefuellingStrategy:
             return app.Config.instance().refuellingStrategy()
 
-        def _saveValue(self, value: logic.RefuellingStrategy) -> None:
+        def saveValue(self, value: logic.RefuellingStrategy) -> None:
             return app.Config.instance().setRefuellingStrategy(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -658,12 +629,27 @@ class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
             toolTip=gui.AnomalyBerthingCostToolTip,
             parent=parent)
 
+class SharedRoutingTypeComboBox(_SharedEnumComboBox):
+    class _SettingUpdater(_EnumComboBoxUpdater):
+        def loadValue(self) -> logic.RoutingType:
+            return app.Config.instance().routingType()
+
+        def saveValue(self, value: logic.RoutingType) -> None:
+            return app.Config.instance().setRoutingType(value)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            updaterType=SharedRoutingTypeComboBox._SettingUpdater,
+            enumType=logic.RoutingType,
+            toolTip='TODO', # TODO: Routing Type combo box
+            parent=parent)
+
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
-        def _loadValue(self) -> logic.RouteOptimisation:
+        def loadValue(self) -> logic.RouteOptimisation:
             return app.Config.instance().routeOptimisation()
 
-        def _saveValue(self, value: logic.RouteOptimisation) -> None:
+        def saveValue(self, value: logic.RouteOptimisation) -> None:
             return app.Config.instance().setRouteOptimisation(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:

@@ -115,10 +115,10 @@ class SingleWorldTraderJob(_TraderJobBase):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[float, common.ScalarCalculation],
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
+            routingType: logic.RoutingType,
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
-            deadSpaceRouting: bool,
             useLocalSaleBroker: bool,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             includePurchaseWorldBerthing: bool,
@@ -148,7 +148,7 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
-        self._deadSpaceRouting = deadSpaceRouting
+        self._routingType = routingType
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
@@ -184,10 +184,10 @@ class SingleWorldTraderJob(_TraderJobBase):
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipStartingFuel=self._shipStartingFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
+                routingType=self._routingType,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
-                deadSpaceRouting=self._deadSpaceRouting,
                 useLocalSaleBroker=self._useLocalSaleBroker,
                 localSaleBrokerDm=self._localSaleBrokerDm,
                 includePurchaseWorldBerthing=self._includePurchaseWorldBerthing,
@@ -223,10 +223,10 @@ class MultiWorldTraderJob(_TraderJobBase):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[float, common.ScalarCalculation],
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
+            routingType: logic.RoutingType,
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
-            deadSpaceRouting: bool,
             useLocalPurchaseBroker: bool,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             useLocalSaleBroker: bool,
@@ -257,10 +257,10 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
+        self._routingType = routingType,
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
-        self._deadSpaceRouting = deadSpaceRouting
         self._useLocalPurchaseBroker = useLocalPurchaseBroker
         self._localPurchaseBrokerDm = localPurchaseBrokerDm
         self._useLocalSaleBroker = useLocalSaleBroker
@@ -296,10 +296,10 @@ class MultiWorldTraderJob(_TraderJobBase):
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipStartingFuel=self._shipStartingFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
+                routingType=self._routingType,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
-                deadSpaceRouting=self._deadSpaceRouting,
                 useLocalPurchaseBroker=self._useLocalPurchaseBroker,
                 localPurchaseBrokerDm=self._localPurchaseBrokerDm,
                 useLocalSaleBroker=self._useLocalSaleBroker,

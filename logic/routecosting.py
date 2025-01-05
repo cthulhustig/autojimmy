@@ -5,6 +5,7 @@ import traveller
 import travellermap
 import typing
 
+# NOTE: The name of these enums is stored in the app config
 class RouteOptimisation(enum.Enum):
     ShortestTime = 'Shortest Time'
     ShortestDistance = 'Shortest Distance'

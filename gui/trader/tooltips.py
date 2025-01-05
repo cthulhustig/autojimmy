@@ -65,6 +65,7 @@ RouteOptimisationToolTip = createStringToolTip(
     'lowest cost route but it\'s generally pretty good.</li>'
     '</ul>',
     escape=False)
+# TODO: This should be reworked as a RoutingType tool tip
 FuelBasedRoutingToolTip = createStringToolTip(
     '<p>Turn fuel based route calculation on/off</p>'
     '<p>When fuel based route calculation is enabled, the jump route calculator will use ship '

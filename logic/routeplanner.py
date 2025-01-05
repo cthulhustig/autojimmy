@@ -1,10 +1,17 @@
 import common
+import enum
 import heapq
 import logic
 import math
 import traveller
 import travellermap
 import typing
+
+# NOTE: The name of these enums is stored in the app config
+class RoutingType(enum.Enum):
+    Basic = 'Basic'
+    FuelBased = 'Fuel Based'
+    DeadSpace = 'Dead Space'
 
 class _RouteNode(object):
     def __init__(
@@ -116,6 +123,7 @@ class HexFilterInterface(object):
 class RoutePlanner(object):
     def calculateDirectRoute(
             self,
+            routingType: RoutingType,
             startHex: travellermap.HexPosition,
             finishHex: travellermap.HexPosition,
             shipTonnage: typing.Union[int, common.ScalarCalculation],
@@ -126,11 +134,11 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            useDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
         return self._calculateRoute(
+            routingType=routingType,
             hexSequence=[startHex, finishHex],
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
@@ -140,12 +148,12 @@ class RoutePlanner(object):
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
             hexFilter=hexFilter,
-            useDeadSpace=useDeadSpace,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
 
     def calculateSequenceRoute(
             self,
+            routingType: RoutingType,
             hexSequence: typing.Sequence[travellermap.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
@@ -155,13 +163,13 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            useDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
         # TODO: Remove debug timer
         with common.DebugTimer('calculateSequenceRoute'):
             return self._calculateRoute(
+                routingType=routingType,
                 hexSequence=hexSequence,
                 shipTonnage=shipTonnage,
                 shipJumpRating=shipJumpRating,
@@ -171,7 +179,6 @@ class RoutePlanner(object):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
-                useDeadSpace=useDeadSpace,
                 progressCallback=progressCallback,
                 isCancelledCallback=isCancelledCallback)
 
@@ -186,19 +193,22 @@ class RoutePlanner(object):
     # by the supplied jump cost calculator.
     def _calculateRoute(
             self,
+            routingType: RoutingType,
             hexSequence: typing.Sequence[travellermap.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipCurrentFuel: typing.Union[float, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
-            pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
+            pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # Required for fuel based and dead space routing
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            useDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
+        if (routingType is not RoutingType.Basic) and (not pitCostCalculator):
+            raise ValueError(f'{routingType.value} routing requires a pit stop cost calculator')
+
         # If the jump rating is a calculation covert it to it's raw value as we don't need to
         # track calculations here
         if isinstance(shipJumpRating, common.ScalarCalculation):
@@ -235,17 +245,17 @@ class RoutePlanner(object):
         finishWorld = worldManager.worldByPosition(hex=finishHex)
 
         startWorldFuelType = None
-        if pitCostCalculator:
-            if startWorld:
-                startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
-            isCurrentFuelWorld = startWorldFuelType != None
-            maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
-        else:
+        if routingType is RoutingType.Basic:
             # Fuel based route calculation is disabled so use the max capacity as the max starting
             # fuel. The intended effect is to have it possible to jump to any world within jump
             # range (fuel capacity allowing).
             isCurrentFuelWorld = False
             maxStartingFuel = shipFuelCapacity
+        else:
+            if startWorld:
+                startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
+            isCurrentFuelWorld = startWorldFuelType != None
+            maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
 
         # Handle early outs when dealing with direct world to world routes
         if sequenceLength == 2:
@@ -269,7 +279,7 @@ class RoutePlanner(object):
             # distance or time.
             distance = startHex.parsecsTo(finishHex)
             if distance <= shipJumpRating:
-                if not pitCostCalculator:
+                if routingType is RoutingType.Basic:
                     # Fuel based routing is disabled so use ships fuel capacity
                     # as the 'available fuel'
                     availableFuel = shipFuelCapacity
@@ -410,7 +420,11 @@ class RoutePlanner(object):
             if progressCallback:
                 progressCallback(closedRoutes, False) # Search isn't finished
 
-            if pitCostCalculator:
+            if routingType is RoutingType.Basic:
+                # Fuel based route calculation is disabled so always search for the full ship jump
+                # rating
+                searchRadius = shipJumpRating
+            else:
                 # Set search area based on the max distance we could jump from the current world. If
                 # it's a world where fuel could be taken then the search area is the ship jump
                 # rating. If it's not a world where fuel can be taken on then the search radius is
@@ -427,16 +441,12 @@ class RoutePlanner(object):
                 if searchRadius <= 0:
                     closedRoutes += 1
                     continue
-            else:
-                # Fuel based route calculation is disabled so always search for the full ship jump
-                # rating
-                searchRadius = shipJumpRating
 
             nearbyIterator = self._yieldNearbyHexes(
+                routingType=routingType,
                 centerHex=currentHex,
                 radius=searchRadius,
-                worldManager=worldManager,
-                includeDeadSpace=useDeadSpace)
+                worldManager=worldManager)
             possibleRoutes = 0
             addedRoutes = 0
             for nearbyHex, nearbyWorld in nearbyIterator:
@@ -446,7 +456,11 @@ class RoutePlanner(object):
 
                 # Work out the max amount of fuel the ship can have in the tank after completing
                 # the jump from the current world to the adjacent world.
-                if pitCostCalculator:
+                if routingType is RoutingType.Basic:
+                    # Fuel based route calculation is disabled.
+                    isNearbyFuelWorld = False
+                    fuelParsecs = shipJumpRating
+                else:
                     nearbyRefuellingType = \
                         nearbyRefuellingType = pitCostCalculator.refuellingType(world=nearbyWorld) \
                         if nearbyWorld else \
@@ -468,11 +482,6 @@ class RoutePlanner(object):
                         # The adjacent world isn't a fuel world and the ship won't have enough
                         # fuel to jump on so there is no point continuing the route
                         continue
-                else:
-                    isNearbyFuelWorld = False
-                    # Fuel based route calculation is disabled. These values have no effect but
-                    # must be set to something
-                    fuelParsecs = shipJumpRating
 
                 nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
                     targetHexData.get(nearbyHex, (None, None, None))
@@ -561,10 +570,10 @@ class RoutePlanner(object):
 
     def _yieldNearbyHexes(
             self,
+            routingType: RoutingType,
             centerHex: travellermap.HexPosition,
             radius: int,
             worldManager: traveller.WorldManager,
-            includeDeadSpace: bool = False
             ) -> typing.Generator[
                 typing.Tuple[
                     travellermap.HexPosition,
@@ -572,7 +581,7 @@ class RoutePlanner(object):
                 ],
                 None,
                 None]:
-        if includeDeadSpace:
+        if routingType is RoutingType.DeadSpace:
             # TODO: There might be an optimisation here. Generally it only makes sense
             # to jump into dead space if the target world is in dead space or if it's a
             # direct line to the target world or a potential next world. This means it

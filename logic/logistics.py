@@ -65,7 +65,7 @@ def calculateRouteLogistics(
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
-        pitCostCalculator: logic.PitStopCostCalculator,
+        pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
@@ -76,50 +76,51 @@ def calculateRouteLogistics(
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[RouteLogistics]:
     refuellingPlan = None
-    if jumpRoute.nodeCount() > 1:
-        refuellingPlan = logic.calculateRefuellingPlan(
-            jumpRoute=jumpRoute,
-            shipTonnage=shipTonnage,
-            shipFuelCapacity=shipFuelCapacity,
-            shipStartingFuel=shipStartingFuel,
-            shipFuelPerParsec=shipFuelPerParsec,
-            pitCostCalculator=pitCostCalculator,
-            requiredBerthingIndices=requiredBerthingIndices,
-            includeRefuellingCosts=includeLogisticsCosts,
-            diceRoller=diceRoller)
-        if not refuellingPlan:
-            return None
-    else:
-        # The start and end world are the same so there are no travel costs. There can still be
-        # berthing costs on the start world, this covers the case where you've not arrived on
-        # the world yet
-        requireStartWorldBerthing = requiredBerthingIndices and 0 in requiredBerthingIndices
-        requireFinishWorldBerthing = requiredBerthingIndices and (jumpRoute.nodeCount() - 1) in requiredBerthingIndices
+    if pitCostCalculator:
+        if jumpRoute.nodeCount() > 1:
+            refuellingPlan = logic.calculateRefuellingPlan(
+                jumpRoute=jumpRoute,
+                shipTonnage=shipTonnage,
+                shipFuelCapacity=shipFuelCapacity,
+                shipStartingFuel=shipStartingFuel,
+                shipFuelPerParsec=shipFuelPerParsec,
+                pitCostCalculator=pitCostCalculator,
+                requiredBerthingIndices=requiredBerthingIndices,
+                includeRefuellingCosts=includeLogisticsCosts,
+                diceRoller=diceRoller)
+            if not refuellingPlan:
+                return None
+        else:
+            # The start and end world are the same so there are no travel costs. There can still be
+            # berthing costs on the start world, this covers the case where you've not arrived on
+            # the world yet
+            requireStartWorldBerthing = requiredBerthingIndices and 0 in requiredBerthingIndices
+            requireFinishWorldBerthing = requiredBerthingIndices and (jumpRoute.nodeCount() - 1) in requiredBerthingIndices
 
-        if requireStartWorldBerthing or requireFinishWorldBerthing:
-            _, startWorld = jumpRoute.startNode()
-            if startWorld:
-                berthingCost = pitCostCalculator.berthingCost(
-                    world=startWorld)
-                if berthingCost:
-                    berthingCost = common.Calculator.rename(
-                        value=berthingCost,
-                        name=f'Berthing Cost For {startWorld.name(includeSubsector=True)}')
+            if requireStartWorldBerthing or requireFinishWorldBerthing:
+                _, startWorld = jumpRoute.startNode()
+                if startWorld:
+                    berthingCost = pitCostCalculator.berthingCost(
+                        world=startWorld)
+                    if berthingCost:
+                        berthingCost = common.Calculator.rename(
+                            value=berthingCost,
+                            name=f'Berthing Cost For {startWorld.name(includeSubsector=True)}')
 
-                    if not includeLogisticsCosts:
-                        berthingCost = common.Calculator.override(
-                            old=berthingCost,
-                            new=common.ScalarCalculation(value=0, name='Overridden Berthing Cost'),
-                            name='Ignored Berthing Cost')
+                        if not includeLogisticsCosts:
+                            berthingCost = common.Calculator.override(
+                                old=berthingCost,
+                                new=common.ScalarCalculation(value=0, name='Overridden Berthing Cost'),
+                                name='Ignored Berthing Cost')
 
-                pitStop = logic.PitStop(
-                    jumpIndex=0,
-                    world=startWorld,
-                    refuellingType=None, # No refuelling
-                    tonsOfFuel=None,
-                    fuelCost=None,
-                    berthingCost=berthingCost)
-                refuellingPlan = logic.RefuellingPlan([pitStop])
+                    pitStop = logic.PitStop(
+                        jumpIndex=0,
+                        world=startWorld,
+                        refuellingType=None, # No refuelling
+                        tonsOfFuel=None,
+                        fuelCost=None,
+                        berthingCost=berthingCost)
+                    refuellingPlan = logic.RefuellingPlan([pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads
     if reportedPerJumpOverheads and not includeLogisticsCosts:

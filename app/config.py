@@ -57,9 +57,9 @@ class Config(object):
     _PurchaseBrokerDmBonusKeyName = 'Game/PurchaseBrokerDmBonus'
     _UseSaleBrokerKeyName = 'Game/UseSaleBroker'
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
+    _RoutingTypeKeyName = 'Game/RoutingType'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
-    _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting'
-    _DeadSpaceRouting = 'Game/DeadSpaceRouting'
+    _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting' # Legacy key
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
     _UseFuelCachesKeyName = 'Game/UseFuelCaches'
     _UseAnomalyRefuellingKeyName = 'Game/UseAnomalyRefuelling'
@@ -523,6 +523,14 @@ class Config(object):
         self._settings.setValue(Config._SaleBrokerDmBonusKeyName, value)
         return False # No restart required
 
+    def routingType(self) -> logic.RoutingType:
+        return self._routingType
+
+    def setRoutingType(self, type: logic.RoutingType) -> bool:
+        self._routingType = type
+        self._settings.setValue(Config._RoutingTypeKeyName, type.name)
+        return False # No restart required
+
     def routeOptimisation(self) -> logic.RouteOptimisation:
         return self._routeOptimisation
 
@@ -530,27 +538,6 @@ class Config(object):
         # This setting can be modified live so update the internal and disk copy
         self._routeOptimisation = optimisation
         self._settings.setValue(Config._RouteOptimisationKeyName, optimisation.name)
-        return False # No restart required
-
-    def fuelBasedRouting(self) -> bool:
-        return self._fuelBasedRouting
-
-    def setDeadSpaceRouting(self, enabled: bool) -> bool:
-        self._deadSpaceRouting = enabled
-        self._settings.setValue(Config._DeadSpaceRouting, enabled)
-        return False # No restart required
-
-    # TODO: It might be better to combine fuel based routing and dead space routing
-    # into an enum. It would mean I could switch 2 check boxes for a single combo
-    # box in the UI but it would mean hacky code to handle reading the old style
-    # fuelBasedRouting from the config file and converting it to the new enum
-    def deadSpaceRouting(self) -> bool:
-        return self._deadSpaceRouting
-
-    def setFuelBasedRouting(self, enable: bool) -> None:
-        # This setting can be modified live so update the internal and disk copy
-        self._fuelBasedRouting = enable
-        self._settings.setValue(Config._FuelBasedRoutingKeyName, enable)
         return False # No restart required
 
     def refuellingStrategy(self) -> logic.RefuellingStrategy:
@@ -1284,16 +1271,14 @@ class Config(object):
         self._saleBrokerDmBonus = self._loadIntSetting(
             key=Config._SaleBrokerDmBonusKeyName,
             default=1)
+        self._routingType = self._loadEnumSetting(
+            key=self._RoutingTypeKeyName,
+            default=logic.RoutingType.FuelBased,
+            members=logic.RouteOptimisation.__members__)
         self._routeOptimisation = self._loadEnumSetting(
             key=Config._RouteOptimisationKeyName,
             default=logic.RouteOptimisation.ShortestDistance,
             members=logic.RouteOptimisation.__members__)
-        self._fuelBasedRouting = self._loadBoolSetting(
-            key=Config._FuelBasedRoutingKeyName,
-            default=True)
-        self._deadSpaceRouting = self._loadBoolSetting(
-            key=Config._DeadSpaceRouting,
-            default=False)
         self._refuellingStrategy = self._loadEnumSetting(
             key=Config._RefuellingStrategyKeyName,
             default=logic.RefuellingStrategy.WildernessPreferred,

@@ -342,9 +342,9 @@ class Simulator(object):
             shipFuelCapacity=self._shipFuelCapacity,
             shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
             shipFuelPerParsec=self._shipFuelPerParsec,
+            routingType=logic.RoutingType.DeadSpace if self._deadSpaceRouting else logic.RoutingType.FuelBased,
             jumpCostCalculator=self._jumpCostCalculator,
             pitCostCalculator=self._pitCostCalculator,
-            deadSpaceRouting=self._deadSpaceRouting,
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
             includeSaleWorldBerthing=True)

@@ -126,27 +126,23 @@ class _BaseTraderWindow(gui.WindowWidget):
         leftLayout.addRow('Local Sale Broker:', self._localSaleBrokerWidget)
 
         # Right column of controls
+        self._routingTypeComboBox = gui.SharedRoutingTypeComboBox()
+        self._routingTypeComboBox.currentIndexChanged.connect(self._routingTypeChanged)
         self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
-        self._deadSpaceRoutingCheckBox = gui.SharedDeadSpaceRoutingCheckBox()
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
         self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
         self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
         self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
-        self._useAnomalyRefuellingCheckBox.stateChanged.connect(
-            self._anomalyRefuellingToggled)
+        self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
         self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
-        self._anomalyFuelCostSpinBox.setEnabled(
-            self._useAnomalyRefuellingCheckBox.isChecked())
         self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
-        self._anomalyBerthingCostSpinBox.setEnabled(
-            self._useAnomalyRefuellingCheckBox.isChecked())
 
         centerLayout = gui.FormLayoutEx()
         centerLayout.setContentsMargins(0, 0, 0, 0)
+        centerLayout.addRow('Routing Type:', self._routingTypeComboBox)
         centerLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
-        centerLayout.addRow('Dead Space Routing:', self._deadSpaceRoutingCheckBox)
         centerLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         centerLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         centerLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
@@ -256,9 +252,14 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeInfoEditBox = QtWidgets.QPlainTextEdit()
         self._tradeInfoEditBox.setReadOnly(True)
 
-    # This should be implemented by the derived class
     def _enableDisableControls(self) -> None:
-        pass
+        isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
+        isAnomalyRefuelling = isFuelAwareRouting and self._useAnomalyRefuellingCheckBox.isChecked()
+        self._refuellingStrategyComboBox.setEnabled(isFuelAwareRouting)
+        self._useFuelCachesCheckBox.setEnabled(isFuelAwareRouting)
+        self._useAnomalyRefuellingCheckBox.setEnabled(isFuelAwareRouting)
+        self._anomalyFuelCostSpinBox.setEnabled(isAnomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(isAnomalyRefuelling)
 
     def _tradeOptionColumns(self) -> typing.List[gui.TradeOptionsTable.ColumnType]:
         calculationMode = self._tradeOptionCalculationModeTabs.currentCalculationMode()
@@ -400,6 +401,9 @@ class _BaseTraderWindow(gui.WindowWidget):
             minValue: int,
             maxValue: int) -> None:
         pass
+
+    def _routingTypeChanged(self) -> None:
+        self._enableDisableControls()
 
     def _anomalyRefuellingToggled(self) -> None:
         self._enableDisableControls()
@@ -1082,6 +1086,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._cargoGroupBox.setLayout(groupBoxLayout)
 
     def _enableDisableControls(self) -> None:
+        super()._enableDisableControls()
+
         if not self._traderJob:
             self._purchaseWorldGroupBox.setDisabled(False)
 
@@ -1099,10 +1105,6 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._cargoGroupBox.setDisabled(True)
             self._saleWorldsGroupBox.setDisabled(True)
             self._createCargoManifestButton.setDisabled(True)
-
-        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
-        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
     def _addSpeculativeCargo(
             self,
@@ -1736,6 +1738,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         if key == QtCore.Qt.Key.Key_Delete:
             self._removeSelectedCurrentCargo()
 
+    # TODO: This needs a warning that logistic costs will be more inaccurate if
+    # basic routing is selected
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
@@ -1790,33 +1794,36 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        pitCostCalculator = logic.PitStopCostCalculator(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().rules())
+        routingType = self._routingTypeComboBox.currentEnum()
+        pitCostCalculator = None
+        if routingType is not logic.RoutingType.Basic:
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+            pitCostCalculator = logic.PitStopCostCalculator(
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+                rules=app.Config.instance().rules())
 
-        # Flag cases where the purchase world doesn't match the refuelling
-        # strategy. No options will be generated unless the ship has enough
-        #current fuel
-        if not pitCostCalculator.refuellingType(
-                world=self._purchaseWorldWidget.selectedWorld()):
-            message = \
-                'The purchase world doesn\'t support the selected refuelling ' \
-                'strategy. It will only be possibly to generate trade ' \
-                'options for sale worlds where a route can be found with the ' \
-                'fuel currently in the ship.'
+            # Flag cases where the purchase world doesn't match the refuelling
+            # strategy. No options will be generated unless the ship has enough
+            #current fuel
+            if not pitCostCalculator.refuellingType(
+                    world=self._purchaseWorldWidget.selectedWorld()):
+                message = \
+                    'The purchase world doesn\'t support the selected refuelling ' \
+                    'strategy. It will only be possibly to generate trade ' \
+                    'options for sale worlds where a route can be found with the ' \
+                    'fuel currently in the ship.'
 
-            answer = gui.AutoSelectMessageBox.question(
-                parent=self,
-                text=message + '\n\nDo you want to continue?',
-                stateKey='WorldTraderPurchaseWorldRefuellingStrategy',
-                # Only remember if the user clicked yes
-                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
-            if answer == QtWidgets.QMessageBox.StandardButton.No:
-                return
+                answer = gui.AutoSelectMessageBox.question(
+                    parent=self,
+                    text=message + '\n\nDo you want to continue?',
+                    stateKey='WorldTraderPurchaseWorldRefuellingStrategy',
+                    # Only remember if the user clicked yes
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+                if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
 
         # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -1863,9 +1870,9 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                routingType=routingType,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
-                deadSpaceRouting=self._deadSpaceRoutingCheckBox.isChecked(),
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
@@ -2204,14 +2211,12 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setLayout(layout)
 
     def _enableDisableControls(self) -> None:
+        super()._enableDisableControls()
+
         # Disable configuration controls while trade option job is running
         self._configurationGroupBox.setDisabled(self._traderJob != None)
         self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
         self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
-
-        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
-        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
     def _allowPurchaseWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
@@ -2366,6 +2371,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             self._saleWorldsWidget.mapToGlobal(point)
         )
 
+    # TODO: This needs a warning that logistic costs will be more inaccurate if
+    # basic routing is selected
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
@@ -2418,37 +2425,40 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        pitCostCalculator = logic.PitStopCostCalculator(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().rules())
+        routingType = self._routingTypeComboBox.currentEnum()
+        pitCostCalculator = None
+        if routingType is not logic.RoutingType.Basic:
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+            pitCostCalculator = logic.PitStopCostCalculator(
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+                rules=app.Config.instance().rules())
 
-        # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
-        # generated for those worlds unless the ship has enough current fuel
-        fuelIssueWorldStrings = []
-        for world in self._purchaseWorldsWidget.worlds():
-            if not pitCostCalculator.refuellingType(world=world):
-                fuelIssueWorldStrings.append(world.name())
+            # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
+            # generated for those worlds unless the ship has enough current fuel
+            fuelIssueWorldStrings = []
+            for world in self._purchaseWorldsWidget.worlds():
+                if not pitCostCalculator.refuellingType(world=world):
+                    fuelIssueWorldStrings.append(world.name())
 
-        if fuelIssueWorldStrings:
-            worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
-            if len(fuelIssueWorldStrings) == 1:
-                message = f'Purchase world {worldListString} doesn\'t support the selected refuelling strategy. '
-            else:
-                message = f'Purchase worlds {worldListString} don\'t support the selected refuelling strategy. '
-            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with fuel currently in the ship.'
+            if fuelIssueWorldStrings:
+                worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
+                if len(fuelIssueWorldStrings) == 1:
+                    message = f'Purchase world {worldListString} doesn\'t support the selected refuelling strategy. '
+                else:
+                    message = f'Purchase worlds {worldListString} don\'t support the selected refuelling strategy. '
+                message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with fuel currently in the ship.'
 
-            answer = gui.AutoSelectMessageBox.question(
-                parent=self,
-                text=message + '\n\nDo you want to continue?',
-                stateKey='MultiTraderPurchaseWorldRefuellingStrategy',
-                # Only remember if the user clicked yes
-                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
-            if answer == QtWidgets.QMessageBox.StandardButton.No:
-                return
+                answer = gui.AutoSelectMessageBox.question(
+                    parent=self,
+                    text=message + '\n\nDo you want to continue?',
+                    stateKey='MultiTraderPurchaseWorldRefuellingStrategy',
+                    # Only remember if the user clicked yes
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+                if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
 
         # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -2496,10 +2506,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
+                routingType=routingType,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
-                deadSpaceRouting=self._deadSpaceRoutingCheckBox.isChecked(),
                 includeIllegal=True, # Always include illegal trade options for multi-world
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
