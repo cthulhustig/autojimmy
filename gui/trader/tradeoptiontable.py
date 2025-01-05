@@ -5,6 +5,8 @@ import logic
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: For consistency the PurchaseSector and SaleSector columns should probably
+# be split into two each, one for sector and one for subsector
 class TradeOptionsTable(gui.FrozenColumnListTable):
     # The indices of the ColumnId must match the table row
     class ColumnType(enum.Enum):

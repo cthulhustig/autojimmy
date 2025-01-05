@@ -9,7 +9,7 @@ from PyQt5 import QtWidgets, QtCore
 # in HexTable apply here as well
 # TODO: I've never liked the name of this class, possibly a good time to
 # rename it. It's more about letting the user select a group of hexes than
-# manage them
+# manage them. Possibly HexTableToolWidget
 class HexTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
     contextMenuRequested = QtCore.pyqtSignal(QtCore.QPoint)
