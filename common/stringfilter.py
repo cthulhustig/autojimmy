@@ -37,7 +37,8 @@ class StringFilter(object):
             if filterString:
                 pattern = f'.*{re.escape(filterString)}.*'
                 # Set flag so '.' matches \n. This is important for the pattern
-                # to match instances of the string that appear after a \n
+                # to match instances of the string that appear after a \n (which
+                # can happen when using this to filter notes on robots)
                 flags |= re.DOTALL
         elif filterType == StringFilterType.ExactString:
             if filterString:
