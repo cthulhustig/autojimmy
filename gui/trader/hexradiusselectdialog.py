@@ -208,7 +208,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    handle = self._travellerMapWidget.createHexBorderOverlayGroup(
+                    handle = self._travellerMapWidget.createHexOverlayGroup(
                         hexes=self._selectedHexes,
                         fillColour=selectionColour)
                     self._overlays.append(handle)

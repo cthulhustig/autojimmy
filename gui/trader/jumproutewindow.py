@@ -1511,7 +1511,8 @@ class JumpRouteWindow(gui.WindowWidget):
                     exc_info=ex)
                 return
 
-            taggedWorlds = []
+            taggedHexes = []
+            colourMap = {}
             for world in worlds:
                 worldHex = world.hex()
                 if (worldHex == startHex) or (worldHex == finishHex):
@@ -1525,11 +1526,13 @@ class JumpRouteWindow(gui.WindowWidget):
                 tagColour = gui.colourToString(
                     colour=colour,
                     includeAlpha=False)
-                taggedWorlds.append((world, tagColour))
+                taggedHexes.append(world.hex())
+                colourMap[world.hex()] = tagColour
 
-            if taggedWorlds:
-                handle = self._travellerMapWidget.createWorldOverlayGroup(
-                    worlds=taggedWorlds)
+            if taggedHexes:
+                handle = self._travellerMapWidget.createHexOverlayGroup(
+                    hexes=taggedHexes,
+                    fillMap=colourMap)
                 self._jumpOverlayHandles.add(handle)
 
     def _updateRouteLabels(self) -> None:

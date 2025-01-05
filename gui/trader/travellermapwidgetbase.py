@@ -444,17 +444,22 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 """.format(x=absoluteX, y=absoluteY)
             self._runScript(script)
 
-    def createWorldOverlayGroup(
+    def createHexOverlayGroup(
             self,
-            worlds: typing.Iterable[typing.Tuple[traveller.World, str]], # (World, Colour))
-            radius: float = 0.5
+            hexes: typing.Iterable[travellermap.HexPosition],
+            radius: float = 0.5,
+            fillColour: typing.Optional[str] = None,
+            fillMap: typing.Optional[typing.Mapping[
+                travellermap.HexPosition,
+                str # Colour string
+            ]] = None
             ) -> str:
         group = _OverlayGroups()
-        for world, colour in worlds:
+        for hex in hexes:
             overlay = _HexOverlay(
-                hex=world.hex(),
+                hex=hex,
                 radius=radius,
-                colour=colour)
+                colour=fillMap.get(hex, fillColour) if fillMap else fillColour)
             group.addOverlay(overlay)
         self._overlayGroups[group.handle()] = group
 
