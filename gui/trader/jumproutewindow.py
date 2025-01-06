@@ -1047,6 +1047,10 @@ class JumpRouteWindow(gui.WindowWidget):
             # re-enabled if we start calculating a "new" jump route (i.e the
             # start/finish world changes)
             self._zoomToJumpRoute = False
+        else:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='No jump route found')
 
         self._jumpRouteJob = None
         self._calculateRouteButton.showPrimaryText()
