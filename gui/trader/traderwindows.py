@@ -17,8 +17,6 @@ def _worldSaleScoreTableColumns(
         columns.remove(gui.WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
-# TODO: Why is this needed? It doesn't look like it adds anything over gui.WorldTradeScoreTable.
-# Maybe some subtlety in what it's doing with columns over the base
 class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
     AllColumns = _worldSaleScoreTableColumns(gui.WorldTradeScoreTable.AllColumns)
     SystemColumns = _worldSaleScoreTableColumns(gui.WorldTradeScoreTable.SystemColumns)

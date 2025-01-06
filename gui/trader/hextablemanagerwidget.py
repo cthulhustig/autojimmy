@@ -14,8 +14,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     displayModeChanged = QtCore.pyqtSignal(gui.HexTableTabBar.DisplayMode)
     showInTravellerMap = QtCore.pyqtSignal([list])
 
-    # TODO: I might need to leave this as the old 'WorldTableManagerWidget_v1'
-    # for backwards compatibility
     _StateVersion = 'HexTableManagerWidget_v1'
 
     def __init__(

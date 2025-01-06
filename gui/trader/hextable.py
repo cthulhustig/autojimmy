@@ -18,8 +18,6 @@ class HexTableTabBar(gui.TabBarEx):
         CultureColumns = 4
         RefuellingColumns = 5
 
-    # TODO: This might need to stay as WorldTableTabBar_v1 for backwards
-    # compatibility
     _StateVersion = 'HexTableTabBar_v1'
 
     def __init__(self) -> None:

@@ -136,9 +136,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
 # TODO: This will need labels updated to use hex when selecting dead space
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
-    # TODO: I suspect I'll need to leave this string as is for backwards
-    # compatibility
-    _StateVersion = '_WorldRadiusSearchWidget_v1'
+    _StateVersion = '_HexSearchRadiusWidget_v1'
 
     _MinWorldWidgetWidth = 350
 
