@@ -5,16 +5,16 @@ import logic
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: For consistency the PurchaseSector and SaleSector columns should probably
-# be split into two each, one for sector and one for subsector
 class TradeOptionsTable(gui.FrozenColumnListTable):
     # The indices of the ColumnId must match the table row
     class ColumnType(enum.Enum):
         TradeGood = 'Trade Good'
         PurchaseWorld = 'Purchase World'
         PurchaseSector = 'Purchase Sector'
+        PurchaseSubsector = 'Purchase Subsector'
         SaleWorld = 'Sale World'
         SaleSector = 'Sale Sector'
+        SaleSubsector = 'Sale Subsector'
         Notes = 'Notes\n(Count)'
         Jumps = 'Jumps\n(Count)'
         Owned = 'Owned'
@@ -53,8 +53,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         ColumnType.TradeGood,
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Notes,
         ColumnType.Jumps,
         ColumnType.Owned,
@@ -91,8 +93,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         ColumnType.TradeGood,
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Notes,
         ColumnType.Jumps,
         ColumnType.Owned,
@@ -111,8 +115,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         ColumnType.TradeGood,
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Notes,
         ColumnType.Jumps,
         ColumnType.Owned,
@@ -131,8 +137,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         ColumnType.TradeGood,
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Notes,
         ColumnType.Jumps,
         ColumnType.Owned,
@@ -162,8 +170,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 self.setColumnWidth(column, 200)
             elif columnType == self.ColumnType.PurchaseWorld or \
                     columnType == self.ColumnType.PurchaseSector or \
+                    columnType == self.ColumnType.PurchaseSubsector or \
                     columnType == self.ColumnType.SaleWorld or \
-                    columnType == self.ColumnType.SaleSector:
+                    columnType == self.ColumnType.SaleSector or \
+                    columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
 
     def tradeOption(self, row: int) -> typing.Optional[logic.TradeOption]:
@@ -271,7 +281,12 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.PurchaseSector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{purchaseWorld.subsectorName()} ({purchaseWorld.sectorName()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.sectorName())
+                    if purchaseWorldTagColour:
+                        tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
+                elif columnType == self.ColumnType.PurchaseSubsector:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.subsectorName())
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.SaleWorld:
@@ -281,7 +296,12 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.SaleSector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{saleWorld.subsectorName()} ({saleWorld.sectorName()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.sectorName())
+                    if saleWorldTagColour:
+                        tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
+                elif columnType == self.ColumnType.SaleSubsector:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.subsectorName())
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.Notes:
@@ -414,11 +434,13 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector:
+                columnType == self.ColumnType.PurchaseSector or \
+                columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = tradeOption.purchaseWorld()
             return gui.createHexToolTip(purchaseWorld)
         elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector:
+                columnType == self.ColumnType.SaleSector or \
+                columnType == self.ColumnType.SaleSubsector:
             saleWorld = tradeOption.saleWorld()
             return gui.createHexToolTip(saleWorld)
         elif columnType == self.ColumnType.Notes:

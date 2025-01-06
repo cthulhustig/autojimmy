@@ -5,15 +5,15 @@ import logic
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: For consistency the PurchaseSector and SaleSector columns should probably
-# be split into two each, one for sector and one for subsector
 class CargoManifestTable(gui.FrozenColumnListTable):
     # The indices of the ColumnId must match the table row
     class ColumnType(enum.Enum):
         PurchaseWorld = 'Purchase World'
         PurchaseSector = 'Purchase Sector'
+        PurchaseSubsector = 'Purchase Subsector'
         SaleWorld = 'Sale World'
         SaleSector = 'Sale Sector'
+        SaleSubsector = 'Sale Subsector'
         Logistics = 'Logistics\n(Jumps)'
         CargoQuantity = 'Quantity\n(Tons)'
 
@@ -40,8 +40,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     AllColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.AverageNetProfit,
@@ -62,8 +64,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     AverageCaseColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.AverageNetProfit,
@@ -76,8 +80,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     WorstCaseColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.WorstNetProfit,
@@ -90,8 +96,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     BestCaseColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.BestNetProfit,
@@ -113,8 +121,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         for column, columnType in enumerate(columns):
             if columnType == self.ColumnType.PurchaseWorld or \
                     columnType == self.ColumnType.PurchaseSector or \
+                    columnType == self.ColumnType.PurchaseSubsector or \
                     columnType == self.ColumnType.SaleWorld or \
-                    columnType == self.ColumnType.SaleSector:
+                    columnType == self.ColumnType.SaleSector or \
+                    columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
 
     def cargoManifest(self, row: int) -> typing.Optional[logic.CargoManifest]:
@@ -187,7 +197,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.PurchaseSector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{purchaseWorld.subsectorName()} ({purchaseWorld.sectorName()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.sectorName())
+                    if purchaseWorldTagColour:
+                        tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
+                elif columnType == self.ColumnType.PurchaseSubsector:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.subsectorName())
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.SaleWorld:
@@ -197,7 +212,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.SaleSector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{saleWorld.subsectorName()} ({saleWorld.sectorName()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.sectorName())
+                    if saleWorldTagColour:
+                        tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
+                elif columnType == self.ColumnType.SaleSubsector:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.subsectorName())
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.Logistics:
@@ -277,11 +297,13 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector:
+                columnType == self.ColumnType.PurchaseSector or \
+                columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
             return gui.createHexToolTip(purchaseWorld)
         elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector:
+                columnType == self.ColumnType.SaleSector or \
+                columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
             return gui.createHexToolTip(saleWorld)
         elif columnType == self.ColumnType.Logistics:
