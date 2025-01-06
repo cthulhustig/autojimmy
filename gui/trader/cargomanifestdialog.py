@@ -210,7 +210,7 @@ class CargoManifestDialog(gui.DialogEx):
             self._cargoManifestDisplayModeChanged)
 
         self._cargoManifestsTable = gui.CargoManifestTable()
-        self._cargoManifestsTable.setVisibleColumns(self._cargoManifestColumns())
+        self._cargoManifestsTable.setActiveColumns(self._cargoManifestColumns())
         self._cargoManifestsTable.sortByColumnHeader(
             self._cargoManifestDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
@@ -224,7 +224,7 @@ class CargoManifestDialog(gui.DialogEx):
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
         self._cargoBreakdownTable = gui.TradeOptionsTable()
-        self._cargoBreakdownTable.setVisibleColumns(self._cargoBreakdownColumns())
+        self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
         self._cargoBreakdownTable.sortByColumnHeader(
             self._cargoBreakdownDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
@@ -403,8 +403,8 @@ class CargoManifestDialog(gui.DialogEx):
         self._generateCargoManifests()
 
     def _cargoManifestDisplayModeChanged(self, index: int) -> None:
-        self._cargoManifestsTable.setVisibleColumns(self._cargoManifestColumns())
-        self._cargoBreakdownTable.setVisibleColumns(self._cargoBreakdownColumns())
+        self._cargoManifestsTable.setActiveColumns(self._cargoManifestColumns())
+        self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
 
     def _cargoManifestTableSelectionChanged(self) -> None:
         self._cargoBreakdownTable.removeAllRows()

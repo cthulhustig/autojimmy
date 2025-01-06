@@ -77,6 +77,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self.setColumnHeaders(columns)
+        self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)

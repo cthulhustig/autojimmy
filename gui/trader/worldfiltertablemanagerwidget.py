@@ -155,11 +155,11 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def removeSelectedFilters(self) -> None:
         self._filterTable.removeSelectedRows()
 
-    def setVisibleColumns(
+    def setActiveColumns(
             self,
             columns: typing.Iterable[gui.WorldFilterTable.ColumnType]
             ) -> None:
-        self._filterTable.setVisibleColumns(columns=columns)
+        self._filterTable.setActiveColumns(columns=columns)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()

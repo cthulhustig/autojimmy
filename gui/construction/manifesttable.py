@@ -31,6 +31,7 @@ class ManifestTable(gui.ListTable):
         columns.append(ManifestTable.StdColumnType.Factors)
 
         self.setColumnHeaders(columns)
+        self.setColumnsMoveable(False)
         self.resizeColumnsToContents() # Size columns to header text
         self.resizeRowsToContents()
         self.setSizeAdjustPolicy(

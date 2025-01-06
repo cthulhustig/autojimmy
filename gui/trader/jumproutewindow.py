@@ -774,7 +774,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteDisplayModeTabBar.currentChanged.connect(self._updateJumpRouteTableColumns)
 
         self._jumpRouteTable = gui.HexTable()
-        self._jumpRouteTable.setVisibleColumns(self._jumpRouteColumns())
+        self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
         self._jumpRouteTable.setMinimumHeight(100)
         self._jumpRouteTable.setSortingEnabled(False) # Disable sorting as we only want to display in jump route order
         self._jumpRouteTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -869,7 +869,7 @@ class JumpRouteWindow(gui.WindowWidget):
             columns = gui.WaypointTable.RefuellingColumns
         else:
             assert(False) # I missed a case
-        self._waypointsWidget.setVisibleColumns(columns)
+        self._waypointsWidget.setActiveColumns(columns)
 
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
@@ -1057,7 +1057,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._enableDisableControls()
 
     def _updateJumpRouteTableColumns(self, index: int) -> None:
-        self._jumpRouteTable.setVisibleColumns(self._jumpRouteColumns())
+        self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
 
     def _jumpRouteColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._jumpRouteDisplayModeTabBar.currentDisplayMode()

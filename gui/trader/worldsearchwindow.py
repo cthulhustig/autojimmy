@@ -513,7 +513,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
         self._worldTable = gui.WorldTradeScoreTable()
-        self._worldTable.setVisibleColumns(self._worldColumns())
+        self._worldTable.setActiveColumns(self._worldColumns())
         self._worldTable.setMinimumHeight(100)
         self._worldTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._worldTable.customContextMenuRequested.connect(self._showWorldTableContextMenu)
@@ -663,7 +663,7 @@ class WorldSearchWindow(gui.WindowWidget):
             switchTab=False)
 
     def _updateWorldTableColumns(self, index: int) -> None:
-        self._worldTable.setVisibleColumns(self._worldColumns())
+        self._worldTable.setActiveColumns(self._worldColumns())
 
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         world = self._worldTable.worldAt(y=point.y())

@@ -223,7 +223,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable()
-        self._tradeOptionsTable.setVisibleColumns(self._tradeOptionColumns())
+        self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
         self._tradeOptionsTable.sortByColumnHeader(
             self._tradeOptionDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
@@ -440,7 +440,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._enableDisableControls()
 
     def _updateTradeOptionTableColumns(self, index: int) -> None:
-        self._tradeOptionsTable.setVisibleColumns(self._tradeOptionColumns())
+        self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
 
     def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())

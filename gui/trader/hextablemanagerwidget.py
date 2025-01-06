@@ -52,7 +52,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable = hexTable
         if not self._hexTable:
             self._hexTable = gui.HexTable()
-        self._hexTable.setVisibleColumns(self._displayColumns())
+        self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._hexTable.customContextMenuRequested.connect(self._showTableContextMenu)
@@ -279,11 +279,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def displayMode(self) -> gui.HexTableTabBar.DisplayMode:
         return self._displayModeTabs.currentDisplayMode()
 
-    def setVisibleColumns(
+    def setActiveColumns(
             self,
             columns: typing.List[gui.HexTable.ColumnType]
             ) -> None:
-        self._hexTable.setVisibleColumns(columns=columns)
+        self._hexTable.setActiveColumns(columns=columns)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -577,4 +577,4 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self.displayModeChanged.emit(self._displayModeTabs.currentDisplayMode())
             return
 
-        self._hexTable.setVisibleColumns(self._displayColumns())
+        self._hexTable.setActiveColumns(self._displayColumns())

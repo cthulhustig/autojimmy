@@ -236,7 +236,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldTable.setTradeGoods(tradeGoods=self._tradeGoodTable.checkedTradeGoods())
 
     def _updateWorldTableColumns(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
-        self._worldManagementWidget.setVisibleColumns(self._worldColumns())
+        self._worldManagementWidget.setActiveColumns(self._worldColumns())
 
     def _tableContentsChanged(self) -> None:
         with gui.SignalBlocker(widget=self._travellerMapWidget):

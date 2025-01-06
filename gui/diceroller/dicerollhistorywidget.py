@@ -36,6 +36,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
         self._historyTable = gui.ListTable()
         self._historyTable.setColumnHeaders(DiceRollHistoryWidget._ColumnType)
+        self._historyTable.setUserColumnHiding(True)
         self._historyTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self._historyTable.setAlternatingRowColors(False)

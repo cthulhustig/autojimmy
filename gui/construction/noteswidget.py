@@ -54,6 +54,7 @@ class NotesWidget(QtWidgets.QWidget):
 
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
+        self._table.setColumnsMoveable(False)
         self._table.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         # Having the table automatically adjust to the content size can cause
