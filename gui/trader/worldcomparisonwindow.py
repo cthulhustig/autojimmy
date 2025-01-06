@@ -169,7 +169,8 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowWorld,
             hexTable=self._worldTable,
-            showSelectInTravellerMapButton=False)
+            enableAddNearby=True,
+            enableMapSelection=False) # The traveller map instance for this window should be used to select
         self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
         self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
         self._worldManagementWidget.enableContextMenuEvent(enable=True)
@@ -266,19 +267,13 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         menuItems = [
             gui.MenuItem(
-                text='Select Worlds with Traveller Map...',
-                callback=lambda: self._worldManagementWidget.promptSelectWithTravellerMap(),
-                enabled=True
-            ),
-            None, # Separator
-            gui.MenuItem(
                 text='Add World...',
                 callback=lambda: self._worldManagementWidget.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._worldManagementWidget.promptAddNearbyWorlds(initialHex=clickedHex),
+                callback=lambda: self._worldManagementWidget.promptAddNearbyHexes(initialHex=clickedHex),
                 enabled=True
             ),
             gui.MenuItem(

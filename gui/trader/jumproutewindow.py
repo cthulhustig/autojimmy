@@ -706,8 +706,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointHexesWidget = gui.HexTableManagerWidget(
             hexTable=self._waypointWorldTable,
             isOrderedList=True, # List order determines order waypoints are to be travelled to
-            showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
-            showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
+            enableAddNearby=False, # Adding nearby worlds doesn't make sense for waypoints
+            enableMapSelection=False) # The windows Traveller Map widget should be used to select worlds
         self._waypointHexesWidget.enableDeadSpace(
             enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._waypointHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
@@ -725,7 +725,8 @@ class JumpRouteWindow(gui.WindowWidget):
     def _setupAvoidWorldsControls(self) -> None:
         self._avoidHexesWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowAvoidHex,
-            showSelectInTravellerMapButton=False) # This windows Traveller Map widget should be used to select worlds
+            enableAddNearby=True,
+            enableMapSelection=True)
         self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
         self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
@@ -1071,41 +1072,37 @@ class JumpRouteWindow(gui.WindowWidget):
         else:
             assert(False) # I missed a case
 
-    # TODO: This will need updated to account for the fact the "jump worlds table"
-    # will actually be dealing with nodes so some options might not apply (e.g.
-    # show world details only makes sense if a world node is selected)
-    # TODO: Remember to update the text strings
     def _showJumpRouteTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
-                text='Add Selected Worlds to Waypoints',
-                callback=lambda: [self._waypointHexesWidget.addWorld(world) for world in self._jumpRouteTable.selectedWorlds()],
+                text='Add Selection to Waypoints',
+                callback=lambda: [self._waypointHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()],
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Add Selected Worlds to Avoid Worlds',
-                callback=lambda: [self._avoidHexesWidget.addWorld(world) for world in self._jumpRouteTable.selectedWorlds()],
+                text='Add Selection to Avoid List',
+                callback=lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()],
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected World Details...',
+                text='Show Selected Hex Details...',
                 callback=lambda: self._showHexDetails(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All World Details...',
+                text='Show All Hex Details...',
                 callback=lambda: self._showHexDetails(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map',
+                text='Show Selection in Traveller Map',
                 callback=lambda: self._showHexesInTravellerMap(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Worlds in Traveller Map',
+                text='Show All in Traveller Map',
                 callback=lambda: self._showHexesInTravellerMap(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             )
@@ -1117,40 +1114,39 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteTable.viewport().mapToGlobal(point)
         )
 
-    # TODO: This at a minimum will need some rewording as waypoints could be hexes
     def _showRefuellingPlanTableContextMenu(self, point: QtCore.QPoint) -> None:
         pitStop = self._refuellingPlanTable.pitStopAt(point.y())
 
         menuItems = [
             gui.MenuItem(
-                text='Add Selected Worlds to Waypoints',
-                callback=lambda: [self._waypointHexesWidget.addWorld(world) for world in self._refuellingPlanTable.selectedWorlds()],
+                text='Add Selection to Waypoints',
+                callback=lambda: [self._waypointHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()],
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Add Selected Worlds to Avoid Worlds',
-                callback=lambda: [self._avoidHexesWidget.addWorld(world) for world in self._refuellingPlanTable.selectedWorlds()],
+                text='Add Selection to Avoid List',
+                callback=lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()],
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected world details...',
+                text='Show Selected Hex Details...',
                 callback=lambda: self._showHexDetails(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All World Details...',
+                text='Show All Hex Details...',
                 callback=lambda: self._showHexDetails(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map',
+                text='Show Selection in Traveller Map',
                 callback=lambda: self._showHexesInTravellerMap(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Worlds in Traveller Map',
+                text='Show All in Traveller Map',
                 callback=lambda: self._showHexesInTravellerMap(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
@@ -1173,8 +1169,6 @@ class JumpRouteWindow(gui.WindowWidget):
             self._refuellingPlanTable.viewport().mapToGlobal(point)
         )
 
-    # TODO: This will need updated to allow setting start/finish/waypoints
-    # to dead space
     def _showTravellerMapContextMenu(
             self,
             hex: typing.Optional[travellermap.HexPosition]
@@ -1187,48 +1181,48 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(self._calculateJumpRoute)
         action.setEnabled(startHex != None and finishHex != None)
 
-        action = QtWidgets.QAction('Show World Details...', self)
+        action = QtWidgets.QAction('Show Hex Details...', self)
         menuItems.append(action)
         action.triggered.connect(lambda: self._showHexDetails([hex]))
         action.setEnabled(hex != None)
 
-        menu = QtWidgets.QMenu('Start/Finish Worlds', self)
+        menu = QtWidgets.QMenu('Start/Finish', self)
         menuItems.append(menu)
-        action = menu.addAction('Set Start World')
+        action = menu.addAction('Set Start Location')
         action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(hex=hex))
         action.setEnabled(hex != None)
-        action = menu.addAction('Set Finish World')
+        action = menu.addAction('Set Finish Location')
         action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(hex=hex))
         action.setEnabled(hex != None)
-        action = menu.addAction('Swap Start && Finish Worlds')
+        action = menu.addAction('Swap Start && Finish Locations')
         action.triggered.connect(
             lambda: self._selectStartFinishWidget.setHexes(startHex=finishHex, finishHex=startHex))
         action.setEnabled(startHex != None and finishHex != None)
 
-        menu = QtWidgets.QMenu('Waypoint Worlds', self)
+        menu = QtWidgets.QMenu('Waypoints', self)
         menuItems.append(menu)
-        action = menu.addAction('Add World')
+        action = menu.addAction('Add Location')
         action.triggered.connect(lambda: self._waypointHexesWidget.addHex(hex=hex))
         action.setEnabled(hex != None and not self._waypointHexesWidget.containsHex(hex=hex))
-        action = menu.addAction('Remove World')
+        action = menu.addAction('Remove Location')
         action.triggered.connect(lambda: self._waypointHexesWidget.removeHex(hex=hex))
         action.setEnabled(hex != None and self._waypointHexesWidget.containsHex(hex=hex))
 
-        menu = QtWidgets.QMenu('Avoid Worlds', self)
+        menu = QtWidgets.QMenu('Avoid List', self)
         menuItems.append(menu)
-        action = menu.addAction('Add World')
+        action = menu.addAction('Add Location')
         action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
         action.setEnabled(hex != None and not self._avoidHexesWidget.containsHex(hex=hex))
-        action = menu.addAction('Remove World')
+        action = menu.addAction('Remove Location')
         action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
         action.setEnabled(hex != None and self._avoidHexesWidget.containsHex(hex=hex))
 
         menu = QtWidgets.QMenu('Zoom To', self)
         menuItems.append(menu)
-        action = menu.addAction('Start World')
+        action = menu.addAction('Start Location')
         action.triggered.connect(lambda: self._showHexInTravellerMap(hex=startHex))
         action.setEnabled(startHex != None)
-        action = menu.addAction('Finish World')
+        action = menu.addAction('Finish Location')
         action.triggered.connect(lambda: self._showHexInTravellerMap(hex=finishHex))
         action.setEnabled(finishHex != None)
         action = menu.addAction('Jump Route')

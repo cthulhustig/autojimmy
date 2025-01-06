@@ -24,8 +24,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
             isOrderedList: bool = False,
-            showAddNearbyWorldsButton: bool = True,
-            showSelectInTravellerMapButton: bool = True,
+            enableAddNearby: bool = True,
+            enableMapSelection: bool = True,
             hexTable: typing.Optional[gui.HexTable] = None,
             displayModeTabs: typing.Optional[gui.HexTableTabBar] = None
             ) -> None:
@@ -33,6 +33,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._allowHexCallback = allowHexCallback
         self._relativeHex = None
+        self._enableAddNearby = enableAddNearby
+        self._enableMapSelect = enableMapSelection
         self._enableContextMenuEvent = False
         self._enableDisplayModeChangedEvent = False
         self._enableShowInTravellerMapEvent = False
@@ -96,27 +98,19 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
             tableLayout = orderedTableLayout
 
-        self._addNearbyButton = None
-        if showAddNearbyWorldsButton:
-            self._addNearbyButton = QtWidgets.QPushButton('Add Nearby...')
-            self._addNearbyButton.setSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Minimum)
-            self._addNearbyButton.clicked.connect(self.promptAddNearbyWorlds)
-
-        self._selectWithTravellerMapButton = None
-        if showSelectInTravellerMapButton:
-            self._selectWithTravellerMapButton = QtWidgets.QPushButton('Select with Traveller Map...')
-            self._selectWithTravellerMapButton.setSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Minimum)
-            self._selectWithTravellerMapButton.clicked.connect(self.promptSelectWithTravellerMap)
-
         self._addButton = QtWidgets.QPushButton('Add...')
         self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
         self._addButton.clicked.connect(self.promptAddHex)
+
+        self._addNearbyButton = None
+        if enableAddNearby:
+            self._addNearbyButton = QtWidgets.QPushButton('Add Nearby...')
+            self._addNearbyButton.setSizePolicy(
+                QtWidgets.QSizePolicy.Policy.Minimum,
+                QtWidgets.QSizePolicy.Policy.Minimum)
+            self._addNearbyButton.clicked.connect(self.promptAddNearbyHexes)
 
         self._removeButton = QtWidgets.QPushButton('Remove')
         self._removeButton.setSizePolicy(
@@ -130,16 +124,24 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Minimum)
         self._removeAllButton.clicked.connect(self.removeAllRows)
 
+        self._mapButton = None
+        if enableMapSelection:
+            self._mapButton = QtWidgets.QPushButton('Traveller Map...')
+            self._mapButton.setSizePolicy(
+                QtWidgets.QSizePolicy.Policy.Minimum,
+                QtWidgets.QSizePolicy.Policy.Minimum)
+            self._mapButton.clicked.connect(self.promptTravellerMap)
+
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
-        if self._addNearbyButton:
-            buttonLayout.addWidget(self._addNearbyButton)
-        if self._selectWithTravellerMapButton:
-            buttonLayout.addWidget(self._selectWithTravellerMapButton)
         buttonLayout.addStretch()
         buttonLayout.addWidget(self._addButton)
+        if self._addNearbyButton:
+            buttonLayout.addWidget(self._addNearbyButton)
         buttonLayout.addWidget(self._removeButton)
         buttonLayout.addWidget(self._removeAllButton)
+        if self._mapButton:
+            buttonLayout.addWidget(self._mapButton)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -374,7 +376,16 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
 
-    def promptAddNearbyWorlds(
+    def promptAddHex(self) -> None:
+        if not self._hexSelectDialog:
+            self._hexSelectDialog = gui.HexSelectDialog()
+            self._hexSelectDialog.enableDeadSpaceSelection(
+                enable=self._enableDeadSpace)
+        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        self.addHex(self._hexSelectDialog.selectedHex())
+
+    def promptAddNearbyHexes(
             self,
             initialHex: typing.Optional[travellermap.HexPosition] = None
             ) -> None:
@@ -389,7 +400,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
 
-    def promptSelectWithTravellerMap(self) -> None:
+    # TODO: There is a bug here, if the table contents have changed since the map
+    # was last shown, it won't update to highlight the new selection
+    def promptTravellerMap(self) -> None:
         currentHexes = self.hexes()
 
         if not self._mapSelectDialog:
@@ -398,6 +411,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 singleSelect=False,
                 includeDeadSpace=self._enableDeadSpace)
 
+        self._mapSelectDialog.clearSelectedHexes()
         for hex in currentHexes:
             self._mapSelectDialog.selectHex(hex=hex, centerOnWorld=False)
 
@@ -432,15 +446,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if updated:
             self.contentChanged.emit()
 
-    def promptAddHex(self) -> None:
-        if not self._hexSelectDialog:
-            self._hexSelectDialog = gui.HexSelectDialog()
-            self._hexSelectDialog.enableDeadSpaceSelection(
-                enable=self._enableDeadSpace)
-        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return
-        self.addHex(self._hexSelectDialog.selectedHex())
-
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()
         if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
@@ -460,10 +465,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def _showDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addHexes(hexes=worlds)
+        detailsWindow.addHexes(hexes=hexes)
 
     def _showInTravellerMap(
             self,
@@ -497,63 +502,60 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         clickedHex = self._hexTable.hexAt(point.y())
 
-        menuItems = [
-            gui.MenuItem(
-                text='Select Worlds with Traveller Map...',
-                callback=lambda: self.promptSelectWithTravellerMap(),
-                enabled=True
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Add World...',
-                callback=lambda: self.promptAddHex(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Add Nearby Worlds...',
-                callback=lambda: self.promptAddNearbyWorlds(initialHex=clickedHex),
+        menuItems = []
+
+        menuItems.append(gui.MenuItem(
+            text='Add...',
+            callback=lambda: self.promptAddHex(),
+            enabled=True))
+        if self._enableAddNearby:
+            menuItems.append(gui.MenuItem(
+                text='Add Nearby...',
+                callback=lambda: self.promptAddNearbyHexes(initialHex=clickedHex),
                 enabled=True,
-                displayed=self._addNearbyButton != None
-            ),
-            gui.MenuItem(
-                text='Remove Selected Worlds',
+                displayed=self._addNearbyButton != None))
+        menuItems.append(None) # Separator
+
+        menuItems.append(gui.MenuItem(
+                text='Remove Selected',
                 callback=lambda: self.removeSelectedRows(),
-                enabled=self._hexTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Worlds',
+                enabled=self._hexTable.hasSelection()))
+        menuItems.append(gui.MenuItem(
+                text='Remove All',
                 callback=lambda: self.removeAllRows(),
-                enabled=not self._hexTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected World Details...',
-                callback=lambda: self._showDetails(self._hexTable.selectedWorlds()),
-                enabled=self._hexTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All World Details...',
-                callback=lambda: self._showDetails(self._hexTable.worlds()),
-                enabled=not self._hexTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showInTravellerMap(self._hexTable.selectedHexes()),
-                enabled=self._hexTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showInTravellerMap(self._hexTable.hexes()),
-                enabled=not self._hexTable.isEmpty()
-            )
-        ]
+                enabled=not self._hexTable.isEmpty()))
+        menuItems.append(None) # Separator
+
+        if self._enableMapSelect:
+            menuItems.append(gui.MenuItem(
+                    text='Select with Traveller Map...',
+                    callback=lambda: self.promptTravellerMap(),
+                    enabled=True))
+            menuItems.append(None) # Separator
+
+        menuItems.append(gui.MenuItem(
+                text='Show Selection Details...',
+                callback=lambda: self._showDetails(self._hexTable.selectedHexes()),
+                enabled=self._hexTable.hasSelection()))
+        menuItems.append(gui.MenuItem(
+                text='Show All Details...',
+                callback=lambda: self._showDetails(self._hexTable.hexes()),
+                enabled=not self._hexTable.isEmpty()))
+        menuItems.append(None) # Separator
+
+        menuItems.append(gui.MenuItem(
+            text='Show Selection in Traveller Map...',
+            callback=lambda: self._showInTravellerMap(self._hexTable.selectedHexes()),
+            enabled=self._hexTable.hasSelection()))
+        menuItems.append(gui.MenuItem(
+            text='Show All in Traveller Map...',
+            callback=lambda: self._showInTravellerMap(self._hexTable.hexes()),
+            enabled=not self._hexTable.isEmpty()))
 
         gui.displayMenu(
             self,
             menuItems,
-            self._hexTable.viewport().mapToGlobal(point)
-        )
+            self._hexTable.viewport().mapToGlobal(point))
 
     def _hexTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:

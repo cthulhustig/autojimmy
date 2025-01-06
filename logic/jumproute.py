@@ -139,8 +139,9 @@ def _deserialiseNode(
             raise RuntimeError('Node absoluteX property is not a integer')
         if not isinstance(absoluteY, int):
             raise RuntimeError('Node absoluteX property is not a integer')
+        hex = travellermap.HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
         return (
-            travellermap.HexPosition(absoluteX=absoluteX, absoluteY=absoluteY),
+            hex,
             traveller.WorldManager.instance().worldByPosition(hex=hex))
 
     sectorHex = data.get('sectorHex')
