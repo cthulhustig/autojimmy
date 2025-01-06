@@ -264,9 +264,6 @@ class HexTable(gui.FrozenColumnListTable):
                 column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
 
-    # TODO: It would be nice to get rid of the world versions of all these
-    # functions so the external interface only deals in hexes or at least
-    # have the hex functions take worlds or hex positions
     def hex(self, row: int) -> typing.Optional[travellermap.HexPosition]:
         tableItem = self.item(row, 0)
         if not tableItem:
@@ -285,10 +282,14 @@ class HexTable(gui.FrozenColumnListTable):
             hexes.append(self.hex(row))
         return hexes
 
+    # NOTE: Indexing into the list of returned worlds does not match
+    # table row indexing if the table contains dead space hexes.
     def worlds(self) -> typing.List[traveller.World]:
         worlds = []
         for row in range(self.rowCount()):
-            worlds.append(self.world(row))
+            world = self.world(row)
+            if world:
+                worlds.append(world)
         return worlds
 
     def hexAt(self, y: int) -> typing.Optional[travellermap.HexPosition]:
@@ -312,10 +313,6 @@ class HexTable(gui.FrozenColumnListTable):
             world = traveller.WorldManager.instance().worldByPosition(hex=hex)
         return self._fillRow(row, hex, world)
 
-    # TODO: This feels a little pointless. I could switch calls
-    # to it for calls to insertHex.
-    # - IMPORTANT: Remember to update the variable name used in calls
-    #   from world to pos
     def insertWorld(self, row: int, world: traveller.World) -> int:
         return self.insertHex(row, world)
 
@@ -331,10 +328,6 @@ class HexTable(gui.FrozenColumnListTable):
             world = traveller.WorldManager.instance().worldByPosition(hex=hex)
         return self._fillRow(row, hex, world)
 
-    # TODO: This feels a little pointless. I could switch calls
-    # to it for calls to setHex.
-    # - IMPORTANT: Remember to update the variable name used in calls
-    #   from world to pos
     def setWorld(self, row: int, world: traveller.World) -> int:
         return self.setHex(row, world)
 
@@ -347,10 +340,6 @@ class HexTable(gui.FrozenColumnListTable):
         for hex in hexes:
             self.addHex(hex)
 
-    # TODO: This feels a little pointless. I could switch calls
-    # to it for calls to setHexes.
-    # - IMPORTANT: Remember to update the variable name used in calls
-    #   from world to pos
     def setWorlds(
             self,
             worlds: typing.Iterator[traveller.World]
@@ -363,10 +352,6 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> int:
         return self.insertHex(self.rowCount(), hex)
 
-    # TODO: This feels a little pointless. I could switch calls
-    # to it for calls to addHex.
-    # - IMPORTANT: Remember to update the variable name used in calls
-    #   from world to pos
     def addWorld(self, world: traveller.World) -> int:
         return self.addHex(world)
 
@@ -386,12 +371,9 @@ class HexTable(gui.FrozenColumnListTable):
         finally:
             self.setSortingEnabled(sortingEnabled)
 
-    # TODO: This feels a little pointless. I could switch calls
-    # to it for calls to addWorlds.
-    # - IMPORTANT: Remember to update the variable name used in calls
-    #   from worlds to positions
+
     def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        self.addHexes([world.hex() for world in worlds])
+        self.addHexes(worlds)
 
     def removeHex(
             self,
@@ -406,10 +388,6 @@ class HexTable(gui.FrozenColumnListTable):
                 removed = True
         return removed
 
-    # TODO: This feels a little pointless. I could switch calls
-    # to it for calls to removeHex.
-    # - IMPORTANT: Remember to update the variable name used in calls
-    #   from worlds to positions
     def removeWorld(self, world: traveller.World) -> bool:
         return self.removeHex(world)
 
@@ -419,9 +397,6 @@ class HexTable(gui.FrozenColumnListTable):
             return None
         return self.hex(row)
 
-    # TODO: Ideally this should be removed as a return value of
-    # None is ambiguity as to if there is no current row or it's
-    # dead space with no world
     def currentWorld(self) -> typing.Optional[traveller.World]:
         row = self.currentRow()
         if row < 0:
@@ -442,16 +417,6 @@ class HexTable(gui.FrozenColumnListTable):
     def containsWorld(self, world: traveller.World) -> bool:
         return self.containsHex(world)
 
-    def selectedRowCount(self) -> int:
-        selection = self.selectedIndexes()
-        if not selection:
-            return 0
-        count = 0
-        for index in selection:
-            if index.column() == 0:
-                count += 1
-        return count
-
     def selectedHexes(self) -> typing.List[travellermap.HexPosition]:
         selection = self.selectedIndexes()
         if not selection:
@@ -462,8 +427,8 @@ class HexTable(gui.FrozenColumnListTable):
                 hexes.append(self.hex(index.row()))
         return hexes
 
-    # TODO: Ideally this would be removed as it's ambiguous in
-    # a similar way to currentWorld
+    # NOTE: Indexing into the list of returned worlds does not match table
+    # selection indexing if the selection contains dead space hexes.
     def selectedWorlds(self) -> typing.List[traveller.World]:
         selection = self.selectedIndexes()
         if not selection:
@@ -472,7 +437,8 @@ class HexTable(gui.FrozenColumnListTable):
         for index in selection:
             if index.column() == 0:
                 world = self.world(index.row())
-                worlds.append(world)
+                if world:
+                    worlds.append(world)
         return worlds
 
     def saveContent(self) -> QtCore.QByteArray:

@@ -155,7 +155,7 @@ class _RefuellingPlanTable(gui.HexTable):
             self._pitStops.clear()
 
         for pitStop in self._pitStops:
-            self.addHex(hex=pitStop.world())
+            self.addWorld(pitStop.world())
 
     def pitStopAt(self, y: int) -> typing.Optional[logic.PitStop]:
         row = self.rowAt(y)
@@ -371,13 +371,13 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._setupStartFinishControls()
         self._setupConfigurationControls()
-        self._setupWaypointWorldsControls()
-        self._setupAvoidWorldsControls()
+        self._setupWaypointControls()
+        self._setupAvoidLocationsControls()
         self._setupJumpRouteControls()
 
         self._tableSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
-        self._tableSplitter.addWidget(self._waypointWorldsGroupBox)
-        self._tableSplitter.addWidget(self._avoidWorldsGroupBox)
+        self._tableSplitter.addWidget(self._waypointsGroupBox)
+        self._tableSplitter.addWidget(self._avoidLocationsGroupBox)
 
         configurationLayout = QtWidgets.QVBoxLayout()
         configurationLayout.setContentsMargins(0, 0, 0, 0)
@@ -423,14 +423,14 @@ class JumpRouteWindow(gui.WindowWidget):
             key='WaypointWorldTableState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._waypointHexesWidget.restoreState(storedValue)
+            self._waypointsWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='WaypointWorldTableContent',
             type=QtCore.QByteArray)
         if storedValue:
-            self._waypointHexesWidget.restoreContent(storedValue)
+            self._waypointsWidget.restoreContent(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -451,21 +451,21 @@ class JumpRouteWindow(gui.WindowWidget):
             key='AvoidFilterTableState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._avoidWorldsFilterWidget.restoreState(storedValue)
+            self._avoidFiltersWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='AvoidFilterTableContent',
             type=QtCore.QByteArray)
         if storedValue:
-            self._avoidWorldsFilterWidget.restoreContent(storedValue)
+            self._avoidFiltersWidget.restoreContent(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='AvoidTabBarState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._avoidWorldsTabWidget.restoreState(storedValue)
+            self._avoidLocationsTabWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -544,13 +544,13 @@ class JumpRouteWindow(gui.WindowWidget):
         # any previously configured waypoints and avoid worlds
         self._settings.setValue('StartFinishWorldsState', self._selectStartFinishWidget.saveState())
         self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
-        self._settings.setValue('WaypointWorldTableState', self._waypointHexesWidget.saveState())
-        self._settings.setValue('WaypointWorldTableContent', self._waypointHexesWidget.saveContent())
+        self._settings.setValue('WaypointWorldTableState', self._waypointsWidget.saveState())
+        self._settings.setValue('WaypointWorldTableContent', self._waypointsWidget.saveContent())
         self._settings.setValue('AvoidWorldTableState', self._avoidHexesWidget.saveState())
         self._settings.setValue('AvoidWorldTableContent', self._avoidHexesWidget.saveContent())
-        self._settings.setValue('AvoidFilterTableState', self._avoidWorldsFilterWidget.saveState())
-        self._settings.setValue('AvoidFilterTableContent', self._avoidWorldsFilterWidget.saveContent())
-        self._settings.setValue('AvoidTabBarState', self._avoidWorldsTabWidget.saveState())
+        self._settings.setValue('AvoidFilterTableState', self._avoidFiltersWidget.saveState())
+        self._settings.setValue('AvoidFilterTableContent', self._avoidFiltersWidget.saveContent())
+        self._settings.setValue('AvoidTabBarState', self._avoidLocationsTabWidget.saveState())
         self._settings.setValue('MapWidgetState', self._travellerMapWidget.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
         self._settings.setValue('JumpRouteTableState', self._jumpRouteTable.saveState())
@@ -584,7 +584,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._selectStartFinishWidget.setHexes(
             startHex=route.startHex(),
             finishHex=route.finishHex())
-        self._waypointWorldTable.removeAllRows()
+        self._waypointsTable.removeAllRows()
 
         self._updateRouteLabels()
         self._updateTravellerMapOverlays()
@@ -701,28 +701,28 @@ class JumpRouteWindow(gui.WindowWidget):
         self._configurationGroupBox = QtWidgets.QGroupBox('Configuration')
         self._configurationGroupBox.setLayout(configurationLayout)
 
-    def _setupWaypointWorldsControls(self) -> None:
-        self._waypointWorldTable = gui.WaypointTable()
-        self._waypointHexesWidget = gui.HexTableManagerWidget(
-            hexTable=self._waypointWorldTable,
+    def _setupWaypointControls(self) -> None:
+        self._waypointsTable = gui.WaypointTable()
+        self._waypointsWidget = gui.HexTableManagerWidget(
+            hexTable=self._waypointsTable,
             isOrderedList=True, # List order determines order waypoints are to be travelled to
             enableAddNearby=False, # Adding nearby worlds doesn't make sense for waypoints
             enableMapSelection=False) # The windows Traveller Map widget should be used to select worlds
-        self._waypointHexesWidget.enableDeadSpace(
+        self._waypointsWidget.enableDeadSpace(
             enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
-        self._waypointHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._waypointHexesWidget.enableDisplayModeChangedEvent(enable=True)
-        self._waypointHexesWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
-        self._waypointHexesWidget.enableShowInTravellerMapEvent(enable=True)
-        self._waypointHexesWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
+        self._waypointsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
+        self._waypointsWidget.enableDisplayModeChangedEvent(enable=True)
+        self._waypointsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
+        self._waypointsWidget.enableShowInTravellerMapEvent(enable=True)
+        self._waypointsWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self._waypointHexesWidget)
+        layout.addWidget(self._waypointsWidget)
 
-        self._waypointWorldsGroupBox = QtWidgets.QGroupBox('Waypoint Worlds')
-        self._waypointWorldsGroupBox.setLayout(layout)
+        self._waypointsGroupBox = QtWidgets.QGroupBox('Waypoints')
+        self._waypointsGroupBox.setLayout(layout)
 
-    def _setupAvoidWorldsControls(self) -> None:
+    def _setupAvoidLocationsControls(self) -> None:
         self._avoidHexesWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowAvoidHex,
             enableAddNearby=True,
@@ -733,18 +733,18 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidHexesWidget.enableShowInTravellerMapEvent(enable=True)
         self._avoidHexesWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
 
-        self._avoidWorldsFilterWidget = gui.WorldFilterTableManagerWidget()
+        self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget()
 
-        self._avoidWorldsTabWidget = gui.TabWidgetEx()
-        self._avoidWorldsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
-        self._avoidWorldsTabWidget.addTab(self._avoidHexesWidget, 'Worlds')
-        self._avoidWorldsTabWidget.addTab(self._avoidWorldsFilterWidget, 'Filters')
+        self._avoidLocationsTabWidget = gui.TabWidgetEx()
+        self._avoidLocationsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
+        self._avoidLocationsTabWidget.addTab(self._avoidHexesWidget, 'Hexes')
+        self._avoidLocationsTabWidget.addTab(self._avoidFiltersWidget, 'Filters')
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self._avoidWorldsTabWidget)
+        layout.addWidget(self._avoidLocationsTabWidget)
 
-        self._avoidWorldsGroupBox = QtWidgets.QGroupBox('Avoid Worlds')
-        self._avoidWorldsGroupBox.setLayout(layout)
+        self._avoidLocationsGroupBox = QtWidgets.QGroupBox('Avoid Locations')
+        self._avoidLocationsGroupBox.setLayout(layout)
 
     def _setupJumpRouteControls(self) -> None:
         self._calculateRouteButton = gui.DualTextPushButton(
@@ -869,7 +869,7 @@ class JumpRouteWindow(gui.WindowWidget):
             columns = gui.WaypointTable.RefuellingColumns
         else:
             assert(False) # I missed a case
-        self._waypointHexesWidget.setVisibleColumns(columns)
+        self._waypointsWidget.setVisibleColumns(columns)
 
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
@@ -936,7 +936,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     return
 
             fuelIssueWorldStrings = []
-            for waypointHex in self._waypointHexesWidget.hexes():
+            for waypointHex in self._waypointsWidget.hexes():
                 waypointWorld = traveller.WorldManager.instance().worldByPosition(hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
@@ -959,7 +959,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     return
 
         hexSequence = [startHex]
-        hexSequence.extend(self._waypointHexesWidget.hexes())
+        hexSequence.extend(self._waypointsWidget.hexes())
         hexSequence.append(finishHex)
 
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -982,8 +982,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         hexFilter = _HexFilter(
             avoidHexes=self._avoidHexesWidget.hexes(),
-            avoidFilters=self._avoidWorldsFilterWidget.filters(),
-            avoidFilterLogic=self._avoidWorldsFilterWidget.filterLogic())
+            avoidFilters=self._avoidFiltersWidget.filters(),
+            avoidFilterLogic=self._avoidFiltersWidget.filterLogic())
 
         try:
             self._jumpRouteJob = jobs.RoutePlannerJob(
@@ -1076,7 +1076,7 @@ class JumpRouteWindow(gui.WindowWidget):
         menuItems = [
             gui.MenuItem(
                 text='Add Selection to Waypoints',
-                callback=lambda: [self._waypointHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()],
+                callback=lambda: [self._waypointsWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()],
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
@@ -1120,7 +1120,7 @@ class JumpRouteWindow(gui.WindowWidget):
         menuItems = [
             gui.MenuItem(
                 text='Add Selection to Waypoints',
-                callback=lambda: [self._waypointHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()],
+                callback=lambda: [self._waypointsWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()],
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
@@ -1202,11 +1202,11 @@ class JumpRouteWindow(gui.WindowWidget):
         menu = QtWidgets.QMenu('Waypoints', self)
         menuItems.append(menu)
         action = menu.addAction('Add Location')
-        action.triggered.connect(lambda: self._waypointHexesWidget.addHex(hex=hex))
-        action.setEnabled(hex != None and not self._waypointHexesWidget.containsHex(hex=hex))
+        action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
+        action.setEnabled(hex != None and not self._waypointsWidget.containsHex(hex=hex))
         action = menu.addAction('Remove Location')
-        action.triggered.connect(lambda: self._waypointHexesWidget.removeHex(hex=hex))
-        action.setEnabled(hex != None and self._waypointHexesWidget.containsHex(hex=hex))
+        action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
+        action.setEnabled(hex != None and self._waypointsWidget.containsHex(hex=hex))
 
         menu = QtWidgets.QMenu('Avoid List', self)
         menuItems.append(menu)
@@ -1258,7 +1258,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 return gui.createStringToolTip('<nobr>Start Hex</nobr>', escape=False)
             elif (finishHex and hex == finishHex):
                 return gui.createStringToolTip('<nobr>Finish Hex</nobr>', escape=False)
-            elif self._waypointHexesWidget.containsHex(hex):
+            elif self._waypointsWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
             elif self._avoidHexesWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
@@ -1317,7 +1317,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
-            if self._waypointHexesWidget.containsHex(hex):
+            if self._waypointsWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
 
             # Check for the world being an avoid world. This is done last as
@@ -1570,7 +1570,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 colour='#00FF00',
                 radius=0.5)
 
-        waypointHexes = self._waypointHexesWidget.hexes()
+        waypointHexes = self._waypointsWidget.hexes()
         if waypointHexes:
             self._travellerMapWidget.highlightHexes(
                 hexes=waypointHexes,
@@ -1606,7 +1606,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _routingTypeChanged(self) -> None:
         isDeadSpaceRouting = self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace
         self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
-        self._waypointHexesWidget.enableDeadSpace(enable=isDeadSpaceRouting)
+        self._waypointsWidget.enableDeadSpace(enable=isDeadSpaceRouting)
         self._travellerMapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
         self._enableDisableControls()
 
@@ -1618,8 +1618,8 @@ class JumpRouteWindow(gui.WindowWidget):
         runningJob = self._jumpRouteJob != None
         self._jumpWorldsGroupBox.setDisabled(runningJob)
         self._configurationGroupBox.setDisabled(runningJob)
-        self._waypointWorldsGroupBox.setDisabled(runningJob)
-        self._avoidWorldsGroupBox.setDisabled(runningJob)
+        self._waypointsGroupBox.setDisabled(runningJob)
+        self._avoidLocationsGroupBox.setDisabled(runningJob)
 
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
         isAnomalyRefuelling = isFuelAwareRouting and self._useAnomalyRefuellingCheckBox.isChecked()
@@ -1718,10 +1718,10 @@ class JumpRouteWindow(gui.WindowWidget):
             startHex,
             startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
 
-        for row in range(self._waypointWorldTable.rowCount()):
+        for row in range(self._waypointsTable.rowCount()):
             waypoints.append((
-                self._waypointWorldTable.hex(row),
-                self._waypointWorldTable.isBerthingChecked(row)))
+                self._waypointsTable.hex(row),
+                self._waypointsTable.isBerthingChecked(row)))
 
         finishHex, finishWorld = self._jumpRoute.finishNode()
         waypoints.append((

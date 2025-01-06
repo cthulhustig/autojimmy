@@ -1285,7 +1285,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if purchaseWorld:
-            self._saleWorldsWidget.setRelativeHex(hex=purchaseWorld.hex())
+            self._saleWorldsWidget.setRelativeWorld(world=purchaseWorld)
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():
@@ -2246,17 +2246,17 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         dstWidget.addWorlds(worlds=srcWidget.worlds())
 
     def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedHex = self._purchaseWorldsWidget.hexAt(y=point.y())
+        clickedWorld = self._purchaseWorldsWidget.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
                 text='Add...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddHex(),
+                callback=lambda: self._purchaseWorldsWidget.promptAdd(),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Add Nearby...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddNearbyHexes(initialHex=clickedHex),
+                callback=lambda: self._purchaseWorldsWidget.promptAddNearby(initialHex=clickedWorld),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2267,7 +2267,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Remove All',
                 callback=lambda: self._purchaseWorldsWidget.removeAllRows(),
-                enabled=self._purchaseWorldsWidget.rowCount() > 0
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
@@ -2279,29 +2279,29 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Copy Sale Worlds',
                 callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget),
-                enabled=self._saleWorldsWidget.rowCount() > 0
+                enabled=not self._saleWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._purchaseWorldsWidget.selectedWorlds()),
+                callback=lambda: self._showWorldDetails(self._purchaseWorldsWidget.selectedWorlds()),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._purchaseWorldsWidget.worlds()),
-                enabled=self._purchaseWorldsWidget.rowCount() > 0
+                callback=lambda: self._showWorldDetails(self._purchaseWorldsWidget.worlds()),
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._purchaseWorldsWidget.selectedWorlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._purchaseWorldsWidget.selectedWorlds()),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._purchaseWorldsWidget.worlds()),
-                enabled=self._purchaseWorldsWidget.rowCount() > 0
+                callback=lambda: self._showWorldsInTravellerMap(self._purchaseWorldsWidget.worlds()),
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             )
         ]
 
@@ -2312,17 +2312,17 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         )
 
     def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedHex = self._saleWorldsWidget.hexAt(y=point.y())
+        clickedWorld = self._saleWorldsWidget.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
                 text='Add...',
-                callback=lambda: self._saleWorldsWidget.promptAddHex(),
+                callback=lambda: self._saleWorldsWidget.promptAdd(),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Add Nearby...',
-                callback=lambda: self._saleWorldsWidget.promptAddNearbyHexes(initialHex=clickedHex),
+                callback=lambda: self._saleWorldsWidget.promptAddNearby(initialHex=clickedWorld),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2333,7 +2333,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Remove All',
                 callback=lambda: self._saleWorldsWidget.removeAllRows(),
-                enabled=self._saleWorldsWidget.rowCount() > 0
+                enabled=not self._saleWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
@@ -2345,29 +2345,29 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             gui.MenuItem(
                 text='Copy Purchase Worlds',
                 callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget),
-                enabled=self._purchaseWorldsWidget.rowCount() > 0
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._saleWorldsWidget.selectedWorlds()),
+                callback=lambda: self._showWorldDetails(self._saleWorldsWidget.selectedWorlds()),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._saleWorldsWidget.worlds()),
-                enabled=self._saleWorldsWidget.rowCount() > 0
+                callback=lambda: self._showWorldDetails(self._saleWorldsWidget.worlds()),
+                enabled=not self._saleWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._saleWorldsWidget.selectedWorlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._saleWorldsWidget.selectedWorlds()),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._saleWorldsWidget.worlds()),
-                enabled=self._saleWorldsWidget.rowCount() > 0
+                callback=lambda: self._showWorldsInTravellerMap(self._saleWorldsWidget.worlds()),
+                enabled=not self._saleWorldsWidget.isEmpty()
             )
         ]
 

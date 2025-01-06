@@ -89,6 +89,9 @@ class HexDetailsWindow(gui.WindowWidget):
         self._tabBar.setCurrentIndex(index)
         self._hexDetails.setHex(hex)
 
+    def addWorld(self, world: traveller.World) -> None:
+        self.addHex(world)
+
     def addHexes(
             self,
             hexes: typing.Iterable[typing.Union[
@@ -96,7 +99,13 @@ class HexDetailsWindow(gui.WindowWidget):
                 traveller.World]]
             ) -> None:
         for hex in hexes:
-            self.addHex(hex=hex)
+            self.addHex(hex)
+
+    def addWorlds(
+            self,
+            worlds: typing.Iterable[traveller.World]
+            ) -> None:
+        self.addHexes(worlds)
 
     def _tabChanged(self) -> None:
         index = self._tabBar.currentIndex()

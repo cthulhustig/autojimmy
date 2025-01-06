@@ -262,18 +262,18 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedRow = self._worldManagementWidget.rowAt(y=point.y())
-        clickedHex = self._worldTable.hex(row=clickedRow)
+        clickedWorld = self._worldTable.world(row=clickedRow)
         clickedScore = self._worldTable.tradeScore(row=clickedRow)
 
         menuItems = [
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._worldManagementWidget.promptAddHex(),
+                callback=lambda: self._worldManagementWidget.promptAdd(),
                 enabled=True
             ),
             gui.MenuItem(
                 text='Add Nearby Worlds...',
-                callback=lambda: self._worldManagementWidget.promptAddNearbyHexes(initialHex=clickedHex),
+                callback=lambda: self._worldManagementWidget.promptAddNearby(initialHex=clickedWorld),
                 enabled=True
             ),
             gui.MenuItem(
@@ -284,7 +284,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             gui.MenuItem(
                 text='Remove All Worlds',
                 callback=lambda: self._worldManagementWidget.removeAllRows(),
-                enabled=self._worldManagementWidget.rowCount() > 0
+                enabled=not self._worldManagementWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
@@ -295,7 +295,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             gui.MenuItem(
                 text='Find Trade Options for All Worlds...',
                 callback=lambda: self._findTradeOptions(self._worldManagementWidget.worlds()),
-                enabled=self._worldManagementWidget.rowCount() > 0
+                enabled=not self._worldManagementWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
@@ -306,7 +306,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             gui.MenuItem(
                 text='Show All World Details...',
                 callback=lambda: self._showWorldDetails(self._worldManagementWidget.worlds()),
-                enabled=self._worldManagementWidget.rowCount() > 0
+                enabled=not self._worldManagementWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
@@ -317,7 +317,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map...',
                 callback=lambda: self._showWorldsInTravellerMap(self._worldManagementWidget.worlds()),
-                enabled=self._worldManagementWidget.rowCount() > 0
+                enabled=not self._worldManagementWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
@@ -371,7 +371,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addHexes(hexes=worlds)
+        infoWindow.addWorlds(worlds=worlds)
 
     def _showWorldsInTravellerMap(
             self,

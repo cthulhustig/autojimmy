@@ -152,16 +152,6 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             return None
         return self.cargoManifest(row)
 
-    def selectedRowCount(self) -> int:
-        selection = self.selectedIndexes()
-        if not selection:
-            return 0
-        count = 0
-        for index in selection:
-            if index.column() == 0:
-                count += 1
-        return count
-
     def _fillRow(
             self,
             row: int,

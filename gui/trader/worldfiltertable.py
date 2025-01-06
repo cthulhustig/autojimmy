@@ -78,16 +78,6 @@ class WorldFilterTable(gui.ListTable):
             return None
         return self.filter(row)
 
-    def selectedRowCount(self) -> int:
-        selection = self.selectedIndexes()
-        if not selection:
-            return 0
-        count = 0
-        for index in selection:
-            if index.column() == 0:
-                count += 1
-        return count
-
     def selectedFilters(self) -> typing.Iterable[logic.WorldFilter]:
         selection = self.selectedIndexes()
         if not selection:

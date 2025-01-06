@@ -5,8 +5,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: Pretty much all the logic about removing world versions of functions
-# in HexTable apply here as well
 # TODO: I've never liked the name of this class, possibly a good time to
 # rename it. It's more about letting the user select a group of hexes than
 # manage them. Possibly HexTableToolWidget
@@ -57,8 +55,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable.setVisibleColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._hexTable.customContextMenuRequested.connect(self._showHexTableContextMenu)
-        self._hexTable.keyPressed.connect(self._hexTableKeyPressed)
+        self._hexTable.customContextMenuRequested.connect(self._showTableContextMenu)
+        self._hexTable.keyPressed.connect(self._tableKeyPressed)
         if isOrderedList:
             # Disable sorting on if the list is to be ordered
             self._hexTable.setSortingEnabled(False)
@@ -102,7 +100,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self.promptAddHex)
+        self._addButton.clicked.connect(self.promptAdd)
 
         self._addNearbyButton = None
         if enableAddNearby:
@@ -110,7 +108,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self._addNearbyButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
                 QtWidgets.QSizePolicy.Policy.Minimum)
-            self._addNearbyButton.clicked.connect(self.promptAddNearbyHexes)
+            self._addNearbyButton.clicked.connect(self.promptAddNearby)
 
         self._removeButton = QtWidgets.QPushButton('Remove')
         self._removeButton.setSizePolicy(
@@ -230,6 +228,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def hexes(self) -> typing.List[travellermap.HexPosition]:
         return self._hexTable.hexes()
 
+    # NOTE: Indexing into the list of returned worlds does not match
+    # table row indexing if the table contains dead space hexes.
     def worlds(self) -> typing.List[traveller.World]:
         return self._hexTable.worlds()
 
@@ -252,6 +252,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def selectedHexes(self) -> typing.List[travellermap.HexPosition]:
         return self._hexTable.selectedHexes()
 
+    # NOTE: Indexing into the list of returned worlds does not match table
+    # selection indexing if the selection contains dead space hexes.
     def selectedWorlds(self) -> typing.List[traveller.World]:
         return self._hexTable.selectedWorlds()
 
@@ -267,6 +269,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if isinstance(hex, traveller.World):
             hex = hex.hex()
         self._relativeHex = hex
+
+    def setRelativeWorld(
+            self,
+            world: traveller.World
+            ) -> None:
+        self.setRelativeHex(world)
 
     def displayMode(self) -> gui.HexTableTabBar.DisplayMode:
         return self._displayModeTabs.currentDisplayMode()
@@ -376,7 +384,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
 
-    def promptAddHex(self) -> None:
+    def promptAdd(self) -> None:
         if not self._hexSelectDialog:
             self._hexSelectDialog = gui.HexSelectDialog()
             self._hexSelectDialog.enableDeadSpaceSelection(
@@ -385,10 +393,16 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             return
         self.addHex(self._hexSelectDialog.selectedHex())
 
-    def promptAddNearbyHexes(
+    def promptAddNearby(
             self,
-            initialHex: typing.Optional[travellermap.HexPosition] = None
+            initialHex: typing.Optional[typing.Union[
+                travellermap.HexPosition,
+                traveller.World
+                ]] = None
             ) -> None:
+        if isinstance(initialHex, traveller.World):
+            initialHex = initialHex.hex()
+
         if not self._radiusSelectDialog:
             self._radiusSelectDialog = gui.HexRadiusSelectDialog()
             self._radiusSelectDialog.enableDeadSpaceSelection(
@@ -400,8 +414,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
 
-    # TODO: There is a bug here, if the table contents have changed since the map
-    # was last shown, it won't update to highlight the new selection
     def promptTravellerMap(self) -> None:
         currentHexes = self.hexes()
 
@@ -425,20 +437,20 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable.setSortingEnabled(False)
 
         try:
-            # Remove worlds that are no longer selected
+            # Remove hexes that are no longer selected
             for hex in currentHexes:
                 if hex not in newHexes:
-                    self._hexTable.removeHex(hex=hex)
+                    self._hexTable.removeHex(hex)
                     updated = True
 
-            # Add newly selected worlds
+            # Add newly selected hexes
             for hex in newHexes:
                 if hex not in currentHexes:
                     if self._allowHexCallback and not self._allowHexCallback(hex):
                         # Silently ignore worlds that are filtered out
                         continue
 
-                    self._hexTable.addHex(hex=hex)
+                    self._hexTable.addHex(hex)
                     updated = True
         finally:
             self._hexTable.setSortingEnabled(sortingEnabled)
@@ -492,8 +504,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
-    # TODO: The menu option text for this menu need updated
-    def _showHexTableContextMenu(self, point: QtCore.QPoint) -> None:
+    def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
         if self._enableContextMenuEvent:
             translated = self._hexTable.viewport().mapToGlobal(point)
             translated = self.mapFromGlobal(translated)
@@ -506,12 +517,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         menuItems.append(gui.MenuItem(
             text='Add...',
-            callback=lambda: self.promptAddHex(),
+            callback=lambda: self.promptAdd(),
             enabled=True))
         if self._enableAddNearby:
             menuItems.append(gui.MenuItem(
                 text='Add Nearby...',
-                callback=lambda: self.promptAddNearbyHexes(initialHex=clickedHex),
+                callback=lambda: self.promptAddNearby(initialHex=clickedHex),
                 enabled=True,
                 displayed=self._addNearbyButton != None))
         menuItems.append(None) # Separator
@@ -557,7 +568,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             menuItems,
             self._hexTable.viewport().mapToGlobal(point))
 
-    def _hexTableKeyPressed(self, key: int) -> None:
+    def _tableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
             self.removeSelectedRows()
 
