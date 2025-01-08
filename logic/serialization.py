@@ -16,7 +16,7 @@ def deserialiseWorld(
     sectorHex = data.get('sectorHex')
     if sectorHex == None:
         raise RuntimeError('World data is missing the sectorHex property')
-    world = traveller.WorldManager.instance().world(sectorHex=sectorHex)
+    world = traveller.WorldManager.instance().worldBySectorHex(sectorHex=sectorHex)
     if not world:
         raise RuntimeError(f'Unable to resolve sector hex {sectorHex} to world')
     return world

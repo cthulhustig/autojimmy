@@ -364,7 +364,7 @@ def createHexToolTip(
 
         if world.hasOwner():
             try:
-                ownerWorld = traveller.WorldManager.instance().world(sectorHex=world.ownerSectorHex())
+                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=world.ownerSectorHex())
             except Exception:
                 ownerWorld = None
 
@@ -564,7 +564,7 @@ def createHexToolTip(
             toolTip += f'<ul style="{_IndentListStyle}">'
             for colonySectorHex in world.colonySectorHexes():
                 try:
-                    colonyWorld = traveller.WorldManager.instance().world(sectorHex=colonySectorHex)
+                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=colonySectorHex)
                 except Exception:
                     colonyWorld = None
 

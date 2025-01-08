@@ -155,33 +155,22 @@ class WorldManager(object):
                     hex = world.hex()
                     self._absoluteWorldMap[(hex.absoluteX(), hex.absoluteY())] = world
 
-    def sectorName(
-            self,
-            sectorX: int,
-            sectorY: int
-            ) -> str:
-        sector: traveller.Sector = self._sectorPositionMap.get((sectorX, sectorY))
-        if not sector:
-            return None
-        return sector.name()
-
     def sectorNames(self) -> typing.Iterable[str]:
         sectorNames = []
         for sector in self._sectorList:
             sectorNames.append(sector.name())
         return sectorNames
 
-    def sector(
+    def sectorByName(
             self,
             name: str
             ) -> traveller.Sector:
         return self._canonicalNameMap.get(name.lower())
 
     def sectors(self) -> typing.Iterable[traveller.Sector]:
-        return self._sectorList
+        return list(self._sectorList)
 
-    # TODO: Should probably rename this to worldBySectorHex
-    def world(
+    def worldBySectorHex(
             self,
             sectorHex: str,
             ) -> typing.Optional[traveller.World]:
@@ -191,7 +180,6 @@ class WorldManager(object):
             return None
         return self.worldByPosition(hex=hex)
 
-    # TODO: Rename these to worldByHex etc???????
     def worldByPosition(
             self,
             hex: travellermap.HexPosition
@@ -356,7 +344,7 @@ class WorldManager(object):
         result = self._SectorHexSearchPattern.match(searchString)
         if result:
             try:
-                foundWorld = self.world(sectorHex=result.group(1))
+                foundWorld = self.worldBySectorHex(sectorHex=result.group(1))
                 if foundWorld:
                     return [foundWorld]
             except:

@@ -773,7 +773,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tagLevel = None
                         if world.hasOwner():
                             try:
-                                ownerWorld = traveller.WorldManager.instance().world(sectorHex=world.ownerSectorHex())
+                                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=world.ownerSectorHex())
                             except Exception:
                                 ownerWorld = None
 
@@ -793,7 +793,7 @@ class HexTable(gui.FrozenColumnListTable):
                         highestTagLevel = None
                         for colonySectorHex in world.colonySectorHexes():
                             try:
-                                colonyWorld = traveller.WorldManager.instance().world(colonySectorHex)
+                                colonyWorld = traveller.WorldManager.instance().worldBySectorHex(colonySectorHex)
                             except Exception:
                                 colonyWorld = None
 
@@ -987,7 +987,7 @@ class HexTable(gui.FrozenColumnListTable):
         elif columnType == self.ColumnType.OwnerWorld:
             if world.hasOwner():
                 try:
-                    ownerWorld = traveller.WorldManager.instance().world(sectorHex=world.ownerSectorHex())
+                    ownerWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=world.ownerSectorHex())
                 except Exception:
                     ownerWorld = None
 
@@ -1001,7 +1001,7 @@ class HexTable(gui.FrozenColumnListTable):
                 listColours = {}
                 for colonySectorHex in world.colonySectorHexes():
                     try:
-                        colonyWorld = traveller.WorldManager.instance().world(sectorHex=colonySectorHex)
+                        colonyWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=colonySectorHex)
                     except Exception:
                         colonyWorld = None
 

@@ -924,7 +924,7 @@ class WorldSearch(object):
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
             ) -> typing.Iterable[traveller.World]:
-        sector = traveller.WorldManager.instance().sector(name=sectorName)
+        sector = traveller.WorldManager.instance().sectorByName(name=sectorName)
         if not sector:
             raise RuntimeError(f'Sector "{sectorName}" for found')
 

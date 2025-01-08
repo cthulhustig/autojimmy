@@ -126,7 +126,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._subsectorComboBox.clear()
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
-        sector = traveller.WorldManager.instance().sector(self._sectorComboBox.currentText())
+        sector = traveller.WorldManager.instance().sectorByName(self._sectorComboBox.currentText())
         if not sector:
             return
 
