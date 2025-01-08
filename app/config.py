@@ -59,7 +59,6 @@ class Config(object):
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
     _RoutingTypeKeyName = 'Game/RoutingType'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
-    _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting' # Legacy key
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
     _UseFuelCachesKeyName = 'Game/UseFuelCaches'
     _UseAnomalyRefuellingKeyName = 'Game/UseAnomalyRefuelling'
