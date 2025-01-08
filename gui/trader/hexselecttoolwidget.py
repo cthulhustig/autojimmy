@@ -6,8 +6,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: The tooltips of widgets should update to say world/hex depending on if dead
-# space selection is enabled
 class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHex = QtCore.pyqtSignal(travellermap.HexPosition)
@@ -44,7 +42,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             icon=gui.loadIcon(id=gui.Icon.Map),
             parent=self)
         self._mapSelectButton.setToolTip(gui.createStringToolTip(
-            'Select a world using Traveller Map.'))
+            'Select Using Traveller Map.'))
         self._mapSelectButton.setHidden(True)
         self._mapSelectButton.clicked.connect(self._mapSelectClicked)
 
@@ -52,7 +50,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             icon=gui.loadIcon(id=gui.Icon.Search),
             parent=self)
         self._showHexButton.setToolTip(gui.createStringToolTip(
-            'Show world in Traveller Map.'))
+            'Show in Traveller Map.'))
         self._showHexButton.setHidden(True)
         self._showHexButton.clicked.connect(self._showHexClicked)
 
@@ -60,7 +58,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             icon=gui.loadIcon(id=gui.Icon.Info),
             parent=self)
         self._showInfoButton.setToolTip(gui.createStringToolTip(
-            'Show world info.'))
+            'Show Location Details.'))
         self._showInfoButton.setHidden(True)
         self._showInfoButton.clicked.connect(self._showInfoClicked)
 

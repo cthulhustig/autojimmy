@@ -882,11 +882,11 @@ class JumpRouteWindow(gui.WindowWidget):
         startHex, finishHex = self._selectStartFinishWidget.hexes()
         if not startHex or not finishHex:
             if not startHex and not finishHex:
-                message = 'You need to select a start and finish world before calculating a route.'
+                message = 'You need to select a start and finish location before calculating a route.'
             elif not startHex:
-                message = 'You need to select a start world before calculating a route.'
+                message = 'You need to select a start location before calculating a route.'
             else:
-                message = 'You need to select a finish world before calculating a route.'
+                message = 'You need to select a finish location before calculating a route.'
             gui.MessageBoxEx.critical(parent=self, text=message)
             return
 
@@ -932,7 +932,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 if currentFuel < oneParsecFuel.value():
                     gui.MessageBoxEx.critical(
                         parent=self,
-                        text='The starting hex is dead space but the ship doesn\'t have enough fuel to jump.')
+                        text='The starting location is dead space but the ship doesn\'t have enough fuel to jump.')
                     return
 
             fuelIssueWorldStrings = []
@@ -1090,12 +1090,12 @@ class JumpRouteWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Hex Details...',
+                text='Show Selected Location Details...',
                 callback=lambda: self._showHexDetails(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Hex Details...',
+                text='Show All Location Details...',
                 callback=lambda: self._showHexDetails(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             ),
@@ -1134,12 +1134,12 @@ class JumpRouteWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Hex Details...',
+                text='Show Selected Location Details...',
                 callback=lambda: self._showHexDetails(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Hex Details...',
+                text='Show All Location Details...',
                 callback=lambda: self._showHexDetails(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
@@ -1185,7 +1185,7 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(self._calculateJumpRoute)
         action.setEnabled(startHex != None and finishHex != None)
 
-        action = QtWidgets.QAction('Show Hex Details...', self)
+        action = QtWidgets.QAction('Show Location Details...', self)
         menuItems.append(action)
         action.triggered.connect(lambda: self._showHexDetails([hex]))
         action.setEnabled(hex != None)
@@ -1257,15 +1257,15 @@ class JumpRouteWindow(gui.WindowWidget):
         if not self._jumpRoute:
             startHex, finishHex = self._selectStartFinishWidget.hexes()
             if (startHex and hex == startHex) and (finishHex and hex == finishHex):
-                return gui.createStringToolTip('<nobr>Start &amp; Finish Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Start &amp; Finish Location</nobr>', escape=False)
             elif (startHex and hex == startHex):
-                return gui.createStringToolTip('<nobr>Start Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Start Location</nobr>', escape=False)
             elif (finishHex and hex == finishHex):
-                return gui.createStringToolTip('<nobr>Finish Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Finish Location</nobr>', escape=False)
             elif self._waypointsWidget.containsHex(hex):
-                return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Waypoint Location</nobr>', escape=False)
             elif self._avoidHexesWidget.containsHex(hex):
-                return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Avoid Location</nobr>', escape=False)
             return None
 
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
@@ -1322,13 +1322,13 @@ class JumpRouteWindow(gui.WindowWidget):
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
             if self._waypointsWidget.containsHex(hex):
-                return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Waypoint Location</nobr>', escape=False)
 
             # Check for the world being an avoid world. This is done last as
             # start/finish/waypoint worlds can be on the avoid list but we
             # don't want to flag them as such here
             if self._avoidHexesWidget.containsHex(hex):
-                return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
+                return gui.createStringToolTip('<nobr>Avoid Location</nobr>', escape=False)
 
             return None
 

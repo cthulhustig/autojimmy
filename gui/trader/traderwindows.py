@@ -1738,8 +1738,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         if key == QtCore.Qt.Key.Key_Delete:
             self._removeSelectedCurrentCargo()
 
-    # TODO: This needs a warning that logistic costs will be more inaccurate if
-    # basic routing is selected
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
@@ -1793,6 +1791,18 @@ class WorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
+
+        if self._includeLogisticsCostsCheckBox.isChecked() and \
+              self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
+            message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
+            answer = gui.AutoSelectMessageBox.question(
+                parent=self,
+                text=message + '\n\nDo you want to continue?',
+                stateKey='WorldTraderBasicRoutingWarning',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
 
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
@@ -2375,8 +2385,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             self._saleWorldsWidget.mapToGlobal(point)
         )
 
-    # TODO: This needs a warning that logistic costs will be more inaccurate if
-    # basic routing is selected
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
             # A trade option job is already running so cancel it
@@ -2428,6 +2436,18 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
+
+        if self._includeLogisticsCostsCheckBox.isChecked() and \
+              self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
+            message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
+            answer = gui.AutoSelectMessageBox.question(
+                parent=self,
+                text=message + '\n\nDo you want to continue?',
+                stateKey='MultiTraderBasicRoutingWarning',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
 
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None

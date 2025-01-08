@@ -48,8 +48,7 @@ class HexSelectDialog(gui.DialogEx):
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
 
         onlineLayout = QtWidgets.QVBoxLayout()
-        # TODO: This should update to say click on the hex dead space selection is enabled
-        onlineLayout.addWidget(QtWidgets.QLabel('Click on the world you want to select.'), 0)
+        onlineLayout.addWidget(QtWidgets.QLabel('Click on the location you want to select.'), 0)
         onlineLayout.addWidget(self._mapWidget, 1)
         self._onlineWidget = QtWidgets.QWidget()
         self._onlineWidget.setLayout(onlineLayout)
