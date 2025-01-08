@@ -278,8 +278,8 @@ class ListTable(gui.TableWidgetEx):
                 columnIndex = self.columnHeaderIndex(columnHeader)
                 if columnIndex < 0:
                     continue
-                shouldHide = self._userColumnHidingEnabled and \
-                    columnHeader in self._activeColumns
+                key = columnHeader.name if isinstance(columnHeader, enum.Enum) else columnHeader
+                shouldHide = self._userColumnHidingEnabled and (key in self._userHiddenColumns)
                 self.setColumnHidden(columnIndex, shouldHide)
 
     def isEmpty(self) -> bool:
