@@ -314,7 +314,10 @@ class RoutePlanner(object):
                     ]],
                 int # Min parsecs from target to finish (going via all waypoints)
                 ]] = []
-        excludedHexes: typing.Set[travellermap.HexPosition] = set()
+        filterResultCache: typing.Set[
+            travellermap.HexPosition, # Hex position
+            bool # Cached filter result
+            ] = {}
 
         minRouteParsecs = 0
         for index in range(sequenceLength - 1):
@@ -420,101 +423,30 @@ class RoutePlanner(object):
             if progressCallback:
                 progressCallback(closedRoutes, False) # Search isn't finished
 
-            # IMPORTANT: When calculating the search radius it's important that
-            # it's not clamped by the distance to the target. This might _seem_
-            # like an optimisation but for best cost route optimisation, if the
-            # target is a waypoint, it can actually be better to jump to a world
-            # that is past the target to refuel then to the target and on to the
-            # next world. If it could actually result in a better route depends
-            # on a lot of variables (refuelling type of target world, refuelling
-            # type of further away but potentially better world, ship fuel
-            # capacity etc) and it's only relevant in the case where the target
-            # world is within the ships current range so it's not really worth
-            # trying to do anything about it.
-            if routingType is RoutingType.Basic:
-                # Fuel based route calculation is disabled so always search for the full ship jump
-                # rating
-                searchRadius = shipJumpRating
-            else:
-                # Set search area based on the max distance we could jump from the current world. If
-                # it's a world where fuel could be taken then the search area is the ship jump
-                # rating. If it's not a world where fuel can be taken on then the search radius is
-                # determined by the amount of fuel in the ship (limited by jump rating)
-                if currentNode.isFuelWorld():
-                    searchRadius = shipJumpRating
-                else:
-                    searchRadius = min(shipJumpRating, currentNode.fuelParsecs())
-
-                # Clamp the search radius to the max parsecs without refuelling. This is required for
-                # ships that don't have the fuel capacity to perform their max jump. Not sure when
-                # this would actually happen but it should be handled
-                searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
-                if searchRadius <= 0:
-                    closedRoutes += 1
-                    continue
-
-            nearbyIterator = self._yieldNearbyHexes(
+            potentialsIterator = self._yieldPotentialHexes(
                 routingType=routingType,
-                centerHex=currentHex,
+                currentNode=currentNode,
                 targetHex=targetHex,
-                radius=searchRadius,
+                shipJumpRating=shipJumpRating,
+                shipParsecsWithoutRefuelling=shipParsecsWithoutRefuelling,
+                closedSet=targetClosedSet,
+                hexData=targetHexData,
                 worldManager=worldManager,
+                pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
-                excludedHexes=excludedHexes)
+                filterResultCache=filterResultCache)
             possibleRoutes = 0
             addedRoutes = 0
-            for nearbyHex, nearbyWorld in nearbyIterator:
+            for potential in potentialsIterator:
+                nearbyHex = potential[0]
+                nearbyWorld = potential[1]
+                nearbyParsecs = potential[2]
+                isNearbyFuelWorld = potential[3]
+                nearbyHexBestScore = potential[4]
+                nearbyHexBestFuelParsecs = potential[5]
+                nearbyToTargetMinParsecs  = potential[6]
+                fuelParsecs = potential[7]
                 possibleRoutes += 1
-
-                nearbyParsecs = currentHex.parsecsTo(nearbyHex)
-
-                # Work out the max amount of fuel the ship can have in the tank after completing
-                # the jump from the current world to the adjacent world.
-                if routingType is RoutingType.Basic:
-                    # Fuel based route calculation is disabled.
-                    isNearbyFuelWorld = False
-                    fuelParsecs = shipJumpRating
-                else:
-                    nearbyRefuellingType = \
-                        nearbyRefuellingType = pitCostCalculator.refuellingType(world=nearbyWorld) \
-                        if nearbyWorld else \
-                        None
-
-                    isNearbyFuelWorld = nearbyRefuellingType != None
-
-                    if currentNode.isFuelWorld():
-                        fuelParsecs = shipParsecsWithoutRefuelling - nearbyParsecs
-                    else:
-                        fuelParsecs = currentNode.fuelParsecs() - nearbyParsecs
-
-                    if fuelParsecs < 0:
-                        # If the fuel parsecs is negative it means, when following this route, there
-                        # is no way to take on enough fuel to reach the adjacent world
-                        continue
-
-                    if (not isNearbyFuelWorld) and (fuelParsecs < 1) and (nearbyHex != finishHex):
-                        # The adjacent world isn't a fuel world and the ship won't have enough
-                        # fuel to jump on so there is no point continuing the route
-                        continue
-
-                nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
-                    targetHexData.get(nearbyHex, (None, None, None))
-
-                # Skip worlds that have already been reached with a BETTER cost unless this
-                # route means the ship will have have more fuel for the onward journey. If the
-                # adjacent world is a previously processed world but we've found a route with
-                # better fuelling potential, the adjacent world will be added to queue with
-                # standard g/f scores. This will mean it will be prioritised lower than the
-                # previous route that had a better cost but worse fuelling potential. This route
-                # will only get further processing if that better cost route fails due to running
-                # out of fuel.
-                # In the case that fuel based routing is disabled, the new fuel parsecs and best
-                # fuel parsecs will always be the ship jump rating (i.e. the same) so the closed
-                # worlds set will always be checked.
-                if (nearbyHexBestFuelParsecs != None) and \
-                        (fuelParsecs <= nearbyHexBestFuelParsecs) and \
-                        (nearbyHex in targetClosedSet):
-                    continue
 
                 # Calculate the cost of jumping to the adjacent world
                 jumpCost, costContext = jumpCostCalculator.calculate(
@@ -570,153 +502,263 @@ class RoutePlanner(object):
 
         return None # No route found
 
-    def _yieldNearbyHexes(
+    def _yieldPotentialHexes(
             self,
             routingType: RoutingType,
-            centerHex: travellermap.HexPosition,
+            currentNode: _RouteNode,
             targetHex: travellermap.HexPosition,
-            radius: int,
+            shipJumpRating: int,
+            shipParsecsWithoutRefuelling: int,
+            closedSet: typing.Set[travellermap.HexPosition],
+            hexData: typing.Dict[
+                travellermap.HexPosition,
+                typing.Tuple[
+                    float, # Best gScore for a route reaching this hex
+                    int, # Best remaining fuel for a route reaching this hex
+                    int # Parsecs from hex to target (note target not necessarily finish)
+                ]],
             worldManager: traveller.WorldManager,
+            pitCostCalculator: typing.Optional[logic.PitStopCostCalculator],
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            excludedHexes: typing.Optional[typing.Set[travellermap.HexPosition]] = None
+            filterResultCache: typing.Optional[typing.Dict[travellermap.HexPosition, bool]] = None
             ) -> typing.Generator[
                 typing.Tuple[
-                    travellermap.HexPosition,
-                    typing.Optional[traveller.World]
-                ],
+                    travellermap.HexPosition, # Potential next hex
+                    typing.Optional[traveller.World], # World at hex
+                    int, # Parsecs from current hex to potential hex
+                    bool, # True if potential hex is a fuel world
+                    float, # Current best score for potential hex
+                    int, # Current best fuel parsecs for potential hex
+                    int, # Current best parsecs to target for potential hex
+                    int], # Max fuel remaining in tank if ship travels to hex
                 None,
                 None]:
-        alreadyYielded: typing.Optional[typing.Set[travellermap.HexPosition]] = None
-        if routingType is RoutingType.DeadSpace:
-            alreadyYielded = set()
+        # IMPORTANT: When calculating the search radius it's important that it's
+        # not clamped by the distance to the target. This might _seem_ like an
+        # optimisation but for best cost route optimisation, if the target is a
+        # waypoint, it can actually be better to jump to a world that is past
+        # the target to refuel then to the target and on to the next world. If
+        # it could actually result in a better route depends on a lot of
+        # variables (refuelling type of target world, refuelling type of further
+        # away but potentially better world, ship fuel capacity etc) and it's
+        # only relevant in the case where the target world is within the ships
+        # current range so it's not really worth trying to do anything about it.
+        if routingType is RoutingType.Basic:
+            # Fuel based route calculation is disabled so always search for the
+            # full ship jump rating
+            searchRadius = shipJumpRating
+        else:
+            # Set search area based on the max distance we could jump from the
+            # current world. If it's a world where fuel could be taken then the
+            # search area is the ship jump rating. If it's not a world where
+            # fuel can be taken on then the search radius is determined by the
+            # amount of fuel in the ship (limited by jump rating)
+            if currentNode.isFuelWorld():
+                searchRadius = shipJumpRating
+            else:
+                searchRadius = min(shipJumpRating, currentNode.fuelParsecs())
 
-        for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):
+            # Clamp the search radius to the max parsecs without refuelling.
+            # This is required for ships that don't have the fuel capacity to
+            # perform their max jump. Not sure when this would actually happen
+            # but it should be handled
+            searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
+            if searchRadius <= 0:
+                # TODO: Not sure what to do about this
+                #closedRoutes += 1
+                return
+
+        currentHex = currentNode.hex()
+        alreadyProcessed: typing.Optional[typing.Set[travellermap.HexPosition]] = None
+        if routingType is RoutingType.DeadSpace:
+            alreadyProcessed = set()
+
+        for nearbyWorld in worldManager.yieldWorldsInArea(center=currentHex, searchRadius=searchRadius):
             nearbyHex = nearbyWorld.hex()
+
+            if nearbyHex == currentHex:
+                # No point processing the current hex again. This assumes the
+                # current hex is never the hex. This is done before updating
+                # the already processed set as there is no point adding the
+                # current hex to the set as the later dead space processing
+                # code that uses the set naturally avoids looking at the current
+                # hex
+                continue
+
+            # Ordering here is important. We only want to take note of worlds
+            # that weren't excluded.
+            if alreadyProcessed != None:
+                alreadyProcessed.add(nearbyHex)
+
+            nearbyParsecs = currentHex.parsecsTo(nearbyHex)
+
+            # Work out the max amount of fuel the ship can have in the tank
+            # after completing the jump from the current hex to the nearby hex
+            if routingType is RoutingType.Basic:
+                # Fuel based route calculation is disabled.
+                isNearbyFuelWorld = False
+                fuelParsecs = shipJumpRating
+            else:
+                nearbyRefuellingType = pitCostCalculator.refuellingType(world=nearbyWorld)
+                isNearbyFuelWorld = nearbyRefuellingType != None
+
+                if currentNode.isFuelWorld():
+                    fuelParsecs = shipParsecsWithoutRefuelling - nearbyParsecs
+                else:
+                    fuelParsecs = currentNode.fuelParsecs() - nearbyParsecs
+
+                if fuelParsecs < 0:
+                    # If the fuel parsecs is negative it means, when following
+                    # this route, there is no way to take on enough fuel to
+                    # reach the adjacent world
+                    continue
+
+                if (not isNearbyFuelWorld) and (fuelParsecs < 1) and (nearbyHex != targetHex):
+                    # The nearby world isn't a fuel world and the ship won't
+                    # have enough fuel to jump on so there is no point
+                    # continuing the route
+                    continue
+
+            nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
+                hexData.get(nearbyHex, (None, None, None))
+
+            # Skip worlds that have already been reached with a BETTER cost
+            # unless this route means the ship will have have more fuel for the
+            # onward journey. If the adjacent world is a previously processed
+            # world but we've found a route with better fuelling potential, the
+            # adjacent world will be added to queue with standard g/f scores.
+            # This will mean it will be prioritised lower than the previous
+            # route that had a better cost but worse fuelling potential. This
+            # route will only get further processing if that better cost route
+            # fails due to running out of fuel.
+            # In the case that fuel based routing is disabled, the new fuel
+            # parsecs and best fuel parsecs will always be the ship jump rating
+            # (i.e. the same) so the closed worlds set will always be checked.
+            isBetter = (nearbyHexBestFuelParsecs == None) or \
+                    (fuelParsecs > nearbyHexBestFuelParsecs) or \
+                    (nearbyHex not in closedSet)
+            if not isBetter:
+                continue
 
             # If the adjacent world isn't the current target world, check if
             # it's been excluded
             if hexFilter and (nearbyHex != targetHex):
-                if nearbyHex in excludedHexes:
-                    continue # World has already been excluded
+                isMatched = filterResultCache.get(nearbyHex)
+                if isMatched == None:
+                    isMatched = hexFilter.match(hex=nearbyHex, world=nearbyWorld)
+                    filterResultCache[nearbyHex] = isMatched
+                if not isMatched:
+                    continue # Hex has been excluded
 
-                # Apply custom world filter. This may be expensive so should be
-                # applied after lower cost filters.
-                if not hexFilter.match(hex=nearbyHex, world=nearbyWorld):
-                    # Hex should be ignored
-                    excludedHexes.add(nearbyHex)
-                    continue
-
-            # Ordering here is important. We only want to take note of worlds that
-            # weren't excluded.
-            if alreadyYielded:
-                alreadyYielded.add(nearbyHex)
-
-            yield (nearbyHex, nearbyWorld)
+            yield (
+                nearbyHex,
+                nearbyWorld,
+                nearbyParsecs,
+                isNearbyFuelWorld,
+                nearbyHexBestScore,
+                nearbyHexBestFuelParsecs,
+                nearbyToTargetMinParsecs,
+                fuelParsecs)
 
         if routingType is RoutingType.DeadSpace:
-            # TODO: There might be an optimisation here. Generally it only makes sense
-            # to jump into dead space if the target world is in dead space or if it's a
-            # direct line to the target world or a potential next world. This means it
-            # only makes sense to jump as far as possible due to the fact there is no
-            # (reliable) refuelling in dead space so there would be no benefit from
-            # jumping less than the max distance as it makes the most efficient
-            # progress to the destination.
-            # In theory this could be achieved using the world manager yieldWorldsInArea
-            # to find the worlds in the area then just processing the ring of hexes
-            # defined by the max distance the current fuel will allow the ship to jump,
-            # limited by the current distance to the target world (which I think is
-            # just the passed in radius), with any hexes that have already been processed
-            # by the yieldWorldsInArea call being ignoring.
-            # The advantage of this is empty hexes within the jump radius won't have any
-            # further processing.
-            # The downside is there is one situation where the general rule doesn't apply
-            # and that's if the user has set an avoid hex (or hexes) that is on the ring
-            # defined by the jump rating. In that situation it may be possible to find
-            # a better route by 'jumping short' so that you can jump over this avoid hex.
-            # I think it would be possible to handle this case if I moved checking for
-            # avoid worlds/hexes into this function. If I did that it should just be a case
-            # of doing the yieldWorldsInArea call, then using yieldRadiusHexes with include
-            # interior set to False to get the ring. Ignoring hexes that were already
-            # processed due to the yieldRadiusHexes _and_ doing the avoid world/hex for
-            # the hex. Any hex that passed these checks would be yielded to the caller. After
-            # the hexes in the ring have been processed it would check if any hexes in the
-            # ring were ignored due to the avoid check, if none were then it's finished
-            # processing, if there were any hexes ignored then it would repeat the ring
-            # processing for jump rating - 1, this would repeat until the jump route rating
-            # was 0 or no hexes in the ring were skipped due to the avoid check.
-            # When it comes to the yieldWorldsInArea call I would also have to do avoid
-            # world filtering there before yielding the hex/world to the caller.
-            # Importantly when later processing rings and checking if a hex was avoided due
-            # to the yieldWorldsInArea check, it should only ignore the hex if it was NOT
-            # avoided (i.e. it has already been yielded to the caller). If it contained
-            # a world that was avoided it should still be counted as avoided when when
-            # checking if any hexes in the ring were avoided. This may mean ding the avoid
-            # check twice for those hexes, once when it was found by yieldWorldsInArea and
-            # once when it was found in the ring, there should be ways to avoid this but
-            # it may not be worth it (would require testing)
-            # When it comes to all this checking I think I want to check if the hex was
-            # already processed by the yieldWorldsInArea call first then the avoid check.
-            # This should allow the ring check to maintain a flag which is initialised to
-            # false and set to true if the ring hex is no yielded to the caller.
-            #
-            # This whole thing might be simpler (and even more optimised) if I move worlds
-            # completely out of the core route planning logic and just having them in the
-            # jump/pitstop cost calculators and hex filter. They would just be passed hex
-            # positions and do the lookups as needed.
-            # There would probably still need to be some world logic as I think I'd still
-            # want the JumpRoute to be be passed the worlds at construction but it should
-            # be possible to leave that until the end when turning the final route into
-            # a jump route
-            # The advantage to this is it should remove a load of code handling worlds.
-            # The downside of his approach is it _might_ increase the number of worldByPosition
-            # calls that get made by the calculators and filter.
-            checkRadius = radius
+            nearbyParsecs = 1
             hitTarget = False
-            while checkRadius > 0:
-                hasExclusion = False
-                for nearbyHex in centerHex.yieldRadiusHexes(radius=checkRadius, includeInterior=False):
+            while nearbyParsecs <= searchRadius:
+                # Calculate the max fuel the ship can have left in the tank if
+                # it jumps to this radius
+                if currentNode.isFuelWorld():
+                    fuelParsecs = shipParsecsWithoutRefuelling - nearbyParsecs
+                else:
+                    fuelParsecs = currentNode.fuelParsecs() - nearbyParsecs
+                if fuelParsecs < 1:
+                    # If the ship jumps to a hex at this radius it won't have
+                    # enough fuel in the tank to jump on and this code is only
+                    # dealing with dead space hexes so there will be no way to
+                    # take on more fuel. As such there is no point in taking
+                    # this any further.
+                    # If the target hex is a dead space hex within the search
+                    # radius it will be processed later due to hitTarget not
+                    # being set
+                    break
+
+                for nearbyHex in currentHex.yieldRadiusHexes(radius=nearbyParsecs, includeInterior=False):
                     isTarget = nearbyHex == targetHex
                     if isTarget:
                         hitTarget = True
 
-                    # Check if the hex was already yielded when worlds were
-                    # processed. If it was then don't process it again.
-                    # If the hex is on this list then it means we know the
-                    # hex wasn't excluded so hasExclusion is not set.
-                    if nearbyHex in alreadyYielded:
+                    # Check if the hex has already been processed due to it
+                    # containing a world. If it has been there is no need to
+                    # process it again
+                    if nearbyHex in alreadyProcessed:
                         continue
 
-                    # If we get to here it means either the hex is dead space
-                    # or it contains a world but it was excluded. If it contains
-                    # a world which wasn't previously yielded due to being
-                    # excluded then the expectation is the hex should already be
-                    # in the set of excluded hexes so the matching logic won't be
-                    # executed again
+                    # If we get to here it means the hex is dead space
+
+                    # Skip hexes that already have a better route. See code that
+                    # processes worlds in the search area for more details
+                    nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
+                        hexData.get(nearbyHex, (None, None, None))
+                    isBetter = (nearbyHexBestFuelParsecs == None) or \
+                            (fuelParsecs > nearbyHexBestFuelParsecs) or \
+                            (nearbyHex not in closedSet)
+                    if not isBetter:
+                        continue
+
+                    # Check if hex is filtered. This check is skipped for the
+                    # target as it can't be filtered
                     if hexFilter and not isTarget:
-                        if nearbyHex in excludedHexes:
-                            hasExclusion = True
-                            continue
+                        isMatched = filterResultCache.get(nearbyHex)
+                        if isMatched == None:
+                            isMatched = hexFilter.match(hex=nearbyHex, world=None)
+                            filterResultCache[nearbyHex] = isMatched
+                        if not isMatched:
+                            continue # Hex has been excluded
 
-                        # If we get to here then we know the hex is dead space
-                        if not hexFilter.match(hex=nearbyHex, world=None):
-                            # Hex should be ignored
-                            excludedHexes.add(nearbyHex)
-                            hasExclusion = True
-                            continue
+                    yield (
+                        nearbyHex,
+                        None, # We know this is dead space
+                        nearbyParsecs,
+                        False, # Dead space is not a fuel world
+                        nearbyHexBestScore,
+                        nearbyHexBestFuelParsecs,
+                        nearbyToTargetMinParsecs,
+                        fuelParsecs)
 
-                    yield (nearbyHex, None)
+                nearbyParsecs += 1
 
-                if not hasExclusion:
-                    # No hexes were excluded in this iteration so there is no
-                    # need to the next radius
-                    break
+            if not hitTarget:
+                parsecsToTarget = currentHex.parsecsTo(targetHex)
+                if parsecsToTarget <= searchRadius:
+                    # The target is dead space and is within the specified search
+                    # radius but wasn't previously processed
 
-                checkRadius -= 1
+                    # Calculate the max fuel the ship can have left in the tank
+                    # once it jumps to this world. As this is the target world
+                    # there is no check to see if we could then jump onwards
+                    # from the world. If the target is a waypoint and not a fuel
+                    # world then this route will naturally be killed of
+                    if currentNode.isFuelWorld():
+                        fuelParsecs = shipParsecsWithoutRefuelling - parsecsToTarget
+                    else:
+                        fuelParsecs = currentNode.fuelParsecs() - parsecsToTarget
 
-            if (not hitTarget) and (centerHex.parsecsTo(targetHex) <= radius):
-                # The target is dead space and is within the specified search
-                # radius but wasn't previously processed
-                yield (targetHex, None)
+                    # Skip hexes that already have a better route. See code that
+                    # processes worlds in the search area for more details
+                    nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
+                        hexData.get(targetHex, (None, None, None))
+                    isBetter = (nearbyHexBestFuelParsecs == None) or \
+                            (fuelParsecs > nearbyHexBestFuelParsecs) or \
+                            (nearbyHex not in closedSet)
+                    if isBetter:
+                        yield (
+                            targetHex,
+                            None, # We know this is dead space
+                            parsecsToTarget,
+                            False, # Dead space is not a fuel world
+                            nearbyHexBestScore,
+                            nearbyHexBestFuelParsecs,
+                            nearbyToTargetMinParsecs,
+                            fuelParsecs)
 
     def _finaliseRoute(
             self,
