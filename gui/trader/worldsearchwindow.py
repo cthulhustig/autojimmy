@@ -134,7 +134,6 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         subsectorNames.sort(key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
-# TODO: This will need labels updated to use hex when selecting dead space
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
