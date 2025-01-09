@@ -197,6 +197,8 @@ class WorldManager(object):
             hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.Subsector]:
         sector = self.sectorByPosition(hex=hex)
+        if sector == None:
+            return None
         subsectors = sector.subsectors()
         assert(len(subsectors) == 16)
 

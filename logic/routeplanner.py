@@ -420,6 +420,17 @@ class RoutePlanner(object):
             if progressCallback:
                 progressCallback(closedRoutes, False) # Search isn't finished
 
+            # IMPORTANT: When calculating the search radius it's important that
+            # it's not clamped by the distance to the target. This might _seem_
+            # like an optimisation but for best cost route optimisation, if the
+            # target is a waypoint, it can actually be better to jump to a world
+            # that is past the target to refuel then to the target and on to the
+            # next world. If it could actually result in a better route depends
+            # on a lot of variables (refuelling type of target world, refuelling
+            # type of further away but potentially better world, ship fuel
+            # capacity etc) and it's only relevant in the case where the target
+            # world is within the ships current range so it's not really worth
+            # trying to do anything about it.
             if routingType is RoutingType.Basic:
                 # Fuel based route calculation is disabled so always search for the full ship jump
                 # rating
@@ -445,8 +456,11 @@ class RoutePlanner(object):
             nearbyIterator = self._yieldNearbyHexes(
                 routingType=routingType,
                 centerHex=currentHex,
+                targetHex=targetHex,
                 radius=searchRadius,
-                worldManager=worldManager)
+                worldManager=worldManager,
+                hexFilter=hexFilter,
+                excludedHexes=excludedHexes)
             possibleRoutes = 0
             addedRoutes = 0
             for nearbyHex, nearbyWorld in nearbyIterator:
@@ -501,18 +515,6 @@ class RoutePlanner(object):
                         (fuelParsecs <= nearbyHexBestFuelParsecs) and \
                         (nearbyHex in targetClosedSet):
                     continue
-
-                # If the adjacent world isn't the current target world, check if it's been excluded
-                if hexFilter and (nearbyHex != targetHex):
-                    if nearbyHex in excludedHexes:
-                        continue # World has already been excluded
-
-                    # Apply custom world filter. This may be expensive so should be applied after lower
-                    # cost filters.
-                    if not hexFilter.match(hex=nearbyHex, world=nearbyWorld):
-                        # Hex should be ignored
-                        excludedHexes.add(nearbyHex)
-                        continue
 
                 # Calculate the cost of jumping to the adjacent world
                 jumpCost, costContext = jumpCostCalculator.calculate(
@@ -572,8 +574,11 @@ class RoutePlanner(object):
             self,
             routingType: RoutingType,
             centerHex: travellermap.HexPosition,
+            targetHex: travellermap.HexPosition,
             radius: int,
             worldManager: traveller.WorldManager,
+            hexFilter: typing.Optional[HexFilterInterface] = None,
+            excludedHexes: typing.Optional[typing.Set[travellermap.HexPosition]] = None
             ) -> typing.Generator[
                 typing.Tuple[
                     travellermap.HexPosition,
@@ -581,6 +586,33 @@ class RoutePlanner(object):
                 ],
                 None,
                 None]:
+        alreadyYielded: typing.Optional[typing.Set[travellermap.HexPosition]] = None
+        if routingType is RoutingType.DeadSpace:
+            alreadyYielded = set()
+
+        for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):
+            nearbyHex = nearbyWorld.hex()
+
+            # If the adjacent world isn't the current target world, check if
+            # it's been excluded
+            if hexFilter and (nearbyHex != targetHex):
+                if nearbyHex in excludedHexes:
+                    continue # World has already been excluded
+
+                # Apply custom world filter. This may be expensive so should be
+                # applied after lower cost filters.
+                if not hexFilter.match(hex=nearbyHex, world=nearbyWorld):
+                    # Hex should be ignored
+                    excludedHexes.add(nearbyHex)
+                    continue
+
+            # Ordering here is important. We only want to take note of worlds that
+            # weren't excluded.
+            if alreadyYielded:
+                alreadyYielded.add(nearbyHex)
+
+            yield (nearbyHex, nearbyWorld)
+
         if routingType is RoutingType.DeadSpace:
             # TODO: There might be an optimisation here. Generally it only makes sense
             # to jump into dead space if the target world is in dead space or if it's a
@@ -638,12 +670,53 @@ class RoutePlanner(object):
             # The advantage to this is it should remove a load of code handling worlds.
             # The downside of his approach is it _might_ increase the number of worldByPosition
             # calls that get made by the calculators and filter.
-            for nearbyHex in centerHex.yieldRadiusHexes(radius=radius, includeInterior=True):
-                world = worldManager.worldByPosition(hex=nearbyHex)
-                yield (nearbyHex, world)
-        else:
-            for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):
-                yield (nearbyWorld.hex(), nearbyWorld)
+            checkRadius = radius
+            hitTarget = False
+            while checkRadius > 0:
+                hasExclusion = False
+                for nearbyHex in centerHex.yieldRadiusHexes(radius=checkRadius, includeInterior=False):
+                    isTarget = nearbyHex == targetHex
+                    if isTarget:
+                        hitTarget = True
+
+                    # Check if the hex was already yielded when worlds were
+                    # processed. If it was then don't process it again.
+                    # If the hex is on this list then it means we know the
+                    # hex wasn't excluded so hasExclusion is not set.
+                    if nearbyHex in alreadyYielded:
+                        continue
+
+                    # If we get to here it means either the hex is dead space
+                    # or it contains a world but it was excluded. If it contains
+                    # a world which wasn't previously yielded due to being
+                    # excluded then the expectation is the hex should already be
+                    # in the set of excluded hexes so the matching logic won't be
+                    # executed again
+                    if hexFilter and not isTarget:
+                        if nearbyHex in excludedHexes:
+                            hasExclusion = True
+                            continue
+
+                        # If we get to here then we know the hex is dead space
+                        if not hexFilter.match(hex=nearbyHex, world=None):
+                            # Hex should be ignored
+                            excludedHexes.add(nearbyHex)
+                            hasExclusion = True
+                            continue
+
+                    yield (nearbyHex, None)
+
+                if not hasExclusion:
+                    # No hexes were excluded in this iteration so there is no
+                    # need to the next radius
+                    break
+
+                checkRadius -= 1
+
+            if (not hitTarget) and (centerHex.parsecsTo(targetHex) <= radius):
+                # The target is dead space and is within the specified search
+                # radius but wasn't previously processed
+                yield (targetHex, None)
 
     def _finaliseRoute(
             self,
