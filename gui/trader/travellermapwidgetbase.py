@@ -127,14 +127,8 @@ class _OverlayGroups(object):
         self._overlays.append(overlay)
 
 class TravellerMapWidgetBase(QtWidgets.QWidget):
-    # These signals will pass the sector hex string for the hex under the cursor
-    # TODO: Is this the pattern to allow signals to pass optional values? If so I
-    # should port it to other code (in a separate PR).
-    # Update: I don't think it is as I tried it somewhere else and I still got
-    # an exception about sending an unexpected NoneType. So the begs the question,
-    # what does it do?
-    leftClicked = QtCore.pyqtSignal([travellermap.HexPosition], [type(None)])
-    rightClicked = QtCore.pyqtSignal([travellermap.HexPosition], [type(None)])
+    leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
+    rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
 
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
@@ -891,26 +885,14 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._emitLeftClickEvent(hex=hex)
+        if hex and self.isEnabled():
+            self.leftClicked.emit(hex)
 
     def _handleRightClickEvent(
             self,
-            hex: travellermap.HexPosition
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._emitRightClickEvent(hex=hex)
-
-    def _emitLeftClickEvent(
-            self,
-            hex: travellermap.HexPosition
-            ) -> None:
-        if self.isEnabled():
-            self.leftClicked.emit(hex)
-
-    def _emitRightClickEvent(
-            self,
-            hex: travellermap.HexPosition
-            ) -> None:
-        if self.isEnabled():
+        if hex and self.isEnabled():
             self.rightClicked.emit(hex)
 
     def _toolTipTimerFired(self) -> None:

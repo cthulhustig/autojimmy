@@ -377,7 +377,7 @@ class _NodeContext(object):
             fuelCostPerTon: typing.Optional[int], # Only used if world and refuelling type is not None
             berthingCost: typing.Optional[int], # Only used if world is not None
             mandatoryBerthing: bool, # Only used if world is not None
-            isFinish: bool, # TODO: Is this not implied by fuelToFinish being 0?????
+            isFinish: bool,
             reachableNodes: typing.Iterable[typing.Tuple[int, float]], # Only used if isFinish is not True
             fuelToFinish: float # Only used if isFinish is not True
             ) -> None:

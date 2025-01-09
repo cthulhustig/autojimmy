@@ -166,21 +166,19 @@ class RoutePlanner(object):
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
-        # TODO: Remove debug timer
-        with common.DebugTimer('calculateSequenceRoute'):
-            return self._calculateRoute(
-                routingType=routingType,
-                hexSequence=hexSequence,
-                shipTonnage=shipTonnage,
-                shipJumpRating=shipJumpRating,
-                shipFuelCapacity=shipFuelCapacity,
-                shipCurrentFuel=shipCurrentFuel,
-                shipFuelPerParsec=shipFuelPerParsec,
-                jumpCostCalculator=jumpCostCalculator,
-                pitCostCalculator=pitCostCalculator,
-                hexFilter=hexFilter,
-                progressCallback=progressCallback,
-                isCancelledCallback=isCancelledCallback)
+        return self._calculateRoute(
+            routingType=routingType,
+            hexSequence=hexSequence,
+            shipTonnage=shipTonnage,
+            shipJumpRating=shipJumpRating,
+            shipFuelCapacity=shipFuelCapacity,
+            shipCurrentFuel=shipCurrentFuel,
+            shipFuelPerParsec=shipFuelPerParsec,
+            jumpCostCalculator=jumpCostCalculator,
+            pitCostCalculator=pitCostCalculator,
+            hexFilter=hexFilter,
+            progressCallback=progressCallback,
+            isCancelledCallback=isCancelledCallback)
 
     # Reimplementation of code from Traveller Map source code (FindPath in PathFinder.cs). This in
     # turn was based on code from AI for Game Developers, Bourg & Seemann, O'Reilly Media, Inc.,
@@ -564,8 +562,6 @@ class RoutePlanner(object):
             # but it should be handled
             searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
             if searchRadius <= 0:
-                # TODO: Not sure what to do about this
-                #closedRoutes += 1
                 return
 
         currentHex = currentNode.hex()
