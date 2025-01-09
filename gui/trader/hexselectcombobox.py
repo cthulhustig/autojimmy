@@ -229,7 +229,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 assert(isinstance(event, QtGui.QHelpEvent))
                 toolTip = ''
                 if self._enableWorldToolTips and self._selectedHex:
-                    toolTip =  gui.createHexToolTip(hex=self._selectedHex)
+                    toolTip = gui.createHexToolTip(hex=self._selectedHex)
                 if toolTip != self.toolTip():
                     self.setToolTip(toolTip)
 
@@ -295,7 +295,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection and \
-                    not traveller.WorldManager.instance().worldByPosition(hex):
+                        not traveller.WorldManager.instance().worldByPosition(hex):
                     # Ignore dead space in history
                     continue
 

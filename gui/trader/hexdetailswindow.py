@@ -70,10 +70,8 @@ class HexDetailsWindow(gui.WindowWidget):
 
     def addHex(
             self,
-            hex: typing.Union[
-                travellermap.HexPosition,
-                traveller.World]
-                ) -> None:
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            ) -> None:
         if isinstance(hex, traveller.World):
             hex = hex.hex()
 

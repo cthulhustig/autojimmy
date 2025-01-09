@@ -91,6 +91,7 @@ class JumpRoute(object):
     def __len__(self) -> int:
         return self._nodes.__len__()
 
+
 #
 # Serialisation
 #

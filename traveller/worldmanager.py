@@ -26,7 +26,6 @@ class WorldManager(object):
     # and subsector name are extracted
     _WorldSearchPattern = re.compile(r'^(.+)\s+\(\s*(.+)\s*\)$')
 
-
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
     _SubsectorPerSectorX = 4
@@ -257,8 +256,8 @@ class WorldManager(object):
             # always unique so just use the first if more than one is found
             sectors = self._alternateNameMap.get(sectorName)
             if sectors:
-               # Alternate sector name match
-               sector = sectors[0]
+                # Alternate sector name match
+                sector = sectors[0]
             else:
                 subsectors = self._subsectorNameMap.get(sectorName)
                 if subsectors:
@@ -371,7 +370,7 @@ class WorldManager(object):
             offsetX = int(result.group(3))
             offsetY = int(result.group(4))
             if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
-                (offsetY >= 0 and offsetY < travellermap.SectorHeight):
+                    (offsetY >= 0 and offsetY < travellermap.SectorHeight):
                 hex = travellermap.HexPosition(
                     sectorX=sectorX,
                     sectorY=sectorY,

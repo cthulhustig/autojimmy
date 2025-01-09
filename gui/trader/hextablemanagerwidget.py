@@ -523,30 +523,30 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         menuItems.append(None) # Separator
 
         menuItems.append(gui.MenuItem(
-                text='Remove Selected',
-                callback=lambda: self.removeSelectedRows(),
-                enabled=self._hexTable.hasSelection()))
+            text='Remove Selected',
+            callback=lambda: self.removeSelectedRows(),
+            enabled=self._hexTable.hasSelection()))
         menuItems.append(gui.MenuItem(
-                text='Remove All',
-                callback=lambda: self.removeAllRows(),
-                enabled=not self._hexTable.isEmpty()))
+            text='Remove All',
+            callback=lambda: self.removeAllRows(),
+            enabled=not self._hexTable.isEmpty()))
         menuItems.append(None) # Separator
 
         if self._enableMapSelect:
             menuItems.append(gui.MenuItem(
-                    text='Select with Traveller Map...',
-                    callback=lambda: self.promptTravellerMap(),
-                    enabled=True))
+                text='Select with Traveller Map...',
+                callback=lambda: self.promptTravellerMap(),
+                enabled=True))
             menuItems.append(None) # Separator
 
         menuItems.append(gui.MenuItem(
-                text='Show Selection Details...',
-                callback=lambda: self._showDetails(self._hexTable.selectedHexes()),
-                enabled=self._hexTable.hasSelection()))
+            text='Show Selection Details...',
+            callback=lambda: self._showDetails(self._hexTable.selectedHexes()),
+            enabled=self._hexTable.hasSelection()))
         menuItems.append(gui.MenuItem(
-                text='Show All Details...',
-                callback=lambda: self._showDetails(self._hexTable.hexes()),
-                enabled=not self._hexTable.isEmpty()))
+            text='Show All Details...',
+            callback=lambda: self._showDetails(self._hexTable.hexes()),
+            enabled=not self._hexTable.isEmpty()))
         menuItems.append(None) # Separator
 
         menuItems.append(gui.MenuItem(

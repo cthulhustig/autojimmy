@@ -650,7 +650,6 @@ def _processRoute(
 
             reachableNodeIndex += 1
 
-
         world = jumpRoute.world(nodeIndex)
         refuellingType = None
         fuelCostPerTon = None

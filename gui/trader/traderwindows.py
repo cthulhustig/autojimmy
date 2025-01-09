@@ -1811,7 +1811,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         if self._includeLogisticsCostsCheckBox.isChecked() and \
-              self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
+                self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
             message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,
@@ -2459,7 +2459,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             return
 
         if self._includeLogisticsCostsCheckBox.isChecked() and \
-              self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
+                self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
             message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,

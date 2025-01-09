@@ -108,4 +108,4 @@ class TravellerMapSelectDialog(gui.DialogEx):
 
         self._label.setText(
             'Click on the {wording} you want to select or deselect.'.format(
-            wording=wording))
+                wording=wording))

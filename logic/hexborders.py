@@ -54,6 +54,7 @@ def _floodRemove(
                 hexes.remove(adjacent)
                 todo.append(adjacent)
 
+
 _AntiClockwiseOffsets = {
     travellermap.NeighbourDirection.Upper: (-_HalfHexMinWidth, _HalfHexHeight),
     travellermap.NeighbourDirection.UpperRight: (_HalfHexMinWidth, _HalfHexHeight),

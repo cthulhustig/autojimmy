@@ -259,8 +259,8 @@ class HexTable(gui.FrozenColumnListTable):
 
         for index, column in enumerate(columns):
             if column == self.ColumnType.Name or \
-                column == self.ColumnType.Sector or \
-                column == self.ColumnType.Subsector:
+                    column == self.ColumnType.Sector or \
+                    column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
 
     def hex(self, row: int) -> typing.Optional[travellermap.HexPosition]:
@@ -369,7 +369,6 @@ class HexTable(gui.FrozenColumnListTable):
                 self.insertHex(self.rowCount(), hex)
         finally:
             self.setSortingEnabled(sortingEnabled)
-
 
     def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
         self.addHexes(worlds)
@@ -840,8 +839,8 @@ class HexTable(gui.FrozenColumnListTable):
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.Name or \
-            columnType == self.ColumnType.Sector or \
-            columnType == self.ColumnType.Subsector:
+                columnType == self.ColumnType.Sector or \
+                columnType == self.ColumnType.Subsector:
             return gui.createHexToolTip(hex=hex)
 
         if world == None:

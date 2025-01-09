@@ -769,9 +769,9 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 map.AddOverlay(overlay);
             }};
             """.format(
-                hexData=','.join(hexData),
-                polyData=','.join(polyData),
-                group=group.handle())
+            hexData=','.join(hexData),
+            polyData=','.join(polyData),
+            group=group.handle())
         self._runScript(script)
 
     def _hexAt(

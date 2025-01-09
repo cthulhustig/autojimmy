@@ -355,7 +355,7 @@ class FormLayoutEx(QtWidgets.QFormLayout):
 
         label = None
         if results.labelItem:
-           label = results.labelItem.widget() if results.labelItem.widget() else results.labelItem.layout()
+            label = results.labelItem.widget() if results.labelItem.widget() else results.labelItem.layout()
         if label:
             label.removeEventFilter(self._parentChangeWatcher)
 

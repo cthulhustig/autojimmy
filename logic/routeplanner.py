@@ -442,7 +442,7 @@ class RoutePlanner(object):
                 isNearbyFuelWorld = potential[3]
                 nearbyHexBestScore = potential[4]
                 nearbyHexBestFuelParsecs = potential[5]
-                nearbyToTargetMinParsecs  = potential[6]
+                nearbyToTargetMinParsecs = potential[6]
                 fuelParsecs = potential[7]
                 possibleRoutes += 1
 
@@ -631,8 +631,8 @@ class RoutePlanner(object):
             # parsecs and best fuel parsecs will always be the ship jump rating
             # (i.e. the same) so the closed worlds set will always be checked.
             isBetter = (nearbyHexBestFuelParsecs == None) or \
-                    (fuelParsecs > nearbyHexBestFuelParsecs) or \
-                    (nearbyHex not in closedSet)
+                (fuelParsecs > nearbyHexBestFuelParsecs) or \
+                (nearbyHex not in closedSet)
             if not isBetter:
                 continue
 
@@ -695,8 +695,8 @@ class RoutePlanner(object):
                     nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
                         hexData.get(nearbyHex, (None, None, None))
                     isBetter = (nearbyHexBestFuelParsecs == None) or \
-                            (fuelParsecs > nearbyHexBestFuelParsecs) or \
-                            (nearbyHex not in closedSet)
+                        (fuelParsecs > nearbyHexBestFuelParsecs) or \
+                        (nearbyHex not in closedSet)
                     if not isBetter:
                         continue
 
@@ -743,8 +743,8 @@ class RoutePlanner(object):
                     nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
                         hexData.get(targetHex, (None, None, None))
                     isBetter = (nearbyHexBestFuelParsecs == None) or \
-                            (fuelParsecs > nearbyHexBestFuelParsecs) or \
-                            (nearbyHex not in closedSet)
+                        (fuelParsecs > nearbyHexBestFuelParsecs) or \
+                        (nearbyHex not in closedSet)
                     if isBetter:
                         yield (
                             targetHex,
