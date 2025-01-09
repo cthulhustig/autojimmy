@@ -641,7 +641,7 @@ class SharedRoutingTypeComboBox(_SharedEnumComboBox):
         super().__init__(
             updaterType=SharedRoutingTypeComboBox._SettingUpdater,
             enumType=logic.RoutingType,
-            toolTip='TODO', # TODO: Routing Type combo box
+            toolTip=gui.RoutingTypeToolTip,
             parent=parent)
 
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):

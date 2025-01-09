@@ -52,6 +52,35 @@ ShipFuelPerParsecToolTip = createStringToolTip(
 FreeCargoSpaceToolTip = createStringToolTip(
     '<p>Free cargo space available for purchased trade cargo</p>',
     escape=False)
+RoutingTypeToolTip = createStringToolTip(
+    '<p>Type of routing algorithm to use</p>'
+    '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
+    '<li><b>Basic</b> - Basic routing is the fastest type of routing, however '
+    'it is also the most primitive. It\'s similar to the routing algorithm '
+    'used by Traveller Map, with routes just using the ship jump rating to '
+    'determine possible routes. Although the algorithm its self is not fuel '
+    'aware, simple fuelling requirements (e.g. only jumping to worlds that '
+    'allow wilderness refuelling) can be achieved by adding filters to the '
+    'avoid locations list. The main downsides to basic routing are the lack '
+    'of control over what type of refuelling you would like to use and the '
+    'fact it can\'t generate optimal routes for ships with a fuel capacity '
+    'that allows them to make multiple jumps without refuelling.'
+    '</li>'
+    '<li><b>Fuel Based</b> - Fuel Based routing is a more advanced but slower '
+    'algorithm that also takes the ship\'s fuel capacity along with other '
+    'refuelling requirements into account in order to generate jump routes '
+    'more optimized for the ship and how want to refuel it. As well as this, '
+    'it has the added benefit of allowing for the automatic creation of a '
+    'refuelling plan that lets you know where along the route to take on fuel '
+    'and how much to take on in order to complete the route at the lost cost.'
+    '</li>'
+    '<li><b>Dead Space</b> - Dead Space routing has the same advantages as '
+    'Fuel Based routing, but it allows the algorithm to make jumps into and '
+    'out of dead space (i.e. empty hexes on the map) if doing so would result '
+    'in a more optimal jump route.'
+    '</li>'
+    '</ul>',
+    escape=False)
 RouteOptimisationToolTip = createStringToolTip(
     '<p>Type of optimisation to apply when calculating a jump route</p>'
     '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
@@ -64,24 +93,6 @@ RouteOptimisationToolTip = createStringToolTip(
     'the lowest logistics costs. It\'s not guaranteed to find the absolute '
     'lowest cost route but it\'s generally pretty good.</li>'
     '</ul>',
-    escape=False)
-# TODO: This should be reworked as a RoutingType tool tip
-FuelBasedRoutingToolTip = createStringToolTip(
-    '<p>Turn fuel based route calculation on/off</p>'
-    '<p>When fuel based route calculation is enabled, the jump route calculator will use ship '
-    'jump/fuel details and world information to generate a route that can be completed using the '
-    'type of refuelling specified by the refuelling strategy. Fuel based routing allows for the '
-    'generation of a refuelling plan that details where along the route to take on fuel and how '
-    'much to take on in order to complete the route with the minimum cost. It also allows the '
-    'route calculator to generate more optimised routes for ships that can travel more parsecs '
-    'than their jump rating without refuelling.</p>'
-    '<p>When fuel based route calculation is disabled, the jump route calculator only uses the '
-    'ships jump rating to calculate the route. This method of route calculation can be significantly '
-    'faster than fuel based routing, however it\'s not guaranteed that it would be possible to take '
-    'on enough fuel along the route to complete it. If you have specific refuelling requirements, '
-    'avoid world filters can be used to exclude worlds that don\'t allow the refuelling you need.</p>'
-    '<p>The primary reason to disable fuel based route calculation is when you need to create a '
-    'route in a sector such as Foreven where world information isn\'t know.</p>',
     escape=False)
 RefuellingStrategyToolTip = createStringToolTip(
     '<p>Type of refuelling that\'s desired</p>'
