@@ -1001,7 +1001,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
         except Exception as ex:
-            message = 'Failed to start route planner job'
+            message = 'Failed to create route planner job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1011,6 +1011,27 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._calculateRouteButton.showSecondaryText()
         self._enableDisableControls()
+
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._jumpRouteJobStart)
+
+    def _jumpRouteJobStart(self) -> None:
+        if not self._jumpRouteJob:
+            return
+
+        try:
+            self._jumpRouteJob.start()
+        except Exception as ex:
+            self._jumpRouteJob = None
+            self._calculateRouteButton.showPrimaryText()
+            self._enableDisableControls()
+
+            message = 'Failed to start route planner job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
 
     def _jumpRouteJobProgressUpdate(self, routeCount: int) -> None:
         self._processedRoutesLabel.setNum(routeCount)

@@ -6,7 +6,7 @@ import traveller
 import typing
 from PyQt5 import QtCore
 
-class _TraderJobBase(QtCore.QThread):
+class TraderJobBase(QtCore.QThread):
     _tradeOptionsSignal = QtCore.pyqtSignal([list])
     _tradeInfoSignal = QtCore.pyqtSignal([list])
     _progressSignal = QtCore.pyqtSignal([int, int])
@@ -49,7 +49,6 @@ class _TraderJobBase(QtCore.QThread):
         self._yieldDelta = datetime.timedelta(milliseconds=yieldIntervalMs)
         self._lastYieldTime = None
         self._cancelled = False
-        self.start()
 
     def cancel(self, block=False) -> None:
         self._cancelled = True
@@ -96,7 +95,7 @@ class _TraderJobBase(QtCore.QThread):
             time.sleep(0.01)
             self._lastYieldTime = now
 
-class SingleWorldTraderJob(_TraderJobBase):
+class SingleWorldTraderJob(TraderJobBase):
     def __init__(
             self,
             parent: QtCore.QObject,
@@ -203,7 +202,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             self._emitTradeInfo()
             self._finishedSignal[Exception].emit(ex)
 
-class MultiWorldTraderJob(_TraderJobBase):
+class MultiWorldTraderJob(TraderJobBase):
     def __init__(
             self,
             parent: QtCore.QObject,

@@ -519,7 +519,9 @@ class SimulatorWindow(gui.WindowWidget):
         self._configGroupBox.setLayout(configLayout)
 
     def _setupSimulationControls(self) -> None:
-        self._runSimulationButton = QtWidgets.QPushButton('Run Simulation')
+        self._runSimulationButton = gui.DualTextPushButton(
+            primaryText='Run Simulation',
+            secondaryText='Cancel')
         self._runSimulationButton.clicked.connect(self._runSimulation)
 
         self._simulationDayLabel = QtWidgets.QLabel('Day:')
@@ -668,10 +670,10 @@ class SimulatorWindow(gui.WindowWidget):
                 maxBuyerDm=self._buyerDmRangeWidget.upperValue(),
                 randomSeed=self._randomSeedWidget.number(),
                 simulationLength=None,
-                eventCallback=self._simulationEvent,
-                finishedCallback=self._simulationFinished)
+                eventCallback=self._simulatorJobEvent,
+                finishedCallback=self._simulatorJobFinished)
         except Exception as ex:
-            message = 'Failed to start simulator job'
+            message = 'Failed to create simulator job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -679,10 +681,31 @@ class SimulatorWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._runSimulationButton.setText('Cancel')
+        self._runSimulationButton.showSecondaryText()
         self._enableDisableControls()
 
-    def _simulationEvent(self, event: logic.Simulator.Event) -> None:
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._simulatorJobStart)
+
+    def _simulatorJobStart(self) -> None:
+        if not self._simulatorJob:
+            return
+
+        try:
+            self._simulatorJob.start()
+        except Exception as ex:
+            self._simulatorJob = None
+            self._runSimulationButton.showPrimaryText()
+            self._enableDisableControls()
+
+            message = 'Failed to start simulator job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _simulatorJobEvent(self, event: logic.Simulator.Event) -> None:
         day = int(math.floor(event.timestamp() / 24))
         self._simulationDayLabel.setText(f'Day: {common.formatNumber(day)}')
 
@@ -710,7 +733,7 @@ class SimulatorWindow(gui.WindowWidget):
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
 
-    def _simulationFinished(self, result: typing.Union[str, Exception]) -> None:
+    def _simulatorJobFinished(self, result: typing.Union[str, Exception]) -> None:
         if isinstance(result, Exception):
             message = 'Simulation exception'
             logging.error(message, exc_info=result)
@@ -722,7 +745,7 @@ class SimulatorWindow(gui.WindowWidget):
             pass
 
         self._simulatorJob = None
-        self._runSimulationButton.setText('Run simulation')
+        self._runSimulationButton.showPrimaryText()
         self._enableDisableControls()
 
     def _showOnMap(

@@ -236,9 +236,10 @@ class _ExportProgressDialog(gui.DialogEx):
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
         self.setSizeGripEnabled(False)
+        self.setModal(True)
         self.show()
 
-    def update(
+    def updateProgress(
             self,
             current: int,
             total: int
@@ -391,7 +392,9 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
                 if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
                     return # User cancelled
 
-                self._progressDlg = _ExportProgressDialog(weapon=weapon, parent=self)
+                self._progressDlg = _ExportProgressDialog(
+                    weapon=weapon,
+                    parent=self)
 
                 self._exportJob = jobs.ExportWeaponJob(
                     parent=self,
@@ -403,10 +406,8 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
                     usePurchasedMagazines=dlg.isUsePurchasedMagazinesChecked(),
                     usePurchasedAmmo=dlg.isUsePurchasedAmmoChecked(),
                     colour=not dlg.isBlackAndWhiteChecked(),
-                    progressCallback=self._progressDlg.update,
-                    finishedCallback=lambda result: self._exportFinished(filePath=path, result=result))
-
-                self.setDisabled(True)
+                    progressCallback=self._progressDlg.updateProgress,
+                    finishedCallback=lambda result: self._exportJobFinished(filePath=path, result=result))
             elif filter == gui.JSONFileFilter:
                 gunsmith.writeWeapon(weapon=weapon, filePath=path)
             elif filter == gui.CSVFileFilter:
@@ -414,20 +415,49 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
             else:
                 raise ValueError(f'Unexpected filter {filter}')
         except Exception as ex:
+            self._exportJob = None
+            if self._progressDlg:
+                self._progressDlg.close()
+                self._progressDlg = None
+
             message = f'Failed to export weapon to {path}'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
+            return
 
-    def _exportFinished(
+        if self._exportJob:
+            # Start job after a delay to give the ui time to update
+            QtCore.QTimer.singleShot(200, self._exportJobStart)
+
+    def _exportJobStart(self) -> None:
+        if not self._exportJob:
+            return
+
+        try:
+            self._exportJob.start()
+        except Exception as ex:
+            self._exportJob = None
+            self._progressDlg.close()
+            self._progressDlg = None
+
+            message = 'Failed to start export job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _exportJobFinished(
             self,
             filePath: str,
             result: typing.Union[str, Exception]
             ) -> None:
+        self._exportJob = None
         self._progressDlg.close()
-        self.setEnabled(True)
+        self._progressDlg = None
 
         if isinstance(result, Exception):
             message = f'Failed to export weapon to {filePath}'
@@ -436,9 +466,6 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
                 parent=self,
                 text=message,
                 exception=result)
-
-        self._exportJob = None
-        self._progressDlg = None
 
 class GunsmithWindow(gui.WindowWidget):
     _ConfigurationBottomSpacing = 300

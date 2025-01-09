@@ -65,7 +65,6 @@ class RoutePlannerJob(QtCore.QThread):
             self._finishedSignal[list].connect(finishedWrapper)
             self._finishedSignal[Exception].connect(finishedCallback)
         self._cancelled = False
-        self.start()
 
     def cancel(self, block=False) -> None:
         self._cancelled = True

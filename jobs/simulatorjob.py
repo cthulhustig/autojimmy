@@ -83,7 +83,6 @@ class SimulatorJob(QtCore.QThread):
             self._finishedSignal[Exception].connect(finishedCallback)
 
         self._cancelled = False
-        self.start()
 
     def setStepInterval(self, seconds: float) -> None:
         self._stepInterval = seconds

@@ -47,7 +47,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             configSection: str
             ) -> None:
         super().__init__(title=title, configSection=configSection)
-        self._traderJob = None
+        self._traderJob: typing.Optional[jobs.TraderJobBase] = None
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -417,7 +417,25 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         self._progressLabel.setText(common.formatNumber(optionsProcessed) + '/' + common.formatNumber(optionsToProcess))
 
-    def _traderFinished(self, result: typing.Union[str, Exception]) -> None:
+    def _traderJobStart(self) -> None:
+        if not self._traderJob:
+            return
+
+        try:
+            self._traderJob.start()
+        except Exception as ex:
+            self._traderJob = None
+            self._calculateTradeOptionsButton.showPrimaryText()
+            self._enableDisableControls()
+
+            message = 'Failed to start trader job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _traderJobFinished(self, result: typing.Union[str, Exception]) -> None:
         if isinstance(result, Exception):
             message = 'Failed to calculate trade options'
             logging.error(message, exc_info=result)
@@ -1890,9 +1908,9 @@ class WorldTraderWindow(_BaseTraderWindow):
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
                 progressCallback=self._updateTraderProgress,
-                finishedCallback=self._traderFinished)
+                finishedCallback=self._traderJobFinished)
         except Exception as ex:
-            message = 'Failed to start trader job'
+            message = 'Failed to create trader job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1902,6 +1920,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         self._calculateTradeOptionsButton.showSecondaryText()
         self._enableDisableControls()
+
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._traderJobStart)
 
     def _createCargoManifest(self) -> None:
         speculativeCargoLookup = set(self._speculativeCargoTable.cargoRecords())
@@ -2542,9 +2563,9 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
                 progressCallback=self._updateTraderProgress,
-                finishedCallback=self._traderFinished)
+                finishedCallback=self._traderJobFinished)
         except Exception as ex:
-            message = 'Failed to start trader job'
+            message = 'Failed to create trader job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -2554,6 +2575,9 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         self._calculateTradeOptionsButton.showSecondaryText()
         self._enableDisableControls()
+
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._traderJobStart)
 
     def _createCargoManifest(self) -> None:
         if self._tradeOptionsTable.isEmpty():

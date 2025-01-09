@@ -26,8 +26,6 @@ class StartupJobBase(QtCore.QThread):
             self._finishedSignal[str].connect(finishedCallback)
             self._finishedSignal[Exception].connect(finishedCallback)
 
-        self.start()
-
     def run(self) -> None:
         try:
             self.executeJob()

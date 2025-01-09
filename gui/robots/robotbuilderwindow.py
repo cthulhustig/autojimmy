@@ -227,6 +227,36 @@ class _RobotPDFExportDialog(gui.DialogEx):
 
         super().accept()
 
+class _ExportProgressDialog(gui.DialogEx):
+    def __init__(
+            self,
+            robot: robots.Robot,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent=parent)
+
+        self._textLabel = QtWidgets.QLabel(f'Exporting {robot.name()}...')
+        self._progressBar = QtWidgets.QProgressBar()
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addWidget(self._textLabel)
+        windowLayout.addWidget(self._progressBar)
+
+        self.setLayout(windowLayout)
+        self.setWindowFlags(
+            ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
+        self.setSizeGripEnabled(False)
+        self.setModal(True)
+        self.show()
+
+    def updateProgress(
+            self,
+            current: int,
+            total: int
+            ) -> None:
+        self._progressBar.setMaximum(int(total))
+        self._progressBar.setValue(int(current))
+
 class _RobotManagerWidget(gui.ConstructableManagerWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponSet = traveller.StockWeaponSet.CSC2023
@@ -369,7 +399,9 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
                 if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
                     return # User cancelled
 
-                self._progressDlg = _RobotPDFExportDialog(parent=self)
+                self._progressDlg = _ExportProgressDialog(
+                    robot=robot,
+                    parent=self)
 
                 self._exportJob = jobs.ExportRobotJob(
                     parent=self,
@@ -380,29 +412,56 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
                     applySkillModifiers=dlg.isApplySkillModifiersChecked(),
                     specialityGroupCount=dlg.specialityGroupCount(),
                     colour=not dlg.isBlackAndWhiteChecked(),
-                    progressCallback=self._progressDlg.update,
-                    finishedCallback=lambda result: self._exportFinished(filePath=path, result=result))
-
-                self.setDisabled(True)
+                    progressCallback=self._progressDlg.updateProgress,
+                    finishedCallback=lambda result: self._exportJobFinished(filePath=path, result=result))
             elif filter == gui.JSONFileFilter:
                 robots.writeRobot(robot=robot, filePath=path)
             else:
                 raise ValueError(f'Unexpected filter {filter}')
         except Exception as ex:
+            self._exportJob = None
+            if self._progressDlg:
+                self._progressDlg.close()
+                self._progressDlg = None
+
             message = f'Failed to export robot to {path}'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
+            return
 
-    def _exportFinished(
+        if self._exportJob:
+            # Start job after a delay to give the ui time to update
+            QtCore.QTimer.singleShot(200, self._exportJobStart)
+
+    def _exportJobStart(self) -> None:
+        if not self._exportJob:
+            return
+
+        try:
+            self._exportJob.start()
+        except Exception as ex:
+            self._exportJob = None
+            self._progressDlg.close()
+            self._progressDlg = None
+
+            message = 'Failed to start export job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _exportJobFinished(
             self,
             filePath: str,
             result: typing.Union[str, Exception]
             ) -> None:
+        self._exportJob = None
         self._progressDlg.close()
-        self.setEnabled(True)
+        self._progressDlg = None
 
         if isinstance(result, Exception):
             message = f'Failed to export robot to {filePath}'
@@ -411,9 +470,6 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
                 parent=self,
                 text=message,
                 exception=result)
-
-        self._exportJob = None
-        self._progressDlg = None
 
 class RobotBuilderWindow(gui.WindowWidget):
     _ConfigurationBottomSpacing = 300
