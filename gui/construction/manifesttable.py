@@ -54,9 +54,6 @@ class ManifestTable(gui.ListTable):
             manifest: typing.Optional[construction.Manifest]
             ) -> None:
         self._manifest = manifest
-        self.update()
-
-    def update(self) -> None:
         self.removeAllRows()
         if not self._manifest:
             self.resizeRowsToContents()

@@ -41,9 +41,6 @@ class DiceRollResultsTable(gui.ListTable):
             results: typing.Optional[diceroller.DiceRollResult]
             ) -> None:
         self._results = results
-        self.update()
-
-    def update(self) -> None:
         self.removeAllRows()
         if not self._results:
             self.resizeRowsToContents()
