@@ -563,10 +563,9 @@ class SimulatorWindow(gui.WindowWidget):
     def _startWorldChanged(self) -> None:
         startWorld = self._startWorldWidget.selectedWorld()
         if startWorld:
-            self._mapWidget.centerOnHex(
-                hex=startWorld.hex(),
-                clearOverlays=True,
-                highlightHex=True)
+            self._mapWidget.clearHexHighlights()
+            self._mapWidget.highlightHex(hex=startWorld.hex())
+            self._mapWidget.centerOnHex(hex=startWorld.hex())
 
         self._enableDisableControls()
 
@@ -722,11 +721,9 @@ class SimulatorWindow(gui.WindowWidget):
                 self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
                 self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
                 self._currentHex = currentHex
-            self._mapWidget.centerOnHex(
-                hex=currentHex,
-                clearOverlays=True,
-                highlightHex=True,
-                linearScale=None) # Keep current scale
+            self._mapWidget.clearHexHighlights()
+            self._mapWidget.highlightHex(hex=currentHex)
+            self._mapWidget.centerOnHex(linearScale=None) # Keep current scale
             self._mapWidget.setInfoHex(
                 hex=currentWorld.hex() if currentWorld else None)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
@@ -753,10 +750,7 @@ class SimulatorWindow(gui.WindowWidget):
             hex: travellermap.HexPosition
             ) -> None:
         try:
-            self._mapWidget.centerOnHex(
-                hex=hex,
-                clearOverlays=False,
-                highlightHex=False)
+            self._mapWidget.centerOnHex(hex=hex)
         except Exception as ex:
             message = 'Failed to show location in Traveller Map'
             logging.error(message, exc_info=ex)

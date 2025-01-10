@@ -337,9 +337,8 @@ class CargoManifestDialog(gui.DialogEx):
             ) -> None:
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.showJumpRoute(
-                jumpRoute=jumpRoute,
-                clearOverlays=True)
+            mapWindow.clearOverlays()
+            mapWindow.setJumpRoute(jumpRoute=jumpRoute)
         except Exception as ex:
             message = 'Failed to show jump route in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -352,12 +351,11 @@ class CargoManifestDialog(gui.DialogEx):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
+        hexes = [world.hex() for world in worlds]
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.centerOnWorlds(
-                worlds=worlds,
-                clearOverlays=True,
-                highlightWorlds=True)
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)

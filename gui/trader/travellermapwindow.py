@@ -1,7 +1,6 @@
 import gui
 import logging
 import logic
-import traveller
 import travellermap
 import typing
 from PyQt5 import QtCore, QtWidgets
@@ -21,109 +20,67 @@ class TravellerMapWindow(gui.WindowWidget):
         windowLayout.addWidget(self._importJumpRouteButton)
         self.setLayout(windowLayout)
 
-    def centerOnWorld(
-            self,
-            world: traveller.World,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
-            clearOverlays: bool = False,
-            highlightWorld: bool = False,
-            highlightRadius: float = 0.5
-            ) -> None:
-        self._mapWidget.centerOnWorld(
-            world=world,
-            linearScale=linearScale,
-            clearOverlays=clearOverlays,
-            highlightWorld=highlightWorld,
-            highlightRadius=highlightRadius)
-
-    def centerOnWorlds(
-            self,
-            worlds: typing.Iterable[traveller.World],
-            clearOverlays: bool = False,
-            highlightWorlds: bool = False,
-            highlightRadius: float = 0.5
-            ) -> None:
-        self._mapWidget.centerOnWorlds(
-            worlds=worlds,
-            clearOverlays=clearOverlays,
-            highlightWorlds=highlightWorlds,
-            highlightRadius=highlightRadius)
-
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
-            clearOverlays: bool = False,
-            highlightHex: bool = False,
-            highlightRadius: float = 0.5
+            linearScale: typing.Optional[float] = 64 # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
-            linearScale=linearScale,
-            clearOverlays=clearOverlays,
-            highlightHex=highlightHex,
-            highlightRadius=highlightRadius)
+            linearScale=linearScale)
 
     def centerOnHexes(
             self,
-            hexes: travellermap.HexPosition,
-            clearOverlays: bool = False,
-            highlightHexes: bool = False,
-            highlightRadius: float = 0.5
+            hexes: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.centerOnHexes(
-            hexes=hexes,
-            clearOverlays=clearOverlays,
-            highlightHexes=highlightHexes,
-            highlightRadius=highlightRadius)
+        self._mapWidget.centerOnHexes(hexes=hexes)
 
-    def showJumpRoute(
+    def setJumpRoute(
             self,
-            jumpRoute: logic.JumpRoute,
+            jumpRoute: typing.Optional[logic.JumpRoute],
             refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
-            zoomToArea: bool = True,
-            clearOverlays: bool = True,
-            highlightRadius: float = 0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
+            pitStopRadius: float = 0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
             ) -> None:
-        self._mapWidget.showJumpRoute(
+        self._mapWidget.setJumpRoute(
             jumpRoute=jumpRoute,
             refuellingPlan=refuellingPlan,
-            zoomToArea=zoomToArea,
-            clearOverlays=clearOverlays,
-            pitStopRadius=highlightRadius)
+            pitStopRadius=pitStopRadius)
+        self._mapWidget.centerOnJumpRoute()
 
-    def highlightWorld(
-            self,
-            world: traveller.World,
-            radius: float = 0.5
-            ) -> None:
-        self.highlightHex(
-            hex=world.hex(),
-            radius=radius)
+    def centerOnJumpRoute(self) -> None:
+        self._mapWidget.centerOnJumpRoute()
+
+    def clearJumpRoute(self):
+        self._mapWidget.clearJumpRoute()
 
     def highlightHex(
             self,
             hex: travellermap.HexPosition,
-            radius: float = 0.5
+            radius: float = 0.5,
+            colour: str = '#8080FF'
             ) -> None:
         self._mapWidget.highlightHex(
             hex=hex,
-            radius=radius)
+            radius=radius,
+            colour=colour)
+        self._mapWidget.centerOnHex(
+            hex=hex)
 
-    def clearWorldHighlight(
+    def highlightHexes(
             self,
-            world: traveller.World
+            hexes: typing.Iterable[travellermap.HexPosition],
+            radius: float = 0.5,
+            colour: str = '#8080FF'
             ) -> None:
-        self._mapWidget.clearWorldHighlight(world=world)
-
-    def clearHexHighlight(
-            self,
-            hex: travellermap.HexPosition
-            ) -> None:
-        self._mapWidget.clearHexHighlight(hex=hex)
+        self._mapWidget.highlightHexes(
+            hexes=hexes,
+            radius=radius,
+            colour=colour)
+        self._mapWidget.centerOnHexes(hexes=hexes)
 
     def clearOverlays(self) -> None:
-        self._mapWidget.clearOverlays()
+        self._mapWidget.clearHexHighlights()
+        self._mapWidget.clearJumpRoute()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -166,6 +123,4 @@ class TravellerMapWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self.showJumpRoute(
-            jumpRoute=jumpRoute,
-            clearOverlays=True)
+        self.setJumpRoute(jumpRoute=jumpRoute)

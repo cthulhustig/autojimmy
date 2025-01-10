@@ -377,11 +377,11 @@ class WorldComparisonWindow(gui.WindowWidget):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
+        hexes = [world.hex() for world in worlds]
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(
                 self._travellerMapWidget)
-            self._travellerMapWidget.centerOnWorlds(
-                worlds=worlds)
+            self._travellerMapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)

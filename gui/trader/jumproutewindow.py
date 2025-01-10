@@ -1455,10 +1455,7 @@ class JumpRouteWindow(gui.WindowWidget):
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
-            self._travellerMapWidget.centerOnHex(
-                hex=hex,
-                clearOverlays=False,
-                highlightHex=False)
+            self._travellerMapWidget.centerOnHex(hex=hex)
         except Exception as ex:
             message = 'Failed to show hex in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -1480,10 +1477,7 @@ class JumpRouteWindow(gui.WindowWidget):
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
-            self._travellerMapWidget.centerOnHexes(
-                hexes=hexes,
-                clearOverlays=False,
-                highlightHexes=False)
+            self._travellerMapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show hexes(s) in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -1494,7 +1488,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _updateJumpOverlays(self) -> None:
         for handle in self._jumpOverlayHandles:
-            self._travellerMapWidget.removeOverlayGroup(handle=handle)
+            self._travellerMapWidget.removeOverlay(handle=handle)
         self._jumpOverlayHandles.clear()
 
         showJumpRatingOverlay = self._jumpRatingOverlayAction.isChecked()
@@ -1511,7 +1505,7 @@ class JumpRouteWindow(gui.WindowWidget):
             colour = self._JumpRatingOverlayDarkStyleColour \
                 if isDarkMapStyle else \
                 self._JumpRatingOverlayLightStyleColour
-            handle = self._travellerMapWidget.createHexRadiusOverlayGroup(
+            handle = self._travellerMapWidget.createRadiusOverlay(
                 center=startHex,
                 radius=jumpRating,
                 lineColour=colour,
@@ -1549,8 +1543,9 @@ class JumpRouteWindow(gui.WindowWidget):
                 colourMap[world.hex()] = tagColour
 
             if taggedHexes:
-                handle = self._travellerMapWidget.createHexOverlayGroup(
+                handle = self._travellerMapWidget.createHexesOverlay(
                     hexes=taggedHexes,
+                    primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
                     fillMap=colourMap)
                 self._jumpOverlayHandles.add(handle)
 
@@ -1579,7 +1574,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._maxRouteCostLabel.clear()
 
     def _updateTravellerMapOverlays(self) -> None:
-        self._travellerMapWidget.clearOverlays()
+        self._travellerMapWidget.clearHexHighlights()
+        self._travellerMapWidget.clearJumpRoute()
         self._jumpRatingOverlayHandle = None
         self._reachableWorldsOverlayHandle = None
 
@@ -1613,15 +1609,14 @@ class JumpRouteWindow(gui.WindowWidget):
                 radius=0.3)
 
         if self._jumpRoute:
-            self._travellerMapWidget.showJumpRoute(
+            self._travellerMapWidget.setJumpRoute(
                 jumpRoute=self._jumpRoute,
-                refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None,
+                refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
+            if self._zoomToJumpRoute:
                 # Only zoom to area if this is a 'new' route (i.e. the start/finish worlds have changed).
                 # Otherwise we assume this is an iteration of the existing jump route and the user wants
                 # to stay with their current view
-                zoomToArea=self._zoomToJumpRoute,
-                clearOverlays=False,
-                pitStopRadius=0.4)
+                self._travellerMapWidget.centerOnJumpRoute()
 
         self._updateJumpOverlays()
 

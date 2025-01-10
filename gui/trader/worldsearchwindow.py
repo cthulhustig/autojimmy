@@ -604,7 +604,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.setTradeGoods(
             tradeGoods=self._tradeGoodTable.checkedTradeGoods())
         self._resultsCountLabel.setText(common.formatNumber(0))
-        self._travellerMapWidget.clearOverlays()
+        self._travellerMapWidget.clearHexHighlights()
 
         foundWorlds = None
         try:
@@ -764,10 +764,12 @@ class WorldSearchWindow(gui.WindowWidget):
                 self._resultsDisplayModeTabView.setCurrentWidget(
                     self._travellerMapWidget)
 
-            self._travellerMapWidget.centerOnWorlds(
-                worlds=worlds,
-                clearOverlays=highlightWorlds, # Clear old highlight when highlighting new worlds
-                highlightWorlds=highlightWorlds)
+            hexes = [world.hex() for world in worlds]
+            if highlightWorlds:
+                # Clear old highlight when highlighting new worlds
+                self._travellerMapWidget.clearHexHighlights()
+                self._travellerMapWidget.highlightHexes(hexes=hexes)
+            self._travellerMapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)

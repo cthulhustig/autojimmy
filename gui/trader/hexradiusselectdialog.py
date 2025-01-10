@@ -164,7 +164,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
     def _handleConfigChange(self) -> None:
         self._selectedHexes.clear()
         for handle in self._overlays:
-            self._travellerMapWidget.removeOverlayGroup(handle)
+            self._travellerMapWidget.removeOverlay(handle)
         self._overlays.clear()
 
         centerHex = self.centerHex()
@@ -187,7 +187,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 for hex in centerHex.yieldRadiusHexes(radius=searchRadius):
                     self._selectedHexes.append(hex)
 
-                handle = self._travellerMapWidget.createHexRadiusOverlayGroup(
+                handle = self._travellerMapWidget.createRadiusOverlay(
                     center=centerHex,
                     radius=searchRadius,
                     fillColour=selectionColour)
@@ -208,12 +208,13 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    handle = self._travellerMapWidget.createHexOverlayGroup(
+                    handle = self._travellerMapWidget.createHexesOverlay(
                         hexes=self._selectedHexes,
+                        primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
                         fillColour=selectionColour)
                     self._overlays.append(handle)
 
-            handle = self._travellerMapWidget.createHexRadiusOverlayGroup(
+            handle = self._travellerMapWidget.createRadiusOverlay(
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,

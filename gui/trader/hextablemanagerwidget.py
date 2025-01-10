@@ -420,7 +420,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._mapSelectDialog.clearSelectedHexes()
         for hex in currentHexes:
-            self._mapSelectDialog.selectHex(hex=hex, centerOnWorld=False)
+            self._mapSelectDialog.selectHex(hex=hex, centerOnHex=False)
 
         if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -487,10 +487,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.centerOnHexes(
-                hexes=hexes,
-                clearOverlays=True,
-                highlightHexes=True)
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)
