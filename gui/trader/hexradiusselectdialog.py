@@ -6,6 +6,8 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This dialog should have a maximize button and double clicking the
+# title bar should make it expand
 class HexRadiusSelectDialog(gui.DialogEx):
     _RadiusOverlayDarkStyleColour = '#0000FF'
     _RadiusOverlayLightStyleColour = '#0000FF'
