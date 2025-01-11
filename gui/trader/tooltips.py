@@ -360,18 +360,28 @@ def createHexToolTip(
     if world:
         allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world=world)
         tagLevel = app.calculateAllegianceTagLevel(world=world)
+        uwp = world.uwp()
         style = formatStyle(app.tagColour(tagLevel))
         toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
 
         population = world.population()
         toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
         toolTip += f'<li><span>Total Worlds: {world.numberOfSystemWorlds()}</span></li>'
-        toolTip += f'<li><span>Water Present: {"Yes" if world.waterPresent() else "No"}</span></li>'
+
+        refuellingTypes = []
+        if world.hasStarPortRefuelling(rules=app.Config.instance().rules()):
+            refuellingTypes.append('Star Port ({code})'.format(
+                code=uwp.code(traveller.UWP.Element.StarPort)))
+        if world.hasGasGiantRefuelling():
+            refuellingTypes.append('Gas Giant(s)')
+        if world.hasWaterRefuelling():
+            refuellingTypes.append('Water')
         if world.isFuelCache():
-            toolTip += '<li><span>Fuel Cache: Yes</span></li>'
+            refuellingTypes.append('Fuel Cache')
         if world.isAnomaly():
-            style = formatStyle(app.tagColour(app.TagLevel.Warning))
-            toolTip += f'<li><span style="{style}">Anomaly: Yes</span></li>'
+            refuellingTypes.append('Anomaly')
+        toolTip += '<li><span>Refuelling: {types}</span></li>'.format(
+            types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
 
         if world.hasOwner():
             try:
@@ -393,7 +403,6 @@ def createHexToolTip(
         #
         # UWP
         #
-        uwp = world.uwp()
         toolTip += f'<li>UWP: {html.escape(uwp.string())}<li>'
         toolTip += f'<ul style="{_IndentListStyle}">'
 
@@ -590,6 +599,9 @@ def createHexToolTip(
                 style = formatStyle(app.tagColour(tagLevel))
                 toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'
             toolTip += '</ul>'
+    else:
+        toolTip += f'<li><span>Total Worlds: 0</span></li>'
+        toolTip += '<li><span>Refuelling: None</span></li>'
 
     toolTip += '</ul>'
 
