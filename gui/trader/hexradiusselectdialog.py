@@ -9,12 +9,6 @@ from PyQt5 import QtWidgets, QtCore
 # TODO: This dialog should have a maximize button and double clicking the
 # title bar should make it expand
 class HexRadiusSelectDialog(gui.DialogEx):
-    _RadiusOverlayDarkStyleColour = '#0000FF'
-    _RadiusOverlayLightStyleColour = '#0000FF'
-    _SelectionOverlayDarkStyleColour = '#9D03FC'
-    _SelectionOverlayLightStyleColour = '#4A03FC'
-    _OverlayLineWidth = 6
-
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -52,6 +46,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         # hex and have the worlds around it selected
         self._travellerMapWidget.enableDeadSpaceSelection(enable=True)
         self._travellerMapWidget.selectionChanged.connect(self._handleConfigChange)
+        self._travellerMapWidget.displayOptionsChanged.connect(self._handleConfigChange)
 
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDisabled(False)
@@ -172,15 +167,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
         centerHex = self.centerHex()
         if centerHex:
             searchRadius = self.searchRadius()
-
-            isDarkMapStyle = travellermap.isDarkStyle(
-                style=app.Config.instance().mapStyle())
-            if isDarkMapStyle:
-                radiusColour = HexRadiusSelectDialog._RadiusOverlayDarkStyleColour
-                selectionColour = HexRadiusSelectDialog._SelectionOverlayDarkStyleColour
-            else:
-                radiusColour = HexRadiusSelectDialog._RadiusOverlayLightStyleColour
-                selectionColour = HexRadiusSelectDialog._SelectionOverlayLightStyleColour
+            selectionColour = gui.TravellerMapWidget.selectionFillColour()
+            radiusColour = gui.TravellerMapWidget.selectionOutlineColour()
+            radiusWidth = gui.TravellerMapWidget.selectionOutlineWidth()
 
             includeDeadSpace = not self._includeDeadSpaceCheckBox.isHidden() and \
                 self._includeDeadSpaceCheckBox.isChecked()
@@ -220,7 +209,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,
-                lineWidth=HexRadiusSelectDialog._OverlayLineWidth)
+                lineWidth=radiusWidth)
             self._overlays.append(handle)
 
         self._okButton.setDisabled(not self._selectedHexes)

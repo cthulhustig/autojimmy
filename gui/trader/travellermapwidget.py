@@ -789,11 +789,18 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         MultiSelect = 2
 
     selectionChanged = QtCore.pyqtSignal()
+    displayOptionsChanged = QtCore.pyqtSignal()
 
     _StateVersion = 'TravellerMapWidget_v1'
 
     _ControlWidgetInset = 20
     _ControlWidgetSpacing = 5
+
+    _SelectionFillDarkStyleColour = '#8080FF'
+    _SelectionFillLightStyleColour = '#8080FF'
+    _SelectionOutlineDarkStyleColour = '#42d7f5'
+    _SelectionOutlineLightStyleColour = '#5442f5'
+    _SelectionOutlineWidth = 6
 
     # Actions shared with all instances of this widget
     _sharedStyleGroup = None
@@ -936,10 +943,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             with gui.SignalBlocker(widget=self):
                 self.clearSelectedHexes()
 
-        self._selectedHexes[hex] = self.createHexOverlay(
-            hexes=[hex],
-            primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
-            fillColour='#8080FF') # TODO: Should be a constant
+        self._createSelectionHexOverlay(hex=hex)
         self._updateSelectionOutline()
 
         with gui.SignalBlocker(widget=self._searchWidget):
@@ -957,12 +961,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             self,
             hex: travellermap.HexPosition
             ) -> None:
-        overlayHandle = self._selectedHexes.get(hex)
-        if not overlayHandle:
-            return
-
-        self.removeOverlay(handle=overlayHandle)
-        del self._selectedHexes[hex]
+        if not self._removeSelectionHexOverlay(hex=hex):
+            return # Hex wasn't selected
         self._updateSelectionOutline()
 
         if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
@@ -1019,9 +1019,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             for hex in list(self._selectedHexes.keys()):
                 world = traveller.WorldManager.instance().worldByPosition(hex=hex)
                 if not world:
-                    overlayHandle = self._selectedHexes[hex]
-                    self.removeOverlay(handle=overlayHandle)
-                    del self._selectedHexes[hex]
+                    self._removeSelectionHexOverlay(hex=hex)
                     selectionChanged = True
 
             if selectionChanged:
@@ -1148,6 +1146,26 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setFixedWidth(stream.readUInt32())
 
         return True
+
+    @staticmethod
+    def selectionFillColour() -> None:
+        isDarkStyle = travellermap.isDarkStyle(
+            style=app.Config.instance().mapStyle())
+        return TravellerMapWidget._SelectionFillDarkStyleColour \
+            if isDarkStyle else \
+            TravellerMapWidget._SelectionFillLightStyleColour
+
+    @staticmethod
+    def selectionOutlineColour() -> None:
+        isDarkStyle = travellermap.isDarkStyle(
+            style=app.Config.instance().mapStyle())
+        return TravellerMapWidget._SelectionOutlineDarkStyleColour \
+            if isDarkStyle else \
+            TravellerMapWidget._SelectionOutlineLightStyleColour
+
+    @staticmethod
+    def selectionOutlineWidth() -> int:
+        return TravellerMapWidget._SelectionOutlineWidth
 
     def _initOptionActions(self) -> None:
         if not TravellerMapWidget._sharedStyleGroup:
@@ -1276,7 +1294,9 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     def _displayOptionChanged(self) -> None:
         self._legendWidget.syncContent()
         self._configureOverlayControls()
+        self._recreateSelectionOverlays()
         self.reload()
+        self.displayOptionsChanged.emit()
 
     def _configureOverlayControls(self) -> None:
         self._resizeOverlayWidgets()
@@ -1371,6 +1391,27 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                             configSize.width()),
             vertOffset)
 
+    def _createSelectionHexOverlay(
+            self,
+            hex: travellermap.HexPosition,
+            ) -> None:
+        self._selectedHexes[hex] = self.createHexOverlay(
+            hexes=[hex],
+            primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
+            fillColour=TravellerMapWidget.selectionFillColour())
+
+    def _removeSelectionHexOverlay(
+            self,
+            hex: travellermap.HexPosition
+            ) -> bool:
+        overlayHandle = self._selectedHexes.get(hex)
+        if not overlayHandle:
+            return False
+
+        self.removeOverlay(handle=overlayHandle)
+        del self._selectedHexes[hex]
+        return True
+
     def _updateSelectionOutline(self) -> None:
         if self._selectionOutlineHandle:
             self.removeOverlay(handle=self._selectionOutlineHandle)
@@ -1378,8 +1419,15 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         if self._selectedHexes:
             self._selectionOutlineHandle = self.createMainsOverlay(
                 hexes=self._selectedHexes.keys(),
-                lineColour='#FF0000AA',
-                lineWidth=6)
+                lineColour=self.selectionOutlineColour(),
+                lineWidth=self.selectionOutlineWidth())
+
+    def _recreateSelectionOverlays(self):
+        for overlayHandle in self._selectedHexes.values():
+            self.removeOverlay(handle=overlayHandle)
+        for hex in self._selectedHexes.keys():
+            self._createSelectionHexOverlay(hex=hex)
+        self._updateSelectionOutline()
 
     def _searchHexTextEdited(self) -> None:
         # Clear the current info hex (and hide the widget) as soon as the user starts editing the

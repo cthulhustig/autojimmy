@@ -798,6 +798,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._travellerMapWidget.enableDeadSpaceSelection(
             enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
+        self._travellerMapWidget.displayOptionsChanged.connect(self._updateJumpOverlays)
 
         self._jumpRatingOverlayAction = QtWidgets.QAction('Jump Rating', self)
         self._jumpRatingOverlayAction.setCheckable(True)
