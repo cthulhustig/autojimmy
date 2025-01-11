@@ -39,7 +39,7 @@ class TravellerMapSelectDialog(gui.DialogEx):
         windowLayout.addLayout(buttonLayout, 0)
 
         self.setLayout(windowLayout)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+        self.showMaximizeButton()
         self._updateLabel()
 
     def selectedHexes(self) -> typing.Iterable[traveller.World]:

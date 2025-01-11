@@ -13,10 +13,13 @@ class DialogEx(QtWidgets.QDialog):
 
         if title != None:
             self.setWindowTitle(title)
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setWindowFlag(QtCore.Qt.WindowType.WindowContextHelpButtonHint, False)
         self._configSection = configSection
         self._settings = None
         self._hasBeenShown = False
+
+    def showMaximizeButton(self, show: bool = True) -> None:
+        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, show)
 
     def showEvent(self, e: QtGui.QShowEvent) -> None:
         if not self._hasBeenShown:

@@ -6,8 +6,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: This dialog should have a maximize button and double clicking the
-# title bar should make it expand
 class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
@@ -82,6 +80,7 @@ class HexSelectDialog(gui.DialogEx):
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
+        self.showMaximizeButton()
 
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
         currentWidget = self._tabBar.currentWidget()

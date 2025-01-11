@@ -6,8 +6,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This dialog should have a maximize button and double clicking the
-# title bar should make it expand
 class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
@@ -68,6 +66,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
+        self.showMaximizeButton()
 
         self._handleConfigChange()
 

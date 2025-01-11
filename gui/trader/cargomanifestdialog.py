@@ -71,7 +71,7 @@ class CargoManifestDialog(gui.DialogEx):
         dialogLayout.addLayout(self._buttonLayout)
 
         self.setLayout(dialogLayout)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+        self.showMaximizeButton()
         self.resize(800, 600)
 
         self._generateCargoManifests()

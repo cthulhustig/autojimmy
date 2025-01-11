@@ -239,7 +239,7 @@ class ConfigDialog(gui.DialogEx):
         dialogLayout.addLayout(self._buttonLayout)
 
         self.setLayout(dialogLayout)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+        self.showMaximizeButton()
 
     def restartRequired(self) -> bool:
         return self._restartRequired
