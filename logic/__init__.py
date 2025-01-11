@@ -12,4 +12,4 @@ from .tradeoption import *
 from .trader import *
 from .cargomanifest import *
 from .simulator import *
-from .hexborders import *
+from .hexoutlines import *

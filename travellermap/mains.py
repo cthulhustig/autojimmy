@@ -49,8 +49,8 @@ class MainsFinder(object):
                 seen.add(world)
                 index += 1
 
-                for direction in travellermap.NeighbourDirection:
-                    neighbour = travellermap.neighbourRelativeHex(origin=world, direction=direction)
+                for edge in travellermap.HexEdge:
+                    neighbour = travellermap.neighbourRelativeHex(origin=world, edge=edge)
                     if (neighbour in self._worlds) and (neighbour not in seen):
                         main.append(neighbour)
                         seen.add(neighbour)

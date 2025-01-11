@@ -208,7 +208,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    handle = self._travellerMapWidget.createHexesOverlay(
+                    handle = self._travellerMapWidget.createHexOverlay(
                         hexes=self._selectedHexes,
                         primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
                         fillColour=selectionColour)

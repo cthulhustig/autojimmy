@@ -1543,7 +1543,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 colourMap[world.hex()] = tagColour
 
             if taggedHexes:
-                handle = self._travellerMapWidget.createHexesOverlay(
+                handle = self._travellerMapWidget.createHexOverlay(
                     hexes=taggedHexes,
                     primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
                     fillMap=colourMap)

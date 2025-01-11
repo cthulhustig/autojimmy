@@ -807,6 +807,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             travellermap.HexPosition,
             str # Overlay key
             ] = {}
+        self._selectionOutlineHandle = None
         self._infoHex = None
 
         fontMetrics = QtGui.QFontMetrics(QtWidgets.QApplication.font())
@@ -927,10 +928,11 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             with gui.SignalBlocker(widget=self):
                 self.clearSelectedHexes()
 
-        self._selectedHexes[hex] = self.createHexesOverlay(
+        self._selectedHexes[hex] = self.createHexOverlay(
             hexes=[hex],
             primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
             fillColour='#8080FF') # TODO: Should be a constant
+        self._updateSelectionOutline()
 
         with gui.SignalBlocker(widget=self._searchWidget):
             self._searchWidget.setCurrentHex(hex=hex)
@@ -953,6 +955,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
         self.removeOverlay(handle=overlayHandle)
         del self._selectedHexes[hex]
+        self._updateSelectionOutline()
 
         if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
             self.selectionChanged.emit()
@@ -964,6 +967,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         for overlayHandle in self._selectedHexes.values():
             self.removeOverlay(handle=overlayHandle)
         self._selectedHexes.clear()
+        self._updateSelectionOutline()
 
         self.selectionChanged.emit()
 
@@ -981,6 +985,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 for overlayHandle in self._selectedHexes.values():
                     self.removeOverlay(handle=overlayHandle)
                 self._selectedHexes.clear()
+                self._updateSelectionOutline()
                 # NOTE: The selection changed signal is intentionally not generated
                 # as we're now in no select mode
         elif self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
@@ -993,6 +998,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 del self._selectedHexes[hex]
                 selectionChanged = True
             if selectionChanged:
+                self._updateSelectionOutline()
                 self.selectionChanged.emit()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
@@ -1011,6 +1017,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                     selectionChanged = True
 
             if selectionChanged:
+                self._updateSelectionOutline()
                 self.selectionChanged.emit()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
@@ -1253,6 +1260,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             else:
                 # Clicking a selected worlds deselects it
                 self.deselectHex(hex=hex)
+            self._updateSelectionOutline()
 
         # Call base implementation to generate left click event
         super()._handleLeftClickEvent(hex=hex)
@@ -1354,6 +1362,16 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             self.width() - (TravellerMapWidget._ControlWidgetInset +
                             configSize.width()),
             vertOffset)
+
+    def _updateSelectionOutline(self) -> None:
+        if self._selectionOutlineHandle:
+            self.removeOverlay(handle=self._selectionOutlineHandle)
+            self._selectionOutlineHandle = None
+        if self._selectedHexes:
+            self._selectionOutlineHandle = self.createMainsOverlay(
+                hexes=self._selectedHexes.keys(),
+                lineColour='#FF0000AA',
+                lineWidth=6)
 
     def _searchHexTextEdited(self) -> None:
         # Clear the current info hex (and hide the widget) as soon as the user starts editing the

@@ -303,7 +303,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self._runJumpRouteScript(jumpRoute)
 
         if refuellingPlan:
-            self._refuellingPlanOverlayHandle = self.createHexesOverlay(
+            self._refuellingPlanOverlayHandle = self.createHexOverlay(
                 hexes=[pitStop.world().hex() for pitStop in refuellingPlan],
                 primitive=TravellerMapWidgetBase.PrimitiveType.Circle,
                 radius=pitStopRadius,
@@ -393,7 +393,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 """
             self._runScript(script)
 
-    def createHexesOverlay(
+    # Create an overlay with a primitive at each hex
+    def createHexOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             primitive: PrimitiveType,
@@ -424,17 +425,27 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         return overlay.handle()
 
-    def createBorderOverlay(
+    # Create a mains style overlay where hexes are highlighted and a border is
+    # drawn around groups of touching hexes. It should be noted that the overlay
+    # is not identical to how Traveller Map renders mains, it uses a collection
+    # of circles, one for each hex so the outline of the highlighted main
+    # doesn't perfectly follow the outline of the hex, its mains don't have
+    # outlines either
+    def createMainsOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None
+            lineWidth: typing.Optional[int] = None,
+            outerOutlinesOnly: bool = False
             ) -> str:
         overlay = _Overlay()
         self._overlays[overlay.handle()] = overlay
 
-        borders = logic.calculateHexBorders(hexes=hexes)
+        if outerOutlinesOnly:
+            borders = logic.calculateOuterHexOutlines(hexes=hexes)
+        else:
+            borders = logic.calculateCompleteHexOutlines(hexes=hexes)
         if not borders:
             # Still return the group even if there were no borders, but there
             # is no point running a script
@@ -452,6 +463,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         return overlay.handle()
 
+    # Create an overlay covering all hexes within the specified radius of the
+    # center hex
     def createRadiusOverlay(
             self,
             center: travellermap.HexPosition,
@@ -463,11 +476,12 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
             includeInterior=False))
-        return self.createBorderOverlay(
+        return self.createMainsOverlay(
             hexes=radiusHexes,
             fillColour=fillColour,
             lineColour=lineColour,
-            lineWidth=lineWidth)
+            lineWidth=lineWidth,
+            outerOutlinesOnly=True)
 
     def removeOverlay(
             self,

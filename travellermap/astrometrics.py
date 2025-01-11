@@ -137,12 +137,8 @@ def hexDistance(
     adx -= ody
     return adx if adx > max else max
 
-# TODO: These are currently labelled visually (i.e. lower is towards the bottom
-# of the screen) but I think the coordinate system is actually increasing in
-# that direction so the y value would be larger than the upper y value. Need to
-# see if there is a canonical way to refer to the edges in the Traveller Map
-# source code
-class NeighbourDirection(enum.Enum):
+# These are orientated visually as seen in Traveller Map
+class HexEdge(enum.Enum):
     Upper = 0
     UpperRight = 1
     LowerRight = 2
@@ -150,55 +146,91 @@ class NeighbourDirection(enum.Enum):
     LowerLeft = 4
     UpperLeft = 5
 
+_OppositeEdgeTransitions = {
+    HexEdge.Upper: HexEdge.Lower,
+    HexEdge.UpperRight: HexEdge.LowerLeft,
+    HexEdge.LowerRight: HexEdge.UpperLeft,
+    HexEdge.Lower: HexEdge.Upper,
+    HexEdge.LowerLeft: HexEdge.UpperRight,
+    HexEdge.UpperLeft: HexEdge.LowerRight
+}
+
+_ClockwiseEdgeTransitions = {
+    HexEdge.Upper: HexEdge.UpperLeft,
+    HexEdge.UpperRight: HexEdge.Upper,
+    HexEdge.LowerRight: HexEdge.UpperRight,
+    HexEdge.Lower: HexEdge.LowerRight,
+    HexEdge.LowerLeft: HexEdge.Lower,
+    HexEdge.UpperLeft: HexEdge.LowerLeft
+}
+
+_AnticlockwiseEdgeTransitions = {
+    HexEdge.Upper: HexEdge.UpperRight,
+    HexEdge.UpperRight: HexEdge.LowerRight,
+    HexEdge.LowerRight: HexEdge.Lower,
+    HexEdge.Lower: HexEdge.LowerLeft,
+    HexEdge.LowerLeft: HexEdge.UpperLeft,
+    HexEdge.UpperLeft: HexEdge.Upper
+}
+
+def oppositeHexEdge(edge: HexEdge) -> HexEdge:
+    return _OppositeEdgeTransitions[edge]
+
+def clockwiseHexEdge(edge: HexEdge) -> HexEdge:
+    return _ClockwiseEdgeTransitions[edge]
+
+def anticlockwiseHexEdge(edge: HexEdge) -> HexEdge:
+    return _AnticlockwiseEdgeTransitions[edge]
+
 def neighbourAbsoluteHex(
         origin: typing.Tuple[int, int],
-        direction: NeighbourDirection
+        edge: HexEdge
         ) -> typing.Tuple[int, int]:
     hexX = origin[0]
     hexY = origin[1]
-    if direction == NeighbourDirection.Upper:
+    if edge == HexEdge.Upper:
         hexY -= 1
-    elif direction == NeighbourDirection.UpperRight:
+    elif edge == HexEdge.UpperRight:
         hexY += 0 if (hexX % 2) else -1
         hexX += 1
-    elif direction == NeighbourDirection.LowerRight:
+    elif edge == HexEdge.LowerRight:
         hexY += 1 if (hexX % 2) else 0
         hexX += 1
-    elif direction == NeighbourDirection.Lower:
+    elif edge == HexEdge.Lower:
         hexY += 1
-    elif direction == NeighbourDirection.LowerLeft:
+    elif edge == HexEdge.LowerLeft:
         hexY += 1 if (hexX % 2) else 0
         hexX -= 1
-    elif direction == NeighbourDirection.UpperLeft:
+    elif edge == HexEdge.UpperLeft:
         hexY += 0 if (hexX % 2) else -1
         hexX -= 1
     else:
-        raise ValueError('Invalid neighbour direction')
+        raise ValueError('Invalid hex edge')
     return (hexX, hexY)
 
 def neighbourRelativeHex(
         origin: typing.Tuple[int, int, int, int],
-        direction: NeighbourDirection
+        edge: HexEdge
         ) -> typing.Tuple[int, int, int, int]:
     sectorX = origin[0]
     sectorY = origin[1]
     hexX = origin[2]
     hexY = origin[3]
 
-    if direction == NeighbourDirection.Upper:
+    if edge == HexEdge.Upper:
         hexY -= 1
-    elif direction == NeighbourDirection.UpperRight:
+    elif edge == HexEdge.UpperRight:
         hexY += -1 if (hexX % 2) else 0
         hexX += 1
-    elif direction == NeighbourDirection.LowerRight:
+    elif edge == HexEdge.LowerRight:
         hexY += 0 if (hexX % 2) else 1
         hexX += 1
-    elif direction == NeighbourDirection.Lower:
+    elif edge == HexEdge.Lower:
         hexY += 1
-    elif direction == NeighbourDirection.LowerLeft:
+    elif edge == HexEdge.LowerLeft:
         hexY += 0 if (hexX % 2) else 1
         hexX -= 1
-    elif direction == NeighbourDirection.UpperLeft:
+    elif edge == HexEdge.UpperLeft:
         hexY += -1 if (hexX % 2) else 0
         hexX -= 1
     else:
@@ -266,27 +298,27 @@ def yieldAbsoluteRadiusHexes(
         current = (center[0], center[1] + radius)
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, NeighbourDirection.UpperRight)
+            current = neighbourAbsoluteHex(current, HexEdge.UpperRight)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, NeighbourDirection.Upper)
+            current = neighbourAbsoluteHex(current, HexEdge.Upper)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, NeighbourDirection.UpperLeft)
+            current = neighbourAbsoluteHex(current, HexEdge.UpperLeft)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, NeighbourDirection.LowerLeft)
+            current = neighbourAbsoluteHex(current, HexEdge.LowerLeft)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, NeighbourDirection.Lower)
+            current = neighbourAbsoluteHex(current, HexEdge.Lower)
             yield current
 
         for _ in range(radius):
-            current = neighbourAbsoluteHex(current, NeighbourDirection.LowerRight)
+            current = neighbourAbsoluteHex(current, HexEdge.LowerRight)
             yield current
 
 class HexPosition(object):
@@ -392,17 +424,17 @@ class HexPosition(object):
 
     def neighbourHex(
             self,
-            direction: NeighbourDirection
+            edge: HexEdge
             ) -> 'HexPosition':
         if self._absolute:
             absoluteX, absoluteY = neighbourAbsoluteHex(
                 origin=self._absolute,
-                direction=direction)
+                edge=edge)
             return HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
         else:
             sectorX, sectorY, offsetX, offsetY = neighbourRelativeHex(
                 origin=self._relative,
-                direction=direction)
+                edge=edge)
             return HexPosition(
                 sectorX=sectorX,
                 sectorY=sectorY,
