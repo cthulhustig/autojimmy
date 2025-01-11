@@ -221,6 +221,12 @@ class WorldManager(object):
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
+    def worldsInFlood(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.List[traveller.World]:
+        return list(self.yieldWorldsInFlood(hex=hex))
+
     def positionToSectorHex(
             self,
             hex: travellermap.HexPosition
@@ -328,6 +334,29 @@ class WorldManager(object):
                 world = self._absoluteWorldMap.get((x, y))
                 if world and ((not worldFilterCallback) or worldFilterCallback(world)):
                     yield world
+
+    def yieldWorldsInFlood(
+            self,
+            hex: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.World, None, None]:
+        world = self.worldByPosition(hex=hex)
+        if not world:
+            return
+
+        yield world
+
+        todo = [world]
+        seen = set(todo)
+        while todo:
+            world = todo.pop(0)
+            hex = world.hex()
+            for edge in travellermap.HexEdge:
+                adjacentHex = hex.neighbourHex(edge=edge)
+                adjacentWorld = self.worldByPosition(hex=adjacentHex)
+                if adjacentWorld and (adjacentWorld not in seen):
+                    todo.append(adjacentWorld)
+                    seen.add(adjacentWorld)
+                    yield adjacentWorld
 
     def searchForWorlds(
             self,

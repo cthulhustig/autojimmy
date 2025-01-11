@@ -938,11 +938,11 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             with gui.SignalBlocker(widget=self):
                 self.clearSelectedHexes()
 
-        self._createSelectionHexOverlay(hex=hex)
-        self._updateSelectionOutline()
-
         with gui.SignalBlocker(widget=self._searchWidget):
             self._searchWidget.setCurrentHex(hex=hex)
+
+        self._createSelectionHexOverlay(hex=hex)
+        self._updateSelectionOutline()
 
         if centerOnHex:
             self.centerOnHex(hex=hex)
@@ -951,6 +951,44 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             self.setInfoHex(hex=hex)
 
         self.selectionChanged.emit()
+
+    def selectHexes(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
+        if self._selectionMode == TravellerMapWidget.SelectionMode.NoSelect:
+            return
+
+        if not self._enableDeadSpaceSelection:
+            filtered = []
+            for hex in hexes:
+                if traveller.WorldManager.instance().worldByPosition(hex=hex):
+                    filtered.append(hex)
+            hexes = filtered
+
+        if not hexes:
+            return
+
+        if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
+            # In single select mode just select the first item
+            self.selectHex(
+                hex=hexes[0],
+                centerOnHex=False,
+                setInfoHex=False)
+            return
+
+        with gui.SignalBlocker(widget=self._searchWidget):
+            self._searchWidget.setCurrentHex(hex=hexes[0])
+
+        selectionChanged = False
+        for hex in hexes:
+            if hex not in self._selectedHexes:
+                self._createSelectionHexOverlay(hex=hex)
+                selectionChanged = True
+
+        if selectionChanged:
+            self._updateSelectionOutline()
+            self.selectionChanged.emit()
 
     def deselectHex(
             self,
@@ -1280,7 +1318,11 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
             # Update selection if enabled
             if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
-                if hex not in self._selectedHexes:
+                if self._selectionMode == TravellerMapWidget.SelectionMode.MultiSelect and \
+                        gui.isShiftKeyDown():
+                    worlds = traveller.WorldManager.instance().worldsInFlood(hex=hex)
+                    self.selectHexes(hexes=[world.hex() for world in worlds])
+                elif hex not in self._selectedHexes:
                     self.selectHex(
                         hex=hex,
                         centerOnHex=False, # Don't center as user is interacting with map
