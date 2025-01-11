@@ -26,6 +26,12 @@ class DialogEx(QtWidgets.QDialog):
             self.firstShowEvent(e)
             self._hasBeenShown = True
 
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
         return super().showEvent(e)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
@@ -33,11 +39,6 @@ class DialogEx(QtWidgets.QDialog):
         if not self._settings:
             self._settings = gui.globalWindowSettings()
             self.loadSettings()
-
-        # Setting up the title bar needs to be done before the window is show to take effect. It
-        # needs to be done every time the window is shown as the setting is lost if the window is
-        # closed then reshown
-        gui.configureWindowTitleBar(widget=self)
 
     def done(self, result: int):
         self.saveSettings()
