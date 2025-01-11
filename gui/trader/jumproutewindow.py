@@ -705,9 +705,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointsTable = gui.WaypointTable()
         self._waypointsWidget = gui.HexTableManagerWidget(
             hexTable=self._waypointsTable,
-            isOrderedList=True, # List order determines order waypoints are to be travelled to
-            enableAddNearby=False, # Adding nearby worlds doesn't make sense for waypoints
-            enableMapSelection=False) # The windows Traveller Map widget should be used to select worlds
+            isOrderedList=True) # List order determines order waypoints are to be travelled to
         self._waypointsWidget.enableDeadSpace(
             enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._waypointsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
@@ -724,9 +722,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupAvoidLocationsControls(self) -> None:
         self._avoidHexesWidget = gui.HexTableManagerWidget(
-            allowHexCallback=self._allowAvoidHex,
-            enableAddNearby=True,
-            enableMapSelection=True)
+            allowHexCallback=self._allowAvoidHex)
         self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
         self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)

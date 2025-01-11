@@ -168,9 +168,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldTable = gui.WorldTradeScoreTable()
         self._worldManagementWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowWorld,
-            hexTable=self._worldTable,
-            enableAddNearby=True,
-            enableMapSelection=False) # The traveller map instance for this window should be used to select
+            hexTable=self._worldTable)
         self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
         self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
         self._worldManagementWidget.enableContextMenuEvent(enable=True)
@@ -268,7 +266,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         menuItems = [
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._worldManagementWidget.promptAdd(),
+                callback=lambda: self._worldManagementWidget.promptAddLocations(),
                 enabled=True
             ),
             gui.MenuItem(

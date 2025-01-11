@@ -17,17 +17,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
             isOrderedList: bool = False,
-            enableAddNearby: bool = True,
-            enableMapSelection: bool = True,
             hexTable: typing.Optional[gui.HexTable] = None,
             displayModeTabs: typing.Optional[gui.HexTableTabBar] = None
             ) -> None:
         super().__init__()
 
         self._allowHexCallback = allowHexCallback
+        self._isOrderedList = isOrderedList
         self._relativeHex = None
-        self._enableAddNearby = enableAddNearby
-        self._enableMapSelect = enableMapSelection
         self._enableContextMenuEvent = False
         self._enableDisplayModeChangedEvent = False
         self._enableShowInTravellerMapEvent = False
@@ -35,9 +32,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         # Instance of dialogs are created on demand then maintained. This is
         # done to prevent the web widget being recreated
-        self._hexSelectDialog: typing.Optional[gui.HexSelectDialog] = None
+        self._locationSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
         self._radiusSelectDialog: typing.Optional[gui.HexRadiusSelectDialog] = None
-        self._mapSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
 
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
@@ -52,7 +48,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._hexTable.customContextMenuRequested.connect(self._showTableContextMenu)
         self._hexTable.keyPressed.connect(self._tableKeyPressed)
-        if isOrderedList:
+        if self._isOrderedList:
             # Disable sorting on if the list is to be ordered
             self._hexTable.setSortingEnabled(False)
 
@@ -64,7 +60,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._moveSelectionUpButton = None
         self._moveSelectionDownButton = None
-        if isOrderedList:
+        if self._isOrderedList:
             self._moveSelectionUpButton = QtWidgets.QToolButton()
             self._moveSelectionUpButton.setArrowType(QtCore.Qt.ArrowType.UpArrow)
             self._moveSelectionUpButton.setSizePolicy(
@@ -91,14 +87,16 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
             tableLayout = orderedTableLayout
 
-        self._addButton = QtWidgets.QPushButton('Add...')
-        self._addButton.setSizePolicy(
+        self._addLocationsButton = QtWidgets.QPushButton('Add...')
+        self._addLocationsButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self.promptAdd)
+        self._addLocationsButton.clicked.connect(self.promptAddLocations)
 
         self._addNearbyButton = None
-        if enableAddNearby:
+        if not self._isOrderedList:
+            # Adding multiple hexes as one time doesn't really make sense for
+            # ordered list
             self._addNearbyButton = QtWidgets.QPushButton('Add Nearby...')
             self._addNearbyButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
@@ -117,24 +115,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Minimum)
         self._removeAllButton.clicked.connect(self.removeAllRows)
 
-        self._mapButton = None
-        if enableMapSelection:
-            self._mapButton = QtWidgets.QPushButton('Traveller Map...')
-            self._mapButton.setSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Minimum,
-                QtWidgets.QSizePolicy.Policy.Minimum)
-            self._mapButton.clicked.connect(self.promptTravellerMap)
-
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._addButton)
+        buttonLayout.addWidget(self._addLocationsButton)
         if self._addNearbyButton:
             buttonLayout.addWidget(self._addNearbyButton)
         buttonLayout.addWidget(self._removeButton)
         buttonLayout.addWidget(self._removeAllButton)
-        if self._mapButton:
-            buttonLayout.addWidget(self._mapButton)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -354,17 +342,13 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def enableDeadSpace(self, enable: bool) -> None:
         self._enableDeadSpace = enable
 
-        if self._hexSelectDialog:
-            self._hexSelectDialog.enableDeadSpaceSelection(
-                enable=enable)
-
         if self._radiusSelectDialog:
             self._radiusSelectDialog.enableDeadSpaceSelection(
                 enable=enable)
 
-        if self._mapSelectDialog:
-            self._mapSelectDialog.configureSelection(
-                singleSelect=False,
+        if self._locationSelectDialog:
+            self._locationSelectDialog.configureSelection(
+                singleSelect=self._isOrderedList,
                 includeDeadSpace=enable)
 
         if not enable:
@@ -379,14 +363,61 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
 
-    def promptAdd(self) -> None:
-        if not self._hexSelectDialog:
-            self._hexSelectDialog = gui.HexSelectDialog()
-            self._hexSelectDialog.enableDeadSpaceSelection(
-                enable=self._enableDeadSpace)
-        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+    def promptAddLocations(self) -> None:
+        currentHexes = self.hexes()
+
+        if not self._locationSelectDialog:
+            self._locationSelectDialog = gui.TravellerMapSelectDialog(parent=self)
+            self._locationSelectDialog.configureSelection(
+                singleSelect=self._isOrderedList,
+                includeDeadSpace=self._enableDeadSpace)
+
+        self._locationSelectDialog.clearSelectedHexes()
+
+        # If it's not an ordered list that is being managed then the dialog should
+        # show the current table contents and allow the user to select more hexes or
+        # unselect currently selected ones to have them removed from the table. If
+        # we are dealing with an ordered list the dialog is just used to select a
+        # new world that should be added to the table, in which case the current
+        # table contents are not shown.
+        if not self._isOrderedList:
+            for hex in currentHexes:
+                self._locationSelectDialog.selectHex(hex=hex, centerOnHex=False)
+
+        if self._locationSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        self.addHex(self._hexSelectDialog.selectedHex())
+
+        newHexes = self._locationSelectDialog.selectedHexes()
+        updated = False
+
+        sortingEnabled = self._hexTable.isSortingEnabled()
+        self._hexTable.setSortingEnabled(False)
+
+        try:
+            # Remove hexes that are no longer selected. This only needs to be
+            # done when not managing an ordered list when the dialog shows the
+            # current table contents and allows the user to deselect as well as
+            # select
+            if not self._isOrderedList:
+                for hex in currentHexes:
+                    if hex not in newHexes:
+                        self._hexTable.removeHex(hex)
+                        updated = True
+
+            # Add newly selected hexes
+            for hex in newHexes:
+                if hex not in currentHexes:
+                    if self._allowHexCallback and not self._allowHexCallback(hex):
+                        # Silently ignore worlds that are filtered out
+                        continue
+
+                    self._hexTable.addHex(hex)
+                    updated = True
+        finally:
+            self._hexTable.setSortingEnabled(sortingEnabled)
+
+        if updated:
+            self.contentChanged.emit()
 
     def promptAddNearby(
             self,
@@ -408,50 +439,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             return
 
         self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
-
-    def promptTravellerMap(self) -> None:
-        currentHexes = self.hexes()
-
-        if not self._mapSelectDialog:
-            self._mapSelectDialog = gui.TravellerMapSelectDialog(parent=self)
-            self._mapSelectDialog.configureSelection(
-                singleSelect=False,
-                includeDeadSpace=self._enableDeadSpace)
-
-        self._mapSelectDialog.clearSelectedHexes()
-        for hex in currentHexes:
-            self._mapSelectDialog.selectHex(hex=hex, centerOnHex=False)
-
-        if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return
-
-        newHexes = self._mapSelectDialog.selectedHexes()
-        updated = False
-
-        sortingEnabled = self._hexTable.isSortingEnabled()
-        self._hexTable.setSortingEnabled(False)
-
-        try:
-            # Remove hexes that are no longer selected
-            for hex in currentHexes:
-                if hex not in newHexes:
-                    self._hexTable.removeHex(hex)
-                    updated = True
-
-            # Add newly selected hexes
-            for hex in newHexes:
-                if hex not in currentHexes:
-                    if self._allowHexCallback and not self._allowHexCallback(hex):
-                        # Silently ignore worlds that are filtered out
-                        continue
-
-                    self._hexTable.addHex(hex)
-                    updated = True
-        finally:
-            self._hexTable.setSortingEnabled(sortingEnabled)
-
-        if updated:
-            self.contentChanged.emit()
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()
@@ -510,9 +497,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         menuItems.append(gui.MenuItem(
             text='Add...',
-            callback=lambda: self.promptAdd(),
+            callback=lambda: self.promptAddLocations(),
             enabled=True))
-        if self._enableAddNearby:
+        if not self._isOrderedList:
             menuItems.append(gui.MenuItem(
                 text='Add Nearby...',
                 callback=lambda: self.promptAddNearby(initialHex=clickedHex),
@@ -529,13 +516,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             callback=lambda: self.removeAllRows(),
             enabled=not self._hexTable.isEmpty()))
         menuItems.append(None) # Separator
-
-        if self._enableMapSelect:
-            menuItems.append(gui.MenuItem(
-                text='Select with Traveller Map...',
-                callback=lambda: self.promptTravellerMap(),
-                enabled=True))
-            menuItems.append(None) # Separator
 
         menuItems.append(gui.MenuItem(
             text='Show Selection Details...',

@@ -862,9 +862,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             hexTable=self._saleWorldsTable,
-            allowHexCallback=self._allowSaleWorld,
-            enableAddNearby=True,
-            enableMapSelection=True)
+            allowHexCallback=self._allowSaleWorld)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._saleWorldsWidget)
@@ -2217,9 +2215,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def _setupSaleWorldControls(self) -> None:
         self._saleWorldsWidget = gui.HexTableManagerWidget(
-            allowHexCallback=self._allowSaleWorld,
-            enableAddNearby=True,
-            enableMapSelection=True)
+            allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.enableContextMenuEvent(True)
         self._saleWorldsWidget.contextMenuRequested.connect(self._showSaleWorldTableContextMenu)
 
@@ -2231,9 +2227,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def _setupPurchaseWorldControls(self) -> None:
         self._purchaseWorldsWidget = gui.HexTableManagerWidget(
-            allowHexCallback=self._allowPurchaseWorld,
-            enableAddNearby=True,
-            enableMapSelection=True)
+            allowHexCallback=self._allowPurchaseWorld)
         self._purchaseWorldsWidget.enableContextMenuEvent(True)
         self._purchaseWorldsWidget.contextMenuRequested.connect(self._showPurchaseWorldTableContextMenu)
 
@@ -2278,7 +2272,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         menuItems = [
             gui.MenuItem(
                 text='Add...',
-                callback=lambda: self._purchaseWorldsWidget.promptAdd(),
+                callback=lambda: self._purchaseWorldsWidget.promptAddLocations(),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2295,12 +2289,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Remove All',
                 callback=lambda: self._purchaseWorldsWidget.removeAllRows(),
                 enabled=not self._purchaseWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Select with Traveller Map...',
-                callback=lambda: self._purchaseWorldsWidget.promptTravellerMap(),
-                enabled=True
             ),
             None, # Separator
             gui.MenuItem(
@@ -2344,7 +2332,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         menuItems = [
             gui.MenuItem(
                 text='Add...',
-                callback=lambda: self._saleWorldsWidget.promptAdd(),
+                callback=lambda: self._saleWorldsWidget.promptAddLocations(),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2361,12 +2349,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Remove All',
                 callback=lambda: self._saleWorldsWidget.removeAllRows(),
                 enabled=not self._saleWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Select with Traveller Map...',
-                callback=lambda: self._saleWorldsWidget.promptTravellerMap(),
-                enabled=True
             ),
             None, # Separator
             gui.MenuItem(
