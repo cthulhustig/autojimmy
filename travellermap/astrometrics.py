@@ -146,6 +146,7 @@ class HexEdge(enum.Enum):
     LowerLeft = 4
     UpperLeft = 5
 
+
 _OppositeEdgeTransitions = {
     HexEdge.Upper: HexEdge.Lower,
     HexEdge.UpperRight: HexEdge.LowerLeft,
