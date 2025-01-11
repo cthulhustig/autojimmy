@@ -10,8 +10,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHex = QtCore.pyqtSignal(travellermap.HexPosition)
 
-    # TODO: I suspect this class will be renamed to HexSelectWidget but I might need
-    # to keep this state so users don't loose the last selected world
+    # This state version intentionally doesn't match the class name. This
+    # was done for backwards compatibility when the class was renamed as
+    # part of the work for dead space routing
     _StateVersion = 'WorldSelectWidget_v1'
 
     # The hex select combo box has a minimum width applied to stop it becoming
