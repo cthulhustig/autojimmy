@@ -507,9 +507,8 @@ class ListTable(gui.TableWidgetEx):
         key = columnType.name if isinstance(columnType, enum.Enum) else columnType
         if hidden:
             self._userHiddenColumns.add(key)
-        else:
-            if key in self._userHiddenColumns:
-                self._userHiddenColumns.remove(key)
+        elif key in self._userHiddenColumns:
+            self._userHiddenColumns.remove(key)
 
     def _restoreColumnUserHide(
             self,
@@ -525,8 +524,9 @@ class ListTable(gui.TableWidgetEx):
         key = columnType.name if isinstance(columnType, enum.Enum) else columnType
         if key in self._userHiddenColumns:
             if self.visibleColumnCount() <= 1:
-                # Don't allow the hide last column as the header will be hidden
-                # and there is no great way of getting it back
+                # Don't allow the last column to be hidden as the header will be
+                # hidden, it looks weird and it might not be obvious to the user
+                # how to get back to having headers.
                 return
 
             self.hideColumn(column)
