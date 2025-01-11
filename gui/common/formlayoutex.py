@@ -126,30 +126,6 @@ class FormLayoutEx(QtWidgets.QFormLayout):
         if isinstance(label, QtWidgets.QLabel):
             label.setText(text)
 
-    def showRow(
-            self,
-            row: int,
-            show: bool
-            ) -> None:
-        self.hideRow(row=row, hidden=not show)
-
-    def hideRow(
-            self,
-            row: int,
-            hidden: bool
-            ) -> None:
-        rowItems = [
-            self.itemAt(row, FormLayoutEx.ItemRole.LabelRole),
-            self.itemAt(row, FormLayoutEx.ItemRole.FieldRole)
-        ]
-
-        for item in rowItems:
-            if not item:
-                continue
-
-            widget = item.widget()
-            widget.setHidden(hidden)
-
     def addStretch(self) -> None:
         spacer = QtWidgets.QSpacerItem(
             0,
