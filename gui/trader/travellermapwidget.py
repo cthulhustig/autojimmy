@@ -1456,12 +1456,6 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._searchButton.setEnabled(hex != None)
 
     def _searchButtonClicked(self) -> None:
-        # TODO: This function has changed a lot. I think the old implementation
-        # might have been left over from before I did the last big update to
-        # world selection but it might have actually been there for a reason. In
-        # fact it seems to have some undesirable behaviour in it causes the map
-        # to jump to an unexpected location if you type a name that doesn't match
-        # anything and click the search button
         self._searchHexSelected(hex=self._searchWidget.currentHex())
 
     def _showInfoToggled(self) -> None:

@@ -269,8 +269,6 @@ class HexSelectDialog(gui.DialogEx):
     def _primeSearch(self) -> None:
         self._searchTimer.start()
 
-    # TODO: How controls are updated by this function has changed quite
-    # a bit so I need to make sure there are no regressions
     def _performSearch(self) -> None:
         oldSelectedHex = self.selectedHex()
 

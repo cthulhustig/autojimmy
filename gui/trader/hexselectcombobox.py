@@ -403,8 +403,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
         # else without them having to delete the current search text
         self.selectAll()
 
-    # TODO: This function used to generate a hex changed event even if the hex
-    # hadn't changed, need to check I've not introduced a regression
     def _updateSelectedHex(
             self,
             hex: typing.Optional[travellermap.HexPosition],
