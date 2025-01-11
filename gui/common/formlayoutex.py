@@ -134,7 +134,10 @@ class FormLayoutEx(QtWidgets.QFormLayout):
             QtWidgets.QSizePolicy.Policy.Expanding)
         self.addItem(spacer)
 
-    def rowForObject(self, obj: typing.Optional[typing.Union[QtWidgets.QWidget, QtWidgets.QLayout]]):
+    def rowForObject(
+            self,
+            obj: typing.Optional[typing.Union[QtWidgets.QWidget, QtWidgets.QLayout]]
+            ) -> int:
         index, _, _ = self._objectSearch(obj)
         return index
 
