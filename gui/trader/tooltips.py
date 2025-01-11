@@ -294,6 +294,7 @@ def createHexToolTip(
         hex = world.hex()
     else:
         world = worldManager.worldByPosition(hex=hex)
+    uwp = world.uwp() if world else None
 
     formatStyle = lambda tagColour: \
         '' if not tagColour \
@@ -357,18 +358,8 @@ def createHexToolTip(
     toolTip += f'<li>Sector Hex: {html.escape(sectorHex)}<li>'
     toolTip += f'<li>Sector Position: ({hex.sectorX()}, {hex.sectorY()})<li>'
 
+    refuellingTypes = []
     if world:
-        allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world=world)
-        tagLevel = app.calculateAllegianceTagLevel(world=world)
-        uwp = world.uwp()
-        style = formatStyle(app.tagColour(tagLevel))
-        toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
-
-        population = world.population()
-        toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
-        toolTip += f'<li><span>Total Worlds: {world.numberOfSystemWorlds()}</span></li>'
-
-        refuellingTypes = []
         if world.hasStarPortRefuelling(rules=app.Config.instance().rules()):
             refuellingTypes.append('Star Port ({code})'.format(
                 code=uwp.code(traveller.UWP.Element.StarPort)))
@@ -380,8 +371,20 @@ def createHexToolTip(
             refuellingTypes.append('Fuel Cache')
         if world.isAnomaly():
             refuellingTypes.append('Anomaly')
-        toolTip += '<li><span>Refuelling: {types}</span></li>'.format(
-            types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
+    toolTip += '<li><span style="{style}">Refuelling: {types}</span></li>'.format(
+        style='' if refuellingTypes else formatStyle(app.tagColour(app.TagLevel.Warning)),
+        types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
+    toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
+        count=world.numberOfSystemWorlds() if world else 0)
+
+    if world:
+        allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world=world)
+        tagLevel = app.calculateAllegianceTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
+
+        population = world.population()
+        toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
 
         if world.hasOwner():
             try:
@@ -599,9 +602,6 @@ def createHexToolTip(
                 style = formatStyle(app.tagColour(tagLevel))
                 toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'
             toolTip += '</ul>'
-    else:
-        toolTip += f'<li><span>Total Worlds: 0</span></li>'
-        toolTip += '<li><span>Refuelling: None</span></li>'
 
     toolTip += '</ul>'
 
