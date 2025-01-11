@@ -1286,7 +1286,6 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             else:
                 # Clicking a selected worlds deselects it
                 self.deselectHex(hex=hex)
-            self._updateSelectionOutline()
 
         # Call base implementation to generate left click event
         super()._handleLeftClickEvent(hex=hex)
