@@ -460,7 +460,6 @@ class HexTable(gui.FrozenColumnListTable):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
         if version == HexTable._LegacyContentV1:
-            # TODO: Need to test this works ok
             try:
                 data = json.loads(stream.readQString())
                 worlds = logic.deserialiseWorldList(data=data)

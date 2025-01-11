@@ -170,7 +170,6 @@ class WaypointTable(gui.HexTable):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
         if version == WaypointTable._LegacyContentV1:
-            # TODO: Need to test this works ok
             try:
                 data = json.loads(stream.readQString())
                 items = data.get('worlds')

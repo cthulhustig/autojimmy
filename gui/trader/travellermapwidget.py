@@ -769,14 +769,6 @@ class _ConfigWidget(QtWidgets.QWidget):
         self._optionsWidget.adjustSize()
         self.adjustSize()
 
-# TODO: Add optional cursor hex that highlights the last clicked hex
-# - Outline only, no fill
-# - The current hex should always be part of the selection if selecting
-#   is enabled (would need to add it when toggling selection mode)
-# - It might make sense to tie this to the info hex (i.e. the info box
-#   should always show current hex)
-#   - This might mean I need to make highlighting the current hex optional
-#     for cases where I need the info but the highlight doesn't make sense
 class TravellerMapWidget(gui.TravellerMapWidgetBase):
     class SelectionMode(enum.Enum):
         NoSelect = 0
