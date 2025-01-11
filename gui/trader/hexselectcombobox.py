@@ -323,10 +323,16 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if not self._completer:
             return
 
-        # Clear the selected hex when the user starts typing
-        self._updateSelectedHex(hex=None)
-
         matches = self._findCompletionMatches()
+
+        # Clear the selected hex when the user starts typing
+        # Update: I disabled this 11/01/25 as it meant if you cancel the
+        # completer the previously selected world is lost. If the selection
+        # was to be enabled it important it's done after the matches are
+        # generated so the current selection can be taken into account when
+        # ordering new matches
+        # self._updateSelectedHex(hex=None)
+
         self._completerModel.clear()
         if not matches:
             return
