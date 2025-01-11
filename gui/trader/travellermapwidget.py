@@ -215,7 +215,7 @@ class _InfoWidget(QtWidgets.QWidget):
         self._resizeMinWidth = None
         self._resizeMaxWidth = None
 
-        self._world = None
+        self._hex = None
 
         self._label = _OverlayLabel()
         self._label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -255,15 +255,10 @@ class _InfoWidget(QtWidgets.QWidget):
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        world = None
-        if hex != None:
-            world = traveller.WorldManager.instance().worldByPosition(hex=hex)
-
-        self._world = world
-
+        self._hex = hex
         self._updateContent(self._label.width())
 
-        if self._world:
+        if self._hex:
             self.show()
         else:
             self.hide()
@@ -344,9 +339,9 @@ class _InfoWidget(QtWidgets.QWidget):
     def _updateContent(self, width: int) -> None:
         self._label.setFixedWidth(width)
 
-        if self._world:
+        if self._hex:
             text = gui.createHexToolTip(
-                hex=self._world,
+                hex=self._hex,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
                 noThumbnail=True,
                 width=width - _InfoWidget._ContentRightMargin)
@@ -1271,21 +1266,28 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        # Show info for the world the user clicked on or hide any current world info if there
-        # is no world in the hex the user clicked
-        if self._infoButton.isChecked():
-            self.setInfoHex(hex=hex)
+        shouldSelect = False
+        if self._enableDeadSpaceSelection:
+            shouldSelect = hex != None
+        elif hex:
+            shouldSelect = traveller.WorldManager.instance().worldByPosition(hex=hex) != None
 
-        # Update selection if enabled
-        if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
-            if hex not in self._selectedHexes:
-                self.selectHex(
-                    hex=hex,
-                    centerOnHex=False, # Don't center as user is interacting with map
-                    setInfoHex=False) # Updating info world has already been handled
-            else:
-                # Clicking a selected worlds deselects it
-                self.deselectHex(hex=hex)
+        if shouldSelect:
+            # Show info for the world the user clicked on or hide any current world info if there
+            # is no world in the hex the user clicked
+            if self._infoButton.isChecked():
+                self.setInfoHex(hex=hex)
+
+            # Update selection if enabled
+            if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
+                if hex not in self._selectedHexes:
+                    self.selectHex(
+                        hex=hex,
+                        centerOnHex=False, # Don't center as user is interacting with map
+                        setInfoHex=False) # Updating info world has already been handled
+                else:
+                    # Clicking a selected worlds deselects it
+                    self.deselectHex(hex=hex)
 
         # Call base implementation to generate left click event
         super()._handleLeftClickEvent(hex=hex)
