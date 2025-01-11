@@ -232,7 +232,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 class WorldSearchWindow(gui.WindowWidget):
     # We need to limit the max results as I was seeing a crash (not in the python code) if to many
     # results were added (i.e. a name search for .*)
-    _MaxSearchResults = 1000
+    _MaxSearchResults = 2000
 
     def __init__(self) -> None:
         super().__init__(
@@ -630,6 +630,8 @@ class WorldSearchWindow(gui.WindowWidget):
                 foundWorlds = worldFilter.searchArea(
                     centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
+                if len(foundWorlds) > self._MaxSearchResults:
+                    foundWorlds = foundWorlds[:self._MaxSearchResults]
         except Exception as ex:
             message = 'Failed to find nearby worlds'
             logging.error(message, exc_info=ex)
@@ -645,7 +647,7 @@ class WorldSearchWindow(gui.WindowWidget):
                 stateKey='WorldSearchNoResultsFound')
             return
 
-        if len(foundWorlds) == self._MaxSearchResults:
+        if len(foundWorlds) >= self._MaxSearchResults:
             gui.AutoSelectMessageBox.information(
                 parent=self,
                 text=f'The number of search results has been limited to {self._MaxSearchResults}',
