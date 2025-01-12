@@ -75,30 +75,28 @@ class HexRadiusSelectDialog(gui.DialogEx):
         super().loadSettings()
 
         self._settings.beginGroup(self._configSection)
+
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='SelectHexState',
             type=QtCore.QByteArray)
         if storedValue:
             self._travellerMapWidget.restoreState(storedValue)
-        self._settings.endGroup()
 
-        self._settings.beginGroup(self._configSection)
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='SelectRadiusState',
             type=QtCore.QByteArray)
         if storedValue:
             self._radiusSpinBox.restoreState(storedValue)
-        self._settings.endGroup()
 
-        self._settings.beginGroup(self._configSection)
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='IncludeDeadSpaceState',
             type=QtCore.QByteArray)
         if storedValue:
             self._includeDeadSpaceCheckBox.restoreState(storedValue)
+
         self._settings.endGroup()
 
     def selectedHexes(self) -> typing.Collection[travellermap.HexPosition]:
