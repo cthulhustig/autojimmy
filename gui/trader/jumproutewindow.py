@@ -1195,6 +1195,17 @@ class JumpRouteWindow(gui.WindowWidget):
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
+        if not hex:
+            return
+
+        isCurrentWaypoint = self._waypointsWidget.containsHex(hex=hex)
+        isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
+
+        isValidStartFinish = isValidWaypoint = \
+            self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
+            traveller.WorldManager.instance().worldByPosition(hex) != None
+        isValidAvoidHex = not isCurrentAvoidHex
+
         startHex, finishHex = self._selectStartFinishWidget.hexes()
         menuItems = []
 
@@ -1206,16 +1217,15 @@ class JumpRouteWindow(gui.WindowWidget):
         action = QtWidgets.QAction('Show Location Details...', self)
         menuItems.append(action)
         action.triggered.connect(lambda: self._showHexDetails([hex]))
-        action.setEnabled(hex != None)
 
         menu = QtWidgets.QMenu('Start/Finish', self)
         menuItems.append(menu)
         action = menu.addAction('Set Start Location')
         action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(hex=hex))
-        action.setEnabled(hex != None)
+        action.setEnabled(isValidStartFinish)
         action = menu.addAction('Set Finish Location')
         action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(hex=hex))
-        action.setEnabled(hex != None)
+        action.setEnabled(isValidStartFinish)
         action = menu.addAction('Swap Start && Finish Locations')
         action.triggered.connect(
             lambda: self._selectStartFinishWidget.setHexes(startHex=finishHex, finishHex=startHex))
@@ -1225,19 +1235,19 @@ class JumpRouteWindow(gui.WindowWidget):
         menuItems.append(menu)
         action = menu.addAction('Add Location')
         action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
-        action.setEnabled(hex != None and not self._waypointsWidget.containsHex(hex=hex))
+        action.setEnabled(isValidWaypoint)
         action = menu.addAction('Remove Location')
         action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
-        action.setEnabled(hex != None and self._waypointsWidget.containsHex(hex=hex))
+        action.setEnabled(isCurrentWaypoint)
 
         menu = QtWidgets.QMenu('Avoid List', self)
         menuItems.append(menu)
         action = menu.addAction('Add Location')
         action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
-        action.setEnabled(hex != None and not self._avoidHexesWidget.containsHex(hex=hex))
+        action.setEnabled(isValidAvoidHex)
         action = menu.addAction('Remove Location')
         action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
-        action.setEnabled(hex != None and self._avoidHexesWidget.containsHex(hex=hex))
+        action.setEnabled(isCurrentAvoidHex)
 
         menu = QtWidgets.QMenu('Zoom To', self)
         menuItems.append(menu)
