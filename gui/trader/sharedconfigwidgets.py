@@ -14,7 +14,7 @@ class _SpinBoxUpdater(QtCore.QObject):
         self._ignoreNotifications = False
 
     def attach(self, widget: typing.Union[gui.SpinBoxEx, gui.DoubleSpinBoxEx]) -> None:
-        widget.setValue(self._loadValue())
+        widget.setValue(self.loadValue())
         widget.valueChanged.connect(lambda value: self._valueChanged(widget, value))
         widget.destroyed.connect(self.detach)
         self._widgets.add(widget)
@@ -23,6 +23,12 @@ class _SpinBoxUpdater(QtCore.QObject):
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
+
+    def loadValue(self) -> int:
+        raise RuntimeError('The loadValue method should be overridden by derived _SpinBoxUpdater')
+
+    def saveValue(self, value: int) -> None:
+        raise RuntimeError('The saveValue method should be overridden by derived _SpinBoxUpdater')
 
     def _valueChanged(
             self,
@@ -33,7 +39,7 @@ class _SpinBoxUpdater(QtCore.QObject):
             return # Events are currently being ignored so nothing to do
 
         # Save the setting
-        self._saveValue(value=value)
+        self.saveValue(value=value)
 
         # Push new value to other attached widgets. Blocking signals can't be used as we want
         # the widget being updated to still notify other observers
@@ -46,12 +52,6 @@ class _SpinBoxUpdater(QtCore.QObject):
         finally:
             self._ignoreNotifications = False
 
-    def _loadValue(self) -> int:
-        raise RuntimeError('The _loadValue method should be overridden by derived _SpinBoxUpdater')
-
-    def _saveValue(self, value: int) -> None:
-        raise RuntimeError('The _saveValue method should be overridden by derived _SpinBoxUpdater')
-
 class _TogglableSpinBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__(None)
@@ -60,7 +60,7 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
         self._ignoreNotifications = False
 
     def attach(self, widget: typing.Union[gui.TogglableSpinBox, gui.TogglableDoubleSpinBox]) -> None:
-        enabled, value = self._loadValue()
+        enabled, value = self.loadValue()
         widget.setConfig(enabled, value)
         widget.valueChanged.connect(lambda value: self._valueChanged(widget, value))
         widget.destroyed.connect(self.detach)
@@ -70,6 +70,12 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
+
+    def loadValue(self) -> typing.Tuple[bool, int]:
+        raise RuntimeError('The loadValue method should be overridden by derived _TogglableSpinBoxUpdater')
+
+    def saveValue(self, enabled: bool, value: int) -> None:
+        raise RuntimeError('The saveValue method should be overridden by derived _TogglableSpinBoxUpdater')
 
     def _valueChanged(
             self,
@@ -82,7 +88,7 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
         # Retrieve the raw config from the widget. This gets that set value even if the widget
         # is disabled
         enabled, value = widget.config()
-        self._saveValue(enabled, value)
+        self.saveValue(enabled, value)
 
         # Push new value to other attached widgets. Blocking signals can't be used as we want
         # the widget being updated to still notify other observers
@@ -94,12 +100,6 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
                     other.setConfig(enabled, value)
         finally:
             self._ignoreNotifications = False
-
-    def _loadValue(self) -> typing.Tuple[bool, int]:
-        raise RuntimeError('The _loadValue method should be overridden by derived _TogglableSpinBoxUpdater')
-
-    def _saveValue(self, enabled: bool, value: int) -> None:
-        raise RuntimeError('The _saveValue method should be overridden by derived _TogglableSpinBoxUpdater')
 
 class _EnumComboBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
@@ -156,7 +156,7 @@ class _CheckBoxUpdater(QtCore.QObject):
         self._ignoreNotifications = False
 
     def attach(self, widget: gui.CheckBoxEx) -> None:
-        widget.setChecked(self._loadValue())
+        widget.setChecked(self.loadValue())
         widget.stateChanged.connect(lambda: self._valueChanged(widget))
         widget.destroyed.connect(self.detach)
         self._widgets.add(widget)
@@ -165,6 +165,12 @@ class _CheckBoxUpdater(QtCore.QObject):
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
+
+    def loadValue(self) -> int:
+        raise RuntimeError('The loadValue method should be overridden by derived _CheckBoxUpdater')
+
+    def saveValue(self, value: int) -> None:
+        raise RuntimeError('The saveValue method should be overridden by derived _CheckBoxUpdater')
 
     def _valueChanged(
             self,
@@ -176,7 +182,7 @@ class _CheckBoxUpdater(QtCore.QObject):
         value = widget.isChecked()
 
         # Save the setting
-        self._saveValue(value=value)
+        self.saveValue(value=value)
 
         # Push new value to other attached widgets. Blocking signals can't be used as we want
         # the widget being updated to still notify other observers
@@ -189,12 +195,6 @@ class _CheckBoxUpdater(QtCore.QObject):
         finally:
             self._ignoreNotifications = False
 
-    def _loadValue(self) -> int:
-        raise RuntimeError('The _loadValue method should be overridden by derived _CheckBoxUpdater')
-
-    def _saveValue(self, value: int) -> None:
-        raise RuntimeError('The _saveValue method should be overridden by derived _CheckBoxUpdater')
-
 class _RangeUpdater(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__(None)
@@ -203,7 +203,7 @@ class _RangeUpdater(QtCore.QObject):
         self._ignoreNotifications = False
 
     def attach(self, widget: gui.RangeSpinBoxWidget) -> None:
-        minValue, maxValue = self._loadValue()
+        minValue, maxValue = self.loadValue()
         widget.setValues(lowerValue=minValue, upperValue=maxValue)
         widget.rangeChanged.connect(lambda: self._rangeChanged(widget))
         widget.destroyed.connect(self.detach)
@@ -213,6 +213,12 @@ class _RangeUpdater(QtCore.QObject):
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
+
+    def loadValue(self) -> typing.Tuple[int, int]:
+        raise RuntimeError('The loadValue method should be overridden by derived _RangeUpdater')
+
+    def saveValue(self, lowerValue: int, upperValue: int) -> None:
+        raise RuntimeError('The saveValue method should be overridden by derived _RangeUpdater')
 
     def _rangeChanged(
             self,
@@ -225,7 +231,7 @@ class _RangeUpdater(QtCore.QObject):
         upperValue = widget.upperValue()
 
         # Save the setting
-        self._saveValue(lowerValue=lowerValue, upperValue=upperValue)
+        self.saveValue(lowerValue=lowerValue, upperValue=upperValue)
 
         # Push new value to other attached widgets. Blocking signals can't be used as we want
         # the widget being updated to still notify other observers
@@ -237,12 +243,6 @@ class _RangeUpdater(QtCore.QObject):
                     other.setValues(lowerValue=lowerValue, upperValue=upperValue)
         finally:
             self._ignoreNotifications = False
-
-    def _loadValue(self) -> typing.Tuple[int, int]:
-        raise RuntimeError('The _loadValue method should be overridden by derived _RangeUpdater')
-
-    def _saveValue(self, lowerValue: int, upperValue: int) -> None:
-        raise RuntimeError('The _saveValue method should be overridden by derived _RangeUpdater')
 
 class _SharedSpinBox(gui.SpinBoxEx):
     _updaterMap: typing.Dict[typing.Type[gui.SpinBoxEx], _SpinBoxUpdater] = {}
@@ -404,10 +404,10 @@ class _SharedRangeWidget(gui.RangeSpinBoxWidget):
 
 class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().playerBrokerDm()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setPlayerBrokerDm(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -420,10 +420,10 @@ class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
 
 class SharedShipTonnageSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().shipTonnage()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setShipTonnage(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -436,10 +436,10 @@ class SharedShipTonnageSpinBox(_SharedSpinBox):
 
 class SharedJumpRatingSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().shipJumpRating()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setShipJumpRating(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -452,10 +452,10 @@ class SharedJumpRatingSpinBox(_SharedSpinBox):
 
 class SharedFuelCapacitySpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().shipFuelCapacity()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setShipFuelCapacity(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -468,10 +468,10 @@ class SharedFuelCapacitySpinBox(_SharedSpinBox):
 
 class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> float:
+        def loadValue(self) -> float:
             return app.Config.instance().shipCurrentFuel()
 
-        def _saveValue(self, value: float) -> None:
+        def saveValue(self, value: float) -> None:
             return app.Config.instance().setShipCurrentFuel(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -484,11 +484,11 @@ class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
 
 class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
-        def _loadValue(self) -> typing.Tuple[bool, float]:
+        def loadValue(self) -> typing.Tuple[bool, float]:
             return (app.Config.instance().useShipFuelPerParsec(),
                     app.Config.instance().shipFuelPerParsec())
 
-        def _saveValue(self, enabled: bool, value: float) -> None:
+        def saveValue(self, enabled: bool, value: float) -> None:
             app.Config.instance().setUseShipFuelPerParsec(enabled)
             app.Config.instance().setShipFuelPerParsec(value)
 
@@ -502,10 +502,10 @@ class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
 
 class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().shipCargoCapacity()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setShipCargoCapacity(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -518,10 +518,10 @@ class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
 
 class SharedJumpOverheadSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().perJumpOverheads()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setPerJumpOverheads(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -534,10 +534,10 @@ class SharedJumpOverheadSpinBox(_SharedSpinBox):
 
 class SharedAvailableFundsSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().availableFunds()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             return app.Config.instance().setAvailableFunds(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -565,10 +565,10 @@ class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
 
 class SharedUseFuelCachesCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
+        def loadValue(self) -> bool:
             return app.Config.instance().useFuelCaches()
 
-        def _saveValue(self, value: bool) -> None:
+        def saveValue(self, value: bool) -> None:
             return app.Config.instance().setUseFuelCaches(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -579,10 +579,10 @@ class SharedUseFuelCachesCheckBox(_SharedCheckBox):
 
 class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
+        def loadValue(self) -> bool:
             return app.Config.instance().useAnomalyRefuelling()
 
-        def _saveValue(self, value: bool) -> None:
+        def saveValue(self, value: bool) -> None:
             return app.Config.instance().setUseAnomalyRefuelling(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -593,10 +593,10 @@ class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
 
 class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().anomalyFuelCost()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             app.Config.instance().setAnomalyFuelCost(value)
 
     def __init__(
@@ -612,10 +612,10 @@ class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
 
 class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
+        def loadValue(self) -> int:
             return app.Config.instance().anomalyBerthingCost()
 
-        def _saveValue(self, value: int) -> None:
+        def saveValue(self, value: int) -> None:
             app.Config.instance().setAnomalyBerthingCost(value)
 
     def __init__(
@@ -661,10 +661,10 @@ class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
 
 class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
+        def loadValue(self) -> bool:
             return app.Config.instance().includeStartBerthing()
 
-        def _saveValue(self, value: bool) -> None:
+        def saveValue(self, value: bool) -> None:
             return app.Config.instance().setIncludeStartBerthing(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -675,10 +675,10 @@ class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):
 
 class SharedIncludeFinishBerthingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
+        def loadValue(self) -> bool:
             return app.Config.instance().includeFinishBerthing()
 
-        def _saveValue(self, value: bool) -> None:
+        def saveValue(self, value: bool) -> None:
             return app.Config.instance().setIncludeFinishBerthing(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -689,10 +689,10 @@ class SharedIncludeFinishBerthingCheckBox(_SharedCheckBox):
 
 class SharedIncludeLogisticsCostsCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
+        def loadValue(self) -> bool:
             return app.Config.instance().includeLogisticsCosts()
 
-        def _saveValue(self, value: bool) -> None:
+        def saveValue(self, value: bool) -> None:
             return app.Config.instance().setIncludeLogisticsCosts(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -703,10 +703,10 @@ class SharedIncludeLogisticsCostsCheckBox(_SharedCheckBox):
 
 class SharedIncludeUnprofitableCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
+        def loadValue(self) -> bool:
             return app.Config.instance().includeUnprofitableTrades()
 
-        def _saveValue(self, value: bool) -> None:
+        def saveValue(self, value: bool) -> None:
             return app.Config.instance().setIncludeUnprofitableTrades(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -717,10 +717,10 @@ class SharedIncludeUnprofitableCheckBox(_SharedCheckBox):
 
 class SharedSellerDMRangeWidget(_SharedRangeWidget):
     class _SettingUpdater(_RangeUpdater):
-        def _loadValue(self) -> typing.Tuple[int, int]:
+        def loadValue(self) -> typing.Tuple[int, int]:
             return app.Config.instance().sellerDmRange()
 
-        def _saveValue(self, lowerValue: int, upperValue: int) -> None:
+        def saveValue(self, lowerValue: int, upperValue: int) -> None:
             return app.Config.instance().setSellerDmRange(lowerValue=lowerValue, upperValue=upperValue)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -733,10 +733,10 @@ class SharedSellerDMRangeWidget(_SharedRangeWidget):
 
 class SharedBuyerDMRangeWidget(_SharedRangeWidget):
     class _SettingUpdater(_RangeUpdater):
-        def _loadValue(self) -> typing.Tuple[int, int]:
+        def loadValue(self) -> typing.Tuple[int, int]:
             return app.Config.instance().buyerDmRange()
 
-        def _saveValue(self, lowerValue: int, upperValue: int) -> None:
+        def saveValue(self, lowerValue: int, upperValue: int) -> None:
             return app.Config.instance().setBuyerDmRange(minValue=lowerValue, maxValue=upperValue)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -784,11 +784,11 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
 
 class SharedLocalPurchaseBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
-        def _loadValue(self) -> typing.Tuple[bool, int]:
+        def loadValue(self) -> typing.Tuple[bool, int]:
             return (app.Config.instance().usePurchaseBroker(),
                     app.Config.instance().purchaseBrokerDmBonus())
 
-        def _saveValue(self, enabled: bool, value: int) -> None:
+        def saveValue(self, enabled: bool, value: int) -> None:
             app.Config.instance().setUsePurchaseBroker(enabled)
             app.Config.instance().setPurchaseBrokerDmBonus(value)
 
@@ -799,11 +799,11 @@ class SharedLocalPurchaseBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
 
 class SharedLocalSaleBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
-        def _loadValue(self) -> typing.Tuple[bool, int]:
+        def loadValue(self) -> typing.Tuple[bool, int]:
             return (app.Config.instance().useSaleBroker(),
                     app.Config.instance().saleBrokerDmBonus())
 
-        def _saveValue(self, enabled: bool, value: int) -> None:
+        def saveValue(self, enabled: bool, value: int) -> None:
             app.Config.instance().setUseSaleBroker(enabled)
             app.Config.instance().setSaleBrokerDmBonus(value)
 
