@@ -193,7 +193,7 @@ def deserialiseJumpRoute(
     else:
         raise RuntimeError(f'Unsupported file format {version}')
 
-    return logic.JumpRoute(notes=nodes)
+    return logic.JumpRoute(nodes=nodes)
 
 def writeJumpRoute(
         jumpRoute: JumpRoute,
