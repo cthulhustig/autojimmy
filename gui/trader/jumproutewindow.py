@@ -1626,6 +1626,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointsWidget.enableDeadSpace(enable=isDeadSpaceRouting)
         self._travellerMapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
         self._enableDisableControls()
+        self._updateTravellerMapOverlays()
 
     def _anomalyRefuellingToggled(self) -> None:
         self._enableDisableControls()
