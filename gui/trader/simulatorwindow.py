@@ -716,16 +716,19 @@ class SimulatorWindow(gui.WindowWidget):
         elif event.type() == logic.Simulator.Event.Type.HexUpdate:
             # Data is the new world object
             currentHex: travellermap.HexPosition = event.data()
-            currentWorld = traveller.WorldManager.instance().worldByPosition(currentHex)
-            if self._currentHex and self._currentHex != currentHex:
-                self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
-                self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
+            if currentHex and self._currentHex != currentHex:
+                if self._currentHex:
+                    self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
+                    self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
                 self._currentHex = currentHex
-            self._mapWidget.clearHexHighlights()
-            self._mapWidget.highlightHex(hex=currentHex)
-            self._mapWidget.centerOnHex(linearScale=None) # Keep current scale
-            self._mapWidget.setInfoHex(
-                hex=currentWorld.hex() if currentWorld else None)
+
+            if self._currentHex:
+                self._mapWidget.clearHexHighlights()
+                self._mapWidget.highlightHex(hex=self._currentHex)
+                self._mapWidget.centerOnHex(
+                    hex=currentHex,
+                    linearScale=None) # Keep current scale
+                self._mapWidget.setInfoHex(hex=self._currentHex)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
