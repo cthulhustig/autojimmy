@@ -1452,7 +1452,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             self.removeOverlay(handle=self._selectionOutlineHandle)
             self._selectionOutlineHandle = None
         if self._selectedHexes:
-            self._selectionOutlineHandle = self.createMainsOverlay(
+            self._selectionOutlineHandle = self.createHexGroupsOverlay(
                 hexes=self._selectedHexes.keys(),
                 lineColour=self.selectionOutlineColour(),
                 lineWidth=self.selectionOutlineWidth())

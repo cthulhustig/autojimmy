@@ -425,13 +425,9 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         return overlay.handle()
 
-    # Create a mains style overlay where hexes are highlighted and a border is
-    # drawn around groups of touching hexes. It should be noted that the overlay
-    # is not identical to how Traveller Map renders mains, it uses a collection
-    # of circles, one for each hex so the outline of the highlighted main
-    # doesn't perfectly follow the outline of the hex, its mains don't have
-    # outlines either
-    def createMainsOverlay(
+    # Create an overlay where groups of touching hexes have a border drawn
+    # around them
+    def createHexGroupsOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             fillColour: typing.Optional[str] = None,
@@ -476,7 +472,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
             includeInterior=False))
-        return self.createMainsOverlay(
+        return self.createHexGroupsOverlay(
             hexes=radiusHexes,
             fillColour=fillColour,
             lineColour=lineColour,
