@@ -47,12 +47,6 @@ class TravellerMapWindow(gui.WindowWidget):
             pitStopRadius=pitStopRadius)
         self._mapWidget.centerOnJumpRoute()
 
-    def centerOnJumpRoute(self) -> None:
-        self._mapWidget.centerOnJumpRoute()
-
-    def clearJumpRoute(self):
-        self._mapWidget.clearJumpRoute()
-
     def highlightHex(
             self,
             hex: travellermap.HexPosition,
