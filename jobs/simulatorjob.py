@@ -1,6 +1,7 @@
 import logic
 import time
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore
 
@@ -15,7 +16,7 @@ class SimulatorJob(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
-            startingWorld: traveller.World,
+            startHex: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -25,6 +26,7 @@ class SimulatorJob(QtCore.QThread):
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
+            deadSpaceRouting: bool,
             searchRadius: int,
             playerBrokerDm: int,
             playerStreetwiseDm: typing.Optional[int],
@@ -45,7 +47,7 @@ class SimulatorJob(QtCore.QThread):
         # to prevent issues if they are modified while the thread is running. The
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
-        self._startingWorld = startingWorld
+        self._startHex = startHex
         self._startingFunds = startingFunds
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
@@ -55,6 +57,7 @@ class SimulatorJob(QtCore.QThread):
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
         self._perJumpOverheads = perJumpOverheads
+        self._deadSpaceRouting = deadSpaceRouting
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -80,7 +83,6 @@ class SimulatorJob(QtCore.QThread):
             self._finishedSignal[Exception].connect(finishedCallback)
 
         self._cancelled = False
-        self.start()
 
     def setStepInterval(self, seconds: float) -> None:
         self._stepInterval = seconds
@@ -97,7 +99,7 @@ class SimulatorJob(QtCore.QThread):
     def run(self) -> None:
         try:
             self._simulator.run(
-                startingWorld=self._startingWorld,
+                startHex=self._startHex,
                 startingFunds=self._startingFunds,
                 shipTonnage=self._shipTonnage,
                 shipJumpRating=self._shipJumpRating,
@@ -107,6 +109,7 @@ class SimulatorJob(QtCore.QThread):
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheads,
+                deadSpaceRouting=self._deadSpaceRouting,
                 searchRadius=self._searchRadius,
                 playerBrokerDm=self._playerBrokerDm,
                 playerStreetwiseDm=self._playerStreetwiseDm,

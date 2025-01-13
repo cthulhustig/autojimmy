@@ -10,8 +10,21 @@ import typing
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
-    _SectorSearchHintPattern = re.compile(r'^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
-    _SectorHexPattern = re.compile(r'^(.*) (\d{4})$')
+    # The absolute and relative hex patterns match search strings formatted
+    # as 2 or 4 comma separated signed integers respectively, optionally
+    # surrounded by brackets. All integer values are extracted.
+    _AbsoluteHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+)\)?$')
+    _RelativeHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)\)?$')
+    # The sector hex search pattern matches a search string with the format
+    # of a sector hex string optionally with the subsector in brackets
+    # following it (i.e. the canonical name format used for a dead space
+    # hex). The sector hex string is extracted but any subsector is discarded
+    # as the sector hex uniquely identifies the world
+    _SectorHexSearchPattern = re.compile(r'^(.+\s[0-9]{4})(?:\s+\(\s*.+\s*\))?$')
+    # The world search pattern matches a search string with the format of
+    # a world name followed by its subsector in brackets. Both the world name
+    # and subsector name are extracted
+    _WorldSearchPattern = re.compile(r'^(.+)\s+\(\s*(.+)\s*\)$')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -32,6 +45,7 @@ class WorldManager(object):
     _alternateNameMap: typing.Dict[str, typing.List[traveller.Sector]] = {}
     _sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
+    _subsectorSectorMap: typing.Dict[traveller.Subsector, traveller.Sector] = {}
     _absoluteWorldMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
 
     def __init__(self) -> None:
@@ -134,18 +148,11 @@ class WorldManager(object):
                         self._subsectorNameMap[subsectorName] = subsectorList
                     subsectorList.append(subsector)
 
-                for world in sector.worlds():
-                    self._absoluteWorldMap[(world.absoluteX(), world.absoluteY())] = world
+                    self._subsectorSectorMap[subsector] = sector
 
-    def sectorName(
-            self,
-            sectorX: int,
-            sectorY: int
-            ) -> str:
-        sector: traveller.Sector = self._sectorPositionMap.get((sectorX, sectorY))
-        if not sector:
-            return None
-        return sector.name()
+                for world in sector.worlds():
+                    hex = world.hex()
+                    self._absoluteWorldMap[(hex.absoluteX(), hex.absoluteY())] = world
 
     def sectorNames(self) -> typing.Iterable[str]:
         sectorNames = []
@@ -153,79 +160,144 @@ class WorldManager(object):
             sectorNames.append(sector.name())
         return sectorNames
 
-    def sector(
+    def sectorByName(
             self,
             name: str
             ) -> traveller.Sector:
         return self._canonicalNameMap.get(name.lower())
 
     def sectors(self) -> typing.Iterable[traveller.Sector]:
-        return self._sectorList
+        return list(self._sectorList)
 
-    def world(
+    def worldBySectorHex(
             self,
             sectorHex: str,
             ) -> typing.Optional[traveller.World]:
-        sectorName, worldX, worldY = traveller.splitSectorHex(sectorHex=sectorHex)
+        try:
+            hex = self.sectorHexToPosition(sectorHex=sectorHex)
+        except Exception as ex:
+            return None
+        return self.worldByPosition(hex=hex)
 
-        # Sector name lookup is case insensitive. The sector name map stores sector names in lower
-        # so search name should be converted to lower case before searching
-        sectorName = sectorName.lower()
-
-        # Check to see if the sector name is a canonical sector name
-        sector = self._canonicalNameMap.get(sectorName)
-        if sector:
-            world = sector.worldByPosition(x=worldX, y=worldY)
-            if world:
-                return world
-
-        # Make a best effort attempt to find the world by looking at abbreviations/alternate names
-        # and subsector names. This is important as in some places the official data does ths for
-        # things like owner/colony worlds sector hexes. These names are not guaranteed to be unique
-        # so the first found world will be returned
-
-        # Check to see if the sector name is as a alternate name
-        sectors = self._alternateNameMap.get(sectorName)
-        if sectors:
-            for sector in sectors:
-                world = sector.worldByPosition(x=worldX, y=worldY)
-                if world:
-                    return world
-
-        # Check to see if the sector name is as actually a subsector name
-        subsectors = self._subsectorNameMap.get(sectorName)
-        if subsectors:
-            for subsector in subsectors:
-                world = subsector.worldByPosition(x=worldX, y=worldY)
-                if world:
-                    return world
-
-        return None
-
-    def worldByAbsolutePosition(
+    def worldByPosition(
             self,
-            absoluteX: int,
-            absoluteY: int
+            hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.World]:
-        return self._absoluteWorldMap.get((absoluteX, absoluteY))
+        return self._absoluteWorldMap.get(hex.absolute())
+
+    def sectorByPosition(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[traveller.Sector]:
+        return self._sectorPositionMap.get((hex.sectorX(), hex.sectorY()))
+
+    def subsectorByPosition(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[traveller.Subsector]:
+        sector = self.sectorByPosition(hex=hex)
+        if sector == None:
+            return None
+        subsectors = sector.subsectors()
+        assert(len(subsectors) == 16)
+
+        _, _, offsetX, offsetY = hex.relative()
+        subsectorX = (offsetX - 1) // WorldManager._SubsectorHexWidth
+        subsectorY = (offsetY - 1) // WorldManager._SubsectorHexHeight
+        index = (subsectorY * WorldManager._SubsectorPerSectorX) + subsectorX
+        if index < 0 or index >= 16:
+            return None
+
+        return subsectors[index]
 
     def worldsInArea(
             self,
-            centerX: int,
-            centerY: int,
+            center: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
         return list(self.yieldWorldsInArea(
-            centerX=centerX,
-            centerY=centerY,
+            center=center,
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
+    def worldsInFlood(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.List[traveller.World]:
+        return list(self.yieldWorldsInFlood(hex=hex))
+
+    def positionToSectorHex(
+            self,
+            hex: travellermap.HexPosition
+            ) -> str:
+        sectorX, sectorY, offsetX, offsetY = hex.relative()
+        sector = self._sectorPositionMap.get((sectorX, sectorY))
+        if not sector:
+            raise KeyError('No sector located at {sectorX}, {sectorY}')
+        return traveller.formatSectorHex(
+            sectorName=sector.name(),
+            worldX=offsetX,
+            worldY=offsetY)
+
+    def sectorHexToPosition(
+            self,
+            sectorHex: str,
+            ) -> travellermap.HexPosition:
+        sectorName, offsetX, offsetY = traveller.splitSectorHex(
+            sectorHex=sectorHex)
+
+        # Sector name lookup is case insensitive. The sector name map stores
+        # sector names in lower so search name should be converted to lower case
+        # before searching
+        sectorName = sectorName.lower()
+
+        # Check to see if the sector name is a canonical sector name
+        sector = self._canonicalNameMap.get(sectorName)
+        if not sector:
+            # Make a best effort attempt to find the sector by looking at
+            # abbreviations/alternate names and subsector names. This is
+            # important as in some places the official data does ths for things
+            # like owner/colony worlds sector hexes. These matches are not
+            # always unique so just use the first if more than one is found
+            sectors = self._alternateNameMap.get(sectorName)
+            if sectors:
+                # Alternate sector name match
+                sector = sectors[0]
+            else:
+                subsectors = self._subsectorNameMap.get(sectorName)
+                if subsectors:
+                    # Subsector name match
+                    sector = self._subsectorSectorMap.get(subsectors[0])
+
+        if not sector:
+            raise KeyError(f'Failed to resolve sector {sectorName} for sector hex {sectorHex}')
+
+        return travellermap.HexPosition(
+            sectorX=sector.x(),
+            sectorY=sector.y(),
+            offsetX=offsetX,
+            offsetY=offsetY)
+
+    def canonicalHexName(
+            self,
+            hex: travellermap.HexPosition
+            ) -> str:
+        world = self.worldByPosition(hex=hex)
+        if world:
+            return world.name(includeSubsector=True)
+        try:
+            name = self.positionToSectorHex(hex=hex)
+            subsector = self.subsectorByPosition(hex=hex)
+            if subsector:
+                name += f' ({subsector.name()})'
+            return name
+        except KeyError:
+            return str(hex)
+
     def yieldWorldsInArea(
             self,
-            centerX: int,
-            centerY: int,
+            center: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.Generator[traveller.World, None, None]:
@@ -233,6 +305,7 @@ class WorldManager(object):
         maxLength = (searchRadius * 2) + 1
         deltaLength = int(math.floor((maxLength - minLength) / 2))
 
+        centerX, centerY = center.absolute()
         startX = centerX - searchRadius
         finishX = centerX + searchRadius
         startY = (centerY - searchRadius) + deltaLength
@@ -262,13 +335,82 @@ class WorldManager(object):
                 if world and ((not worldFilterCallback) or worldFilterCallback(world)):
                     yield world
 
+    def yieldWorldsInFlood(
+            self,
+            hex: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.World, None, None]:
+        world = self.worldByPosition(hex=hex)
+        if not world:
+            return
+
+        yield world
+
+        todo = [world]
+        seen = set(todo)
+        while todo:
+            world = todo.pop(0)
+            hex = world.hex()
+            for edge in travellermap.HexEdge:
+                adjacentHex = hex.neighbourHex(edge=edge)
+                adjacentWorld = self.worldByPosition(hex=adjacentHex)
+                if adjacentWorld and (adjacentWorld not in seen):
+                    todo.append(adjacentWorld)
+                    seen.add(adjacentWorld)
+                    yield adjacentWorld
+
     def searchForWorlds(
             self,
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.World]:
+        searchString = searchString.strip()
+        if not searchString:
+            # No matches if search string is empty after white space stripped
+            return []
+
+        # If the search string matches the sector hex format or either the
+        # absolute or relative coordinate formats then try to a world at the
+        # specified location. If a world is found then it's our only result
+        result = self._SectorHexSearchPattern.match(searchString)
+        if result:
+            try:
+                foundWorld = self.worldBySectorHex(sectorHex=result.group(1))
+                if foundWorld:
+                    return [foundWorld]
+            except:
+                # Search string is not a valid sector hex. The search pattern
+                # regex was matched so it should have the correct format, most
+                # likely the sector name doesn't match a known sector
+                pass
+
+        result = self._AbsoluteHexSearchPattern.match(searchString)
+        if result:
+            hex = travellermap.HexPosition(
+                absoluteX=int(result.group(1)),
+                absoluteY=int(result.group(2)))
+            foundWorld = self.worldByPosition(hex=hex)
+            if foundWorld:
+                return [foundWorld]
+
+        result = self._RelativeHexSearchPattern.match(searchString)
+        if result:
+            sectorX = int(result.group(1))
+            sectorY = int(result.group(2))
+            offsetX = int(result.group(3))
+            offsetY = int(result.group(4))
+            if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
+                    (offsetY >= 0 and offsetY < travellermap.SectorHeight):
+                hex = travellermap.HexPosition(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    offsetX=offsetX,
+                    offsetY=offsetY)
+                foundWorld = self.worldByPosition(hex=hex)
+                if foundWorld:
+                    return [foundWorld]
+
         searchWorldLists = None
-        result = self._SectorSearchHintPattern.match(searchString)
+        result = self._WorldSearchPattern.match(searchString)
         filterString = searchString
         if result:
             # We've matched the sector search hint pattern so check to see if the hint is actually
@@ -278,49 +420,12 @@ class WorldManager(object):
             worldString = result.group(1)
             hintString = result.group(2)
 
-            hintExpression = re.compile(
-                fnmatch.translate(hintString),
-                re.IGNORECASE)
+            searchWorldLists = self.searchForSectors(searchString=hintString)
+            for subsector in self.searchForSubsectors(searchString=hintString):
+                sector = self._subsectorSectorMap.get(subsector)
+                if sector not in searchWorldLists:
+                    searchWorldLists.append(subsector)
 
-            canonicalMatches = []
-            alternateMatches = []
-            subsectorMatches = []
-
-            for sector in self._canonicalNameMap.values():
-                if hintExpression.match(sector.name()):
-                    # The hint matched the canonical sector name so search the whole sector for
-                    # worlds
-                    canonicalMatches.append(sector)
-
-                    # The sector has been added to the list of worlds to search so no need to check
-                    # alternate names or subsectors
-                    continue
-
-                alternateNames = sector.alternateNames()
-                if alternateNames:
-                    matched = False
-                    for alternateName in sector.alternateNames():
-                        if hintExpression.match(alternateName):
-                            matched = True
-                            break
-                    if matched:
-                        # The hint matched an alternate name or abbreviations so search the whole
-                        # sector for worlds
-                        alternateMatches.append(sector)
-
-                        # The sector has been added to the list of worlds to search so no need to
-                        # check subsectors
-                        continue
-
-                for subsector in sector.subsectors():
-                    if hintExpression.match(subsector.name()):
-                        # The hint matched a subsector name so search that subsector for worlds
-                        subsectorMatches.append(subsector)
-
-            # Order the matched world lists so all canonical matches are before all alternate matches
-            # then finally any subsector matches. Doing this means the final found world list will be
-            # in a consistent order
-            searchWorldLists = canonicalMatches + alternateMatches + subsectorMatches
             if searchWorldLists:
                 filterString = worldString
 
@@ -329,34 +434,152 @@ class WorldManager(object):
             # _or_ if the specified sector/subsector is unknown
             searchWorldLists = self._sectorList
 
-        # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
-        # will match the world without needing to specify wild cards
-        if filterString[-1:] != '*':
-            filterString += '*'
-        worldExpression = re.compile(
+        strictExpression = re.compile(
             fnmatch.translate(filterString),
             re.IGNORECASE)
+        wildExpression = None
+        if filterString[-1:] != '*':
+            # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
+            # will match the world without needing to specify wild cards
+            wildExpression = re.compile(
+                fnmatch.translate(filterString + '*'),
+                re.IGNORECASE)
 
-        # IMPORTANT: In order for the list of found worlds to contain no duplicates this assumes
-        # that sectors will never appear on the list of world lists multiple times and a subsector
-        # will never be on the list if its sector is on the list
-        foundWorlds = []
+        matches: typing.List[traveller.World] = []
         for worldList in searchWorldLists:
             for world in worldList:
-                if worldExpression.match(world.name()):
-                    foundWorlds.append(world)
-                    if maxResults and len(foundWorlds) >= maxResults:
-                        return foundWorlds
+                if strictExpression.match(world.name()):
+                    matches.append(world)
+                elif wildExpression and wildExpression.match(world.name()):
+                    matches.append(world)
 
-        # If the search string matches the sector hex format try to look up the world and add it
-        # to the list
-        result = self._SectorHexPattern.match(searchString)
-        if result:
-            foundWorld = self.world(sectorHex=searchString)
-            if foundWorld and (foundWorld not in foundWorlds):
-                foundWorlds.append(foundWorld)
+        matches.sort(
+            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        if maxResults and len(matches) >= maxResults:
+            return matches[:maxResults]
+        seen = set(matches)
 
-        return foundWorlds
+        # If the search string matches any sub sectors add any worlds that
+        # we've not already seen. Ordering of this relative to sectors
+        # matches is important as sub sectors are more specific so matches
+        # should be listed first in results
+        subsectorMatches: typing.List[traveller.World] = []
+        for subsector in self.searchForSubsectors(searchString=searchString):
+            for world in subsector:
+                if world not in seen:
+                    subsectorMatches.append(world)
+
+        subsectorMatches.sort(
+            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        for world in subsectorMatches:
+            matches.append(world)
+            if maxResults and len(matches) >= maxResults:
+                return matches
+            seen.add(world)
+
+        # If the search string matches any sectors add any worlds that
+        # we've not already seen
+        sectorMatches: typing.List[traveller.World] = []
+        for sector in self.searchForSectors(searchString=searchString):
+            for world in sector:
+                if world not in seen:
+                    sectorMatches.append(world)
+
+        sectorMatches.sort(
+            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        for world in sectorMatches:
+            matches.append(world)
+            if maxResults and len(matches) >= maxResults:
+                return matches
+            seen.add(world)
+
+        return matches
+
+    def searchForSubsectors(
+            self,
+            searchString: str,
+            maxResults: int = 0 # 0 means unlimited
+            ) -> typing.List[traveller.Subsector]:
+        searchString = searchString.strip()
+        if not searchString:
+            # No matches if search string is empty after white space stripped
+            return []
+
+        strictExpression = re.compile(
+            fnmatch.translate(searchString),
+            re.IGNORECASE)
+        wildExpression = None
+        if searchString[-1:] != '*':
+            # Try to mimic the behaviour of Traveller Map where just typing the start of a name
+            # will match the without needing to specify wild cards.
+            wildExpression = re.compile(
+                fnmatch.translate(searchString + '*'),
+                re.IGNORECASE)
+
+        matches: typing.List[traveller.Subsector] = []
+        for sector in self._sectorList:
+            for subsector in sector.subsectors():
+                if strictExpression.match(subsector.name()):
+                    matches.append(subsector)
+                elif wildExpression and wildExpression.match(subsector.name()):
+                    matches.append(subsector)
+
+        matches.sort(
+            key=lambda subsector: f'{subsector.name()}/{subsector.sectorName()}'.casefold())
+        if maxResults and len(matches) > maxResults:
+            return matches[:maxResults]
+
+        return matches
+
+    def searchForSectors(
+            self,
+            searchString: str,
+            maxResults: int = 0 # 0 means unlimited
+            ) -> typing.List[traveller.Sector]:
+        searchString = searchString.strip()
+        if not searchString:
+            # No matches if search string is empty after white space stripped
+            return []
+
+        strictExpression = re.compile(
+            fnmatch.translate(searchString),
+            re.IGNORECASE)
+        wildExpression = None
+        if searchString[-1:] != '*':
+            # Try to mimic the behaviour of Traveller Map where just typing the start of a name
+            # will match the without needing to specify wild cards.
+            wildExpression = re.compile(
+                fnmatch.translate(searchString + '*'),
+                re.IGNORECASE)
+
+        matches: typing.List[traveller.Sector] = []
+        for sector in self._sectorList:
+            if strictExpression.match(sector.name()):
+                matches.append(sector)
+                continue
+            elif wildExpression and wildExpression.match(sector.name()):
+                matches.append(sector)
+                continue
+
+            alternateNames = sector.alternateNames()
+            if alternateNames:
+                matched = False
+                for alternateName in alternateNames:
+                    if strictExpression.match(alternateName):
+                        matched = True
+                        break
+                    elif wildExpression and wildExpression.match(sector.name()):
+                        matched = True
+                        break
+                if matched:
+                    matches.append(sector)
+                    continue
+
+        matches.sort(key=lambda sector: sector.name().casefold())
+        if maxResults and len(matches) > maxResults:
+            return matches[:maxResults]
+
+        return matches
 
     @staticmethod
     def _loadSector(
@@ -425,7 +648,11 @@ class WorldManager(object):
                     name=worldName,
                     sectorName=sectorName,
                     subsectorName=subsectorName,
-                    hex=hex,
+                    hex=travellermap.HexPosition(
+                        sectorX=sectorX,
+                        sectorY=sectorY,
+                        offsetX=int(hex[:2]),
+                        offsetY=int(hex[-2:])),
                     allegiance=rawWorld.attribute(travellermap.WorldAttribute.Allegiance),
                     uwp=rawWorld.attribute(travellermap.WorldAttribute.UWP),
                     economics=rawWorld.attribute(travellermap.WorldAttribute.Economics),
@@ -436,9 +663,7 @@ class WorldManager(object):
                     stellar=rawWorld.attribute(travellermap.WorldAttribute.Stellar),
                     pbg=rawWorld.attribute(travellermap.WorldAttribute.PBG),
                     systemWorlds=rawWorld.attribute(travellermap.WorldAttribute.SystemWorlds),
-                    bases=rawWorld.attribute(travellermap.WorldAttribute.Bases),
-                    sectorX=sectorX,
-                    sectorY=sectorY)
+                    bases=rawWorld.attribute(travellermap.WorldAttribute.Bases))
                 worlds.append(world)
             except Exception as ex:
                 logging.warning(

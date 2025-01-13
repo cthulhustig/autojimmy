@@ -36,6 +36,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
         self._historyTable = gui.ListTable()
         self._historyTable.setColumnHeaders(DiceRollHistoryWidget._ColumnType)
+        self._historyTable.setUserColumnHiding(True)
         self._historyTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self._historyTable.setAlternatingRowColors(False)
@@ -307,7 +308,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -321,7 +322,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._historyTable.viewport().mapToGlobal(position))
+            self._historyTable.viewport().mapToGlobal(point))
 
     def _copyToClipboard(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()

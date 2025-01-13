@@ -110,10 +110,15 @@ def calculateWorldTagLevel(world: traveller.World) -> app.TagLevel:
 def calculateJumpRouteTagLevel(jumpRoute: logic.JumpRoute) -> app.TagLevel:
     routeTagLevel = None
 
-    for world in jumpRoute:
-        worldTagLevel = calculateWorldTagLevel(world)
-        if not routeTagLevel or (worldTagLevel > routeTagLevel):
-            routeTagLevel = worldTagLevel
+    for _, world in jumpRoute:
+        if world:
+            worldTagLevel = calculateWorldTagLevel(world)
+            if not routeTagLevel or (worldTagLevel > routeTagLevel):
+                routeTagLevel = worldTagLevel
+        else:
+            # Routes going through dead space are always considered dangerous
+            routeTagLevel = app.TagLevel.Danger
+            break
 
     return routeTagLevel
 

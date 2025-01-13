@@ -5,12 +5,13 @@ import jobs
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 def _worldSaleScoreTableColumns(
-        originalColumns: typing.List[gui.WorldTable.ColumnType]
-        ) -> typing.List[typing.Union[gui.WorldTradeScoreTableColumnType, gui.WorldTable.ColumnType]]:
+        originalColumns: typing.List[gui.HexTable.ColumnType]
+        ) -> typing.List[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]]:
     columns = originalColumns.copy()
     if gui.WorldTradeScoreTableColumnType.PurchaseScore in columns:
         columns.remove(gui.WorldTradeScoreTableColumnType.PurchaseScore)
@@ -26,7 +27,7 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
 
     def __init__(
             self,
-            columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.WorldTable.ColumnType]] = AllColumns) -> None:
+            columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns) -> None:
         super().__init__(columns)
 
 
@@ -46,7 +47,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             configSection: str
             ) -> None:
         super().__init__(title=title, configSection=configSection)
-        self._traderJob = None
+        self._traderJob: typing.Optional[jobs.TraderJobBase] = None
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -123,6 +124,8 @@ class _BaseTraderWindow(gui.WindowWidget):
         leftLayout.addRow('Local Sale Broker:', self._localSaleBrokerWidget)
 
         # Right column of controls
+        self._routingTypeComboBox = gui.SharedRoutingTypeComboBox()
+        self._routingTypeComboBox.currentIndexChanged.connect(self._routingTypeChanged)
         self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
         self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
@@ -130,32 +133,28 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
         self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
-        self._useAnomalyRefuellingCheckBox.stateChanged.connect(
-            self._anomalyRefuellingToggled)
+        self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
         self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
-        self._anomalyFuelCostSpinBox.setEnabled(
-            self._useAnomalyRefuellingCheckBox.isChecked())
         self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
-        self._anomalyBerthingCostSpinBox.setEnabled(
-            self._useAnomalyRefuellingCheckBox.isChecked())
 
         centerLayout = gui.FormLayoutEx()
         centerLayout.setContentsMargins(0, 0, 0, 0)
+        centerLayout.addRow('Routing Type:', self._routingTypeComboBox)
         centerLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         centerLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         centerLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         centerLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
         centerLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
-        centerLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
-        centerLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
-        centerLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
-        centerLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
 
         self._includeLogisticsCostsCheckBox = gui.SharedIncludeLogisticsCostsCheckBox()
         self._includeUnprofitableTradesCheckBox = gui.SharedIncludeUnprofitableCheckBox()
 
         rightLayout = gui.FormLayoutEx()
         rightLayout.setContentsMargins(0, 0, 0, 0)
+        rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
+        rightLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
+        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Include Logistics Costs:', self._includeLogisticsCostsCheckBox)
         rightLayout.addRow('Include Unprofitable Trades:', self._includeUnprofitableTradesCheckBox)
 
@@ -222,7 +221,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable()
-        self._tradeOptionsTable.setVisibleColumns(self._tradeOptionColumns())
+        self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
         self._tradeOptionsTable.sortByColumnHeader(
             self._tradeOptionDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
@@ -251,9 +250,14 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeInfoEditBox = QtWidgets.QPlainTextEdit()
         self._tradeInfoEditBox.setReadOnly(True)
 
-    # This should be implemented by the derived class
     def _enableDisableControls(self) -> None:
-        pass
+        isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
+        isAnomalyRefuelling = isFuelAwareRouting and self._useAnomalyRefuellingCheckBox.isChecked()
+        self._refuellingStrategyComboBox.setEnabled(isFuelAwareRouting)
+        self._useFuelCachesCheckBox.setEnabled(isFuelAwareRouting)
+        self._useAnomalyRefuellingCheckBox.setEnabled(isFuelAwareRouting)
+        self._anomalyFuelCostSpinBox.setEnabled(isAnomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(isAnomalyRefuelling)
 
     def _tradeOptionColumns(self) -> typing.List[gui.TradeOptionsTable.ColumnType]:
         calculationMode = self._tradeOptionCalculationModeTabs.currentCalculationMode()
@@ -297,18 +301,9 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         try:
             jumpRouteWindow = gui.WindowManager.instance().showJumpRouteWindow()
-            jumpRouteWindow.configureControls(
-                startWorld=tradeOption.purchaseWorld(),
-                finishWorld=tradeOption.saleWorld(),
-                shipTonnage=self._shipTonnageSpinBox.value(),
-                shipJumpRating=self._shipJumpRatingSpinBox.value(),
-                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
-                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                routeOptimisation=self._routeOptimisationComboBox.currentEnum(),
-                includeStartWorldBerthingCosts=self._includeStartWorldBerthingCheckBox.isChecked(),
-                includeFinishWorldBerthingCosts=self._includeFinishWorldBerthingCheckBox.isChecked())
+            jumpRouteWindow.setRoute(
+                route=tradeOption.jumpRoute(),
+                logistics=tradeOption.routeLogistics())
         except Exception as ex:
             message = 'Failed to show jump route window'
             logging.error(message, exc_info=ex)
@@ -322,7 +317,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addWorlds(worlds=worlds)
+        detailsWindow.addHexes(hexes=worlds)
 
     def _showTradeOptionCalculations(
             self,
@@ -345,9 +340,8 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.showJumpRoute(
-                jumpRoute=jumpRoute,
-                clearOverlays=True)
+            mapWindow.clearOverlays()
+            mapWindow.setJumpRoute(jumpRoute=jumpRoute)
         except Exception as ex:
             message = 'Failed to show jump route in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -360,12 +354,11 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
+        hexes = [world.hex() for world in worlds]
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.centerOnWorlds(
-                worlds=worlds,
-                clearOverlays=True,
-                highlightWorlds=True)
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -405,6 +398,9 @@ class _BaseTraderWindow(gui.WindowWidget):
             maxValue: int) -> None:
         pass
 
+    def _routingTypeChanged(self) -> None:
+        self._enableDisableControls()
+
     def _anomalyRefuellingToggled(self) -> None:
         self._enableDisableControls()
 
@@ -419,7 +415,25 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         self._progressLabel.setText(common.formatNumber(optionsProcessed) + '/' + common.formatNumber(optionsToProcess))
 
-    def _traderFinished(self, result: typing.Union[str, Exception]) -> None:
+    def _traderJobStart(self) -> None:
+        if not self._traderJob:
+            return
+
+        try:
+            self._traderJob.start()
+        except Exception as ex:
+            self._traderJob = None
+            self._calculateTradeOptionsButton.showPrimaryText()
+            self._enableDisableControls()
+
+            message = 'Failed to start trader job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _traderJobFinished(self, result: typing.Union[str, Exception]) -> None:
         if isinstance(result, Exception):
             message = 'Failed to calculate trade options'
             logging.error(message, exc_info=result)
@@ -440,10 +454,10 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._enableDisableControls()
 
     def _updateTradeOptionTableColumns(self, index: int) -> None:
-        self._tradeOptionsTable.setVisibleColumns(self._tradeOptionColumns())
+        self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
 
-    def _showTradeOptionsTableContextMenu(self, position: QtCore.QPoint) -> None:
-        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(position)
+    def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
         selectedTradeOptions = self._tradeOptionsTable.selectedTradeOptions()
         selectedPurchaseWorlds = None
         selectedSaleWorlds = None
@@ -507,7 +521,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._tradeOptionsTable.viewport().mapToGlobal(position)
+            self._tradeOptionsTable.viewport().mapToGlobal(point)
         )
 
     def _createCargoManifest(self) -> None:
@@ -655,10 +669,11 @@ class WorldTraderWindow(_BaseTraderWindow):
         if currentCargo:
             self._removeAllCurrentCargo()
         if saleWorlds:
-            self._saleWorldsWidget.removeAllWorlds()
+            self._saleWorldsWidget.removeAllRows()
 
         if purchaseWorld != None:
-            self._purchaseWorldWidget.setWorld(world=purchaseWorld)
+            self._purchaseWorldWidget.setSelectedHex(
+                hex=purchaseWorld.hex() if purchaseWorld else None)
         if playerBrokerDm != None:
             self._playerBrokerDmSpinBox.setValue(int(playerBrokerDm))
         if minSellerDm != None:
@@ -831,7 +846,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupPurchaseWorldControls(self) -> None:
-        self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -845,9 +860,9 @@ class WorldTraderWindow(_BaseTraderWindow):
     def _setupSaleWorldControls(self) -> None:
         self._saleWorldsTable = _WorldSaleScoreTable()
 
-        self._saleWorldsWidget = gui.WorldTableManagerWidget(
-            worldTable=self._saleWorldsTable,
-            allowWorldCallback=self._allowSaleWorld)
+        self._saleWorldsWidget = gui.HexTableManagerWidget(
+            hexTable=self._saleWorldsTable,
+            allowHexCallback=self._allowSaleWorld)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._saleWorldsWidget)
@@ -1085,11 +1100,13 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._cargoGroupBox.setLayout(groupBoxLayout)
 
     def _enableDisableControls(self) -> None:
+        super()._enableDisableControls()
+
         if not self._traderJob:
             self._purchaseWorldGroupBox.setDisabled(False)
 
             # Disable all other controls until purchase world is selected
-            disable = not self._purchaseWorldWidget.hasSelection()
+            disable = not self._purchaseWorldWidget.selectedWorld()
             self._configurationGroupBox.setDisabled(disable)
             self._cargoGroupBox.setDisabled(disable)
             self._saleWorldsGroupBox.setDisabled(disable)
@@ -1102,10 +1119,6 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._cargoGroupBox.setDisabled(True)
             self._saleWorldsGroupBox.setDisabled(True)
             self._createCargoManifestButton.setDisabled(True)
-
-        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
-        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
     def _addSpeculativeCargo(
             self,
@@ -1171,7 +1184,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _regenerateSpeculativeCargo(self):
-        world = self._purchaseWorldWidget.world()
+        world = self._purchaseWorldWidget.selectedWorld()
         if not world:
             self._removeAllSpeculativeCargo()
             return
@@ -1244,9 +1257,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         return cargoRecords
 
-    def _allowSaleWorld(self, world: traveller.World) -> bool:
+    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._saleWorldsWidget.containsWorld(world)
+        return not self._saleWorldsWidget.containsHex(hex)
 
     def _updateSaleWorldTradeScores(self) -> None:
         tradeGoods = set()
@@ -1282,7 +1295,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _purchaseWorldChanged(self) -> None:
         self._enableDisableControls()
-        self._saleWorldsWidget.setRelativeWorld(world=self._purchaseWorldWidget.world())
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
+        if purchaseWorld:
+            self._saleWorldsWidget.setRelativeWorld(world=purchaseWorld)
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():
@@ -1301,7 +1316,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
             localBrokerDm=self._localPurchaseBrokerWidget.value(),
@@ -1344,7 +1359,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
             localBrokerDm=self._localPurchaseBrokerWidget.value(),
@@ -1355,7 +1370,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         for cargoRecord in cargoRecords:
             self._addSpeculativeCargo(cargoRecord)
 
-    def _showSpeculativeCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Current World Cargo...',
@@ -1388,7 +1403,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._speculativeCargoTable.viewport().mapToGlobal(position)
+            self._speculativeCargoTable.viewport().mapToGlobal(point)
         )
 
     def _speculativeCargoTableKeyPressed(self, key: int) -> None:
@@ -1446,7 +1461,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -1475,7 +1490,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1517,7 +1532,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         dlg = gui.PurchaseCargoDialog(
             parent=self,
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             availableCargo=affordableCargo,
             availableFunds=self._availableFundsSpinBox.value(),
             freeCargoCapacity=self._freeCargoSpaceSpinBox.value())
@@ -1547,7 +1562,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._freeCargoSpaceSpinBox.setValue(
             self._freeCargoSpaceSpinBox.value() - int(totalQuantity))
 
-    def _showAvailableCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Cargo...',
@@ -1586,7 +1601,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._availableCargoTable.viewport().mapToGlobal(position)
+            self._availableCargoTable.viewport().mapToGlobal(point)
         )
 
     def _availableCargoTableKeyPressed(self, key: int) -> None:
@@ -1654,7 +1669,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Current Cargo',
-            world=self._purchaseWorldWidget.world())
+            world=self._purchaseWorldWidget.selectedWorld())
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1682,7 +1697,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Current Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1697,7 +1712,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._currentCargoTable.setCargoRecord(row, cargoRecord)
         self._updateSaleWorldTradeScores()
 
-    def _showCurrentCargoTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Cargo...',
@@ -1730,7 +1745,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         gui.displayMenu(
             self,
             menuItems,
-            self._currentCargoTable.viewport().mapToGlobal(position)
+            self._currentCargoTable.viewport().mapToGlobal(point)
         )
 
     def _currentCargoTableKeyPressed(self, key: int) -> None:
@@ -1791,33 +1806,48 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        pitCostCalculator = logic.PitStopCostCalculator(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().rules())
-
-        # Flag cases where the purchase world doesn't match the refuelling
-        # strategy. No options will be generated unless the ship has enough
-        #current fuel
-        if not pitCostCalculator.refuellingType(
-                world=self._purchaseWorldWidget.world()):
-            message = \
-                'The purchase world doesn\'t support the selected refuelling ' \
-                'strategy. It will only be possibly to generate trade ' \
-                'options for sale worlds where a route can be found with the ' \
-                'fuel currently in the ship.'
-
+        if self._includeLogisticsCostsCheckBox.isChecked() and \
+                self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
+            message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,
                 text=message + '\n\nDo you want to continue?',
-                stateKey='WorldTraderPurchaseWorldRefuellingStrategy',
+                stateKey='WorldTraderBasicRoutingWarning',
                 # Only remember if the user clicked yes
                 rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
+
+        routingType = self._routingTypeComboBox.currentEnum()
+        pitCostCalculator = None
+        if routingType is not logic.RoutingType.Basic:
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+            pitCostCalculator = logic.PitStopCostCalculator(
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+                rules=app.Config.instance().rules())
+
+            # Flag cases where the purchase world doesn't match the refuelling
+            # strategy. No options will be generated unless the ship has enough
+            #current fuel
+            if not pitCostCalculator.refuellingType(
+                    world=self._purchaseWorldWidget.selectedWorld()):
+                message = \
+                    'The purchase world doesn\'t support the selected refuelling ' \
+                    'strategy. It will only be possibly to generate trade ' \
+                    'options for sale worlds where a route can be found with the ' \
+                    'fuel currently in the ship.'
+
+                answer = gui.AutoSelectMessageBox.question(
+                    parent=self,
+                    text=message + '\n\nDo you want to continue?',
+                    stateKey='WorldTraderPurchaseWorldRefuellingStrategy',
+                    # Only remember if the user clicked yes
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+                if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
 
         # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -1847,7 +1877,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                purchaseWorld=self._purchaseWorldWidget.world(),
+                purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 currentCargo=self._currentCargoTable.cargoRecords(),
                 possibleCargo=self._speculativeCargoTable.cargoRecords() + self._availableCargoTable.cargoRecords(),
@@ -1864,6 +1894,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                routingType=routingType,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
@@ -1873,9 +1904,9 @@ class WorldTraderWindow(_BaseTraderWindow):
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
                 progressCallback=self._updateTraderProgress,
-                finishedCallback=self._traderFinished)
+                finishedCallback=self._traderJobFinished)
         except Exception as ex:
-            message = 'Failed to start trader job'
+            message = 'Failed to create trader job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1885,6 +1916,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         self._calculateTradeOptionsButton.showSecondaryText()
         self._enableDisableControls()
+
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._traderJobStart)
 
     def _createCargoManifest(self) -> None:
         speculativeCargoLookup = set(self._speculativeCargoTable.cargoRecords())
@@ -2096,10 +2130,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         if perJumpOverheads != None:
             self._perJumpOverheadsSpinBox.setValue(int(perJumpOverheads))
         if purchaseWorlds != None:
-            self._purchaseWorldsWidget.removeAllWorlds()
+            self._purchaseWorldsWidget.removeAllRows()
             self._purchaseWorldsWidget.addWorlds(worlds=purchaseWorlds)
         if saleWorlds != None:
-            self._saleWorldsWidget.removeAllWorlds()
+            self._saleWorldsWidget.removeAllRows()
             self._saleWorldsWidget.addWorlds(worlds=saleWorlds)
 
     def loadSettings(self) -> None:
@@ -2180,8 +2214,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupSaleWorldControls(self) -> None:
-        self._saleWorldsWidget = gui.WorldTableManagerWidget(
-            allowWorldCallback=self._allowSaleWorld)
+        self._saleWorldsWidget = gui.HexTableManagerWidget(
+            allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.enableContextMenuEvent(True)
         self._saleWorldsWidget.contextMenuRequested.connect(self._showSaleWorldTableContextMenu)
 
@@ -2192,8 +2226,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._saleWorldsGroupBox.setLayout(layout)
 
     def _setupPurchaseWorldControls(self) -> None:
-        self._purchaseWorldsWidget = gui.WorldTableManagerWidget(
-            allowWorldCallback=self._allowPurchaseWorld)
+        self._purchaseWorldsWidget = gui.HexTableManagerWidget(
+            allowHexCallback=self._allowPurchaseWorld)
         self._purchaseWorldsWidget.enableContextMenuEvent(True)
         self._purchaseWorldsWidget.contextMenuRequested.connect(self._showPurchaseWorldTableContextMenu)
 
@@ -2204,166 +2238,152 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setLayout(layout)
 
     def _enableDisableControls(self) -> None:
+        super()._enableDisableControls()
+
         # Disable configuration controls while trade option job is running
         self._configurationGroupBox.setDisabled(self._traderJob != None)
         self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
         self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
 
-        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
-        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
-
-    def _allowPurchaseWorld(self, world: traveller.World) -> bool:
+    def _allowPurchaseWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._purchaseWorldsWidget.containsWorld(world)
+        return not self._purchaseWorldsWidget.containsHex(hex)
 
-    def _allowSaleWorld(self, world: traveller.World) -> bool:
+    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._saleWorldsWidget.containsWorld(world)
+        return not self._saleWorldsWidget.containsHex(hex)
 
     def _copyBetweenWorldWidgets(
             self,
-            srcWidget: gui.WorldTableManagerWidget,
-            dstWidget: gui.WorldTableManagerWidget
+            srcWidget: gui.HexTableManagerWidget,
+            dstWidget: gui.HexTableManagerWidget
             ) -> None:
-        if dstWidget.worldCount() > 0:
+        if dstWidget.rowCount() > 0:
             answer = gui.MessageBoxEx.question(
                 parent=self,
                 text='Remove current worlds before copying?')
             if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                dstWidget.removeAllWorlds()
+                dstWidget.removeAllRows()
         dstWidget.addWorlds(worlds=srcWidget.worlds())
 
-    def _showPurchaseWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._purchaseWorldsWidget.worldAt(position=position)
+    def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedWorld = self._purchaseWorldsWidget.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
-                text='Select Worlds with Traveller Map...',
-                callback=lambda: self._purchaseWorldsWidget.promptSelectWithTravellerMap(),
-                enabled=True
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Add World...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddWorld(),
+                text='Add...',
+                callback=lambda: self._purchaseWorldsWidget.promptAddLocations(),
                 enabled=True
             ),
             gui.MenuItem(
-                text='Add Nearby Worlds...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddNearbyWorlds(initialWorld=world),
+                text='Add Nearby...',
+                callback=lambda: self._purchaseWorldsWidget.promptAddNearby(initialHex=clickedWorld),
                 enabled=True
             ),
             gui.MenuItem(
-                text='Remove Selected Worlds',
-                callback=lambda: self._purchaseWorldsWidget.removeSelectedWorlds(),
+                text='Remove Selected',
+                callback=lambda: self._purchaseWorldsWidget.removeSelectedRows(),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Remove All Worlds',
-                callback=lambda: self._purchaseWorldsWidget.removeAllWorlds(),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                text='Remove All',
+                callback=lambda: self._purchaseWorldsWidget.removeAllRows(),
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Copy Sale Worlds',
                 callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                enabled=not self._saleWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._purchaseWorldsWidget.selectedWorlds()),
+                text='Show Selected Details...',
+                callback=lambda: self._showWorldDetails(self._purchaseWorldsWidget.selectedWorlds()),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._purchaseWorldsWidget.worlds()),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                text='Show All Details...',
+                callback=lambda: self._showWorldDetails(self._purchaseWorldsWidget.worlds()),
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._purchaseWorldsWidget.selectedWorlds()),
+                text='Show Selected in Traveller Map...',
+                callback=lambda: self._showWorldsInTravellerMap(self._purchaseWorldsWidget.selectedWorlds()),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._purchaseWorldsWidget.worlds()),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                text='Show All in Traveller Map...',
+                callback=lambda: self._showWorldsInTravellerMap(self._purchaseWorldsWidget.worlds()),
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             )
         ]
 
         gui.displayMenu(
             self,
             menuItems,
-            self._purchaseWorldsWidget.mapToGlobal(position)
+            self._purchaseWorldsWidget.mapToGlobal(point)
         )
 
-    def _showSaleWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
-        world = self._saleWorldsWidget.worldAt(position=position)
+    def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+        clickedWorld = self._saleWorldsWidget.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
-                text='Select Worlds with Traveller Map...',
-                callback=lambda: self._saleWorldsWidget.promptSelectWithTravellerMap(),
-                enabled=True
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Add World...',
-                callback=lambda: self._saleWorldsWidget.promptAddWorld(),
+                text='Add...',
+                callback=lambda: self._saleWorldsWidget.promptAddLocations(),
                 enabled=True
             ),
             gui.MenuItem(
-                text='Add Nearby Worlds...',
-                callback=lambda: self._saleWorldsWidget.promptAddNearbyWorlds(initialWorld=world),
+                text='Add Nearby...',
+                callback=lambda: self._saleWorldsWidget.promptAddNearby(initialHex=clickedWorld),
                 enabled=True
             ),
             gui.MenuItem(
-                text='Remove Selected Worlds',
-                callback=lambda: self._saleWorldsWidget.removeSelectedWorlds(),
+                text='Remove Selected',
+                callback=lambda: self._saleWorldsWidget.removeSelectedRows(),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Remove All Worlds',
-                callback=lambda: self._saleWorldsWidget.removeAllWorlds(),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                text='Remove All',
+                callback=lambda: self._saleWorldsWidget.removeAllRows(),
+                enabled=not self._saleWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Copy Purchase Worlds',
                 callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget),
-                enabled=self._purchaseWorldsWidget.worldCount() > 0
+                enabled=not self._purchaseWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._saleWorldsWidget.selectedWorlds()),
+                text='Show Selected Details...',
+                callback=lambda: self._showWorldDetails(self._saleWorldsWidget.selectedWorlds()),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(worlds=self._saleWorldsWidget.worlds()),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                text='Show All Details...',
+                callback=lambda: self._showWorldDetails(self._saleWorldsWidget.worlds()),
+                enabled=not self._saleWorldsWidget.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._saleWorldsWidget.selectedWorlds()),
+                text='Show Selected in Traveller Map...',
+                callback=lambda: self._showWorldsInTravellerMap(self._saleWorldsWidget.selectedWorlds()),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(worlds=self._saleWorldsWidget.worlds()),
-                enabled=self._saleWorldsWidget.worldCount() > 0
+                text='Show All in Traveller Map...',
+                callback=lambda: self._showWorldsInTravellerMap(self._saleWorldsWidget.worlds()),
+                enabled=not self._saleWorldsWidget.isEmpty()
             )
         ]
 
         gui.displayMenu(
             self,
             menuItems,
-            self._saleWorldsWidget.mapToGlobal(position)
+            self._saleWorldsWidget.mapToGlobal(point)
         )
 
     def _calculateTradeOptions(self) -> None:
@@ -2418,37 +2438,52 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        pitCostCalculator = logic.PitStopCostCalculator(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().rules())
-
-        # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
-        # generated for those worlds unless the ship has enough current fuel
-        fuelIssueWorldStrings = []
-        for world in self._purchaseWorldsWidget.worlds():
-            if not pitCostCalculator.refuellingType(world=world):
-                fuelIssueWorldStrings.append(world.name())
-
-        if fuelIssueWorldStrings:
-            worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
-            if len(fuelIssueWorldStrings) == 1:
-                message = f'Purchase world {worldListString} doesn\'t support the selected refuelling strategy. '
-            else:
-                message = f'Purchase worlds {worldListString} don\'t support the selected refuelling strategy. '
-            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with fuel currently in the ship.'
-
+        if self._includeLogisticsCostsCheckBox.isChecked() and \
+                self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
+            message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,
                 text=message + '\n\nDo you want to continue?',
-                stateKey='MultiTraderPurchaseWorldRefuellingStrategy',
+                stateKey='MultiTraderBasicRoutingWarning',
                 # Only remember if the user clicked yes
                 rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
+
+        routingType = self._routingTypeComboBox.currentEnum()
+        pitCostCalculator = None
+        if routingType is not logic.RoutingType.Basic:
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+            pitCostCalculator = logic.PitStopCostCalculator(
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+                rules=app.Config.instance().rules())
+
+            # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
+            # generated for those worlds unless the ship has enough current fuel
+            fuelIssueWorldStrings = []
+            for world in self._purchaseWorldsWidget.worlds():
+                if not pitCostCalculator.refuellingType(world=world):
+                    fuelIssueWorldStrings.append(world.name())
+
+            if fuelIssueWorldStrings:
+                worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
+                if len(fuelIssueWorldStrings) == 1:
+                    message = f'Purchase world {worldListString} doesn\'t support the selected refuelling strategy. '
+                else:
+                    message = f'Purchase worlds {worldListString} don\'t support the selected refuelling strategy. '
+                message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with fuel currently in the ship.'
+
+                answer = gui.AutoSelectMessageBox.question(
+                    parent=self,
+                    text=message + '\n\nDo you want to continue?',
+                    stateKey='MultiTraderPurchaseWorldRefuellingStrategy',
+                    # Only remember if the user clicked yes
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+                if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
 
         # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -2496,6 +2531,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
+                routingType=routingType,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
@@ -2507,9 +2543,9 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
                 progressCallback=self._updateTraderProgress,
-                finishedCallback=self._traderFinished)
+                finishedCallback=self._traderJobFinished)
         except Exception as ex:
-            message = 'Failed to start trader job'
+            message = 'Failed to create trader job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -2519,6 +2555,9 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         self._calculateTradeOptionsButton.showSecondaryText()
         self._enableDisableControls()
+
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._traderJobStart)
 
     def _createCargoManifest(self) -> None:
         if self._tradeOptionsTable.isEmpty():

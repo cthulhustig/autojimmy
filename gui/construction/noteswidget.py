@@ -39,7 +39,7 @@ class NotesWidget(QtWidgets.QWidget):
         self._filterTypeComboBox.activated.connect(self._updateFilter)
 
         self._filterIgnoreCaseCheckBox = gui.CheckBoxEx("Ignore Case:")
-        self._filterIgnoreCaseCheckBox.setLayoutDirection(QtCore.Qt.LayoutDirection.RightToLeft)
+        self._filterIgnoreCaseCheckBox.setTextOnLeft(True)
         self._filterIgnoreCaseCheckBox.setChecked(True)
         self._filterIgnoreCaseCheckBox.stateChanged.connect(self._updateFilter)
 
@@ -54,6 +54,7 @@ class NotesWidget(QtWidgets.QWidget):
 
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
+        self._table.setColumnsMoveable(False)
         self._table.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         # Having the table automatically adjust to the content size can cause
@@ -238,7 +239,7 @@ class NotesWidget(QtWidgets.QWidget):
 
     def _tableContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -249,7 +250,7 @@ class NotesWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._table.viewport().mapToGlobal(position))
+            self._table.viewport().mapToGlobal(point))
 
     def _copyToClipboard(self):
         clipboard = QtWidgets.QApplication.clipboard()

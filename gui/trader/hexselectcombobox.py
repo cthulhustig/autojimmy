@@ -4,11 +4,36 @@ import html
 import logging
 import math
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+def _formatWorldName(world: traveller.World) -> str:
+    return world.name(includeSubsector=True)
+
+def _formatHexName(hex: travellermap.HexPosition) -> str:
+    world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+    if world:
+        return _formatWorldName(world=world)
+
+    try:
+        sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
+        subsector = traveller.WorldManager.instance().subsectorByPosition(hex=hex)
+        return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
+    except:
+        return ''
+
 def _formatWorldHtml(world: traveller.World) -> str:
-    return f'{html.escape(world.name(includeSubsector=True))}<br><i>{html.escape(world.sectorHex())} - {html.escape(world.uwp().string())}</i>'
+    return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
+        worldName=html.escape(_formatWorldName(world=world)),
+        sectorHex=html.escape(world.sectorHex()),
+        uwp=html.escape(world.uwp().string()))
+
+def _formatHexHtml(hex: travellermap.HexPosition) -> str:
+    world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+    if world:
+        return _formatWorldHtml(world=world)
+    return html.escape(_formatHexName(hex=hex))
 
 # Based on code from here
 # https://stackoverflow.com/questions/21141757/pyqt-different-colors-in-a-single-row-in-a-combobox
@@ -30,9 +55,9 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         else:
             style = QtWidgets.QApplication.style()
 
-        world = index.data(QtCore.Qt.ItemDataRole.UserRole)
-        if world:
-            self._document.setHtml(_formatWorldHtml(world))
+        hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
+        if hex:
+            self._document.setHtml(_formatHexHtml(hex=hex))
         else:
             self._document.clear()
 
@@ -57,15 +82,15 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
             option: QtWidgets.QStyleOptionViewItem,
             index: QtCore.QModelIndex
             ) -> QtCore.QSize:
-        world = index.data(QtCore.Qt.ItemDataRole.UserRole)
-        if not world:
+        hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
+        if not hex:
             return super().sizeHint(option, index)
-        self._document.setHtml(_formatWorldHtml(world))
+        self._document.setHtml(_formatHexHtml(hex=hex))
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
-class WorldSelectComboBox(gui.ComboBoxEx):
-    worldChanged = QtCore.pyqtSignal(object)
+class HexSelectComboBox(gui.ComboBoxEx):
+    hexChanged = QtCore.pyqtSignal(object)
 
     # NOTE: This controls the max number of results added to the completer
     # model. The complete its self also has a max number it will display
@@ -73,12 +98,17 @@ class WorldSelectComboBox(gui.ComboBoxEx):
     # popup view
     _MaxCompleterResults = 50
 
+    # NOTE: This state string doesn't match the class name so the user doesn't
+    # lose the last selected history due to the updates made to add dead space
+    # support. It was already writing a sector hex so previous data should load
+    # correctly
     _StateVersion = '_WorldSearchComboBox_v1'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._selectedWorld = None
+        self._enableDeadSpaceSelection = False
+        self._selectedHex = None
 
         self._completer = None
         self._completerModel = None
@@ -98,19 +128,18 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
 
-    def currentWorld(self) -> typing.Optional[traveller.World]:
-        return self._selectedWorld
+    def currentHex(self) -> typing.Optional[travellermap.HexPosition]:
+        return self._selectedHex
 
-    def setCurrentWorld(
+    def setCurrentHex(
             self,
-            world: typing.Optional[traveller.World],
-            updateRecentWorlds: bool = True
+            hex: typing.Optional[travellermap.HexPosition],
+            updateHistory: bool = True
             ) -> None:
-        self.setCurrentText(
-            world.name(includeSubsector=True) if world else '')
-        self._updateSelectedWorld(
-            world=world,
-            updateRecentWorlds=updateRecentWorlds)
+        self.setCurrentText(_formatHexName(hex=hex) if hex else '')
+        self._updateSelectedHex(
+            hex=hex,
+            updateHistory=updateHistory)
 
     def enableAutoComplete(self, enable: bool) -> None:
         if enable == (self._completer != None):
@@ -141,6 +170,19 @@ class WorldSelectComboBox(gui.ComboBoxEx):
     def enableWorldToolTips(self, enabled: bool) -> None:
         self._enableWorldToolTips = enabled
 
+    def enableDeadSpaceSelection(self, enable: bool) -> None:
+        self._enableDeadSpaceSelection = enable
+
+        if not self._enableDeadSpaceSelection:
+            # Dead space selection has been disabled so clear the current selection
+            # if it's a dead space hex
+            hex = self.currentHex()
+            if hex and not traveller.WorldManager.instance().worldByPosition(hex=hex):
+                self.setCurrentHex(hex=None)
+
+    def isDeadSpaceSelectionEnabled(self) -> bool:
+        return self._enableDeadSpaceSelection
+
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self:
             if event.type() == QtCore.QEvent.Type.FocusIn:
@@ -154,28 +196,29 @@ class WorldSelectComboBox(gui.ComboBoxEx):
                 if event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
                     QtCore.QTimer.singleShot(0, self.selectAll)
             elif event.type() == QtCore.QEvent.Type.FocusOut:
-                # The widget has lost focus. Sync the selected world and current
-                # text as long as focus isn't being lost to the widgets completer
-                # popup. If there is a currently selected world then force the
-                # text to be the full canonical name for that world. If there is
-                # no selected world then get the list of the matches for the
-                # current text, if there are matches then select the first one.
-                # This should effectively be as if the user had selected the first
-                # completer option. This is a usability thing as, if a user gets
-                # it down to the point the world they want is the first in the
-                # completer list, it might not be obvious to them that they need
-                # select it. It should be obvious if it's not the first in the
-                # list but it's less obvious if it was the first.
+                # The widget has lost focus. If the completer is enabled sync
+                # the selected hex and current text as long as focus isn't
+                # being lost to the widgets completer popup. If there is a
+                # currently selected hex then force the text to be the full
+                # canonical name for that hex. If there is no selected hex then
+                # get the list of the matches for the current text, if there are
+                # matches then select the first one. This should effectively be
+                # as if the user had selected the first completer option. This
+                # is a usability thing as, if a user gets it down to the point
+                # the hex they want is the first in the completer list, it might
+                # not be obvious to them that they need select it. It should be
+                # obvious if it's not the first in the list but it's less
+                # obvious if it was the first.
                 assert(isinstance(event, QtGui.QFocusEvent))
-                if event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
-                    world = self.currentWorld()
-                    if world:
-                        worldName = world.name(includeSubsector=True)
-                        if worldName != self.currentText():
-                            self.setCurrentText(worldName)
+                if self._completer and event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
+                    hex = self.currentHex()
+                    if hex:
+                        newText = _formatHexName(hex)
+                        if newText != self.currentText():
+                            self.setCurrentText(newText)
                     else:
-                        worlds = self._matchedWorlds()
-                        self.setCurrentWorld(world=worlds[0] if worlds else None)
+                        matches = self._findCompletionMatches()
+                        self.setCurrentHex(hex=matches[0] if matches else None)
             elif event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Paste):
@@ -185,8 +228,8 @@ class WorldSelectComboBox(gui.ComboBoxEx):
             if event.type() == QtCore.QEvent.Type.ToolTip:
                 assert(isinstance(event, QtGui.QHelpEvent))
                 toolTip = ''
-                if self._enableWorldToolTips and self._selectedWorld:
-                    toolTip =  gui.createWorldToolTip(self._selectedWorld)
+                if self._enableWorldToolTips and self._selectedHex:
+                    toolTip = gui.createHexToolTip(hex=self._selectedHex)
                 if toolTip != self.toolTip():
                     self.setToolTip(toolTip)
 
@@ -199,13 +242,13 @@ class WorldSelectComboBox(gui.ComboBoxEx):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(WorldSelectComboBox._StateVersion)
+        stream.writeQString(HexSelectComboBox._StateVersion)
 
-        world = self.currentWorld()
-        stream.writeBool(world != None)
-        if world:
-            stream.writeInt32(world.absoluteX())
-            stream.writeInt32(world.absoluteY())
+        current = self.currentHex()
+        stream.writeBool(current != None)
+        if current:
+            stream.writeInt32(current.absoluteX())
+            stream.writeInt32(current.absoluteY())
 
         return state
 
@@ -215,26 +258,18 @@ class WorldSelectComboBox(gui.ComboBoxEx):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != WorldSelectComboBox._StateVersion:
+        if version != HexSelectComboBox._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore WorldSearchComboBox state (Incorrect version)')
+            logging.debug(f'Failed to restore HexSearchComboBox state (Incorrect version)')
             return False
 
         if stream.readBool():
-            absoluteX = stream.readInt32()
-            absoluteY = stream.readInt32()
-            try:
-                world = traveller.WorldManager.instance().worldByAbsolutePosition(
-                    absoluteX=absoluteX,
-                    absoluteY=absoluteY)
-            except Exception as ex:
-                logging.error(
-                    'Failed to restore WorldSearchComboBox selected world',
-                    exc_info=ex)
-                return False
-            self.setCurrentWorld(
-                world=world,
-                updateRecentWorlds=False)
+            hex = travellermap.HexPosition(
+                absoluteX=stream.readInt32(),
+                absoluteY=stream.readInt32())
+            self.setCurrentHex(
+                hex=hex,
+                updateHistory=False)
 
         return True
 
@@ -258,11 +293,16 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         with gui.SignalBlocker(widget=self):
             self.clear()
 
-            for world in app.RecentWorlds.instance().worlds():
-                self.addItem(world.name(includeSubsector=True), world)
+            for hex in app.HexHistory.instance().hexes():
+                if not self._enableDeadSpaceSelection and \
+                        not traveller.WorldManager.instance().worldByPosition(hex):
+                    # Ignore dead space in history
+                    continue
 
-                displayHtml = _formatWorldHtml(world)
-                itemWidth = self._calculateIdealHtmlWidth(displayHtml)
+                self.addItem(_formatHexName(hex=hex), hex)
+
+                html = _formatHexHtml(hex=hex)
+                itemWidth = self._calculateIdealHtmlWidth(html)
                 if itemWidth > contentWidth:
                     contentWidth = itemWidth
 
@@ -271,7 +311,7 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         # changed. It's most likely because I'm blocking signals above but it doesn't seem worth
         # the effort to do anything better. The only downside of this approach is any text the user
         # has typed is cleared but that doesn't seem like an issue as they're using the drop down to
-        # select a previously used world
+        # select a previously used hex
         self.setCurrentIndex(-1)
 
         margins = self.view().contentsMargins()
@@ -283,31 +323,36 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         if not self._completer:
             return
 
-        # Clear the selected world when the user starts typing
-        self._updateSelectedWorld(None)
+        matches = self._findCompletionMatches()
 
-        worlds = self._matchedWorlds()
+        # Clear the selected hex when the user starts typing
+        # Update: I disabled this 11/01/25 as it meant if you cancel the
+        # completer the previously selected world is lost. If the selection
+        # was to be enabled it important it's done after the matches are
+        # generated so the current selection can be taken into account when
+        # ordering new matches
+        # self._updateSelectedHex(hex=None)
+
         self._completerModel.clear()
-        if not worlds:
+        if not matches:
             return
-        worlds = worlds[:WorldSelectComboBox._MaxCompleterResults]
 
         self._completerModel.setColumnCount(1)
-        self._completerModel.setRowCount(len(worlds))
+        self._completerModel.setRowCount(len(matches))
         contentWidth = 0
-        for index, world in enumerate(worlds):
+        for index, hex in enumerate(matches):
             modelIndex = self._completerModel.index(index, 0)
             self._completerModel.setData(
                 modelIndex,
-                world.name(includeSubsector=True),
+                _formatHexName(hex=hex),
                 QtCore.Qt.ItemDataRole.DisplayRole)
             self._completerModel.setData(
                 modelIndex,
-                world,
+                hex,
                 QtCore.Qt.ItemDataRole.UserRole)
 
-            worldHtml = _formatWorldHtml(world)
-            idealWidth = self._calculateIdealHtmlWidth(worldHtml)
+            html = _formatHexHtml(hex=hex)
+            idealWidth = self._calculateIdealHtmlWidth(html)
             if idealWidth > contentWidth:
                 contentWidth = idealWidth
 
@@ -319,9 +364,9 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         # line edit. This needs to be done to avoid weird issues where
         # activate isn't called in some cases, an example being just typing
         # z then using the mouse to select the first item in the list. It
-        # would fill in the text for the world in the comboboxes edit box
-        # but it wouldn't call activate so the selected world would be set
-        # and the world changed notification wouldn't be emitted. It needs
+        # would fill in the text for the hex in the comboboxes edit box
+        # but it wouldn't call activate so the selected hex would be set
+        # and the hex changed notification wouldn't be emitted. It needs
         # to be set each time the search changes as something keeps resetting
         # so it's set back to target the actual combobox
         self._completer.setWidget(self.lineEdit())
@@ -338,47 +383,43 @@ class WorldSelectComboBox(gui.ComboBoxEx):
             self,
             index: QtCore.QModelIndex
             ) -> None:
-        world = index.data(QtCore.Qt.ItemDataRole.UserRole)
+        hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
 
-        # The completer hasn't actually set the combo box text yet so defer handling the world
-        # update until after that's done. This is done to make sure the state is always consistent
-        # when the world changed event is generated
-        QtCore.QTimer.singleShot(0, lambda: self._delayedCompleterHandler(world))
+        # The completer hasn't actually set the combo box text yet so defer
+        # handling the hex update until after that's done. This is done to make
+        # sure the state is always consistent when the hex changed event is
+        # generated
+        QtCore.QTimer.singleShot(0, lambda: self._delayedCompleterHandler(hex=hex))
 
     def _delayedCompleterHandler(
             self,
-            world: typing.Optional[traveller.World]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._updateSelectedWorld(world)
+        self._updateSelectedHex(hex=hex)
         self.selectAll()
 
     def _dropDownSelected(
             self,
             index: int
             ) -> None:
-        world = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
-        self._updateSelectedWorld(world)
+        hex = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
+        self._updateSelectedHex(hex=hex)
 
         # Select all the current text so the control is ready for the user to search for something
         # else without them having to delete the current search text
         self.selectAll()
 
-    def _updateSelectedWorld(
+    def _updateSelectedHex(
             self,
-            world: typing.Optional[traveller.World],
-            updateRecentWorlds: bool = True
+            hex: typing.Optional[travellermap.HexPosition],
+            updateHistory: bool = True
             ) -> None:
-        if world == self._selectedWorld:
-            return
+        if hex and updateHistory:
+            app.HexHistory.instance().addHex(hex=hex)
 
-        self._selectedWorld = world
-        if world and updateRecentWorlds:
-            app.RecentWorlds.instance().addWorld(world)
-
-        # Notify observers that the selected world has changed. This is done even
-        # if it's actually the same world to allow for the case where the user
-        # reselects the same world to cause the map to jump back to it's location
-        self.worldChanged.emit(self._selectedWorld)
+        if hex != self._selectedHex:
+            self._selectedHex = hex
+            self.hexChanged.emit(self._selectedHex)
 
     # https://forum.qt.io/topic/123909/how-to-override-paste-or-catch-the-moment-before-paste-happens-in-qlineedit/10
     # NOTE: I suspect this might not work with RTL languages
@@ -394,7 +435,7 @@ class WorldSelectComboBox(gui.ComboBoxEx):
                 action.triggered.connect(self._pasteText)
         except Exception as ex:
             logging.error(
-                'An exception occurred while overriding the world search paste action',
+                'An exception occurred while overriding the hex search paste action',
                 exc_info=ex)
             # Continue so menu is still displayed
 
@@ -407,28 +448,57 @@ class WorldSelectComboBox(gui.ComboBoxEx):
             # Force display of the completer after pasting text into the line
             # edit as QT doesn't seem to do it it's self. Setting the completer
             # widget to the line edit used by the combo box is needed otherwise
-            # the world changed event isn't trigged if the user selects an entry
+            # the hex changed event isn't trigged if the user selects an entry
             # from the completer. This happens as for some reason activated
             # isn't called even though the completer does still set the text
             self._completer.setWidget(lineEdit)
             self._completer.complete()
 
-    def _matchedWorlds(self) -> typing.Optional[typing.List[traveller.World]]:
+    def _findCompletionMatches(self) -> typing.Collection[travellermap.HexPosition]:
         searchString = self.currentText().strip()
-        worlds = None
+        matches: typing.List[travellermap.HexPosition] = []
+
         if searchString:
+            # NOTE: For sorting to make sense it's important that the world
+            # search returns ALL worlds that match the search string so they
+            # can be sorted. The limiting of the number of results added to
+            # the completer should be done on the sorted list.
             try:
-                # NOTE: For sorting to make sense it's important that the world
-                # search returns ALL worlds that match the search string so they
-                # can be sorted. The limiting of the number of results added to
-                # the completer should be done on the sorted list.
                 worlds = traveller.WorldManager.instance().searchForWorlds(
                     searchString=searchString)
+                for world in worlds:
+                    matches.append(world.hex())
             except Exception as ex:
-                logging.error(
-                    f'World search for "{searchString}" failed setting up completer',
+                # Log this at debug as it could get very spammy as the user types
+                logging.debug(
+                    f'Search for "{searchString}" failed',
                     exc_info=ex)
 
-            worlds.sort(
-                key=lambda world: world.name(includeSubsector=True).casefold())
-        return worlds
+            if self._enableDeadSpaceSelection:
+                try:
+                    hex = traveller.WorldManager.instance().sectorHexToPosition(
+                        sectorHex=searchString)
+                    isDuplicate = False
+                    for other in matches:
+                        if hex == other:
+                            isDuplicate = True
+                            break
+                    if not isDuplicate:
+                        matches.append(hex)
+                except KeyError:
+                    pass # The search string isn't a a sector hex so ignore it
+                except Exception as ex:
+                    # Log this at debug as it could get very spammy as the user types
+                    logging.debug(
+                        f'Search for sector hex "{searchString}" failed',
+                        exc_info=ex)
+
+            # If the currently selected hex is in the list of matched hexes, make sure
+            # it's the first option in the list
+            if self._selectedHex and self._selectedHex in matches:
+                matches.remove(self._selectedHex)
+                matches.insert(0, self._selectedHex)
+
+        if len(matches) > HexSelectComboBox._MaxCompleterResults:
+            matches = matches[:HexSelectComboBox._MaxCompleterResults]
+        return matches

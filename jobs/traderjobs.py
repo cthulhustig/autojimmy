@@ -6,7 +6,7 @@ import traveller
 import typing
 from PyQt5 import QtCore
 
-class _TraderJobBase(QtCore.QThread):
+class TraderJobBase(QtCore.QThread):
     _tradeOptionsSignal = QtCore.pyqtSignal([list])
     _tradeInfoSignal = QtCore.pyqtSignal([list])
     _progressSignal = QtCore.pyqtSignal([int, int])
@@ -49,7 +49,6 @@ class _TraderJobBase(QtCore.QThread):
         self._yieldDelta = datetime.timedelta(milliseconds=yieldIntervalMs)
         self._lastYieldTime = None
         self._cancelled = False
-        self.start()
 
     def cancel(self, block=False) -> None:
         self._cancelled = True
@@ -96,7 +95,7 @@ class _TraderJobBase(QtCore.QThread):
             time.sleep(0.01)
             self._lastYieldTime = now
 
-class SingleWorldTraderJob(_TraderJobBase):
+class SingleWorldTraderJob(TraderJobBase):
     def __init__(
             self,
             parent: QtCore.QObject,
@@ -115,6 +114,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[float, common.ScalarCalculation],
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
+            routingType: logic.RoutingType,
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
@@ -147,6 +147,7 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
+        self._routingType = routingType
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
@@ -182,6 +183,7 @@ class SingleWorldTraderJob(_TraderJobBase):
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipStartingFuel=self._shipStartingFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
+                routingType=self._routingType,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
@@ -200,7 +202,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             self._emitTradeInfo()
             self._finishedSignal[Exception].emit(ex)
 
-class MultiWorldTraderJob(_TraderJobBase):
+class MultiWorldTraderJob(TraderJobBase):
     def __init__(
             self,
             parent: QtCore.QObject,
@@ -220,6 +222,7 @@ class MultiWorldTraderJob(_TraderJobBase):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[float, common.ScalarCalculation],
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
+            routingType: logic.RoutingType,
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
@@ -253,6 +256,7 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
+        self._routingType = routingType,
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
@@ -291,6 +295,7 @@ class MultiWorldTraderJob(_TraderJobBase):
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipStartingFuel=self._shipStartingFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
+                routingType=self._routingType,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,

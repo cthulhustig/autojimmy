@@ -77,6 +77,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self.setColumnHeaders(columns)
+        self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
@@ -102,14 +103,9 @@ class CargoRecordTable(gui.FrozenColumnListTable):
     def cargoRecordCount(self) -> int:
         return self.rowCount()
 
-    def cargoRecordAt(
-            self,
-            position: QtCore.QPoint
-            ) -> typing.Optional[logic.CargoRecord]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.cargoRecord(item.row())
+    def cargoRecordAt(self, y: int) -> typing.Optional[logic.CargoRecord]:
+        row = self.rowAt(y)
+        return self.cargoRecord(row) if row >= 0 else None
 
     def insertCargoRecord(
             self,

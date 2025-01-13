@@ -5,26 +5,24 @@ class Subsector(object):
     def __init__(
             self,
             name: str,
+            sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
         self._name = name
+        self._sectorName = sectorName
         self._worlds = worlds
-
-        self._worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
-        for world in self._worlds:
-            self._worldPositionMap[(world.x(), world.y())] = world
 
     def name(self) -> str:
         return self._name
 
+    def sectorName(self) -> str:
+        return self._sectorName
+
     def worldCount(self) -> int:
         return len(self._worlds)
 
-    def worlds(self) -> typing.Iterable[traveller.World]:
-        return self._worlds
-
-    def worldByPosition(self, x: int, y: int) -> traveller.World:
-        return self._worldPositionMap.get((x, y))
+    def worlds(self) -> typing.Collection[traveller.World]:
+        return list(self._worlds)
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)
@@ -47,38 +45,36 @@ class Sector(object):
             x: int,
             y: int,
             worlds: typing.Iterable[traveller.World],
-            subsectorNames: typing.Iterable[str]
+            subsectorNames: typing.Iterable[str] # Subsector names should be ordered in subsector order (i.e. A-P)
             ) -> None:
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
         self._x = x
         self._y = y
-        self._worlds = worlds
-        self._worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
+        self._worlds = list(worlds)
         self._subsectorMap: typing.Dict[str, Subsector] = {}
 
-        subsectorWorlds: typing.Dict[str, typing.List[traveller.World]] = {}
+        subsectorWorldsMap: typing.Dict[str, typing.List[traveller.World]] = {}
         for subsectorName in subsectorNames:
-            subsectorWorlds[subsectorName] = []
+            subsectorWorldsMap[subsectorName] = []
 
         for world in self._worlds:
-            self._worldPositionMap[(world.x(), world.y())] = world
+            assert(world.subsectorName() in subsectorWorldsMap)
+            subsectorWorlds = subsectorWorldsMap[world.subsectorName()]
+            subsectorWorlds.append(world)
 
-            assert(world.subsectorName() in subsectorWorlds)
-            worldList = subsectorWorlds[world.subsectorName()]
-            worldList.append(world)
-
-        for subsectorName, worldList in subsectorWorlds.items():
+        for subsectorName, subsectorWorlds in subsectorWorldsMap.items():
             self._subsectorMap[subsectorName] = Subsector(
                 name=subsectorName,
-                worlds=worldList)
+                sectorName=self._name,
+                worlds=subsectorWorlds)
 
     def name(self) -> str:
         return self._name
 
-    def alternateNames(self) -> typing.Optional[typing.Iterable[str]]:
-        return self._alternateNames
+    def alternateNames(self) -> typing.Optional[typing.Collection[str]]:
+        return list(self._alternateNames) if self._alternateNames else None
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
@@ -92,20 +88,17 @@ class Sector(object):
     def worldCount(self) -> int:
         return len(self._worlds)
 
-    def worlds(self) -> typing.Iterable[traveller.World]:
-        return self._worlds
+    def worlds(self) -> typing.Collection[traveller.World]:
+        return list(self._worlds)
 
-    def worldByPosition(self, x: int, y: int) -> traveller.World:
-        return self._worldPositionMap.get((x, y))
-
-    def subsectorNames(self) -> typing.Iterable[str]:
-        return self._subsectorMap.keys()
+    def subsectorNames(self) -> typing.Sequence[str]:
+        return list(self._subsectorMap.keys())
 
     def subsector(self, name: str) -> typing.Optional[Subsector]:
         return self._subsectorMap.get(name)
 
-    def subsectors(self) -> typing.Iterable[Subsector]:
-        return self._subsectorMap.values()
+    def subsectors(self) -> typing.Sequence[Subsector]:
+        return list(self._subsectorMap.values())
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)

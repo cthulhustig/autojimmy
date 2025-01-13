@@ -1,5 +1,6 @@
 import gui
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -9,13 +10,15 @@ class TravellerMapSelectDialog(gui.DialogEx):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='Traveller Map World Select',
+            title='Traveller Map Select',
             configSection='TravellerMapSelectDialog',
             parent=parent)
 
         self._mapWidget = gui.TravellerMapWidget()
         self._mapWidget.setInfoEnabled(False) # Disable by default
         self._mapWidget.setSelectionMode(gui.TravellerMapWidget.SelectionMode.MultiSelect)
+
+        self._label = QtWidgets.QLabel()
 
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDefault(True)
@@ -31,54 +34,48 @@ class TravellerMapSelectDialog(gui.DialogEx):
         buttonLayout.addWidget(self._cancelButton)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(QtWidgets.QLabel('Click on the worlds you want to select or deselect.'), 0)
+        windowLayout.addWidget(self._label, 0)
         windowLayout.addWidget(self._mapWidget, 1)
         windowLayout.addLayout(buttonLayout, 0)
 
         self.setLayout(windowLayout)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+        self.showMaximizeButton()
+        self._updateLabel()
 
-    def selectedWorlds(self) -> typing.Iterable[traveller.World]:
-        return self._mapWidget.selectedWorlds()
+    def selectedHexes(self) -> typing.Iterable[traveller.World]:
+        return self._mapWidget.selectedHexes()
 
-    def selectWorld(
+    def selectHex(
             self,
-            world: traveller.World,
-            centerOnWorld: bool = True,
-            setInfoWorld: bool = True
+            hex: travellermap.HexPosition,
+            centerOnHex: bool = True,
+            setInfoHex: bool = True
             ) -> None:
-        self._mapWidget.selectWorld(
-            world=world,
-            centerOnWorld=centerOnWorld,
-            setInfoWorld=setInfoWorld)
+        self._mapWidget.selectHex(
+            hex=hex,
+            centerOnHex=centerOnHex,
+            setInfoHex=setInfoHex)
 
-    def deselectWorld(
+    def deselectHex(
             self,
-            world: traveller.World
+            hex: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.deselectWorld(world=world)
+        self._mapWidget.deselectHex(hex=hex)
 
-    def setSelectedWorlds(
-            self,
-            worlds: typing.Iterable[traveller.World],
-            centerOnWorlds: bool = True
-            ) -> None:
-        self._mapWidget.clearSelectedWorlds()
-        for world in worlds:
-            self._mapWidget.selectWorld(
-                world=world,
-                centerOnWorld=False)
-        if centerOnWorlds:
-            self._mapWidget.centerOnWorlds(worlds=worlds)
+    def clearSelectedHexes(self) -> None:
+        self._mapWidget.clearSelectedHexes()
 
-    def setSingleSelect(
+    def configureSelection(
             self,
-            singleSelect: bool
+            singleSelect: bool,
+            includeDeadSpace: bool = False
             ) -> None:
         self._mapWidget.setSelectionMode(
             gui.TravellerMapWidget.SelectionMode.SingleSelect \
             if singleSelect else \
             gui.TravellerMapWidget.SelectionMode.MultiSelect)
+        self._mapWidget.enableDeadSpaceSelection(enable=includeDeadSpace)
+        self._updateLabel()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -100,3 +97,15 @@ class TravellerMapSelectDialog(gui.DialogEx):
         self._settings.endGroup()
 
         super().saveSettings()
+
+    def _updateLabel(self) -> None:
+        isWorld = not self._mapWidget.isDeadSpaceSelectionEnabled()
+        isSingular = self._mapWidget.selectionMode() == gui.TravellerMapWidget.SelectionMode.SingleSelect
+        if isWorld:
+            wording = 'world' if isSingular else 'worlds'
+        else:
+            wording = 'hex' if isSingular else 'hexes'
+
+        self._label.setText(
+            'Click on the {wording} you want to select or deselect.'.format(
+                wording=wording))

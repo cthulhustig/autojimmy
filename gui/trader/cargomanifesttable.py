@@ -10,8 +10,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     class ColumnType(enum.Enum):
         PurchaseWorld = 'Purchase World'
         PurchaseSector = 'Purchase Sector'
+        PurchaseSubsector = 'Purchase Subsector'
         SaleWorld = 'Sale World'
         SaleSector = 'Sale Sector'
+        SaleSubsector = 'Sale Subsector'
         Logistics = 'Logistics\n(Jumps)'
         CargoQuantity = 'Quantity\n(Tons)'
 
@@ -38,8 +40,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     AllColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.AverageNetProfit,
@@ -60,8 +64,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     AverageCaseColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.AverageNetProfit,
@@ -74,8 +80,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     WorstCaseColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.WorstNetProfit,
@@ -88,8 +96,10 @@ class CargoManifestTable(gui.FrozenColumnListTable):
     BestCaseColumns = [
         ColumnType.PurchaseWorld,
         ColumnType.PurchaseSector,
+        ColumnType.PurchaseSubsector,
         ColumnType.SaleWorld,
         ColumnType.SaleSector,
+        ColumnType.SaleSubsector,
         ColumnType.Logistics,
         ColumnType.CargoQuantity,
         ColumnType.BestNetProfit,
@@ -105,14 +115,17 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self.setColumnHeaders(columns)
+        self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         for column, columnType in enumerate(columns):
             if columnType == self.ColumnType.PurchaseWorld or \
                     columnType == self.ColumnType.PurchaseSector or \
+                    columnType == self.ColumnType.PurchaseSubsector or \
                     columnType == self.ColumnType.SaleWorld or \
-                    columnType == self.ColumnType.SaleSector:
+                    columnType == self.ColumnType.SaleSector or \
+                    columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
 
     def cargoManifest(self, row: int) -> typing.Optional[logic.CargoManifest]:
@@ -130,11 +143,9 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             manifests.append(cargoManifest)
         return manifests
 
-    def cargoManifestAt(self, position: QtCore.QPoint) -> typing.Optional[logic.CargoManifest]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.cargoManifest(item.row())
+    def cargoManifestAt(self, y: int) -> typing.Optional[logic.CargoManifest]:
+        row = self.rowAt(y)
+        return self.cargoManifest(row) if row >= 0 else None
 
     def insertCargoManifest(self, row: int, cargoManifest: logic.CargoManifest) -> int:
         self.insertRow(row)
@@ -151,16 +162,6 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         if row < 0:
             return None
         return self.cargoManifest(row)
-
-    def selectedRowCount(self) -> int:
-        selection = self.selectedIndexes()
-        if not selection:
-            return 0
-        count = 0
-        for index in selection:
-            if index.column() == 0:
-                count += 1
-        return count
 
     def _fillRow(
             self,
@@ -197,7 +198,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.PurchaseSector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{purchaseWorld.subsectorName()} ({purchaseWorld.sectorName()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.sectorName())
+                    if purchaseWorldTagColour:
+                        tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
+                elif columnType == self.ColumnType.PurchaseSubsector:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, purchaseWorld.subsectorName())
                     if purchaseWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(purchaseWorldTagColour))
                 elif columnType == self.ColumnType.SaleWorld:
@@ -207,7 +213,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.SaleSector:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{saleWorld.subsectorName()} ({saleWorld.sectorName()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.sectorName())
+                    if saleWorldTagColour:
+                        tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
+                elif columnType == self.ColumnType.SaleSubsector:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, saleWorld.subsectorName())
                     if saleWorldTagColour:
                         tableItem.setBackground(QtGui.QColor(saleWorldTagColour))
                 elif columnType == self.ColumnType.Logistics:
@@ -287,13 +298,15 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector:
+                columnType == self.ColumnType.PurchaseSector or \
+                columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
-            return gui.createWorldToolTip(purchaseWorld)
+            return gui.createHexToolTip(purchaseWorld)
         elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector:
+                columnType == self.ColumnType.SaleSector or \
+                columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
-            return gui.createWorldToolTip(saleWorld)
+            return gui.createHexToolTip(saleWorld)
         elif columnType == self.ColumnType.Logistics:
             return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
 

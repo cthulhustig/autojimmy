@@ -137,10 +137,14 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def filters(self) -> typing.Iterable[logic.WorldFilter]:
         return self._filterTable.filters()
 
-    def filterAt(self, position: QtCore.QPoint) -> typing.Optional[logic.WorldFilter]:
-        translated = self.mapToGlobal(position)
+    def rowAt(self, y: int) -> int:
+        translated = self.mapToGlobal(QtCore.QPoint(self.x(), y))
         translated = self._filterTable.viewport().mapFromGlobal(translated)
-        return self._filterTable.filterAt(position=translated)
+        return self._filterTable.rowAt(translated.y())
+
+    def filterAt(self, y: int) -> typing.Optional[logic.WorldFilter]:
+        row = self.rowAt(y)
+        return self._filterTable.row(row) if row >= 0 else None
 
     def hasSelection(self) -> bool:
         return self._filterTable.hasSelection()
@@ -151,11 +155,11 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def removeSelectedFilters(self) -> None:
         self._filterTable.removeSelectedRows()
 
-    def setVisibleColumns(
+    def setActiveColumns(
             self,
             columns: typing.Iterable[gui.WorldFilterTable.ColumnType]
             ) -> None:
-        self._filterTable.setVisibleColumns(columns=columns)
+        self._filterTable.setActiveColumns(columns=columns)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -237,8 +241,8 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         if key == QtCore.Qt.Key.Key_Delete:
             self.removeSelectedFilters()
 
-    def _showFilterTableContextMenu(self, position: QtCore.QPoint) -> None:
-        filter = self._filterTable.filterAt(position=position)
+    def _showFilterTableContextMenu(self, point: QtCore.QPoint) -> None:
+        filter = self._filterTable.filterAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -266,5 +270,5 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._filterTable.viewport().mapToGlobal(position)
+            self._filterTable.viewport().mapToGlobal(point)
         )

@@ -52,6 +52,35 @@ ShipFuelPerParsecToolTip = createStringToolTip(
 FreeCargoSpaceToolTip = createStringToolTip(
     '<p>Free cargo space available for purchased trade cargo</p>',
     escape=False)
+RoutingTypeToolTip = createStringToolTip(
+    '<p>Type of routing algorithm to use</p>'
+    '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
+    '<li><b>Basic</b> - Basic routing is the fastest type of routing, however '
+    'it is also the most primitive. It\'s similar to the routing algorithm '
+    'used by Traveller Map, with routes just using the ship jump rating to '
+    'determine possible routes. Although the algorithm its self is not fuel '
+    'aware, simple fuelling requirements (e.g. only jumping to worlds that '
+    'allow wilderness refuelling) can be achieved by adding filters to the '
+    'avoid locations list. The main downsides to basic routing are the lack '
+    'of control over what type of refuelling you would like to use and the '
+    'fact it can\'t generate optimal routes for ships with a fuel capacity '
+    'that allows them to make multiple jumps without refuelling.'
+    '</li>'
+    '<li><b>Fuel Based</b> - Fuel Based routing is a more advanced but slower '
+    'algorithm that also takes the ship\'s fuel capacity along with other '
+    'refuelling requirements into account in order to generate jump routes '
+    'more optimized for the ship and how want to refuel it. As well as this, '
+    'it has the added benefit of allowing for the automatic creation of a '
+    'refuelling plan that lets you know where along the route to take on fuel '
+    'and how much to take on in order to complete the route at the lost cost.'
+    '</li>'
+    '<li><b>Dead Space</b> - Dead Space routing has the same advantages as '
+    'Fuel Based routing, but it allows the algorithm to make jumps into and '
+    'out of dead space (i.e. empty hexes on the map) if doing so would result '
+    'in a more optimal jump route.'
+    '</li>'
+    '</ul>',
+    escape=False)
 RouteOptimisationToolTip = createStringToolTip(
     '<p>Type of optimisation to apply when calculating a jump route</p>'
     '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
@@ -64,23 +93,6 @@ RouteOptimisationToolTip = createStringToolTip(
     'the lowest logistics costs. It\'s not guaranteed to find the absolute '
     'lowest cost route but it\'s generally pretty good.</li>'
     '</ul>',
-    escape=False)
-FuelBasedRoutingToolTip = createStringToolTip(
-    '<p>Turn fuel based route calculation on/off</p>'
-    '<p>When fuel based route calculation is enabled, the jump route calculator will use ship '
-    'jump/fuel details and world information to generate a route that can be completed using the '
-    'type of refuelling specified by the refuelling strategy. Fuel based routing allows for the '
-    'generation of a refuelling plan that details where along the route to take on fuel and how '
-    'much to take on in order to complete the route with the minimum cost. It also allows the '
-    'route calculator to generate more optimised routes for ships that can travel more parsecs '
-    'than their jump rating without refuelling.</p>'
-    '<p>When fuel based route calculation is disabled, the jump route calculator only uses the '
-    'ships jump rating to calculate the route. This method of route calculation can be significantly '
-    'faster than fuel based routing, however it\'s not guaranteed that it would be possible to take '
-    'on enough fuel along the route to complete it. If you have specific refuelling requirements, '
-    'avoid world filters can be used to exclude worlds that don\'t allow the refuelling you need.</p>'
-    '<p>The primary reason to disable fuel based route calculation is when you need to create a '
-    'route in a sector such as Foreven where world information isn\'t know.</p>',
     escape=False)
 RefuellingStrategyToolTip = createStringToolTip(
     '<p>Type of refuelling that\'s desired</p>'
@@ -102,18 +114,18 @@ RefuellingStrategyToolTip = createStringToolTip(
     'if it results in a more optimal jump route.</li>'
     '<li><b>Gas Giant Preferred</b> - Ideally refuel by skimming gas giants, '
     'but allow refuelling at star ports if it results in a more optimal jump '
-    'route. If refuelling at a star port with refined and unrefined fuel, '
+    'route. If refuelling at a star port that has refined and unrefined fuel, '
     'unrefined fuel costs will be used for logistics calculations.</li>'
     '<li><b>Water Preferred</b> - Ideally refuel by extracting hydrogen from '
     'water or ice, but allow refuelling at star ports if it results in a more '
-    'optimal jump route. If refuelling at a star port with refined and '
+    'optimal jump route. If refuelling at a star port that has refined and '
     'unrefined fuel, unrefined fuel costs will be used for logistics '
     'calculations.</li>'
     '<li><b>Wilderness Preferred</b> - Ideally refuel by skimming gas giants '
     'or extracting hydrogen from water or ice, but allow refuelling at star '
     'ports if it results in a more optimal jump route. If refuelling at a '
-    'star port with refined and unrefined fuel, unrefined fuel costs will be '
-    'used for logistics calculations.</li>'
+    'star port that has refined and unrefined fuel, unrefined fuel costs will '
+    'be used for logistics calculations.</li>'
     '</ul>',
     escape=False)
 UseFuelCachesToolTip = createStringToolTip(
@@ -268,12 +280,21 @@ def createListToolTip(
 
 
 _DisableWorldToolTipImages = False
-def createWorldToolTip(
-        world: traveller.World,
+def createHexToolTip(
+        hex: typing.Union[travellermap.HexPosition, traveller.World],
         noThumbnail: bool = False,
         width: int = 512 # 0 means no fixed width
         ) -> str:
     global _DisableWorldToolTipImages
+
+    worldManager = traveller.WorldManager.instance()
+
+    if isinstance(hex, traveller.World):
+        world = hex
+        hex = world.hex()
+    else:
+        world = worldManager.worldByPosition(hex=hex)
+    uwp = world.uwp() if world else None
 
     formatStyle = lambda tagColour: \
         '' if not tagColour \
@@ -295,8 +316,7 @@ def createWorldToolTip(
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
-                absoluteX=world.absoluteX(),
-                absoluteY=world.absoluteY(),
+                hex=hex,
                 width=256,
                 height=256,
                 timeout=3)
@@ -308,7 +328,7 @@ def createWorldToolTip(
                 toolTip += f'<p style="vertical-align:middle"><img src=data:{mineType};base64,{tileString} width="256" height="256"></p>'
                 toolTip += '</td>'
         except Exception as ex:
-            logging.error(f'Failed to retrieve tool tip image for {world.name(includeSubsector=True)}', exc_info=ex)
+            logging.error(f'Failed to retrieve tool tip image for hex {hex}', exc_info=ex)
             if isinstance(ex, TimeoutError):
                 logging.warning(f'Showing world images in tool tips has been temporarily disabled')
                 _DisableWorldToolTipImages = True
@@ -319,245 +339,269 @@ def createWorldToolTip(
     #
     # World
     #
-    toolTip += f'<h1>{html.escape(world.name())}</h1>'
 
-    toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
-    toolTip += f'<li>Subsector: {html.escape(world.subsectorName())}<li>'
-    toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
-    toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
+    canonicalName = traveller.WorldManager.instance().canonicalHexName(hex=hex)
+    toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
 
-    allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world)
-    tagLevel = app.calculateAllegianceTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
-
-    population = world.population()
-    toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
-    toolTip += f'<li><span>Total Worlds: {world.numberOfSystemWorlds()}</span></li>'
-    toolTip += f'<li><span>Water Present: {"Yes" if world.waterPresent() else "No"}</span></li>'
-    if world.isFuelCache():
-        toolTip += '<li><span>Fuel Cache: Yes</span></li>'
-    if world.isAnomaly():
-        style = formatStyle(app.tagColour(app.TagLevel.Warning))
-        toolTip += f'<li><span style="{style}">Anomaly: Yes</span></li>'
-
-    if world.hasOwner():
+    if world:
+        sectorHex = world.sectorHex()
+        subsectorName = world.subsectorName()
+    else:
         try:
-            ownerWorld = traveller.WorldManager.instance().world(sectorHex=world.ownerSectorHex())
-        except Exception:
-            ownerWorld = None
+            sectorHex = worldManager.positionToSectorHex(hex=hex)
+        except:
+            sectorHex = 'Unknown'
+        subsector = worldManager.subsectorByPosition(hex=hex)
+        subsectorName = subsector.name() if subsector else 'Unknown'
+    toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
+    toolTip += f'<li>Subsector: {html.escape(subsectorName)}<li>'
+    toolTip += f'<li>Sector Hex: {html.escape(sectorHex)}<li>'
+    toolTip += f'<li>Sector Position: ({hex.sectorX()}, {hex.sectorY()})<li>'
 
-        if ownerWorld:
-            ownerText = ownerWorld.name(includeSubsector=True)
-            tagLevel = app.calculateWorldTagLevel(world=ownerWorld)
-        else:
-            # We don't know about this world so just display the sector hex and tag it as danger
-            ownerText = f'Unknown world at {world.ownerSectorHex()}'
-            tagLevel = app.TagLevel.Danger
+    refuellingTypes = []
+    if world:
+        if world.hasStarPortRefuelling(rules=app.Config.instance().rules()):
+            refuellingTypes.append('Star Port ({code})'.format(
+                code=uwp.code(traveller.UWP.Element.StarPort)))
+        if world.hasGasGiantRefuelling():
+            refuellingTypes.append('Gas Giant(s)')
+        if world.hasWaterRefuelling():
+            refuellingTypes.append('Water')
+        if world.isFuelCache():
+            refuellingTypes.append('Fuel Cache')
+        if world.isAnomaly():
+            refuellingTypes.append('Anomaly')
+    toolTip += '<li><span style="{style}">Refuelling: {types}</span></li>'.format(
+        style='' if refuellingTypes else formatStyle(app.tagColour(app.TagLevel.Warning)),
+        types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
+    toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
+        count=world.numberOfSystemWorlds() if world else 0)
 
+    if world:
+        allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world=world)
+        tagLevel = app.calculateAllegianceTagLevel(world=world)
         style = formatStyle(app.tagColour(tagLevel))
-        toolTip += f'<li><span style="{style}">Owner: {html.escape(ownerText)}</span><li>'
+        toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
 
-    #
-    # UWP
-    #
-    uwp = world.uwp()
-    toolTip += f'<li>UWP: {html.escape(uwp.string())}<li>'
-    toolTip += f'<ul style="{_IndentListStyle}">'
+        population = world.population()
+        toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
 
-    tagLevel = app.calculateStarPortTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Star Port: {uwp.code(traveller.UWP.Element.StarPort)} - {html.escape(uwp.description(traveller.UWP.Element.StarPort))}</span></li>'
-
-    tagLevel = app.calculateWorldSizeTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">World Size: {uwp.code(traveller.UWP.Element.WorldSize)} - {html.escape(uwp.description(traveller.UWP.Element.WorldSize))}</span></li>'
-
-    tagLevel = app.calculateAtmosphereTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Atmosphere: {uwp.code(traveller.UWP.Element.Atmosphere)} - {html.escape(uwp.description(traveller.UWP.Element.Atmosphere))}</span></li>'
-
-    tagLevel = app.calculateHydrographicsTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Hydrographics: {uwp.code(traveller.UWP.Element.Hydrographics)} - {html.escape(uwp.description(traveller.UWP.Element.Hydrographics))}</span></li>'
-
-    tagLevel = app.calculatePopulationTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Population: {uwp.code(traveller.UWP.Element.Population)} - {html.escape(uwp.description(traveller.UWP.Element.Population))}</span></li>'
-
-    tagLevel = app.calculateGovernmentTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Government: {uwp.code(traveller.UWP.Element.Government)} - {html.escape(uwp.description(traveller.UWP.Element.Government))}</span></li>'
-
-    tagLevel = app.calculateLawLevelTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Law Level: {uwp.code(traveller.UWP.Element.LawLevel)} - {html.escape(uwp.description(traveller.UWP.Element.LawLevel))}</span></li>'
-
-    tagLevel = app.calculateTechLevelTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(traveller.UWP.Element.TechLevel)} ({traveller.ehexToInteger(value=uwp.code(traveller.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(traveller.UWP.Element.TechLevel))}</span></li>'
-
-    toolTip += '</ul>'
-
-    #
-    # Economics
-    #
-    economics = world.economics()
-    toolTip += f'<li>Economics: {html.escape(economics.string())}</li>'
-    toolTip += f'<ul style="{_IndentListStyle}">'
-
-    tagLevel = app.calculateResourcesTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Resources: {economics.code(traveller.Economics.Element.Resources)} - {html.escape(economics.description(traveller.Economics.Element.Resources))}</span></li>'
-
-    tagLevel = app.calculateLabourTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Labour: {economics.code(traveller.Economics.Element.Labour)} - {html.escape(economics.description(traveller.Economics.Element.Labour))}</span></li>'
-
-    tagLevel = app.calculateInfrastructureTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Infrastructure: {economics.code(traveller.Economics.Element.Infrastructure)} - {html.escape(economics.description(traveller.Economics.Element.Infrastructure))}</span></li>'
-
-    tagLevel = app.calculateEfficiencyTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Efficiency: {economics.code(traveller.Economics.Element.Efficiency)} - {html.escape(economics.description(traveller.Economics.Element.Efficiency))}</span></li>'
-
-    toolTip += '</ul>'
-
-    #
-    # Culture
-    #
-    culture = world.culture()
-    toolTip += f'<li>Culture: {html.escape(culture.string())}</li>'
-    toolTip += f'<ul style="{_IndentListStyle}">'
-
-    tagLevel = app.calculateHeterogeneityTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Heterogeneity: {culture.code(traveller.Culture.Element.Heterogeneity)} - {html.escape(culture.description(traveller.Culture.Element.Heterogeneity))}</span></li>'
-
-    tagLevel = app.calculateAcceptanceTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Acceptance: {culture.code(traveller.Culture.Element.Acceptance)} - {html.escape(culture.description(traveller.Culture.Element.Acceptance))}</span></li>'
-
-    tagLevel = app.calculateStrangenessTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Strangeness: {culture.code(traveller.Culture.Element.Strangeness)} - {html.escape(culture.description(traveller.Culture.Element.Strangeness))}</span></li>'
-
-    tagLevel = app.calculateSymbolsTagLevel(world)
-    style = formatStyle(app.tagColour(tagLevel))
-    toolTip += f'<li><span style="{style}">Symbols: {html.escape(culture.code(traveller.Culture.Element.Symbols))} - {html.escape(culture.description(traveller.Culture.Element.Symbols))}</span></li>'
-
-    toolTip += '</ul>'
-
-    #
-    # Nobilities
-    #
-    nobilities = world.nobilities()
-    if not nobilities.isEmpty():
-        toolTip += f'<li>Nobilities: {html.escape(nobilities.string())}</li>'
-        toolTip += f'<ul style="{_IndentListStyle}">'
-        for nobilityType in nobilities:
-            tagLevel = app.calculateNobilityTagLevel(nobilityType)
-            style = formatStyle(app.tagColour(tagLevel))
-            toolTip += f'<li><span style="{style}">{traveller.Nobilities.code(nobilityType)} - {html.escape(traveller.Nobilities.description(nobilityType))}</span></li>'
-        toolTip += '</ul>'
-
-    #
-    # Remarks
-    #
-    remarks = world.remarks()
-    if not remarks.isEmpty():
-        toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
-
-        tradeCodes = remarks.tradeCodes()
-        if tradeCodes:
-            toolTip += '<li>Trade Codes:</li>'
-            toolTip += f'<ul style="{_IndentListStyle}">'
-            for tradeCode in tradeCodes:
-                tagLevel = app.calculateTradeCodeTagLevel(tradeCode)
-                style = formatStyle(app.tagColour(tagLevel))
-                toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
-            toolTip += '</ul>'
-
-        sophonts = remarks.sophonts()
-        if sophonts:
-            toolTip += '<li>Sophonts:</li>'
-            toolTip += f'<ul style="{_IndentListStyle}">'
-            for sophont in sophonts:
-                percentage = remarks.sophontPercentage(sophont=sophont)
-                toolTip += f'<li><span>{html.escape(sophont)} - {percentage}%</span></li>'
-            toolTip += '</ul>'
-
-    #
-    # PBG
-    #
-    pbg = world.pbg()
-    toolTip += f'<li><span>PBG: {html.escape(pbg.string())}</span></li>'
-    toolTip += f'<ul style="{_IndentListStyle}">'
-    toolTip += f'<li><span>Population Multiplier: {pbg.code(traveller.PBG.Element.PopulationMultiplier)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
-    toolTip += f'<li><span>Planetoid Belts: {pbg.code(traveller.PBG.Element.PlanetoidBelts)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
-    toolTip += f'<li><span>Gas Giants: {pbg.code(traveller.PBG.Element.GasGiants)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.GasGiants), default="?")})</span></li>'
-    toolTip += '</ul>'
-
-    #
-    # Stellar
-    #
-    stellar = world.stellar()
-    if not stellar.isEmpty():
-        toolTip += f'<li><span>Stars: {html.escape(stellar.string())}</span></li>'
-
-        toolTip += f'<ul style="{_IndentListStyle}">'
-        for star in stellar:
-            toolTip += f'<li><span">Classification: {html.escape(star.string())}</span></li>'
-            toolTip += f'<ul style="{_IndentListStyle}">'
-
-            tagLevel = app.calculateSpectralTagLevel(star)
-            style = formatStyle(app.tagColour(tagLevel))
-            toolTip += f'<li><span style="{style}">Spectral Class: {star.code(traveller.Star.Element.SpectralClass)} - {html.escape(star.description(traveller.Star.Element.SpectralClass))}</span></li>'
-            toolTip += f'<li><span style="{style}">Spectral Scale: {star.code(traveller.Star.Element.SpectralScale)} - {html.escape(star.description(traveller.Star.Element.SpectralScale))}</span></li>'
-
-            tagLevel = app.calculateLuminosityTagLevel(star)
-            style = formatStyle(app.tagColour(tagLevel))
-            toolTip += f'<li><span style="{style}">Luminosity Class: {star.code(traveller.Star.Element.LuminosityClass)} - {html.escape(star.description(traveller.Star.Element.LuminosityClass))}</span></li>'
-            toolTip += '</ul>'
-        toolTip += '</ul>'
-
-    #
-    # Bases
-    #
-    bases = world.bases()
-    if not bases.isEmpty():
-        toolTip += f'<li>Bases: {html.escape(bases.string())}</li>'
-        toolTip += f'<ul style="{_IndentListStyle}">'
-        for base in bases:
-            tagLevel = app.calculateBaseTypeTagLevel(base)
-            style = formatStyle(app.tagColour(tagLevel))
-            toolTip += f'<li><span style="{style}">{html.escape(traveller.Bases.description(base))}</span></li>'
-        toolTip += '</ul>'
-
-    #
-    # Colonies
-    #
-    if world.hasColony():
-        toolTip += '<li>Colonies</li>'
-        toolTip += f'<ul style="{_IndentListStyle}">'
-        for colonySectorHex in world.colonySectorHexes():
+        if world.hasOwner():
             try:
-                colonyWorld = traveller.WorldManager.instance().world(sectorHex=colonySectorHex)
+                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=world.ownerSectorHex())
             except Exception:
-                colonyWorld = None
+                ownerWorld = None
 
-            if colonyWorld:
-                worldText = colonyWorld.name(includeSubsector=True)
-                tagLevel = app.calculateWorldTagLevel(colonyWorld)
+            if ownerWorld:
+                ownerText = ownerWorld.name(includeSubsector=True)
+                tagLevel = app.calculateWorldTagLevel(world=ownerWorld)
             else:
                 # We don't know about this world so just display the sector hex and tag it as danger
-                worldText = f'Unknown World at {colonySectorHex}'
+                ownerText = f'Unknown world at {world.ownerSectorHex()}'
                 tagLevel = app.TagLevel.Danger
 
             style = formatStyle(app.tagColour(tagLevel))
-            toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'
+            toolTip += f'<li><span style="{style}">Owner: {html.escape(ownerText)}</span><li>'
+
+        #
+        # UWP
+        #
+        toolTip += f'<li>UWP: {html.escape(uwp.string())}<li>'
+        toolTip += f'<ul style="{_IndentListStyle}">'
+
+        tagLevel = app.calculateStarPortTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Star Port: {uwp.code(traveller.UWP.Element.StarPort)} - {html.escape(uwp.description(traveller.UWP.Element.StarPort))}</span></li>'
+
+        tagLevel = app.calculateWorldSizeTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">World Size: {uwp.code(traveller.UWP.Element.WorldSize)} - {html.escape(uwp.description(traveller.UWP.Element.WorldSize))}</span></li>'
+
+        tagLevel = app.calculateAtmosphereTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Atmosphere: {uwp.code(traveller.UWP.Element.Atmosphere)} - {html.escape(uwp.description(traveller.UWP.Element.Atmosphere))}</span></li>'
+
+        tagLevel = app.calculateHydrographicsTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Hydrographics: {uwp.code(traveller.UWP.Element.Hydrographics)} - {html.escape(uwp.description(traveller.UWP.Element.Hydrographics))}</span></li>'
+
+        tagLevel = app.calculatePopulationTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Population: {uwp.code(traveller.UWP.Element.Population)} - {html.escape(uwp.description(traveller.UWP.Element.Population))}</span></li>'
+
+        tagLevel = app.calculateGovernmentTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Government: {uwp.code(traveller.UWP.Element.Government)} - {html.escape(uwp.description(traveller.UWP.Element.Government))}</span></li>'
+
+        tagLevel = app.calculateLawLevelTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Law Level: {uwp.code(traveller.UWP.Element.LawLevel)} - {html.escape(uwp.description(traveller.UWP.Element.LawLevel))}</span></li>'
+
+        tagLevel = app.calculateTechLevelTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(traveller.UWP.Element.TechLevel)} ({traveller.ehexToInteger(value=uwp.code(traveller.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(traveller.UWP.Element.TechLevel))}</span></li>'
+
         toolTip += '</ul>'
+
+        #
+        # Economics
+        #
+        economics = world.economics()
+        toolTip += f'<li>Economics: {html.escape(economics.string())}</li>'
+        toolTip += f'<ul style="{_IndentListStyle}">'
+
+        tagLevel = app.calculateResourcesTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Resources: {economics.code(traveller.Economics.Element.Resources)} - {html.escape(economics.description(traveller.Economics.Element.Resources))}</span></li>'
+
+        tagLevel = app.calculateLabourTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Labour: {economics.code(traveller.Economics.Element.Labour)} - {html.escape(economics.description(traveller.Economics.Element.Labour))}</span></li>'
+
+        tagLevel = app.calculateInfrastructureTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Infrastructure: {economics.code(traveller.Economics.Element.Infrastructure)} - {html.escape(economics.description(traveller.Economics.Element.Infrastructure))}</span></li>'
+
+        tagLevel = app.calculateEfficiencyTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Efficiency: {economics.code(traveller.Economics.Element.Efficiency)} - {html.escape(economics.description(traveller.Economics.Element.Efficiency))}</span></li>'
+
+        toolTip += '</ul>'
+
+        #
+        # Culture
+        #
+        culture = world.culture()
+        toolTip += f'<li>Culture: {html.escape(culture.string())}</li>'
+        toolTip += f'<ul style="{_IndentListStyle}">'
+
+        tagLevel = app.calculateHeterogeneityTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Heterogeneity: {culture.code(traveller.Culture.Element.Heterogeneity)} - {html.escape(culture.description(traveller.Culture.Element.Heterogeneity))}</span></li>'
+
+        tagLevel = app.calculateAcceptanceTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Acceptance: {culture.code(traveller.Culture.Element.Acceptance)} - {html.escape(culture.description(traveller.Culture.Element.Acceptance))}</span></li>'
+
+        tagLevel = app.calculateStrangenessTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Strangeness: {culture.code(traveller.Culture.Element.Strangeness)} - {html.escape(culture.description(traveller.Culture.Element.Strangeness))}</span></li>'
+
+        tagLevel = app.calculateSymbolsTagLevel(world=world)
+        style = formatStyle(app.tagColour(tagLevel))
+        toolTip += f'<li><span style="{style}">Symbols: {html.escape(culture.code(traveller.Culture.Element.Symbols))} - {html.escape(culture.description(traveller.Culture.Element.Symbols))}</span></li>'
+
+        toolTip += '</ul>'
+
+        #
+        # Nobilities
+        #
+        nobilities = world.nobilities()
+        if not nobilities.isEmpty():
+            toolTip += f'<li>Nobilities: {html.escape(nobilities.string())}</li>'
+            toolTip += f'<ul style="{_IndentListStyle}">'
+            for nobilityType in nobilities:
+                tagLevel = app.calculateNobilityTagLevel(nobilityType)
+                style = formatStyle(app.tagColour(tagLevel))
+                toolTip += f'<li><span style="{style}">{traveller.Nobilities.code(nobilityType)} - {html.escape(traveller.Nobilities.description(nobilityType))}</span></li>'
+            toolTip += '</ul>'
+
+        #
+        # Remarks
+        #
+        remarks = world.remarks()
+        if not remarks.isEmpty():
+            toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
+
+            tradeCodes = remarks.tradeCodes()
+            if tradeCodes:
+                toolTip += '<li>Trade Codes:</li>'
+                toolTip += f'<ul style="{_IndentListStyle}">'
+                for tradeCode in tradeCodes:
+                    tagLevel = app.calculateTradeCodeTagLevel(tradeCode)
+                    style = formatStyle(app.tagColour(tagLevel))
+                    toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
+                toolTip += '</ul>'
+
+            sophonts = remarks.sophonts()
+            if sophonts:
+                toolTip += '<li>Sophonts:</li>'
+                toolTip += f'<ul style="{_IndentListStyle}">'
+                for sophont in sophonts:
+                    percentage = remarks.sophontPercentage(sophont=sophont)
+                    toolTip += f'<li><span>{html.escape(sophont)} - {percentage}%</span></li>'
+                toolTip += '</ul>'
+
+        #
+        # PBG
+        #
+        pbg = world.pbg()
+        toolTip += f'<li><span>PBG: {html.escape(pbg.string())}</span></li>'
+        toolTip += f'<ul style="{_IndentListStyle}">'
+        toolTip += f'<li><span>Population Multiplier: {pbg.code(traveller.PBG.Element.PopulationMultiplier)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
+        toolTip += f'<li><span>Planetoid Belts: {pbg.code(traveller.PBG.Element.PlanetoidBelts)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
+        toolTip += f'<li><span>Gas Giants: {pbg.code(traveller.PBG.Element.GasGiants)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.GasGiants), default="?")})</span></li>'
+        toolTip += '</ul>'
+
+        #
+        # Stellar
+        #
+        stellar = world.stellar()
+        if not stellar.isEmpty():
+            toolTip += f'<li><span>Stars: {html.escape(stellar.string())}</span></li>'
+
+            toolTip += f'<ul style="{_IndentListStyle}">'
+            for star in stellar:
+                toolTip += f'<li><span">Classification: {html.escape(star.string())}</span></li>'
+                toolTip += f'<ul style="{_IndentListStyle}">'
+
+                tagLevel = app.calculateSpectralTagLevel(star)
+                style = formatStyle(app.tagColour(tagLevel))
+                toolTip += f'<li><span style="{style}">Spectral Class: {star.code(traveller.Star.Element.SpectralClass)} - {html.escape(star.description(traveller.Star.Element.SpectralClass))}</span></li>'
+                toolTip += f'<li><span style="{style}">Spectral Scale: {star.code(traveller.Star.Element.SpectralScale)} - {html.escape(star.description(traveller.Star.Element.SpectralScale))}</span></li>'
+
+                tagLevel = app.calculateLuminosityTagLevel(star)
+                style = formatStyle(app.tagColour(tagLevel))
+                toolTip += f'<li><span style="{style}">Luminosity Class: {star.code(traveller.Star.Element.LuminosityClass)} - {html.escape(star.description(traveller.Star.Element.LuminosityClass))}</span></li>'
+                toolTip += '</ul>'
+            toolTip += '</ul>'
+
+        #
+        # Bases
+        #
+        bases = world.bases()
+        if not bases.isEmpty():
+            toolTip += f'<li>Bases: {html.escape(bases.string())}</li>'
+            toolTip += f'<ul style="{_IndentListStyle}">'
+            for base in bases:
+                tagLevel = app.calculateBaseTypeTagLevel(base)
+                style = formatStyle(app.tagColour(tagLevel))
+                toolTip += f'<li><span style="{style}">{html.escape(traveller.Bases.description(base))}</span></li>'
+            toolTip += '</ul>'
+
+        #
+        # Colonies
+        #
+        if world.hasColony():
+            toolTip += '<li>Colonies</li>'
+            toolTip += f'<ul style="{_IndentListStyle}">'
+            for colonySectorHex in world.colonySectorHexes():
+                try:
+                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=colonySectorHex)
+                except Exception:
+                    colonyWorld = None
+
+                if colonyWorld:
+                    worldText = colonyWorld.name(includeSubsector=True)
+                    tagLevel = app.calculateWorldTagLevel(colonyWorld)
+                else:
+                    # We don't know about this world so just display the sector hex and tag it as danger
+                    worldText = f'Unknown World at {colonySectorHex}'
+                    tagLevel = app.TagLevel.Danger
+
+                style = formatStyle(app.tagColour(tagLevel))
+                toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'
+            toolTip += '</ul>'
 
     toolTip += '</ul>'
 
@@ -570,15 +614,17 @@ def createWorldToolTip(
 
 def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     jumpRoute = routeLogistics.jumpRoute()
-    startWorld = jumpRoute.startWorld()
-    finishWorld = jumpRoute.finishWorld()
+    startHex, _ = jumpRoute.startNode()
+    finishHex, _ = jumpRoute.finishNode()
+    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=startHex))
+    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=finishHex))
 
     toolTip = '<html>'
 
-    if startWorld != finishWorld:
-        toolTip += f'<b>{html.escape(startWorld.name())} ({html.escape(startWorld.subsectorName())}) to {html.escape(finishWorld.name())} ({html.escape(finishWorld.subsectorName())})</b>'
+    if startHex != finishHex:
+        toolTip += f'<b>{startString} to {finishString})</b>'
     else:
-        toolTip += f'<b>{html.escape(startWorld.name())} ({html.escape(startWorld.subsectorName())})</b>'
+        toolTip += f'<b>{startString})</b>'
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
 
     toolTip += '<li>Distance:</li>'
@@ -632,12 +678,18 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
         for pitStop in refuellingPlan:
             pitStopMap[pitStop.jumpIndex()] = pitStop
 
-    for index, world in enumerate(jumpRoute):
-        tagColour = app.tagColour(app.calculateWorldTagLevel(world))
+    for index, (nodeHex, world) in enumerate(jumpRoute):
+        hexString = html.escape('{type}: {name}'.format(
+            type='World' if world else 'Dead Space',
+            name=traveller.WorldManager.instance().canonicalHexName(hex=nodeHex)))
+        tagColour = app.tagColour(
+            app.calculateWorldTagLevel(world)
+            if world else
+            app.TagLevel.Danger) # Dead space is tagged as danger
         style = ""
         if tagColour:
             style = f'background-color:#{tagColour}'
-        toolTip += f'<li><span style="{style}">{html.escape(world.name(includeSubsector=True))}<span></li>'
+        toolTip += f'<li><span style="{style}">{hexString}<span></li>'
 
         if index in pitStopMap:
             pitStop: logic.PitStop = pitStopMap[index]

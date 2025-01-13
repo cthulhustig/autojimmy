@@ -115,9 +115,8 @@ class SimulatorWindow(gui.WindowWidget):
             title='Trade Simulator',
             configSection='SimulatorWindow')
 
-        self._currentWorld = None
+        self._currentHex = None
         self._parsecsTravelled = 0
-        self._jumpRoute = []
         self._simulatorJob = None
 
         self._setupConfigControls()
@@ -366,12 +365,12 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
-        self._startWorldWidget = gui.WorldSelectWidget(
-            text='Start World:')
-        self._startWorldWidget.enableShowWorldButton(True)
+        self._startWorldWidget = gui.HexSelectToolWidget(
+            labelText='Start World:')
+        self._startWorldWidget.enableShowHexButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self._startWorldChanged)
-        self._startWorldWidget.showWorld.connect(self._showWorldOnMap)
+        self._startWorldWidget.showHex.connect(self._showOnMap)
 
         self._randomSeedWidget = _RandomSeedWidget(
             maxDigits=SimulatorWindow._RandomSeedMaxDigits)
@@ -520,7 +519,9 @@ class SimulatorWindow(gui.WindowWidget):
         self._configGroupBox.setLayout(configLayout)
 
     def _setupSimulationControls(self) -> None:
-        self._runSimulationButton = QtWidgets.QPushButton('Run Simulation')
+        self._runSimulationButton = gui.DualTextPushButton(
+            primaryText='Run Simulation',
+            secondaryText='Cancel')
         self._runSimulationButton.clicked.connect(self._runSimulation)
 
         self._simulationDayLabel = QtWidgets.QLabel('Day:')
@@ -553,19 +554,18 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulationGroupBox.setDisabled(False)
         else:
             self._configGroupBox.setDisabled(False)
-            self._simulationGroupBox.setDisabled(not self._startWorldWidget.hasSelection())
+            self._simulationGroupBox.setDisabled(not self._startWorldWidget.selectedWorld())
 
         anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
     def _startWorldChanged(self) -> None:
-        world = self._startWorldWidget.world()
-        if world:
-            self._mapWidget.centerOnWorld(
-                world=world,
-                clearOverlays=True,
-                highlightWorld=True)
+        startWorld = self._startWorldWidget.selectedWorld()
+        if startWorld:
+            self._mapWidget.clearHexHighlights()
+            self._mapWidget.highlightHex(hex=startWorld.hex())
+            self._mapWidget.centerOnHex(hex=startWorld.hex())
 
         self._enableDisableControls()
 
@@ -575,10 +575,11 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob.cancel()
             return
 
-        if not self._startWorldWidget.hasSelection():
+        startWorld = self._startWorldWidget.selectedWorld()
+        if not startWorld:
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Select a start world')
+                text='Select a starting location')
             return
 
         if self._startingFundsSpinBox.value() <= 0:
@@ -611,8 +612,7 @@ class SimulatorWindow(gui.WindowWidget):
             anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
             anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
             rules=app.Config.instance().rules())
-        if not pitCostCalculator.refuellingType(
-                world=self._startWorldWidget.world()):
+        if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
             gui.MessageBoxEx.information(
                 parent=self,
                 text='The start world must allow the selected refuelling strategy')
@@ -636,9 +636,8 @@ class SimulatorWindow(gui.WindowWidget):
         else:
             assert(False) # I've missed an enum
 
-        self._currentWorld = None
+        self._currentHex = None
         self._parsecsTravelled = 0
-        self._jumpRoute.clear()
         self._simInfoEditBox.clear()
 
         self._simulationDayLabel.setText('Day:')
@@ -649,7 +648,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                startingWorld=self._startWorldWidget.world(),
+                startHex=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -659,6 +658,7 @@ class SimulatorWindow(gui.WindowWidget):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
+                deadSpaceRouting=False,
                 searchRadius=self._searchRadiusSpinBox.value(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 playerStreetwiseDm=self._playerStreetwiseDmSpinBox.value(),
@@ -669,10 +669,10 @@ class SimulatorWindow(gui.WindowWidget):
                 maxBuyerDm=self._buyerDmRangeWidget.upperValue(),
                 randomSeed=self._randomSeedWidget.number(),
                 simulationLength=None,
-                eventCallback=self._simulationEvent,
-                finishedCallback=self._simulationFinished)
+                eventCallback=self._simulatorJobEvent,
+                finishedCallback=self._simulatorJobFinished)
         except Exception as ex:
-            message = 'Failed to start simulator job'
+            message = 'Failed to create simulator job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -680,10 +680,31 @@ class SimulatorWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._runSimulationButton.setText('Cancel')
+        self._runSimulationButton.showSecondaryText()
         self._enableDisableControls()
 
-    def _simulationEvent(self, event: logic.Simulator.Event) -> None:
+        # Start job after a delay to give the ui time to update
+        QtCore.QTimer.singleShot(200, self._simulatorJobStart)
+
+    def _simulatorJobStart(self) -> None:
+        if not self._simulatorJob:
+            return
+
+        try:
+            self._simulatorJob.start()
+        except Exception as ex:
+            self._simulatorJob = None
+            self._runSimulationButton.showPrimaryText()
+            self._enableDisableControls()
+
+            message = 'Failed to start simulator job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _simulatorJobEvent(self, event: logic.Simulator.Event) -> None:
         day = int(math.floor(event.timestamp() / 24))
         self._simulationDayLabel.setText(f'Day: {common.formatNumber(day)}')
 
@@ -692,29 +713,27 @@ class SimulatorWindow(gui.WindowWidget):
             availableFunds: int = event.data()
             self._simulationFundsLabel.setText(f'Funds: Cr{common.formatNumber(availableFunds)}')
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: Available funds = Cr{common.formatNumber(availableFunds)}')
-        elif event.type() == logic.Simulator.Event.Type.WorldUpdate:
+        elif event.type() == logic.Simulator.Event.Type.HexUpdate:
             # Data is the new world object
-            world: traveller.World = event.data()
-            if self._currentWorld and self._currentWorld != world:
-                self._parsecsTravelled += travellermap.hexDistance(
-                    self._currentWorld.absoluteX(),
-                    self._currentWorld.absoluteY(),
-                    world.absoluteX(),
-                    world.absoluteY())
-            self._currentWorld = world
-            self._jumpRoute.append(world)
-            self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
-            self._mapWidget.centerOnWorld(
-                world=world,
-                clearOverlays=True,
-                highlightWorld=True,
-                linearScale=None) # Keep current scale
-            self._mapWidget.setInfoWorld(world=world)
+            currentHex: travellermap.HexPosition = event.data()
+            if currentHex and self._currentHex != currentHex:
+                if self._currentHex:
+                    self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
+                    self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
+                self._currentHex = currentHex
+
+            if self._currentHex:
+                self._mapWidget.clearHexHighlights()
+                self._mapWidget.highlightHex(hex=self._currentHex)
+                self._mapWidget.centerOnHex(
+                    hex=self._currentHex,
+                    linearScale=None) # Keep current scale
+                self._mapWidget.setInfoHex(hex=self._currentHex)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
 
-    def _simulationFinished(self, result: typing.Union[str, Exception]) -> None:
+    def _simulatorJobFinished(self, result: typing.Union[str, Exception]) -> None:
         if isinstance(result, Exception):
             message = 'Simulation exception'
             logging.error(message, exc_info=result)
@@ -726,20 +745,17 @@ class SimulatorWindow(gui.WindowWidget):
             pass
 
         self._simulatorJob = None
-        self._runSimulationButton.setText('Run simulation')
+        self._runSimulationButton.showPrimaryText()
         self._enableDisableControls()
 
-    def _showWorldOnMap(
+    def _showOnMap(
             self,
-            world: traveller.World
+            hex: travellermap.HexPosition
             ) -> None:
         try:
-            self._mapWidget.centerOnWorld(
-                world=world,
-                clearOverlays=False,
-                highlightWorld=False)
+            self._mapWidget.centerOnHex(hex=hex)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show location in Traveller Map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

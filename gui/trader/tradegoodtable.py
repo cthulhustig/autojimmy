@@ -55,12 +55,10 @@ class TradeGoodTable(gui.ListTable):
 
     def tradeGoodAt(
             self,
-            position: QtCore.QPoint
+            y: int
             ) -> typing.Optional[traveller.TradeGood]:
-        item = self.itemAt(position)
-        if not item:
-            return None
-        return self.tradeGood(item.row())
+        row = self.itemAt(y)
+        return self.tradeGood(row) if row >= 0 else None
 
     def insertTradeGood(
             self,

@@ -13,15 +13,24 @@ class DialogEx(QtWidgets.QDialog):
 
         if title != None:
             self.setWindowTitle(title)
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setWindowFlag(QtCore.Qt.WindowType.WindowContextHelpButtonHint, False)
         self._configSection = configSection
         self._settings = None
         self._hasBeenShown = False
+
+    def showMaximizeButton(self, show: bool = True) -> None:
+        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, show)
 
     def showEvent(self, e: QtGui.QShowEvent) -> None:
         if not self._hasBeenShown:
             self.firstShowEvent(e)
             self._hasBeenShown = True
+
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
 
         return super().showEvent(e)
 
@@ -30,11 +39,6 @@ class DialogEx(QtWidgets.QDialog):
         if not self._settings:
             self._settings = gui.globalWindowSettings()
             self.loadSettings()
-
-        # Setting up the title bar needs to be done before the window is show to take effect. It
-        # needs to be done every time the window is shown as the setting is lost if the window is
-        # closed then reshown
-        gui.configureWindowTitleBar(widget=self)
 
     def done(self, result: int):
         self.saveSettings()

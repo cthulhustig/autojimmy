@@ -12,7 +12,7 @@ class WindowManager(object):
     _worldTradeOptionsWindow = None
     _multiWorldTradeOptionsWindow = None
     _simulatorWindow = None
-    _worldDetailsWindow = None
+    _hexDetailsWindow = None
     _calculationWindow = None
     _travellerMapWindow = None
     _gunsmithWindow = None
@@ -49,8 +49,8 @@ class WindowManager(object):
             self._multiWorldTradeOptionsWindow.close()
         if self._simulatorWindow:
             self._simulatorWindow.close()
-        if self._worldDetailsWindow:
-            self._worldDetailsWindow.close()
+        if self._hexDetailsWindow:
+            self._hexDetailsWindow.close()
         if self._calculationWindow:
             self._calculationWindow.close()
         if self._travellerMapWindow:
@@ -110,11 +110,11 @@ class WindowManager(object):
         self._simulatorWindow.bringToFront()
         return self._simulatorWindow
 
-    def showWorldDetailsWindow(self) -> 'gui.WorldDetailsWindow':
-        if not self._worldDetailsWindow:
-            self._worldDetailsWindow = gui.WorldDetailsWindow()
-        self._worldDetailsWindow.bringToFront()
-        return self._worldDetailsWindow
+    def showWorldDetailsWindow(self) -> 'gui.HexDetailsWindow':
+        if not self._hexDetailsWindow:
+            self._hexDetailsWindow = gui.HexDetailsWindow()
+        self._hexDetailsWindow.bringToFront()
+        return self._hexDetailsWindow
 
     def showCalculationWindow(self) -> 'gui.CalculationWindow':
         if not self._calculationWindow:

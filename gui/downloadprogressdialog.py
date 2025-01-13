@@ -47,6 +47,7 @@ class DownloadProgressDialog(QtWidgets.QDialog):
                 parent=self,
                 progressCallback=self._updateProgress,
                 finishedCallback=self._downloadFinished)
+            self._downloadJob.start()
         except Exception as ex:
             message = 'Failed to start download job'
             logging.error(message, exc_info=ex)

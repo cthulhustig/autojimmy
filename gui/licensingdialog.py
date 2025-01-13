@@ -31,5 +31,5 @@ class LicensingDialog(gui.DialogEx):
         layout.addWidget(self._licenseWidget)
 
         self.setLayout(layout)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+        self.showMaximizeButton()
         self.resize(900, 600)

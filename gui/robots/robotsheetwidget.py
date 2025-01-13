@@ -57,7 +57,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._robot = None
 
         self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include DMs in Skill Levels:')
-        self._applySkillModifiersCheckBox.setLayoutDirection(QtCore.Qt.LayoutDirection.RightToLeft)
+        self._applySkillModifiersCheckBox.setTextOnLeft(True)
         self._applySkillModifiersCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
         self._applySkillModifiersCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
 
@@ -269,7 +269,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
     def _tableContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -287,7 +287,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         gui.displayMenu(
             self,
             menuItems,
-            self._table.viewport().mapToGlobal(position))
+            self._table.viewport().mapToGlobal(point))
 
     def _showCalculations(self) -> None:
         try:

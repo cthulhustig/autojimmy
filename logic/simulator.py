@@ -5,6 +5,7 @@ import functools
 import random
 import time
 import traveller
+import travellermap
 import typing
 
 # Rules for finding a supplier (seller or buyer)
@@ -22,13 +23,13 @@ class Simulator(object):
     class Event(object):
         class Type(enum.Enum):
             FundsUpdate = 0
-            WorldUpdate = 1
+            HexUpdate = 1
             InfoMessage = 2
 
         def __init__(
                 self,
                 type: Type,
-                data: typing.Union[int, traveller.World, str],
+                data: typing.Any,
                 timestamp: int
                 ) -> None:
             self._type = type
@@ -38,7 +39,7 @@ class Simulator(object):
         def type(self) -> Type:
             return self._type
 
-        def data(self) -> typing.Union[int, traveller.World, str]:
+        def data(self) -> typing.Any:
             return self._data
 
         def timestamp(self) -> int:
@@ -67,7 +68,7 @@ class Simulator(object):
 
     def run(
             self,
-            startingWorld: traveller.World,
+            startHex: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -76,6 +77,7 @@ class Simulator(object):
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
+            deadSpaceRouting: bool,
             searchRadius: int,
             minSellerDm: int,
             maxSellerDm: int,
@@ -96,6 +98,7 @@ class Simulator(object):
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
+        self._deadSpaceRouting = deadSpaceRouting
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -117,7 +120,7 @@ class Simulator(object):
 
         # Set the funds and world like this to trigger callbacks. Note
         # that this MUST be done AFTER the simulation time is reset
-        self._setCurrentWorld(startingWorld)
+        self._setCurrentHex(hex=startHex)
         self._setAvailableFunds(startingFunds)
 
         while self._availableFunds > 0:
@@ -133,20 +136,23 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
+        currentWorld = traveller.WorldManager.instance().worldByPosition(hex=self._currentHex)
+
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
+            assert(currentWorld) # Should always be on a world at this point
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInArea(
-                centerX=self._currentWorld.absoluteX(),
-                centerY=self._currentWorld.absoluteY(),
+                center=self._currentHex,
                 searchRadius=self._searchRadius,
                 worldFilterCallback=worldFilterCallback)
 
             # Buy something
-            self._logMessage(f'Buying goods on {self._currentWorld.name(includeSubsector=True)}')
+            self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')
             self._runTradeLoop(
+                world=currentWorld,
                 onTraderCallback=self._sellerFound,
                 lookingForSeller=True)
             return
@@ -160,6 +166,9 @@ class Simulator(object):
             pitStop = refuellingPlan.pitStop(self._jumpRouteIndex)
 
             if pitStop:
+                assert(currentWorld)
+                assert(currentWorld == pitStop.world())
+
                 if pitStop.hasBerthing():
                     # Roll dice to calculate actual berthing cost on this world
                     # NOTE: If we've got to this point then we know berthing is
@@ -171,14 +180,14 @@ class Simulator(object):
                     diceRoller = common.DiceRoller(
                         randomGenerator=self._randomGenerator)
                     berthingCost = self._pitCostCalculator.berthingCost(
-                        world=jumpRoute[self._jumpRouteIndex],
+                        world=currentWorld,
                         mandatory=True,
                         diceRoller=diceRoller)
                     assert(isinstance(berthingCost, common.ScalarCalculation))
                     berthingCost = berthingCost.value()
                     self._logMessage(
                         'Berthing at {world} for a cost of Cr{cost}'.format(
-                            world=self._currentWorld.name(includeSubsector=True),
+                            world=currentWorld.name(includeSubsector=True),
                             cost=berthingCost))
                     self._setAvailableFunds(self._availableFunds - berthingCost)
                     self._actualLogisticsCost += berthingCost
@@ -193,7 +202,7 @@ class Simulator(object):
                     fuelCost = fuelCost.value() if fuelCost else 0
 
                     infoString = 'Refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
-                        world=self._currentWorld.name(includeSubsector=True),
+                        world=currentWorld.name(includeSubsector=True),
                         tons=fuelTons,
                         type=refuellingType.value.lower())
                     if fuelCost > 0:
@@ -204,14 +213,17 @@ class Simulator(object):
                     self._actualLogisticsCost += fuelCost
 
             self._jumpRouteIndex += 1
-            if self._jumpRouteIndex < jumpRoute.worldCount():
+            if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
-                nextWorld = jumpRoute[self._jumpRouteIndex]
-                self._logMessage(f'Travelling from {self._currentWorld.name(includeSubsector=True)} to {nextWorld.name(includeSubsector=True)}')
+                nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
+                currentString = traveller.WorldManager.instance().canonicalHexName(hex=self._currentHex)
+                nextString = traveller.WorldManager.instance().canonicalHexName(hex=nextHex)
+                self._logMessage(
+                    f'Travelling from {currentString} to {nextString}')
 
                 self._simulationTime += self._calculateTravelHours(1)
 
-                self._setCurrentWorld(nextWorld)
+                self._setCurrentHex(hex=nextHex)
                 self._logMessage(f'Arrived on {nextWorld.name(includeSubsector=True)}')
                 return
 
@@ -223,16 +235,20 @@ class Simulator(object):
                 self._actualLogisticsCost += jumpOverheads
 
             # We've reached the sale world
-            assert(self._currentWorld == jumpRoute.finishWorld())
+            assert(self._currentHex == jumpRoute.finishHex())
             assert(self._actualLogisticsCost <= routeLogistics.totalCosts().worstCaseValue())
             assert(self._actualLogisticsCost >= routeLogistics.totalCosts().bestCaseValue())
         else:
+            assert(currentWorld) # Should always be on a world if we get here
             self._logMessage(
-                f'Staying on {self._currentWorld.name(includeSubsector=True)} to sell goods')
+                f'Staying on {currentWorld.name(includeSubsector=True)} to sell goods')
+
+        assert(currentWorld) # Should always be on a world if we get here
 
         # Sell what was bought
-        self._logMessage(f'Selling goods on {self._currentWorld.name(includeSubsector=True)}')
+        self._logMessage(f'Selling goods on {currentWorld.name(includeSubsector=True)}')
         self._runTradeLoop(
+            world=currentWorld,
             onTraderCallback=self._buyerFound,
             lookingForSeller=False)
 
@@ -244,12 +260,12 @@ class Simulator(object):
                 self._availableFunds,
                 self._simulationTime))
 
-    def _setCurrentWorld(self, world: traveller.World) -> None:
-        self._currentWorld = world
+    def _setCurrentHex(self, hex: travellermap.HexPosition) -> None:
+        self._currentHex = hex
         if self._eventCallback:
             self._eventCallback(Simulator.Event(
-                Simulator.Event.Type.WorldUpdate,
-                self._currentWorld,
+                Simulator.Event.Type.HexUpdate,
+                self._currentHex,
                 self._simulationTime))
 
     def _logMessage(self, message: str):
@@ -277,6 +293,7 @@ class Simulator(object):
 
     def _sellerFound(
             self,
+            world: traveller.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -291,7 +308,7 @@ class Simulator(object):
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
             rules=self._rules,
-            world=self._currentWorld,
+            world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
             blackMarket=blackMarket,
@@ -311,7 +328,7 @@ class Simulator(object):
             isCancelledCallback=self._isCancelledCallback)
 
         trader.calculateTradeOptionsForSingleWorld(
-            purchaseWorld=self._currentWorld,
+            purchaseWorld=world,
             possibleCargo=cargoRecords,
             currentCargo=None,
             saleWorlds=self._nearbyWorlds,
@@ -325,6 +342,7 @@ class Simulator(object):
             shipFuelCapacity=self._shipFuelCapacity,
             shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
             shipFuelPerParsec=self._shipFuelPerParsec,
+            routingType=logic.RoutingType.DeadSpace if self._deadSpaceRouting else logic.RoutingType.FuelBased,
             jumpCostCalculator=self._jumpCostCalculator,
             pitCostCalculator=self._pitCostCalculator,
             perJumpOverheads=self._perJumpOverheads,
@@ -378,6 +396,7 @@ class Simulator(object):
 
     def _buyerFound(
             self,
+            world: traveller.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -390,7 +409,7 @@ class Simulator(object):
         purchaseCargoRecords = self._cargoManifest.cargoRecords()
         saleCargoRecords, _ = logic.generateRandomSaleCargo(
             rules=self._rules,
-            world=self._currentWorld,
+            world=world,
             currentCargo=purchaseCargoRecords,
             playerBrokerDm=self._playerBrokerDm,
             buyerDm=buyerDm,
@@ -472,7 +491,8 @@ class Simulator(object):
 
     def _runTradeLoop(
             self,
-            onTraderCallback: typing.Callable[[int, bool, bool], bool],
+            world: traveller.World,
+            onTraderCallback: typing.Callable[[traveller.World, int, bool], bool],
             lookingForSeller: bool
             ) -> None:
         class MethodState(object):
@@ -503,7 +523,7 @@ class Simulator(object):
 
                 if tradeGood.id() != traveller.TradeGoodIds.Exotics:
                     # Look for a buyer that matches the legality of the trade good
-                    if tradeGood.isIllegal(self._currentWorld):
+                    if tradeGood.isIllegal(world=world):
                         lookForBlackMarketTrader = True
                     else:
                         lookForLegalTrader = True
@@ -527,7 +547,7 @@ class Simulator(object):
                 False, # Not online
                 True, # Black market buyer/seller
                 0))
-        if self._playerAdminDm != None and traveller.ehexToInteger(value=self._currentWorld.uwp().code(traveller.UWP.Element.TechLevel), default=-1) >= 8:
+        if self._playerAdminDm != None and traveller.ehexToInteger(value=world.uwp().code(traveller.UWP.Element.TechLevel), default=-1) >= 8:
             if lookForLegalTrader:
                 methods.append(MethodState(
                     self._playerAdminDm,
@@ -549,7 +569,7 @@ class Simulator(object):
         tradeTime = 0
         lastTraderFoundTime = 0
         lastMonth = 0
-        worldModifier = Simulator._starPortModifier(self._currentWorld)
+        worldModifier = Simulator._starPortModifier(world=world)
 
         while True:
             if self._isCancelledCallback and self._isCancelledCallback():
@@ -596,6 +616,7 @@ class Simulator(object):
 
             if lowestMethod:
                 stopLooking = onTraderCallback(
+                    world,
                     tradeTime - lastTraderFoundTime,
                     lowestMethod.blackMarket)
                 if stopLooking:

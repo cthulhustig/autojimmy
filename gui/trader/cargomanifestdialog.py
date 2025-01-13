@@ -71,7 +71,7 @@ class CargoManifestDialog(gui.DialogEx):
         dialogLayout.addLayout(self._buttonLayout)
 
         self.setLayout(dialogLayout)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+        self.showMaximizeButton()
         self.resize(800, 600)
 
         self._generateCargoManifests()
@@ -210,7 +210,7 @@ class CargoManifestDialog(gui.DialogEx):
             self._cargoManifestDisplayModeChanged)
 
         self._cargoManifestsTable = gui.CargoManifestTable()
-        self._cargoManifestsTable.setVisibleColumns(self._cargoManifestColumns())
+        self._cargoManifestsTable.setActiveColumns(self._cargoManifestColumns())
         self._cargoManifestsTable.sortByColumnHeader(
             self._cargoManifestDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
@@ -224,7 +224,7 @@ class CargoManifestDialog(gui.DialogEx):
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
         self._cargoBreakdownTable = gui.TradeOptionsTable()
-        self._cargoBreakdownTable.setVisibleColumns(self._cargoBreakdownColumns())
+        self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
         self._cargoBreakdownTable.sortByColumnHeader(
             self._cargoBreakdownDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
@@ -270,7 +270,7 @@ class CargoManifestDialog(gui.DialogEx):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addWorlds(worlds=worlds)
+        detailsWindow.addHexes(hexes=worlds)
 
     def _cargoManifestColumns(self) -> typing.List[gui.CargoManifestTable.ColumnType]:
         calculationMode = self._cargoManifestDisplayModeTabs.currentCalculationMode()
@@ -337,9 +337,8 @@ class CargoManifestDialog(gui.DialogEx):
             ) -> None:
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.showJumpRoute(
-                jumpRoute=jumpRoute,
-                clearOverlays=True)
+            mapWindow.clearOverlays()
+            mapWindow.setJumpRoute(jumpRoute=jumpRoute)
         except Exception as ex:
             message = 'Failed to show jump route in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -352,12 +351,11 @@ class CargoManifestDialog(gui.DialogEx):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
+        hexes = [world.hex() for world in worlds]
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.centerOnWorlds(
-                worlds=worlds,
-                clearOverlays=True,
-                highlightWorlds=True)
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -403,8 +401,8 @@ class CargoManifestDialog(gui.DialogEx):
         self._generateCargoManifests()
 
     def _cargoManifestDisplayModeChanged(self, index: int) -> None:
-        self._cargoManifestsTable.setVisibleColumns(self._cargoManifestColumns())
-        self._cargoBreakdownTable.setVisibleColumns(self._cargoBreakdownColumns())
+        self._cargoManifestsTable.setActiveColumns(self._cargoManifestColumns())
+        self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
 
     def _cargoManifestTableSelectionChanged(self) -> None:
         self._cargoBreakdownTable.removeAllRows()
@@ -416,8 +414,8 @@ class CargoManifestDialog(gui.DialogEx):
         for tradeOption in cargoManifest.tradeOptions():
             self._cargoBreakdownTable.addTradeOption(tradeOption)
 
-    def _showCargoManifestTableContextMenu(self, position: QtCore.QPoint) -> None:
-        cargoManifest = self._cargoManifestsTable.cargoManifestAt(position)
+    def _showCargoManifestTableContextMenu(self, point: QtCore.QPoint) -> None:
+        cargoManifest = self._cargoManifestsTable.cargoManifestAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -467,10 +465,10 @@ class CargoManifestDialog(gui.DialogEx):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoManifestsTable.viewport().mapToGlobal(position))
+            self._cargoManifestsTable.viewport().mapToGlobal(point))
 
-    def _showCargoBreakdownTableContextMenu(self, position: QtCore.QPoint) -> None:
-        tradeOption = self._cargoBreakdownTable.tradeOptionAt(position)
+    def _showCargoBreakdownTableContextMenu(self, point: QtCore.QPoint) -> None:
+        tradeOption = self._cargoBreakdownTable.tradeOptionAt(point.y())
 
         menuItems = [
             # When showing trade option calculation we show the calculation for the gross profit
@@ -486,7 +484,7 @@ class CargoManifestDialog(gui.DialogEx):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoBreakdownTable.viewport().mapToGlobal(position))
+            self._cargoBreakdownTable.viewport().mapToGlobal(point))
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

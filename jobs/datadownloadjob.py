@@ -29,8 +29,6 @@ class DataDownloadJob(QtCore.QThread):
         self._lastProgressTime = None
         self._avgFileDownloadTime = None
 
-        self.start()
-
     def cancel(self, block=False) -> None:
         self._cancelled = True
         if block:

@@ -24,7 +24,7 @@ class _CalculationLineEdit(gui.ContentSizedLineEdit):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menu = self.createStandardContextMenu()
 
@@ -37,7 +37,7 @@ class _CalculationLineEdit(gui.ContentSizedLineEdit):
             firstAction = existingActions[0] if existingActions else None
             menu.insertAction(firstAction, action)
 
-        menu.exec(self.mapToGlobal(position))
+        menu.exec(self.mapToGlobal(point))
 
     def _showCalculations(
             self,

@@ -1283,7 +1283,7 @@ class CustomSectorDialog(gui.DialogEx):
 
         self._modified = False
 
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.WindowMaximizeButtonHint)
+        self.showMaximizeButton()
 
         self._setupSectorListControls()
         self._setupSectorDataControls()

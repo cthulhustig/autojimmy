@@ -36,6 +36,7 @@ class Trader(object):
             shipCargoCapacity: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[float, common.ScalarCalculation],
+            routingType: logic.RoutingType,
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
@@ -154,6 +155,7 @@ class Trader(object):
             shipFuelCapacity=shipFuelCapacity,
             shipStartingFuel=shipStartingFuel,
             shipFuelPerParsec=shipFuelPerParsec,
+            routingType=routingType,
             perJumpOverheads=perJumpOverheads,
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
@@ -180,6 +182,7 @@ class Trader(object):
             shipCargoCapacity: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[float, common.ScalarCalculation],
+            routingType: logic.RoutingType,
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
@@ -341,6 +344,7 @@ class Trader(object):
                 shipFuelCapacity=shipFuelCapacity,
                 shipStartingFuel=shipStartingFuel,
                 shipFuelPerParsec=shipFuelPerParsec,
+                routingType=routingType,
                 perJumpOverheads=perJumpOverheads,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
@@ -366,6 +370,7 @@ class Trader(object):
             shipFuelCapacity: common.ScalarCalculation,
             shipStartingFuel: common.ScalarCalculation,
             shipFuelPerParsec: common.ScalarCalculation,
+            routingType: logic.RoutingType,
             perJumpOverheads: common.ScalarCalculation,
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             pitCostCalculator: logic.PitStopCostCalculator,
@@ -380,8 +385,9 @@ class Trader(object):
 
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
-                startWorld=purchaseWorld,
-                finishWorld=saleWorld,
+                routingType=routingType,
+                startHex=purchaseWorld.hex(),
+                finishHex=saleWorld.hex(),
                 shipTonnage=shipTonnage,
                 shipJumpRating=shipJumpRating,
                 shipFuelCapacity=shipFuelCapacity,
@@ -389,7 +395,7 @@ class Trader(object):
                 shipCurrentFuel=shipStartingFuel,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
-                worldFilterCallback=None,
+                hexFilter=None,
                 isCancelledCallback=self._isCancelledCallback)
             if not jumpRoute:
                 if self._isCancelledCallback and self._isCancelledCallback():
@@ -412,7 +418,7 @@ class Trader(object):
                 if includePurchaseWorldBerthing:
                     requiredBerthingIndices.add(0)
                 if includeSaleWorldBerthing:
-                    requiredBerthingIndices.add(jumpRoute.worldCount() - 1)
+                    requiredBerthingIndices.add(jumpRoute.nodeCount() - 1)
 
             routeLogistics = logic.calculateRouteLogistics(
                 jumpRoute=jumpRoute,
@@ -676,7 +682,7 @@ class Trader(object):
     def _generateTradeOptionNotes(
             tradeOption: logic.TradeOption,
             shipFuelPerParsec: common.ScalarCalculation,
-            pitCostCalculator: logic.PitStopCostCalculator
+            pitCostCalculator: typing.Optional[logic.PitStopCostCalculator]
             ) -> logic.TradeOption:
         purchaseWorld = tradeOption.purchaseWorld()
         saleWorld = tradeOption.saleWorld()
@@ -690,20 +696,21 @@ class Trader(object):
             # This should only happen if the trader was told to include unprofitable trades
             notes.append('With average dice rolls this trade will make a loss')
 
-        purchaseWorldRefuellingType = pitCostCalculator.refuellingType(world=purchaseWorld)
-        if purchaseWorldRefuellingType == None:
-            notes.append('The purchase world doesn\'t allow the selected refuelling strategy')
+        if pitCostCalculator:
+            purchaseWorldRefuellingType = pitCostCalculator.refuellingType(world=purchaseWorld)
+            if purchaseWorldRefuellingType == None:
+                notes.append('The purchase world doesn\'t allow the selected refuelling strategy')
 
-        saleWorldRefuellingType = pitCostCalculator.refuellingType(world=saleWorld)
-        if saleWorldRefuellingType == None:
-            notes.append('The sale world doesn\'t allow the selected refuelling strategy')
+            saleWorldRefuellingType = pitCostCalculator.refuellingType(world=saleWorld)
+            if saleWorldRefuellingType == None:
+                notes.append('The sale world doesn\'t allow the selected refuelling strategy')
 
-        saleWorldFuelCostPerTon = pitCostCalculator.fuelCost(world=saleWorld)
-        if saleWorldFuelCostPerTon:
-            fuelCostToGetOffWorld = shipFuelPerParsec.value() * saleWorldFuelCostPerTon.value()
-            if netProfit.averageCaseValue() > 0 and fuelCostToGetOffWorld > 0:
-                percentageOfProfit = math.ceil((fuelCostToGetOffWorld / netProfit.averageCaseValue()) * 100)
-                notes.append(f'On the sale world the cost of buying the fuel for jump-1 will be Cr{fuelCostToGetOffWorld}. With average dice rolls, this will be {percentageOfProfit}% of the profits from the trade.')
+            saleWorldFuelCostPerTon = pitCostCalculator.fuelCost(world=saleWorld)
+            if saleWorldFuelCostPerTon:
+                fuelCostToGetOffWorld = shipFuelPerParsec.value() * saleWorldFuelCostPerTon.value()
+                if netProfit.averageCaseValue() > 0 and fuelCostToGetOffWorld > 0:
+                    percentageOfProfit = math.ceil((fuelCostToGetOffWorld / netProfit.averageCaseValue()) * 100)
+                    notes.append(f'On the sale world the cost of buying the fuel for jump-1 will be Cr{fuelCostToGetOffWorld}. With average dice rolls, this will be {percentageOfProfit}% of the profits from the trade.')
 
         if purchaseWorld.hasTradeCode(traveller.TradeCode.LowPopulationWorld):
             notes.append(f'The purchase world has the Low Population trade code, you may struggle to find a seller')

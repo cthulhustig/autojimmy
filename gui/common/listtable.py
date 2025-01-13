@@ -1,5 +1,6 @@
 import common
 import enum
+import functools
 import gui
 import logging
 import math
@@ -82,17 +83,22 @@ class ListTable(gui.TableWidgetEx):
     keyPressed = QtCore.pyqtSignal(int)
     iconClicked = QtCore.pyqtSignal(int)
 
-    _StateVersion = 'ListTable_v1'
+    _StateVersion = 'ListTable_v2'
 
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
-        self._columnWidths = {}
+        self._activeColumns: typing.List[typing.Union[enum.Enum, str]] = []
         self._headerIconClickIndex = None
         self._headerStyle = _SizeableIconHeaderStyle(iconSize=self.iconSize())
         self._rowFilter = None
+
+        self._userColumnHidingEnabled = False
+        self._userHiddenColumns: typing.Set[str] = set()
+
+        self._columnWidths: typing.Dict[str, int] = {}
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -125,6 +131,10 @@ class ListTable(gui.TableWidgetEx):
             stream.writeQString(key)
             stream.writeInt32(value)
 
+        stream.writeUInt32(len(self._userHiddenColumns))
+        for key in self._userHiddenColumns:
+            stream.writeQString(key)
+
         headerState = self.horizontalHeader().saveState()
         stream.writeUInt32(headerState.count() if headerState else 0)
         if headerState:
@@ -150,14 +160,21 @@ class ListTable(gui.TableWidgetEx):
             self._columnWidths[key] = value
 
         count = stream.readUInt32()
+        for _ in range(count):
+            key = stream.readQString()
+            self._userHiddenColumns.add(key)
+
+        count = stream.readUInt32()
         if count > 0:
             headerState = QtCore.QByteArray(stream.readRawData(count))
             if not self.horizontalHeader().restoreState(headerState):
                 return False
 
-        # Restore the column widths after the header has been restored
+        # Restore the column widths and user hide settings after the header
+        # has been restored
         for columnIndex in range(self.columnCount()):
-            self._restoreCachedColumnWidth(columnIndex)
+            self._restoreColumnUserHide(columnIndex)
+            self._restoreColumnWidth(columnIndex)
 
         return True
 
@@ -165,6 +182,8 @@ class ListTable(gui.TableWidgetEx):
             self,
             columns: typing.Iterable[typing.Union[enum.Enum, str]]
             ) -> None:
+        self._activeColumns = list(columns)
+
         self.setColumnCount(len(columns))
         for columnIndex, columnHeader in enumerate(columns):
             if isinstance(columnHeader, enum.Enum):
@@ -174,6 +193,17 @@ class ListTable(gui.TableWidgetEx):
                 item = QtWidgets.QTableWidgetItem(columnHeader)
             item.setData(QtCore.Qt.ItemDataRole.UserRole, columnHeader)
             self.setHorizontalHeaderItem(columnIndex, item)
+            self.showColumn(columnIndex)
+            self._restoreColumnUserHide(columnIndex)
+            self._restoreColumnWidth(columnIndex)
+
+        # Lock the height of the header to the height required with all columns
+        # displayed (i.e. the current state). This just stops the header resizing
+        # if the visible columns are changed and the currently visible ones don't
+        # require as much height
+        header = self.horizontalHeader()
+        hint = header.sizeHint()
+        header.setFixedHeight(hint.height())
 
     def columnHeader(
             self,
@@ -193,18 +223,64 @@ class ListTable(gui.TableWidgetEx):
                 return column
         return -1
 
-    def setVisibleColumns(self, columns: typing.Iterable[typing.Union[enum.Enum, str]]) -> None:
-        for column in range(self.columnCount()):
-            columnType = self.columnHeader(column)
-            if not columnType:
+    def columnHeaderText(
+            self,
+            index: int
+            ) -> typing.Optional[str]:
+        item = self.horizontalHeaderItem(index)
+        if not item:
+            return None
+        return item.text()
+
+    def setActiveColumns(self, columns: typing.Iterable[typing.Union[enum.Enum, str]]) -> None:
+        self._activeColumns.clear()
+        for columnIndex in range(self.columnCount()):
+            columnHeader = self.columnHeader(columnIndex)
+            if not columnHeader:
                 continue
 
-            if columnType in columns:
-                self.setColumnHidden(column, False)
-                self._restoreCachedColumnWidth(column)
+            if columnHeader in columns:
+                self.showColumn(columnIndex)
+                self._restoreColumnUserHide(columnIndex)
+                self._restoreColumnWidth(columnIndex)
+                self._activeColumns.append(columnHeader)
             else:
-                self._updateCachedColumnWidth(column, self.columnWidth(column))
-                self.setColumnHidden(column, True)
+                self._cacheColumnWidth(columnIndex, self.columnWidth(columnIndex))
+                self.hideColumn(columnIndex)
+
+    def visibleColumnCount(self) -> None:
+        count = 0
+        for columnHeader in self._activeColumns:
+            columnIndex = self.columnHeaderIndex(columnHeader)
+            if not self.isColumnHidden(columnIndex):
+                count += 1
+        return count
+
+    def setUserColumnHiding(self, enabled: bool) -> None:
+        if self._userColumnHidingEnabled == enabled:
+            return # Nothing to do
+
+        self._userColumnHidingEnabled = enabled
+
+        header = self.horizontalHeader()
+        if self._userColumnHidingEnabled:
+            header.setContextMenuPolicy(
+                QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+            header.customContextMenuRequested.connect(
+                self._showHeaderContextMenu)
+        else:
+            header.customContextMenuRequested.disconnect(
+                self._showHeaderContextMenu)
+
+        # Update columns to match new state
+        if self._activeColumns:
+            for columnHeader in self._activeColumns:
+                columnIndex = self.columnHeaderIndex(columnHeader)
+                if columnIndex < 0:
+                    continue
+                key = columnHeader.name if isinstance(columnHeader, enum.Enum) else columnHeader
+                shouldHide = self._userColumnHidingEnabled and (key in self._userHiddenColumns)
+                self.setColumnHidden(columnIndex, shouldHide)
 
     def isEmpty(self) -> bool:
         return self.rowCount() <= 0
@@ -382,7 +458,7 @@ class ListTable(gui.TableWidgetEx):
         super().keyPressEvent(event)
         self.keyPressed.emit(event.key())
 
-    def _updateCachedColumnWidth(
+    def _cacheColumnWidth(
             self,
             column: int,
             width: int
@@ -392,7 +468,6 @@ class ListTable(gui.TableWidgetEx):
             # with so ignore the event. The isColumnHidden isn't used as it appears when hiding the
             # column width is set to 0 before the tables internal state is update to say the column
             # is hidden
-            self.isColumnHidden
             return
 
         columnType = self.columnHeader(column)
@@ -404,7 +479,7 @@ class ListTable(gui.TableWidgetEx):
         else:
             self._columnWidths[columnType] = width
 
-    def _restoreCachedColumnWidth(
+    def _restoreColumnWidth(
             self,
             column: int
             ) -> None:
@@ -419,6 +494,42 @@ class ListTable(gui.TableWidgetEx):
             width = self._columnWidths.get(columnType)
         if width != None:
             self.setColumnWidth(column, width)
+
+    def _cacheColumnUserHide(
+            self,
+            column: int,
+            hidden: bool
+            ) -> None:
+        columnType = self.columnHeader(column)
+        if columnType == None:
+            return
+
+        key = columnType.name if isinstance(columnType, enum.Enum) else columnType
+        if hidden:
+            self._userHiddenColumns.add(key)
+        elif key in self._userHiddenColumns:
+            self._userHiddenColumns.remove(key)
+
+    def _restoreColumnUserHide(
+            self,
+            column: int
+            ) -> None:
+        if not self._userColumnHidingEnabled:
+            return
+
+        columnType = self.columnHeader(column)
+        if columnType == None:
+            return
+
+        key = columnType.name if isinstance(columnType, enum.Enum) else columnType
+        if key in self._userHiddenColumns:
+            if self.visibleColumnCount() <= 1:
+                # Don't allow the last column to be hidden as the header will be
+                # hidden, it looks weird and it might not be obvious to the user
+                # how to get back to having headers.
+                return
+
+            self.hideColumn(column)
 
     def _createToolTip(
             self,
@@ -474,7 +585,7 @@ class ListTable(gui.TableWidgetEx):
             ) -> None:
         self._checkRowFiltering(row=item.row())
 
-    def _checkForHeaderIconClick(self, pos: QtCore.QPoint) -> int:
+    def _checkForHeaderIconClick(self, point: QtCore.QPoint) -> int:
         header = self.horizontalHeader()
         for column in range(self.columnCount()):
             if self.isColumnHidden(column):
@@ -495,10 +606,54 @@ class ListTable(gui.TableWidgetEx):
 
             # Check if the click position is inside the icon rect. Don't include the edges of the
             # rect as I was finding i was getting false clicks when resizing columns
-            if iconRect.contains(pos, True):
+            if iconRect.contains(point, True):
                 return column
 
         return -1
+
+    def _showHeaderContextMenu(
+            self,
+            point: QtCore.QPoint
+            ) -> None:
+        if not self._activeColumns or not self._userColumnHidingEnabled:
+            return
+
+        visibleColumnCount = self.visibleColumnCount()
+
+        menu = QtWidgets.QMenu(self)
+        for columnHeader in self._activeColumns:
+            columnIndex = self.columnHeaderIndex(columnHeader)
+            if columnIndex < 0:
+                continue
+
+            columnText = self.columnHeaderText(columnIndex)
+            if not columnText:
+                continue
+
+            action = QtWidgets.QAction(columnText, self)
+            action.setCheckable(True)
+            action.setChecked(not self.isColumnHidden(columnIndex))
+            action.setData(columnIndex)
+            partial = functools.partial(self._userHideColumnAction, action)
+            action.changed.connect(partial)
+
+            if (visibleColumnCount == 1) and action.isChecked():
+                # Don't allow the user to hide the last column as the header
+                # will be hidden and there is no great way of getting it back
+                action.setDisabled(True)
+
+            menu.addAction(action)
+
+        menu.exec(self.mapToGlobal(point))
+
+    def _userHideColumnAction(self, action: QtWidgets.QAction) -> None:
+        shouldHide = not action.isChecked()
+        columnIndex = action.data()
+        self.setColumnHidden(columnIndex, shouldHide)
+        self._cacheColumnUserHide(columnIndex, shouldHide)
+
+        if not shouldHide:
+            self._restoreColumnWidth(columnIndex)
 
     def _columnWidthChanged(
             self,
@@ -506,7 +661,7 @@ class ListTable(gui.TableWidgetEx):
             oldSize : int,
             newSize: int
             ) -> None:
-        self._updateCachedColumnWidth(logicalIndex, newSize)
+        self._cacheColumnWidth(logicalIndex, newSize)
 
         # Reset header icon click index to prevent the mouse button release after a resize also
         # triggering an icon click. This is necessary as the hit box for column resize gripper
@@ -570,6 +725,13 @@ class FrozenColumnListTable(ListTable):
         # column where the right most column should be.
         self._frozenColumnWidget.setAutoScroll(False)
 
+        # Disable user column hiding on the frozen widget and handle it locally
+        self._frozenColumnWidget.setUserColumnHiding(False)
+        self._frozenColumnWidget.horizontalHeader().setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._frozenColumnWidget.horizontalHeader().customContextMenuRequested.connect(
+            self._showHeaderContextMenu)
+
         self.itemChanged.connect(self._itemChanged)
 
         self.itemSelectionChanged.connect(self._itemSelectionChanged)
@@ -591,9 +753,9 @@ class FrozenColumnListTable(ListTable):
 
         self.viewport().stackUnder(self._frozenColumnWidget)
 
-    def setVisibleColumns(self, columns: typing.Iterable[typing.Union[enum.Enum, str]]) -> None:
-        self._frozenColumnWidget.setVisibleColumns(columns)
-        return super().setVisibleColumns(columns)
+    def setActiveColumns(self, columns: typing.Iterable[typing.Union[enum.Enum, str]]) -> None:
+        self._frozenColumnWidget.setActiveColumns(columns)
+        return super().setActiveColumns(columns)
 
     def frozenColumnVisualIndex(self) -> typing.Optional[int]:
         return self._frozenColumnVisualIndex
@@ -839,8 +1001,8 @@ class FrozenColumnListTable(ListTable):
     # To use cell widgets the derived class will need to override setFrozenColumnVisualIndex
     # so it can remove the old cell widgets before the update and add new ones after the update.
     # This is necessary as there is no way to detach a cell widget from one table and move it to
-    # another table (removeCellWidget causes the widget to be destroyed). See WorldBerthingTable
-    # for an example
+    # another table (removeCellWidget causes the widget to be destroyed). See WaypointTable for
+    # an example
     def setCellWidget(self, row: int, column: int, widget: QtWidgets.QWidget) -> None:
         if self._frozenColumnVisualIndex != None:
             visualIndex = self.visualColumn(column)
@@ -980,6 +1142,18 @@ class FrozenColumnListTable(ListTable):
             if oldData != newData:
                 frozenItem.setData(role, newData)
 
+    def _hideColumnAction(self, action):
+        super()._userHideColumnAction(action)
+
+        index = action.data()
+        if self._frozenColumnVisualIndex != None:
+            if index <= self._frozenColumnVisualIndex:
+                pass
+
+    def _userHideColumnAction(self, action: QtWidgets.QAction) -> None:
+        super()._userHideColumnAction(action)
+        self._updateFrozenWidgetGeometry()
+
     def _columnWidthChanged(
             self,
             logicalIndex: int,
@@ -1027,9 +1201,9 @@ class FrozenColumnListTable(ListTable):
 
     def _frozenContextMenuRequested(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
-        self.customContextMenuRequested.emit(position)
+        self.customContextMenuRequested.emit(point)
 
     def _columnMoved(
             self,

@@ -41,9 +41,6 @@ class DiceRollResultsTable(gui.ListTable):
             results: typing.Optional[diceroller.DiceRollResult]
             ) -> None:
         self._results = results
-        self.update()
-
-    def update(self) -> None:
         self.removeAllRows()
         if not self._results:
             self.resizeRowsToContents()
@@ -264,7 +261,7 @@ class DiceRollResultsTable(gui.ListTable):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
@@ -276,7 +273,7 @@ class DiceRollResultsTable(gui.ListTable):
         gui.displayMenu(
             self,
             menuItems,
-            self.viewport().mapToGlobal(position))
+            self.viewport().mapToGlobal(point))
 
     def _copyToClipboard(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()

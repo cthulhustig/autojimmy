@@ -31,6 +31,7 @@ class ManifestTable(gui.ListTable):
         columns.append(ManifestTable.StdColumnType.Factors)
 
         self.setColumnHeaders(columns)
+        self.setColumnsMoveable(False)
         self.resizeColumnsToContents() # Size columns to header text
         self.resizeRowsToContents()
         self.setSizeAdjustPolicy(
@@ -53,9 +54,6 @@ class ManifestTable(gui.ListTable):
             manifest: typing.Optional[construction.Manifest]
             ) -> None:
         self._manifest = manifest
-        self.update()
-
-    def update(self) -> None:
         self.removeAllRows()
         if not self._manifest:
             self.resizeRowsToContents()
@@ -233,9 +231,9 @@ class ManifestTable(gui.ListTable):
 
     def _showContextMenu(
             self,
-            position: QtCore.QPoint
+            point: QtCore.QPoint
             ) -> None:
-        item = self.itemAt(position)
+        item = self.itemAt(point)
         calculations = []
         if item:
             column = self.columnHeader(column=item.column())
@@ -276,7 +274,7 @@ class ManifestTable(gui.ListTable):
         gui.displayMenu(
             self,
             menuItems,
-            self.viewport().mapToGlobal(position))
+            self.viewport().mapToGlobal(point))
 
     def _showCalculations(
             self,

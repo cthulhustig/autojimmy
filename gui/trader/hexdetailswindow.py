@@ -1,5 +1,6 @@
 import gui
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -10,8 +11,6 @@ class _CustomTextEdit(gui.TextEditEx):
             ) -> None:
         super().__init__(parent)
 
-        self._world = None
-
         self.setReadOnly(True)
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
@@ -21,24 +20,16 @@ class _CustomTextEdit(gui.TextEditEx):
         # set. This is required so the sizeHint is generated correctly
         self.document().adjustSize()
 
-    def world(self) -> traveller.World:
-        return self._world
-
-    def setWorld(
+    def setHex(
             self,
-            world: typing.Optional[traveller.World]
+            hex: typing.Optional[typing.Union[travellermap.HexPosition, traveller.World]]
             ) -> None:
-        if world == self._world:
-            return # Nothing to do
-
-        self._world = world
-        if self._world:
-            self.setHtml(gui.createWorldToolTip(self._world))
+        if hex:
+            self.setHtml(gui.createHexToolTip(hex=hex))
         else:
             self.clear()
 
     def clear(self) -> None:
-        self._world = None
         super().clear()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
@@ -53,67 +44,82 @@ class _CustomTextEdit(gui.TextEditEx):
 
         return super().keyPressEvent(event)
 
-class WorldDetailsWindow(gui.WindowWidget):
+class HexDetailsWindow(gui.WindowWidget):
     def __init__(
             self,
             ) -> None:
         super().__init__(
-            title='World Details',
-            configSection='WorldDetailsWindow')
+            title='Hex Details',
+            configSection='HexDetailsWindow')
 
-        self._worlds = []
+        self._hexes: typing.List[travellermap.HexPosition] = []
 
         self._tabBar = gui.VerticalTabBar()
         self._tabBar.setTabsClosable(True)
         self._tabBar.tabCloseRequested.connect(self._tabCloseRequested)
         self._tabBar.selectionChanged.connect(self._tabChanged)
 
-        self._worldDetails = _CustomTextEdit()
+        self._hexDetails = _CustomTextEdit()
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self._tabBar, 0)
-        layout.addWidget(self._worldDetails, 1)
+        layout.addWidget(self._hexDetails, 1)
 
         self.setLayout(layout)
         self.resize(800, 600)
 
-    def addWorld(
+    def addHex(
             self,
-            world: traveller.World
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> None:
-        for index, existingWorld in enumerate(self._worlds):
-            if world == existingWorld:
+        if isinstance(hex, traveller.World):
+            hex = hex.hex()
+
+        for index, existingHex in enumerate(self._hexes):
+            if hex == existingHex:
                 self._tabBar.setCurrentIndex(index)
-                self._worldDetails.setWorld(world)
+                self._hexDetails.setHex(hex)
                 return
 
-        self._worlds.append(world)
-        index = self._tabBar.addTab(world.name(includeSubsector=True))
+        tabName = traveller.WorldManager.instance().canonicalHexName(hex)
+        self._hexes.append(hex)
+        index = self._tabBar.addTab(tabName)
         self._tabBar.setCurrentIndex(index)
-        self._worldDetails.setWorld(world)
+        self._hexDetails.setHex(hex)
+
+    def addWorld(self, world: traveller.World) -> None:
+        self.addHex(world)
+
+    def addHexes(
+            self,
+            hexes: typing.Iterable[typing.Union[
+                travellermap.HexPosition,
+                traveller.World]]
+            ) -> None:
+        for hex in hexes:
+            self.addHex(hex)
 
     def addWorlds(
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        for world in worlds:
-            self.addWorld(world=world)
+        self.addHexes(worlds)
 
     def _tabChanged(self) -> None:
         index = self._tabBar.currentIndex()
         if index < 0:
             return
 
-        assert(index < len(self._worlds))
-        self._worldDetails.setWorld(self._worlds[index])
+        assert(index < len(self._hexes))
+        self._hexDetails.setHex(self._hexes[index])
 
     def _tabCloseRequested(
             self,
             index: int
             ) -> None:
-        assert(index < len(self._worlds))
+        assert(index < len(self._hexes))
 
-        del self._worlds[index]
+        del self._hexes[index]
 
         # Block signals while removing the tab to prevent the tabChanged handler being called
         self._tabBar.blockSignals(True)
@@ -122,12 +128,12 @@ class WorldDetailsWindow(gui.WindowWidget):
         finally:
             self._tabBar.blockSignals(False)
 
-        if len(self._worlds) > 0:
+        if len(self._hexes) > 0:
             currentIndex = self._tabBar.currentIndex()
-            assert(currentIndex < len(self._worlds))
-            self._worldDetails.setWorld(self._worlds[currentIndex])
+            assert(currentIndex < len(self._hexes))
+            self._hexDetails.setHex(self._hexes[currentIndex])
         else:
             # No more worlds to display so clear the current world info and close the window.
             # The world info is cleared in case the window is re-shown
-            self._worldDetails.clear()
+            self._hexDetails.clear()
             self.close()

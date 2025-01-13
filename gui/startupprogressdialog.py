@@ -11,7 +11,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
         jobs.LoadSectorsJob: 'Loading: Sector - ',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
-        jobs.LoadWeaponsJob: 'Loading: Robot - ',
+        jobs.LoadRobotsJob: 'Loading: Robot - ',
         jobs.StartProxyJob: 'Proxy: '}
 
     def __init__(
@@ -76,6 +76,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
                 parent=self,
                 progressCallback=self._updateProgress,
                 finishedCallback=self._jobFinished)
+            self._currentJob.start()
         except Exception as ex:
             self._exception = ex
             self.close()

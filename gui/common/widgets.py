@@ -1,78 +1,11 @@
 import app
 import common
-import html
 import gui
 import logging
 import math
 import re
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
-
-class FormLayoutEx(QtWidgets.QFormLayout):
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
-        super().__init__(parent)
-
-        self.setFieldGrowthPolicy(QtWidgets.QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
-        self.setLabelAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
-
-    def labelAt(self, row: int) -> typing.Optional[QtWidgets.QLabel]:
-        item = self.itemAt(row, gui.FormLayoutEx.ItemRole.LabelRole)
-        return item.widget() if item else None
-
-    def fieldAt(self, row: int) -> typing.Optional[typing.Union[QtWidgets.QWidget, QtWidgets.QLayout]]:
-        item = self.itemAt(row, gui.FormLayoutEx.ItemRole.FieldRole)
-        if item:
-            if item.widget():
-                return item.widget()
-            if item.layout():
-                return item.layout()
-        return None
-
-    def widgetAt(self, row: int) -> typing.Optional[QtWidgets.QWidget]:
-        item = self.itemAt(row, gui.FormLayoutEx.ItemRole.FieldRole)
-        return item.widget() if item else None
-
-    def layoutAt(self, row: int) -> typing.Optional[QtWidgets.QLayout]:
-        item = self.itemAt(row, gui.FormLayoutEx.ItemRole.FieldRole)
-        return item.layout() if item else None
-
-    def clear(self) -> None:
-        while self.rowCount() > 0:
-            self.removeRow(self.rowCount() - 1)
-
-    def setLabelText(
-            self,
-            row: int,
-            text: str
-            ) -> None:
-        label = self.labelAt(row)
-        if label:
-            label.setText(text)
-
-    def setRowHidden(
-            self,
-            row: int,
-            hidden: bool
-            ) -> None:
-        rowItems = [
-            self.itemAt(row, FormLayoutEx.ItemRole.LabelRole),
-            self.itemAt(row, FormLayoutEx.ItemRole.FieldRole)
-        ]
-
-        for item in rowItems:
-            if not item:
-                continue
-
-            widget = item.widget()
-            widget.setHidden(hidden)
-
-    def addStretch(self) -> None:
-        spacer = QtWidgets.QSpacerItem(
-            0,
-            0,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding)
-        self.addItem(spacer)
 
 class TabWidgetEx(QtWidgets.QTabWidget):
     _StateVersion = 'TabWidgetEx_v1'
@@ -157,6 +90,12 @@ class TabBarEx(QtWidgets.QTabBar):
 
 class CheckBoxEx(QtWidgets.QCheckBox):
     _StateVersion = 'CheckBoxEx_v1'
+
+    def setTextOnLeft(self, enable: bool) -> None:
+        self.setLayoutDirection(
+            QtCore.Qt.LayoutDirection.RightToLeft
+            if enable else
+            QtCore.Qt.LayoutDirection.LeftToRight)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()

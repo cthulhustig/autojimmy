@@ -57,8 +57,8 @@ class Config(object):
     _PurchaseBrokerDmBonusKeyName = 'Game/PurchaseBrokerDmBonus'
     _UseSaleBrokerKeyName = 'Game/UseSaleBroker'
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
+    _RoutingTypeKeyName = 'Game/RoutingType'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
-    _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting'
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
     _UseFuelCachesKeyName = 'Game/UseFuelCaches'
     _UseAnomalyRefuellingKeyName = 'Game/UseAnomalyRefuelling'
@@ -522,6 +522,14 @@ class Config(object):
         self._settings.setValue(Config._SaleBrokerDmBonusKeyName, value)
         return False # No restart required
 
+    def routingType(self) -> logic.RoutingType:
+        return self._routingType
+
+    def setRoutingType(self, type: logic.RoutingType) -> bool:
+        self._routingType = type
+        self._settings.setValue(Config._RoutingTypeKeyName, type.name)
+        return False # No restart required
+
     def routeOptimisation(self) -> logic.RouteOptimisation:
         return self._routeOptimisation
 
@@ -529,15 +537,6 @@ class Config(object):
         # This setting can be modified live so update the internal and disk copy
         self._routeOptimisation = optimisation
         self._settings.setValue(Config._RouteOptimisationKeyName, optimisation.name)
-        return False # No restart required
-
-    def fuelBasedRouting(self) -> bool:
-        return self._fuelBasedRouting
-
-    def setFuelBasedRouting(self, enable: bool) -> None:
-        # This setting can be modified live so update the internal and disk copy
-        self._fuelBasedRouting = enable
-        self._settings.setValue(Config._FuelBasedRoutingKeyName, enable)
         return False # No restart required
 
     def refuellingStrategy(self) -> logic.RefuellingStrategy:
@@ -1271,13 +1270,14 @@ class Config(object):
         self._saleBrokerDmBonus = self._loadIntSetting(
             key=Config._SaleBrokerDmBonusKeyName,
             default=1)
+        self._routingType = self._loadEnumSetting(
+            key=self._RoutingTypeKeyName,
+            default=logic.RoutingType.FuelBased,
+            members=logic.RoutingType.__members__)
         self._routeOptimisation = self._loadEnumSetting(
             key=Config._RouteOptimisationKeyName,
             default=logic.RouteOptimisation.ShortestDistance,
             members=logic.RouteOptimisation.__members__)
-        self._fuelBasedRouting = self._loadBoolSetting(
-            key=Config._FuelBasedRoutingKeyName,
-            default=True)
         self._refuellingStrategy = self._loadEnumSetting(
             key=Config._RefuellingStrategyKeyName,
             default=logic.RefuellingStrategy.WildernessPreferred,
@@ -1617,7 +1617,7 @@ class Config(object):
                 assert(maxValue != None)
                 reason = f'{value} is not less than or equal to {maxValue}'
 
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({reason})')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({reason})')
             return default
         return value
 
@@ -1641,7 +1641,7 @@ class Config(object):
                 assert(maxValue != None)
                 reason = f'{value} is not less than or equal to {maxValue}'
 
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({reason})')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({reason})')
             return default
         return value
 
@@ -1656,7 +1656,7 @@ class Config(object):
             default=default.name,
             type=str)
         if value not in members:
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({value} is not a valid {type(default).__name__})')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({value} is not a valid {type(default).__name__})')
             return default
         return members[value]
 
@@ -1670,7 +1670,7 @@ class Config(object):
             default=default,
             type=str)
         if not urllib.parse.urlparse(value):
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({value} is not a valid URL)')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({value} is not a valid URL)')
             return default
         return value
 
@@ -1684,7 +1684,7 @@ class Config(object):
             default=default,
             type=str)
         if not re.match(r'^#[0-9a-fA-F]{8}$', value):
-            logging.warning(f'Ignoring {key} from {self._settings.group()} ({value} is not a valid #AARRGGBB colour)')
+            logging.warning(f'Ignoring {key} from "{self._settings.group()}" in "{self._settings.fileName()}" ({value} is not a valid #AARRGGBB colour)')
             return default
         return value
 

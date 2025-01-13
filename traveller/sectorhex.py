@@ -2,7 +2,7 @@
 import re
 import typing
 
-_SectorHexPattern = re.compile('^(.*) ([0-9]{2})([0-9]{2})$')
+_SectorHexPattern = re.compile(r'^(.*)\s+([0-9]{2})([0-9]{2})$')
 
 def splitSectorHex(
         sectorHex: str
