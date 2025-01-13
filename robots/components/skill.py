@@ -712,7 +712,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                     speciality=speciality)
                 flags = construction.SkillFlags(0)
                 if (characteristic == traveller.Characteristic.Dexterity) or \
-                    (characteristic == traveller.Characteristic.Strength):
+                        (characteristic == traveller.Characteristic.Strength):
                     flags |= construction.SkillFlags.NoNegativeCharacteristicModifier
 
                 stacks = _stacksWithHardware(

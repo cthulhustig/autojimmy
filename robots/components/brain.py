@@ -633,6 +633,7 @@ class FixedFunctionRobot(RobotBrain):
     """
     - Requirement: Not compatible with avatar controller or receiver (p95)
     """
+
     def isCompatible(self, sequence: str, context: construction.ConstructionContext) -> bool:
         if not super().isCompatible(sequence, context):
             return False
