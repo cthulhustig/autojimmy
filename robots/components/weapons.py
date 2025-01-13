@@ -11,6 +11,7 @@ class FireControlLevel(enum.Enum):
     Enhanced = 'Enhanced'
     Advanced = 'Advanced'
 
+
 _SkillNameMap = {skill.name(): skill for skill in traveller.AllStandardSkills}
 
 class _WeaponImpl(object):
