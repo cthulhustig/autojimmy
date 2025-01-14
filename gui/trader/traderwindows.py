@@ -871,7 +871,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._saleWorldsGroupBox.setLayout(layout)
 
     def _setupCargoControls(self) -> None:
-        self._cargoRecordDisplayModeTabView = gui.TabWidgetEx()
+        self._cargoRecordDisplayModeTabView = gui.ItemCountTabWidget()
         self._cargoRecordDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
 
         # Speculative cargo controls
@@ -918,10 +918,10 @@ class WorldTraderWindow(_BaseTraderWindow):
         paneLayout.setContentsMargins(0, 0, 0, 0)
         paneLayout.addWidget(self._speculativeCargoTable)
         paneLayout.addLayout(buttonLayout)
-        paneWidget = QtWidgets.QWidget()
-        paneWidget.setLayout(paneLayout)
+        speculativeCargoPaneWidget = QtWidgets.QWidget()
+        speculativeCargoPaneWidget.setLayout(paneLayout)
 
-        tabIndex = self._cargoRecordDisplayModeTabView.addTab(paneWidget, 'Speculative')
+        tabIndex = self._cargoRecordDisplayModeTabView.addTab(speculativeCargoPaneWidget, 'Speculative')
         self._cargoRecordDisplayModeTabView.setTabToolTip(
             tabIndex,
             gui.createStringToolTip(
@@ -934,6 +934,16 @@ class WorldTraderWindow(_BaseTraderWindow):
                 'availability ranges for cargo is calculated from on the trade codes for ' \
                 'the current world.</p>',
                 escape=False))
+        self._cargoRecordDisplayModeTabView.setWidgetItemCount(speculativeCargoPaneWidget, 0)
+        self._speculativeCargoTable.model().rowsInserted.connect(
+            lambda: self._cargoRecordDisplayModeTabView.setWidgetItemCount(
+                speculativeCargoPaneWidget,
+                self._speculativeCargoTable.rowCount()))
+        self._speculativeCargoTable.model().rowsRemoved.connect(
+            lambda: self._cargoRecordDisplayModeTabView.setWidgetItemCount(
+                speculativeCargoPaneWidget,
+                self._speculativeCargoTable.rowCount()))
+
 
         # Available cargo controls
         self._availableCargoTable = gui.CargoRecordTable(
@@ -998,10 +1008,10 @@ class WorldTraderWindow(_BaseTraderWindow):
         paneLayout.setContentsMargins(0, 0, 0, 0)
         paneLayout.addWidget(self._availableCargoTable)
         paneLayout.addLayout(buttonLayout)
-        paneWidget = QtWidgets.QWidget()
-        paneWidget.setLayout(paneLayout)
+        availableCargoPaneWidget = QtWidgets.QWidget()
+        availableCargoPaneWidget.setLayout(paneLayout)
 
-        tabIndex = self._cargoRecordDisplayModeTabView.addTab(paneWidget, 'Available')
+        tabIndex = self._cargoRecordDisplayModeTabView.addTab(availableCargoPaneWidget, 'Available')
         self._cargoRecordDisplayModeTabView.setTabToolTip(
             tabIndex,
             gui.createStringToolTip(
@@ -1014,6 +1024,15 @@ class WorldTraderWindow(_BaseTraderWindow):
                 'determined by the quantity available for purchase, the per ton purchase price, ' \
                 'your available funds and logistics costs.</p>',
                 escape=False))
+        self._cargoRecordDisplayModeTabView.setWidgetItemCount(availableCargoPaneWidget, 0)
+        self._availableCargoTable.model().rowsInserted.connect(
+            lambda: self._cargoRecordDisplayModeTabView.setWidgetItemCount(
+                availableCargoPaneWidget,
+                self._availableCargoTable.rowCount()))
+        self._availableCargoTable.model().rowsRemoved.connect(
+            lambda: self._cargoRecordDisplayModeTabView.setWidgetItemCount(
+                availableCargoPaneWidget,
+                self._availableCargoTable.rowCount()))
 
         # Current cargo controls
         self._currentCargoTable = gui.CargoRecordTable(
@@ -1078,10 +1097,10 @@ class WorldTraderWindow(_BaseTraderWindow):
         paneLayout.setContentsMargins(0, 0, 0, 0)
         paneLayout.addWidget(self._currentCargoTable)
         paneLayout.addLayout(buttonLayout)
-        paneWidget = QtWidgets.QWidget()
-        paneWidget.setLayout(paneLayout)
+        currentCargoPaneWidget = QtWidgets.QWidget()
+        currentCargoPaneWidget.setLayout(paneLayout)
 
-        tabIndex = self._cargoRecordDisplayModeTabView.addTab(paneWidget, 'Current')
+        tabIndex = self._cargoRecordDisplayModeTabView.addTab(currentCargoPaneWidget, 'Current')
         self._cargoRecordDisplayModeTabView.setTabToolTip(
             tabIndex,
             gui.createStringToolTip(
@@ -1091,6 +1110,15 @@ class WorldTraderWindow(_BaseTraderWindow):
                 '<p>Trade options generated for this cargo will speculate on sale price and ' \
                 'logistics costs.</p>',
                 escape=False))
+        self._cargoRecordDisplayModeTabView.setWidgetItemCount(currentCargoPaneWidget, 0)
+        self._currentCargoTable.model().rowsInserted.connect(
+            lambda: self._cargoRecordDisplayModeTabView.setWidgetItemCount(
+                currentCargoPaneWidget,
+                self._currentCargoTable.rowCount()))
+        self._currentCargoTable.model().rowsRemoved.connect(
+            lambda: self._cargoRecordDisplayModeTabView.setWidgetItemCount(
+                currentCargoPaneWidget,
+                self._currentCargoTable.rowCount()))
 
         # Group box
         groupBoxLayout = QtWidgets.QVBoxLayout()

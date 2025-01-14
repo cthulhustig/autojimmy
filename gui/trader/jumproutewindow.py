@@ -721,6 +721,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointsGroupBox.setLayout(layout)
 
     def _setupAvoidLocationsControls(self) -> None:
+        self._avoidLocationsTabWidget = gui.ItemCountTabWidget()
+        self._avoidLocationsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
+
         self._avoidHexesWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowAvoidHex)
         self._avoidHexesWidget.enableDeadSpace(
@@ -728,13 +731,20 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._avoidHexesWidget.enableShowInTravellerMapEvent(enable=True)
         self._avoidHexesWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
+        self._avoidLocationsTabWidget.addTab(self._avoidHexesWidget, 'Hexes')
+        self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidHexesWidget, 0)
+        self._avoidHexesWidget.contentChanged.connect(
+            lambda: self._avoidLocationsTabWidget.setWidgetItemCount(
+                self._avoidHexesWidget,
+                self._avoidHexesWidget.rowCount()))
 
         self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget()
-
-        self._avoidLocationsTabWidget = gui.TabWidgetEx()
-        self._avoidLocationsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
-        self._avoidLocationsTabWidget.addTab(self._avoidHexesWidget, 'Hexes')
         self._avoidLocationsTabWidget.addTab(self._avoidFiltersWidget, 'Filters')
+        self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidFiltersWidget, 0)
+        self._avoidFiltersWidget.contentChanged.connect(
+            lambda: self._avoidLocationsTabWidget.setWidgetItemCount(
+                self._avoidFiltersWidget,
+                self._avoidFiltersWidget.filterCount()))
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._avoidLocationsTabWidget)

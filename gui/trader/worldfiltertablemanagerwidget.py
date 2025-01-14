@@ -51,6 +51,8 @@ class _FilterLogicComboBox(gui.EnumComboBox):
         return True
 
 class WorldFilterTableManagerWidget(QtWidgets.QWidget):
+    contentChanged = QtCore.pyqtSignal()
+
     _StateVersion = 'WorldFilterTableManagerWidget_v1'
 
     def __init__(
@@ -118,15 +120,22 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def addFilter(self, filter: logic.WorldFilter) -> None:
         self._filterTable.addFilter(filter=filter)
+        self.contentChanged.emit()
 
     def addFilters(self, filters: typing.Iterable[logic.WorldFilter]) -> None:
         self._filterTable.addFilters(filters=filters)
+        self.contentChanged.emit()
 
     def removeFilters(self, filter: logic.WorldFilter) -> bool:
-        return self._filterTable.removeFilter(filter=filter)
+        removed = self._filterTable.removeFilter(filter=filter)
+        if removed:
+            self.contentChanged.emit()
+        return removed
 
     def removeAllFilters(self) -> None:
-        self._filterTable.removeAllRows()
+        if not self._filterTable.isEmpty():
+            self._filterTable.removeAllRows()
+            self.contentChanged.emit()
 
     def isEmpty(self) -> bool:
         return self._filterTable.isEmpty()
@@ -153,7 +162,9 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         return self._filterTable.selectedFilters()
 
     def removeSelectedFilters(self) -> None:
-        self._filterTable.removeSelectedRows()
+        if self._filterTable.hasSelection():
+            self._filterTable.removeSelectedRows()
+            self.contentChanged.emit()
 
     def setActiveColumns(
             self,
@@ -210,7 +221,10 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             self,
             state: QtCore.QByteArray
             ) -> bool:
-        return self._filterTable.restoreContent(state=state)
+        result = self._filterTable.restoreContent(state=state)
+        if not self._filterTable.isEmpty():
+            self.contentChanged.emit()
+        return result
 
     def promptAddFilter(self) -> None:
         dlg = gui.WorldFilterDialog(
@@ -236,6 +250,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             return
         index = self._filterTable.currentIndex()
         self._filterTable.setFilter(index.row(), dlg.filter())
+        self.contentChanged.emit()
 
     def _worldTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:

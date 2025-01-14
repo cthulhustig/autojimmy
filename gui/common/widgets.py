@@ -38,6 +38,90 @@ class TabWidgetEx(QtWidgets.QTabWidget):
         self.setCurrentIndex(stream.readInt32())
         return True
 
+class ItemCountTabWidget(TabWidgetEx):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+
+        self._itemCountMap: typing.Dict[QtWidgets.QWidget, int] = {}
+        self._originalTextMap: typing.Dict[QtWidgets.QWidget, str] = {}
+
+    def setTabItemCount(self, index: int, count: int) -> None:
+        widget = self.widget(index)
+        if not widget:
+            return
+
+        self._itemCountMap[widget] = count
+        if widget not in self._originalTextMap:
+            self._originalTextMap[widget] = self.tabText(index)
+
+        # NOTE: Call base setTabText to avoid having the item count added twice
+        super().setTabText(
+            index,
+            self._formatItemCountText(widget))
+
+    def setWidgetItemCount(self, widget: QtWidgets.QWidget, count: int) -> None:
+        index = self.indexOf(widget)
+        if index >= 0:
+            self.setTabItemCount(index, count)
+
+    def removeTabItemCount(self, index: int) -> None:
+        widget = self.widget(index)
+        if not widget:
+            return
+
+        if widget in self._itemCountMap:
+            del self._itemCountMap[widget]
+        if widget in self._originalTextMap:
+            # NOTE: Call base setTabText to avoid having the item count added twice
+            super().setTabText(
+                index,
+                self._originalTextMap[widget])
+            del self._originalTextMap[widget]
+
+    def removeWidgetItemCount(self, widget: QtWidgets.QWidget) -> None:
+        index = self.indexOf(widget)
+        if index >= 0:
+            self.removeTabItemCount(index)
+
+    def setTabText(self, index: int, text: str) -> None:
+        widget = self.widget(index)
+        if widget in self._originalTextMap:
+            self._originalTextMap[widget] = text
+            text = self._formatItemCountText(widget)
+
+        return super().setTabText(index, text)
+
+    def tabText(self, index: int) -> str:
+        widget = self.widget(index)
+        if not widget:
+            return ''
+
+        origText = self._originalTextMap.get(widget)
+        if origText != None:
+            return origText
+
+        return super().tabText(index)
+
+    def removeTab(self, index: int) -> None:
+        widget = self.widget(index)
+        if widget in self._itemCountMap:
+            del self._itemCountMap[widget]
+        if widget in self._originalTextMap:
+            del self._originalTextMap[widget]
+
+        return super().removeTab(index)
+
+    def clear(self):
+        self._itemCountMap.clear()
+        self._originalTextMap.clear()
+        return super().clear()
+
+    def _formatItemCountText(self, widget: QtWidgets.QWidget) -> str:
+        itemCount = self._itemCountMap[widget]
+        origText = self._originalTextMap[widget]
+        return f'{origText} ({itemCount})'
+
+
 class TabBarEx(QtWidgets.QTabBar):
     _StateVersion = 'TabBarEx_v1'
 
