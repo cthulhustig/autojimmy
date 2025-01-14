@@ -319,7 +319,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             state: QtCore.QByteArray
             ) -> bool:
-        return self._hexTable.restoreContent(state=state)
+        result = self._hexTable.restoreContent(state=state)
+        if not self._hexTable.isEmpty():
+            self.contentChanged.emit()
+        return result
 
     def enableContextMenuEvent(self, enable: bool = True) -> None:
         self._enableContextMenuEvent = enable
@@ -354,11 +357,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
+            contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(
                     hex=self.hex(row=row))
                 if not world:
                     self._hexTable.removeRow(row=row)
+                    contentChanged = True
+            if contentChanged:
+                self.contentChanged.emit()
 
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
