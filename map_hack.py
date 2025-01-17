@@ -482,8 +482,8 @@ class RenderContext(object):
     def __init__(
             self,
             graphics: AbstractGraphics,
-            tileRect: RectangleF,
-            tileSize: Size,
+            tileRect: RectangleF, # Region to render in map coordinates
+            tileSize: Size, # Pixel size of view to render to
             scale: float,
             styles: StyleSheet,
             options: MapOptions
@@ -508,6 +508,12 @@ class RenderContext(object):
         self._scale = scale
         self._updateSpaceTransforms()
 
+    def moveRelative(self, dx: float, dy: float) -> None:
+        print(f'D: {dx} {dy}')
+        self._tileRect.x += (dx * self._scale)
+        self._tileRect.y += (dy * self._scale)
+        self._updateSpaceTransforms()
+
     def render(self) -> None:
         with self._graphics.save():
             self._graphics.multiplyTransform(self._imageSpaceToWorldSpace)
@@ -522,6 +528,7 @@ class RenderContext(object):
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
         self._imageSpaceToWorldSpace = AbstractMatrix(m)
+        print(f'M: {m.offsetX} {m.offsetY}')
         m.invert()
         self._worldSpaceToImageSpace = AbstractMatrix(m)
 
@@ -532,6 +539,11 @@ class RenderContext(object):
         """
 
         self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+
+
+        self._graphics.drawRectangleFill(
+            brush=AbstractBrush('#0000FF'),
+            rect=RectangleF(-0.5, -0.5, 1, 1))
 
         parsecSlop = 1
 
@@ -715,10 +727,12 @@ class QtGraphics(AbstractGraphics):
 
 
 
-class MapHackView(QtWidgets.QGraphicsView):
+class MapHackView(QtWidgets.QWidget):
     _MinScale = 0.0078125 # Math.Pow(2, -7);
     _MaxScale = 512 # Math.Pow(2, 9);
     _DefaultScale = 64
+
+    _WheelStep = 2
 
     _ZoomInScale = 1.25
     _ZoomOutScale = 0.8
@@ -728,22 +742,25 @@ class MapHackView(QtWidgets.QGraphicsView):
 
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
-        self.setScene(scene)
-        self.resetTransform()
+        #self.setScene(scene)
+        #self.resetTransform()
 
-        self._x = 0
-        self._y = 0
+        self._viewCenter = PointF(0, 0)
         self._tileSize = Size(self.width(), self.height())
         self._scale = MapHackView._DefaultScale
         self._graphics = QtGraphics()
         self._renderer = self._createRender()
 
-        self.setTransformationAnchor(
-            QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
-        self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheNone)
-        self.setViewportUpdateMode(
-            QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+        #self.setTransformationAnchor(
+        #    QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        #self.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
+        #self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheNone)
+        #self.setViewportUpdateMode(
+        #    QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
+        #self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        #self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     def clear(self) -> None:
         self._graphics = None
@@ -753,17 +770,55 @@ class MapHackView(QtWidgets.QGraphicsView):
         self._tileSize = Size(self.width(), self.height())
         self._renderer = self._createRender()
 
-    def drawBackground(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        super().keyPressEvent(event)
+        print(event.key())
+
+        if self._renderer:
+            dx = dy = None
+            if event.key() == QtCore.Qt.Key.Key_Left:
+                mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
+                dx = -mapWidth / 10
+            elif event.key() == QtCore.Qt.Key.Key_Right:
+                mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
+                dx = mapWidth / 10
+            elif event.key() == QtCore.Qt.Key.Key_Up:
+                mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
+                dy = -mapHeight / 10
+            elif event.key() == QtCore.Qt.Key.Key_Down:
+                mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
+                dy = mapHeight / 10
+
+            if dx != None or dy != None:
+                if dx != None:
+                    self._viewCenter.x += dx
+                if dy != None:
+                    self._viewCenter.y += dy
+                self._renderer.setTileRect(
+                    rect=self._calculateTileRect())
+                self.repaint()
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        super().wheelEvent(event)
+
+        if self._renderer:
+            if event.angleDelta().y() > 0:
+                self._scale += MapHackView._WheelStep
+            else:
+                self._scale -= MapHackView._WheelStep
+            self._renderer = self._createRender()
+            self.repaint()
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         if not self._graphics or not self._renderer:
-            return super().drawBackground(painter, rect)
+            return super().paintEvent(event)
 
-        painter.save()
-        painter.resetTransform()
-
-        self._graphics.setPainter(painter)
-        self._renderer.render()
-
-        painter.restore()
+        painter = QtGui.QPainter(self)
+        try:
+            self._graphics.setPainter(painter)
+            self._renderer.render()
+        finally:
+            painter.end()
 
     def _createRender(self) -> RenderContext:
         return RenderContext(
@@ -775,19 +830,20 @@ class MapHackView(QtWidgets.QGraphicsView):
             options=0)
 
     def _calculateTileRect(self) -> RectangleF:
+        mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
+        mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
         return RectangleF(
-            x=self._x * self._tileSize.width / (self._scale * travellermap.ParsecScaleX),
-            y=self._y * self._tileSize.height / (self._scale * travellermap.ParsecScaleY),
-            width=self._tileSize.width / (self._scale * travellermap.ParsecScaleX),
-            height=self._tileSize.height / (self._scale * travellermap.ParsecScaleY))
+            x=self._viewCenter.x - (mapWidth / 2),
+            y=self._viewCenter.y - (mapHeight / 2),
+            width=mapWidth,
+            height=mapHeight)
 
 class MyWidget(gui.WindowWidget):
-    _ImageFormat = 'PNG'
-
     def __init__(self):
         super().__init__(title='Map Hack', configSection='MapHack')
         self._widget = MapHackView()
         layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._widget)
 
         self.setLayout(layout)
