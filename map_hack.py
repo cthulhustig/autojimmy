@@ -295,6 +295,7 @@ class AbstractMatrix(object):
             dy: float
             ) -> numpy.ndarray:
         return numpy.array([[m11, m12, dx], [m21, m22, dy], [0, 0, 1]])
+        #return numpy.array([[m11, m21, 0], [m12, m22, 0], [dx, dy, 1]])
 
 class AbstractPath(object):
     class PointFlag(enum.IntFlag):
@@ -354,6 +355,7 @@ class AbstractGraphics(object):
     def __init__(self):
         self._smoothingMode = AbstractGraphics.SmoothingMode.Default
 
+    # TODO: Need to do something with smoothing mode????
     def smoothingMode(self) -> SmoothingMode:
         return self._smoothingMode
 
@@ -481,10 +483,10 @@ class RenderContext(object):
             self,
             graphics: AbstractGraphics,
             tileRect: RectangleF,
+            tileSize: Size,
             scale: float,
             styles: StyleSheet,
-            options: MapOptions,
-            tileSize: Size
+            options: MapOptions
             ) -> None:
         self._graphics = graphics
         self._tileRect = tileRect
@@ -496,6 +498,10 @@ class RenderContext(object):
 
     def setTileRect(self, rect: RectangleF) -> None:
         self._tileRect = rect
+        self._updateSpaceTransforms()
+
+    def setTileSize(self, size: Size) -> None:
+        self._tileSize  = size
         self._updateSpaceTransforms()
 
     def setScale(self, scale: float) -> None:
@@ -525,7 +531,7 @@ class RenderContext(object):
             return;
         """
 
-        self._graphics.SmoothingMode = AbstractGraphics.SmoothingMode.HighQuality
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
 
         parsecSlop = 1
 
@@ -535,9 +541,6 @@ class RenderContext(object):
         hh = int(math.ceil(self._tileRect.height))
 
         pen = self._styles.parsecGrid.pen
-        """
-        styles.parsecGrid.pen.Apply(ref pen);
-        """
 
         if self._styles.hexStyle == HexStyle.Square:
             """
@@ -616,7 +619,7 @@ class QtGraphics(AbstractGraphics):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement rotateTransform')
     def multiplyTransform(self, matrix: AbstractMatrix) -> None:
         self._painter.setTransform(
-            self._painter.transform() * self._convertTransform(matrix))
+            self._convertMatrix(matrix) * self._painter.transform())
 
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipPath(self, path: AbstractPath) -> None:
@@ -632,7 +635,7 @@ class QtGraphics(AbstractGraphics):
 
     def drawLines(self, pen: AbstractPen, points: typing.Sequence[PointF]):
         self._painter.setPen(self._convertPen(pen))
-        self._painter.drawLines([QtCore.QPointF(p.x, p.y) for p in points])
+        self._painter.drawPolyline(self._convertPoints(points))
 
     # TODO: This was an overload of drawPath in the traveller map code
     def drawPathOutline(self, pen: AbstractPen, path: AbstractPath):
@@ -649,10 +652,15 @@ class QtGraphics(AbstractGraphics):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawClosedCurveFill')
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawRectangleOutline(self, pen: AbstractPen, rect: RectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawRectangleOutline')
+        self._painter.setPen(self._convertPen(pen))
+        self._painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+        self._painter.drawRect(self._convertRect(rect))
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawRectangleFill(self, brush: AbstractBrush, rect: RectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawRectangleFill')
+        self._painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        self._painter.setBrush(self._convertBrush(brush))
+        self._painter.drawRect(self._convertRect(rect))
+
     # TODO: This has changed quite a bit from the traveller map interface
     def drawEllipse(self, pen: typing.Optional[AbstractPen], brush: typing.Optional[AbstractBrush], rect: RectangleF):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawEllipse')
@@ -675,21 +683,37 @@ class QtGraphics(AbstractGraphics):
     def restore(self) -> None:
         self._painter.restore()
 
-    def _convertPen(self, abstractPen: AbstractPen) -> QtGui.QPen:
+    def _convertPen(self, pen: AbstractPen) -> QtGui.QPen:
         return QtGui.QPen(
-            QtGui.QBrush(QtGui.QColor(abstractPen.colour)),
-            abstractPen.width,
-            QtGraphics._DashStyleMap[abstractPen.dashStyle])
+            QtGui.QBrush(QtGui.QColor(pen.colour)),
+            pen.width,
+            QtGraphics._DashStyleMap[pen.dashStyle])
 
-    def _convertTransform(self, transform: AbstractMatrix) -> QtGui.QTransform:
+    def _convertBrush(self, brush: AbstractBrush) -> QtGui.QBrush:
+        return QtGui.QBrush(QtGui.QColor(brush.colour))
+
+    def _convertRect(self, rect: RectangleF) -> QtCore.QRectF:
+        return QtCore.QRectF(rect.x, rect.y, rect.width, rect.height)
+
+    def _convertPoints(
+            self,
+            points: typing.Sequence[PointF]
+            ) -> typing.Sequence[QtCore.QPointF]:
+        return [QtCore.QPointF(p.x, p.y) for p in points]
+
+    def _convertMatrix(self, transform: AbstractMatrix) -> QtGui.QTransform:
         return QtGui.QTransform(
             transform.m11,
             transform.m12,
-            transform.offsetX,
+            0,
             transform.m21,
             transform.m22,
+            0,
+            transform.offsetX,
             transform.offsetY,
-            0, 0, 1)
+            1)
+
+
 
 class MapHackView(QtWidgets.QGraphicsView):
     _MinScale = 0.0078125 # Math.Pow(2, -7);
@@ -709,25 +733,10 @@ class MapHackView(QtWidgets.QGraphicsView):
 
         self._x = 0
         self._y = 0
-        self._tileSize = Size(256, 256)
-        self._scale = 32
-
-        self._tileRect = RectangleF(
-            x=self._x * self._tileSize.width / (self._scale * travellermap.ParsecScaleX),
-            y=self._y * self._tileSize.height / (self._scale * travellermap.ParsecScaleY),
-            width=self._tileSize.width / (self._scale * travellermap.ParsecScaleX),
-            height=self._tileSize.height / (self._scale * travellermap.ParsecScaleY))
-
+        self._tileSize = Size(self.width(), self.height())
+        self._scale = MapHackView._DefaultScale
         self._graphics = QtGraphics()
-        self._styles = StyleSheet(
-            scale=self._scale)
-        self._renderer = RenderContext(
-            graphics=self._graphics,
-            tileRect=self._tileRect,
-            scale=self._scale,
-            styles=self._styles,
-            options=0,
-            tileSize=self._tileSize)
+        self._renderer = self._createRender()
 
         self.setTransformationAnchor(
             QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
@@ -739,15 +748,38 @@ class MapHackView(QtWidgets.QGraphicsView):
     def clear(self) -> None:
         self._graphics = None
 
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._tileSize = Size(self.width(), self.height())
+        self._renderer = self._createRender()
+
     def drawBackground(self, painter: QtGui.QPainter, rect: QtCore.QRectF) -> None:
-        if not self._graphics:
+        if not self._graphics or not self._renderer:
             return super().drawBackground(painter, rect)
 
         painter.save()
         painter.resetTransform()
+
         self._graphics.setPainter(painter)
         self._renderer.render()
+
         painter.restore()
+
+    def _createRender(self) -> RenderContext:
+        return RenderContext(
+            graphics=self._graphics,
+            tileRect=self._calculateTileRect(),
+            tileSize=self._tileSize,
+            scale=self._scale,
+            styles=StyleSheet(scale=self._scale),
+            options=0)
+
+    def _calculateTileRect(self) -> RectangleF:
+        return RectangleF(
+            x=self._x * self._tileSize.width / (self._scale * travellermap.ParsecScaleX),
+            y=self._y * self._tileSize.height / (self._scale * travellermap.ParsecScaleY),
+            width=self._tileSize.width / (self._scale * travellermap.ParsecScaleX),
+            height=self._tileSize.height / (self._scale * travellermap.ParsecScaleY))
 
 class MyWidget(gui.WindowWidget):
     _ImageFormat = 'PNG'
