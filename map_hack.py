@@ -105,6 +105,16 @@ class SizeF(object):
             return self.width == other.width and self.height == other.height
         return super().__eq__(other)
 
+class Point(object):
+    def __init__(self, x: int, y: int):
+        self.x = int(x)
+        self.y = int(y)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if isinstance(other, Point):
+            return self.x == other.x and self.y == other.y
+        return super().__eq__(other)
+
 class PointF(object):
     def __init__(self, x: float, y: float):
         self.x = x
@@ -165,7 +175,7 @@ class AbstractMatrix(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'AbstractMatrix') -> None: ...
+    def __init__(self, other: typing.Union['AbstractMatrix', numpy.ndarray]) -> None: ...
     @typing.overload
     def __init__(self, m11: float, m12: float, m21: float, m22: float, dx: float, dy: float) -> None: ...
 
@@ -174,10 +184,12 @@ class AbstractMatrix(object):
             self._matrix = AbstractMatrix._IdentityMatrix.copy()
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, AbstractMatrix):
-                raise TypeError('The other parameter must be an AbstractMatrix')
-            assert(isinstance(other, AbstractMatrix))
-            self._matrix = other.numpyMatrix().copy()
+            if isinstance(other, AbstractMatrix):
+                self._matrix = other.numpyMatrix().copy()
+            elif isinstance(other, numpy.ndarray):
+                self._matrix = other.copy()
+            else:
+                raise TypeError('The other parameter must be an AbstractMatrix or ndarray')
         else:
             m11 = args[0] if len(args) > 0 else kwargs['m11']
             m12 = args[1] if len(args) > 1 else kwargs['m12']
@@ -250,7 +262,7 @@ class AbstractMatrix(object):
             dx=center.x * (1 - cosAngle) + center.y * sinAngle,
             dy=center.y * (1 - cosAngle) + center.x * sinAngle)
 
-        self._matrix = numpy.dot(self._matrix, rotationMatrix)
+        self._matrix = self._matrix.dot(rotationMatrix)
 
     def scalePrepend(self, sx: float, sy: float) -> None:
         scalingMatrix = AbstractMatrix._createNumpyMatrix(
@@ -261,7 +273,7 @@ class AbstractMatrix(object):
             dx=0,
             dy=0)
 
-        self._matrix = numpy.dot(self._matrix, scalingMatrix)
+        self._matrix = self._matrix.dot(scalingMatrix)
 
     def translatePrepend(self, dx: float, dy: float) -> None:
         translationMatrix = AbstractMatrix._createNumpyMatrix(
@@ -272,13 +284,23 @@ class AbstractMatrix(object):
             dx=dx,
             dy=dy)
 
-        self._matrix = numpy.dot(self._matrix, translationMatrix)
+        self._matrix = self._matrix.dot(translationMatrix)
 
     def prepend(self, matrix: 'AbstractMatrix') -> None:
-        self._matrix = numpy.dot(self._matrix, matrix.numpyMatrix())
+        self._matrix = self._matrix.dot(matrix.numpyMatrix())
 
     def numpyMatrix(self) -> numpy.matrix:
         return self._matrix
+
+    def transform(self, point: typing.Union[Point, PointF]) -> PointF:
+        result = self._matrix.dot([point.x, point.y, 1])
+        x = result[0]
+        y = result[1]
+        w = result[2]
+        if w != 0:
+            x /= w
+            y /= w
+        return PointF(x, y)
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, AbstractMatrix):
@@ -295,7 +317,6 @@ class AbstractMatrix(object):
             dy: float
             ) -> numpy.ndarray:
         return numpy.array([[m11, m12, dx], [m21, m22, dy], [0, 0, 1]])
-        #return numpy.array([[m11, m21, 0], [m12, m22, 0], [dx, dy, 1]])
 
 class AbstractPath(object):
     class PointFlag(enum.IntFlag):
@@ -509,10 +530,12 @@ class RenderContext(object):
         self._updateSpaceTransforms()
 
     def moveRelative(self, dx: float, dy: float) -> None:
-        print(f'D: {dx} {dy}')
         self._tileRect.x += (dx * self._scale)
         self._tileRect.y += (dy * self._scale)
         self._updateSpaceTransforms()
+
+    def pixelSpaceToMapSpace(self, point: Point) -> PointF:
+        return self._worldSpaceToImageSpace.transform(point)
 
     def render(self) -> None:
         with self._graphics.save():
@@ -528,7 +551,6 @@ class RenderContext(object):
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
         self._imageSpaceToWorldSpace = AbstractMatrix(m)
-        print(f'M: {m.offsetX} {m.offsetY}')
         m.invert()
         self._worldSpaceToImageSpace = AbstractMatrix(m)
 
@@ -725,14 +747,12 @@ class QtGraphics(AbstractGraphics):
             transform.offsetY,
             1)
 
-
-
 class MapHackView(QtWidgets.QWidget):
     _MinScale = 0.0078125 # Math.Pow(2, -7);
     _MaxScale = 512 # Math.Pow(2, 9);
     _DefaultScale = 64
 
-    _WheelStep = 2
+    _WheelScaleMultiplier = 1.5
 
     _ZoomInScale = 1.25
     _ZoomOutScale = 0.8
@@ -742,28 +762,53 @@ class MapHackView(QtWidgets.QWidget):
 
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
-        #self.setScene(scene)
-        #self.resetTransform()
 
-        self._viewCenter = PointF(0, 0)
+        self._viewCenterMapPos = PointF(0, 0)
         self._tileSize = Size(self.width(), self.height())
         self._scale = MapHackView._DefaultScale
         self._graphics = QtGraphics()
         self._renderer = self._createRender()
 
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._isDragging = False
+        self._dragPixelPos: typing.Optional[QtCore.QPoint] = None
 
-        #self.setTransformationAnchor(
-        #    QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        #self.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
-        #self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheNone)
-        #self.setViewportUpdateMode(
-        #    QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
-        #self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        #self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setMouseTracking(True)
 
     def clear(self) -> None:
         self._graphics = None
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent):
+        super().mousePressEvent(event)
+
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            self._dragPixelPos = event.pos()
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mouseMoveEvent(event)
+        if self._renderer and self._dragPixelPos:
+            point = event.pos()
+            screenDelta = point - self._dragPixelPos
+            mapDelta = PointF(
+                screenDelta.x() / self._scale,
+                screenDelta.y() / self._scale)
+            self._dragPixelPos = point
+
+            self._viewCenterMapPos.x -= mapDelta.x
+            self._viewCenterMapPos.y -= mapDelta.y
+            self._renderer.setTileRect(
+                rect=self._calculateTileRect())
+            self.repaint()
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            self._dragPixelPos = None
+
+    def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
+        super().focusOutEvent(event)
+        self._dragPixelPos = None
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
@@ -772,7 +817,6 @@ class MapHackView(QtWidgets.QWidget):
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
-        print(event.key())
 
         if self._renderer:
             dx = dy = None
@@ -791,9 +835,9 @@ class MapHackView(QtWidgets.QWidget):
 
             if dx != None or dy != None:
                 if dx != None:
-                    self._viewCenter.x += dx
+                    self._viewCenterMapPos.x += dx
                 if dy != None:
-                    self._viewCenter.y += dy
+                    self._viewCenterMapPos.y += dy
                 self._renderer.setTileRect(
                     rect=self._calculateTileRect())
                 self.repaint()
@@ -802,11 +846,27 @@ class MapHackView(QtWidgets.QWidget):
         super().wheelEvent(event)
 
         if self._renderer:
+            cursorScreenPos = event.pos()
+            oldCursorMapPos = self._renderer.pixelSpaceToMapSpace(PointF(
+                cursorScreenPos.x(),
+                cursorScreenPos.y()))
+
             if event.angleDelta().y() > 0:
-                self._scale += MapHackView._WheelStep
+                self._scale *= MapHackView._WheelScaleMultiplier
             else:
-                self._scale -= MapHackView._WheelStep
+                self._scale /= MapHackView._WheelScaleMultiplier
             self._renderer = self._createRender()
+
+            newCursorMapPos = self._renderer.pixelSpaceToMapSpace(PointF(
+                cursorScreenPos.x(),
+                cursorScreenPos.y()))
+
+            self._viewCenterMapPos.x += oldCursorMapPos.x - newCursorMapPos.x
+            self._viewCenterMapPos.y += oldCursorMapPos.y - newCursorMapPos.y
+
+            self._renderer.setTileRect(
+                rect=self._calculateTileRect())
+
             self.repaint()
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
@@ -833,8 +893,8 @@ class MapHackView(QtWidgets.QWidget):
         mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
         mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
         return RectangleF(
-            x=self._viewCenter.x - (mapWidth / 2),
-            y=self._viewCenter.y - (mapHeight / 2),
+            x=self._viewCenterMapPos.x - (mapWidth / 2),
+            y=self._viewCenterMapPos.y - (mapHeight / 2),
             width=mapWidth,
             height=mapHeight)
 
