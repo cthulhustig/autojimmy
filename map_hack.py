@@ -577,19 +577,17 @@ class RenderContext(object):
         pen = self._styles.parsecGrid.pen
 
         if self._styles.hexStyle == HexStyle.Square:
-            """
-            for (int px = hx - parsecSlop; px < hx + hw + parsecSlop; px++)
-            {
-                float yOffset = ((px % 2) != 0) ? 0.0f : 0.5f;
-                for (int py = hy - parsecSlop; py < hy + hh + parsecSlop; py++)
-                {
-                    // TODO: use RenderUtil.(Square|Hex)Edges(X|Y) arrays
-                    const float inset = 0.1f;
-                    graphics.DrawRectangle(pen, px + inset, py + inset + yOffset, 1 - inset * 2, 1 - inset * 2);
-                }
-            }
-            """
-            pass
+            for px in range(hx - parsecSlop, hx + hw + parsecSlop):
+                yOffset = 0 if ((px % 2) != 0) else 0.5
+                for py in range(hy - parsecSlop, hy + hh + parsecSlop):
+                    inset = 1
+                    self._graphics.drawRectangleOutline(
+                        pen,
+                        RectangleF(
+                            px + inset,
+                            py + inset + yOffset,
+                            1 - inset * 2,
+                            1 - inset * 2))
         elif self._styles.hexStyle == HexStyle.Hex:
             points = [None] * 4
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
