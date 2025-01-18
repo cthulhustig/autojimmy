@@ -100,6 +100,56 @@ class MapOptions(enum.IntEnum):
     WorldColors = 0x4000,
     FilledBorders = 0x8000
 
+class LayerId(enum.Enum):
+        #------------------------------------------------------------
+        # Background
+        #------------------------------------------------------------
+
+        Background_Solid = 0
+        Background_NebulaTexture = 1
+        Background_Galaxy = 2
+
+        Background_PseudoRandomStars = 3
+        Background_Rifts = 4
+
+        #------------------------------------------------------------
+        #Foreground
+        #------------------------------------------------------------
+
+        Macro_Borders = 5
+        Macro_Routes = 6
+
+        Grid_Sector = 7
+        Grid_Subsector = 8
+        Grid_Parsec = 9
+
+        Names_Subsector = 10
+
+        Micro_BordersFill = 11
+        Micro_BordersShade = 12
+        Micro_BordersStroke = 13
+        Micro_Routes = 14
+        Micro_BorderExplicitLabels = 15
+
+        Names_Sector = 16
+
+        Macro_GovernmentRiftRouteNames = 17
+        Macro_CapitalsAndHomeWorlds = 18
+        Mega_GalaxyScaleLabels = 19
+
+        Worlds_Background = 20
+        Worlds_Foreground = 21
+        Worlds_Overlays = 22
+
+        #------------------------------------------------------------
+        # Overlays
+        #------------------------------------------------------------
+
+        Overlay_DroyneChirperWorlds = 23
+        Overlay_MinorHomeworlds = 24
+        Overlay_AncientsWorlds = 25
+        Overlay_ReviewStatus = 26
+
 class WorldDetails(enum.IntEnum):
     NoDetails = 0 # TODO: Was None in traveller map code
 
@@ -121,9 +171,35 @@ class WorldDetails(enum.IntEnum):
     #Poster = Atlas | Hex | AllNames | Asteroids,
 
 class Size(object):
-    def __init__(self, width: int, height: int):
-        self.width = int(width)
-        self.height = int(height)
+    @typing.overload
+    def __init__(self, other: 'Size') -> None: ...
+    @typing.overload
+    def __init__(self, width: int, height: int) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, Size):
+                raise TypeError('The other parameter must be a Size')
+            self._width = other.width
+            self._height = other.height
+        else:
+            self._width = int(args[0] if len(args) > 0 else kwargs['width'])
+            self._height = int(args[1] if len(args) > 1 else kwargs['height'])
+
+    @property
+    def width(self) -> int:
+        return self._width
+    @width.setter
+    def width(self, width: int) -> None:
+        self._width = int(width)
+
+    @property
+    def height(self) -> int:
+        return self._height
+    @height.setter
+    def height(self, height: int) -> None:
+        self._height = int(height)
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, Size):
@@ -131,9 +207,21 @@ class Size(object):
         return super().__eq__(other)
 
 class SizeF(object):
-    def __init__(self, width: float, height: float):
-        self.width = width
-        self.height = height
+    @typing.overload
+    def __init__(self, other: 'SizeF') -> None: ...
+    @typing.overload
+    def __init__(self, width: float, height: float) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, SizeF):
+                raise TypeError('The other parameter must be a SizeF')
+            self.width = other.width
+            self.height = other.height
+        else:
+            self.width = args[0] if len(args) > 0 else kwargs['width']
+            self.height = args[1] if len(args) > 1 else kwargs['height']
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, SizeF):
@@ -141,9 +229,39 @@ class SizeF(object):
         return super().__eq__(other)
 
 class Point(object):
+    @typing.overload
+    def __init__(self, other: 'PointF') -> None: ...
+    @typing.overload
+    def __init__(self, x: int, y: int) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, Point):
+                raise TypeError('The other parameter must be a Point')
+            self.x = other.x
+            self.y = other.y
+        else:
+            self.x = int(args[0] if len(args) > 0 else kwargs['x'])
+            self.y = int(args[1] if len(args) > 1 else kwargs['y'])
+
     def __init__(self, x: int, y: int):
-        self.x = int(x)
-        self.y = int(y)
+        self._x = int(x)
+        self._y = int(y)
+
+    @property
+    def x(self) -> int:
+        return self._x
+    @x.setter
+    def x(self, x: int) -> None:
+        self._x = int(x)
+
+    @property
+    def y(self) -> int:
+        return self._y
+    @y.setter
+    def y(self, y: int) -> None:
+        self._y = int(y)
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, Point):
@@ -151,9 +269,21 @@ class Point(object):
         return super().__eq__(other)
 
 class PointF(object):
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
+    @typing.overload
+    def __init__(self, other: 'PointF') -> None: ...
+    @typing.overload
+    def __init__(self, x: float, y: float) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, PointF):
+                raise TypeError('The other parameter must be a PointF')
+            self.x = other.x
+            self.y = other.y
+        else:
+            self.x = args[0] if len(args) > 0 else kwargs['x']
+            self.y = args[1] if len(args) > 1 else kwargs['y']
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, PointF):
@@ -161,11 +291,25 @@ class PointF(object):
         return super().__eq__(other)
 
 class RectangleF(object):
-    def __init__(self, x: float, y: float, height: float, width: float):
-        self.x = x
-        self.y = y
-        self.height = height
-        self.width = width
+    @typing.overload
+    def __init__(self, other: 'RectangleF') -> None: ...
+    @typing.overload
+    def __init__(self, x: float, y: float, width: float, height: float) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, RectangleF):
+                raise TypeError('The other parameter must be a RectangleF')
+            self.x = other.x
+            self.y = other.y
+            self.width = other.width
+            self.height = other.height
+        else:
+            self.x = args[0] if len(args) > 0 else kwargs['x']
+            self.y = args[1] if len(args) > 1 else kwargs['y']
+            self.width = args[3] if len(args) > 3 else kwargs['width']
+            self.height = args[2] if len(args) > 2 else kwargs['height']
 
     @property
     def left(self) -> float:
@@ -182,6 +326,12 @@ class RectangleF(object):
     @property
     def bottom(self) -> float:
         return self.y + self.height
+
+    def inflate(self, x: float, y: float) -> None:
+        self.x -= x
+        self.y -= y
+        self.width += x * 2
+        self.height += y * 2
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, RectangleF):
@@ -762,7 +912,16 @@ class StyleSheet(object):
                 StyleSheet._DefaultFont,
                 0.1 * fontScale)
 
-
+class LayerAction(object):
+    def __init__(
+            self,
+            id: LayerId,
+            action: typing.Callable[[], typing.NoReturn],
+            clip: bool
+            ) -> None:
+        self.id = id
+        self.action = action
+        self.clip = clip
 
 class RenderContext(object):
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
@@ -782,6 +941,7 @@ class RenderContext(object):
         self._options = options
         self._styles = styles
         self._tileSize = tileSize
+        self._createLayers()
         self._updateSpaceTransforms()
 
     def setTileRect(self, rect: RectangleF) -> None:
@@ -807,7 +967,41 @@ class RenderContext(object):
     def render(self) -> None:
         with self._graphics.save():
             self._graphics.multiplyTransform(self._imageSpaceToWorldSpace)
-            self._renderHexGrid()
+
+            for layer in self._layers:
+                # TODO: Implement clipping if I need it
+                """
+                // HACK: Clipping to tileRect rapidly becomes inaccurate away from
+                // the origin due to float precision. Only do it if really necessary.
+                bool clip = layer.clip && (ctx.ForceClip ||
+                    !((ClipPath == null) && (graphics is BitmapGraphics)));
+
+                // Impose a clipping region if desired, or remove it if not.
+                if (clip && state == null)
+                {
+                    state = graphics.Save();
+                    if (ClipPath != null) graphics.IntersectClip(ClipPath);
+                    else graphics.IntersectClip(tileRect);
+                }
+                else if (!clip && state != null)
+                {
+                    state.Dispose();
+                    state = null;
+                }
+
+                layer.Run(this);
+                timers.Add(new Timer(layer.id.ToString()));
+                """
+                layer.action()
+
+    def _createLayers(self) -> None:
+        # TODO: This list probably only needs created once
+        self._layers: typing.List[LayerAction] = [
+            LayerAction(id=LayerId.Background_Solid, action=self._drawBackground, clip=True),
+            LayerAction(id=LayerId.Grid_Parsec, action=self._drawParsecGrid, clip=True)
+        ]
+
+        self._layers.sort(key=lambda l: l.id.value)
 
     def _updateSpaceTransforms(self):
         m = AbstractMatrix()
@@ -821,7 +1015,20 @@ class RenderContext(object):
         m.invert()
         self._worldSpaceToImageSpace = AbstractMatrix(m)
 
-    def _renderHexGrid(self) -> None:
+    def _drawBackground(self) -> None:
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighSpeed)
+
+        # TODO: Inefficient to create this every frame
+        brush = AbstractBrush(self._styles.backgroundColor)
+
+        # NOTE: This is a comment from the original Traveller Map source code
+        # HACK: Due to limited precisions of floats, tileRect can end up not covering
+        # the full bitmap when far from the origin.
+        rect = RectangleF(self._tileRect)
+        rect.inflate(rect.width * 0.1, rect.height * 0.1)
+        self._graphics.drawRectangleFill(brush, rect)
+
+    def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
             return
 
@@ -849,10 +1056,10 @@ class RenderContext(object):
                     self._graphics.drawRectangleOutline(
                         pen,
                         RectangleF(
-                            px + inset,
-                            py + inset + yOffset,
-                            1 - inset * 2,
-                            1 - inset * 2))
+                            x=px + inset,
+                            y=py + inset + yOffset,
+                            width=1 - inset * 2,
+                            height=1 - inset * 2))
         elif self._styles.hexStyle == HexStyle.Hex:
             points = [None] * 4
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
@@ -990,6 +1197,8 @@ class QtGraphics(AbstractGraphics):
         self._painter.setFont(qtFont)
         self._painter.setBrush(self._convertBrush(brush))
 
+        # TODO: This should maybe use self.measureString but it depends
+        # what coordinates it ends up working in
         fontMetrics = QtGui.QFontMetrics(qtFont)
         contentPixelRect = fontMetrics.boundingRect(
             QtCore.QRect(0, 0, 65535, 65535),
@@ -1227,18 +1436,6 @@ class MapHackView(QtWidgets.QWidget):
         try:
             self._graphics.setPainter(painter)
             self._renderer.render()
-            """
-            transform = QtGui.QTransform()
-            transform.scale(0.5, 0.5)
-            painter.setTransform(transform)
-
-            font = QtGui.QFont("Ariel")
-            font.setPixelSize(100)
-            #font.setPointSizeF(10)
-            painter.setFont(font)
-            painter.setPen(QtGui.QColor('#FF0000'))
-            painter.drawText(int(self.width() / 2), int(self.height() / 2), 'Hello')
-            """
         finally:
             painter.end()
 
