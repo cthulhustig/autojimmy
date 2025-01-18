@@ -33,6 +33,12 @@ class FontStyle(enum.IntEnum):
     Underline = 0x4
     Strikeout = 0x8
 
+class LineStyle(enum.Enum):
+    Solid = 0 # Default
+    Dashed = 1
+    Dotted = 2
+    NoStyle = 3 # TODO: Was non in traveller map code
+
 class GraphicsUnit(enum.Enum):
     # Specifies the world coordinate system unit as the unit of measure.
     World = 0
@@ -54,6 +60,15 @@ class HexStyle(enum.Enum):
     NoHex = 0 # TODO: Was None in traveller map code
     Hex = 1
     Square = 2
+
+class MicroBorderStyle(enum.Enum):
+    Hex = 0
+    Square = 1
+    Curve = 2
+
+class HexCoordinateStyle(enum.Enum):
+    Sector = 0
+    Subsector = 1
 
 class MapOptions(enum.IntEnum):
     SectorGrid = 0x0001,
@@ -84,6 +99,26 @@ class MapOptions(enum.IntEnum):
     ForceHexes = 0x2000,
     WorldColors = 0x4000,
     FilledBorders = 0x8000
+
+class WorldDetails(enum.IntEnum):
+    NoDetails = 0 # TODO: Was None in traveller map code
+
+    Type = 1 << 0, # Show world type (water/no water/asteroid/unknown)
+    KeyNames = 1 << 1, # Show HiPop/Capital names
+    Starport = 1 << 2, # Show starport
+    GasGiant = 1 << 3, # Show gas giant glyph
+    Allegiance = 1 << 4, # Show allegiance code
+    Bases = 1 << 5, # Show bases
+    Hex = 1 << 6, # Include hex numbers
+    Zone = 1 << 7, # Show Amber/Red zones
+    AllNames = 1 << 8, # Show all world names, not just HiPop/Capitals
+    Uwp = 1 << 9, # Show UWP below world name
+    Asteroids = 1 << 10, # Render asteroids as pseudorandom ovals
+    Highlight = 1 << 11, # Highlight (text font, text color) HiPopCapital worlds
+
+    #Dotmap = None,
+    #Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight,
+    #Poster = Atlas | Hex | AllNames | Asteroids,
 
 class Size(object):
     def __init__(self, width: int, height: int):
@@ -154,20 +189,87 @@ class RectangleF(object):
                 self.height == other.height and self.width == other.width
         return super().__eq__(other)
 
+class FontInfo():
+    def __init__(self, families: str, size: float, style: FontStyle = FontStyle.Regular):
+        self.families = families
+        self.size = size
+        self.style = style
+
+    def makeFont(self) -> 'AbstractFont':
+        if not self.families:
+            raise RuntimeError("FontInfo has null name")
+        return AbstractFont(self.families, self.size * 1.4, self.style, GraphicsUnit.World)
+
+class HighlightWorldPattern(object):
+    class Field(enum.Enum):
+        Starport = 0
+        Size = 1
+        Atmosphere = 2
+        Hydrosphere = 3
+        Population = 4
+        Government = 5
+        Law = 6
+        Tech = 7
+        Importance = 8
+        Bases = 9
+
+    def __init__(
+            self,
+            field: 'HighlightWorldPattern.Field' = Field.Starport,
+            min: typing.Optional[int] = None,
+            max: typing.Optional[int] = None,
+            matches: typing.Optional[typing.Collection[str]] = None
+            ):
+        self.field = field
+        self.min = min
+        self.max = max
+        self.matches = list(matches)
+
 class AbstractPen(object):
-    def __init__(self, colour: str, width: float = 1):
-        self.colour = colour
+    def __init__(self, color: str, width: float = 1):
+        self.color = color
         self.width = width
         self.dashStyle = DashStyle.Solid
         self.customDashPattern: typing.Optional[typing.List[float]] = None
 
 class AbstractBrush(object):
-    def __init__(self, colour: str):
-        self.colour = colour
+    def __init__(self, color: str):
+        self.color = color
 
+# TODO: Using Qt fonts here is a temp hack. Tge traveller map version of
+# AbstractFont implementation uses a system drawing font class. I want to
+# differ from this approach by having a completely abstract font interface
+# so using this code doesn't require some specific library for rendering
+# library for the font implementation
+# TODO: Need to do something with GraphicsUnit
 class AbstractFont(object):
     def __init__(self, families: str, emSize: float, style: FontStyle, units: GraphicsUnit):
-        pass
+        self.families = families
+        self.emSize = emSize
+        self.style = style
+        self.units = units
+
+        self.font = None
+        for family in self.families.split(','):
+            try:
+                self.font = QtGui.QFont(family)
+                if self.font:
+                    #self.font.setPointSizeF(emSize)
+                    self.font.setPointSizeF(20)
+                    if style & FontStyle.Bold:
+                        self.font.setBold(True)
+                    if style & FontStyle.Italic:
+                        self.font.setBold(True)
+                    if style & FontStyle.Underline:
+                        self.font.setUnderline(True)
+                    if style & FontStyle.Strikeout:
+                        self.font.setStrikeOut(True)
+                    break
+            except:
+                self.font = None
+
+        if not self.font:
+            raise RuntimeError("No matching font family")
 
 class AbstractMatrix(object):
     _IdentityMatrix = numpy.identity(3)
@@ -451,13 +553,15 @@ class AbstractGraphics(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement restore')
 
 class StyleSheet(object):
+    _DefaultFont = "Arial"
+
     class StyleElement(object):
         def __init__(self):
             self.visible = False
-            self.fillColour = '#000000'
+            self.fillColor = '#000000'
             self.content = ''
             self.pen = AbstractPen('#000000')
-            self.textColour = '#000000'
+            self.textColor = '#000000'
             self.textHighlightColor = '#000000'
 
             # TODO: Still to fill out
@@ -467,35 +571,198 @@ class StyleSheet(object):
             self.smallFontInfo = None
             self.mediumFontInfo = None
             self.largeFontInfo = None
-            self.position = None
-            self.font = None
-            self.smallFont = None
-            self.mediumFont = None
-            self.largeFont = None
+            self.position = PointF(0, 0)
+
+            self._font = None
+            self._smallFont = None
+            self._mediumFont = None
+            self._largeFont = None
+
+        @property
+        def font(self) -> AbstractFont:
+            if not self._font:
+                if not self.fontInfo:
+                    raise RuntimeError('AbstractFont has no fontInfo')
+                self._font = self.fontInfo.makeFont()
+            return self._font
+        @property
+        def smallFont(self) -> AbstractFont:
+            if not self._smallFont:
+                if not self.smallFontInfo:
+                    raise RuntimeError('AbstractFont has no font smallFontInfo')
+                self._smallFont = self.smallFontInfo.makeFont()
+            return self._smallFont
+        @property
+        def mediumFont(self) -> AbstractFont:
+            if not self._mediumFont:
+                if not self.mediumFontInfo:
+                    raise RuntimeError('AbstractFont has no font mediumFontInfo')
+                self._mediumFont = self.mediumFontInfo.makeFont()
+            return self._mediumFont
+        @property
+        def largeFont(self) -> AbstractFont:
+            if not self._largeFont:
+                if not self.largeFontInfo:
+                    raise RuntimeError('AbstractFont has no font largeFontInfo')
+                self._largeFont = self.largeFontInfo.makeFont()
+            return self._largeFont
 
     def __init__(
             self,
-            scale: float
+            scale: float,
+            style: travellermap.Style
             ):
         self._scale = scale
-
-        self.hexStyle = HexStyle.Hex
-        self.parsecGrid = StyleSheet.StyleElement()
-
+        self._style = style
         self._handleConfigUpdate()
 
     @property
     def scale(self) -> float:
         return self._scale
     @scale.setter
-    def scale(self, value: float) -> None:
-        self._scale = value
+    def scale(self, scale: float) -> None:
+        self._scale = scale
         self._handleConfigUpdate()
 
-    def _handleConfigUpdate(self) -> None:
-        onePixel = 1.0 / self.scale
+    @property
+    def style(self) -> float:
+        return self._style
+    @scale.setter
+    def style(self, style: float) -> None:
+        self._style = style
+        self._handleConfigUpdate()
 
+    @property
+    def hasWorldOverlays(self) -> bool:
+        return self.populationOverlay.visible or \
+            self.importanceOverlay.visible or  \
+            self.highlightWorlds.visible or \
+            self.showStellarOverlay or \
+            self.capitalOverlay.visible
+
+    def _handleConfigUpdate(self) -> None:
+        # Options
+        self.backgroundColor = '#000000'
+
+        self.imageBorderColor ='#FF0000'
+        self.imageBorderWidth = 0.2
+
+        self.showNebulaBackground = False
+        self.showGalaxyBackground = False
+        self.useWorldImages = False
+        self.dimUnofficialSectors = False
+        self.colorCodeSectorStatus = False
+
+        self.deepBackgroundOpacity = 0.0 # TODO: Not sure about this
+
+        self.grayscale = False
+        self.lightBackground = False
+
+        self.showRiftOverlay = False
+        self.riftOpacity = 0.0 # TODO: Not sure about this
+
+        self.hexContentScale = 1.0
+        self.hexRotation = 0
+
+        self.routeEndAdjust = 0.25
+
+        # TODO: Not sure I'll need this
+        self.preferredMimeType = ''
+        self.t5AllegianceCodes = False
+
+        self.highlightWorlds = StyleSheet.StyleElement()
+        self.highlightWorldsPattern: typing.Optional[HighlightWorldPattern] = None
+
+        self.droyneWorlds = StyleSheet.StyleElement()
+        self.ancientsWorlds = StyleSheet.StyleElement()
+        self.minorHomeWorlds = StyleSheet.StyleElement()
+
+        # Worlds
+        self.worlds = StyleSheet.StyleElement()
+        self.showWorldDetailColors = False
+        self.populationOverlay = StyleSheet.StyleElement()
+        self.importanceOverlay = StyleSheet.StyleElement()
+        self.capitalOverlay = StyleSheet.StyleElement()
+        self.capitalOverlayAltA = StyleSheet.StyleElement()
+        self.capitalOverlayAltB = StyleSheet.StyleElement()
+        self.showStellarOverlay = False
+
+        self.discPosition = PointF(0, 0)
+        self.discRadius = 0.1
+        self.gasGiantPosition = PointF(0, 0)
+        self.allegiancePosition = PointF(0, 0)
+        self.baseTopPosition = PointF(0, 0)
+        self.baseBottomPosition = PointF(0, 0)
+        self.baseMiddlePosition = PointF(0, 0)
+
+        self.uwp = StyleSheet.StyleElement()
+        self.starport = StyleSheet.StyleElement()
+
+        #self.glyphFont = FontInfo() # TODO: Need to figure out defaults
+        self.worldDetails: WorldDetails = 0
+        self.lowerCaseAllegiance = False
+        #self.wingdingFont = FontInfo() # TODO: Need to figure out defaults
+        self.showGasGiantRing = False
+
+        self.showTL = False
+        self.ignoreBaseBias = False
+        self.showZonesAsPerimeters = False
+
+        # Hex Coordinates
+        self.hexNumber = StyleSheet.StyleElement()
+        self.hexCoordinateStyle = HexCoordinateStyle.Sector
+        self.numberAllHexes = False
+
+        # Sector Name
+        self.sectorName = StyleSheet.StyleElement()
+        self.showSomeSectorNames = False
+        self.showAllSectorNames = False
+
+        self.capitals = StyleSheet.StyleElement()
+        self.subsectorNames = StyleSheet.StyleElement()
+        self.greenZone = StyleSheet.StyleElement()
+        self.amberZone = StyleSheet.StyleElement()
+        self.redZone = StyleSheet.StyleElement()
+        self.sectorGrid = StyleSheet.StyleElement()
+        self.subsectorGrid = StyleSheet.StyleElement()
+        self.parsecGrid = StyleSheet.StyleElement()
+        self.worldWater = StyleSheet.StyleElement()
+        self.worldNoWater = StyleSheet.StyleElement()
+        self.macroRoutes = StyleSheet.StyleElement()
+        self.microRoutes = StyleSheet.StyleElement()
+        self.macroBorders = StyleSheet.StyleElement()
+        self.megaNames = StyleSheet.StyleElement()
+        self.pseudoRandomStars = StyleSheet.StyleElement()
+        self.placeholder = StyleSheet.StyleElement()
+        self.anomaly = StyleSheet.StyleElement()
+
+        self.microBorders = StyleSheet.StyleElement()
+        self.fillMicroBorders = False
+        self.shadeMicroBorders = False
+        self.showMicroNames = False
+        self.microBorderStyle = MicroBorderStyle.Hex
+        self.hexStyle = HexStyle.Hex
+        self.overrideLineStyle: typing.Optional[LineStyle] = None
+
+        # TODO: The stuff below is still a WIP
+
+        self.parsecGrid.visible = True
+        self.worlds.visible = True
+
+        self.numberAllHexes = True # TODO: Remove override of default
+
+        self.hexNumber.textColor = '#FF0000'
+
+        onePixel = 1.0 / self.scale
         self.parsecGrid.pen = AbstractPen('#FF0000', onePixel)
+
+        if self.worlds.visible:
+            fontScale = 1 if (self.scale <= 96 or self.style == travellermap.Style.Candy) else 96 / min(self.scale, 192)
+            self.hexNumber.fontInfo = FontInfo(
+                StyleSheet._DefaultFont,
+                0.1 * fontScale)
+
+
 
 class RenderContext(object):
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
@@ -555,10 +822,8 @@ class RenderContext(object):
         self._worldSpaceToImageSpace = AbstractMatrix(m)
 
     def _renderHexGrid(self) -> None:
-        """
-        if (!styles.parsecGrid.visible)
-            return;
-        """
+        if not self._styles.parsecGrid.visible:
+            return
 
         self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
 
@@ -599,33 +864,35 @@ class RenderContext(object):
                     points[3] = PointF(px + 1.0 + RenderContext._HexEdge, py + 0.5 + yOffset)
                     self._graphics.drawLines(pen, points)
 
-        """
-        if (styles.numberAllHexes &&
-            styles.worldDetails.HasFlag(WorldDetails.Hex))
-        {
-            solidBrush.Color = styles.hexNumber.textColor;
-            for (int px = hx - parsecSlop; px < hx + hw + parsecSlop; px++)
-            {
-                float yOffset = ((px % 2) != 0) ? 0.0f : 0.5f;
-                for (int py = hy - parsecSlop; py < hy + hh + parsecSlop; py++)
-                {
-                    Location loc = Astrometrics.CoordinatesToLocation(px + 1, py + 1);
-                    string hex = styles.hexCoordinateStyle switch
-                    {
-                        HexCoordinateStyle.Sector => loc.HexString,
-                        HexCoordinateStyle.Subsector => loc.SubsectorHexString,
-                        _ => loc.HexString,
-                    };
-                    using (graphics.Save())
-                    {
-                        graphics.TranslateTransform(px + 0.5f, py + yOffset);
-                        graphics.ScaleTransform(styles.hexContentScale / Astrometrics.ParsecScaleX, styles.hexContentScale / Astrometrics.ParsecScaleY);
-                        graphics.DrawString(hex, styles.hexNumber.Font, solidBrush, 0, 0, Graphics.StringAlignment.TopCenter);
-                    }
-                }
-            }
-        }
-        """
+        # TODO: The if statment in the traveller map code is this
+        #if (styles.numberAllHexes &&
+        #    styles.worldDetails.HasFlag(WorldDetails.Hex))
+        if self._styles.numberAllHexes:
+            solidBrush = AbstractBrush(self._styles.hexNumber.textColor)
+            for px in range(hx - parsecSlop, hx + hw + parsecSlop):
+                yOffset = 0 if ((px % 2) != 0) else 0.5
+                for py in range(hy - parsecSlop, hy + hh + parsecSlop):
+
+                    if self._styles.hexCoordinateStyle == HexCoordinateStyle.Subsector:
+                        # TODO: Need to implement Subsector hex number. Not sure what this
+                        # actually is
+                        hex = 'TODO'
+                    else:
+                        relativePos = travellermap.absoluteSpaceToRelativeSpace((px + 1, py + 1))
+                        hex = f'{relativePos[2]:02d}{relativePos[3]:02d}'
+
+                    with self._graphics.save():
+                        self._graphics.translateTransform(px + 0.5, py + yOffset)
+                        self._graphics.scaleTransform(
+                            self._styles.hexContentScale / travellermap.ParsecScaleX,
+                            self._styles.hexContentScale / travellermap.ParsecScaleY)
+                        self._graphics.drawString(
+                            hex,
+                            self._styles.hexNumber.font,
+                            solidBrush,
+                            0, 0,
+                            StringAlignment.TopCenter)
+
 
 class QtGraphics(AbstractGraphics):
     _DashStyleMap = {
@@ -644,9 +911,19 @@ class QtGraphics(AbstractGraphics):
         self._painter = painter
 
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement scaleTransform')
+        transform = QtGui.QTransform()
+        transform.scale(scaleX, scaleY)
+        self._painter.setTransform(
+            transform * self._painter.transform())
+        #self._painter.setTransform(
+        #    self._painter.transform() * transform)
     def translateTransform(self, dx: float, dy: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement translateTransform')
+        transform = QtGui.QTransform()
+        transform.translate(dx, dy)
+        self._painter.setTransform(
+            transform * self._painter.transform())
+        #self._painter.setTransform(
+        #    self._painter.transform() * transform)
     def rotateTransform(self, angle: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement rotateTransform')
     def multiplyTransform(self, matrix: AbstractMatrix) -> None:
@@ -707,7 +984,62 @@ class QtGraphics(AbstractGraphics):
     def measureString(self, text: str, font: AbstractFont) -> SizeF:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
     def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: StringAlignment) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawString')
+        qtFont = self._convertFont(font)
+        scale = font.emSize / qtFont.pointSize()
+
+        self._painter.setFont(qtFont)
+        self._painter.setBrush(self._convertBrush(brush))
+
+        fontMetrics = QtGui.QFontMetrics(qtFont)
+        contentPixelRect = fontMetrics.boundingRect(
+            QtCore.QRect(0, 0, 65535, 65535),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            text)
+        contentPixelRect.moveTo(0, 0)
+
+        self._painter.save()
+        try:
+            self.translateTransform(x, y)
+            self.scaleTransform(scale, scale)
+
+            if format == StringAlignment.Baseline:
+                # TODO: Handle BaseLine strings
+                #float fontUnitsToWorldUnits = font.Size / font.FontFamily.GetEmHeight(font.Style);
+                #float ascent = font.FontFamily.GetCellAscent(font.Style) * fontUnitsToWorldUnits;
+                #g.DrawString(s, font.Font, this.brush, x, y - ascent);
+                self._painter.drawText(QtCore.QPointF(x, y), text)
+            elif format == StringAlignment.Centered:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        -contentPixelRect.width() / 2,
+                        contentPixelRect.height() / 2),
+                    text)
+            elif format == StringAlignment.TopLeft:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        0,
+                        contentPixelRect.height()),
+                    text)
+            elif format == StringAlignment.TopCenter:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        -contentPixelRect.width() / 2,
+                        contentPixelRect.height()),
+                    text)
+            elif format == StringAlignment.TopRight:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        -contentPixelRect.width(),
+                        contentPixelRect.height()),
+                    text)
+            elif format == StringAlignment.CenterLeft:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        -contentPixelRect.width(),
+                        contentPixelRect.height() / 2),
+                    text)
+        finally:
+            self._painter.restore()
 
     def save(self) -> AbstractGraphicsState:
         self._painter.save()
@@ -715,14 +1047,24 @@ class QtGraphics(AbstractGraphics):
     def restore(self) -> None:
         self._painter.restore()
 
+    # TODO: Creating a new pen for every primitive that gets drawn is
+    # really inefficient. The fact I'm using a string for the colour
+    # so it will need to be parsed each time is even worse
     def _convertPen(self, pen: AbstractPen) -> QtGui.QPen:
         return QtGui.QPen(
-            QtGui.QBrush(QtGui.QColor(pen.colour)),
+            QtGui.QBrush(QtGui.QColor(pen.color)),
             pen.width,
             QtGraphics._DashStyleMap[pen.dashStyle])
 
+    # TODO: Creating a new font for every piece of text that gets drawn is
+    # really inefficient. The fact I'm using a string for the colour
+    # so it will need to be parsed each time is even worse
+    def _convertFont(self, font: AbstractFont) -> QtGui.QFont:
+        # TODO: This is a temp hack, AbstractFont shouldn't be using QFont
+        return font.font
+
     def _convertBrush(self, brush: AbstractBrush) -> QtGui.QBrush:
-        return QtGui.QBrush(QtGui.QColor(brush.colour))
+        return QtGui.QBrush(QtGui.QColor(brush.color))
 
     def _convertRect(self, rect: RectangleF) -> QtCore.QRectF:
         return QtCore.QRectF(rect.x, rect.y, rect.width, rect.height)
@@ -763,7 +1105,9 @@ class MapHackView(QtWidgets.QWidget):
 
         self._viewCenterMapPos = PointF(0, 0)
         self._tileSize = Size(self.width(), self.height())
-        self._scale = MapHackView._DefaultScale
+        #self._scale = MapHackView._DefaultScale
+        self._scale = 128
+        self._style = travellermap.Style.Poster
         self._graphics = QtGraphics()
         self._renderer = self._createRender()
 
@@ -781,6 +1125,14 @@ class MapHackView(QtWidgets.QWidget):
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self._dragPixelPos = event.pos()
+
+            mapCursor = self._renderer.pixelSpaceToMapSpace(point=Point(event.x(), event.y()))
+            absCursor = travellermap.mapSpaceToAbsoluteSpace((mapCursor.x, mapCursor.y))
+            #print(f'MAP: {mapCursor.x} {mapCursor.y}')
+            #print(f'ABS: {absCursor[0]} {absCursor[1]}')
+            relCursor = travellermap.absoluteSpaceToRelativeSpace(absCursor)
+            print(f'{relCursor[2]} {relCursor[3]}')
+
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
@@ -875,6 +1227,18 @@ class MapHackView(QtWidgets.QWidget):
         try:
             self._graphics.setPainter(painter)
             self._renderer.render()
+            """
+            transform = QtGui.QTransform()
+            transform.scale(0.5, 0.5)
+            painter.setTransform(transform)
+
+            font = QtGui.QFont("Ariel")
+            font.setPixelSize(100)
+            #font.setPointSizeF(10)
+            painter.setFont(font)
+            painter.setPen(QtGui.QColor('#FF0000'))
+            painter.drawText(int(self.width() / 2), int(self.height() / 2), 'Hello')
+            """
         finally:
             painter.end()
 
@@ -884,7 +1248,7 @@ class MapHackView(QtWidgets.QWidget):
             tileRect=self._calculateTileRect(),
             tileSize=self._tileSize,
             scale=self._scale,
-            styles=StyleSheet(scale=self._scale),
+            styles=StyleSheet(scale=self._scale, style=self._style),
             options=0)
 
     def _calculateTileRect(self) -> RectangleF:

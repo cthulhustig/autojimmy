@@ -65,6 +65,21 @@ def relativeSpaceToMapSpace(
         ) -> typing.Tuple[float, float]:
     return absoluteSpaceToMapSpace(pos=relativeSpaceToAbsoluteSpace(pos=pos))
 
+# NOTE: This function doesn't always give the results I'd expect, however
+# the behaviour does seem consistent with traveller map. If you click very
+# close to the left/right most point of a hex then it won't return the
+# absolution position of the hex you clicked in but will instead return the
+# position of the neighbour hex. This seems consistent with the Traveller Map
+# web interface (verified by hacking javascript run by _hexAt so it would
+# convert the map position for the click to the absolute position (world
+# position in traveller map parlance) then log it to the console)
+def mapSpaceToAbsoluteSpace(
+        pos: typing.Tuple[float, float]
+        ) -> typing.Tuple[int, int]:
+    x = int(round((pos[0] / ParsecScaleX) + 0.5))
+    y = int(round((-pos[1] / ParsecScaleY) + (0.5 if (x % 2 == 0) else 0)))
+    return (x, y)
+
 def mapSpaceToTileSpace(
         pos: typing.Tuple[float, float],
         scale: float
