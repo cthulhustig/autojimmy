@@ -71,33 +71,34 @@ class HexCoordinateStyle(enum.Enum):
     Subsector = 1
 
 class MapOptions(enum.IntEnum):
-    SectorGrid = 0x0001,
-    SubsectorGrid = 0x0002,
+    SectorGrid = 0x0001
+    SubsectorGrid = 0x0002
 
-    SectorsSelected = 0x0004,
-    SectorsAll = 0x0008,
-    #SectorsMask = SectorsSelected | SectorsAll,
+    SectorsSelected = 0x0004
+    SectorsAll = 0x0008
+    SectorsMask = SectorsSelected | SectorsAll
 
-    BordersMajor = 0x0010,
-    BordersMinor = 0x0020,
-    #BordersMask = BordersMajor | BordersMinor,
+    BordersMajor = 0x0010
+    BordersMinor = 0x0020
+    BordersMask = BordersMajor | BordersMinor,
 
-    NamesMajor = 0x0040,
-    NamesMinor = 0x0080,
-    #NamesMask = NamesMajor | NamesMinor,
+    NamesMajor = 0x0040
+    NamesMinor = 0x0080
+    NamesMask = NamesMajor | NamesMinor,
 
-    WorldsCapitals = 0x0100,
-    WorldsHomeworlds = 0x0200,
-    #WorldsMask = WorldsCapitals | WorldsHomeworlds,
+    # TODO: Do I need these if they're deprecated?
+    WorldsCapitals = 0x0100
+    WorldsHomeworlds = 0x0200
+    WorldsMask = WorldsCapitals | WorldsHomeworlds,
 
-    RoutesSelectedDeprecated = 0x0400,
+    RoutesSelectedDeprecated = 0x0400
 
-    PrintStyleDeprecated = 0x0800,
-    CandyStyleDeprecated = 0x1000,
-    #StyleMaskDeprecated = PrintStyleDeprecated | CandyStyleDeprecated,
+    PrintStyleDeprecated = 0x0800
+    CandyStyleDeprecated = 0x1000
+    StyleMaskDeprecated = PrintStyleDeprecated | CandyStyleDeprecated,
 
-    ForceHexes = 0x2000,
-    WorldColors = 0x4000,
+    ForceHexes = 0x2000
+    WorldColors = 0x4000
     FilledBorders = 0x8000
 
 class LayerId(enum.Enum):
@@ -596,9 +597,16 @@ class AbstractPath(object):
             ):
         pass
 
+# TODO: In the same way as AbstractFont, the fact this is using a QT
+# class is a hack and I need a way to abstract the image format in
+# a way that they can still be rendered efficiently
 class AbstractImage(object):
-    def __init__(self, path: str, url: str):
-        pass
+    def __init__(self, path: str):
+        self.path = path
+
+        self.image = QtGui.QImage(self.path, None)
+        if not self.image:
+            raise RuntimeError(f'Failed to load {self.path}')
 
 class AbstractGraphicsState():
     def __init__(self, graphics: 'AbstractGraphics'):
@@ -702,8 +710,66 @@ class AbstractGraphics(object):
     def restore(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement restore')
 
+class ImageCache(object):
+    def __init__(self, basePath: str) -> None:
+        # TODO: There is a readme in the /res/Candy/ that gives copyright info, I'll
+        # need to include that as well
+        self.nebulaImage = AbstractImage(os.path.join(basePath, 'res/Candy/Nebula.png'))
+        self.riftImage = AbstractImage(os.path.join(basePath, 'res/Candy/Rifts.png'))
+        self.galaxyImage = AbstractImage(os.path.join(basePath, 'res/Candy/Galaxy.png'))
+        self.galaxyImageGray = AbstractImage(os.path.join(basePath, 'res/Candy/Galaxy_Gray.png'))
+        self.worldImages: typing.Dict[str, AbstractImage] = {
+            'Hyd0': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd0.png')),
+            'Hyd1': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd1.png')),
+            'Hyd2': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd2.png')),
+            'Hyd3': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd3.png')),
+            'Hyd4': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd4.png')),
+            'Hyd5': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd5.png')),
+            'Hyd6': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd6.png')),
+            'Hyd7': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd7.png')),
+            'Hyd8': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd8.png')),
+            'Hyd9': AbstractImage(os.path.join(basePath, 'res/Candy/Hyd9.png')),
+            'HydA': AbstractImage(os.path.join(basePath, 'res/Candy/HydA.png')),
+            'Belt': AbstractImage(os.path.join(basePath, 'res/Candy/Belt.png'))}
+
 class StyleSheet(object):
-    _DefaultFont = "Arial"
+    _DefaultFont = 'Arial'
+
+    _SectorGridMinScale = 1 / 2 # Below this, no sector grid is shown
+    _SectorGridFullScale = 4 # Above this, sector grid opaque
+    _SectorNameMinScale = 1
+    _SectorNameAllSelectedScale = 4 # At this point, "Selected" == "All"
+    _SectorNameMaxScale = 16
+    _PseudoRandomStarsMinScale = 1 # Below this, no pseudo-random stars
+    _PseudoRandomStarsMaxScale = 4 # Above this, no pseudo-random stars
+    _SubsectorsMinScale = 8
+    _SubsectorNameMinScale = 24
+    _SubsectorNameMaxScale = 64
+    _MegaLabelMaxScale = 1 / 4
+    _MacroWorldsMinScale = 1 / 2
+    _MacroWorldsMaxScale = 4
+    _MacroLabelMinScale = 1 / 2
+    _MacroLabelMaxScale = 4
+    _MacroRouteMinScale = 1 / 2
+    _MacroRouteMaxScale = 4
+    _MacroBorderMinScale = 1 / 32
+    _MicroBorderMinScale = 4
+    _MicroNameMinScale = 16
+    _RouteMinScale = 8 # Below this, routes not rendered
+    _ParsecMinScale = 16 # Below this, parsec edges not rendered
+    _ParsecHexMinScale = 48 # Below this, hex numbers not rendered
+    _WorldMinScale = 4 # Below this: no worlds; above this: dotmap
+    _WorldBasicMinScale = 24 # Above this: atlas-style abbreviated data
+    _WorldFullMinScale = 48 # Above this: full poster-style data
+    _WorldUwpMinScale = 96 # Above this: UWP shown above name
+
+    _CandyMinWorldNameScale = 64
+    _CandyMinUwpScale = 256
+    _CandyMaxWorldRelativeScale = 512
+    _CandyMaxBorderRelativeScale = 32
+    _CandyMaxRouteRelativeScale = 32
+
+    _T5AllegianceCodeMinScale = 64
 
     class StyleElement(object):
         def __init__(self):
@@ -760,9 +826,11 @@ class StyleSheet(object):
     def __init__(
             self,
             scale: float,
+            options: MapOptions,
             style: travellermap.Style
             ):
         self._scale = scale
+        self._options = options
         self._style = style
         self._handleConfigUpdate()
 
@@ -772,6 +840,14 @@ class StyleSheet(object):
     @scale.setter
     def scale(self, scale: float) -> None:
         self._scale = scale
+        self._handleConfigUpdate()
+
+    @property
+    def options(self) -> MapOptions:
+        return self._options
+    @options.setter
+    def options(self, options: MapOptions) -> None:
+        self._options = options
         self._handleConfigUpdate()
 
     @property
@@ -894,16 +970,40 @@ class StyleSheet(object):
         self.hexStyle = HexStyle.Hex
         self.overrideLineStyle: typing.Optional[LineStyle] = None
 
+        onePixel = 1.0 / self.scale
+
+        self.subsectorGrid.visible = (self.scale >= StyleSheet._SubsectorsMinScale) and \
+            ((self.options & MapOptions.SubsectorGrid) != 0)
+        self.sectorGrid.visible = (self.scale >= StyleSheet._SectorGridMinScale) and \
+            ((self._options & MapOptions.SectorGrid) != 0)
+        self.parsecGrid.visible = (self.scale >= StyleSheet._ParsecMinScale)
+        self.showSomeSectorNames = (self.scale >= StyleSheet._SectorNameMinScale) and \
+            (self.scale <= StyleSheet._SectorNameMaxScale) and \
+            ((self._options & MapOptions.SectorsMask) != 0)
+        self.showAllSectorNames = self.showSomeSectorNames and \
+            ((self.scale >= StyleSheet._SectorNameAllSelectedScale) or \
+             ((self._options & MapOptions.SectorsAll) != 0))
+        self.subsectorNames.visible = (self.scale >= StyleSheet._SubsectorNameMinScale) and \
+            (self.scale <= StyleSheet._SubsectorNameMaxScale) and \
+            ((self._options & MapOptions.SectorsMask) != 0)
+
+        self.worlds.visible = self.scale >= StyleSheet._WorldMinScale
+        self.pseudoRandomStars.visible = (StyleSheet._PseudoRandomStarsMinScale <= self.scale) and \
+             (self.scale <= StyleSheet._PseudoRandomStarsMaxScale)
+        self.showRiftOverlay = (self.scale <= StyleSheet._PseudoRandomStarsMaxScale) or \
+             (StyleSheet.style == travellermap.Style.Candy)
+
         # TODO: The stuff below is still a WIP
 
-        self.parsecGrid.visible = True
-        self.worlds.visible = True
+        self.worldDetails = WorldDetails.Hex
 
-        self.numberAllHexes = True # TODO: Remove override of default
+
+        #self.numberAllHexes = True # TODO: Remove override of default
+        self.showNebulaBackground = True # TODO: Remove override of default
 
         self.hexNumber.textColor = '#FF0000'
 
-        onePixel = 1.0 / self.scale
+
         self.parsecGrid.pen = AbstractPen('#FF0000', onePixel)
 
         if self.worlds.visible:
@@ -933,6 +1033,7 @@ class RenderContext(object):
             tileSize: Size, # Pixel size of view to render to
             scale: float,
             styles: StyleSheet,
+            images: ImageCache,
             options: MapOptions
             ) -> None:
         self._graphics = graphics
@@ -940,6 +1041,7 @@ class RenderContext(object):
         self._scale = scale
         self._options = options
         self._styles = styles
+        self._images = images
         self._tileSize = tileSize
         self._createLayers()
         self._updateSpaceTransforms()
@@ -966,6 +1068,8 @@ class RenderContext(object):
 
     def render(self) -> None:
         with self._graphics.save():
+            # Overall, rendering is all in world-space; individual steps may transform back
+            # to image-space as needed.
             self._graphics.multiplyTransform(self._imageSpaceToWorldSpace)
 
             for layer in self._layers:
@@ -997,12 +1101,22 @@ class RenderContext(object):
     def _createLayers(self) -> None:
         # TODO: This list probably only needs created once
         self._layers: typing.List[LayerAction] = [
-            LayerAction(id=LayerId.Background_Solid, action=self._drawBackground, clip=True),
-            LayerAction(id=LayerId.Grid_Parsec, action=self._drawParsecGrid, clip=True)
+            LayerAction(LayerId.Background_Solid, self._drawBackground, clip=True),
+
+            # NOTE: Since alpha texture brushes aren't supported without
+            # creating a new image (slow!) we render the local background
+            # first, then overlay the deep background over it, for
+            # basically the same effect since the alphas sum to 1.
+            LayerAction(LayerId.Background_NebulaTexture, self._drawNebulaBackground, clip=True),
+
+            LayerAction(LayerId.Grid_Parsec, self._drawParsecGrid, clip=True)
         ]
 
         self._layers.sort(key=lambda l: l.id.value)
 
+    # TODO: I'm not sure about the use of the term world space
+    # here. It comes from traveller map but as far as I can tell
+    # it's actually dealing with map space
     def _updateSpaceTransforms(self):
         m = AbstractMatrix()
         m.translatePrepend(
@@ -1028,12 +1142,60 @@ class RenderContext(object):
         rect.inflate(rect.width * 0.1, rect.height * 0.1)
         self._graphics.drawRectangleFill(brush, rect)
 
+    # TODO: When zooming in and out the background doesn't stay in a consistent
+    # place between zoom levels. I think traveller map technically has the same
+    # issue but it's nowhere near as noticeable as it only actually renders
+    # tiles at a few zoom levels then uses digital zoom in the browser to scale
+    # between those levels. The result being it doesn't jump around every zoom
+    # step, it still does it at some zoom levels but it's far less noticeable.
+    # I suspect I could do something in this function that effectively mimics
+    # this behaviour
+    def _drawNebulaBackground(self) -> None:
+        if not self._styles.showNebulaBackground:
+            return
+
+        # Render in image-space so it scales/tiles nicely
+        with self._graphics.save():
+            self._graphics.multiplyTransform(self._worldSpaceToImageSpace)
+
+            backgroundImageScale = 2.0
+            nebulaImageWidth = 1024
+            nebulaImageHeight = 1024
+            # Scaled size of the background
+            w = nebulaImageWidth * backgroundImageScale
+            h = nebulaImageHeight * backgroundImageScale
+
+            # Offset of the background, relative to the canvas
+            ox = (-self._tileRect.left * self._scale * travellermap.ParsecScaleX) % w
+            oy = (-self._tileRect.top * self._scale * travellermap.ParsecScaleY) % h
+            if (ox > 0):
+                ox -= w
+            if (oy > 0):
+                oy -= h
+
+            # Number of copies needed to cover the canvas
+            nx = 1 + int(math.floor(self._tileSize.width / w))
+            ny = 1 + int(math.floor(self._tileSize.height / h))
+            if (ox + nx * w < self._tileSize.width):
+                nx += 1
+            if (oy + ny * h < self._tileSize.height):
+                ny += 1
+
+            imageRect = RectangleF(x=ox, y=oy, width=w + 1, height=h + 1)
+            for _ in range(nx):
+                imageRect.y=oy
+                for _ in range(ny):
+                    self._graphics.drawImage(
+                        self._images.nebulaImage,
+                        imageRect)
+                    imageRect.y += h
+                imageRect.x += w
+
     def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
             return
 
         self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
-
 
         self._graphics.drawRectangleFill(
             brush=AbstractBrush('#0000FF'),
@@ -1072,9 +1234,7 @@ class RenderContext(object):
                     self._graphics.drawLines(pen, points)
 
         # TODO: The if statment in the traveller map code is this
-        #if (styles.numberAllHexes &&
-        #    styles.worldDetails.HasFlag(WorldDetails.Hex))
-        if self._styles.numberAllHexes:
+        if self._styles.numberAllHexes and (self._styles.worldDetails & WorldDetails.Hex) != 0:
             solidBrush = AbstractBrush(self._styles.hexNumber.textColor)
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
@@ -1184,7 +1344,9 @@ class QtGraphics(AbstractGraphics):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
 
     def drawImage(self, image: AbstractImage, rect: RectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImage')
+        self._painter.drawImage(
+            self._convertRect(rect),
+            image.image)
     def drawImageAlpha(self, alpha: float, image: AbstractImage, rect: RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImageAlpha')
 
@@ -1316,8 +1478,15 @@ class MapHackView(QtWidgets.QWidget):
         self._tileSize = Size(self.width(), self.height())
         #self._scale = MapHackView._DefaultScale
         self._scale = 128
+        self._options = \
+            MapOptions.SectorGrid | MapOptions.SubsectorGrid | MapOptions.SectorsSelected | MapOptions.SectorsAll | \
+            MapOptions.BordersMajor | MapOptions.BordersMinor | MapOptions.NamesMajor | MapOptions.NamesMinor | \
+            MapOptions.WorldsCapitals | MapOptions.WorldsHomeworlds | MapOptions.RoutesSelectedDeprecated | \
+            MapOptions.PrintStyleDeprecated | MapOptions.CandyStyleDeprecated | MapOptions.ForceHexes | \
+            MapOptions.WorldColors | MapOptions.FilledBorders
         self._style = travellermap.Style.Poster
         self._graphics = QtGraphics()
+        self._images = ImageCache(basePath='./data/map/')
         self._renderer = self._createRender()
 
         self._isDragging = False
@@ -1445,7 +1614,11 @@ class MapHackView(QtWidgets.QWidget):
             tileRect=self._calculateTileRect(),
             tileSize=self._tileSize,
             scale=self._scale,
-            styles=StyleSheet(scale=self._scale, style=self._style),
+            styles=StyleSheet(
+                scale=self._scale,
+                options=self._options,
+                style=self._style),
+            images=self._images,
             options=0)
 
     def _calculateTileRect(self) -> RectangleF:
