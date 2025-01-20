@@ -8,6 +8,7 @@ import typing
 import enum
 import math
 import numpy
+import random
 import travellermap
 
 class StringAlignment(enum.Enum):
@@ -1030,6 +1031,8 @@ class StyleSheet(object):
         elif self._style is travellermap.Style.Draft:
             pass
         elif self._style is travellermap.Style.Candy:
+            self.pseudoRandomStars.visible = False
+
             self.showNebulaBackground = self.deepBackgroundOpacity < 0.5
         elif self._style is travellermap.Style.Terminal:
             pass
@@ -1039,6 +1042,8 @@ class StyleSheet(object):
             pass
         elif self._style is travellermap.Style.Terminal:
             pass
+
+        self.pseudoRandomStars.fillColor = '#FFFFFF'
 
         # TODO: The stuff below is still a WIP
 
@@ -1095,6 +1100,9 @@ class RenderContext(object):
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
 
     _GalaxyImageRect = RectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
+
+    _PseudoRandomStarsChunkSize = 256
+    _PseudoRandomStarsMaxPerChunk = 800
 
     def __init__(
             self,
@@ -1186,6 +1194,8 @@ class RenderContext(object):
             # basically the same effect since the alphas sum to 1.
             LayerAction(LayerId.Background_NebulaTexture, self._drawNebulaBackground, clip=True),
             LayerAction(LayerId.Background_Galaxy, self._drawGalaxyBackground, clip=True),
+
+            LayerAction(LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars, clip=True),
 
             LayerAction(LayerId.Grid_Parsec, self._drawParsecGrid, clip=True)
         ]
@@ -1281,6 +1291,56 @@ class RenderContext(object):
                 galaxyImage,
                 RenderContext._GalaxyImageRect)
 
+    # NOTE: How this is implemented differs from the Traveller Map implementation
+    # as Traveller Map achieves consistent random star positioning by seeding the
+    # rng by the tile origin. As the web interface always chunks the universe into
+    # tiles with the same origins this means, for a given tile, the random stars
+    # will always be in the same place.
+    # This approach doesn't work for me as I'm not using tiles in that way. I'm
+    # drawing a single tile where the origin will vary depending on where the
+    # current viewport is. To achieve a similar effect I'm chunking the random
+    # stars by sector. The downside of this is you always have to draw process
+    # all stars for all sectors overlapped by the viewport
+    def _drawPseudoRandomStars(self) -> None:
+        if not self._styles.pseudoRandomStars.visible:
+            return
+
+        startX = math.floor(self._tileRect.left / RenderContext._PseudoRandomStarsChunkSize) * \
+            RenderContext._PseudoRandomStarsChunkSize
+        startY = math.floor(self._tileRect.top / RenderContext._PseudoRandomStarsChunkSize) * \
+            RenderContext._PseudoRandomStarsChunkSize
+        finishX = math.ceil(self._tileRect.right / RenderContext._PseudoRandomStarsChunkSize) * \
+            RenderContext._PseudoRandomStarsChunkSize
+        finishY = math.ceil(self._tileRect.bottom / RenderContext._PseudoRandomStarsChunkSize) * \
+            RenderContext._PseudoRandomStarsChunkSize
+
+        brush = AbstractBrush(self._styles.pseudoRandomStars.fillColor)
+        with self._graphics.save():
+            self._graphics.SmoothingMode = AbstractGraphics.SmoothingMode.HighQuality
+
+            for chunkLeft in range(startX, finishX + 1, RenderContext._PseudoRandomStarsChunkSize):
+                for chunkTop in range(startY, finishY + 1, RenderContext._PseudoRandomStarsChunkSize):
+                    rand = random.Random((chunkLeft << 8) ^ chunkTop)
+
+                    starCount =  \
+                        RenderContext._PseudoRandomStarsMaxPerChunk \
+                        if self._scale >= 1 else \
+                        int(RenderContext._PseudoRandomStarsMaxPerChunk / self._scale)
+
+                    for _ in range(starCount):
+                        starX = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkLeft
+                        starY = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkTop
+                        d = rand.random() * 2
+
+                        self._graphics.drawEllipse(
+                            pen=None,
+                            brush=brush,
+                            rect=RectangleF(
+                                x=starX,
+                                y=starY,
+                                width=(d / self._scale * travellermap.ParsecScaleX),
+                                height=(d / self._scale * travellermap.ParsecScaleY)))
+
     def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
             return
@@ -1367,6 +1427,36 @@ class QtGraphics(AbstractGraphics):
     def setPainter(self, painter: QtGui.QPainter) -> None:
         self._painter = painter
 
+        # Highest quality by default
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.Antialiasing,
+            True)
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.TextAntialiasing,
+            True)
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.SmoothPixmapTransform,
+            True)
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.LosslessImageRendering,
+            True)
+
+    def setSmoothingMode(self, mode: AbstractGraphics.SmoothingMode):
+        super().setSmoothingMode(mode)
+
+        antialias = mode == AbstractGraphics.SmoothingMode.HighQuality or \
+            mode == AbstractGraphics.SmoothingMode.AntiAlias
+
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.Antialiasing,
+            antialias)
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.TextAntialiasing,
+            antialias)
+        self._painter.setRenderHint(
+            QtGui.QPainter.RenderHint.SmoothPixmapTransform,
+            antialias)
+
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         transform = QtGui.QTransform()
         transform.scale(scaleX, scaleY)
@@ -1429,7 +1519,9 @@ class QtGraphics(AbstractGraphics):
 
     # TODO: This has changed quite a bit from the traveller map interface
     def drawEllipse(self, pen: typing.Optional[AbstractPen], brush: typing.Optional[AbstractBrush], rect: RectangleF):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawEllipse')
+        self._painter.setPen(self._convertPen(pen) if pen else QtCore.Qt.PenStyle.NoPen)
+        self._painter.setBrush(self._convertBrush(brush) if brush else QtCore.Qt.BrushStyle.NoBrush)
+        self._painter.drawEllipse(self._convertRect(rect))
     def drawArc(self, pen: AbstractPen, rect: RectangleF, startAngle: float, sweepAngle: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
 
