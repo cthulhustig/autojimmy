@@ -309,8 +309,8 @@ class RectangleF(object):
         else:
             self.x = args[0] if len(args) > 0 else kwargs['x']
             self.y = args[1] if len(args) > 1 else kwargs['y']
-            self.width = args[3] if len(args) > 3 else kwargs['width']
-            self.height = args[2] if len(args) > 2 else kwargs['height']
+            self.width = args[2] if len(args) > 2 else kwargs['width']
+            self.height = args[3] if len(args) > 3 else kwargs['height']
 
     @property
     def left(self) -> float:
@@ -328,11 +328,21 @@ class RectangleF(object):
     def bottom(self) -> float:
         return self.y + self.height
 
+    @property
+    def centre(self) -> PointF:
+        return PointF(self.x + (self.width / 2), self.y + (self.height / 2))
+
     def inflate(self, x: float, y: float) -> None:
         self.x -= x
         self.y -= y
         self.width += x * 2
         self.height += y * 2
+
+    def intersectsWith(self, rect: 'RectangleF') -> bool:
+        return (rect.x < self.x + self.width) and \
+            (self.x < rect.x + rect.width) and \
+            (rect.y < self.y + self.height) and \
+            (self.y < rect.y + rect.height)
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, RectangleF):
@@ -607,6 +617,13 @@ class AbstractImage(object):
         self.image = QtGui.QImage(self.path, None)
         if not self.image:
             raise RuntimeError(f'Failed to load {self.path}')
+
+    @property
+    def width(self) -> int:
+        return self.image.width()
+    @property
+    def height(self) -> int:
+        return self.image.height()
 
 class AbstractGraphicsState():
     def __init__(self, graphics: 'AbstractGraphics'):
@@ -993,15 +1010,46 @@ class StyleSheet(object):
         self.showRiftOverlay = (self.scale <= StyleSheet._PseudoRandomStarsMaxScale) or \
              (StyleSheet.style == travellermap.Style.Candy)
 
+        self.deepBackgroundOpacity = StyleSheet._floatScaleInterpolate(
+            minValue=1,
+            maxValue=0,
+            scale=self._scale,
+            minScale=1 / 8,
+            maxScale=2)
+
+        self.showGalaxyBackground = self.deepBackgroundOpacity > 0.0
+
+        if self._style is travellermap.Style.Poster:
+            pass
+        elif self._style is travellermap.Style.Atlas:
+            pass
+        elif self._style is travellermap.Style.Fasa:
+            pass
+        elif self._style is travellermap.Style.Print:
+            pass
+        elif self._style is travellermap.Style.Draft:
+            pass
+        elif self._style is travellermap.Style.Candy:
+            self.showNebulaBackground = self.deepBackgroundOpacity < 0.5
+        elif self._style is travellermap.Style.Terminal:
+            pass
+        elif self._style is travellermap.Style.Mongoose:
+            pass
+        elif self._style is travellermap.Style.Terminal:
+            pass
+        elif self._style is travellermap.Style.Terminal:
+            pass
+
         # TODO: The stuff below is still a WIP
 
         self.worldDetails = WorldDetails.Hex
 
 
         #self.numberAllHexes = True # TODO: Remove override of default
-        self.showNebulaBackground = True # TODO: Remove override of default
 
         self.hexNumber.textColor = '#FF0000'
+
+        self.numberAllHexes = True
 
 
         self.parsecGrid.pen = AbstractPen('#FF0000', onePixel)
@@ -1011,6 +1059,26 @@ class StyleSheet(object):
             self.hexNumber.fontInfo = FontInfo(
                 StyleSheet._DefaultFont,
                 0.1 * fontScale)
+
+    @staticmethod
+    def _floatScaleInterpolate(
+            minValue: float,
+            maxValue: float,
+            scale: float,
+            minScale: float,
+            maxScale: float
+            ) -> float:
+        if scale <= minScale:
+            return minValue
+        if scale >= maxScale:
+            return maxValue
+
+        logscale = math.log(scale, 2.0)
+        logmin = math.log(minScale, 2.0)
+        logmax = math.log(maxScale, 2.0)
+        p = (logscale - logmin) / (logmax - logmin)
+        value = minValue + (maxValue - minValue) * p
+        return value
 
 class LayerAction(object):
     def __init__(
@@ -1025,6 +1093,8 @@ class LayerAction(object):
 
 class RenderContext(object):
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
+
+    _GalaxyImageRect = RectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
 
     def __init__(
             self,
@@ -1063,8 +1133,15 @@ class RenderContext(object):
         self._tileRect.y += (dy * self._scale)
         self._updateSpaceTransforms()
 
-    def pixelSpaceToMapSpace(self, point: Point) -> PointF:
-        return self._worldSpaceToImageSpace.transform(point)
+    def pixelSpaceToWorldSpace(self, pixel: Point, clamp: bool = True) -> PointF:
+        world = self._worldSpaceToImageSpace.transform(pixel)
+
+        if clamp:
+            x = round(world.x + 0.5)
+            y = round(world.y + (0.5 if x % 2 == 0 else 0))
+            world = PointF(x, y)
+
+        return world
 
     def render(self) -> None:
         with self._graphics.save():
@@ -1108,6 +1185,7 @@ class RenderContext(object):
             # first, then overlay the deep background over it, for
             # basically the same effect since the alphas sum to 1.
             LayerAction(LayerId.Background_NebulaTexture, self._drawNebulaBackground, clip=True),
+            LayerAction(LayerId.Background_Galaxy, self._drawGalaxyBackground, clip=True),
 
             LayerAction(LayerId.Grid_Parsec, self._drawParsecGrid, clip=True)
         ]
@@ -1190,6 +1268,18 @@ class RenderContext(object):
                         imageRect)
                     imageRect.y += h
                 imageRect.x += w
+
+    def _drawGalaxyBackground(self) -> None:
+        if not self._styles.showGalaxyBackground:
+            return
+
+        if self._styles.deepBackgroundOpacity > 0 and \
+            RenderContext._GalaxyImageRect.intersectsWith(self._tileRect):
+            galaxyImage = self._images.galaxyImageGray if self._styles.lightBackground else self._images.galaxyImage
+            self._graphics.drawImageAlpha(
+                self._styles.deepBackgroundOpacity,
+                galaxyImage,
+                RenderContext._GalaxyImageRect)
 
     def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
@@ -1348,7 +1438,14 @@ class QtGraphics(AbstractGraphics):
             self._convertRect(rect),
             image.image)
     def drawImageAlpha(self, alpha: float, image: AbstractImage, rect: RectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImageAlpha')
+        oldAlpha = self._painter.opacity()
+        self._painter.setOpacity(alpha)
+        try:
+            self._painter.drawImage(
+                self._convertRect(rect),
+                image.image)
+        finally:
+            self._painter.setOpacity(oldAlpha)
 
     def measureString(self, text: str, font: AbstractFont) -> SizeF:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
@@ -1477,7 +1574,7 @@ class MapHackView(QtWidgets.QWidget):
         self._viewCenterMapPos = PointF(0, 0)
         self._tileSize = Size(self.width(), self.height())
         #self._scale = MapHackView._DefaultScale
-        self._scale = 128
+        self._scale = 64
         self._options = \
             MapOptions.SectorGrid | MapOptions.SubsectorGrid | MapOptions.SectorsSelected | MapOptions.SectorsAll | \
             MapOptions.BordersMajor | MapOptions.BordersMinor | MapOptions.NamesMajor | MapOptions.NamesMinor | \
@@ -1485,6 +1582,7 @@ class MapHackView(QtWidgets.QWidget):
             MapOptions.PrintStyleDeprecated | MapOptions.CandyStyleDeprecated | MapOptions.ForceHexes | \
             MapOptions.WorldColors | MapOptions.FilledBorders
         self._style = travellermap.Style.Poster
+        #self._style = travellermap.Style.Candy
         self._graphics = QtGraphics()
         self._images = ImageCache(basePath='./data/map/')
         self._renderer = self._createRender()
@@ -1504,12 +1602,11 @@ class MapHackView(QtWidgets.QWidget):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self._dragPixelPos = event.pos()
 
-            mapCursor = self._renderer.pixelSpaceToMapSpace(point=Point(event.x(), event.y()))
-            absCursor = travellermap.mapSpaceToAbsoluteSpace((mapCursor.x, mapCursor.y))
-            #print(f'MAP: {mapCursor.x} {mapCursor.y}')
-            #print(f'ABS: {absCursor[0]} {absCursor[1]}')
-            relCursor = travellermap.absoluteSpaceToRelativeSpace(absCursor)
-            print(f'{relCursor[2]} {relCursor[3]}')
+            # TODO: This is borked, need to figure out how to convert a float world space coordinate
+            # to an int absolute coordinate
+            absCursor = self._renderer.pixelSpaceToWorldSpace(pixel=Point(event.x(), event.y()))
+            relCursor = travellermap.absoluteSpaceToRelativeSpace((absCursor.x, absCursor.y))
+            print(f'ABS: {absCursor.x} {absCursor.y} HEX:{relCursor[2]} {relCursor[3]}')
 
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
@@ -1575,9 +1672,10 @@ class MapHackView(QtWidgets.QWidget):
 
         if self._renderer:
             cursorScreenPos = event.pos()
-            oldCursorMapPos = self._renderer.pixelSpaceToMapSpace(PointF(
+            oldCursorMapPos = self._renderer.pixelSpaceToWorldSpace(PointF(
                 cursorScreenPos.x(),
-                cursorScreenPos.y()))
+                cursorScreenPos.y()),
+                clamp=False) # Float value for extra accuracy
 
             if event.angleDelta().y() > 0:
                 self._scale *= MapHackView._WheelScaleMultiplier
@@ -1585,9 +1683,10 @@ class MapHackView(QtWidgets.QWidget):
                 self._scale /= MapHackView._WheelScaleMultiplier
             self._renderer = self._createRender()
 
-            newCursorMapPos = self._renderer.pixelSpaceToMapSpace(PointF(
+            newCursorMapPos = self._renderer.pixelSpaceToWorldSpace(PointF(
                 cursorScreenPos.x(),
-                cursorScreenPos.y()))
+                cursorScreenPos.y()),
+                clamp=False)
 
             self._viewCenterMapPos.x += oldCursorMapPos.x - newCursorMapPos.x
             self._viewCenterMapPos.y += oldCursorMapPos.y - newCursorMapPos.y
