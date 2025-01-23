@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 import PIL.Image, PIL.ImageDraw, PIL.ImageFont
+import base64
 import os
 import gui
 import io
@@ -10,6 +11,7 @@ import math
 import numpy
 import random
 import travellermap
+import xml.etree.ElementTree
 
 class StringAlignment(enum.Enum):
     Baseline = 0
@@ -27,7 +29,7 @@ class DashStyle(enum.Enum):
     DashDotDot = 4
     Custom = 5
 
-class FontStyle(enum.IntEnum):
+class FontStyle(enum.IntFlag):
     Regular = 0x0
     Bold = 0x1
     Italic = 0x2
@@ -39,6 +41,24 @@ class LineStyle(enum.Enum):
     Dashed = 1
     Dotted = 2
     NoStyle = 3 # TODO: Was non in traveller map code
+
+class TextFormat(enum.Enum):
+    TopLeft = 0
+    TopCenter = 1
+    TopRight = 2
+    MiddleLeft = 3
+    Center = 4
+    MiddleRight = 5
+    BottomLeft = 6
+    BottomCenter = 7
+    BottomRight = 8
+
+class TextBackgroundStyle(enum.Enum):
+    NoStyle = 0 # TODO: Was non in traveller map code
+    Rectangle = 1
+    Shadow = 2
+    Outline = 3
+    Filled = 4
 
 class GraphicsUnit(enum.Enum):
     # Specifies the world coordinate system unit as the unit of measure.
@@ -71,7 +91,7 @@ class HexCoordinateStyle(enum.Enum):
     Sector = 0
     Subsector = 1
 
-class MapOptions(enum.IntEnum):
+class MapOptions(enum.IntFlag):
     SectorGrid = 0x0001
     SubsectorGrid = 0x0002
 
@@ -152,34 +172,38 @@ class LayerId(enum.Enum):
         Overlay_AncientsWorlds = 25
         Overlay_ReviewStatus = 26
 
-class WorldDetails(enum.IntEnum):
+class WorldDetails(enum.IntFlag):
     NoDetails = 0 # TODO: Was None in traveller map code
 
-    Type = 1 << 0, # Show world type (water/no water/asteroid/unknown)
-    KeyNames = 1 << 1, # Show HiPop/Capital names
-    Starport = 1 << 2, # Show starport
-    GasGiant = 1 << 3, # Show gas giant glyph
-    Allegiance = 1 << 4, # Show allegiance code
-    Bases = 1 << 5, # Show bases
-    Hex = 1 << 6, # Include hex numbers
-    Zone = 1 << 7, # Show Amber/Red zones
-    AllNames = 1 << 8, # Show all world names, not just HiPop/Capitals
-    Uwp = 1 << 9, # Show UWP below world name
-    Asteroids = 1 << 10, # Render asteroids as pseudorandom ovals
-    Highlight = 1 << 11, # Highlight (text font, text color) HiPopCapital worlds
+    Type = 1 << 0 # Show world type (water/no water/asteroid/unknown)
+    KeyNames = 1 << 1 # Show HiPop/Capital names
+    Starport = 1 << 2 # Show starport
+    GasGiant = 1 << 3 # Show gas giant glyph
+    Allegiance = 1 << 4 # Show allegiance code
+    Bases = 1 << 5 # Show bases
+    Hex = 1 << 6 # Include hex numbers
+    Zone = 1 << 7 # Show Amber/Red zones
+    AllNames = 1 << 8 # Show all world names, not just HiPop/Capitals
+    Uwp = 1 << 9 # Show UWP below world name
+    Asteroids = 1 << 10 # Render asteroids as pseudorandom ovals
+    Highlight = 1 << 11 # Highlight (text font, text color) HiPopCapital worlds
 
-    #Dotmap = None,
-    #Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight,
-    #Poster = Atlas | Hex | AllNames | Asteroids,
+    Dotmap = NoDetails
+    Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight
+    Poster = Atlas | Hex | AllNames | Asteroids
 
 class Size(object):
+    @typing.overload
+    def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, other: 'Size') -> None: ...
     @typing.overload
     def __init__(self, width: int, height: int) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
-        if len(args) + len(kwargs) == 1:
+        if not args and not kwargs:
+            self._width = self._height = 0
+        elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, Size):
                 raise TypeError('The other parameter must be a Size')
@@ -210,20 +234,24 @@ class Size(object):
 
 class SizeF(object):
     @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
     def __init__(self, other: 'SizeF') -> None: ...
     @typing.overload
     def __init__(self, width: float, height: float) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
-        if len(args) + len(kwargs) == 1:
+        if not args and not kwargs:
+            self.width = self.height = 0
+        elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, SizeF):
                 raise TypeError('The other parameter must be a SizeF')
             self.width = other.width
             self.height = other.height
         else:
-            self.width = args[0] if len(args) > 0 else kwargs['width']
-            self.height = args[1] if len(args) > 1 else kwargs['height']
+            self.width = float(args[0] if len(args) > 0 else kwargs['width'])
+            self.height = float(args[1] if len(args) > 1 else kwargs['height'])
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, SizeF):
@@ -232,12 +260,16 @@ class SizeF(object):
 
 class Point(object):
     @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
     def __init__(self, other: 'PointF') -> None: ...
     @typing.overload
     def __init__(self, x: int, y: int) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
-        if len(args) + len(kwargs) == 1:
+        if not args and not kwargs:
+            self.x = self.y = 0
+        elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, Point):
                 raise TypeError('The other parameter must be a Point')
@@ -272,12 +304,16 @@ class Point(object):
 
 class PointF(object):
     @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
     def __init__(self, other: 'PointF') -> None: ...
     @typing.overload
     def __init__(self, x: float, y: float) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
-        if len(args) + len(kwargs) == 1:
+        if not args and not kwargs:
+            self.x = self.y = 0
+        elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, PointF):
                 raise TypeError('The other parameter must be a PointF')
@@ -294,12 +330,16 @@ class PointF(object):
 
 class RectangleF(object):
     @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
     def __init__(self, other: 'RectangleF') -> None: ...
     @typing.overload
     def __init__(self, x: float, y: float, width: float, height: float) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
-        if len(args) + len(kwargs) == 1:
+        if not args and not kwargs:
+            self.x = self.y = self.width = self.height = 0
+        elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, RectangleF):
                 raise TypeError('The other parameter must be a RectangleF')
@@ -308,10 +348,10 @@ class RectangleF(object):
             self.width = other.width
             self.height = other.height
         else:
-            self.x = args[0] if len(args) > 0 else kwargs['x']
-            self.y = args[1] if len(args) > 1 else kwargs['y']
-            self.width = args[2] if len(args) > 2 else kwargs['width']
-            self.height = args[3] if len(args) > 3 else kwargs['height']
+            self.x = float(args[0] if len(args) > 0 else kwargs['x'])
+            self.y = float(args[1] if len(args) > 1 else kwargs['y'])
+            self.width = float(args[2] if len(args) > 2 else kwargs['width'])
+            self.height = float(args[3] if len(args) > 3 else kwargs['height'])
 
     @property
     def left(self) -> float:
@@ -332,6 +372,18 @@ class RectangleF(object):
     @property
     def centre(self) -> PointF:
         return PointF(self.x + (self.width / 2), self.y + (self.height / 2))
+    @centre.setter
+    def centre(self, center: PointF) -> PointF:
+        self.x = center.x - (self.width / 2)
+        self.y = center.y - (self.height / 2)
+
+    @property
+    def location(self) -> PointF:
+        return PointF(self.x, self.y)
+    @location.setter
+    def location(self, location: PointF) -> None:
+        self.x = location.x
+        self.y = location.y
 
     def inflate(self, x: float, y: float) -> None:
         self.x -= x
@@ -352,10 +404,29 @@ class RectangleF(object):
         return super().__eq__(other)
 
 class FontInfo():
-    def __init__(self, families: str, size: float, style: FontStyle = FontStyle.Regular):
-        self.families = families
-        self.size = size
-        self.style = style
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'FontInfo') -> None: ...
+    @typing.overload
+    def __init__(self, families: str, size: float, style: FontStyle = FontStyle.Regular) -> None: ...
+
+    def __init__(self, *args, **kwargs):
+        if not args and not kwargs:
+            self.families = ''
+            self.size = 0
+            self.style = FontStyle.Regular
+        elif len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, FontInfo):
+                raise TypeError('The other parameter must be a FontInfo')
+            self.families = other.families
+            self.size = other.size
+            self.style = other.style
+        else:
+            self.families = args[0] if len(args) > 0 else kwargs['families']
+            self.size = float(args[1] if len(args) > 1 else kwargs['size'])
+            self.style = args[2] if len(args) > 2 else kwargs.get('style', FontStyle.Regular)
 
     def makeFont(self) -> 'AbstractFont':
         if not self.families:
@@ -388,15 +459,62 @@ class HighlightWorldPattern(object):
         self.matches = list(matches)
 
 class AbstractPen(object):
-    def __init__(self, color: str, width: float = 1):
-        self.color = color
-        self.width = width
-        self.dashStyle = DashStyle.Solid
-        self.customDashPattern: typing.Optional[typing.List[float]] = None
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'FontInfo') -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        color: str,
+        width: float,
+        dashStyle: DashStyle = DashStyle.Solid,
+        customDashPattern: typing.Optional[typing.List[float]] = None
+        ) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if not args and not kwargs:
+            self.color = ''
+            self.width = 0
+            self.dashStyle = DashStyle.Solid
+            self.customDashPattern = None
+        elif len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, AbstractPen):
+                raise TypeError('The other parameter must be an AbstractPen')
+            self.color = other.color
+            self.width = other.width
+            self.dashStyle = other.dashStyle
+            self.customDashPattern = list(other.customDashPattern) if other.customDashPattern else None
+        else:
+            self.color = args[0] if len(args) > 0 else kwargs['color']
+            self.width = args[1] if len(args) > 1 else kwargs['width']
+            self.dashStyle = args[1] if len(args) > 2 else kwargs.get('dashStyle', DashStyle.Solid)
+            self.customDashPattern = args[1] if len(args) > 3 else kwargs.get('customDashPattern', None)
 
 class AbstractBrush(object):
-    def __init__(self, color: str):
-        self.color = color
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'AbstractBrush') -> None: ...
+    @typing.overload
+    def __init__(self, color: str) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if not args and not kwargs:
+            self.color = ''
+        elif len(args) > 0:
+            arg = args[0]
+            self.color = arg.color if isinstance(arg, AbstractBrush) else arg
+        elif 'other' in kwargs:
+            other = kwargs['other']
+            if not isinstance(other, AbstractBrush):
+                raise TypeError('The other parameter must be an AbstractBrush')
+            self.color = other.color
+        elif 'color' in kwargs:
+            self.color = kwargs['color']
+        else:
+            raise ValueError('Invalid arguments')
 
 # TODO: Using Qt fonts here is a temp hack. Tge traveller map version of
 # AbstractFont implementation uses a system drawing font class. I want to
@@ -582,31 +700,59 @@ class AbstractMatrix(object):
             ) -> numpy.ndarray:
         return numpy.array([[m11, m12, dx], [m21, m22, dy], [0, 0, 1]])
 
-class AbstractPath(object):
-    class PointFlag(enum.IntFlag):
-        # The starting point
-        Start = 0
-        # A line segment.
-        Line = 1
-        # A default Bézier curve.
-        Bezier = 3
-        # A mask point.
-        PathTypeMask = 7
-        # The corresponding segment is dashed.
-        DashMode = 0x10,
-        # A path marker.
-        PathMarker = 0x20,
-        # The endpoint of a subpath.
-        CloseSubpath = 0x80,
-        # A cubic Bézier curve.
-        Bezier3 = 3
+class PathPointType(enum.IntFlag):
+    #
+    # Summary:
+    #     The starting point of a System.Drawing.Drawing2D.GraphicsPath object.
+    Start = 0
+    #
+    # Summary:
+    #     A line segment.
+    Line = 1
+    #
+    # Summary:
+    #     A default Bézier curve.
+    Bezier = 3
+    #
+    # Summary:
+    #     A mask point.
+    PathTypeMask = 7
+    #
+    # Summary:
+    #     The corresponding segment is dashed.
+    DashMode = 0x10
+    #
+    # Summary:
+    #     A path marker.
+    PathMarker = 0x20
+    #
+    # Summary:
+    #     The endpoint of a subpath.
+    CloseSubpath = 0x80,
+    #
+    # Summary:
+    #     A cubic Bézier curve.
+    Bezier3 = 3
 
+class AbstractPath(object):
     def __init__(
             self,
-            points: typing.Iterable[PointF],
-            flags: typing.Iterable[PointFlag]
+            points: typing.Sequence[PointF],
+            types: typing.Sequence[PathPointType],
+            closed: bool
             ):
-        pass
+        if len(points) != len(types):
+            raise ValueError('AbstractPath point and type vectors have different lengths')
+        self._points = list(points)
+        self._types = list(types)
+        self.closed = closed
+
+    @property
+    def points(self) -> typing.Sequence[PointF]:
+        return self._points
+    @property
+    def types(self) -> typing.Sequence[PathPointType]:
+        return self._types
 
 # TODO: In the same way as AbstractFont, the fact this is using a QT
 # class is a hack and I need a way to abstract the image format in
@@ -671,7 +817,7 @@ class AbstractGraphics(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement scaleTransform')
     def translateTransform(self, dx: float, dy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement translateTransform')
-    def rotateTransform(self, angle: float) -> None:
+    def rotateTransform(self, degrees: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement rotateTransform')
     def multiplyTransform(self, matrix: AbstractMatrix) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement multiplyTransform')
@@ -750,6 +896,355 @@ class ImageCache(object):
             'HydA': AbstractImage(os.path.join(basePath, 'res/Candy/HydA.png')),
             'Belt': AbstractImage(os.path.join(basePath, 'res/Candy/Belt.png'))}
 
+class LabelStyle(object):
+    def __init__(
+            self,
+            rotation: float = 0,
+            scale: SizeF = 1,
+            translation: typing.Optional[PointF] = None,
+            uppercase: bool = False,
+            wrap: bool = False
+            ) -> None:
+        self.rotation = rotation
+        self.scale = scale
+        self.translation = translation if translation else PointF()
+        self.uppercase = uppercase
+        self.wrap = wrap
+
+class MapObject(object):
+    pass
+
+class VectorObject(MapObject):
+    def __init__(
+            self,
+            name: str,
+            originX: float,
+            originY: float,
+            scaleX: float,
+            scaleY: float,
+            nameX: float,
+            nameY: float,
+            points: typing.Sequence[PointF],
+            types: typing.Optional[typing.Sequence[PathPointType]] = None,
+            closed: bool = False,
+            mapOptions: MapOptions = 0):
+        super().__init__()
+
+        if types and (len(points) != len(types)):
+            pass # TODO: Remove debug code
+
+        if types and (len(points) != len(types)):
+            raise ValueError('VectorObject path point and type vectors have different lengths')
+
+        self.name = name
+        self.originX = originX
+        self.originY = originY
+        self.scaleX = scaleX
+        self.scaleY = scaleY
+        self.nameX = nameX
+        self.nameY = nameY
+        self.closed = closed
+        self.mapOptions: MapOptions = mapOptions
+        self._pathDataPoints = list(points)
+        # TODO: This uses byte instead of PathPointType
+        self._pathDataTypes = list(types) if types else None
+        self._minScale = None
+        self._maxScale = None
+        self._cachedBounds: typing.Optional[RectangleF] = None
+        self._cachedPath: typing.Optional[AbstractPath] = None
+
+    @property
+    def pathDataPoints(self) -> typing.Sequence[PointF]:
+        return self._pathDataPoints
+
+    @property
+    def bounds(self) -> RectangleF:
+        # Compute bounds if not already set
+        if (not self._cachedBounds) and self.pathDataPoints:
+            left = right = top = bottom = None
+            for point in self._pathDataPoints:
+                if (not left) or (point.x < left):
+                    left = point.x
+                if (not right) or (point.x > right):
+                    right = point.x
+                if (not top) or (point.y < top):
+                    top = point.y
+                if (not bottom) or (point.y > bottom):
+                    bottom = point.y
+            self._cachedBounds = RectangleF(
+                x=left,
+                y=top,
+                width=right - left,
+                height=bottom - top)
+        return RectangleF(self._cachedBounds) # Don't return internal copy
+
+    @property
+    def pathDataTypes(self) -> typing.List[int]:
+        if not self._pathDataPoints:
+            raise RuntimeError('Invalid VectorObject - PathDataPoints required')
+
+        if not self._pathDataTypes:
+            self._pathDataTypes = [PathPointType.Start]
+            for _ in range(1, len(self._pathDataPoints)):
+                self._pathDataTypes.append(PathPointType.Line)
+
+        return self._pathDataTypes
+
+    @property
+    def path(self) -> AbstractPath:
+        if not self.pathDataPoints:
+            raise RuntimeError('Invalid VectorObject - PathDataPoints required')
+        if not self._cachedPath:
+            self._cachedPath = AbstractPath(
+                points=self.pathDataPoints,
+                types=self.pathDataTypes,
+                closed=self.closed)
+        return self._cachedPath
+
+    def draw(
+            self,
+            graphics: AbstractGraphics,
+            rect: RectangleF,
+            pen: AbstractPen) -> None:
+        transformedBounds = self._transformedBounds()
+        if transformedBounds.intersectsWith(rect):
+            with graphics.save():
+                graphics.scaleTransform(scaleX=self.scaleX, scaleY=self.scaleY)
+                graphics.translateTransform(dx=-self.originX, dy=-self.originY)
+                graphics.drawPathOutline(pen, self.path)
+
+    def drawName(
+            self,
+            graphics: AbstractGraphics,
+            rect: RectangleF,
+            font: AbstractFont,
+            textBrush: AbstractBrush,
+            labelStyle: LabelStyle
+            ) -> None:
+        transformedBounds = self._transformedBounds()
+        if self.name and transformedBounds.intersectsWith(rect):
+            str = self.name
+            if labelStyle.uppercase:
+                str = str.upper()
+            pos = self._namePosition()
+
+            with graphics.save():
+                graphics.translateTransform(dx=pos.x, dy=pos.y)
+                graphics.scaleTransform(
+                    scaleX=1.0 / travellermap.ParsecScaleX,
+                    scaleY=1.0 / travellermap.ParsecScaleY)
+                graphics.rotateTransform(-labelStyle.rotation)
+
+                drawStringHelper(graphics, str, font, textBrush, 0, 0)
+
+    def _transformedBounds(self) -> RectangleF:
+        bounds = self.bounds
+
+        bounds.x -= self.originX
+        bounds.y -= self.originY
+
+        bounds.x *= self.scaleX
+        bounds.y *= self.scaleY
+        bounds.width *= self.scaleX
+        bounds.height *= self.scaleY
+        if bounds.width < 0:
+            bounds.x += bounds.width
+            bounds.width = -bounds.width
+        if bounds.height < 0:
+            bounds.y += bounds.height
+            bounds.height = -bounds.height
+
+        return bounds
+
+    def _namePosition(self) -> PointF:
+        bounds = self.bounds
+        transformedBounds = self._transformedBounds()
+        center = transformedBounds.centre
+        center.x += transformedBounds.width * (self.nameX / bounds.width)
+        center.y += transformedBounds.height * (self.nameY / bounds.height)
+
+        return center
+
+# NOTE: My implementation of vectors is slightly different from the Traveller
+# Map one. The vector format supports point types which specify a set of flags
+# for each point that determine how the point should be interpreted. A full
+# list of the flags can be found here
+# https://learn.microsoft.com/en-us/windows/win32/api/gdiplusenums/ne-gdiplusenums-pathpointtype
+# When vector definitions use the CloseSubpath flag the Traveller Map
+# implementation keeps these keeps the sub paths as a single VectorObject (i.e.
+# one VectorObject per file). The intention is that the rendering engine should
+# interpret the flags and render separate sub paths. This is great if the
+# rendering engine supports it, but if it doesn't (e.g. Qt) then it can make
+# rendering more complex/inefficient. My implementation splits sub paths into
+# multiple VectorObject to avoid repeated processing at render time
+class VectorObjectCache(object):
+    _BorderFiles = [
+        'res/Vectors/Imperium.xml',
+        'res/Vectors/Aslan.xml',
+        'res/Vectors/Kkree.xml',
+        'res/Vectors/Vargr.xml',
+        'res/Vectors/Zhodani.xml',
+        'res/Vectors/Solomani.xml',
+        'res/Vectors/Hive.xml',
+        'res/Vectors/SpinwardClient.xml',
+        'res/Vectors/RimwardClient.xml',
+        'res/Vectors/TrailingClient.xml']
+
+    _RiftFiles = [
+        'res/Vectors/GreatRift.xml',
+        'res/Vectors/LesserRift.xml',
+        'res/Vectors/WindhornRift.xml',
+        'res/Vectors/DelphiRift.xml',
+        'res/Vectors/ZhdantRift.xml']
+
+    _RouteFiles = [
+        'res/Vectors/J5Route.xml',
+        'res/Vectors/J4Route.xml',
+        'res/Vectors/CoreRoute.xml']
+
+    def __init__(self, basePath: str):
+        self.borders = self._loadFiles(basePath, VectorObjectCache._BorderFiles)
+        self.rifts = self._loadFiles(basePath, VectorObjectCache._RiftFiles)
+        self.routes = self._loadFiles(basePath, VectorObjectCache._RouteFiles)
+
+    def _loadFiles(
+            self,
+            basePath: str,
+            paths: typing.Iterable[str]
+            ) -> typing.List[VectorObject]:
+        vectors = []
+        for path in paths:
+            try:
+                vectors.extend(self._loadFile(path=os.path.join(basePath, path)))
+            except Exception as ex:
+                # TODO: Do something better
+                print(ex)
+        return vectors
+
+
+    def _loadFile(self, path: str) -> typing.Iterable[VectorObject]:
+        with open(path, 'r', encoding='utf-8-sig') as file:
+            content = file.read()
+
+        rootElement = xml.etree.ElementTree.fromstring(content)
+
+        name = ''
+        element = rootElement.find('./Name')
+        if element is not None:
+            name = element.text
+
+        mapOptions = 0
+        element = rootElement.find('./MapOptions')
+        if element is not None:
+            for option in element.text.split():
+                try:
+                    mapOptions |= MapOptions[option]
+                except Exception as ex:
+                    # TODO: Do something better
+                    print(ex)
+
+        originX = 0
+        element = rootElement.find('./OriginX')
+        if element is not None:
+            originX = float(element.text)
+
+        originY = 0
+        element = rootElement.find('./OriginY')
+        if element is not None:
+            originY= float(element.text)
+
+        scaleX = 1 # TODO: Not sure about this default
+        element = rootElement.find('./ScaleX')
+        if element is not None:
+            scaleX = float(element.text)
+
+        scaleY = 1 # TODO: Not sure about this default
+        element = rootElement.find('./ScaleY')
+        if element is not None:
+            scaleY = float(element.text)
+
+        nameX = 0
+        element = rootElement.find('./NameX')
+        if element is not None:
+            nameX = float(element.text)
+
+        nameY = 0
+        element = rootElement.find('./NameY')
+        if element is not None:
+            nameY = float(element.text)
+
+        # TODO: Is this used?
+        #element = rootElement.find('./Type')
+
+        # NOTE: Don't read bounds, let code generate it
+        #element = rootElement.find('./Bounds')
+
+        points = []
+        for pointElement in rootElement.findall('./PathDataPoints/PointF'):
+            x = 0
+            element = pointElement.find('./X')
+            if element is not None:
+                x = float(element.text)
+
+            y = 0
+            element = pointElement.find('./Y')
+            if element is not None:
+                y = float(element.text)
+
+            points.append(PointF(x=x, y=y))
+
+        element = rootElement.find('./PathDataTypes')
+        types = None
+        if element is not None:
+            types = base64.b64decode(element.text)
+            startIndex = 0
+            finishIndex = len(points) - 1
+            vectorPoints = []
+            vectors = []
+
+            for currentIndex, (point, type) in enumerate(zip(points, types)):
+                isStartPoint = (type & PathPointType.PathTypeMask) == PathPointType.Start
+                isLastPoint = currentIndex == finishIndex
+                isClosed = (type & PathPointType.CloseSubpath) == PathPointType.CloseSubpath
+
+                if isClosed or isLastPoint:
+                    vectorPoints.append(point)
+
+                if (isStartPoint and vectorPoints) or isClosed or isLastPoint:
+                    isFirstVector = not vectors
+                    nextIndex = currentIndex + (0 if isStartPoint else 1)
+                    vectors.append(VectorObject(
+                        name=name if isFirstVector else '', # Only set name on first to avoid multiple rendering
+                        originX=originX,
+                        originY=originY,
+                        scaleX=scaleX,
+                        scaleY=scaleY,
+                        nameX=nameX,
+                        nameY=nameY,
+                        points=vectorPoints,
+                        types=types[startIndex:nextIndex],
+                        closed=isClosed,
+                        mapOptions=mapOptions))
+                    vectorPoints.clear()
+                    startIndex = nextIndex
+
+                vectorPoints.append(point)
+
+            return vectors
+        else:
+            # No path data types so this is just a single path
+            return [VectorObject(
+                name=name,
+                originX=originX,
+                originY=originY,
+                scaleX=scaleX,
+                scaleY=scaleY,
+                nameX=nameX,
+                nameY=nameY,
+                points=points,
+                types=types,
+                mapOptions=mapOptions)]
+
 class StyleSheet(object):
     _DefaultFont = 'Arial'
 
@@ -792,21 +1287,21 @@ class StyleSheet(object):
     class StyleElement(object):
         def __init__(self):
             self.visible = False
-            self.fillColor = '#000000'
+            self.fillColor = ''
             self.content = ''
-            self.pen = AbstractPen('#000000')
-            self.textColor = '#000000'
-            self.textHighlightColor = '#000000'
+            self.pen = AbstractPen()
+            self.textColor = ''
+            self.textHighlightColor = ''
+
+            self.textStyle = LabelStyle()
+            self.textBackgroundStyle = TextBackgroundStyle.NoStyle
+            self.fontInfo = FontInfo()
+            self.smallFontInfo = FontInfo()
+            self.mediumFontInfo = FontInfo()
+            self.largeFontInfo = FontInfo()
+            self.position = PointF()
 
             # TODO: Still to fill out
-            self.textStyle = None
-            self.textBackgroundStyle = None
-            self.fontInfo = None
-            self.smallFontInfo = None
-            self.mediumFontInfo = None
-            self.largeFontInfo = None
-            self.position = PointF(0, 0)
-
             self._font = None
             self._smallFont = None
             self._mediumFont = None
@@ -943,7 +1438,7 @@ class StyleSheet(object):
         self.starport = StyleSheet.StyleElement()
 
         #self.glyphFont = FontInfo() # TODO: Need to figure out defaults
-        self.worldDetails: WorldDetails = 0
+        self.worldDetails: WorldDetails = WorldDetails.NoDetails
         self.lowerCaseAllegiance = False
         #self.wingdingFont = FontInfo() # TODO: Need to figure out defaults
         self.showGasGiantRing = False
@@ -975,6 +1470,7 @@ class StyleSheet(object):
         self.macroRoutes = StyleSheet.StyleElement()
         self.microRoutes = StyleSheet.StyleElement()
         self.macroBorders = StyleSheet.StyleElement()
+        self.macroNames = StyleSheet.StyleElement()
         self.megaNames = StyleSheet.StyleElement()
         self.pseudoRandomStars = StyleSheet.StyleElement()
         self.placeholder = StyleSheet.StyleElement()
@@ -987,6 +1483,8 @@ class StyleSheet(object):
         self.microBorderStyle = MicroBorderStyle.Hex
         self.hexStyle = HexStyle.Hex
         self.overrideLineStyle: typing.Optional[LineStyle] = None
+
+        self.layerOrder: typing.Dict[LayerId, int] = {}
 
         onePixel = 1.0 / self.scale
 
@@ -1011,6 +1509,15 @@ class StyleSheet(object):
         self.showRiftOverlay = (self.scale <= StyleSheet._PseudoRandomStarsMaxScale) or \
              (StyleSheet.style == travellermap.Style.Candy)
 
+        self.t5AllegianceCodes = self.scale >= StyleSheet._T5AllegianceCodeMinScale
+
+        self.riftOpacity = StyleSheet._floatScaleInterpolate(
+            minValue=0,
+            maxValue=0.85,
+            scale=self._scale,
+            minScale=1 / 4,
+            maxScale=4)
+
         self.deepBackgroundOpacity = StyleSheet._floatScaleInterpolate(
             minValue=1,
             maxValue=0,
@@ -1018,52 +1525,881 @@ class StyleSheet(object):
             minScale=1 / 8,
             maxScale=2)
 
+        self.macroRoutes.visible = (self.scale >= StyleSheet._MacroRouteMinScale) and \
+            (self.scale <= StyleSheet._MacroRouteMaxScale)
+        self.macroNames.visible = (self.scale >= StyleSheet._MacroLabelMinScale) and \
+            (self.scale <= StyleSheet._MacroLabelMaxScale)
+        self.megaNames.visible = self.scale <= StyleSheet._MegaLabelMaxScale and \
+            ((self.options & MapOptions.NamesMask) != 0)
+        self.showMicroNames = (self.scale >= StyleSheet._MicroNameMinScale) and \
+            ((self.options & MapOptions.NamesMask) != 0)
+        self.capitals.visible = (self.scale >= StyleSheet._MacroWorldsMinScale) and \
+            (self.scale <= StyleSheet._MacroWorldsMaxScale)
+
+        self.hexStyle = \
+            HexStyle.Square \
+            if ((self.options & MapOptions.ForceHexes) == 0) and (self.scale < StyleSheet._ParsecHexMinScale) else \
+            HexStyle.Hex
+        self.microBorderStyle = MicroBorderStyle.Square if self.hexStyle == HexStyle.Square else MicroBorderStyle.Hex
+
+        self.macroBorders.visible = (self.scale >= StyleSheet._MacroBorderMinScale) and \
+            (self.scale < StyleSheet._MicroBorderMinScale) and \
+            ((self.options & MapOptions.BordersMask) != 0)
+        self.microBorders.visible = (self.scale >= StyleSheet._MicroBorderMinScale) and \
+            ((self.options & MapOptions.BordersMask) != 0)
+        self.fillMicroBorders = self.microBorders.visible and \
+            ((self.options & MapOptions.FilledBorders) != 0)
+        self.microRoutes.visible = (self.scale >= StyleSheet._RouteMinScale)
+
+        if self.scale < StyleSheet._WorldBasicMinScale:
+            self.worldDetails = WorldDetails.Dotmap
+        elif self.scale < StyleSheet._WorldFullMinScale:
+            self.worldDetails = WorldDetails.Atlas
+        else:
+            self.worldDetails = WorldDetails.Poster
+
+        self.discRadius = 0.1 if ((self.worldDetails & WorldDetails.Type) != 0) else  0.2
+
+        self.showWorldDetailColors = self.worldDetails == WorldDetails.Poster and \
+            ((self.options & MapOptions.WorldColors) != 0)
+
+        self.lowerCaseAllegiance = (self.scale < StyleSheet._WorldFullMinScale)
+        self.showGasGiantRing = (self.scale >= StyleSheet._WorldUwpMinScale)
+
+        self.worlds.textBackgroundStyle = TextBackgroundStyle.Rectangle
+
+        self.hexCoordinateStyle = HexCoordinateStyle.Sector
+        self.numberAllHexes = False
+
+        if self.scale < StyleSheet._WorldFullMinScale:
+            # Atlas-style
+
+            x = 0.225
+            y = 0.125
+
+            self.baseTopPosition = PointF(-x, -y)
+            self.baseBottomPosition = PointF(-x, y)
+            self.gasGiantPosition =  PointF(x, -y)
+            self.allegiancePosition = PointF(x, y)
+
+            self.baseMiddlePosition = PointF(
+                -0.35 if ((self.options & MapOptions.ForceHexes) != 0) else -0.2,
+                0)
+            self.starport.position = PointF(0, -0.24)
+            self.uwp.position = PointF(0, 0.24)
+            self.worlds.position = PointF(0, 0.4)
+        else:
+            # Poster-style
+
+            x = 0.25
+            y = 0.18
+
+            self.baseTopPosition = PointF(-x, -y)
+            self.baseBottomPosition = PointF(-x, y)
+            self.gasGiantPosition = PointF(x, -y)
+            self.allegiancePosition = PointF(x, y)
+
+            self.baseMiddlePosition = PointF(-0.35, 0)
+            self.starport.position = PointF(0, -0.225)
+            self.uwp.position = PointF(0, 0.225)
+            self.worlds.position = PointF(0, 0.37)#  Don't hide hex bottom, leave room for UWP
+
+        if self.scale >= StyleSheet._WorldUwpMinScale:
+            self.worldDetails |= WorldDetails.Uwp
+            self.baseBottomPosition.y = 0.1
+            self.baseMiddlePosition.y = (self.baseBottomPosition.y + self.baseTopPosition.y) / 2
+            self.allegiancePosition.Y = 0.1
+
+        if self.worlds.visible:
+            fontScale = \
+                1 \
+                if (self.scale <= 96) or (self.style == travellermap.Style.Candy) else \
+                96 / min(self.scale, 192)
+
+            self.worlds.fontInfo = FontInfo(
+                StyleSheet._DefaultFont,
+                0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
+                FontStyle.Bold)
+            self.wingdingFont = FontInfo(
+                "Wingdings",
+                0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.175 * fontScale))
+            self.glyphFont = FontInfo(
+                "Arial Unicode MS,Segoe UI Symbol,Arial",
+                0.175 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
+                FontStyle.Bold)
+            self.uwp.fontInfo = FontInfo(StyleSheet._DefaultFont, 0.1 * fontScale)
+            self.hexNumber.fontInfo = FontInfo(StyleSheet._DefaultFont, 0.1 * fontScale)
+            self.worlds.smallFontInfo = FontInfo(
+                StyleSheet._DefaultFont,
+                0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.1 * fontScale))
+            self.worlds.largeFontInfo = self.worlds.fontInfo
+            self.starport.fontInfo = \
+                FontInfo(self.worlds.smallFontInfo) \
+                if (self.scale < StyleSheet._WorldFullMinScale) else \
+                FontInfo(self.worlds.fontInfo)
+
+        self.sectorName.fontInfo = FontInfo(StyleSheet._DefaultFont, 5.5)
+        self.subsectorNames.fontInfo = FontInfo(StyleSheet._DefaultFont, 1.5)
+
+        overlayFontSize = max(onePixel * 12, 0.375)
+        self.droyneWorlds.fontInfo = FontInfo(StyleSheet._DefaultFont, overlayFontSize)
+        self.ancientsWorlds.fontInfo = FontInfo(StyleSheet._DefaultFont, overlayFontSize)
+        self.minorHomeWorlds.fontInfo = FontInfo(StyleSheet._DefaultFont, overlayFontSize)
+
+        self.droyneWorlds.content = "\u2605\u2606" # BLACK STAR / WHITE STAR
+        self.minorHomeWorlds.content = "\u273B" # TEARDROP-SPOKED ASTERISK
+        self.ancientsWorlds.content = "\u2600" # BLACK SUN WITH RAYS
+
+        self.microBorders.fontInfo = FontInfo(
+            StyleSheet._DefaultFont,
+            # TODO: This was == rather tan <= but in my implementation scale isn't
+            # usually going to be an integer value so <= seems more appropriate.
+            # Just need to check it shouldn't be >=
+            0.6 if self.scale <= StyleSheet._MicroNameMinScale else 0.25,
+            FontStyle.Bold)
+        self.microBorders.smallFontInfo = FontInfo(StyleSheet._DefaultFont, 0.15, FontStyle.Bold)
+        self.microBorders.largeFontInfo = FontInfo(StyleSheet._DefaultFont, 0.75, FontStyle.Bold)
+
+        self.macroNames.fontInfo = FontInfo(
+            families=StyleSheet._DefaultFont,
+            size=8 / 1.4,
+            style=FontStyle.Bold)
+        self.macroNames.smallFontInfo = FontInfo(
+            families=StyleSheet._DefaultFont,
+            size=5 / 1.4,
+            style=FontStyle.Regular)
+        self.macroNames.mediumFontInfo = FontInfo(
+            families=StyleSheet._DefaultFont,
+            size=6.5 / 1.4,
+            style=FontStyle.Italic)
+
+        megaNameScaleFactor = min(35, 0.75 * onePixel)
+        self.megaNames.fontInfo = FontInfo(
+            StyleSheet._DefaultFont,
+            24 * megaNameScaleFactor,
+            FontStyle.Bold)
+        self.megaNames.mediumFontInfo = FontInfo(
+            StyleSheet._DefaultFont,
+            22 * megaNameScaleFactor,
+            FontStyle.Regular)
+        self.megaNames.smallFontInfo = FontInfo(
+            StyleSheet._DefaultFont,
+            18 * megaNameScaleFactor,
+            FontStyle.Italic)
+
+        self.capitals.fillColor = '#0000FF' # TODO: Color.Wheat
+        self.capitals.textColor = '#0000FF' # TODO: TravellerColors.Red
+        self.amberZone.visible = self.redZone.visible = True
+        self.amberZone.pen.color = '#0000FF' # TODO: TravellerColors.Amber
+        self.redZone.pen.color = '#0000FF' # TODO: TravellerColors.Red
+        self.macroBorders.pen.color = '#FF0000'
+        self.macroRoutes.pen.color = '#FFFFFF'
+        self.microBorders.pen.color = '#0000FF' # TODO: Color.Gray
+        self.microRoutes.pen.color = '#0000FF' # TODO: Color.Gray
+
+        self.microBorders.textColor = '#0000FF' # TODO: TravellerColors.Amber;
+        self.worldWater.fillColor = '#0000FF' # TODO: Color.DeepSkyBlue;
+        self.worldNoWater.fillColor = '#FFFFFF'
+        self.worldNoWater.pen.color = '#0000FF' # TODO: Color.Empty;
+
+        gridColor = '#0000FF' # TODO: Color.FromArgb(ScaleInterpolate(0, 255, scale, SectorGridMinScale, SectorGridFullScale), Color.Gray);
+        self.parsecGrid.pen = AbstractPen(gridColor, onePixel)
+        self.subsectorGrid.pen = AbstractPen(gridColor, onePixel * 2)
+        self.sectorGrid.pen = AbstractPen(gridColor, (4 if self.subsectorGrid.visible else 2) * onePixel)
+        self.worldWater.pen = AbstractPen(
+            '#0000FF', # TODO: Color.Empty,
+            max(0.01, onePixel))
+
+        self.microBorders.textStyle.rotation = 0
+        self.microBorders.textStyle.translation = PointF(0, 0)
+        self.microBorders.textStyle.scale = SizeF(1.0, 1.0)
+        self.microBorders.textStyle.uppercase = False
+
+        self.sectorName.textStyle.rotation = -50 # degrees
+        self.sectorName.textStyle.translation = PointF(0, 0)
+        self.sectorName.textStyle.scale = SizeF(0.75, 1.0)
+        self.sectorName.textStyle.uppercase = False
+        self.sectorName.textStyle.wrap = True
+
+        self.subsectorNames.textStyle = self.sectorName.textStyle
+
+        self.worlds.textStyle.rotation = 0
+        self.worlds.textStyle.scale = SizeF(1.0, 1.0)
+        self.worlds.textStyle.translation = PointF(self.worlds.position)
+        self.worlds.textStyle.uppercase = False
+
+        self.hexNumber.position = PointF(0, -0.5)
+
+        self.showNebulaBackground = False
         self.showGalaxyBackground = self.deepBackgroundOpacity > 0.0
+        self.useWorldImages = False
+
+        # Cap pen widths when zooming in
+        penScale = 1 if self.scale <= 64 else (64 / self.scale)
+
+        borderPenWidth = 1
+        if self.scale >= StyleSheet._MicroBorderMinScale and \
+            self.scale >= StyleSheet._ParsecMinScale:
+            borderPenWidth = 0.16 * penScale
+
+        routePenWidth = 0.2 if self.scale <= 16 else (0.08 * penScale)
+
+        self.microBorders.pen.width = borderPenWidth
+        self.macroBorders.pen.width = borderPenWidth
+        self.microRoutes.pen.width = routePenWidth
+
+        self.amberZone.pen.width = self.redZone.pen.width = 0.05 * penScale
+
+        self.macroRoutes.pen.width = borderPenWidth
+        self.macroRoutes.pen.dashStyle = DashStyle.Dash
+
+        self.populationOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x80, 0xff, 0xff, 0x00)
+        self.importanceOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x20, 0x80, 0xff, 0x00)
+        self.highlightWorlds.fillColor = '#0000FF' # TODO: Color.FromArgb(0x80, 0xff, 0x00, 0x00)
+
+        self.populationOverlay.pen = AbstractPen(
+            '#0000FF', # TODO: Color.Empty,
+            0.03 * penScale,
+            DashStyle.Dash)
+        self.importanceOverlay.pen = AbstractPen(
+            '#0000FF', # TODO: Color.Empty,
+            0.03 * penScale,
+            DashStyle.Dot)
+        self.highlightWorlds.pen = AbstractPen(
+            '#0000FF', # TODO: Color.Empty,
+            0.03 * penScale,
+            DashStyle.DashDot)
+
+        self.capitalOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x80, TravellerColors.Green)
+        self.capitalOverlayAltA.fillColor = '#0000FF' # TODO: Color.FromArgb(0x80, Color.Blue)
+        self.capitalOverlayAltB.fillColor = '#0000FF' # TODO: Color.FromArgb(0x80, TravellerColors.Amber)
+
+        fadeSectorSubsectorNames = True
+
+        self.placeholder.content = "*"
+        self.placeholder.fontInfo = FontInfo("Georgia", 0.6)
+        self.placeholder.position = PointF(0, 0.17)
+
+        self.anomaly.content = "\u2316"; # POSITION INDICATOR
+        self.anomaly.fontInfo = FontInfo("Arial Unicode MS,Segoe UI Symbol", 0.6)
+
+        # Generic colors; applied to various elements by default (see end of this method).
+        # May be overridden by specific styles
+        foregroundColor = '#FFFFFF'
+        lightColor = '#0000FF' # TODO: Color.LightGray
+        darkColor = '#0000FF' # TODO: Color.DarkGray
+        dimColor = '#0000FF' # TODO: Color.DimGray
+        highlightColor = '#FF0000'
+
+        layers: typing.List[LayerId] = [
+            #------------------------------------------------------------
+            # Background
+            #------------------------------------------------------------
+
+            LayerId.Background_Solid,
+            LayerId.Background_NebulaTexture,
+            LayerId.Background_Galaxy,
+            LayerId.Background_PseudoRandomStars,
+            LayerId.Background_Rifts,
+
+            #------------------------------------------------------------
+            # Foreground
+            #------------------------------------------------------------
+
+            LayerId.Macro_Borders,
+            LayerId.Macro_Routes,
+
+            LayerId.Grid_Sector,
+            LayerId.Grid_Subsector,
+            LayerId.Grid_Parsec,
+
+            LayerId.Names_Subsector,
+
+            LayerId.Micro_BordersFill,
+            LayerId.Micro_BordersShade,
+            LayerId.Micro_BordersStroke,
+            LayerId.Micro_Routes,
+            LayerId.Micro_BorderExplicitLabels,
+
+            LayerId.Names_Sector,
+
+            LayerId.Macro_GovernmentRiftRouteNames,
+            LayerId.Macro_CapitalsAndHomeWorlds,
+            LayerId.Mega_GalaxyScaleLabels,
+
+            LayerId.Worlds_Background,
+            LayerId.Worlds_Foreground,
+            LayerId.Worlds_Overlays,
+
+            #------------------------------------------------------------
+            # Overlays
+            #------------------------------------------------------------
+
+            LayerId.Overlay_DroyneChirperWorlds,
+            LayerId.Overlay_MinorHomeworlds,
+            LayerId.Overlay_AncientsWorlds,
+            LayerId.Overlay_ReviewStatus]
 
         if self._style is travellermap.Style.Poster:
             pass
         elif self._style is travellermap.Style.Atlas:
-            pass
+            self.grayscale = True
+            self.lightBackground = True
+
+            self.capitals.fillColor = '#0000FF' # TODO: Color.DarkGray
+            self.capitals.textColor = '#000000'
+            self.amberZone.pen.color = '#0000FF' # TODO: Color.LightGray
+            self.redZone.pen.color = '#000000'
+            self.macroBorders.pen.color = '#000000'
+            self.macroRoutes.pen.color = '#0000FF' # TODO: Color.Gray
+            self.microBorders.pen.color = '#000000'
+            self.microRoutes.pen.color = '#0000FF' # TODO: Color.Gray
+
+            foregroundColor = '#000000'
+            self.backgroundColor = '#FFFFFF'
+            lightColor = '#0000FF' # TODO: Color.DarkGray
+            darkColor = '#0000FF' # TODO: Color.DarkGray
+            dimColor = '#0000FF' # TODO: Color.LightGray
+            highlightColor = '#0000FF' # TODO: Color.Gray
+            self.microBorders.textColor = '#0000FF' # TODO: Color.Gray
+            self.worldWater.fillColor = '#000000'
+            self.worldNoWater.fillColor = '#0000FF' # TODO: Color.Empty
+
+            self.worldNoWater.fillColor = '#0000FF' # TODO: Color.White
+            self.worldNoWater.pen = AbstractPen('#000000', onePixel)
+
+            self.riftOpacity = min(self.riftOpacity, 0.70)
+
+            self.showWorldDetailColors = False
+
+            self.populationOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x40, highlightColor)
+            self.populationOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.importanceOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x20, highlightColor)
+            self.importanceOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.highlightWorlds.fillColor = '#0000FF' # TODO: Color.FromArgb(0x30, highlightColor)
+            self.highlightWorlds.pen.color = '#0000FF' # TODO: Color.Gray
         elif self._style is travellermap.Style.Fasa:
-            pass
+            self.showGalaxyBackground = False
+            self.deepBackgroundOpacity = 0
+            self.riftOpacity = 0
+
+            inkColor = '#5C4033'
+
+            foregroundColor = inkColor
+            self.backgroundColor = '#FFFFFF'
+
+            # NOTE: This TODO came in from the Traveller Map code
+            self.grayscale = True # TODO: Tweak to be "monochrome"
+            self.lightBackground = True
+
+            self.capitals.fillColor = inkColor
+            self.capitals.textColor = inkColor
+            self.amberZone.pen.color = inkColor
+            self.amberZone.pen.width = onePixel * 2
+            self.redZone.pen.color = '#0000FF' # TODO: Color.Empty
+            self.redZone.fillColor = '#0000FF' # TODO: Color.FromArgb(0x80, inkColor)
+
+            self.macroBorders.pen.color = inkColor
+            self.macroRoutes.pen.color = inkColor
+
+            self.microBorders.pen.color = inkColor
+            self.microBorders.pen.width = onePixel * 2
+            self.microBorders.fontInfo.size *= 0.6
+            self.microBorders.fontInfo.style = FontStyle.Regular
+
+            self.microRoutes.pen.color = inkColor
+
+            lightColor = '#0000FF' # TODO: Color.FromArgb(0x80, inkColor)
+            darkColor = inkColor
+            dimColor = inkColor
+            highlightColor = inkColor
+            self.microBorders.textColor = inkColor
+            self.hexStyle = HexStyle.Hex
+            self.microBorderStyle = MicroBorderStyle.Curve
+
+            self.parsecGrid.pen.color = lightColor
+            self.sectorGrid.pen.color = lightColor
+            self.subsectorGrid.pen.color = lightColor
+
+            self.worldWater.fillColor = inkColor
+            self.worldNoWater.fillColor = inkColor
+            self.worldWater.pen.color = '#0000FF' # TODO: Color.Empty
+            self.worldNoWater.pen.color = '#0000FF' # TODO: Color.Empty
+
+            self.showWorldDetailColors = False
+
+            self.worldDetails &= ~WorldDetails.Starport
+            self.worldDetails &= ~WorldDetails.Allegiance
+            self.worldDetails &= ~WorldDetails.Bases
+            self.worldDetails &= ~WorldDetails.GasGiant
+            self.worldDetails &= ~WorldDetails.Highlight
+            self.worldDetails &= ~WorldDetails.Uwp
+            self.worlds.fontInfo.size *= 0.85
+            self.worlds.textStyle.translation = PointF(0, 0.25)
+
+            self.numberAllHexes = True
+            self.hexCoordinateStyle = HexCoordinateStyle.Subsector
+            self.overrideLineStyle = LineStyle.Solid
+
+            self.populationOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x40, highlightColor)
+            self.populationOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.importanceOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x20, highlightColor)
+            self.importanceOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.highlightWorlds.fillColor = '#0000FF' # TODO: Color.FromArgb(0x30, highlightColor)
+            self.highlightWorlds.pen.color = '#0000FF' # TODO: Color.Gray
         elif self._style is travellermap.Style.Print:
-            pass
+            self.lightBackground = True
+
+            foregroundColor = '#000000'
+            self.backgroundColor = '#FFFFFF'
+            lightColor = '#0000FF' # TODO: Color.DarkGray
+            darkColor = '#0000FF' # TODO: Color.DarkGray
+            dimColor = '#0000FF' # TODO: Color.LightGray
+            self.microRoutes.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.microBorders.textColor = '#0000FF' # TODO: Color.Brown
+
+            self.amberZone.pen.color = '#0000FF' # TODO: TravellerColors.Amber
+            self.worldNoWater.fillColor = '#FFFFFF'
+            self.worldNoWater.pen = AbstractPen('#000000', onePixel)
+
+            self.riftOpacity = min(self.riftOpacity, 0.70)
+
+            self.populationOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x40, populationOverlay.fillColor)
+            self.populationOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.importanceOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x20, importanceOverlay.fillColor)
+            self.importanceOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.highlightWorlds.fillColor = '#0000FF' # TODO: Color.FromArgb(0x30, highlightWorlds.fillColor)
+            self.highlightWorlds.pen.color = '#0000FF' # TODO: Color.Gray
         elif self._style is travellermap.Style.Draft:
-            pass
+            inkOpacity = 0xB0
+
+            self.showGalaxyBackground = False
+            self.lightBackground = True
+
+            self.deepBackgroundOpacity = 0
+
+            # TODO: I Need to handle alpha here
+            self.backgroundColor = '#0000FF' # TODO: Color.AntiqueWhite
+            foregroundColor = '#000000' # TODO: Color.FromArgb(inkOpacity, Color.Black)
+            highlightColor = '#FF0000' # TODO: Color.FromArgb(inkOpacity, TravellerColors.Red)
+
+            lightColor = '#0000FF' # TODO: Color.FromArgb(inkOpacity, Color.DarkCyan)
+            darkColor = '#000000' # TODO: Color.FromArgb(inkOpacity, Color.Black)
+            dimColor = '#000000' # TODO: Color.FromArgb(inkOpacity / 2, Color.Black)
+
+            self.subsectorGrid.pen.color = '#0000FF' # TODO: Color.FromArgb(inkOpacity, Color.Firebrick)
+
+            fontName = "Comic Sans MS"
+            self.worlds.fontInfo.families = fontName
+            self.worlds.smallFontInfo.families = fontName
+            self.starport.fontInfo.families = fontName
+            self.worlds.largeFontInfo.families = fontName
+            self.worlds.largeFontInfo.size = self.worlds.fontInfo.size * 1.25
+            self.worlds.fontInfo.size *= 0.8
+
+            self.macroNames.fontInfo.families = fontName
+            self.macroNames.mediumFontInfo.families = fontName
+            self.macroNames.smallFontInfo.families = fontName
+            self.megaNames.fontInfo.families = fontName
+            self.megaNames.mediumFontInfo.families = fontName
+            self.megaNames.smallFontInfo.families = fontName
+            self.microBorders.smallFontInfo.families = fontName
+            self.microBorders.largeFontInfo.families = fontName
+            self.microBorders.fontInfo.families = fontName
+            self.macroBorders.fontInfo.families = fontName
+            self.macroRoutes.fontInfo.families = fontName
+            self.capitals.fontInfo.families = fontName
+            self.macroBorders.smallFontInfo.families = fontName
+
+            self.microBorders.textStyle.uppercase = True
+
+            self.sectorName.textStyle.uppercase = True
+            self.subsectorNames.textStyle.uppercase = True
+
+            # NOTE: This TODO came in from Traveller Map
+            # TODO: Render small, around edges
+            self.subsectorNames.visible = False
+
+            self.worlds.textStyle.uppercase = True
+
+            # NOTE: This TODO came in from Traveller Map
+            # TODO: Decide on this. It's nice to not overwrite the parsec grid, but
+            # it looks very cluttered, especially amber/red zones.
+            self.worlds.textBackgroundStyle = TextBackgroundStyle.NoStyle
+
+            self.worldDetails &= ~WorldDetails.Allegiance
+
+            self.subsectorNames.fontInfo.families = fontName
+            self.sectorName.fontInfo.families = fontName
+
+            self.worlds.largeFontInfo.style |= FontStyle.Underline
+
+            self.microBorders.pen.width = onePixel * 4
+            self.microBorders.pen.dashStyle = DashStyle.Dot
+
+            self.worldNoWater.fillColor = foregroundColor
+            self.worldWater.fillColor = '#0000FF' # TODO: Color.Empty
+            self.worldWater.pen = AbstractPen(foregroundColor, onePixel * 2)
+
+            self.amberZone.pen.color = foregroundColor
+            self.amberZone.pen.width = onePixel
+            self.redZone.pen.width = onePixel * 2
+
+            self.microRoutes.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.parsecGrid.pen.color = lightColor
+            self.microBorders.textColor = '#0000FF' # TODO: Color.FromArgb(inkOpacity, Color.Brown)
+
+            self.riftOpacity = min(self.riftOpacity, 0.30)
+
+            self.numberAllHexes = True
+
+            self.populationOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x40, populationOverlay.fillColor)
+            self.populationOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.importanceOverlay.fillColor = '#0000FF' # TODO: Color.FromArgb(0x20, importanceOverlay.fillColor)
+            self.importanceOverlay.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.highlightWorlds.fillColor = '#0000FF' # TODO: Color.FromArgb(0x30, highlightWorlds.fillColor)
+            self.highlightWorlds.pen.color = '#0000FF' # TODO: Color.Gray
         elif self._style is travellermap.Style.Candy:
+            self.useWorldImages = True
             self.pseudoRandomStars.visible = False
+            self.fadeSectorSubsectorNames = False
 
             self.showNebulaBackground = self.deepBackgroundOpacity < 0.5
+
+            self.hexStyle = HexStyle.NoHex
+            self.microBorderStyle = MicroBorderStyle.Curve
+
+            self.sectorGrid.visible = self.sectorGrid.visible and (self.scale >= 4)
+            self.subsectorGrid.visible = self.subsectorGrid.visible and (self.scale >= 32)
+            self.parsecGrid.visible = False
+
+            self.subsectorGrid.pen.width = 0.03 * (64.0 / self.scale)
+            self.subsectorGrid.pen.dashStyle = DashStyle.Custom
+            self.subsectorGrid.pen.customDashPattern = [10.0, 8.0]
+
+            self.sectorGrid.pen.width = 0.03 * (64.0 / self.scale)
+            self.sectorGrid.pen.dashStyle = DashStyle.Custom
+            self.sectorGrid.pen.customDashPattern = [10.0, 8.0]
+
+            self.worlds.textBackgroundStyle = TextBackgroundStyle.Shadow
+
+            self.worldDetails = worldDetails &  ~WorldDetails.Starport & \
+                ~WorldDetails.Allegiance & ~WorldDetails.Bases & ~WorldDetails.Hex
+
+            if (self.scale < StyleSheet._CandyMinWorldNameScale):
+                worldDetails = worldDetails & ~WorldDetails.KeyNames & ~WorldDetails.AllNames
+            if (self.scale < StyleSheet._CandyMinUwpScale):
+                worldDetails &= ~WorldDetails.Uwp
+
+            self.amberZone.pen.color = '#0000FF' # TODO: Color.Goldenrod
+            self.amberZone.pen.width = self.redZone.pen.width = 0.035
+
+            self.sectorName.textStyle.rotation = 0
+            self.sectorName.textStyle.translation = PointF(0, -0.25)
+            self.sectorName.textStyle.scale = SizeF(0.5, 0.25)
+            self.sectorName.textStyle.uppercase = True
+
+            self.subsectorNames.textStyle.rotation = 0
+            self.subsectorNames.textStyle.translation = PointF(0, -0.25)
+            self.subsectorNames.textStyle.scale = SizeF(0.3, 0.15) #  Expand
+            self.subsectorNames.textStyle.uppercase = True
+
+            self.subsectorNames.textColor = self.sectorName.textColor = \
+                '#0000FF' # TODO: Color.FromArgb(128, Color.Goldenrod)
+
+            self.microBorders.textStyle.rotation = 0
+            self.microBorders.textStyle.translation = PointF(0, 0.25)
+            self.microBorders.textStyle.scale = SizeF(1.0, 0.5) # Expand
+            self.microBorders.textStyle.uppercase = True
+
+            self.microBorders.pen.color = '#FF0000' # TODO: Color.FromArgb(128, TravellerColors.Red)
+            self.microRoutes.pen.width = \
+                routePenWidth if self.scale < StyleSheet._CandyMaxRouteRelativeScale else routePenWidth / 2
+            self.macroBorders.pen.width = \
+                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4
+            self.microBorders.pen.width = \
+                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4
+
+            self.worlds.textStyle.rotation = 0
+            self.worlds.textStyle.scale = SizeF(1, 0.5) # Expand
+            self.worlds.textStyle.translation = PointF(0, 0)
+            self.worlds.textStyle.uppercase = True
+
+            if (self.scale > StyleSheet._CandyMaxWorldRelativeScale):
+                self.hexContentScale = StyleSheet._CandyMaxWorldRelativeScale / self.scale
         elif self._style is travellermap.Style.Terminal:
-            pass
+            self.fadeSectorSubsectorNames = False
+            self.showGalaxyBackground = False
+            self.lightBackground = False
+
+            self.backgroundColor = '#000000'
+            foregroundColor = '#0000FF' # TODO: Color.Cyan
+            highlightColor = '#FFFFFF'
+
+            lightColor = '#0000FF' # TODO: Color.LightBlue
+            darkColor = '#0000FF' # TODO: Color.DarkBlue
+            dimColor = '#0000FF' # TODO: Color.DimGray
+
+            self.subsectorGrid.pen.color = '#0000FF' # TODO: Color.Cyan
+
+            fontNames = "Courier New"
+            self.worlds.fontInfo.families = fontNames
+            self.worlds.smallFontInfo.families = fontNames
+            self.starport.fontInfo.families = fontNames
+            self.worlds.largeFontInfo.families = fontNames
+            self.worlds.largeFontInfo.size = self.worlds.fontInfo.size * 1.25
+            self.worlds.fontInfo.size *= 0.8
+
+            self.macroNames.fontInfo.families = fontNames
+            self.macroNames.mediumFontInfo.families = fontNames
+            self.macroNames.smallFontInfo.families = fontNames
+            self.megaNames.fontInfo.families = fontNames
+            self.megaNames.mediumFontInfo.families = fontNames
+            self.megaNames.smallFontInfo.families = fontNames
+            self.microBorders.smallFontInfo.families = fontNames
+            self.microBorders.largeFontInfo.families = fontNames
+            self.microBorders.fontInfo.families = fontNames
+            self.macroBorders.fontInfo.families = fontNames
+            self.macroRoutes.fontInfo.families = fontNames
+            self.capitals.fontInfo.families = fontNames
+            self.macroBorders.smallFontInfo.families = fontNames
+
+            self.worlds.textStyle.uppercase = True
+            self.microBorders.textStyle.uppercase = True
+            self.microBorders.fontInfo.style |= FontStyle.Underline
+
+            self.sectorName.textColor = foregroundColor
+            self.sectorName.textStyle.scale = SizeF(1, 1)
+            self.sectorName.textStyle.rotation = 0
+            self.sectorName.textStyle.uppercase = True
+            self.sectorName.fontInfo.style |= FontStyle.Bold
+            self.sectorName.fontInfo.size *= 0.5
+
+            self.subsectorNames.textColor = foregroundColor
+            self.subsectorNames.textStyle.scale = SizeF(1, 1)
+            self.subsectorNames.textStyle.rotation = 0
+            self.subsectorNames.textStyle.uppercase = True
+            self.subsectorNames.fontInfo.style |= FontStyle.Bold
+            self.subsectorNames.fontInfo.size *= 0.5
+
+            self.worlds.textStyle.uppercase = True
+
+            self.worlds.textBackgroundStyle = TextBackgroundStyle.NoStyle
+
+            self.subsectorNames.fontInfo.families = fontNames
+            self.sectorName.fontInfo.families = fontNames
+
+            self.worlds.largeFontInfo.style |= FontStyle.Underline
+
+            self.microBorders.pen.width = onePixel * 4
+            self.microBorders.pen.dashStyle = DashStyle.Dot
+
+            self.worldNoWater.fillColor = foregroundColor
+            self.worldWater.fillColor = '#0000FF' # TODO: Color.Empty
+            self.worldWater.pen = AbstractPen(foregroundColor, onePixel * 2)
+
+            self.amberZone.pen.color = foregroundColor
+            self.amberZone.pen.width = onePixel
+            self.redZone.pen.width = onePixel * 2
+
+            self.microRoutes.pen.color = '#0000FF' # TODO: Color.Gray
+
+            self.parsecGrid.pen.color = '#0000FF' # TODO: Color.Plum
+            self.microBorders.textColor = '#0000FF' # TODO: Color.Cyan
+
+            self.riftOpacity = min(self.riftOpacity, 0.30)
+
+            self.numberAllHexes = True
+
+            if (self.scale >= 64):
+                self.subsectorNames.visible = False
         elif self._style is travellermap.Style.Mongoose:
-            pass
-        elif self._style is travellermap.Style.Terminal:
-            pass
-        elif self._style is travellermap.Style.Terminal:
-            pass
+            self.showGalaxyBackground = False
+            self.lightBackground = True
+            self.showGasGiantRing = True
+            self.showTL = True
+            self.ignoreBaseBias = True
+            self.shadeMicroBorders = True
 
-        self.pseudoRandomStars.fillColor = '#FFFFFF'
+            # TODO: Need to handle moving layers
+            # Re-order these elements
+            #layers.MoveAfter(LayerId.Worlds_Background, LayerId.Micro_BordersStroke);
+            #layers.MoveAfter(LayerId.Worlds_Foreground, LayerId.Micro_Routes);
 
-        # TODO: The stuff below is still a WIP
+            self.imageBorderWidth = 0.1
+            self.deepBackgroundOpacity = 0
 
-        self.worldDetails = WorldDetails.Hex
+            self.backgroundColor = '#0000FF' # TODO: Color.FromArgb(0xe6, 0xe7, 0xe8)
+            foregroundColor = '#000000'
+            highlightColor = '#FF0000'
+
+            lightColor = '#000000'
+            darkColor = '#000000'
+            dimColor = '#0000FF' # TODO: Color.Gray
+
+            self.sectorGrid.pen.color = self.subsectorGrid.pen.color = self.parsecGrid.pen.color = foregroundColor
+
+            self.microBorders.textColor = '#0000FF' # TODO: Color.DarkSlateGray
+
+            fontName = "Calibri,Arial"
+            self.worlds.fontInfo.families = fontName
+            self.worlds.smallFontInfo.families = fontName
+            self.starport.fontInfo.families = fontName
+            self.starport.fontInfo.style = FontStyle.Regular
+            self.worlds.largeFontInfo.families = fontName
+
+            self.worlds.fontInfo.style = FontStyle.Regular
+            self.worlds.largeFontInfo.style = FontStyle.Bold
+
+            self.hexNumber.fontInfo = FontInfo(self.worlds.fontInfo)
+            self.hexNumber.position.y = -0.49
+            self.starport.fontInfo.style = FontStyle.Italic
+
+            self.macroNames.fontInfo.families = fontName
+            self.macroNames.mediumFontInfo.families = fontName
+            self.macroNames.smallFontInfo.families = fontName
+            self.megaNames.fontInfo.families = fontName
+            self.megaNames.mediumFontInfo.families = fontName
+            self.megaNames.smallFontInfo.families = fontName
+            self.microBorders.smallFontInfo.families = fontName
+            self.microBorders.largeFontInfo.families = fontName
+            self.microBorders.fontInfo.families = fontName
+            self.macroBorders.fontInfo.families = fontName
+            self.macroRoutes.fontInfo.families = fontName
+            self.capitals.fontInfo.families = fontName
+            self.macroBorders.smallFontInfo.families = fontName
+
+            self.microBorders.textStyle.uppercase = True
+
+            self.sectorName.textStyle.uppercase = True
+            self.subsectorNames.textStyle.uppercase = True
+
+            self.subsectorNames.visible = False
+
+            self.worlds.textStyle.uppercase = True
+
+            self.worldDetails &= ~WorldDetails.Allegiance
+
+            self.subsectorNames.fontInfo.families = fontName
+            self.sectorName.fontInfo.families = fontName
+
+            self.microBorders.pen.width = 0.11
+            self.microBorders.pen.dashStyle = DashStyle.Dot
+
+            self.worldWater.fillColor = '#0000FF' # TODO: Color.MediumBlue
+            self.worldNoWater.fillColor = '#0000FF' # TODO: Color.DarkKhaki
+            self.worldWater.pen = AbstractPen(
+                '#0000FF', # TODO: Color.DarkGray,
+                onePixel * 2)
+            self.worldNoWater.pen = AbstractPen(
+                '#0000FF', # TODO: Color.DarkGray,
+                onePixel * 2)
+
+            self.showZonesAsPerimeters = True
+            self.greenZone.visible = True
+            self.greenZone.pen.width = self.amberZone.pen.width = self.redZone.pen.width = 0.05
+
+            self.greenZone.pen.color = '#0000FF' # TODO: Color.FromArgb(0x80, 0xc6, 0x76)
+            self.amberZone.pen.color = '#0000FF' # TODO: Color.FromArgb(0xfb, 0xb0, 0x40)
+            self.redZone.pen.color = '#0000FF' # TODO: Color.FromArgb(0xff, 0x00, 0x00)
+
+            self.microBorders.textColor = '#0000FF' # TODO: Color.DarkSlateGray
+
+            self.riftOpacity = min(self.riftOpacity, 0.30)
+
+            self.discRadius = 0.11
+            self.gasGiantPosition = PointF(0, -0.23)
+            self.baseTopPosition = PointF(-0.22, -0.21)
+            self.baseMiddlePosition = PointF(-0.32, 0.17)
+            self.baseBottomPosition = PointF(0.22, -0.21)
+            self.starport.position = PointF(0.175, 0.17)
+            self.uwp.position = PointF(0, 0.40)
+            self.discPosition = PointF(-self.discRadius, 0.16)
+            self.worlds.textStyle.translation = PointF(0, -0.04)
+
+            self.worlds.textBackgroundStyle = TextBackgroundStyle.NoStyle
+
+            self.uwp.fontInfo = FontInfo(self.hexNumber.fontInfo)
+            self.uwp.fillColor = '#000000'
+            self.uwp.textColor = '#FFFFFF'
+            self.uwp.textBackgroundStyle = TextBackgroundStyle.Filled
+
+        # NOTE: This TODO came in with traveller map
+        # TODO: Do this with opacity.
+        if fadeSectorSubsectorNames:
+            if self.scale < 16:
+                self.sectorName.textColor = foregroundColor
+                self.subsectorNames.textColor = foregroundColor
+            elif self.scale < 48:
+                self.sectorName.textColor = darkColor
+                self.subsectorNames.textColor = darkColor
+            else:
+                self.sectorName.textColor = dimColor
+                self.subsectorNames.textColor = dimColor
+
+        # Base element colors on foreground/light/dim/dark/highlight, if not specified by style.
+        if not self.pseudoRandomStars.fillColor:
+            self.pseudoRandomStars.fillColor = foregroundColor
+
+        if not self.droyneWorlds.textColor:
+            self.droyneWorlds.textColor = self.microBorders.textColor
+        if not self.minorHomeWorlds.textColor:
+            self.minorHomeWorlds.textColor = self.microBorders.textColor
+        if not self.ancientsWorlds.textColor:
+            self.ancientsWorlds.textColor = self.microBorders.textColor
 
 
-        #self.numberAllHexes = True # TODO: Remove override of default
+        if not self.megaNames.textColor:
+            self.megaNames.textColor = foregroundColor
+        if not self.megaNames.textHighlightColor:
+            self.megaNames.textHighlightColor = highlightColor
 
-        self.hexNumber.textColor = '#FF0000'
+        if not self.macroNames.textColor:
+            self.macroNames.textColor = foregroundColor
+        if not self.macroNames.textHighlightColor:
+            self.macroNames.textHighlightColor = highlightColor
 
+        if not self.macroRoutes.textColor:
+            self.macroRoutes.textColor = foregroundColor
+        if not self.macroRoutes.textHighlightColor:
+            self.macroRoutes.textHighlightColor = highlightColor
+
+        if not self.worlds.textColor:
+            self.worlds.textColor = foregroundColor
+        if not self.worlds.textHighlightColor:
+            self.worlds.textHighlightColor = highlightColor
+
+        if not self.hexNumber.textColor:
+            self.hexNumber.textColor = lightColor
+        if not self.uwp.textColor:
+            self.uwp.textColor = foregroundColor
+
+        if not self.placeholder.textColor:
+            self.placeholder.textColor = foregroundColor
+        if not self.anomaly.textColor:
+            self.anomaly.textColor = highlightColor
+
+        if not self.imageBorderColor:
+            self.imageBorderColor = lightColor
+
+        # Convert list into a id -> index mapping.
+        self.layerOrder.clear()
+        for i, layer in enumerate(layers):
+            self.layerOrder[layer] = i
+
+
+        # TODO: Delete the hacky stuff below
         self.numberAllHexes = True
-
-
-        self.parsecGrid.pen = AbstractPen('#FF0000', onePixel)
-
-        if self.worlds.visible:
-            fontScale = 1 if (self.scale <= 96 or self.style == travellermap.Style.Candy) else 96 / min(self.scale, 192)
-            self.hexNumber.fontInfo = FontInfo(
-                StyleSheet._DefaultFont,
-                0.1 * fontScale)
 
     @staticmethod
     def _floatScaleInterpolate(
@@ -1096,10 +2432,74 @@ class LayerAction(object):
         self.action = action
         self.clip = clip
 
+# TODO: This is drawString from RenderUtils
+def drawStringHelper(
+        graphics: AbstractGraphics,
+        text: str,
+        font: AbstractFont,
+        brush: AbstractBrush,
+        x: float,
+        y: float,
+        format: TextFormat = TextFormat.Center
+        ) -> None:
+    if not text:
+        return
+
+    lines = text.split('\n')
+    sizes = [graphics.measureString(line, font) for line in lines]
+
+    # TODO: This needs updated to not use QT
+    qtFont = font.font
+    qtFontMetrics = QtGui.QFontMetrics(qtFont)
+
+    # TODO: Not sure how to calculate this
+    #fontUnitsToWorldUnits = qtFont.pointSize / font.FontFamily.GetEmHeight(font.Style)
+    fontUnitsToWorldUnits = 1
+    lineSpacing = qtFontMetrics.lineSpacing() * fontUnitsToWorldUnits
+    ascent = qtFontMetrics.ascent() * fontUnitsToWorldUnits
+    # NOTE: This was commented out in the Traveller Map source code
+    #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
+
+    maxWidth = max(sizes, key=lambda rect: rect.width)
+    boundingSize = SizeF(width=maxWidth, height=lineSpacing * len(sizes))
+
+    # Offset from baseline to top-left.
+    y += lineSpacing / 2
+
+    widthFactor = 0
+    if format == TextFormat.MiddleLeft or \
+        format == TextFormat.Center or \
+        format == TextFormat.MiddleRight:
+        y -= boundingSize.height / 2
+    elif format == TextFormat.BottomLeft or \
+        format == TextFormat.BottomCenter or \
+        format == TextFormat.BottomRight:
+        y -= boundingSize.height
+
+    if format == TextFormat.TopCenter or \
+        format == TextFormat.Center or \
+        format == TextFormat.BottomCenter:
+            widthFactor = -0.5
+    elif format == TextFormat.TopRight or \
+        format == TextFormat.MiddleRight or \
+        format == TextFormat.BottomRight:
+            widthFactor = -1
+
+    for line, size in zip(lines, sizes):
+        graphics.drawString(
+            line,
+            font,
+            brush,
+            x + widthFactor * size.width + size.width / 2,
+            y,
+            StringAlignment.Centered)
+        y += lineSpacing
+
 class RenderContext(object):
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
 
     _GalaxyImageRect = RectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
+    _RiftImageRect = RectangleF(-1374, -827, 2769, 1754)
 
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 800
@@ -1111,7 +2511,8 @@ class RenderContext(object):
             tileSize: Size, # Pixel size of view to render to
             scale: float,
             styles: StyleSheet,
-            images: ImageCache,
+            imageCache: ImageCache,
+            vectorCache: VectorObjectCache,
             options: MapOptions
             ) -> None:
         self._graphics = graphics
@@ -1119,7 +2520,8 @@ class RenderContext(object):
         self._scale = scale
         self._options = options
         self._styles = styles
-        self._images = images
+        self._imageCache = imageCache
+        self._vectorCache = vectorCache
         self._tileSize = tileSize
         self._createLayers()
         self._updateSpaceTransforms()
@@ -1196,6 +2598,13 @@ class RenderContext(object):
             LayerAction(LayerId.Background_Galaxy, self._drawGalaxyBackground, clip=True),
 
             LayerAction(LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars, clip=True),
+            LayerAction(LayerId.Background_Rifts, self._drawRifts, clip=True),
+
+            #------------------------------------------------------------
+            # Foreground
+            #------------------------------------------------------------
+            LayerAction(LayerId.Macro_Borders, self._drawMacroBorders, clip=True),
+            LayerAction(LayerId.Macro_Routes, self._drawMacroRoutes, clip=True),
 
             LayerAction(LayerId.Grid_Parsec, self._drawParsecGrid, clip=True)
         ]
@@ -1274,7 +2683,7 @@ class RenderContext(object):
                 imageRect.y=oy
                 for _ in range(ny):
                     self._graphics.drawImage(
-                        self._images.nebulaImage,
+                        self._imageCache.nebulaImage,
                         imageRect)
                     imageRect.y += h
                 imageRect.x += w
@@ -1285,7 +2694,7 @@ class RenderContext(object):
 
         if self._styles.deepBackgroundOpacity > 0 and \
             RenderContext._GalaxyImageRect.intersectsWith(self._tileRect):
-            galaxyImage = self._images.galaxyImageGray if self._styles.lightBackground else self._images.galaxyImage
+            galaxyImage = self._imageCache.galaxyImageGray if self._styles.lightBackground else self._imageCache.galaxyImage
             self._graphics.drawImageAlpha(
                 self._styles.deepBackgroundOpacity,
                 galaxyImage,
@@ -1316,7 +2725,7 @@ class RenderContext(object):
 
         brush = AbstractBrush(self._styles.pseudoRandomStars.fillColor)
         with self._graphics.save():
-            self._graphics.SmoothingMode = AbstractGraphics.SmoothingMode.HighQuality
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
 
             for chunkLeft in range(startX, finishX + 1, RenderContext._PseudoRandomStarsChunkSize):
                 for chunkTop in range(startY, finishY + 1, RenderContext._PseudoRandomStarsChunkSize):
@@ -1340,6 +2749,41 @@ class RenderContext(object):
                                 y=starY,
                                 width=(d / self._scale * travellermap.ParsecScaleX),
                                 height=(d / self._scale * travellermap.ParsecScaleY)))
+
+    def _drawRifts(self) -> None:
+        if not self._styles.showRiftOverlay:
+            return
+
+        if self._styles.riftOpacity > 0 and \
+            RenderContext._RiftImageRect.intersectsWith(self._tileRect):
+            self._graphics.drawImageAlpha(
+                alpha=self._styles.riftOpacity,
+                image=self._imageCache.riftImage,
+                rect=self._RiftImageRect)
+
+    def _drawMacroBorders(self) -> None:
+        if not self._styles.macroBorders.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+        for vector in self._vectorCache.borders:
+            if (vector.mapOptions & self._options & MapOptions.BordersMask) != 0:
+                vector.draw(
+                    graphics=self._graphics,
+                    rect=self._tileRect,
+                    pen=self._styles.macroBorders.pen)
+
+    def _drawMacroRoutes(self) -> None:
+        if not self._styles.macroRoutes.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+        for vector in self._vectorCache.routes:
+            if (vector.mapOptions & self._options & MapOptions.BordersMask) != 0:
+                vector.draw(
+                    graphics=self._graphics,
+                    rect=self._tileRect,
+                    pen=self._styles.macroRoutes.pen)
 
     def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
@@ -1462,17 +2906,16 @@ class QtGraphics(AbstractGraphics):
         transform.scale(scaleX, scaleY)
         self._painter.setTransform(
             transform * self._painter.transform())
-        #self._painter.setTransform(
-        #    self._painter.transform() * transform)
     def translateTransform(self, dx: float, dy: float) -> None:
         transform = QtGui.QTransform()
         transform.translate(dx, dy)
         self._painter.setTransform(
             transform * self._painter.transform())
-        #self._painter.setTransform(
-        #    self._painter.transform() * transform)
-    def rotateTransform(self, angle: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement rotateTransform')
+    def rotateTransform(self, degrees: float) -> None:
+        transform = QtGui.QTransform()
+        transform.rotate(degrees, QtCore.Qt.Axis.ZAxis)
+        self._painter.setTransform(
+            transform * self._painter.transform())
     def multiplyTransform(self, matrix: AbstractMatrix) -> None:
         self._painter.setTransform(
             self._convertMatrix(matrix) * self._painter.transform())
@@ -1493,9 +2936,15 @@ class QtGraphics(AbstractGraphics):
         self._painter.setPen(self._convertPen(pen))
         self._painter.drawPolyline(self._convertPoints(points))
 
+    # TODO: I don't know if a path is a segmented line or a closed polygon
     # TODO: This was an overload of drawPath in the traveller map code
     def drawPathOutline(self, pen: AbstractPen, path: AbstractPath):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPathOutline')
+        self._painter.setPen(self._convertPen(pen))
+        self._painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+        if path.closed:
+            self._painter.drawPolygon(self._convertPath(path))
+        else:
+            self._painter.drawPolyline(self._convertPoints(path.points))
     # TODO: This was an overload of drawPath in the traveller map code
     def drawPathFill(self, brush: AbstractBrush, path: AbstractPath):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPathFill')
@@ -1540,7 +2989,18 @@ class QtGraphics(AbstractGraphics):
             self._painter.setOpacity(oldAlpha)
 
     def measureString(self, text: str, font: AbstractFont) -> SizeF:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
+        qtFont = self._convertFont(font)
+        scale = font.emSize / qtFont.pointSize()
+
+        fontMetrics = QtGui.QFontMetrics(qtFont)
+        contentPixelRect = fontMetrics.boundingRect(
+            QtCore.QRect(0, 0, 65535, 65535),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            text)
+        contentPixelRect.moveTo(0, 0)
+
+        return SizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
+
     def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: StringAlignment) -> None:
         qtFont = self._convertFont(font)
         scale = font.emSize / qtFont.pointSize()
@@ -1548,8 +3008,6 @@ class QtGraphics(AbstractGraphics):
         self._painter.setFont(qtFont)
         self._painter.setBrush(self._convertBrush(brush))
 
-        # TODO: This should maybe use self.measureString but it depends
-        # what coordinates it ends up working in
         fontMetrics = QtGui.QFontMetrics(qtFont)
         contentPixelRect = fontMetrics.boundingRect(
             QtCore.QRect(0, 0, 65535, 65535),
@@ -1647,6 +3105,9 @@ class QtGraphics(AbstractGraphics):
             transform.offsetY,
             1)
 
+    def _convertPath(self, path: AbstractPath) -> QtGui.QPolygonF:
+        return QtGui.QPolygonF(self._convertPoints(path.points))
+
 class MapHackView(QtWidgets.QWidget):
     _MinScale = 0.0078125 # Math.Pow(2, -7);
     _MaxScale = 512 # Math.Pow(2, 9);
@@ -1676,7 +3137,8 @@ class MapHackView(QtWidgets.QWidget):
         self._style = travellermap.Style.Poster
         #self._style = travellermap.Style.Candy
         self._graphics = QtGraphics()
-        self._images = ImageCache(basePath='./data/map/')
+        self._imageCache = ImageCache(basePath='./data/map/')
+        self._vectorCache = VectorObjectCache(basePath='./data/map/')
         self._renderer = self._createRender()
 
         self._isDragging = False
@@ -1792,12 +3254,14 @@ class MapHackView(QtWidgets.QWidget):
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
 
-        painter = QtGui.QPainter(self)
-        try:
-            self._graphics.setPainter(painter)
-            self._renderer.render()
-        finally:
-            painter.end()
+        # TODO: Remove debug timer
+        with common.DebugTimer('Draw Time'):
+            painter = QtGui.QPainter(self)
+            try:
+                self._graphics.setPainter(painter)
+                self._renderer.render()
+            finally:
+                painter.end()
 
     def _createRender(self) -> RenderContext:
         return RenderContext(
@@ -1809,8 +3273,9 @@ class MapHackView(QtWidgets.QWidget):
                 scale=self._scale,
                 options=self._options,
                 style=self._style),
-            images=self._images,
-            options=0)
+            imageCache=self._imageCache,
+            vectorCache=self._vectorCache,
+            options=self._options)
 
     def _calculateTileRect(self) -> RectangleF:
         mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
