@@ -535,7 +535,7 @@ class AbstractFont(object):
                 self.font = QtGui.QFont(family)
                 if self.font:
                     #self.font.setPointSizeF(emSize)
-                    self.font.setPointSizeF(20)
+                    self.font.setPointSizeF(10)
                     if style & FontStyle.Bold:
                         self.font.setBold(True)
                     if style & FontStyle.Italic:
@@ -800,7 +800,7 @@ class AbstractGraphics(object):
     def __init__(self):
         self._smoothingMode = AbstractGraphics.SmoothingMode.Default
 
-    # TODO: Need to do something with smoothing mode????
+    # TODO: Smoothing mode should probably be a property
     def smoothingMode(self) -> SmoothingMode:
         return self._smoothingMode
 
@@ -926,6 +926,7 @@ class VectorObject(MapObject):
             nameY: float,
             points: typing.Sequence[PointF],
             types: typing.Optional[typing.Sequence[PathPointType]] = None,
+            bounds: typing.Optional[RectangleF] = None,
             closed: bool = False,
             mapOptions: MapOptions = 0):
         super().__init__()
@@ -944,13 +945,13 @@ class VectorObject(MapObject):
         self.nameX = nameX
         self.nameY = nameY
         self.closed = closed
-        self.mapOptions: MapOptions = mapOptions
-        self._pathDataPoints = list(points)
+        self.mapOptions = mapOptions
+        self._pathDataPoints = [PointF(p) for p in points]
         # TODO: This uses byte instead of PathPointType
         self._pathDataTypes = list(types) if types else None
         self._minScale = None
         self._maxScale = None
-        self._cachedBounds: typing.Optional[RectangleF] = None
+        self._cachedBounds = RectangleF(bounds) if bounds else None
         self._cachedPath: typing.Optional[AbstractPath] = None
 
     @property
@@ -1029,6 +1030,7 @@ class VectorObject(MapObject):
             pos = self._namePosition()
 
             with graphics.save():
+                # TODO: Need to check rotation works here, GREAT RIFT text should be rotated (when I add support for it)
                 graphics.translateTransform(dx=pos.x, dy=pos.y)
                 graphics.scaleTransform(
                     scaleX=1.0 / travellermap.ParsecScaleX,
@@ -1176,8 +1178,23 @@ class VectorObjectCache(object):
         # TODO: Is this used?
         #element = rootElement.find('./Type')
 
-        # NOTE: Don't read bounds, let code generate it
-        #element = rootElement.find('./Bounds')
+        # NOTE: Loading the bounds from the file when it's present rather than
+        # regenerating it from the points is important as it the bounds in the
+        # file doesn't always match the bounds of the points (e.g. the Solomani
+        # Sphere). As the bounds determine where the name name is drawn it needs
+        # to match what Traveller Map uses.
+        xElement = rootElement.find('./Bounds/X')
+        yElement = rootElement.find('./Bounds/Y')
+        widthElement = rootElement.find('./Bounds/Width')
+        heightElement = rootElement.find('./Bounds/Height')
+        bounds = None
+        if xElement is not None and yElement is not None \
+            and widthElement is not None and heightElement is not None:
+            bounds = RectangleF(
+                x=float(xElement.text),
+                y=float(yElement.text),
+                width=float(widthElement.text),
+                height=float(heightElement.text))
 
         points = []
         for pointElement in rootElement.findall('./PathDataPoints/PointF'):
@@ -1223,6 +1240,7 @@ class VectorObjectCache(object):
                         nameY=nameY,
                         points=vectorPoints,
                         types=types[startIndex:nextIndex],
+                        bounds=bounds,
                         closed=isClosed,
                         mapOptions=mapOptions))
                     vectorPoints.clear()
@@ -1243,6 +1261,7 @@ class VectorObjectCache(object):
                 nameY=nameY,
                 points=points,
                 types=types,
+                bounds=bounds,
                 mapOptions=mapOptions)]
 
 class StyleSheet(object):
@@ -2453,15 +2472,17 @@ def drawStringHelper(
     qtFontMetrics = QtGui.QFontMetrics(qtFont)
 
     # TODO: Not sure how to calculate this
-    #fontUnitsToWorldUnits = qtFont.pointSize / font.FontFamily.GetEmHeight(font.Style)
-    fontUnitsToWorldUnits = 1
+    #fontUnitsToWorldUnits = qtFont.pointSize() / font.FontFamily.GetEmHeight(font.Style)
+    fontUnitsToWorldUnits = font.emSize / qtFont.pointSize()
     lineSpacing = qtFontMetrics.lineSpacing() * fontUnitsToWorldUnits
     ascent = qtFontMetrics.ascent() * fontUnitsToWorldUnits
     # NOTE: This was commented out in the Traveller Map source code
     #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
 
-    maxWidth = max(sizes, key=lambda rect: rect.width)
-    boundingSize = SizeF(width=maxWidth, height=lineSpacing * len(sizes))
+    print(lineSpacing)
+
+    maxWidthRect = max(sizes, key=lambda rect: rect.width)
+    boundingSize = SizeF(width=maxWidthRect.width, height=lineSpacing * len(sizes))
 
     # Offset from baseline to top-left.
     y += lineSpacing / 2
@@ -2496,6 +2517,12 @@ def drawStringHelper(
         y += lineSpacing
 
 class RenderContext(object):
+    class BorderLayer(enum.Enum):
+        Fill = 0
+        Shade = 1
+        Stroke = 2
+        Regions = 3
+
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
 
     _GalaxyImageRect = RectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
@@ -2606,10 +2633,40 @@ class RenderContext(object):
             LayerAction(LayerId.Macro_Borders, self._drawMacroBorders, clip=True),
             LayerAction(LayerId.Macro_Routes, self._drawMacroRoutes, clip=True),
 
-            LayerAction(LayerId.Grid_Parsec, self._drawParsecGrid, clip=True)
+            LayerAction(LayerId.Grid_Sector, self._drawSectorGrid, clip=True),
+            LayerAction(LayerId.Grid_Subsector, self._drawSubsectorGrid, clip=True),
+            LayerAction(LayerId.Grid_Parsec, self._drawParsecGrid, clip=True),
+
+            LayerAction(LayerId.Names_Subsector, self._drawSubsectorNames, clip=True),
+
+            LayerAction(LayerId.Micro_BordersFill, self._drawMicroBordersFill, clip=True),
+            LayerAction(LayerId.Micro_BordersShade, self._drawMicroBordersShade, clip=True),
+            LayerAction(LayerId.Micro_BordersStroke, self._drawMicroBordersStroke, clip=True),
+            LayerAction(LayerId.Micro_Routes, self._drawMicroRoutes, clip=True),
+            LayerAction(LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels, clip=True),
+
+            LayerAction(LayerId.Names_Sector, self._drawSectorNames, clip=True),
+            LayerAction(LayerId.Macro_GovernmentRiftRouteNames, self._drawMacroNames, clip=True),
+            LayerAction(LayerId.Macro_CapitalsAndHomeWorlds, self._drawCapitalsAndHomeWorlds, clip=True),
+            LayerAction(LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels, clip=True),
+
+            LayerAction(LayerId.Worlds_Background, self._drawWorldsBackground, clip=True),
+
+            # Not clipped, so names are not clipped in jumpmaps.
+            LayerAction(LayerId.Worlds_Foreground, self._drawWorldsForeground, clip=False),
+
+            LayerAction(LayerId.Worlds_Overlays, self._drawWorldsOverlay, clip=True),
+
+            #------------------------------------------------------------
+            # Overlays
+            #------------------------------------------------------------
+            LayerAction(LayerId.Overlay_DroyneChirperWorlds, self._drawDroyneOverlay, clip=True),
+            LayerAction(LayerId.Overlay_MinorHomeworlds, self._drawMinorHomeworldOverlay, clip=True),
+            LayerAction(LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay, clip=True),
+            LayerAction(LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay, clip=True),
         ]
 
-        self._layers.sort(key=lambda l: l.id.value)
+        self._layers.sort(key=lambda l: self._styles.layerOrder[l.id])
 
     # TODO: I'm not sure about the use of the term world space
     # here. It comes from traveller map but as far as I can tell
@@ -2785,6 +2842,78 @@ class RenderContext(object):
                     rect=self._tileRect,
                     pen=self._styles.macroRoutes.pen)
 
+    def _drawSectorGrid(self) -> None:
+        if not self._styles.sectorGrid.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighSpeed)
+
+        h = ((math.floor((self._tileRect.left) / travellermap.SectorWidth) - 1) - travellermap.ReferenceSectorX) * \
+            travellermap.SectorWidth - travellermap.ReferenceHexX
+        gridSlop = 10
+        while h <= (self._tileRect.right + travellermap.SectorWidth):
+            with self._graphics.save():
+                self._graphics.translateTransform(dx=h, dy=0)
+                self._graphics.scaleTransform(
+                    scaleX=1 / travellermap.ParsecScaleX,
+                    scaleY=1 / travellermap.ParsecScaleY)
+                self._graphics.drawLine(
+                    pen=self._styles.sectorGrid.pen,
+                    pt1=PointF(0, self._tileRect.top - gridSlop),
+                    pt2=PointF(0, self._tileRect.bottom + gridSlop))
+            h += travellermap.SectorWidth
+
+        v = ((math.floor((self._tileRect.top) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
+            travellermap.SectorHeight - travellermap.ReferenceHexY
+        while v <= (self._tileRect.bottom + travellermap.SectorHeight):
+            self._graphics.drawLine(
+                pen=self._styles.sectorGrid.pen,
+                pt1=PointF(self._tileRect.left - gridSlop, v),
+                pt2=PointF(self._tileRect.right + gridSlop, v))
+            v += travellermap.SectorHeight
+
+    def _drawSubsectorGrid(self) -> None:
+        if not self._styles.subsectorGrid.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighSpeed)
+
+        hmin = int(math.floor(self._tileRect.left / travellermap.SubsectorWidth) - 1 -
+                   travellermap.ReferenceSectorX)
+        hmax = int(math.ceil((self._tileRect.right + travellermap.SubsectorWidth +
+                              travellermap.ReferenceHexX) / travellermap.SubsectorWidth))
+        gridSlop = 10
+        for hi in range(hmin, hmax + 1):
+            if (hi % 4) == 0:
+                continue
+            h = hi * travellermap.SubsectorWidth - travellermap.ReferenceHexX
+            self._graphics.drawLine(
+                pen=self._styles.subsectorGrid.pen,
+                pt1=PointF(h, self._tileRect.top - gridSlop),
+                pt2=PointF(h, self._tileRect.bottom + gridSlop))
+            with self._graphics.save():
+                self._graphics.translateTransform(dx=h, dy=0)
+                self._graphics.scaleTransform(
+                    scaleX=1 / travellermap.ParsecScaleX,
+                    scaleY=1 / travellermap.ParsecScaleY)
+                self._graphics.drawLine(
+                    pen=self._styles.subsectorGrid.pen,
+                    pt1=PointF(0, self._tileRect.top - gridSlop),
+                    pt2=PointF(0, self._tileRect.bottom + gridSlop))
+
+        vmin = int(math.floor(self._tileRect.top / travellermap.SubsectorHeight) - 1 -
+                   travellermap.ReferenceSectorY)
+        vmax = int(math.ceil((self._tileRect.bottom + travellermap.SubsectorHeight +
+                              travellermap.ReferenceHexY) / travellermap.SubsectorHeight))
+        for vi in range(vmin, vmax + 1):
+            if (vi % 4) == 0:
+                continue
+            v = vi * travellermap.SubsectorHeight - travellermap.ReferenceHexY
+            self._graphics.drawLine(
+                pen=self._styles.subsectorGrid.pen,
+                pt1=PointF(self._tileRect.left - gridSlop, v),
+                pt2=PointF(self._tileRect.right + gridSlop, v))
+
     def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
             return
@@ -2854,6 +2983,163 @@ class RenderContext(object):
                             0, 0,
                             StringAlignment.TopCenter)
 
+    def _drawSubsectorNames(self) -> None:
+        if not self._styles.subsectorNames.visible:
+            return
+
+        not self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+        brush = AbstractBrush(self._styles.subsectorNames.textColor)
+        # TODO: Finish this off when I add world loading
+        """
+        foreach (Sector sector in selector.Sectors)
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                Subsector ss = sector.Subsector(i);
+                if (ss == null || string.IsNullOrEmpty(ss.Name))
+                    continue;
+
+                Point center = sector.SubsectorCenter(i);
+                RenderUtil.DrawLabel(graphics, ss.Name, center, styles.subsectorNames.Font, brush, styles.subsectorNames.textStyle);
+            }
+        }
+        """
+
+    def _drawMicroBordersFill(self) -> None:
+        if not self._styles.microBorders.visible:
+            return
+
+        self._drawMicroBorders(RenderContext.BorderLayer.Regions)
+
+        if self._styles.fillMicroBorders:
+            self._drawMicroBorders(RenderContext.BorderLayer.Fill)
+
+    def _drawMicroBordersShade(self) -> None:
+        if not self._styles.microBorders.visible or not self._styles.shadeMicroBorders:
+            return
+
+        self._drawMicroBorders(RenderContext.BorderLayer.Shade)
+
+    def _drawMicroBordersStroke(self) -> None:
+        if not self._styles.microBorders.visible:
+            return
+
+        self._drawMicroBorders(RenderContext.BorderLayer.Stroke)
+
+    def _drawMicroRoutes(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawMicroLabels(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawSectorNames(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawMacroNames(self) -> None:
+        if  not self._styles.macroNames.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+
+        for vec in self._vectorCache.borders:
+            if (vec.mapOptions & self._options & MapOptions.NamesMask) == 0:
+                continue
+            major = (vec.mapOptions & MapOptions.NamesMajor) != 0
+            labelStyle = LabelStyle(uppercase=major)
+            font = \
+                self._styles.macroNames.font \
+                if major else \
+                self._styles.macroNames.smallFont
+            solidBrush = AbstractBrush(self._styles.macroNames.textColor
+                                       if major else
+                                       self._styles.macroNames.textHighlightColor)
+            vec.drawName(
+                graphics=self._graphics,
+                rect=self._tileRect,
+                font=font,
+                textBrush=solidBrush,
+                labelStyle=labelStyle)
+
+        if self._styles.macroRoutes.visible:
+            for vec in self._vectorCache.routes:
+                if (vec.mapOptions & self._options & MapOptions.NamesMask) == 0:
+                    continue
+                major = (vec.mapOptions & MapOptions.NamesMajor) != 0
+                labelStyle = LabelStyle(uppercase=major)
+                font = \
+                    self._styles.macroNames.font \
+                    if major else \
+                    self._styles.macroNames.smallFont
+                solidBrush = AbstractBrush(self._styles.macroRoutes.textColor
+                                           if major else
+                                           self._styles.macroRoutes.textHighlightColor)
+                vec.drawName(
+                    graphics=self._graphics,
+                    rect=self._tileRect,
+                    font=font,
+                    textBrush=solidBrush,
+                    labelStyle=labelStyle)
+
+        # TODO: Need to implement loading of ~/res/labels/minor_labels.tab to finish this
+        """
+        if (options.HasFlag(MapOptions.NamesMinor))
+        {
+            foreach (var label in minorLabels)
+            {
+                AbstractFont font = label.minor ? styles.macroNames.SmallFont : styles.macroNames.MediumFont;
+                solidBrush.Color = label.minor ? styles.macroRoutes.textColor : styles.macroRoutes.textHighlightColor;
+                using (graphics.Save())
+                {
+                    graphics.TranslateTransform(label.position.X, label.position.Y);
+                    graphics.ScaleTransform(1.0f / Astrometrics.ParsecScaleX, 1.0f / Astrometrics.ParsecScaleY);
+                    RenderUtil.DrawString(graphics, label.text, font, solidBrush, 0, 0);
+                }
+            }
+        }
+        """
+
+    def _drawCapitalsAndHomeWorlds(self) -> None:
+        # TODO: Need to add loading of ~/res/labels/Worlds.xml
+        pass
+
+    def _drawMegaLabels(self) -> None:
+        # TODO: Need to add loading of ~/res/labels/mega_labels.tab
+        pass
+
+    def _drawWorldsBackground(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawWorldsForeground(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawWorldsOverlay(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawDroyneOverlay(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawMinorHomeworldOverlay(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawAncientWorldsOverlay(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawSectorReviewStatusOverlay(self) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
+
+    def _drawMicroBorders(self, layer: BorderLayer) -> None:
+        # TODO: Implement when I add loading worlds
+        pass
 
 class QtGraphics(AbstractGraphics):
     _DashStyleMap = {
@@ -2930,7 +3216,9 @@ class QtGraphics(AbstractGraphics):
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(self, pen: AbstractPen, pt1: PointF, pt2: PointF) -> None:
         self._painter.setPen(self._convertPen(pen))
-        self._painter.drawLine(pt1.x, pt1.y, pt2.x, pt2.y)
+        self._painter.drawLine(
+            self._convertPoint(pt1),
+            self._convertPoint(pt2))
 
     def drawLines(self, pen: AbstractPen, points: typing.Sequence[PointF]):
         self._painter.setPen(self._convertPen(pen))
@@ -2993,10 +3281,7 @@ class QtGraphics(AbstractGraphics):
         scale = font.emSize / qtFont.pointSize()
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
-        contentPixelRect = fontMetrics.boundingRect(
-            QtCore.QRect(0, 0, 65535, 65535),
-            QtCore.Qt.AlignmentFlag.AlignCenter,
-            text)
+        contentPixelRect = fontMetrics.tightBoundingRect(text)
         contentPixelRect.moveTo(0, 0)
 
         return SizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
@@ -3009,10 +3294,7 @@ class QtGraphics(AbstractGraphics):
         self._painter.setBrush(self._convertBrush(brush))
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
-        contentPixelRect = fontMetrics.boundingRect(
-            QtCore.QRect(0, 0, 65535, 65535),
-            QtCore.Qt.AlignmentFlag.AlignCenter,
-            text)
+        contentPixelRect = fontMetrics.tightBoundingRect(text)
         contentPixelRect.moveTo(0, 0)
 
         self._painter.save()
@@ -3087,6 +3369,9 @@ class QtGraphics(AbstractGraphics):
     def _convertRect(self, rect: RectangleF) -> QtCore.QRectF:
         return QtCore.QRectF(rect.x, rect.y, rect.width, rect.height)
 
+    def _convertPoint(self, point: PointF) -> QtCore.QPointF:
+        return QtCore.QPointF(point.x, point.y)
+
     def _convertPoints(
             self,
             points: typing.Sequence[PointF]
@@ -3124,7 +3409,7 @@ class MapHackView(QtWidgets.QWidget):
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
 
-        self._viewCenterMapPos = PointF(0, 0)
+        self._viewCenterMapPos = PointF(0, 0) # TODO: I think this is actually in world/absolute coordinates
         self._tileSize = Size(self.width(), self.height())
         #self._scale = MapHackView._DefaultScale
         self._scale = 64
@@ -3162,7 +3447,8 @@ class MapHackView(QtWidgets.QWidget):
             relCursor = travellermap.absoluteSpaceToRelativeSpace((absCursor.x, absCursor.y))
             print(f'ABS: {absCursor.x} {absCursor.y} HEX:{relCursor[2]} {relCursor[3]}')
 
-
+    # TODO: There is an issue with the drag move where the point you start the
+    # drag on isn't staying under the cursor
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
         if self._renderer and self._dragPixelPos:

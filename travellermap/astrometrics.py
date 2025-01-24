@@ -2,8 +2,8 @@ import enum
 import math
 import typing
 
-SectorWidth = 32
-SectorHeight = 40
+SectorWidth = 32 # parsecs
+SectorHeight = 40 # parsecs
 ReferenceSectorX = 0
 ReferenceSectorY = 0
 ReferenceHexX = 1
@@ -12,6 +12,8 @@ TravellerMapTileSize = 256
 ParsecScaleX = math.cos(math.pi / 6) # cosine 30°
 ParsecScaleY = 1
 HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX
+SubsectorWidth = 8 # parsecs
+SubsectorHeight = 10 # parsecs
 
 # I've pinched this diagram from Traveller Map (RenderUtils.cs)
 # It shows how the size of hexes are calculated
