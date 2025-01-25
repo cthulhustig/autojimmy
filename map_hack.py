@@ -3112,6 +3112,23 @@ class RenderContext(object):
                 textBrush=solidBrush,
                 labelStyle=labelStyle)
 
+        for vec in self._vectorCache.rifts:
+            major = (vec.mapOptions & MapOptions.NamesMajor) != 0
+            labelStyle = LabelStyle(rotation=35, uppercase=major)
+            font = \
+                self._styles.macroNames.font \
+                if major else \
+                self._styles.macroNames.smallFont
+            solidBrush = AbstractBrush(self._styles.macroNames.textColor
+                                       if major else
+                                       self._styles.macroNames.textHighlightColor)
+            vec.drawName(
+                graphics=self._graphics,
+                rect=self._tileRect,
+                font=font,
+                textBrush=solidBrush,
+                labelStyle=labelStyle)
+
         if self._styles.macroRoutes.visible:
             for vec in self._vectorCache.routes:
                 if (vec.mapOptions & self._options & MapOptions.NamesMask) == 0:
