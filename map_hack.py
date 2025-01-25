@@ -431,7 +431,7 @@ class FontInfo():
     def makeFont(self) -> 'AbstractFont':
         if not self.families:
             raise RuntimeError("FontInfo has null name")
-        return AbstractFont(self.families, self.size * 1.4, self.style, GraphicsUnit.World)
+        return AbstractFont(self.families, self.size * 1.2, self.style, GraphicsUnit.World)
 
 class HighlightWorldPattern(object):
     class Field(enum.Enum):
@@ -534,12 +534,15 @@ class AbstractFont(object):
             try:
                 self.font = QtGui.QFont(family)
                 if self.font:
+                    # Qt doesn't support floating point fonts so instead the font that
+                    # is created is always the same point size and we scale it to the
+                    # required em size
                     #self.font.setPointSizeF(emSize)
                     self.font.setPointSizeF(10)
                     if style & FontStyle.Bold:
                         self.font.setBold(True)
                     if style & FontStyle.Italic:
-                        self.font.setBold(True)
+                        self.font.setItalic(True)
                     if style & FontStyle.Underline:
                         self.font.setUnderline(True)
                     if style & FontStyle.Strikeout:
@@ -913,6 +916,50 @@ class LabelStyle(object):
 
 class MapObject(object):
     pass
+
+class MapLabel(object):
+    def __init__(
+            self,
+            text: str,
+            position: PointF,
+            minor: bool = False
+            ) -> None:
+        self.text = text
+        self.position = PointF(position)
+        self.minor = minor
+
+class MapLabelCache(object):
+    _MinorLabelsPath = 'res/labels/minor_labels.tab'
+    _MajorLabelsPath = 'res/labels/mega_labels.tab'
+
+    def __init__(self, basePath: str):
+        self.minorLabels = self._loadFile(
+            os.path.join(basePath, MapLabelCache._MinorLabelsPath))
+        self.megaLabels = self._loadFile(
+            os.path.join(basePath, MapLabelCache._MajorLabelsPath))
+
+    def _loadFile(self, path: str) -> typing.List[MapLabel]:
+        labels = []
+
+        with open(path, 'r', encoding='utf-8-sig') as file:
+            header = None
+            for line in file.readlines():
+                if not line:
+                    continue
+                if line.startswith('#'):
+                    continue
+                tokens = [t.strip() for t in line.split('\t')]
+                if not header:
+                    header = tokens
+                    continue
+
+                data = {header[i]:t for i, t in enumerate(tokens)}
+                labels.append(MapLabel(
+                    text=data['Text'].replace('\\n', '\n'),
+                    position=PointF(x=float(data['X']), y=float(data['Y'])),
+                    minor=bool(data['Minor'].lower() == 'true')))
+
+        return labels
 
 class VectorObject(MapObject):
     def __init__(
@@ -1691,6 +1738,9 @@ class StyleSheet(object):
             families=StyleSheet._DefaultFont,
             size=6.5 / 1.4,
             style=FontStyle.Italic)
+
+        test = self.macroNames.font
+        families = test.font.families()
 
         megaNameScaleFactor = min(35, 0.75 * onePixel)
         self.megaNames.fontInfo = FontInfo(
@@ -2479,8 +2529,6 @@ def drawStringHelper(
     # NOTE: This was commented out in the Traveller Map source code
     #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
 
-    print(lineSpacing)
-
     maxWidthRect = max(sizes, key=lambda rect: rect.width)
     boundingSize = SizeF(width=maxWidthRect.width, height=lineSpacing * len(sizes))
 
@@ -2508,12 +2556,12 @@ def drawStringHelper(
 
     for line, size in zip(lines, sizes):
         graphics.drawString(
-            line,
-            font,
-            brush,
-            x + widthFactor * size.width + size.width / 2,
-            y,
-            StringAlignment.Centered)
+            text=line,
+            font=font,
+            brush=brush,
+            x=x + widthFactor * size.width + size.width / 2,
+            y=y,
+            format=StringAlignment.Centered)
         y += lineSpacing
 
 class RenderContext(object):
@@ -2540,6 +2588,7 @@ class RenderContext(object):
             styles: StyleSheet,
             imageCache: ImageCache,
             vectorCache: VectorObjectCache,
+            labelCache: MapLabelCache,
             options: MapOptions
             ) -> None:
         self._graphics = graphics
@@ -2549,6 +2598,7 @@ class RenderContext(object):
         self._styles = styles
         self._imageCache = imageCache
         self._vectorCache = vectorCache
+        self._labelCache = labelCache
         self._tileSize = tileSize
         self._createLayers()
         self._updateSpaceTransforms()
@@ -2956,7 +3006,6 @@ class RenderContext(object):
                     points[3] = PointF(px + 1.0 + RenderContext._HexEdge, py + 0.5 + yOffset)
                     self._graphics.drawLines(pen, points)
 
-        # TODO: The if statment in the traveller map code is this
         if self._styles.numberAllHexes and (self._styles.worldDetails & WorldDetails.Hex) != 0:
             solidBrush = AbstractBrush(self._styles.hexNumber.textColor)
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
@@ -3083,31 +3132,51 @@ class RenderContext(object):
                     textBrush=solidBrush,
                     labelStyle=labelStyle)
 
-        # TODO: Need to implement loading of ~/res/labels/minor_labels.tab to finish this
-        """
-        if (options.HasFlag(MapOptions.NamesMinor))
-        {
-            foreach (var label in minorLabels)
-            {
-                AbstractFont font = label.minor ? styles.macroNames.SmallFont : styles.macroNames.MediumFont;
-                solidBrush.Color = label.minor ? styles.macroRoutes.textColor : styles.macroRoutes.textHighlightColor;
-                using (graphics.Save())
-                {
-                    graphics.TranslateTransform(label.position.X, label.position.Y);
-                    graphics.ScaleTransform(1.0f / Astrometrics.ParsecScaleX, 1.0f / Astrometrics.ParsecScaleY);
-                    RenderUtil.DrawString(graphics, label.text, font, solidBrush, 0, 0);
-                }
-            }
-        }
-        """
+        if (self._options & MapOptions.NamesMinor) != 0:
+            for label in self._labelCache.minorLabels:
+                font = self._styles.macroNames.smallFont if label.minor else self._styles.macroNames.mediumFont
+                solidBrush = AbstractBrush(self._styles.macroRoutes.textColor
+                                           if label.minor else
+                                           self._styles.macroRoutes.textHighlightColor)
+                with self._graphics.save():
+                    self._graphics.translateTransform(
+                        dx=label.position.x,
+                        dy=label.position.y)
+                    self._graphics.scaleTransform(
+                        scaleX=1.0 / travellermap.ParsecScaleX,
+                        scaleY=1.0 / travellermap.ParsecScaleY)
+                    drawStringHelper(
+                        graphics=self._graphics,
+                        text=label.text,
+                        font=font,
+                        brush=solidBrush,
+                        x=0, y=0)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
-        # TODO: Need to add loading of ~/res/labels/Worlds.xml
+        # TODO: Need to add worlds and loading of ~/res/labels/Worlds.xml
         pass
 
     def _drawMegaLabels(self) -> None:
-        # TODO: Need to add loading of ~/res/labels/mega_labels.tab
-        pass
+        if not self._styles.megaNames.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+        solidBrush = AbstractBrush(self._styles.megaNames.textColor)
+        for label in self._labelCache.megaLabels:
+            with self._graphics.save():
+                font = self._styles.megaNames.smallFont if label.minor else self._styles.megaNames.font
+                self._graphics.translateTransform(
+                    dx=label.position.x,
+                    dy=label.position.y)
+                self._graphics.scaleTransform(
+                    scaleX=1.0 / travellermap.ParsecScaleX,
+                    scaleY=1.0 / travellermap.ParsecScaleY)
+                drawStringHelper(
+                    graphics=self._graphics,
+                    text=label.text,
+                    font=font,
+                    brush=solidBrush,
+                    x=0, y=0)
 
     def _drawWorldsBackground(self) -> None:
         # TODO: Implement when I add loading worlds
@@ -3291,6 +3360,10 @@ class QtGraphics(AbstractGraphics):
         scale = font.emSize / qtFont.pointSize()
 
         self._painter.setFont(qtFont)
+        # TODO: It looks like Qt uses a pen for text rather than the brush
+        # it may make more sense for it to just be a colour that is passed
+        # to drawString
+        self._painter.setPen(QtGui.QColor(brush.color))
         self._painter.setBrush(self._convertBrush(brush))
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
@@ -3424,6 +3497,7 @@ class MapHackView(QtWidgets.QWidget):
         self._graphics = QtGraphics()
         self._imageCache = ImageCache(basePath='./data/map/')
         self._vectorCache = VectorObjectCache(basePath='./data/map/')
+        self._labelCache = MapLabelCache(basePath='./data/map/')
         self._renderer = self._createRender()
 
         self._isDragging = False
@@ -3561,6 +3635,7 @@ class MapHackView(QtWidgets.QWidget):
                 style=self._style),
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
+            labelCache=self._labelCache,
             options=self._options)
 
     def _calculateTileRect(self) -> RectangleF:
