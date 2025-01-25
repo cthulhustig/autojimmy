@@ -431,7 +431,7 @@ class FontInfo():
     def makeFont(self) -> 'AbstractFont':
         if not self.families:
             raise RuntimeError("FontInfo has null name")
-        return AbstractFont(self.families, self.size * 1.2, self.style, GraphicsUnit.World)
+        return AbstractFont(self.families, self.size * 1.4, self.style, GraphicsUnit.World)
 
 class HighlightWorldPattern(object):
     class Field(enum.Enum):
@@ -3372,9 +3372,19 @@ class QtGraphics(AbstractGraphics):
 
         return SizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
 
-    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: StringAlignment) -> None:
+    def drawString(
+            self,
+            text: str,
+            font: AbstractFont,
+            brush: AbstractBrush,
+            x: float, y: float,
+            format: StringAlignment
+            ) -> None:
+        # TODO: I've found that to get text sizes to match Traveller Map I need
+        # to scale the emSize
+        emSize = font.emSize * 0.85
         qtFont = self._convertFont(font)
-        scale = font.emSize / qtFont.pointSize()
+        scale = emSize / qtFont.pointSize()
 
         self._painter.setFont(qtFont)
         # TODO: It looks like Qt uses a pen for text rather than the brush
