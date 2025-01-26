@@ -941,7 +941,7 @@ class WorldSearch(object):
             centerHex: travellermap.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
-        return traveller.WorldManager.instance().worldsInArea(
+        return traveller.WorldManager.instance().worldsInRadius(
             center=centerHex,
             searchRadius=searchRadius,
             worldFilterCallback=self.checkWorld)

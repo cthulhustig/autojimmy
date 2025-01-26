@@ -136,6 +136,9 @@ class Bases(object):
     def isEmpty(self) -> bool:
         return not self._string
 
+    def count(self) -> int:
+        return len(self._bases)
+
     def hasBase(self, base: BaseType) -> bool:
         return base in self._bases
 
@@ -182,15 +185,15 @@ class Bases(object):
         return _BaseTypeDescriptionMap
 
     @staticmethod
-    def _parseString(string: str) -> typing.Set[BaseType]:
-        bases = set()
+    def _parseString(string: str) -> typing.List[BaseType]:
+        bases = list()
         for code in string:
             codeBaseTypes = _CodeToBaseTypeMap.get(code)
             if not codeBaseTypes:
                 logging.debug(f'Ignoring unknown base code "{code}"')
                 continue
 
-            bases.update(codeBaseTypes)
+            bases.extend(codeBaseTypes)
         return bases
 
     def __getitem__(self, index: int) -> BaseType:

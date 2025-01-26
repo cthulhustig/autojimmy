@@ -1,3 +1,4 @@
+import common
 import fnmatch
 import re
 import logging
@@ -210,15 +211,35 @@ class WorldManager(object):
 
         return subsectors[index]
 
+    def sectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.List[traveller.Sector]:
+        return list(self.yieldSectorsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight))
+
     def worldsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            worldFilterCallback: typing.Callable[[traveller.World], bool] = None
+            ) -> typing.List[traveller.World]:
+        return list(self.yieldWorldsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight,
+            worldFilterCallback=worldFilterCallback))
+
+    def worldsInRadius(
             self,
             center: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
-        return list(self.yieldWorldsInArea(
+        return list(self.yieldWorldsInRadius(
             center=center,
-            searchRadius=searchRadius,
+            radius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
     def worldsInFlood(
@@ -295,27 +316,64 @@ class WorldManager(object):
         except KeyError:
             return str(hex)
 
+    def yieldSectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.Sector, None, None]:
+        startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
+        startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
+
+        x = startX
+        while x <= finishX:
+            y = startY
+            while y <= finishY:
+                sector = self._sectorPositionMap.get((x, y))
+                if sector:
+                    yield sector
+                y += 1
+            x += 1
+
     def yieldWorldsInArea(
             self,
-            center: travellermap.HexPosition,
-            searchRadius: int,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.Generator[traveller.World, None, None]:
-        minLength = searchRadius + 1
-        maxLength = (searchRadius * 2) + 1
+        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
+        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
+
+        x = startX
+        while x <= finishX:
+            y = startY
+            while y <= finishY:
+                world = self._absoluteWorldMap.get((x, y))
+                if world and ((not worldFilterCallback) or worldFilterCallback(world)):
+                    yield world
+                y += 1
+            x += 1
+
+    def yieldWorldsInRadius(
+            self,
+            center: travellermap.HexPosition,
+            radius: int,
+            worldFilterCallback: typing.Callable[[traveller.World], bool] = None
+            ) -> typing.Generator[traveller.World, None, None]:
+        minLength = radius + 1
+        maxLength = (radius * 2) + 1
         deltaLength = int(math.floor((maxLength - minLength) / 2))
 
         centerX, centerY = center.absolute()
-        startX = centerX - searchRadius
-        finishX = centerX + searchRadius
-        startY = (centerY - searchRadius) + deltaLength
-        finishY = (centerY + searchRadius) - deltaLength
+        startX = centerX - radius
+        finishX = centerX + radius
+        startY = (centerY - radius) + deltaLength
+        finishY = (centerY + radius) - deltaLength
         if (startX & 0b1) != 0:
             startY += 1
-            if (searchRadius & 0b1) != 0:
+            if (radius & 0b1) != 0:
                 finishY -= 1
         else:
-            if (searchRadius & 0b1) != 0:
+            if (radius & 0b1) != 0:
                 startY += 1
             finishY -= 1
         for x in range(startX, finishX + 1):

@@ -130,6 +130,14 @@ def formatNumber(
 
     return string
 
+def minmax(
+        val1: typing.Union[float, int],
+        val2: typing.Union[float, int]
+        ) -> typing.Tuple[typing.Union[float, int], typing.Union[float, int]]:
+    if val1 < val2:
+        return (val1, val2)
+    return (val2, val1)
+
 def clamp(
         value: typing.Union[float, int],
         minValue: typing.Union[float, int],

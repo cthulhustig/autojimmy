@@ -1531,7 +1531,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if startHex and showWorldTaggingOverlay:
             try:
-                worlds = traveller.WorldManager.instance().worldsInArea(
+                worlds = traveller.WorldManager.instance().worldsInRadius(
                     center=startHex,
                     searchRadius=jumpRating)
             except Exception as ex:

@@ -1,16 +1,22 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-import PIL.Image, PIL.ImageDraw, PIL.ImageFont
+import app
 import base64
-import os
-import gui
-import io
 import common
-import typing
 import enum
+import fnmatch
+import gui
+import locale
+import logging
+import io
 import math
 import numpy
+import os
 import random
+import re
+import sys
+import traveller
 import travellermap
+import typing
 import xml.etree.ElementTree
 
 class StringAlignment(enum.Enum):
@@ -859,7 +865,7 @@ class AbstractGraphics(object):
     # TODO: This has changed quite a bit from the traveller map interface
     def drawEllipse(self, pen: typing.Optional[AbstractPen], brush: typing.Optional[AbstractBrush], rect: RectangleF):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawEllipse')
-    def drawArc(self, pen: AbstractPen, rect: RectangleF, startAngle: float, sweepAngle: float) -> None:
+    def drawArc(self, pen: AbstractPen, rect: RectangleF, startDegrees: float, sweepDegrees: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
 
     def drawImage(self, image: AbstractImage, rect: RectangleF) -> None:
@@ -876,6 +882,27 @@ class AbstractGraphics(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement save')
     def restore(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement restore')
+
+def loadTabFile(path: str) -> typing.Tuple[
+        typing.List[str], # Headers
+        typing.List[typing.Dict[
+            str, # Header
+            str]]]: # Value
+    with open(path, 'r', encoding='utf-8-sig') as file:
+        header = None
+        rows = []
+        for line in file.readlines():
+            if not line:
+                continue
+            if line.startswith('#'):
+                continue
+            tokens = [t.strip() for t in line.split('\t')]
+            if not header:
+                header = tokens
+                continue
+
+            rows.append({header[i]:t for i, t in enumerate(tokens)})
+    return (header, rows)
 
 class ImageCache(object):
     def __init__(self, basePath: str) -> None:
@@ -939,26 +966,13 @@ class MapLabelCache(object):
             os.path.join(basePath, MapLabelCache._MajorLabelsPath))
 
     def _loadFile(self, path: str) -> typing.List[MapLabel]:
+        _, rows = loadTabFile(path=path)
         labels = []
-
-        with open(path, 'r', encoding='utf-8-sig') as file:
-            header = None
-            for line in file.readlines():
-                if not line:
-                    continue
-                if line.startswith('#'):
-                    continue
-                tokens = [t.strip() for t in line.split('\t')]
-                if not header:
-                    header = tokens
-                    continue
-
-                data = {header[i]:t for i, t in enumerate(tokens)}
-                labels.append(MapLabel(
-                    text=data['Text'].replace('\\n', '\n'),
-                    position=PointF(x=float(data['X']), y=float(data['Y'])),
-                    minor=bool(data['Minor'].lower() == 'true')))
-
+        for data in rows:
+            labels.append(MapLabel(
+                text=data['Text'].replace('\\n', '\n'),
+                position=PointF(x=float(data['X']), y=float(data['Y'])),
+                minor=bool(data['Minor'].lower() == 'true')))
         return labels
 
 class VectorObject(MapObject):
@@ -977,9 +991,6 @@ class VectorObject(MapObject):
             closed: bool = False,
             mapOptions: MapOptions = 0):
         super().__init__()
-
-        if types and (len(points) != len(types)):
-            pass # TODO: Remove debug code
 
         if types and (len(points) != len(types)):
             raise ValueError('VectorObject path point and type vectors have different lengths')
@@ -1311,6 +1322,170 @@ class VectorObjectCache(object):
                 bounds=bounds,
                 mapOptions=mapOptions)]
 
+class WorldHelper(object):
+    # Traveller Map doesn't use trade codes for things you might expect it
+    # would. Instead it has it's own logic based on UWP. Best guess is this is
+    # to support older sector data that might not have trade codes
+    _HighPopulation = 9
+    _AgriculturalAtmospheres = set([4, 5, 6, 7, 8, 9])
+    _AgriculturalHydrographics = set([4, 5, 6, 7, 8])
+    _AgriculturalPopulations = set([5, 6, 7])
+    _IndustrialAtmospheres = set([0, 1, 2, 4, 7, 9, 10, 11, 12])
+    _IndustrialMinPopulation = 9
+    _RichAtmospheres = set([6, 8])
+    _RichPopulations = set([6, 7, 8])
+
+    _DefaultAllegiances = set([
+        "Im", # Classic Imperium
+        "ImAp", # Third Imperium, Amec Protectorate (Dagu)
+        "ImDa", # Third Imperium, Domain of Antares (Anta/Empt/Lish)
+        "ImDc", # Third Imperium, Domain of Sylea (Core/Delp/Forn/Mass)
+        "ImDd", # Third Imperium, Domain of Deneb (Dene/Reft/Spin/Troj)
+        "ImDg", # Third Imperium, Domain of Gateway (Glim/Hint/Ley)
+        "ImDi", # Third Imperium, Domain of Ilelish (Daib/Ilel/Reav/Verg/Zaru)
+        "ImDs", # Third Imperium, Domain of Sol (Alph/Dias/Magy/Olde/Solo)
+        "ImDv", # Third Imperium, Domain of Vland (Corr/Dagu/Gush/Reft/Vlan)
+        "ImLa", # Third Imperium, League of Antares (Anta)
+        "ImLc", # Third Imperium, Lancian Cultural Region (Corr/Dagu/Gush)
+        "ImLu", # Third Imperium, Luriani Cultural Association (Ley/Forn)
+        "ImSy", # Third Imperium, Sylean Worlds (Core)
+        "ImVd", # Third Imperium, Vegan Autonomous District (Solo)
+        "XXXX", # Unknown
+        "??", # Placeholder - show as blank
+        "--", # Placeholder - show as blank
+    ])
+
+    _T5OfficialAllegiancesPath = 'res/t5ss/allegiance_codes.tab'
+    _T5UnofficialAllegiances = {
+            # -----------------------
+            # Unofficial/Unreviewed
+            # -----------------------
+
+            # M1120
+            'FdAr': 'Fa',
+            'BoWo': 'Bw',
+            'LuIm': 'Li',
+            'MaSt': 'Ma',
+            'BaCl': 'Bc',
+            'FdDa': 'Fd',
+            'FdIl': 'Fi',
+            'AvCn': 'Ac',
+            'CoAl': 'Ca',
+            'StIm': 'St',
+            'ZiSi': 'Rv', # Ziru Sirka
+            'VA16': 'V6',
+            'CRVi': 'CV',
+            'CRGe': 'CG',
+            'CRSu': 'CS',
+            'CRAk': 'CA'
+    }
+    _T5AllegiancesMap: typing.Optional[typing.Dict[
+        str, # Code
+        str # Legacy Code
+        ]] = None
+
+    _HydrographicsImageMap = {
+        0x1: 'Hyd1',
+        0x2: 'Hyd2',
+        0x3: 'Hyd3',
+        0x4: 'Hyd4',
+        0x5: 'Hyd5',
+        0x6: 'Hyd6',
+        0x7: 'Hyd7',
+        0x8: 'Hyd8',
+        0x9: 'Hyd9',
+        0xA: 'HydA',
+    }
+    _HydrographicsDefaultImage = 'Hyd0'
+
+    @staticmethod
+    def loadData(basePath: str) -> None:
+        if WorldHelper._T5AllegiancesMap is not None:
+            return # Already loaded
+        WorldHelper._T5AllegiancesMap = {}
+
+        _, rows = loadTabFile(path=os.path.join(basePath, WorldHelper._T5OfficialAllegiancesPath))
+        for data in rows:
+            code = data.get('Code')
+            legacy = data.get('Legacy')
+            WorldHelper._T5AllegiancesMap[code] = legacy
+        for code, legacy in WorldHelper._T5UnofficialAllegiances.items():
+            WorldHelper._T5AllegiancesMap[code] = legacy
+
+    @staticmethod
+    def hasWater(world: traveller.World) -> bool:
+        return world.hasWaterRefuelling()
+
+    @staticmethod
+    def hasGasGiants(world: traveller.World) -> bool:
+        return world.hasGasGiantRefuelling()
+
+    @staticmethod
+    def isHighPopulation(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return population >= WorldHelper._HighPopulation
+
+    @staticmethod
+    def isAgricultural(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return atmosphere in WorldHelper._AgriculturalAtmospheres and \
+            hydrographics in WorldHelper._AgriculturalHydrographics and \
+            population in WorldHelper._AgriculturalPopulations
+
+    @staticmethod
+    def isIndustrial(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return atmosphere in WorldHelper._IndustrialAtmospheres and \
+            population >= WorldHelper._IndustrialMinPopulation
+
+    @staticmethod
+    def isRich(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return atmosphere in WorldHelper._RichAtmospheres and \
+            population in WorldHelper._RichPopulations
+
+    @staticmethod
+    def isVacuum(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        return atmosphere == 0
+
+    @staticmethod
+    def isCapital(world: traveller.World) -> bool:
+        # TODO: Need to check "Capital" support is working
+        return world.hasTradeCode(traveller.TradeCode.SectorCapital) or \
+            world.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
+            world.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
+            world.hasRemark('Capital')
+
+    @staticmethod
+    def allegianceCode(world: traveller.World, ignoreDefault: bool, useLegacy: bool) -> str:
+        allegiance = world.allegiance()
+        if ignoreDefault and (allegiance in WorldHelper._DefaultAllegiances):
+            return None
+        if useLegacy and WorldHelper._T5AllegiancesMap:
+            allegiance = WorldHelper._T5AllegiancesMap.get(allegiance, allegiance)
+        return allegiance
+
+    @staticmethod
+    def worldImage(world: traveller.World, images: ImageCache) -> AbstractImage:
+        uwp = world.uwp()
+        size = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
+        if size <= 0:
+            return images.worldImages['Belt']
+
+        hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
+        return images.worldImages[
+            WorldHelper._HydrographicsImageMap.get(hydrographics, WorldHelper._HydrographicsDefaultImage)]
+
 class MapColors(object):
     Black = '#000000'
     White = '#FFFFFF'
@@ -1335,6 +1510,7 @@ class MapColors(object):
     LightGray = '#D3D3D3'
     MediumBlue = '#0000CD'
     Plum = '#DDA0DD'
+    Purple = '#800080'
     Wheat = '#F5DEB3'
 
     TravellerRed = '#E32736'
@@ -1383,6 +1559,7 @@ class StyleSheet(object):
     class StyleElement(object):
         def __init__(self):
             self.visible = False
+            # TODO: This should probably be an AbstractBrush to avoid having to create it all the time
             self.fillColor = ''
             self.content = ''
             self.pen = AbstractPen()
@@ -1474,6 +1651,51 @@ class StyleSheet(object):
             self.highlightWorlds.visible or \
             self.showStellarOverlay or \
             self.capitalOverlay.visible
+
+    def worldColors(
+            self,
+            world: traveller.World
+            ) -> typing.Tuple[
+                typing.Optional[str], # Pen colour
+                typing.Optional[str]]: # Brush colour
+        penColor = None
+        brushColor = None
+
+        if self.showWorldDetailColors:
+            if WorldHelper.isAgricultural(world) and WorldHelper.isRich(world):
+                penColor = brushColor = MapColors.TravellerAmber
+            elif WorldHelper.isAgricultural(world):
+                penColor = brushColor = MapColors.TravellerGreen
+            elif WorldHelper.isRich(world):
+                penColor = brushColor = MapColors.Purple
+            elif WorldHelper.isIndustrial(world):
+                penColor = brushColor = '#888888' # Gray
+            elif world.uwp().numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10:
+                penColor = brushColor = '#CC6626' # Rust
+            elif WorldHelper.isVacuum(world):
+                brushColor = MapColors.Black
+                penColor = MapColors.White
+            elif WorldHelper.hasWater(world):
+                brushColor = self.worldWater.fillColor
+                penColor = self.worldWater.pen.color
+            else:
+                brushColor = self.worldNoWater.fillColor
+                penColor = self.worldNoWater.pen.color
+        else:
+            # Classic colors
+
+            # World disc
+            hasWater = WorldHelper.hasWater(world)
+            brushColor = \
+                self.worldWater.fillColor \
+                if hasWater else \
+                self.worldNoWater.fillColor
+            penColor = \
+                self.worldWater.pen.color \
+                if hasWater else \
+                self.worldNoWater.pen.color
+
+        return (penColor, brushColor)
 
     def _handleConfigUpdate(self) -> None:
         # Options
@@ -1726,7 +1948,7 @@ class StyleSheet(object):
             self.worlds.smallFontInfo = FontInfo(
                 StyleSheet._DefaultFont,
                 0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.1 * fontScale))
-            self.worlds.largeFontInfo = self.worlds.fontInfo
+            self.worlds.largeFontInfo = FontInfo(self.worlds.fontInfo)
             self.starport.fontInfo = \
                 FontInfo(self.worlds.smallFontInfo) \
                 if (self.scale < StyleSheet._WorldFullMinScale) else \
@@ -2079,6 +2301,7 @@ class StyleSheet(object):
             self.highlightWorlds.fillColor = StyleSheet._makeAlphaColor(0x30, self.highlightWorlds.fillColor)
             self.highlightWorlds.pen.color = MapColors.Gray
         elif self._style is travellermap.Style.Draft:
+            # TODO: For some reason all text is getting underlining set
             inkOpacity = 0xB0
 
             self.showGalaxyBackground = False
@@ -2194,13 +2417,13 @@ class StyleSheet(object):
 
             self.worlds.textBackgroundStyle = TextBackgroundStyle.Shadow
 
-            self.worldDetails = worldDetails &  ~WorldDetails.Starport & \
+            self.worldDetails = self.worldDetails &  ~WorldDetails.Starport & \
                 ~WorldDetails.Allegiance & ~WorldDetails.Bases & ~WorldDetails.Hex
 
-            if (self.scale < StyleSheet._CandyMinWorldNameScale):
-                worldDetails = worldDetails & ~WorldDetails.KeyNames & ~WorldDetails.AllNames
-            if (self.scale < StyleSheet._CandyMinUwpScale):
-                worldDetails &= ~WorldDetails.Uwp
+            if self.scale < StyleSheet._CandyMinWorldNameScale:
+                self.worldDetails &= ~WorldDetails.KeyNames & ~WorldDetails.AllNames
+            if self.scale < StyleSheet._CandyMinUwpScale:
+                self.worldDetails &= ~WorldDetails.Uwp
 
             self.amberZone.pen.color = MapColors.Goldenrod
             self.amberZone.pen.width = self.redZone.pen.width = 0.035
@@ -2498,10 +2721,6 @@ class StyleSheet(object):
         for i, layer in enumerate(layers):
             self.layerOrder[layer] = i
 
-
-        # TODO: Delete the hacky stuff below
-        self.numberAllHexes = True
-
     @staticmethod
     def _floatScaleInterpolate(
             minValue: float,
@@ -2555,6 +2774,26 @@ class StyleSheet(object):
 
         return f'#{alpha:02X}{color[1 if length == 7 else 3:]}'
 
+class FontCache(object):
+    def __init__(self, sheet: StyleSheet):
+        self.sheet = sheet
+        self._wingdingsFont = None
+        self._glyphFont = None
+
+    @property
+    def wingdingFont(self) -> AbstractFont:
+        if self._wingdingsFont:
+            return self._wingdingsFont
+        self._wingdingsFont = self.sheet.wingdingFont.makeFont()
+        return self._wingdingsFont
+
+    @property
+    def glyphFont(self) -> AbstractFont:
+        if self._glyphFont:
+            return self._glyphFont
+        self._glyphFont = self.sheet.glyphFont.makeFont()
+        return self._glyphFont
+
 class LayerAction(object):
     def __init__(
             self,
@@ -2565,6 +2804,194 @@ class LayerAction(object):
         self.id = id
         self.action = action
         self.clip = clip
+
+class RectSelector(object):
+    _SlopFactor = 0.3 # Arbitrary, but 0.25 not enough for some routes.
+
+    def __init__(self, rect: RectangleF, slop: bool = True) -> None:
+        self._slop = slop
+        self._rect = RectangleF(rect)
+
+        self._cachedSectors = None
+        self._cachedWorlds = None
+
+    def setRect(self, rect: RectangleF) -> None:
+        self._rect = RectangleF(rect)
+        self._cachedSectors = None
+        self._cachedWorlds = None
+
+    def sectors(self) -> typing.Iterable[traveller.Sector]:
+        if self._cachedSectors is not None:
+            return self._cachedSectors
+
+        rect = RectangleF(self._rect)
+        if self._slop:
+            rect.inflate(
+                x=rect.width * RectSelector._SlopFactor,
+                y=rect.height * RectSelector._SlopFactor)
+
+        left = int(math.floor((rect.left + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+        right = int(math.floor((rect.right + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+
+        top = int(math.floor((rect.top + travellermap.ReferenceHexY) / travellermap.SectorHeight))
+        bottom = int(math.floor((rect.bottom + travellermap.ReferenceHexY) / travellermap.SectorHeight))
+
+        self._cachedSectors = traveller.WorldManager.instance().sectorsInArea(
+            upperLeft=travellermap.HexPosition(
+                sectorX=left,
+                sectorY=top,
+                offsetX=travellermap.SectorWidth - 1, # TODO: Not sure about -1 here and below
+                offsetY=travellermap.SectorHeight - 1),
+            lowerRight=travellermap.HexPosition(
+                sectorX=right,
+                sectorY=bottom,
+                offsetX=0, # TODO: Should this be 0 or 1 (same for below)
+                offsetY=0))
+
+        return self._cachedSectors
+
+    def worlds(self) -> typing.Iterable[traveller.World]:
+        if self._cachedWorlds is not None:
+            return self._cachedWorlds
+
+        rect = RectangleF(self._rect)
+        if self._slop:
+            rect.inflate(
+                x=rect.width * RectSelector._SlopFactor,
+                y=rect.height * RectSelector._SlopFactor)
+
+        left = int(math.floor(rect.left))
+        right = int(math.ceil(rect.right))
+
+        top = int(math.floor(rect.top))
+        bottom = int(math.ceil(rect.bottom))
+
+        self._cachedWorlds = traveller.WorldManager.instance().worldsInArea(
+            upperLeft=travellermap.HexPosition(absoluteX=left, absoluteY=top),
+            lowerRight=travellermap.HexPosition(absoluteX=right, absoluteY=bottom))
+
+        return self._cachedWorlds
+
+class Glyph(object):
+    class GlyphBias(enum.Enum):
+        NoBias = 0 # TODO: This was None in Traveller Map code
+        Top = 1
+        Bottom = 2
+
+    @typing.overload
+    def __init__(self, chars: str, highlight: bool = False, bias: GlyphBias = GlyphBias.NoBias) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'Glyph', highlight: bool = False, bias: GlyphBias = GlyphBias.NoBias) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if not args and not kwargs:
+            self.characters = ''
+            self.highlight = False
+            self.bias = Glyph.GlyphBias.NoBias
+        else:
+            if args:
+                if isinstance(args[0], Glyph):
+                    self.characters = args[0].characters
+                else:
+                    self.characters = str(args[0])
+            elif 'chars' in kwargs:
+                self.characters = str(kwargs['chars'])
+            elif 'other' in kwargs:
+                other = kwargs['other']
+                if not isinstance(other, Glyph):
+                    raise TypeError('The other parameter must be a Glyph')
+                self.characters = other.characters
+            else:
+                raise ValueError('Invalid arguments')
+            self.highlight = int(args[1] if len(args) > 1 else kwargs.get('highlight', False))
+            self.bias = args[2] if len(args) > 2 else kwargs.get('bias', Glyph.GlyphBias.NoBias)
+
+    @property
+    def isPrintable(self) -> bool:
+        return len(self.characters) > 0
+
+class GlyphDefs(object):
+    NoGlyph = Glyph('') # TODO: This was Glyph.None in Traveller Map code
+    Diamond = Glyph('\u2666') # U+2666 (BLACK DIAMOND SUIT)
+    DiamondX = Glyph('\u2756') # U+2756 (BLACK DIAMOND MINUS WHITE X)
+    Circle = Glyph('\u2022') # U+2022 (BULLET); alternate:  U+25CF (BLACK CIRCLE)
+    Triangle = Glyph('\u25B2') # U+25B2 (BLACK UP-POINTING TRIANGLE)
+    Square = Glyph('\u25A0') # U+25A0 (BLACK SQUARE)
+    Star4Point = Glyph('\u2726') # U+2726 (BLACK FOUR POINTED STAR)
+    Star5Point = Glyph('\u2605') # U+2605 (BLACK STAR)
+    StarStar = Glyph('**') # Would prefer U+2217 (ASTERISK OPERATOR) but font coverage is poor
+
+    # Research Stations
+    Alpha = Glyph('\u0391', highlight=True)
+    Beta = Glyph('\u0392', highlight=True)
+    Gamma = Glyph('\u0393', highlight=True)
+    Delta = Glyph('\u0394', highlight=True)
+    Epsilon = Glyph('\u0395', highlight=True)
+    Zeta = Glyph('\u0396', highlight=True)
+    Eta = Glyph('\u0397', highlight=True)
+    Theta = Glyph('\u0398', highlight=True)
+    Omicron = Glyph('\u039F', highlight=True)
+
+    # Other Textual
+    Prison = Glyph('P', highlight=True)
+    Reserve = Glyph('R')
+    ExileCamp = Glyph('X')
+
+    # TNE
+    HiverSupplyBase = Glyph('\u2297')
+    Terminus = Glyph('\u2297')
+    Interface = Glyph('\u2297')
+
+    _ResearchCodeMap = {
+        'A': Alpha,
+        'B': Beta,
+        'G': Gamma,
+        'D': Delta,
+        'E': Epsilon,
+        'Z': Zeta,
+        'H': Eta,
+        'T': Theta,
+        'O': Omicron}
+
+    @staticmethod
+    def fromResearchCode(rs: str) -> Glyph:
+        glyph = GlyphDefs.Gamma
+        if len(rs) == 3:
+            glyph = GlyphDefs._ResearchCodeMap.get(rs[2], glyph)
+        return glyph
+
+    # TODO: Using regexes for this is horrible AND slow
+    def _compileGlyphRegex(wildcard: str) -> re.Pattern:
+        return re.compile(fnmatch.translate(wildcard))
+    _BaseGlyphs: typing.List[typing.Tuple[re.Pattern, Glyph]] = [
+        (_compileGlyphRegex(r'*.C'), Glyph(StarStar, bias=Glyph.GlyphBias.Bottom)), # Vargr Corsair Base
+        (_compileGlyphRegex(r'Im.D'), Glyph(Square, bias=Glyph.GlyphBias.Bottom)), # Imperial Depot
+        (_compileGlyphRegex(r'*.D'), Glyph(Square, highlight=True)), # Depot
+        (_compileGlyphRegex(r'*.E'), Glyph(StarStar, bias=Glyph.GlyphBias.Bottom)), # Hiver Embassy
+        (_compileGlyphRegex(r'*.K'), Glyph(Star5Point, highlight=True, bias=Glyph.GlyphBias.Top)), # Naval Base
+        (_compileGlyphRegex(r'*.M'), Glyph(Star4Point, bias=Glyph.GlyphBias.Bottom)), # Military Base
+        (_compileGlyphRegex(r'*.N'), Glyph(Star5Point, bias=Glyph.GlyphBias.Top)), # Imperial Naval Base
+        (_compileGlyphRegex(r'*.O'), Glyph(Square, highlight=True, bias=Glyph.GlyphBias.Top)), # K'kree Naval Outpost (non-standard)
+        (_compileGlyphRegex(r'*.R'), Glyph(StarStar, bias=Glyph.GlyphBias.Bottom)), # Aslan Clan Base
+        (_compileGlyphRegex(r'*.S'), Glyph(Triangle, bias=Glyph.GlyphBias.Bottom)), # Imperial Scout Base
+        (_compileGlyphRegex(r'*.T'), Glyph(Star5Point, highlight=True, bias=Glyph.GlyphBias.Top)), # Aslan Tlaukhu Base
+        (_compileGlyphRegex(r'*.V'), Glyph(Circle, bias=Glyph.GlyphBias.Bottom)), # Exploration Base
+        (_compileGlyphRegex(r'Zh.W'), Glyph(Diamond, highlight=True)), # Zhodani Relay Station
+        (_compileGlyphRegex(r'*.W'), Glyph(Triangle, highlight=True, bias=Glyph.GlyphBias.Bottom)), # Imperial Scout Waystation
+        (_compileGlyphRegex(r'Zh.Z'), Diamond), # Zhodani Base (Special case for "Zh.KM")
+        # For TNE
+        (_compileGlyphRegex(r'Sc.H'), HiverSupplyBase), # Hiver Supply Base
+        (_compileGlyphRegex(r'*.I'), Interface), # Interface
+        (_compileGlyphRegex(r'*.T'), Terminus), # Terminus
+        # Fallback
+        (_compileGlyphRegex(r'*.*'), Circle)] # Independent Base
+
+    @staticmethod
+    def fromBaseCode(allegiance: str, code: str) -> Glyph:
+        for regex, glyph in GlyphDefs._BaseGlyphs:
+            if regex.match(allegiance + '.' + code):
+                return glyph
+        return GlyphDefs.Circle
 
 # TODO: This is drawString from RenderUtils
 def drawStringHelper(
@@ -2629,12 +3056,53 @@ def drawStringHelper(
             format=StringAlignment.Centered)
         y += lineSpacing
 
+_DingMap = {
+    '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)
+    '\u2756': '\x76', # U+2756 (BLACK DIAMOND MINUS WHITE X)
+    '\u2726': '\xAA', # U+2726 (BLACK FOUR POINTED STAR)
+    '\u2605': '\xAB', # U+2605 (BLACK STAR)
+    '\u2736': '\xAC'} # U+2736 (BLACK SIX POINTED STAR)
+
+def drawGlyphHelper(
+        graphics: AbstractGraphics,
+        glyph: Glyph,
+        fonts: FontCache,
+        brush: AbstractBrush,
+        pt: PointF
+        ) -> None:
+    font = fonts.glyphFont
+    s = glyph.characters
+    if graphics.supportsWingdings():
+        dings = ''
+        for c in s:
+            c = _DingMap.get(c)
+            if c is None:
+                dings = ''
+                break
+            dings += c
+        if dings:
+            font = fonts.wingdingFont
+            s = dings
+
+    graphics.drawString(
+        text=s,
+        font=font,
+        brush=brush,
+        x=pt.x,
+        y=pt.y,
+        format=StringAlignment.Centered)
+
 class RenderContext(object):
     class BorderLayer(enum.Enum):
         Fill = 0
         Shade = 1
         Stroke = 2
         Regions = 3
+
+    class WorldLayer(enum.Enum):
+        Background = 0
+        Foreground = 1
+        Overlay = 2
 
     _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
 
@@ -2643,6 +3111,25 @@ class RenderContext(object):
 
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 800
+
+    _HexPath = AbstractPath(
+        points=[
+            PointF(-0.5 + _HexEdge, -0.5),
+            PointF( 0.5 - _HexEdge, -0.5),
+            PointF( 0.5 + _HexEdge, 0),
+            PointF( 0.5 - _HexEdge, 0.5),
+            PointF(-0.5 + _HexEdge, 0.5),
+            PointF(-0.5 - _HexEdge, 0),
+            PointF(-0.5 + _HexEdge, -0.5)],
+        types=[
+            PathPointType.Start,
+            PathPointType.Line,
+            PathPointType.Line,
+            PathPointType.Line,
+            PathPointType.Line,
+            PathPointType.Line,
+            PathPointType.Line | PathPointType.CloseSubpath],
+        closed=True)
 
     def __init__(
             self,
@@ -2664,25 +3151,15 @@ class RenderContext(object):
         self._imageCache = imageCache
         self._vectorCache = vectorCache
         self._labelCache = labelCache
+        self._fontCache = FontCache(sheet=self._styles)
         self._tileSize = tileSize
+        self._selector = RectSelector(rect=self._tileRect)
         self._createLayers()
         self._updateSpaceTransforms()
 
     def setTileRect(self, rect: RectangleF) -> None:
         self._tileRect = rect
-        self._updateSpaceTransforms()
-
-    def setTileSize(self, size: Size) -> None:
-        self._tileSize  = size
-        self._updateSpaceTransforms()
-
-    def setScale(self, scale: float) -> None:
-        self._scale = scale
-        self._updateSpaceTransforms()
-
-    def moveRelative(self, dx: float, dy: float) -> None:
-        self._tileRect.x += (dx * self._scale)
-        self._tileRect.y += (dy * self._scale)
+        self._selector.setRect(rect=self._tileRect)
         self._updateSpaceTransforms()
 
     def pixelSpaceToWorldSpace(self, pixel: Point, clamp: bool = True) -> PointF:
@@ -3035,11 +3512,6 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
 
-        # TODO: Remove debug drawing code
-        self._graphics.drawRectangleFill(
-            brush=AbstractBrush('#0000FF'),
-            rect=RectangleF(-0.5, -0.5, 1, 1))
-
         parsecSlop = 1
 
         hx = int(math.floor(self._tileRect.x))
@@ -3262,12 +3734,22 @@ class RenderContext(object):
                     x=0, y=0)
 
     def _drawWorldsBackground(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.worlds.visible or self._styles.showStellarOverlay:
+            return
+
+        for world in self._selector.worlds():
+            self._drawWorld(
+                world=world,
+                layer=RenderContext.WorldLayer.Background)
 
     def _drawWorldsForeground(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.worlds.visible or self._styles.showStellarOverlay:
+            return
+
+        for world in self._selector.worlds():
+            self._drawWorld(
+                world=world,
+                layer=RenderContext.WorldLayer.Foreground)
 
     def _drawWorldsOverlay(self) -> None:
         # TODO: Implement when I add loading worlds
@@ -3289,9 +3771,655 @@ class RenderContext(object):
         # TODO: Implement when I add loading worlds
         pass
 
+    def _drawWorld(self, world: traveller.World, layer: WorldLayer) -> None:
+        uwp = world.uwp()
+        isPlaceholder = False # TODO: Handle placeholder worlds
+        isCapital = WorldHelper.isCapital(world)
+        isHiPop = WorldHelper.isHighPopulation(world)
+        renderName = ((self._styles.worldDetails & WorldDetails.AllNames) != 0) or \
+            (((self._styles.worldDetails & WorldDetails.KeyNames) != 0) and (isCapital or isHiPop))
+        renderUWP = (self._styles.worldDetails & WorldDetails.Uwp) != 0
+
+        with self._graphics.save():
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+
+            center = RenderContext._hexToCenter(world.hex())
+
+            self._graphics.translateTransform(
+                dx=center.x,
+                dy=center.y)
+            self._graphics.scaleTransform(
+                scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
+                scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
+            self._graphics.rotateTransform(
+                degrees=self._styles.hexRotation)
+
+            if layer is RenderContext.WorldLayer.Overlay:
+                if self._styles.populationOverlay.visible and (world.population() > 0):
+                    # TODO: Handle population overlay
+                    """
+                    self._drawOverlay(styles.populationOverlay, (float)Math.Sqrt(world.Population / Math.PI) * 0.00002f, ref solidBrush, ref pen);
+                    """
+
+                if self._styles.importanceOverlay.visible:
+                    # TODO: Handle importance overlay
+                    """
+                    int im = world.CalculatedImportance;
+                    if (im > 0)
+                    {
+                        DrawOverlay(styles.importanceOverlay, (im - 0.5f) * Astrometrics.ParsecScaleX, ref solidBrush, ref pen);
+                    }
+                    """
+
+                if self._styles.capitalOverlay.visible:
+                    # TODO: Handle capital overlay
+                    """
+                    bool hasIm = world.CalculatedImportance >= 4;
+                    bool hasCp = world.IsCapital;
+
+                    if (hasIm && hasCp)
+                        DrawOverlay(styles.capitalOverlay, 2 * Astrometrics.ParsecScaleX, ref solidBrush, ref pen);
+                    else if (hasIm)
+                        DrawOverlay(styles.capitalOverlayAltA, 2 * Astrometrics.ParsecScaleX, ref solidBrush, ref pen);
+                    else if (hasCp)
+                        DrawOverlay(styles.capitalOverlayAltB, 2 * Astrometrics.ParsecScaleX, ref solidBrush, ref pen);
+                    """
+
+                # TODO: Not sure if I need to bother with highlight pattern stuff. It
+                # doesn't look like it's used in tile rendering (just image rendering)
+                """
+                if (styles.highlightWorlds.visible && styles.highlightWorldsPattern!.Matches(world))
+                {
+                    DrawOverlay(styles.highlightWorlds, Astrometrics.ParsecScaleX, ref solidBrush, ref pen);
+                }
+                """
+
+            if not self._styles.useWorldImages:
+                # Normal (non-"Eye Candy") styles
+                if layer is RenderContext.WorldLayer.Background:
+                    if (self._styles.worldDetails & WorldDetails.Zone) != 0:
+                        elem = self._zoneStyle(world)
+                        if elem and elem.visible:
+                            if self._styles.showZonesAsPerimeters:
+                                with self._graphics.save():
+                                    # TODO: Why is this 2 separate scale transforms?
+                                    self._graphics.scaleTransform(
+                                        scaleX=travellermap.ParsecScaleX,
+                                        scaleY=travellermap.ParsecScaleY)
+                                    self._graphics.scaleTransform(
+                                        scaleX=0.95,
+                                        scaleY=0.95)
+                                    self._graphics.drawPathOutline(
+                                        pen=elem.pen,
+                                        path=RenderContext._HexPath)
+                            else:
+                                if elem.fillColor:
+                                    self._graphics.drawEllipse(
+                                        brush=AbstractBrush(elem.fillColor),
+                                        pen=None,
+                                        rect=RectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
+                                if elem.pen.color:
+                                    if renderName and self._styles.fillMicroBorders:
+                                        # TODO: Is saving the state actually needed here?
+                                        with self._graphics.save():
+                                            self._graphics.intersectClipRect(
+                                                rect=RectangleF(
+                                                    x=-0.5,
+                                                    y=-0.5,
+                                                    width=1,
+                                                    height=0.65 if renderUWP else 0.75))
+                                            self._graphics.drawEllipse(
+                                                pen=elem.pen,
+                                                brush=None,
+                                                rect=RectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
+                                    else:
+                                        self._graphics.drawEllipse(
+                                            pen=elem.pen,
+                                            brush=None,
+                                            rect=RectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
+
+                    if not self._styles.numberAllHexes and \
+                        ((self._styles.worldDetails & WorldDetails.Hex) != 0):
+
+                        hex = world.hex()
+                        if self._styles.hexContentScale is HexCoordinateStyle.Subsector:
+                            # TODO: Handle subsector hex whatever that is
+                            #hex=f'{hex.offsetX():02d}{hex.offsetY():02d}'
+                            hex='TODO'
+                        else:
+                            hex=f'{hex.offsetX():02d}{hex.offsetY():02d}'
+                        self._graphics.drawString(
+                            text=hex,
+                            font=self._styles.hexNumber.font,
+                            brush=AbstractBrush(self._styles.hexNumber.textColor),
+                            x=self._styles.hexNumber.position.x,
+                            y=self._styles.hexNumber.position.y,
+                            format=StringAlignment.TopCenter)
+
+                if layer is RenderContext.WorldLayer.Foreground:
+                    elem = self._zoneStyle(world)
+                    worldTextBackgroundStyle = \
+                        TextBackgroundStyle.NoStyle \
+                        if (not elem or not elem.fillColor) else \
+                        self._styles.worlds.textBackgroundStyle
+
+                    # TODO: Implement placeholders, this should be
+                    # if (!isPlaceholder)
+                    if True:
+                        if ((self._styles.worldDetails & WorldDetails.GasGiant) != 0) and \
+                            WorldHelper.hasGasGiants(world):
+                            self._drawGasGiant(
+                                self._styles.worlds.textColor,
+                                self._styles.gasGiantPosition.x,
+                                self._styles.gasGiantPosition.y,
+                                0.05,
+                                self._styles.showGasGiantRing)
+
+                        if (self._styles.worldDetails & WorldDetails.Starport) != 0:
+                            starport = uwp.code(traveller.UWP.Element.StarPort)
+                            if self._styles.showTL:
+                                starport += "-" + uwp.code(traveller.UWP.Element.TechLevel)
+                            self._drawWorldLabel(
+                                backgroundStyle=worldTextBackgroundStyle,
+                                brush=AbstractBrush(self._styles.uwp.fillColor),
+                                color=self._styles.worlds.textColor,
+                                position=self._styles.starport.position,
+                                font=self._styles.starport.font,
+                                text=starport)
+
+                        if renderUWP:
+                            self._drawWorldLabel(
+                                backgroundStyle=self._styles.uwp.textBackgroundStyle,
+                                brush=AbstractBrush(self._styles.uwp.fillColor),
+                                color=self._styles.uwp.textColor,
+                                position=self._styles.uwp.position,
+                                font=self._styles.hexNumber.font,
+                                text=uwp.string())
+
+                        # NOTE: This todo came in with the traveller map code
+                        # TODO: Mask off background for glyphs
+                        if (self._styles.worldDetails & WorldDetails.Bases) != 0:
+                            bases = world.bases()
+                            baseCount = bases.count()
+
+                            # TODO: Handle base allegiances
+                            """
+                            # Special case: Show Zho Naval+Military as diamond
+                            if (world.BaseAllegiance == "Zh" && bases == "KM")
+                                bases = "Z";
+                            """
+
+                            # Base 1
+                            bottomUsed = False
+                            if baseCount:
+                                glyph = GlyphDefs.fromBaseCode(
+                                    allegiance=world.allegiance(),
+                                    code=traveller.Bases.code(bases[0]))
+                                if glyph.isPrintable:
+                                    pt = self._styles.baseTopPosition
+                                    if glyph.bias is Glyph.GlyphBias.Bottom and not self._styles.ignoreBaseBias:
+                                        pt = self._styles.baseBottomPosition
+                                        bottomUsed = True
+
+                                    brush = AbstractBrush(
+                                        self._styles.worlds.textHighlightColor
+                                        if glyph.highlight else
+                                        self._styles.worlds.textColor)
+                                    drawGlyphHelper(
+                                        graphics=self._graphics,
+                                        glyph=glyph,
+                                        fonts=self._fontCache,
+                                        brush=brush,
+                                        pt=pt)
+
+                            # Base 2
+                            # TODO: Add support for legacyAllegiance
+                            """
+                            if baseCount > 1:
+                                glyph = GlyphDefs.fromBaseCode(
+                                    allegiance=world.legacyAllegiance, bases[1])
+                                if glyph.isPrintable:
+                                    pt = self._styles.baseTopPosition if bottomUsed else self._styles.baseBottomPosition
+                                    solidBrush.color = \
+                                        self._styles.worlds.textHighlightColor \
+                                        if glyph.isHighlighted else \
+                                        self._styles.worlds.textColor
+                                    drawGlyphHelper(
+                                        graphics=self._graphics,
+                                        glyph=glyph,
+                                        fonts=self._fontCache,
+                                        brush=solidBrush,
+                                        position=pt)
+
+                            # Base 3 (!)
+                            if baseCount > 2:
+                                glyph = GlyphDefs.fromBaseCode(world.legacyAllegiance, bases[2])
+                                if glyph.isPrintable:
+                                    solidBrush.color = \
+                                        self._styles.worlds.textHighlightColor \
+                                        if glyph.isHighlighted else \
+                                        self._styles.worlds.textColor
+                                    drawGlyphHelper(
+                                        graphics=self._graphics,
+                                        glyph=glyph,
+                                        fonts=self._fontCache,
+                                        brush=solidBrush,
+                                        position=self._styles.baseMiddlePosition)
+                            """
+
+                            # Research Stations
+                            # TODO: Handle research stations/penal colony etc
+                            """
+                            rs = world.researchStation()
+                            glyph = None
+                            if rs:
+                                glyph = GlyphDefs.fromResearchCode(rs)
+                            elif world.isReserve:
+                                glyph = GlyphDefs.Reserve
+                            elif world.isPenalColony:
+                                glyph = GlyphDefs.Prison
+                            elif world.isPrisonExileCamp:
+                                glyph = GlyphDefs.ExileCamp
+                            if glyph:
+                                solidBrush.color = \
+                                    self._styles.worlds.textHighlightColor \
+                                    if glyph.isHighlighted else \
+                                    self._styles.worlds.textColor
+                                drawGlyphHelper(
+                                    graphics=self._graphics,
+                                    glyph=glyph,
+                                    fonts=self._fontCache,
+                                    brush=solidBrush,
+                                    position=self._styles.baseMiddlePosition)
+                            """
+
+                    if (self._styles.worldDetails & WorldDetails.Type) != 0:
+                        # TODO: Handle placeholders, this should be
+                        # if (isPlaceholder)
+                        if False:
+                            e = self._styles.anomaly if world.isAnomaly() else self._styles.placeholder
+                            self._drawWorldLabel(
+                                backgroundStyle=e.textBackgroundStyle,
+                                brush=AbstractBrush(self._styles.worlds.textColor),
+                                color=e.textColor,
+                                position=e.position,
+                                font=e.font,
+                                text=e.content)
+                        else:
+                            with self._graphics.save():
+                                self._graphics.translateTransform(
+                                    dx=self._styles.discPosition.x,
+                                    dy=self._styles.discPosition.y)
+                                if uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0:
+                                    if (self._styles.worldDetails & WorldDetails.Asteroids) != 0:
+                                        # Basic pattern, with probability varying per position:
+                                        #   o o o
+                                        #  o o o o
+                                        #   o o o
+
+                                        lpx = [-2, 0, 2, -3, -1, 1, 3, -2, 0, 2]
+                                        lpy = [-2, -2, -2, 0, 0, 0, 0, 2, 2, 2]
+                                        lpr = [0.5, 0.9, 0.5, 0.6, 0.9, 0.9, 0.6, 0.5, 0.9, 0.5]
+
+                                        brush = AbstractBrush(self._styles.worlds.textColor)
+
+                                        # Random generator is seeded with world location so it is always the same
+                                        rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
+                                        rect = RectangleF()
+                                        for i in range(len(lpx)):
+                                            if rand.random() < lpr[i]:
+                                                rect.x = lpx[i] * 0.035
+                                                rect.y = lpy[i] * 0.035
+
+                                                rect.width = 0.04 + rand.random() * 0.03
+                                                rect.height = 0.04 + rand.random() * 0.03
+
+                                                # If necessary, add jitter here
+                                                #rect.x += 0
+                                                #rect.y += 0
+
+                                                self._graphics.drawEllipse(
+                                                    brush=brush,
+                                                    pen=None,
+                                                    rect=rect)
+                                    else:
+                                        # Just a glyph
+                                        drawGlyphHelper(
+                                            graphics=self._graphics,
+                                            glyph=GlyphDefs.DiamondX,
+                                            fonts=self._fontCache,
+                                            brush=AbstractBrush(self._styles.worlds.textColor),
+                                            pt=PointF(0, 0))
+                                else:
+                                    penColor, brushColor = self._styles.worldColors(world)
+                                    brush = AbstractBrush(brushColor) if brushColor else None
+                                    pen = AbstractPen(self._styles.worldWater.pen) if penColor else None
+                                    if pen:
+                                        pen.color = penColor
+                                    self._graphics.drawEllipse(
+                                        pen=pen,
+                                        brush=brush,
+                                        rect=RectangleF(
+                                            x=-self._styles.discRadius,
+                                            y=-self._styles.discRadius,
+                                            width=2 * self._styles.discRadius,
+                                            height=2 * self._styles.discRadius))
+                    elif not world.isAnomaly():
+                        # Dotmap
+                        self._graphics.drawEllipse(
+                            brush=AbstractBrush(self._styles.worlds.textColor),
+                            pen=None,
+                            rect=RectangleF(
+                                x=-self._styles.discRadius,
+                                y=-self._styles.discRadius,
+                                width=2 * self._styles.discRadius,
+                                height=2 * self._styles.discRadius))
+
+                    if renderName:
+                        name = world.name()
+                        highlight = (self._styles.worldDetails & WorldDetails.Highlight) != 0
+                        if (isHiPop and highlight) or \
+                            self._styles.worlds.textStyle.uppercase:
+                            name = name.upper()
+
+                        textColor = \
+                            self._styles.worlds.textHighlightColor \
+                            if isCapital and highlight else \
+                            self._styles.worlds.textColor
+                        font = \
+                            self._styles.worlds.largeFont \
+                            if (isHiPop or isCapital) and highlight else \
+                            self._styles.worlds.font
+
+                        self._drawWorldLabel(
+                            backgroundStyle=worldTextBackgroundStyle,
+                            brush=AbstractBrush(self._styles.worlds.textColor),
+                            color=textColor,
+                            position=self._styles.worlds.textStyle.translation,
+                            font=font,
+                            text=name)
+
+                    if (self._styles.worldDetails & WorldDetails.Allegiance) != 0:
+                        alleg = WorldHelper.allegianceCode(
+                            world=world,
+                            ignoreDefault=True,
+                            useLegacy=not self._styles.t5AllegianceCodes)
+                        if alleg:
+                            if self._styles.lowerCaseAllegiance:
+                                alleg = alleg.lower()
+
+                            self._graphics.drawString(
+                                text=alleg,
+                                font=self._styles.worlds.smallFont,
+                                brush=AbstractBrush(self._styles.worlds.textColor),
+                                x=self._styles.allegiancePosition.x,
+                                y=self._styles.allegiancePosition.y,
+                                format=StringAlignment.Centered)
+            else: # styles.useWorldImages
+                # "Eye-Candy" style
+                worldSize = world.physicalSize()
+                imageRadius = (0.6 if worldSize <= 0 else (0.3 * (worldSize / 5.0 + 0.2))) / 2
+                decorationRadius = imageRadius
+
+                if layer is RenderContext.WorldLayer.Background:
+                    if (self._styles.worldDetails & WorldDetails.Type) != 0:
+                        # TODO: Handle placeholders, this should be
+                        #if isPlaceholder:
+                        if False:
+                            e = self._styles.anomaly if world.isAnomaly() else self._styles.placeholder
+                            self._drawWorldLabel(
+                                backgroundStyle=e.textBackgroundStyle,
+                                brush=AbstractBrush(self._styles.worlds.textColor),
+                                color=e.textColor,
+                                position=e.position,
+                                font=e.font,
+                                text=e.content)
+                        else:
+                            scaleX = 1.5 if worldSize <= 0 else 1
+                            scaleY = 1.0 if worldSize <= 0 else 1
+                            self._graphics.drawImage(
+                                image=WorldHelper.worldImage(
+                                    world=world,
+                                    images=self._imageCache),
+                                rect=RectangleF(
+                                    x=-imageRadius * scaleX,
+                                    y=-imageRadius * scaleY,
+                                    width=imageRadius * 2 * scaleX,
+                                    height=imageRadius * 2 * scaleY))
+                    elif not world.isAnomaly():
+                        # Dotmap
+                        self._graphics.drawEllipse(
+                            brush=AbstractBrush(self._styles.worlds.textColor),
+                            pen=None,
+                            rect=RectangleF(
+                                x=-self._styles.discRadius,
+                                y=-self._styles.discRadius,
+                                width=2 * self._styles.discRadius,
+                                height=2 * self._styles.discRadius))
+
+                # TODO: Support placeholders, this should be
+                # if (isPlaceholder)
+                if False:
+                    return
+
+                if layer is RenderContext.WorldLayer.Foreground:
+                    decorationRadius += 0.1
+
+                    if (self._styles.worldDetails & WorldDetails.Zone) != 0:
+                        zone = world.zone()
+                        if zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.RedZone:
+                            pen = \
+                                self._styles.amberZone.pen \
+                                if zone is traveller.ZoneType.AmberZone else \
+                                self._styles.redZone.pen
+                            rect = RectangleF(
+                                x=-decorationRadius,
+                                y=-decorationRadius,
+                                width=decorationRadius * 2,
+                                height=decorationRadius * 2)
+
+                            self._graphics.drawArc(
+                                pen=pen,
+                                rect=rect,
+                                startDegrees=5,
+                                sweepDegrees=80)
+                            self._graphics.drawArc(
+                                pen=pen,
+                                rect=rect,
+                                startDegrees=95,
+                                sweepDegrees=80)
+                            self._graphics.drawArc(
+                                pen=pen,
+                                rect=rect,
+                                startDegrees=185,
+                                sweepDegrees=80)
+                            self._graphics.drawArc(
+                                pen=pen,
+                                rect=rect,
+                                startDegrees=275,
+                                sweepDegrees=80)
+                            decorationRadius += 0.1
+
+                    if (self._styles.worldDetails & WorldDetails.GasGiant) != 0:
+                        symbolRadius = 0.05
+                        if self._styles.showGasGiantRing:
+                            decorationRadius += symbolRadius
+                        self._drawGasGiant(
+                            color=self._styles.worlds.textHighlightColor,
+                            x=decorationRadius,
+                            y=0,
+                            radius=symbolRadius,
+                            ring=self._styles.showGasGiantRing)
+                        decorationRadius += 0.1
+
+                    if renderUWP:
+                        # NOTE: This todo came in with the traveller map code
+                        # TODO: Scale, like the name text.
+                        self._graphics.drawString(
+                            text=uwp.string(),
+                            font=self._styles.hexNumber.font,
+                            brush=AbstractBrush(self._styles.worlds.textColor),
+                            x=decorationRadius,
+                            y=self._styles.uwp.position.y,
+                            format=StringAlignment.CenterLeft)
+
+                    if renderName:
+                        name = world.name()
+                        if isHiPop:
+                            name.upper()
+
+                        with self._graphics.save():
+                            highlight = (self._styles.worldDetails & WorldDetails.Highlight) != 0
+                            textColor = \
+                                self._styles.worlds.textHighlightColor \
+                                if isCapital and highlight else \
+                                self._styles.worlds.textColor
+
+                            if self._styles.worlds.textStyle.uppercase:
+                                name = name.upper()
+
+                            self._graphics.translateTransform(
+                                dx=decorationRadius,
+                                dy=0.0)
+                            self._graphics.scaleTransform(
+                                scaleX=self._styles.worlds.textStyle.scale.width,
+                                scaleY=self._styles.worlds.textStyle.scale.height)
+                            self._graphics.translateTransform(
+                                dx=self._graphics.measureString(
+                                    text=name,
+                                    font=self._styles.worlds.font).width / 2,
+                                dy=0.0) # Left align
+
+                            self._drawWorldLabel(
+                                backgroundStyle=self._styles.worlds.textBackgroundStyle,
+                                brush=AbstractBrush(self._styles.worlds.textColor),
+                                color=textColor,
+                                position=self._styles.worlds.textStyle.translation,
+                                font=self._styles.worlds.font,
+                                text=name)
+
+    def _drawWorldLabel(
+            self,
+            backgroundStyle: TextBackgroundStyle,
+            brush: AbstractBrush,
+            color: str,
+            position: PointF,
+            font: AbstractFont,
+            text: str
+            ) -> None:
+        size = self._graphics.measureString(text=text, font=font)
+
+        if backgroundStyle is TextBackgroundStyle.Rectangle:
+            if not self._styles.fillMicroBorders:
+                # NOTE: This todo came over from traveller map
+                # TODO: Implement this with a clipping region instead
+                self._graphics.drawRectangleFill(
+                    brush=AbstractBrush(self._styles.backgroundColor),
+                    rect=RectangleF(
+                        x=position.x - size.width / 2,
+                        y=position.y - size.height / 2,
+                        width=size.width,
+                        height=size.height))
+        elif backgroundStyle is TextBackgroundStyle.Filled:
+            self._graphics.drawRectangleFill(
+                brush=brush,
+                rect=RectangleF(
+                    x=position.x - size.width / 2,
+                    y=position.y - size.height / 2,
+                    width=size.width,
+                    height=size.height))
+        elif backgroundStyle is TextBackgroundStyle.Outline or \
+            backgroundStyle is TextBackgroundStyle.Shadow:
+            # NOTE: This todo came over from traveller map
+            # TODO: These scaling factors are constant for a render; compute once
+
+            # Invert the current scaling transforms
+            sx = 1.0 / self._styles.hexContentScale
+            sy = 1.0 / self._styles.hexContentScale
+            sx *= travellermap.ParsecScaleX
+            sy *= travellermap.ParsecScaleY
+            sx /= self._scale * travellermap.ParsecScaleX
+            sy /= self._scale * travellermap.ParsecScaleY
+
+            outlineSize = 2
+            outlineSkip = 1
+
+            outlineStart = -outlineSize if backgroundStyle is TextBackgroundStyle.Outline else 0
+            brush = AbstractBrush(self._styles.backgroundColor)
+
+            dx = outlineStart
+            while dx <= outlineSize:
+                dy = outlineStart
+                while dy <= outlineSize:
+                    self._graphics.drawString(
+                        text=text,
+                        font=font,
+                        brush=brush,
+                        x=position.x + sx * dx,
+                        y=position.y + sy * dy,
+                        format=StringAlignment.Centered)
+                    dy += outlineSkip
+                dx += outlineSkip
+
+        self._graphics.drawString(
+            text=text,
+            font=font,
+            brush=AbstractBrush(color),
+            x=position.x,
+            y=position.y,
+            format=StringAlignment.Centered)
+
+    def _drawGasGiant(
+            self,
+            color: str,
+            x: float,
+            y: float,
+            radius: float,
+            ring: bool
+            ) -> None:
+        with self._graphics.save():
+            self._graphics.translateTransform(dx=x, dy=y)
+            self._graphics.drawEllipse(
+                brush=AbstractBrush(color),
+                pen=None,
+                rect=RectangleF(
+                    x=-radius,
+                    y=-radius,
+                    width=radius * 2,
+                    height=radius * 2))
+
+            if ring:
+                self._graphics.rotateTransform(degrees=-30)
+                self._graphics.drawEllipse(
+                    pen=AbstractPen(color=color, width=radius / 4),
+                    brush=None,
+                    rect=RectangleF(
+                        x=-radius * 1.75,
+                        y=-radius * 0.4,
+                        width=radius * 1.75 * 2,
+                        height=radius * 0.4 * 2))
+
     def _drawMicroBorders(self, layer: BorderLayer) -> None:
         # TODO: Implement when I add loading worlds
         pass
+
+    def _zoneStyle(self, world: traveller.World) -> typing.Optional[StyleSheet.StyleElement]:
+        zone = world.zone()
+        if zone is traveller.ZoneType.AmberZone:
+            return self._styles.amberZone
+        if zone is traveller.ZoneType.RedZone:
+            return self._styles.redZone
+        # TODO: Handle placeholders, this should be
+        # if (styles.greenZone.visible && !world.IsPlaceholder)
+        if self._styles.greenZone.visible:
+            return self._styles.greenZone
+        return None
+
+    @staticmethod
+    def _hexToCenter(hex: travellermap.HexPosition) -> PointF:
+        return PointF(
+            x=hex.absoluteX() - 0.5,
+            y=hex.absoluteY() - (0.0 if ((hex.absoluteX() % 2) != 0) else 0.5))
 
 class QtGraphics(AbstractGraphics):
     _DashStyleMap = {
@@ -3305,6 +4433,7 @@ class QtGraphics(AbstractGraphics):
     def __init__(self):
         super().__init__()
         self._painter = None
+        self._supportsWingdings = None
 
     def setPainter(self, painter: QtGui.QPainter) -> None:
         self._painter = painter
@@ -3339,6 +4468,19 @@ class QtGraphics(AbstractGraphics):
             QtGui.QPainter.RenderHint.SmoothPixmapTransform,
             antialias)
 
+    def supportsWingdings(self) -> bool:
+        if self._supportsWingdings is not None:
+            return self._supportsWingdings
+
+        self._supportsWingdings = False
+        try:
+            font = QtGui.QFont('Wingdings')
+            self._supportsWingdings = font.exactMatch()
+        except:
+            pass
+
+        return self._supportsWingdings
+
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         transform = QtGui.QTransform()
         transform.scale(scaleX, scaleY)
@@ -3360,10 +4502,14 @@ class QtGraphics(AbstractGraphics):
 
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipPath(self, path: AbstractPath) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
+        path = self._painter.clipPath()
+        path.addPolygon(self._convertPath(path))
+        self._painter.setClipPath(path, operation=QtCore.Qt.ClipOperation.IntersectClip)
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipRect(self, rect: RectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
+        path = self._painter.clipPath()
+        path.addRect(self._convertRect(rect))
+        self._painter.setClipPath(path, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(self, pen: AbstractPen, pt1: PointF, pt2: PointF) -> None:
@@ -3407,12 +4553,27 @@ class QtGraphics(AbstractGraphics):
         self._painter.drawRect(self._convertRect(rect))
 
     # TODO: This has changed quite a bit from the traveller map interface
-    def drawEllipse(self, pen: typing.Optional[AbstractPen], brush: typing.Optional[AbstractBrush], rect: RectangleF):
+    def drawEllipse(
+            self,
+            pen: typing.Optional[AbstractPen],
+            brush: typing.Optional[AbstractBrush],
+            rect: RectangleF):
         self._painter.setPen(self._convertPen(pen) if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(self._convertBrush(brush) if brush else QtCore.Qt.BrushStyle.NoBrush)
         self._painter.drawEllipse(self._convertRect(rect))
-    def drawArc(self, pen: AbstractPen, rect: RectangleF, startAngle: float, sweepAngle: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
+    def drawArc(
+            self,
+            pen: AbstractPen,
+            rect: RectangleF,
+            startDegrees: float,
+            sweepDegrees: float
+            ) -> None:
+        self._painter.setPen(self._convertPen(pen))
+        # NOTE: Angles are in 1/16th of a degree
+        self._painter.drawArc(
+            self._convertRect(rect),
+            int((startDegrees * 16) + 0.5),
+            int((sweepDegrees * 16) + 0.5))
 
     def drawImage(self, image: AbstractImage, rect: RectangleF) -> None:
         self._painter.drawImage(
@@ -3433,7 +4594,10 @@ class QtGraphics(AbstractGraphics):
         scale = font.emSize / qtFont.pointSize()
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
-        contentPixelRect = fontMetrics.tightBoundingRect(text)
+        # TODO: Not sure if this should use bounds or tight bounds. It needs to
+        # be correct for what will actually be rendered for different alignments
+        #contentPixelRect = fontMetrics.tightBoundingRect(text)
+        contentPixelRect = fontMetrics.boundingRect(text)
         contentPixelRect.moveTo(0, 0)
 
         return SizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
@@ -3460,7 +4624,10 @@ class QtGraphics(AbstractGraphics):
         self._painter.setBrush(self._convertBrush(brush))
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
-        contentPixelRect = fontMetrics.tightBoundingRect(text)
+        # TODO: Not sure if this should use bounds or tight bounds. It needs to
+        # be correct for what will actually be rendered for different alignments
+        #contentPixelRect = fontMetrics.tightBoundingRect(text)
+        contentPixelRect = fontMetrics.boundingRect(text)
         contentPixelRect.moveTo(0, 0)
 
         self._painter.save()
@@ -3501,7 +4668,7 @@ class QtGraphics(AbstractGraphics):
             elif format == StringAlignment.CenterLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width(),
+                        0,
                         contentPixelRect.height() / 2),
                     text)
         finally:
@@ -3585,12 +4752,13 @@ class MapHackView(QtWidgets.QWidget):
             MapOptions.WorldsCapitals | MapOptions.WorldsHomeworlds | MapOptions.RoutesSelectedDeprecated | \
             MapOptions.PrintStyleDeprecated | MapOptions.CandyStyleDeprecated | MapOptions.ForceHexes | \
             MapOptions.WorldColors | MapOptions.FilledBorders
-        self._style = travellermap.Style.Poster
-        #self._style = travellermap.Style.Candy
+        #self._style = travellermap.Style.Poster
+        self._style = travellermap.Style.Candy
         self._graphics = QtGraphics()
         self._imageCache = ImageCache(basePath='./data/map/')
         self._vectorCache = VectorObjectCache(basePath='./data/map/')
         self._labelCache = MapLabelCache(basePath='./data/map/')
+        WorldHelper.loadData(basePath='./data/map/') # TODO: Not sure where this should live
         self._renderer = self._createRender()
 
         self._isDragging = False
@@ -3751,8 +4919,54 @@ class MyWidget(gui.WindowWidget):
         self.setLayout(layout)
 
 
+def _installDirectory() -> str:
+    return os.path.dirname(os.path.realpath(__file__))
+
+def _applicationDirectory() -> str:
+    if os.name == 'nt':
+        return os.path.join(os.getenv('APPDATA'), app.AppName)
+    else:
+        return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
+
 if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
+    application = QtWidgets.QApplication([])
+
+    installDir = _installDirectory()
+    application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
+
+    appDir = _applicationDirectory()
+    os.makedirs(appDir, exist_ok=True)
+
+    logDirectory = os.path.join(appDir, 'logs')
+    app.setupLogger(logDir=logDirectory, logFile='autojimmy.log')
+    # Log version before setting log level as it should always be logged
+    logging.info(f'{app.AppName} v{app.AppVersion}')
+
+    try:
+        locale.setlocale(locale.LC_ALL, '')
+    except Exception as ex:
+        logging.warning('Failed to set default locale', exc_info=ex)
+
+    # Set configured log level immediately after configuration has been setup
+    logLevel = app.Config.instance().logLevel()
+    try:
+        app.setLogLevel(logLevel)
+    except Exception as ex:
+        logging.warning('Failed to set log level', exc_info=ex)
+
+    installMapsDir = os.path.join(installDir, 'data', 'map')
+    overlayMapsDir = os.path.join(appDir, 'map')
+    customMapsDir = os.path.join(appDir, 'custom_map')
+    travellermap.DataStore.setSectorDirs(
+        installDir=installMapsDir,
+        overlayDir=overlayMapsDir,
+        customDir=customMapsDir)
+
+    traveller.WorldManager.setMilieu(milieu=travellermap.Milieu.M1105)
+    traveller.WorldManager.instance().loadSectors()
+
+    gui.configureAppStyle(application)
+
     window = MyWidget()
     window.show()
-    app.exec_()
+    application.exec_()

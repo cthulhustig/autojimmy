@@ -23,11 +23,11 @@ class Remarks(object):
             zone: traveller.ZoneType
             ) -> None:
         self._string = string
-        self._tokenSet = set()
+        self._tokenSet: typing.Set[str] = set()
         self._sectorName = sectorName
         self._zone = zone
-        self._tradeCodes = set()
-        self._sophontPercentages = dict()
+        self._tradeCodes: typing.Set[traveller.TradeCode] = set()
+        self._sophontPercentages: typing.Dict[str, int] = dict()
         self._owningWorld = None
         self._colonyWorlds = []
 
@@ -47,7 +47,7 @@ class Remarks(object):
     def isEmpty(self) -> bool:
         return not self._string
 
-    def hasRemark(self, remark) -> bool:
+    def hasRemark(self, remark: str) -> bool:
         return remark in self._tokenSet
 
     def tradeCodes(self) -> typing.Iterable[traveller.TradeCode]:

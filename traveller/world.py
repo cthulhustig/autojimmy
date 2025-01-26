@@ -77,6 +77,9 @@ class World(object):
     def remarks(self) -> traveller.Remarks:
         return self._remarks
 
+    def hasRemark(self, remark: str) -> None:
+        return self._remarks.hasRemark(remark=remark)
+
     def zone(self) -> typing.Optional[traveller.ZoneType]:
         return self._zone
 
@@ -116,6 +119,9 @@ class World(object):
 
     def colonySectorHexes(self) -> typing.Optional[typing.Iterable[str]]:
         return self._remarks.colonySectorHexes()
+
+    def physicalSize(self) -> int:
+        return self._uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
 
     # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:
