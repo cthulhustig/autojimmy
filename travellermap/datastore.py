@@ -1237,10 +1237,6 @@ class DataStore(object):
                 if not canonicalName:
                     raise RuntimeError('Sector has no name')
 
-                # TODO: Remove hacky code to skip sectors, DO NOT COMMIT
-                if canonicalName.find('Core') < 0:
-                    continue
-
                 abbreviation = sectorElement.get('Abbreviation')
                 if abbreviation != None:
                     abbreviation = str(abbreviation)
