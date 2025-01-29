@@ -35,18 +35,27 @@ class DashStyle(enum.Enum):
     DashDotDot = 4
     Custom = 5
 
+# TODO: Why is this needed when DashStyle exists?
+class LineStyle(enum.Enum):
+    Solid = 0 # Default
+    Dashed = 1
+    Dotted = 2
+    NoStyle = 3 # TODO: Was None in traveller map code
+
+_LineStyleToDashStyleMap = {
+    LineStyle.Solid: DashStyle.Solid,
+    LineStyle.Dashed: DashStyle.Dash,
+    LineStyle.Dotted: DashStyle.Dot
+}
+def lineStyleToDashStyle(lineStyle: LineStyle) -> DashStyle:
+    return _LineStyleToDashStyleMap.get(lineStyle, DashStyle.Solid)
+
 class FontStyle(enum.IntFlag):
     Regular = 0x0
     Bold = 0x1
     Italic = 0x2
     Underline = 0x4
     Strikeout = 0x8
-
-class LineStyle(enum.Enum):
-    Solid = 0 # Default
-    Dashed = 1
-    Dotted = 2
-    NoStyle = 3 # TODO: Was non in traveller map code
 
 class TextFormat(enum.Enum):
     TopLeft = 0
@@ -437,7 +446,10 @@ class FontInfo():
     def makeFont(self) -> 'AbstractFont':
         if not self.families:
             raise RuntimeError("FontInfo has null name")
-        return AbstractFont(self.families, self.size * 1.4, self.style, GraphicsUnit.World)
+        # TODO: Traveller Map has this as 1.4 but I found I needed to lower it to get
+        # fonts rendering the correct size. Ideally I'd account for this in the Qt
+        # specific code to keep this code the same as Traveller map
+        return AbstractFont(self.families, self.size * 1.1, self.style, GraphicsUnit.World)
 
 class HighlightWorldPattern(object):
     class Field(enum.Enum):
@@ -1321,6 +1333,53 @@ class VectorObjectCache(object):
                 types=types,
                 bounds=bounds,
                 mapOptions=mapOptions)]
+
+class DefaultStyleCache(object):
+    _DefaultStylePath = 'res/styles/otu.css'
+
+    _RouteStyleMap = {
+        'solid': traveller.Route.Style.Solid,
+        'dashed': traveller.Route.Style.Dashed,
+        'dotted': traveller.Route.Style.Dotted}
+
+    def __init__(self, basePath: str):
+        self._borderStyles = {}
+        self._routeStyles = {}
+
+        content = travellermap.readCssFile(
+            os.path.join(basePath, DefaultStyleCache._DefaultStylePath))
+        for group, properties in content.items():
+            match = borderPattern.match(group)
+            if match:
+                key = match.group(1)
+                color = properties.get('color')
+                style = properties.get('style')
+                if style:
+                    style = _RouteStyleMap.get(style.lower())
+                self._borderStyles[key] = (color, style)
+
+            match = routePattern.match(group)
+            if match:
+                key = match.group(1)
+                color = properties.get('color')
+                style = properties.get('style')
+                if style:
+                    style = _RouteStyleMap.get(style.lower())
+                width = properties.get('width')
+                if width:
+                    width = float(width)
+                self._routeStyles[key] = (color, style, width)
+
+    def defaultBorderStyle(self, key: str) -> typing.Tuple[
+            typing.Optional[str], # Colour
+            typing.Optional[traveller.Route.Style]]:
+        return self._borderStyles.get(key, (None, None))
+
+    def defaultRouteStyle(self, key: str) -> typing.Tuple[
+            typing.Optional[str], # Colour
+            typing.Optional[traveller.Route.Style],
+            typing.Optional[float]]: # Width
+        return self._routeStyles.get(key, (None, None, None))
 
 class WorldHelper(object):
     # Traveller Map doesn't use trade codes for things you might expect it
@@ -2658,6 +2717,8 @@ class StyleSheet(object):
             self.uwp.textColor = MapColors.White
             self.uwp.textBackgroundStyle = TextBackgroundStyle.Filled
 
+        print(self._scale)
+
         # NOTE: This TODO came in with traveller map
         # TODO: Do this with opacity.
         if fadeSectorSubsectorNames:
@@ -3056,6 +3117,47 @@ def drawStringHelper(
             format=StringAlignment.Centered)
         y += lineSpacing
 
+def drawLabelHelper(
+        graphics: AbstractGraphics,
+        text: str,
+        center: PointF,
+        font: AbstractFont,
+        brush: AbstractBrush,
+        labelStyle: LabelStyle
+        ) -> None:
+    with graphics.save():
+        if labelStyle.uppercase:
+            text = text.upper()
+        if labelStyle.wrap:
+            text = text.replace(' ', '\n')
+
+        graphics.translateTransform(
+            dx=center.x,
+            dy=center.y)
+        graphics.scaleTransform(
+            scaleX=1.0 / travellermap.ParsecScaleX,
+            scaleY=1.0 / travellermap.ParsecScaleY)
+
+        graphics.translateTransform(
+            dx=labelStyle.translation.x,
+            dy=labelStyle.translation.y)
+        graphics.rotateTransform(
+            degrees=labelStyle.rotation)
+        graphics.scaleTransform(
+            scaleX=labelStyle.scale.width,
+            scaleY=labelStyle.scale.height)
+
+        if labelStyle.rotation != 0:
+            graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+
+        drawStringHelper(
+            graphics=graphics,
+            text=text,
+            font=font,
+            brush=brush,
+            x=0,
+            y=0)
+
 _DingMap = {
     '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)
     '\u2756': '\x76', # U+2756 (BLACK DIAMOND MINUS WHITE X)
@@ -3141,6 +3243,7 @@ class RenderContext(object):
             imageCache: ImageCache,
             vectorCache: VectorObjectCache,
             labelCache: MapLabelCache,
+            styleCache: DefaultStyleCache,
             options: MapOptions
             ) -> None:
         self._graphics = graphics
@@ -3151,6 +3254,7 @@ class RenderContext(object):
         self._imageCache = imageCache
         self._vectorCache = vectorCache
         self._labelCache = labelCache
+        self._styleCache = styleCache
         self._fontCache = FontCache(sheet=self._styles)
         self._tileSize = tileSize
         self._selector = RectSelector(rect=self._tileRect)
@@ -3576,21 +3680,26 @@ class RenderContext(object):
 
         not self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
         brush = AbstractBrush(self._styles.subsectorNames.textColor)
-        # TODO: Finish this off when I add world loading
-        """
-        foreach (Sector sector in selector.Sectors)
-        {
-            for (int i = 0; i < 16; i++)
-            {
-                Subsector ss = sector.Subsector(i);
-                if (ss == null || string.IsNullOrEmpty(ss.Name))
-                    continue;
+        for sector in self._selector.sectors():
+            for index, subsector in enumerate(sector.subsectors()):
+                name = subsector.name()
+                if not name:
+                    continue
 
-                Point center = sector.SubsectorCenter(i);
-                RenderUtil.DrawLabel(graphics, ss.Name, center, styles.subsectorNames.Font, brush, styles.subsectorNames.textStyle);
-            }
-        }
-        """
+                ssx = index % 4
+                ssy = index // 4
+                centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
+                    sector.x(),
+                    sector.y(),
+                    int(travellermap.SubsectorWidth * (2 * ssx + 1) // 2),
+                    int(travellermap.SubsectorHeight * (2 * ssy + 1) // 2)))
+                drawLabelHelper(
+                    graphics=self._graphics,
+                    text=subsector.name(),
+                    center=PointF(x=centerX, y=centerY),
+                    font=self._styles.subsectorNames.font,
+                    brush=brush,
+                    labelStyle=self._styles.subsectorNames.textStyle)
 
     def _drawMicroBordersFill(self) -> None:
         if not self._styles.microBorders.visible:
@@ -3614,16 +3723,114 @@ class RenderContext(object):
         self._drawMicroBorders(RenderContext.BorderLayer.Stroke)
 
     def _drawMicroRoutes(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.microRoutes.visible:
+            return
+
+        with self._graphics.save():
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+            pen = AbstractPen(self._styles.microRoutes.pen)
+            baseWidth = self._styles.microRoutes.pen.width
+
+            for sector in self._selector.sectors():
+                for route in sector.routes():
+                    # Compute source/target sectors (may be offset)
+                    startPoint = route.startHex()
+                    endPoint = route.endHex()
+
+                    # If drawing dashed lines twice and the start/end are swapped the
+                    # dashes don't overlap correctly. So "sort" the points.
+                    needsSwap = (startPoint.absoluteX() < endPoint.absoluteX()) or \
+                        (startPoint.absoluteX() == endPoint.absoluteX() and \
+                         startPoint.absoluteY() < endPoint.absoluteY())
+                    if needsSwap:
+                        (startPoint, endPoint) = (endPoint, startPoint)
+
+                    startPoint = RenderContext._hexToCenter(startPoint)
+                    endPoint = RenderContext._hexToCenter(endPoint)
+
+                    # Shorten line to leave room for world glyph
+                    self._offsetRouteSegment(startPoint, endPoint, self._styles.routeEndAdjust)
+
+                    routeColor = route.colour()
+                    routeWidth = route.width()
+                    routeStyle = self._styles.overrideLineStyle
+                    if not routeStyle:
+                        if route.style() == traveller.Route.Style.Solid:
+                            routeStyle = LineStyle.Solid
+                        elif route.style() == traveller.Route.Style.Dashed:
+                            routeStyle = LineStyle.Dashed
+                        elif route.style() == traveller.Route.Style.Dotted:
+                            routeStyle = LineStyle.Dotted
+
+                    if not routeWidth or not routeColor or not routeStyle:
+                        presidence = [route.allegiance(), route.type(), 'Im']
+                        for key in presidence:
+                            defaultColor, defaultStyle, defaltWidth = self._styleCache.defaultRouteStyle(key)
+                            if not routeColor:
+                                routeColor = defaultColor
+                            if not routeStyle:
+                                routeStyle = defaultStyle
+                            if not routeWidth:
+                                routeWidth = defaltWidth
+
+                    # In grayscale, convert default color and style to non-default style
+                    if self._styles.grayscale and (not routeColor) and (not routeStyle):
+                        routeStyle = LineStyle.Dashed
+
+                    if not routeWidth:
+                        routeWidth = 1.0
+                    if not routeColor:
+                        routeColor = self._styles.microRoutes.pen.color
+                    if not routeStyle:
+                        routeStyle = LineStyle.Solid
+
+                    # Ensure color is visible
+                    # TODO: Handle making colour visible
+                    """
+                    if (styles.grayscale || !ColorUtil.NoticeableDifference(routeColor.Value, styles.backgroundColor))
+                        routeColor = styles.microRoutes.pen.color; // default
+                    """
+
+                    pen.color = routeColor
+                    pen.width = routeWidth * baseWidth
+                    pen.dashStyle = lineStyleToDashStyle(routeStyle)
+
+                    self._graphics.drawLine(pen, startPoint, endPoint)
 
     def _drawMicroLabels(self) -> None:
         # TODO: Implement when I add loading worlds
         pass
 
     def _drawSectorNames(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not (self._styles.showSomeSectorNames or self._styles.showAllSectorNames):
+            return
+
+        if not self._styles.showAllSectorNames:
+            # TODO: Add support for only showing selected sectors. I think
+            # this happens when you zoom out a bit and it still shows some
+            # sector names (Core, Ley) but not all
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+        for sector in self._selector.sectors():
+            # TODO: Traveller Map would use the sector label first and only
+            # fall back to the name if if there was no label. I need to work out
+            # where that label is being loaded from
+            name = sector.name()
+
+            centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
+                sector.x(),
+                sector.y(),
+                int(travellermap.SectorWidth // 2),
+                int(travellermap.SectorHeight // 2)))
+
+            drawLabelHelper(
+                graphics=self._graphics,
+                text=name,
+                center=PointF(x=centerX, y=centerY),
+                font=self._styles.sectorName.font,
+                brush=AbstractBrush(self._styles.sectorName.textColor),
+                labelStyle=self._styles.sectorName.textStyle)
 
     def _drawMacroNames(self) -> None:
         if  not self._styles.macroNames.visible:
@@ -4416,6 +4623,18 @@ class RenderContext(object):
         return None
 
     @staticmethod
+    def _offsetRouteSegment(startPoint: PointF, endPoint: PointF, offset: float) -> None:
+        dx = (endPoint.x - startPoint.x) * travellermap.ParsecScaleX
+        dy = (endPoint.y - startPoint.y) * travellermap.ParsecScaleY
+        length = math.sqrt(dx * dx + dy * dy)
+        ddx = (dx * offset / length) / travellermap.ParsecScaleX
+        ddy = (dy * offset / length) / travellermap.ParsecScaleY
+        startPoint.x += ddx
+        startPoint.y += ddy
+        endPoint.x -= ddx
+        endPoint.y -= ddy
+
+    @staticmethod
     def _hexToCenter(hex: travellermap.HexPosition) -> PointF:
         return PointF(
             x=hex.absoluteX() - 0.5,
@@ -4596,8 +4815,8 @@ class QtGraphics(AbstractGraphics):
         fontMetrics = QtGui.QFontMetrics(qtFont)
         # TODO: Not sure if this should use bounds or tight bounds. It needs to
         # be correct for what will actually be rendered for different alignments
-        #contentPixelRect = fontMetrics.tightBoundingRect(text)
-        contentPixelRect = fontMetrics.boundingRect(text)
+        contentPixelRect = fontMetrics.tightBoundingRect(text)
+        #contentPixelRect = fontMetrics.boundingRect(text)
         contentPixelRect.moveTo(0, 0)
 
         return SizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
@@ -4610,11 +4829,8 @@ class QtGraphics(AbstractGraphics):
             x: float, y: float,
             format: StringAlignment
             ) -> None:
-        # TODO: I've found that to get text sizes to match Traveller Map I need
-        # to scale the emSize
-        emSize = font.emSize * 0.85
         qtFont = self._convertFont(font)
-        scale = emSize / qtFont.pointSize()
+        scale = font.emSize / qtFont.pointSize()
 
         self._painter.setFont(qtFont)
         # TODO: It looks like Qt uses a pen for text rather than the brush
@@ -4626,9 +4842,10 @@ class QtGraphics(AbstractGraphics):
         fontMetrics = QtGui.QFontMetrics(qtFont)
         # TODO: Not sure if this should use bounds or tight bounds. It needs to
         # be correct for what will actually be rendered for different alignments
-        #contentPixelRect = fontMetrics.tightBoundingRect(text)
-        contentPixelRect = fontMetrics.boundingRect(text)
-        contentPixelRect.moveTo(0, 0)
+        contentPixelRect = fontMetrics.tightBoundingRect(text)
+        fullPixelRect = fontMetrics.boundingRect(text)
+        leftPadding = contentPixelRect.x() - fullPixelRect.x()
+        topPadding = contentPixelRect.y() - fullPixelRect.y()
 
         self._painter.save()
         try:
@@ -4644,32 +4861,32 @@ class QtGraphics(AbstractGraphics):
             elif format == StringAlignment.Centered:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width() / 2,
-                        contentPixelRect.height() / 2),
+                        (-contentPixelRect.width() / 2) - (leftPadding / 2),
+                        (contentPixelRect.height() / 2) - (topPadding / 2)),
                     text)
             elif format == StringAlignment.TopLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        0,
-                        contentPixelRect.height()),
+                        0 + leftPadding,
+                        contentPixelRect.height() + topPadding),
                     text)
             elif format == StringAlignment.TopCenter:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width() / 2,
-                        contentPixelRect.height()),
+                        (-contentPixelRect.width() / 2) - (leftPadding / 2),
+                        contentPixelRect.height() + topPadding),
                     text)
             elif format == StringAlignment.TopRight:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width(),
-                        contentPixelRect.height()),
+                        -contentPixelRect.width() - leftPadding,
+                        contentPixelRect.height() + topPadding),
                     text)
             elif format == StringAlignment.CenterLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        0,
-                        contentPixelRect.height() / 2),
+                        0 + leftPadding,
+                        (contentPixelRect.height() / 2) - (topPadding / 2)),
                     text)
         finally:
             self._painter.restore()
@@ -4684,10 +4901,12 @@ class QtGraphics(AbstractGraphics):
     # really inefficient. The fact I'm using a string for the colour
     # so it will need to be parsed each time is even worse
     def _convertPen(self, pen: AbstractPen) -> QtGui.QPen:
-        return QtGui.QPen(
-            QtGui.QBrush(QtGui.QColor(pen.color)),
-            pen.width,
-            QtGraphics._DashStyleMap[pen.dashStyle])
+        qtColor = QtGui.QColor(pen.color)
+        qtStyle = QtGraphics._DashStyleMap[pen.dashStyle]
+        qtPen = QtGui.QPen(qtColor, pen.width, qtStyle)
+        if qtStyle == QtCore.Qt.PenStyle.CustomDashLine:
+            qtPen.setDashPattern(pen.customDashPattern)
+        return qtPen
 
     # TODO: Creating a new font for every piece of text that gets drawn is
     # really inefficient. The fact I'm using a string for the colour
@@ -4744,20 +4963,20 @@ class MapHackView(QtWidgets.QWidget):
 
         self._viewCenterMapPos = PointF(0, 0) # TODO: I think this is actually in world/absolute coordinates
         self._tileSize = Size(self.width(), self.height())
-        #self._scale = MapHackView._DefaultScale
-        self._scale = 64
+        self._scale = MapHackView._DefaultScale
         self._options = \
             MapOptions.SectorGrid | MapOptions.SubsectorGrid | MapOptions.SectorsSelected | MapOptions.SectorsAll | \
             MapOptions.BordersMajor | MapOptions.BordersMinor | MapOptions.NamesMajor | MapOptions.NamesMinor | \
             MapOptions.WorldsCapitals | MapOptions.WorldsHomeworlds | MapOptions.RoutesSelectedDeprecated | \
             MapOptions.PrintStyleDeprecated | MapOptions.CandyStyleDeprecated | MapOptions.ForceHexes | \
             MapOptions.WorldColors | MapOptions.FilledBorders
-        #self._style = travellermap.Style.Poster
-        self._style = travellermap.Style.Candy
+        self._style = travellermap.Style.Poster
+        #self._style = travellermap.Style.Candy
         self._graphics = QtGraphics()
         self._imageCache = ImageCache(basePath='./data/map/')
         self._vectorCache = VectorObjectCache(basePath='./data/map/')
         self._labelCache = MapLabelCache(basePath='./data/map/')
+        self._styleCache = DefaultStyleCache(basePath='./data/map/')
         WorldHelper.loadData(basePath='./data/map/') # TODO: Not sure where this should live
         self._renderer = self._createRender()
 
@@ -4897,6 +5116,7 @@ class MapHackView(QtWidgets.QWidget):
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
             labelCache=self._labelCache,
+            styleCache=self._styleCache,
             options=self._options)
 
     def _calculateTileRect(self) -> RectangleF:
@@ -4929,6 +5149,33 @@ def _applicationDirectory() -> str:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
 
 if __name__ == "__main__":
+    content = travellermap.readCssFile('E:\\Projects\\travellermap\\travellermap_fork\\res\\styles\\otu.css')
+    borderPattern = re.compile(r'border\.(\w+)')
+    routePattern = re.compile(r'route\.(\w+)')
+    _RouteStyleMap = {
+        'solid': traveller.Route.Style.Solid,
+        'dashed': traveller.Route.Style.Dashed,
+        'dotted': traveller.Route.Style.Dotted}
+    for group, properties in content.items():
+        match = borderPattern.match(group)
+        if match:
+            key = match.group(1)
+            colour = properties.get('color')
+            style = properties.get('style')
+            if style:
+                style = _RouteStyleMap.get(style.lower())
+
+        match = routePattern.match(group)
+        if match:
+            key = match.group(1)
+            colour = properties.get('color')
+            style = properties.get('style')
+            if style:
+                style = _RouteStyleMap.get(style.lower())
+            width = properties.get('width')
+            if width:
+                width = float(width)
+
     application = QtWidgets.QApplication([])
 
     installDir = _installDirectory()

@@ -13,6 +13,7 @@ from .sophont import *
 from .remarks import *
 from .stellar import *
 from .world import *
+from .route import *
 from .sector import *
 from .tradegoods import *
 from .allegiance import *

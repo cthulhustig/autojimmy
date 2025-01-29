@@ -340,28 +340,27 @@ def yieldAbsoluteRadiusHexes(
             yield current
 
 class HexPosition(object):
-    def __init__(
-            self,
-            absoluteX: typing.Optional[int] = None,
-            absoluteY: typing.Optional[int] = None,
-            sectorX: typing.Optional[int] = None,
-            sectorY: typing.Optional[int] = None,
-            offsetX: typing.Optional[int] = None,
-            offsetY: typing.Optional[int] = None
-            ):
-        isAbsolute = absoluteX != None and absoluteY != None
-        isRelative = sectorX != None and sectorY != None and offsetX != None and offsetY != None
-        if not (isAbsolute or isRelative):
-            raise ValueError('Hex position must be absolute or relative')
-        elif isAbsolute and isRelative:
-            raise ValueError('Hex position can\'t be absolute and relative')
+    @typing.overload
+    def __init__(self, absoluteX: int, absoluteY: int) -> None: ...
+    @typing.overload
+    def __init__(self, sectorX: int, sectorY: int, offsetX: int, offsetY: int) -> None: ...
 
-        if isAbsolute:
-            self._absolute = (int(absoluteX), int(absoluteY))
+    def __init__(self, *args, **kwargs) -> None:
+        argCount = len(args) + len(kwargs)
+        if argCount == 2:
+            absoluteX = int(args[0] if len(args) > 0 else kwargs['absoluteX'])
+            absoluteY = int(args[1] if len(args) > 1 else kwargs['absoluteY'])
+            self._absolute = (absoluteX, absoluteY)
             self._relative = None
-        else:
-            self._relative = (int(sectorX), int(sectorY), int(offsetX), int(offsetY))
+        elif argCount == 4:
+            sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
+            sectorY = int(args[1] if len(args) > 1 else kwargs['sectorY'])
+            offsetX = int(args[2] if len(args) > 2 else kwargs['offsetX'])
+            offsetY = int(args[3] if len(args) > 3 else kwargs['offsetY'])
+            self._relative = (sectorX, sectorY, offsetX, offsetY)
             self._absolute = None
+        else:
+            raise ValueError('Invalid hex position arguments')
 
     def __eq__(self, other):
         if isinstance(other, HexPosition):
