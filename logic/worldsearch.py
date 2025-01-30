@@ -537,7 +537,9 @@ class AllegianceFilter(WorldFilter):
             else:
                 raise ValueError('Invalid allegiance filter operation')
 
-            allegianceName = traveller.AllegianceManager.instance().allegianceName(world)
+            allegianceName = traveller.AllegianceManager.instance().allegianceName(
+                allegianceCode=world.allegiance(),
+                sectorName=world.sectorName())
             if allegianceName:
                 if self._operation == StringFilterOperation.ContainsString:
                     if self._regex.search(allegianceName):

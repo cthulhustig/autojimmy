@@ -27,9 +27,8 @@ class WorldManager(object):
     # and subsector name are extracted
     _WorldSearchPattern = re.compile(r'^(.+)\s+\(\s*(.+)\s*\)$')
     # Route and border style sheet regexes
-    _BorderStylePattern = re.compile(r'\s*border\.(\w+)\s*{\s*(.*)\s*}')
-    _RouteStylePattern = re.compile(r'\s*route\.(\w+)\s*{\s*(.*)\s*}')
-    _PropertyPattern = re.compile(r'\s*(\w+)\s*\:\s*([^;]+?)\s*(?:;|\Z)')
+    _BorderStylePattern = re.compile(r'border\.(\w+)')
+    _RouteStylePattern = re.compile(r'route\.(\w+)')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -743,7 +742,7 @@ class WorldManager(object):
             str, # Allegiance/Type
             typing.Tuple[
                 typing.Optional[str], # Colour
-                typing.Optional[str] # Style
+                typing.Optional[traveller.Border.Style] # Style
             ]] = {}
         routeStyleMap: typing.Dict[
             str, # Allegiance/Type
@@ -753,53 +752,99 @@ class WorldManager(object):
                 typing.Optional[float] # Width
             ]] = {}
         if styleSheet:
-            for line in styleSheet.splitlines():
-                try:
-                    match = WorldManager._BorderStylePattern.match(line)
-                    if match:
-                        allegiance = match.group(1)
-                        styles = match.group(2)
-                        borderColour = None
-                        borderStyle = None
-                        for key, value in WorldManager._PropertyPattern.findall(styles):
-                            assert(isinstance(key, str))
-                            assert(isinstance(value, str))
-                            key = key.lower()
-                            if key == 'color' or key == 'colour':
-                                borderColour = value
-                            elif key == 'style':
-                                borderStyle = value
-                        if borderColour or borderStyle:
-                            borderStyleMap[allegiance] = (borderColour, borderStyle)
+            try:
+                content = travellermap.readCssContent(styleSheet)
+                for styleKey, properties in content.items():
+                    try:
+                        match = WorldManager._BorderStylePattern.match(styleKey)
+                        if match:
+                            tag = match.group(1)
+                            colour = properties.get('color')
+                            style = WorldManager._mapBorderStyle(properties.get('style'))
+                            if colour or style:
+                                borderStyleMap[tag] = (colour, style)
 
-                    match = WorldManager._RouteStylePattern.match(line)
-                    if match:
-                        allegiance = match.group(1)
-                        styles = match.group(2)
-                        routeColour = None
-                        routeStyle = None
-                        routeWidth = None
-                        for key, value in WorldManager._PropertyPattern.findall(styles):
-                            assert(isinstance(key, str))
-                            assert(isinstance(value, str))
-                            key = key.lower()
-                            if key == 'color' or key == 'colour':
-                                routeColour = value
-                            elif key == 'style':
-                                routeStyle = WorldManager._mapRouteStyle(value)
-                            elif key == 'width':
-                                routeWidth = float(value)
-                        if routeColour or routeStyle or routeWidth:
-                            routeStyleMap[allegiance] = (routeColour, routeStyle, routeWidth)
+                        match = WorldManager._RouteStylePattern.match(styleKey)
+                        if match:
+                            tag = match.group(1)
+                            colour = properties.get('color')
+                            style = WorldManager._mapRouteStyle(properties.get('style'))
+                            width = properties.get('width')
+                            if width:
+                                width = float(width)
+                            if colour or style or width:
+                                routeStyleMap[tag] = (colour, style, width)
+                    except Exception as ex:
+                        logging.warning(
+                            f'Failed to process style sheet entry for {styleKey} in metadata for sector {sectorName}',
+                            exc_info=ex)
+            except Exception as ex:
+                logging.warning(
+                    f'Failed to parse style sheet for sector {sectorName}',
+                    exc_info=ex)
+
+        rawBorders = rawMetadata.borders()
+        borders = []
+        if rawBorders:
+            for rawBorder in rawBorders:
+                try:
+                    hexes = []
+                    for rawHex in rawBorder.hexList():
+                        hexes.append(travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(rawHex[:2]),
+                            offsetY=int(rawHex[-2:])))
+
+                    labelHex = rawBorder.labelHex()
+                    if labelHex:
+                        labelHex = travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(labelHex[:2]),
+                            offsetY=int(labelHex[-2:]))
+                    else:
+                        labelHex = None
+
+                    colour = rawBorder.colour()
+                    style = WorldManager._mapBorderStyle(rawBorder.style())
+
+                    if not colour or not style:
+                        # This order of precedence matches the order in the Traveller Map
+                        # DrawMicroBorders code
+                        stylePrecedence = [
+                            rawBorder.allegiance(),
+                            'Im']
+                        for tag in stylePrecedence:
+                            if tag in borderStyleMap:
+                                defaultColour, defaultStyle = borderStyleMap[tag]
+                                if not colour:
+                                    colour = defaultColour
+                                if not style:
+                                    style = defaultStyle
+                                break
+
+                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    borders.append(traveller.Border(
+                        hexList=hexes,
+                        allegiance=rawBorder.allegiance(),
+                        showLabel=rawBorder.showLabel(),
+                        wrapLabel=rawBorder.wrapLabel(),
+                        labelHex=labelHex,
+                        labelOffsetX=rawBorder.labelOffsetX(),
+                        labelOffsetY=rawBorder.labelOffsetY(),
+                        label=rawBorder.label(),
+                        style=style,
+                        colour=colour))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process style sheet line "{line}" in metadata for sector {sectorName}',
+                        f'Failed to process border {rawBorder.fileIndex()} in metadata for sector {sectorName}',
                         exc_info=ex)
 
         rawRoutes = rawMetadata.routes()
         routes = []
         if rawRoutes:
-            for rawRoute in rawMetadata.routes():
+            for rawRoute in rawRoutes:
                 try:
                     startHex = rawRoute.startHex()
                     startHex = travellermap.HexPosition(
@@ -815,29 +860,65 @@ class WorldManager(object):
                         offsetX=int(endHex[:2]),
                         offsetY=int(endHex[-2:]))
 
-                    # This order of precedence matches the order in the Traveller Map
-                    # DrawMicroRoutes code
-                    stylePrecedence = [
-                        rawRoute.allegiance(),
-                        rawRoute.type(),
-                        'Im']
-                    routeColour = routeStyle = routeWidth = None
-                    for styleKey in stylePrecedence:
-                        if styleKey in routeStyleMap:
-                            routeColour = routeStyle = routeWidth = routeStyleMap[styleKey]
-                            break
+                    colour = rawRoute.colour()
+                    style = WorldManager._mapRouteStyle(rawRoute.style())
+                    width = rawRoute.width()
+
+                    if not colour or not style or not width:
+                        # This order of precedence matches the order in the Traveller Map
+                        # DrawMicroRoutes code
+                        stylePrecedence = [
+                            rawRoute.allegiance(),
+                            rawRoute.type(),
+                            'Im']
+                        for tag in stylePrecedence:
+                            if tag in routeStyleMap:
+                                defaultColour, defaultStyle, defaultWidth = routeStyleMap[tag]
+                                if not colour:
+                                    colour = defaultColour
+                                if not style:
+                                    style = defaultStyle
+                                if not width:
+                                    width = defaultWidth
+                                break
 
                     routes.append(traveller.Route(
                         startHex=startHex,
                         endHex=endHex,
                         allegiance=rawRoute.allegiance(),
                         type=rawRoute.type(),
-                        style=routeStyle,
-                        colour=routeColour,
-                        width=routeWidth))
+                        style=style,
+                        colour=colour,
+                        width=width))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process route {rawRoute.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
+        rawLabels = rawMetadata.labels()
+        labels = []
+        if rawLabels:
+            for rawLabel in rawLabels:
+                try:
+                    hex = rawLabel.hex()
+                    hex = travellermap.HexPosition(
+                        sectorX=sectorX,
+                        sectorY=sectorY,
+                        offsetX=int(hex[:2]),
+                        offsetY=int(hex[-2:]))
+
+                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    labels.append(traveller.Label(
+                        text=rawLabel.text(),
+                        hex=hex,
+                        colour=rawLabel.colour(),
+                        size=WorldManager._mapLabelSize(rawLabel.size()),
+                        wrap=rawLabel.wrap(),
+                        offsetX=rawLabel.offsetX(),
+                        offsetY=rawLabel.offsetY()))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process label {rawLabel.fileIndex()} in metadata for sector {sectorName}',
                         exc_info=ex)
 
         return traveller.Sector(
@@ -848,6 +929,8 @@ class WorldManager(object):
             y=sectorY,
             worlds=worlds,
             routes=routes,
+            borders=borders,
+            labels=labels,
             subsectorNames=subsectorMap.values())
 
     _RouteStyleMap = {
@@ -856,11 +939,50 @@ class WorldManager(object):
         'dotted': traveller.Route.Style.Dotted,
     }
     @staticmethod
-    def _mapRouteStyle(style: str) -> traveller.Route.Style:
+    def _mapRouteStyle(
+            style: typing.Optional[str]
+            ) -> typing.Optional[traveller.Route.Style]:
+        if not style:
+            return None
         lowerStyle = style.lower()
         mappedStyle = WorldManager._RouteStyleMap.get(lowerStyle)
         if not mappedStyle:
-            raise ValueError(f'Invalid route style {style}')
+            raise ValueError(f'Invalid route style "{style}"')
+        return mappedStyle
+
+    # TODO: This is effectively a duplicate of the route stuff above
+    # just with different types
+    _BorderStyleMap = {
+        'solid': traveller.Border.Style.Solid,
+        'dashed': traveller.Border.Style.Dashed,
+        'dotted': traveller.Border.Style.Dotted,
+    }
+    @staticmethod
+    def _mapBorderStyle(
+            style: typing.Optional[str]
+            ) -> typing.Optional[traveller.Border.Style]:
+        if not style:
+            return None
+        lowerStyle = style.lower()
+        mappedStyle = WorldManager._BorderStyleMap.get(lowerStyle)
+        if not mappedStyle:
+            raise ValueError(f'Invalid border style "{style}"')
+        return mappedStyle
+
+    _LabelSizeMap = {
+        'small': traveller.Label.Size.Small,
+        'large': traveller.Label.Size.Large,
+    }
+    def _mapLabelSize(
+            size: typing.Optional[str]
+            ) -> typing.Optional[traveller.Label.Size]:
+        if not size:
+            return None
+        lowerSize = size.lower()
+        mappedSize = WorldManager._LabelSizeMap.get(lowerSize)
+        if not mappedSize:
+            raise ValueError(f'Invalid label size "{size}"')
+        return mappedSize
 
     @staticmethod
     def _calculateSubsectorCode(

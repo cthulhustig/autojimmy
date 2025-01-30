@@ -118,32 +118,43 @@ class AllegianceManager(object):
     def allegiances(self) -> typing.Iterable[AllegianceCodeInfo]:
         return self._allegianceMap.values()
 
-    def allegianceName(self, world: traveller.World) -> typing.Optional[str]:
-        code = world.allegiance()
-        if not code:
+    def allegianceName(
+            self,
+            allegianceCode: str,
+            sectorName: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
             return None
 
-        codeInfo = self._allegianceMap.get(code)
+        codeInfo = self._allegianceMap.get(allegianceCode)
         if not codeInfo:
             return None
 
-        return codeInfo.name(world.sectorName())
+        return codeInfo.name(sectorName)
 
-    def uniqueAllegianceCode(self, world: traveller.World) -> typing.Optional[str]:
-        code = world.allegiance()
-        if not code:
+    def uniqueAllegianceCode(
+            self,
+            allegianceCode: str,
+            sectorName: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
             return None
 
-        codeInfo = self._allegianceMap.get(code)
+        codeInfo = self._allegianceMap.get(allegianceCode)
         if not codeInfo:
             return None
 
-        return codeInfo.uniqueCode(world.sectorName())
+        return codeInfo.uniqueCode(sectorName)
 
-    def formatAllegianceString(self, world: traveller.World) -> str:
-        allegianceCode = world.allegiance()
+    def formatAllegianceString(
+            self,
+            allegianceCode: str,
+            sectorName: str
+            ) -> str:
         if allegianceCode:
-            allegianceName = traveller.AllegianceManager.instance().allegianceName(world)
+            allegianceName = self.allegianceName(
+                allegianceCode=allegianceCode,
+                sectorName=sectorName)
             if allegianceName:
                 allegianceString = f'{allegianceCode} - {allegianceName}'
             else:

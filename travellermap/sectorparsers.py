@@ -907,10 +907,6 @@ def readXMLMetadata(
 
     styleSheetElement = sectorElement.find('./Stylesheet')
     styleSheet = styleSheetElement.text if styleSheetElement != None else None
-    if styleSheet:
-        print('----------------------------------------------')
-        print(names[0])
-        print(styleSheet)
 
     return RawMetadata(
         canonicalName=names[0],

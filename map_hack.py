@@ -18,6 +18,8 @@ import traveller
 import travellermap
 import typing
 import xml.etree.ElementTree
+import cProfile, pstats, io
+from pstats import SortKey
 
 class StringAlignment(enum.Enum):
     Baseline = 0
@@ -1335,6 +1337,8 @@ class VectorObjectCache(object):
                 mapOptions=mapOptions)]
 
 class DefaultStyleCache(object):
+    _BorderPattern = re.compile(r'border\.(\w+)')
+    _RoutePattern = re.compile(r'route\.(\w+)')
     _DefaultStylePath = 'res/styles/otu.css'
 
     _RouteStyleMap = {
@@ -1349,22 +1353,22 @@ class DefaultStyleCache(object):
         content = travellermap.readCssFile(
             os.path.join(basePath, DefaultStyleCache._DefaultStylePath))
         for group, properties in content.items():
-            match = borderPattern.match(group)
+            match = DefaultStyleCache._BorderPattern.match(group)
             if match:
                 key = match.group(1)
                 color = properties.get('color')
                 style = properties.get('style')
                 if style:
-                    style = _RouteStyleMap.get(style.lower())
+                    style = DefaultStyleCache._RouteStyleMap.get(style.lower())
                 self._borderStyles[key] = (color, style)
 
-            match = routePattern.match(group)
+            match = DefaultStyleCache._RoutePattern.match(group)
             if match:
                 key = match.group(1)
                 color = properties.get('color')
                 style = properties.get('style')
                 if style:
-                    style = _RouteStyleMap.get(style.lower())
+                    style = DefaultStyleCache._RouteStyleMap.get(style.lower())
                 width = properties.get('width')
                 if width:
                     width = float(width)
@@ -2717,8 +2721,6 @@ class StyleSheet(object):
             self.uwp.textColor = MapColors.White
             self.uwp.textBackgroundStyle = TextBackgroundStyle.Filled
 
-        print(self._scale)
-
         # NOTE: This TODO came in with traveller map
         # TODO: Do this with opacity.
         if fadeSectorSubsectorNames:
@@ -3797,9 +3799,82 @@ class RenderContext(object):
 
                     self._graphics.drawLine(pen, startPoint, endPoint)
 
+    _WrapPattern = re.compile(r'\s+(?![a-z])')
     def _drawMicroLabels(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.showMicroNames:
+            return
+
+        with self._graphics.save():
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+
+            solidBrush = AbstractBrush()
+            for sector in self._selector.sectors():
+                solidBrush.color = self._styles.microBorders.textColor
+
+                for border in sector.borders():
+                    label = border.label()
+                    if not label and border.allegiance():
+                        label = traveller.AllegianceManager.instance().allegianceName(
+                            allegianceCode=border.allegiance(),
+                            sectorName=sector.name())
+                    if not label:
+                        continue
+                    if border.wrapLabel:
+                        label = RenderContext._WrapPattern.sub('\n', label)
+
+                    labelPos = RenderContext._hexToCenter(border.labelHex())
+                    if border.labelOffsetX():
+                        labelPos.x += border.labelOffsetX() * 0.7
+                    if border.labelOffsetY():
+                        labelPos.y -= border.labelOffsetY() * 0.7
+
+                    drawLabelHelper(
+                        graphics=self._graphics,
+                        text=label,
+                        center=labelPos,
+                        font=self._styles.microBorders.font,
+                        brush=solidBrush,
+                        labelStyle=self._styles.microBorders.textStyle)
+
+                # TODO: Add sector labels
+                for label in sector.labels():
+                    text = label.text()
+                    if label.wrap():
+                        text = RenderContext._WrapPattern.sub('\n', text)
+
+                    labelPos = RenderContext._hexToCenter(label.hex())
+                    # NOTE: This todo came in with the traveller map code
+                    # TODO: Adopt some of the tweaks from .MSEC
+                    if label.offsetX():
+                        labelPos.x += label.offsetX() * 0.7
+                    if label.offsetY():
+                        labelPos.y -= label.offsetY() * 0.7
+
+                    if label.size() is traveller.Label.Size.Small:
+                        font = self._styles.microBorders.smallFont
+                    elif label.size() is traveller.Label.Size.Large:
+                        font = self._styles.microBorders.largeFont
+                    else:
+                        font = self._styles.microBorders.font
+
+                    # TODO: Handle similar colours
+                    solidBrush.color = label.colour() if label.colour() else MapColors.TravellerAmber
+                    """
+                    if (!styles.grayscale &&
+                        label.Color != null &&
+                        ColorUtil.NoticeableDifference(label.Color.Value, styles.backgroundColor) &&
+                        (label.Color != Label.DefaultColor))
+                        solidBrush.Color = label.Color.Value;
+                    else
+                        solidBrush.Color = styles.microBorders.textColor;
+                    """
+                    drawLabelHelper(
+                        graphics=self._graphics,
+                        text=text,
+                        center=labelPos,
+                        font=font,
+                        brush=solidBrush,
+                        labelStyle=self._styles.microBorders.textStyle)
 
     def _drawSectorNames(self) -> None:
         if not (self._styles.showSomeSectorNames or self._styles.showAllSectorNames):
@@ -4627,6 +4702,8 @@ class RenderContext(object):
         dx = (endPoint.x - startPoint.x) * travellermap.ParsecScaleX
         dy = (endPoint.y - startPoint.y) * travellermap.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
+        if not length:
+            return # No offset
         ddx = (dx * offset / length) / travellermap.ParsecScaleX
         ddy = (dy * offset / length) / travellermap.ParsecScaleY
         startPoint.x += ddx
@@ -5099,7 +5176,18 @@ class MapHackView(QtWidgets.QWidget):
             painter = QtGui.QPainter(self)
             try:
                 self._graphics.setPainter(painter)
+
+                #pr = cProfile.Profile()
+                #pr.enable()
+
                 self._renderer.render()
+
+                #pr.disable()
+                #s = io.StringIO()
+                #sortby = SortKey.TIME
+                #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+                #ps.print_stats()
+                #print(s.getvalue())
             finally:
                 painter.end()
 
@@ -5149,33 +5237,6 @@ def _applicationDirectory() -> str:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
 
 if __name__ == "__main__":
-    content = travellermap.readCssFile('E:\\Projects\\travellermap\\travellermap_fork\\res\\styles\\otu.css')
-    borderPattern = re.compile(r'border\.(\w+)')
-    routePattern = re.compile(r'route\.(\w+)')
-    _RouteStyleMap = {
-        'solid': traveller.Route.Style.Solid,
-        'dashed': traveller.Route.Style.Dashed,
-        'dotted': traveller.Route.Style.Dotted}
-    for group, properties in content.items():
-        match = borderPattern.match(group)
-        if match:
-            key = match.group(1)
-            colour = properties.get('color')
-            style = properties.get('style')
-            if style:
-                style = _RouteStyleMap.get(style.lower())
-
-        match = routePattern.match(group)
-        if match:
-            key = match.group(1)
-            colour = properties.get('color')
-            style = properties.get('style')
-            if style:
-                style = _RouteStyleMap.get(style.lower())
-            width = properties.get('width')
-            if width:
-                width = float(width)
-
     application = QtWidgets.QApplication([])
 
     installDir = _installDirectory()

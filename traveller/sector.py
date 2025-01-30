@@ -46,6 +46,8 @@ class Sector(object):
             y: int,
             worlds: typing.Iterable[traveller.World],
             routes: typing.Iterable[traveller.Route],
+            borders: typing.Iterable[traveller.Border],
+            labels: typing.Iterable[traveller.Label],
             subsectorNames: typing.Iterable[str] # Subsector names should be ordered in subsector order (i.e. A-P)
             ) -> None:
         self._name = name
@@ -55,6 +57,8 @@ class Sector(object):
         self._y = y
         self._worlds = list(worlds)
         self._routes = list(routes)
+        self._borders = list(borders)
+        self._labels = list(labels)
         self._subsectorMap: typing.Dict[str, Subsector] = {}
 
         subsectorWorldsMap: typing.Dict[str, typing.List[traveller.World]] = {}
@@ -93,8 +97,16 @@ class Sector(object):
     def worlds(self) -> typing.Collection[traveller.World]:
         return list(self._worlds)
 
+    # TODO: Returning copies of the list of routes/borders probably
+    # isn't great when it's done every frame
     def routes(self) -> typing.Collection[traveller.Route]:
         return list(self._routes)
+
+    def borders(self) -> typing.Collection[traveller.Border]:
+        return list(self._borders)
+
+    def labels(self) -> typing.Collection[traveller.Label]:
+        return list(self._labels)
 
     def subsectorNames(self) -> typing.Sequence[str]:
         return list(self._subsectorMap.keys())

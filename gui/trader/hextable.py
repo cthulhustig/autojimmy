@@ -899,7 +899,9 @@ class HexTable(gui.FrozenColumnListTable):
                     strings=lines,
                     stringColours=lineColours)
         elif columnType == self.ColumnType.Allegiance:
-            allegiance = traveller.AllegianceManager.instance().allegianceName(world)
+            allegiance = traveller.AllegianceManager.instance().allegianceName(
+                allegianceCode=world.allegiance(),
+                sectorName=world.sectorName())
             if allegiance:
                 return gui.createStringToolTip(allegiance)
         elif columnType == self.ColumnType.Sophont:
