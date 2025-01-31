@@ -473,6 +473,13 @@ class HexPosition(object):
         for absoluteX, absoluteY in generator:
             yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
 
+    # Return the absolute center point of the hex
+    def absoluteCenter(self) -> typing.Tuple[float, float]:
+        absX, absY = self.absolute()
+        return (
+            absX - 0.5,
+            absY - (0.0 if ((absX % 2) != 0) else 0.5))
+
     def _calculateRelative(self) -> None:
         self._relative = absoluteSpaceToRelativeSpace(pos=self._absolute)
 

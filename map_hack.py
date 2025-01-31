@@ -989,6 +989,135 @@ class MapLabelCache(object):
                 minor=bool(data['Minor'].lower() == 'true')))
         return labels
 
+class WorldLabel(object):
+    def __init__(
+            self,
+            name: str,
+            mapOptions: MapOptions,
+            location: PointF,
+            labelBiasX: int = 0,
+            labelBiasY: int = 0,
+            ) -> None:
+        self.name = name
+        self.mapOptions = mapOptions
+        self.location = PointF(location)
+        self.labelBiasX = labelBiasX
+        self.labelBiasY = labelBiasY
+
+    def paint(
+            self,
+            graphics: AbstractGraphics,
+            dotColor: str,
+            labelBrush: AbstractBrush,
+            labelFont: AbstractFont
+            ) -> None:
+        pt = PointF(self.location)
+
+        with graphics.save():
+            graphics.translateTransform(dx=pt.x, dy=pt.y)
+            graphics.scaleTransform(
+                scaleX=1.0 / travellermap.ParsecScaleX,
+                scaleY=1.0 / travellermap.ParsecScaleY)
+
+            radius = 3
+            brush = AbstractBrush(dotColor)
+            pen = AbstractPen(dotColor, 1)
+            graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+            graphics.drawEllipse(
+                pen=pen,
+                brush=brush,
+                rect=RectangleF(x=-radius / 2, y=-radius / 2, width=radius, height=radius))
+
+            if self.labelBiasX > 0:
+                if self.labelBiasY < 0:
+                    format = TextFormat.BottomLeft
+                elif self.labelBiasY > 0:
+                    format = TextFormat.TopLeft
+                else:
+                    format = TextFormat.MiddleLeft
+            elif self.labelBiasX < 0:
+                if self.labelBiasY < 0:
+                    format = TextFormat.BottomRight
+                elif self.labelBiasY > 0:
+                    format = TextFormat.TopRight
+                else:
+                    format = TextFormat.MiddleRight
+            else:
+                if self.labelBiasY < 0:
+                    format = TextFormat.BottomCenter
+                elif self.labelBiasY > 0:
+                    format = TextFormat.TopCenter
+                else:
+                    format = TextFormat.Center
+
+            drawStringHelper(
+                graphics=graphics,
+                text=self.name,
+                font=labelFont,
+                brush=labelBrush,
+                x=self.labelBiasX * radius / 2,
+                y=self.labelBiasY * radius / 2,
+                format=format)
+
+class WorldLabelCache(object):
+    _WorldLabelPath = 'res/labels/Worlds.xml'
+
+    def __init__(self, basePath: str):
+        filePath = os.path.join(basePath, WorldLabelCache._WorldLabelPath)
+        with open(filePath, 'r', encoding='utf-8-sig') as file:
+            content = file.read()
+
+        rootElement = xml.etree.ElementTree.fromstring(content)
+
+        self.labels: typing.List[WorldLabel] = []
+        for index, worldElement in enumerate(rootElement.findall('./World')):
+            try:
+                nameElement = worldElement.find('./Name')
+                if nameElement is None:
+                    raise RuntimeError('World label has no Name element')
+                name = nameElement.text
+
+                optionsElement = worldElement.find('./MapOptions')
+                if optionsElement is None:
+                    raise RuntimeError('World label has no MapOptions element')
+                options = 0
+                for token in optionsElement.text.split():
+                    if token == 'WorldsHomeworlds':
+                        options |= MapOptions.WorldsHomeworlds
+                    elif token == 'WorldsCapitals':
+                        options |= MapOptions.WorldsCapitals
+
+                locationElement = worldElement.find('./Location')
+                if locationElement is None:
+                    raise RuntimeError('World label has no Location element')
+                sector = locationElement.attrib.get('Sector')
+                if sector is None:
+                    raise RuntimeError('Location element has no Sector attribute')
+                hex = locationElement.attrib.get('Hex')
+                if hex is None:
+                    raise RuntimeError('Location element has no Hex attribute')
+                location = traveller.WorldManager.instance().sectorHexToPosition(f'{sector} {hex}')
+                centerX, centerY = location.absoluteCenter()
+                location = PointF(x=centerX, y=centerY)
+
+                biasXElement = worldElement.find('./LabelBiasX')
+                biasX = 0
+                if biasXElement is not None:
+                    biasX = int(biasXElement.text)
+                biasYElement = worldElement.find('./LabelBiasY')
+                biasY = 0
+                if biasYElement is not None:
+                    biasY = int(biasYElement.text)
+
+                self.labels.append(WorldLabel(
+                    name=name,
+                    mapOptions=options,
+                    location=location,
+                    labelBiasX=biasX,
+                    labelBiasY=biasY))
+            except Exception as ex:
+                logging.warning(f'Failed to read world label {index} from "{filePath}"', exc_info=ex)
+
 class VectorObject(MapObject):
     def __init__(
             self,
@@ -3244,7 +3373,8 @@ class RenderContext(object):
             styles: StyleSheet,
             imageCache: ImageCache,
             vectorCache: VectorObjectCache,
-            labelCache: MapLabelCache,
+            mapLabelCache: MapLabelCache,
+            worldLabelCache: WorldLabelCache,
             styleCache: DefaultStyleCache,
             options: MapOptions
             ) -> None:
@@ -3255,7 +3385,8 @@ class RenderContext(object):
         self._styles = styles
         self._imageCache = imageCache
         self._vectorCache = vectorCache
-        self._labelCache = labelCache
+        self._mapLabelCache = mapLabelCache
+        self._worldLabelCache = worldLabelCache
         self._styleCache = styleCache
         self._fontCache = FontCache(sheet=self._styles)
         self._tileSize = tileSize
@@ -3822,7 +3953,10 @@ class RenderContext(object):
                     if border.wrapLabel:
                         label = RenderContext._WrapPattern.sub('\n', label)
 
-                    labelPos = RenderContext._hexToCenter(border.labelHex())
+                    labelPos = border.labelHex()
+                    if not labelPos:
+                        continue
+                    labelPos = RenderContext._hexToCenter(labelPos)
                     if border.labelOffsetX():
                         labelPos.x += border.labelOffsetX() * 0.7
                     if border.labelOffsetY():
@@ -3836,7 +3970,6 @@ class RenderContext(object):
                         brush=solidBrush,
                         labelStyle=self._styles.microBorders.textStyle)
 
-                # TODO: Add sector labels
                 for label in sector.labels():
                     text = label.text()
                     if label.wrap():
@@ -3970,7 +4103,7 @@ class RenderContext(object):
                     labelStyle=labelStyle)
 
         if (self._options & MapOptions.NamesMinor) != 0:
-            for label in self._labelCache.minorLabels:
+            for label in self._mapLabelCache.minorLabels:
                 font = self._styles.macroNames.smallFont if label.minor else self._styles.macroNames.mediumFont
                 solidBrush = AbstractBrush(self._styles.macroRoutes.textColor
                                            if label.minor else
@@ -3990,8 +4123,19 @@ class RenderContext(object):
                         x=0, y=0)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
-        # TODO: Need to add worlds and loading of ~/res/labels/Worlds.xml
-        pass
+        if (not self._styles.capitals.visible) or ((self._options & MapOptions.WorldsMask) == 0):
+            return
+
+        with self._graphics.save():
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+            solidBrush = AbstractBrush(self._styles.capitals.textColor)
+            for worldLabel in self._worldLabelCache.labels:
+                if (worldLabel.mapOptions & self._options) != 0:
+                    worldLabel.paint(
+                        graphics=self._graphics,
+                        dotColor=self._styles.capitals.fillColor,
+                        labelBrush=solidBrush,
+                        labelFont=self._styles.macroNames.smallFont)
 
     def _drawMegaLabels(self) -> None:
         if not self._styles.megaNames.visible:
@@ -3999,7 +4143,7 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
         solidBrush = AbstractBrush(self._styles.megaNames.textColor)
-        for label in self._labelCache.megaLabels:
+        for label in self._mapLabelCache.megaLabels:
             with self._graphics.save():
                 font = self._styles.megaNames.smallFont if label.minor else self._styles.megaNames.font
                 self._graphics.translateTransform(
@@ -4713,9 +4857,8 @@ class RenderContext(object):
 
     @staticmethod
     def _hexToCenter(hex: travellermap.HexPosition) -> PointF:
-        return PointF(
-            x=hex.absoluteX() - 0.5,
-            y=hex.absoluteY() - (0.0 if ((hex.absoluteX() % 2) != 0) else 0.5))
+        centerX, centerY = hex.absoluteCenter()
+        return PointF(x=centerX, y=centerY)
 
 class QtGraphics(AbstractGraphics):
     _DashStyleMap = {
@@ -5052,7 +5195,8 @@ class MapHackView(QtWidgets.QWidget):
         self._graphics = QtGraphics()
         self._imageCache = ImageCache(basePath='./data/map/')
         self._vectorCache = VectorObjectCache(basePath='./data/map/')
-        self._labelCache = MapLabelCache(basePath='./data/map/')
+        self._mapLabelCache = MapLabelCache(basePath='./data/map/')
+        self._worldLabelCache = WorldLabelCache(basePath='./data/map/')
         self._styleCache = DefaultStyleCache(basePath='./data/map/')
         WorldHelper.loadData(basePath='./data/map/') # TODO: Not sure where this should live
         self._renderer = self._createRender()
@@ -5203,7 +5347,8 @@ class MapHackView(QtWidgets.QWidget):
                 style=self._style),
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
-            labelCache=self._labelCache,
+            mapLabelCache=self._mapLabelCache,
+            worldLabelCache=self._worldLabelCache,
             styleCache=self._styleCache,
             options=self._options)
 
