@@ -139,6 +139,14 @@ class MapOptions(enum.IntFlag):
     WorldColors = 0x4000
     FilledBorders = 0x8000
 
+    # These were added by me. In the Traveller Map code these come from
+    # separate URL parameters rather than part of the map options
+
+    PopulationOverlay = 0x10000
+    ImportanceOverlay = 0x20000
+    CapitalOverlay = 0x40000
+    StellarOverlay = 0x80000
+
 class LayerId(enum.Enum):
         #------------------------------------------------------------
         # Background
@@ -482,7 +490,7 @@ class AbstractPen(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'FontInfo') -> None: ...
+    def __init__(self, other: 'AbstractPen') -> None: ...
     @typing.overload
     def __init__(
         self,
@@ -509,8 +517,8 @@ class AbstractPen(object):
         else:
             self.color = args[0] if len(args) > 0 else kwargs['color']
             self.width = args[1] if len(args) > 1 else kwargs['width']
-            self.dashStyle = args[1] if len(args) > 2 else kwargs.get('dashStyle', DashStyle.Solid)
-            self.customDashPattern = args[1] if len(args) > 3 else kwargs.get('customDashPattern', None)
+            self.dashStyle = args[2] if len(args) > 2 else kwargs.get('dashStyle', DashStyle.Solid)
+            self.customDashPattern = args[3] if len(args) > 3 else kwargs.get('customDashPattern', None)
 
 class AbstractBrush(object):
     @typing.overload
@@ -2070,6 +2078,10 @@ class StyleSheet(object):
 
         self.showWorldDetailColors = self.worldDetails == WorldDetails.Poster and \
             ((self.options & MapOptions.WorldColors) != 0)
+        self.populationOverlay.visible = (self.options & MapOptions.PopulationOverlay) != 0
+        self.importanceOverlay.visible = (self.options & MapOptions.ImportanceOverlay) != 0
+        self.capitalOverlay.visible = (self.options & MapOptions.WorldColors) != 0
+        self.showStellarOverlay = (self._options & MapOptions.StellarOverlay) != 0
 
         self.lowerCaseAllegiance = (self.scale < StyleSheet._WorldFullMinScale)
         self.showGasGiantRing = (self.scale >= StyleSheet._WorldUwpMinScale)
@@ -2273,17 +2285,17 @@ class StyleSheet(object):
         self.highlightWorlds.fillColor = '#80FF0000'
 
         self.populationOverlay.pen = AbstractPen(
-            '#0000FF', # TODO: Color.Empty,
-            0.03 * penScale,
-            DashStyle.Dash)
+            color='#0000FF', # TODO: Color.Empty,
+            width=0.03 * penScale,
+            dashStyle=DashStyle.Dash)
         self.importanceOverlay.pen = AbstractPen(
-            '#0000FF', # TODO: Color.Empty,
-            0.03 * penScale,
-            DashStyle.Dot)
+            color='#0000FF', # TODO: Color.Empty,
+            width=0.03 * penScale,
+            dashStyle=DashStyle.Dot)
         self.highlightWorlds.pen = AbstractPen(
-            '#0000FF', # TODO: Color.Empty,
-            0.03 * penScale,
-            DashStyle.DashDot)
+            color='#0000FF', # TODO: Color.Empty,
+            width=0.03 * penScale,
+            dashStyle=DashStyle.DashDot)
 
         self.capitalOverlay.fillColor = StyleSheet._makeAlphaColor(0x80, MapColors.TravellerGreen)
         self.capitalOverlayAltA.fillColor = StyleSheet._makeAlphaColor(0x80, MapColors.Blue)
@@ -2998,17 +3010,30 @@ class LayerAction(object):
         self.clip = clip
 
 class RectSelector(object):
-    _SlopFactor = 0.3 # Arbitrary, but 0.25 not enough for some routes.
-
-    def __init__(self, rect: RectangleF, slop: bool = True) -> None:
+    def __init__(
+            self,
+            rect: RectangleF,
+            slop: float = 0.3 # Arbitrary, but 0.25 not enough for some routes.
+            ) -> None:
         self._slop = slop
         self._rect = RectangleF(rect)
 
         self._cachedSectors = None
         self._cachedWorlds = None
 
+    def rect(self) -> RectangleF:
+        return RectangleF(self._rect)
+
     def setRect(self, rect: RectangleF) -> None:
         self._rect = RectangleF(rect)
+        self._cachedSectors = None
+        self._cachedWorlds = None
+
+    def slop(self) -> float:
+        return self._slop
+
+    def setSlop(self, slop) -> None:
+        self._slop = slop
         self._cachedSectors = None
         self._cachedWorlds = None
 
@@ -3019,8 +3044,8 @@ class RectSelector(object):
         rect = RectangleF(self._rect)
         if self._slop:
             rect.inflate(
-                x=rect.width * RectSelector._SlopFactor,
-                y=rect.height * RectSelector._SlopFactor)
+                x=rect.width * self._slop,
+                y=rect.height * self._slop)
 
         left = int(math.floor((rect.left + travellermap.ReferenceHexX) / travellermap.SectorWidth))
         right = int(math.floor((rect.right + travellermap.ReferenceHexX) / travellermap.SectorWidth))
@@ -3049,8 +3074,8 @@ class RectSelector(object):
         rect = RectangleF(self._rect)
         if self._slop:
             rect.inflate(
-                x=rect.width * RectSelector._SlopFactor,
-                y=rect.height * RectSelector._SlopFactor)
+                x=rect.width * self._slop,
+                y=rect.height * self._slop)
 
         left = int(math.floor(rect.left))
         right = int(math.ceil(rect.right))
@@ -4178,8 +4203,24 @@ class RenderContext(object):
                 layer=RenderContext.WorldLayer.Foreground)
 
     def _drawWorldsOverlay(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.worlds.visible:
+            return
+
+        with self._graphics.save():
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+            if self._styles.showStellarOverlay:
+                for world in self._selector.worlds():
+                    self._drawStars(world)
+            elif self._styles.hasWorldOverlays:
+                slop = self._selector.slop()
+                self._selector.setSlop(max(slop, math.log(self._scale, 2.0) - 4))
+                try:
+                    for world in self._selector.worlds():
+                        self._drawWorld(
+                            world=world,
+                            layer=RenderContext.WorldLayer.Overlay)
+                finally:
+                    self._selector.setSlop(slop)
 
     def _drawDroyneOverlay(self) -> None:
         # TODO: Implement when I add loading worlds
@@ -4222,10 +4263,9 @@ class RenderContext(object):
 
             if layer is RenderContext.WorldLayer.Overlay:
                 if self._styles.populationOverlay.visible and (world.population() > 0):
-                    # TODO: Handle population overlay
-                    """
-                    self._drawOverlay(styles.populationOverlay, (float)Math.Sqrt(world.Population / Math.PI) * 0.00002f, ref solidBrush, ref pen);
-                    """
+                    self._drawOverlay(
+                        element=self._styles.populationOverlay,
+                        radius=math.sqrt(world.population() / math.pi) * 0.00002)
 
                 if self._styles.importanceOverlay.visible:
                     # TODO: Handle importance overlay
@@ -4795,6 +4835,35 @@ class RenderContext(object):
             y=position.y,
             format=StringAlignment.Centered)
 
+    def _drawStars(self, world: traveller.World) -> None:
+        with self._graphics.save():
+            self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+            center = self._hexToCenter(world.hex())
+
+            self._graphics.translateTransform(dx=center.x, dy=center.y)
+            self._graphics.scaleTransform(
+                scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
+                scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
+
+            solidBrush = AbstractBrush()
+            pen = AbstractPen()
+            for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
+                solidBrush.color = fillColour
+                pen.color = lineColor
+                pen.dashStyle = DashStyle.Solid
+                pen.width = self._styles.worlds.pen.width
+                offset = RenderContext._starOffset(i)
+                offsetScale = 0.3
+                radius *= 0.15
+                self._graphics.drawEllipse(
+                    pen=pen,
+                    brush=solidBrush,
+                    rect=RectangleF(
+                        x=offset.x * offsetScale - radius,
+                        y=offset.y * offsetScale - radius,
+                        width=radius * 2,
+                        height=radius * 2))
+
     def _drawGasGiant(
             self,
             color: str,
@@ -4825,6 +4894,20 @@ class RenderContext(object):
                         width=radius * 1.75 * 2,
                         height=radius * 0.4 * 2))
 
+    def _drawOverlay(
+            self,
+            element: StyleSheet.StyleElement,
+            radius: float
+            ) -> None:
+        # Prevent "Out of memory" exception when rendering to GDI+.
+        if radius < 0.001:
+            return
+
+        self._graphics.drawEllipse(
+            pen=element.pen,
+            brush=AbstractBrush(element.fillColor),
+            rect=RectangleF(x=-radius, y=-radius, width=radius * 2, height=radius * 2))
+
     def _drawMicroBorders(self, layer: BorderLayer) -> None:
         # TODO: Implement when I add loading worlds
         pass
@@ -4840,6 +4923,64 @@ class RenderContext(object):
         if self._styles.greenZone.visible:
             return self._styles.greenZone
         return None
+
+    _StarPropsMap = {
+        'O': ('#9DB4FF', 4),
+        'B': ('#BBCCFF', 3),
+        'A': ('#FBF8FF', 2),
+        'F': ('#FFFFED', 1.5),
+        'G': ('#FFFF00', 1),
+        'K': ('#FF9833', 0.7),
+        'M': ('#FF0000', 0.5)}
+    _StarLuminanceMap = {
+        'Ia': 7,
+        'Ib': 5,
+        'II': 3,
+        'III': 2,
+        'IV': 1,
+        'V': 0}
+    @staticmethod
+    def _worldStarProps(world: traveller.World) -> typing.Iterable[typing.Tuple[
+            str, # Fill Color,
+            str, # Border Color
+            float]]: # Radius
+        stellar = world.stellar()
+        props = []
+        for star in stellar.yieldStars():
+            classification = star.string()
+            if classification == 'D':
+                props.append((MapColors.White, MapColors.Black, 0.3))
+            # NOTE: This todo came in with traveller map code
+            # TODO: Distinct rendering for black holes, neutron stars, pulsars
+            elif classification == 'NS' or classification == 'PSR' or classification == 'BH':
+                props.append((MapColors.Black, MapColors.White, 0.8))
+            elif classification == 'BD':
+                props.append((MapColors.Brown, MapColors.Black, 0.3))
+            else:
+                color, radius = RenderContext._StarPropsMap.get(
+                    star.code(element=traveller.Star.Element.SpectralClass),
+                    (None, None))
+                if color:
+                    luminance = star.code(element=traveller.Star.Element.LuminosityClass)
+                    luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
+                    props.append((color, MapColors.Black, radius + luminance))
+
+        props.sort(key=lambda p: p[2], reverse=True)
+        return props
+
+    _StarOffsetX = [
+        0.0,
+        math.cos(math.pi * 1 / 3), math.cos(math.pi * 2 / 3), math.cos(math.pi * 3 / 3),
+        math.cos(math.pi * 4 / 3), math.cos(math.pi * 5 / 3), math.cos(math.pi * 6 / 3)]
+    _StarOffsetY = [
+        0.0,
+        math.sin(math.pi * 1 / 3), math.sin(math.pi * 2 / 3), math.sin(math.pi * 3 / 3),
+        math.sin(math.pi * 4 / 3), math.sin(math.pi * 5 / 3), math.sin(math.pi * 6 / 3)]
+    @staticmethod
+    def _starOffset(index: int) -> PointF:
+        if index >= len(RenderContext._StarOffsetX):
+            index = (index % (len(RenderContext._StarOffsetX) - 1)) + 1
+        return PointF(RenderContext._StarOffsetX[index], RenderContext._StarOffsetY[index])
 
     @staticmethod
     def _offsetRouteSegment(startPoint: PointF, endPoint: PointF, offset: float) -> None:
