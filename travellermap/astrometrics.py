@@ -1,3 +1,4 @@
+import common
 import enum
 import math
 import typing
@@ -362,6 +363,9 @@ class HexPosition(object):
         else:
             raise ValueError('Invalid hex position arguments')
 
+        self._absoluteCenter: typing.Optional[typing.Tuple[float, float]] = None
+        self._mapSpace: typing.Optional[typing.Tuple[float, float]] = None
+
     def __eq__(self, other):
         if isinstance(other, HexPosition):
             # Only need to compare absolute position
@@ -427,9 +431,13 @@ class HexPosition(object):
         return self._relative
 
     def mapSpace(self) -> typing.Tuple[float, float]:
+        if self._mapSpace:
+            return self._mapSpace
+
         if not self._absolute:
             self._calculateAbsolute()
-        return absoluteSpaceToMapSpace(pos=self._absolute)
+        self._mapSpace = absoluteSpaceToMapSpace(pos=self._absolute)
+        return self._mapSpace
 
     def parsecsTo(
             self,
@@ -475,10 +483,12 @@ class HexPosition(object):
 
     # Return the absolute center point of the hex
     def absoluteCenter(self) -> typing.Tuple[float, float]:
-        absX, absY = self.absolute()
-        return (
-            absX - 0.5,
-            absY - (0.0 if ((absX % 2) != 0) else 0.5))
+        if not self._absoluteCenter:
+            absX, absY = self.absolute()
+            self._absoluteCenter = (
+                absX - 0.5,
+                absY - (0.0 if ((absX % 2) != 0) else 0.5))
+        return self._absoluteCenter
 
     def _calculateRelative(self) -> None:
         self._relative = absoluteSpaceToRelativeSpace(pos=self._absolute)

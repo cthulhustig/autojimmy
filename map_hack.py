@@ -28,6 +28,10 @@ class StringAlignment(enum.Enum):
     TopCenter = 3
     TopRight = 4
     CenterLeft = 5
+    CenterRight = 6
+    BottomLeft = 7
+    BottomCenter = 8
+    BottomRight = 9
 
 class DashStyle(enum.Enum):
     Solid = 0
@@ -59,6 +63,7 @@ class FontStyle(enum.IntFlag):
     Underline = 0x4
     Strikeout = 0x8
 
+# TODO: This should probably be combined with StringAlignment
 class TextFormat(enum.Enum):
     TopLeft = 0
     TopCenter = 1
@@ -777,6 +782,7 @@ class AbstractPath(object):
         self._points = list(points)
         self._types = list(types)
         self.closed = closed
+        self._bounds = None # Calculate on demand
 
     @property
     def points(self) -> typing.Sequence[PointF]:
@@ -784,6 +790,29 @@ class AbstractPath(object):
     @property
     def types(self) -> typing.Sequence[PathPointType]:
         return self._types
+
+    @property
+    def bounds(self) -> RectangleF:
+        if self._bounds is not None:
+            return self._bounds
+
+        minX = maxX = minY = maxY = None
+        for point in self._points:
+            if minX is None or point.x < minX:
+                minX = point.x
+            if maxX is None or point.x > maxX:
+                maxX = point.x
+            if minY is None or point.y < minY:
+                minY = point.y
+            if maxY is None or point.y > maxY:
+                maxY = point.y
+
+        self._bounds = RectangleF(
+            x=minX,
+            y=minY,
+            width=maxX - minX,
+            height=maxY - minY)
+        return self._bounds
 
 # TODO: In the same way as AbstractFont, the fact this is using a QT
 # class is a hack and I need a way to abstract the image format in
@@ -854,7 +883,7 @@ class AbstractGraphics(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement multiplyTransform')
 
     # TODO: This was an overload of intersectClip in traveller map code
-    def intersectClipPath(self, path: AbstractPath) -> None:
+    def intersectClipPath(self, clip: AbstractPath) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipRect(self, rect: RectangleF) -> None:
@@ -1513,7 +1542,7 @@ class DefaultStyleCache(object):
 
     def defaultBorderStyle(self, key: str) -> typing.Tuple[
             typing.Optional[str], # Colour
-            typing.Optional[traveller.Route.Style]]:
+            typing.Optional[traveller.Border.Style]]:
         return self._borderStyles.get(key, (None, None))
 
     def defaultRouteStyle(self, key: str) -> typing.Tuple[
@@ -1521,6 +1550,134 @@ class DefaultStyleCache(object):
             typing.Optional[traveller.Route.Style],
             typing.Optional[float]]: # Width
         return self._routeStyles.get(key, (None, None, None))
+
+class ClipPathCache(object):
+    class PathType(enum.Enum):
+        Hex = 0
+        # TODO: I don't currently support Square but I'm thinking of deleting
+        # support for square hexes all together as I don't think they ever get
+        # rendered in standard traveller map
+        Square = 1
+        # TODO: I don't think TypeCount is needed as it looks like it's only
+        # used to initialise cache arrays with a size equal to the number of
+        # entries in this enum
+        #TypeCount = 2
+
+    # NOTE: These offsets assume a clockwise winding
+    _TopOffsets = [
+        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
+        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
+        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + travellermap.HexWidthOffset, 0) # Center right
+    ]
+
+    _RightOffsets = [
+        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
+        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
+        (+0.5 + travellermap.HexWidthOffset, 1) # Center right of next hex
+    ]
+
+    _BottomOffsets = [
+        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
+        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
+        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - travellermap.HexWidthOffset, 0) # Center left
+    ]
+
+    _LeftOffsets = [
+        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
+        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
+        (-0.5 - travellermap.HexWidthOffset, -1) # Center left of next hex
+    ]
+
+    def __init__(self):
+        self._sectorClipPaths: typing.Mapping[
+            typing.Tuple[
+                int, # Sector X position
+                int, # Sector Y position
+                ClipPathCache.PathType
+            ],
+            AbstractPath
+        ] = {}
+
+    def sectorClipPath(
+            self,
+            sectorX: int,
+            sectorY: int,
+            pathType: PathType
+            ) -> AbstractPath:
+        key = (sectorX, sectorY, pathType)
+        clipPath = self._sectorClipPaths.get(key)
+        if clipPath:
+            return clipPath
+
+        originX, originY = travellermap.relativeSpaceToAbsoluteSpace(
+            (sectorX, sectorY, 1, 1))
+
+        points = []
+
+        count = len(ClipPathCache._TopOffsets)
+        y=0
+        for x in range(0, travellermap.SectorWidth, 2):
+            for i in range(count):
+                offsetX, offsetY = ClipPathCache._TopOffsets[i]
+                points.append(PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=((originY + y) - 0.5) + offsetY))
+
+        last = travellermap.SectorHeight - 2
+        count = len(ClipPathCache._RightOffsets)
+        x = travellermap.SectorWidth - 1
+        for y in range(0, travellermap.SectorHeight, 2):
+            if y == last:
+                count -= 1
+            for i in range(count):
+                offsetX, offsetY = ClipPathCache._RightOffsets[i]
+                points.append(PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=(originY + y) + offsetY))
+
+        count = len(ClipPathCache._BottomOffsets)
+        y = travellermap.SectorHeight - 1
+        for x in range(travellermap.SectorWidth - 1, -1, -2):
+            for i in range(count):
+                offsetX, offsetY = ClipPathCache._BottomOffsets[i]
+                points.append(PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=(originY + y) + offsetY))
+
+        last = travellermap.SectorHeight - 2
+        count = len(ClipPathCache._LeftOffsets)
+        x = 0
+        for y in range(travellermap.SectorHeight - 1, -1, -2):
+            if y == last:
+                count -= 1
+            for i in range(count):
+                offsetX, offsetY = ClipPathCache._LeftOffsets[i]
+                points.append(PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=((originY + y) - 0.5) + offsetY))
+
+        types = [PathPointType.Start]
+        types.extend([PathPointType.Line] * (len(points) - 2))
+        types.append([PathPointType.Line | PathPointType.CloseSubpath])
+
+        path = AbstractPath(points=points, types=types, closed=True)
+        self._sectorClipPaths[key] = path
+        return path
+
+    @staticmethod
+    def _sectorBounds(
+            sectorX: int,
+            sectorY: int
+            ) -> RectangleF:
+        return RectangleF(
+            x=(sectorX * travellermap.SectorWidth) - travellermap.ReferenceHexX,
+            y=(sectorY * travellermap.SectorHeight) - travellermap.ReferenceHexY,
+            width=travellermap.SectorWidth,
+            height=travellermap.SectorHeight)
 
 class WorldHelper(object):
     # Traveller Map doesn't use trade codes for things you might expect it
@@ -1686,36 +1843,21 @@ class WorldHelper(object):
         return images.worldImages[
             WorldHelper._HydrographicsImageMap.get(hydrographics, WorldHelper._HydrographicsDefaultImage)]
 
-class MapColors(object):
-    Black = '#000000'
-    White = '#FFFFFF'
-    Red = '#FF0000'
-    Green = '#00FF00'
-    Blue = '#0000FF'
+def makeAlphaColor(
+        alpha: typing.Union[float, int],
+        color: str
+        ) -> str:
+    length = len(color)
+    if (length != 7 and length != 9) or color[0] != '#':
+        raise ValueError(f'Invalid color "#{color}"')
 
-    AntiqueWhite = '#FAEBD7'
-    Brown = '#A52A2A'
-    Cyan = '#00FFFF'
-    DarkCyan = '#008B8B'
-    DarkBlue = '#00008B'
-    DarkGray = '#A9A9A9'
-    DarkKhaki = '#BDB76B'
-    DarkSlateGray = '#2F4F4F'
-    DeepSkyBlue = '#00BFFF'
-    DimGray = '#696969'
-    Firebrick = '#B22222'
-    Goldenrod = '#DAA520'
-    Gray = '#808080'
-    LightBlue = '#ADD8E6'
-    LightGray = '#D3D3D3'
-    MediumBlue = '#0000CD'
-    Plum = '#DDA0DD'
-    Purple = '#800080'
-    Wheat = '#F5DEB3'
+    alpha = int(alpha)
+    if alpha < 0:
+        alpha = 0
+    if alpha > 255:
+        alpha =255
 
-    TravellerRed = '#E32736'
-    TravellerAmber = '#FFCC00'
-    TravellerGreen = '#048104'
+    return f'#{alpha:02X}{color[1 if length == 7 else 3:]}'
 
 class StyleSheet(object):
     _DefaultFont = 'Arial'
@@ -1863,18 +2005,18 @@ class StyleSheet(object):
 
         if self.showWorldDetailColors:
             if WorldHelper.isAgricultural(world) and WorldHelper.isRich(world):
-                penColor = brushColor = MapColors.TravellerAmber
+                penColor = brushColor = travellermap.MapColours.TravellerAmber
             elif WorldHelper.isAgricultural(world):
-                penColor = brushColor = MapColors.TravellerGreen
+                penColor = brushColor = travellermap.MapColours.TravellerGreen
             elif WorldHelper.isRich(world):
-                penColor = brushColor = MapColors.Purple
+                penColor = brushColor = travellermap.MapColours.Purple
             elif WorldHelper.isIndustrial(world):
                 penColor = brushColor = '#888888' # Gray
             elif world.uwp().numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10:
                 penColor = brushColor = '#CC6626' # Rust
             elif WorldHelper.isVacuum(world):
-                brushColor = MapColors.Black
-                penColor = MapColors.White
+                brushColor = travellermap.MapColours.Black
+                penColor = travellermap.MapColours.White
             elif WorldHelper.hasWater(world):
                 brushColor = self.worldWater.fillColor
                 penColor = self.worldWater.pen.color
@@ -1899,7 +2041,7 @@ class StyleSheet(object):
 
     def _handleConfigUpdate(self) -> None:
         # Options
-        self.backgroundColor = MapColors.Black
+        self.backgroundColor = travellermap.MapColours.Black
 
         self.imageBorderColor = ''
         self.imageBorderWidth = 0.2
@@ -2210,26 +2352,26 @@ class StyleSheet(object):
             18 * megaNameScaleFactor,
             FontStyle.Italic)
 
-        self.capitals.fillColor = MapColors.Wheat
-        self.capitals.textColor = MapColors.TravellerRed
+        self.capitals.fillColor = travellermap.MapColours.Wheat
+        self.capitals.textColor = travellermap.MapColours.TravellerRed
         self.amberZone.visible = self.redZone.visible = True
-        self.amberZone.pen.color = MapColors.TravellerAmber
-        self.redZone.pen.color = MapColors.TravellerRed
-        self.macroBorders.pen.color = MapColors.TravellerRed
-        self.macroRoutes.pen.color = MapColors.White
-        self.microBorders.pen.color = MapColors.Gray
-        self.microRoutes.pen.color = MapColors.Gray
+        self.amberZone.pen.color = travellermap.MapColours.TravellerAmber
+        self.redZone.pen.color = travellermap.MapColours.TravellerRed
+        self.macroBorders.pen.color = travellermap.MapColours.TravellerRed
+        self.macroRoutes.pen.color = travellermap.MapColours.White
+        self.microBorders.pen.color = travellermap.MapColours.Gray
+        self.microRoutes.pen.color = travellermap.MapColours.Gray
 
-        self.microBorders.textColor = MapColors.TravellerAmber
-        self.worldWater.fillColor = MapColors.DeepSkyBlue
-        self.worldNoWater.fillColor = MapColors.White
+        self.microBorders.textColor = travellermap.MapColours.TravellerAmber
+        self.worldWater.fillColor = travellermap.MapColours.DeepSkyBlue
+        self.worldNoWater.fillColor = travellermap.MapColours.White
         self.worldNoWater.pen.color = '#0000FF' # TODO: Color.Empty;
 
         gridColor = self._colorScaleInterpolate(
             scale=self.scale,
             minScale=StyleSheet._SectorGridMinScale,
             maxScale=StyleSheet._SectorGridFullScale,
-            color=MapColors.Gray)
+            color=travellermap.MapColours.Gray)
         self.parsecGrid.pen = AbstractPen(gridColor, onePixel)
         self.subsectorGrid.pen = AbstractPen(gridColor, onePixel * 2)
         self.sectorGrid.pen = AbstractPen(gridColor, (4 if self.subsectorGrid.visible else 2) * onePixel)
@@ -2297,9 +2439,9 @@ class StyleSheet(object):
             width=0.03 * penScale,
             dashStyle=DashStyle.DashDot)
 
-        self.capitalOverlay.fillColor = StyleSheet._makeAlphaColor(0x80, MapColors.TravellerGreen)
-        self.capitalOverlayAltA.fillColor = StyleSheet._makeAlphaColor(0x80, MapColors.Blue)
-        self.capitalOverlayAltB.fillColor = StyleSheet._makeAlphaColor(0x80, MapColors.TravellerAmber)
+        self.capitalOverlay.fillColor = makeAlphaColor(0x80, travellermap.MapColours.TravellerGreen)
+        self.capitalOverlayAltA.fillColor = makeAlphaColor(0x80, travellermap.MapColours.Blue)
+        self.capitalOverlayAltB.fillColor = makeAlphaColor(0x80, travellermap.MapColours.TravellerAmber)
 
         fadeSectorSubsectorNames = True
 
@@ -2312,11 +2454,11 @@ class StyleSheet(object):
 
         # Generic colors; applied to various elements by default (see end of this method).
         # May be overridden by specific styles
-        foregroundColor = MapColors.White
-        lightColor = MapColors.LightGray
-        darkColor = MapColors.DarkGray
-        dimColor = MapColors.DimGray
-        highlightColor = MapColors.TravellerRed
+        foregroundColor = travellermap.MapColours.White
+        lightColor = travellermap.MapColours.LightGray
+        darkColor = travellermap.MapColours.DarkGray
+        dimColor = travellermap.MapColours.DimGray
+        highlightColor = travellermap.MapColours.TravellerRed
 
         layers: typing.List[LayerId] = [
             #------------------------------------------------------------
@@ -2373,40 +2515,40 @@ class StyleSheet(object):
             self.grayscale = True
             self.lightBackground = True
 
-            self.capitals.fillColor = MapColors.DarkGray
-            self.capitals.textColor = MapColors.Black
-            self.amberZone.pen.color = MapColors.LightGray
-            self.redZone.pen.color = MapColors.Black
-            self.macroBorders.pen.color = MapColors.Black
-            self.macroRoutes.pen.color = MapColors.Gray
-            self.microBorders.pen.color = MapColors.Black
-            self.microRoutes.pen.color = MapColors.Gray
+            self.capitals.fillColor = travellermap.MapColours.DarkGray
+            self.capitals.textColor = travellermap.MapColours.Black
+            self.amberZone.pen.color = travellermap.MapColours.LightGray
+            self.redZone.pen.color = travellermap.MapColours.Black
+            self.macroBorders.pen.color = travellermap.MapColours.Black
+            self.macroRoutes.pen.color = travellermap.MapColours.Gray
+            self.microBorders.pen.color = travellermap.MapColours.Black
+            self.microRoutes.pen.color = travellermap.MapColours.Gray
 
-            foregroundColor = MapColors.Black
-            self.backgroundColor = MapColors.White
-            lightColor = MapColors.DarkGray
-            darkColor = MapColors.DarkGray
-            dimColor = MapColors.LightGray
-            highlightColor = MapColors.Gray
-            self.microBorders.textColor = MapColors.Gray
-            self.worldWater.fillColor = MapColors.Black
+            foregroundColor = travellermap.MapColours.Black
+            self.backgroundColor = travellermap.MapColours.White
+            lightColor = travellermap.MapColours.DarkGray
+            darkColor = travellermap.MapColours.DarkGray
+            dimColor = travellermap.MapColours.LightGray
+            highlightColor = travellermap.MapColours.Gray
+            self.microBorders.textColor = travellermap.MapColours.Gray
+            self.worldWater.fillColor = travellermap.MapColours.Black
             self.worldNoWater.fillColor = '#0000FF' # TODO: Color.Empty
 
-            self.worldNoWater.fillColor = MapColors.White
-            self.worldNoWater.pen = AbstractPen(MapColors.Black, onePixel)
+            self.worldNoWater.fillColor = travellermap.MapColours.White
+            self.worldNoWater.pen = AbstractPen(travellermap.MapColours.Black, onePixel)
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
 
             self.showWorldDetailColors = False
 
-            self.populationOverlay.fillColor = StyleSheet._makeAlphaColor(0x40, highlightColor)
-            self.populationOverlay.pen.color = MapColors.Gray
+            self.populationOverlay.fillColor = makeAlphaColor(0x40, highlightColor)
+            self.populationOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.importanceOverlay.fillColor = StyleSheet._makeAlphaColor(0x20, highlightColor)
-            self.importanceOverlay.pen.color = MapColors.Gray
+            self.importanceOverlay.fillColor = makeAlphaColor(0x20, highlightColor)
+            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.highlightWorlds.fillColor = StyleSheet._makeAlphaColor(0x30, highlightColor)
-            self.highlightWorlds.pen.color = MapColors.Gray
+            self.highlightWorlds.fillColor = makeAlphaColor(0x30, highlightColor)
+            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
         elif self._style is travellermap.Style.Fasa:
             self.showGalaxyBackground = False
             self.deepBackgroundOpacity = 0
@@ -2415,7 +2557,7 @@ class StyleSheet(object):
             inkColor = '#5C4033'
 
             foregroundColor = inkColor
-            self.backgroundColor = MapColors.White
+            self.backgroundColor = travellermap.MapColours.White
 
             # NOTE: This TODO came in from the Traveller Map code
             self.grayscale = True # TODO: Tweak to be "monochrome"
@@ -2426,7 +2568,7 @@ class StyleSheet(object):
             self.amberZone.pen.color = inkColor
             self.amberZone.pen.width = onePixel * 2
             self.redZone.pen.color = '#0000FF' # TODO: Color.Empty
-            self.redZone.fillColor = StyleSheet._makeAlphaColor(0x80, inkColor)
+            self.redZone.fillColor = makeAlphaColor(0x80, inkColor)
 
             self.macroBorders.pen.color = inkColor
             self.macroRoutes.pen.color = inkColor
@@ -2438,7 +2580,7 @@ class StyleSheet(object):
 
             self.microRoutes.pen.color = inkColor
 
-            lightColor = StyleSheet._makeAlphaColor(0x80, inkColor)
+            lightColor = makeAlphaColor(0x80, inkColor)
             darkColor = inkColor
             dimColor = inkColor
             highlightColor = inkColor
@@ -2470,40 +2612,40 @@ class StyleSheet(object):
             self.hexCoordinateStyle = HexCoordinateStyle.Subsector
             self.overrideLineStyle = LineStyle.Solid
 
-            self.populationOverlay.fillColor = StyleSheet._makeAlphaColor(0x40, highlightColor)
-            self.populationOverlay.pen.color = MapColors.Gray
+            self.populationOverlay.fillColor = makeAlphaColor(0x40, highlightColor)
+            self.populationOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.importanceOverlay.fillColor = StyleSheet._makeAlphaColor(0x20, highlightColor)
-            self.importanceOverlay.pen.color = MapColors.Gray
+            self.importanceOverlay.fillColor = makeAlphaColor(0x20, highlightColor)
+            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.highlightWorlds.fillColor = StyleSheet._makeAlphaColor(0x30, highlightColor)
-            self.highlightWorlds.pen.color = MapColors.Gray
+            self.highlightWorlds.fillColor = makeAlphaColor(0x30, highlightColor)
+            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
         elif self._style is travellermap.Style.Print:
             self.lightBackground = True
 
-            foregroundColor = MapColors.Black
-            self.backgroundColor = MapColors.White
-            lightColor = MapColors.DarkGray
-            darkColor = MapColors.DarkGray
-            dimColor = MapColors.LightGray
-            self.microRoutes.pen.color = MapColors.Gray
+            foregroundColor = travellermap.MapColours.Black
+            self.backgroundColor = travellermap.MapColours.White
+            lightColor = travellermap.MapColours.DarkGray
+            darkColor = travellermap.MapColours.DarkGray
+            dimColor = travellermap.MapColours.LightGray
+            self.microRoutes.pen.color = travellermap.MapColours.Gray
 
-            self.microBorders.textColor = MapColors.Brown
+            self.microBorders.textColor = travellermap.MapColours.Brown
 
-            self.amberZone.pen.color = MapColors.TravellerAmber
-            self.worldNoWater.fillColor = MapColors.White
-            self.worldNoWater.pen = AbstractPen(MapColors.Black, onePixel)
+            self.amberZone.pen.color = travellermap.MapColours.TravellerAmber
+            self.worldNoWater.fillColor = travellermap.MapColours.White
+            self.worldNoWater.pen = AbstractPen(travellermap.MapColours.Black, onePixel)
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
 
-            self.populationOverlay.fillColor = StyleSheet._makeAlphaColor(0x40, self.populationOverlay.fillColor)
-            self.populationOverlay.pen.color = MapColors.Gray
+            self.populationOverlay.fillColor = makeAlphaColor(0x40, self.populationOverlay.fillColor)
+            self.populationOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.importanceOverlay.fillColor = StyleSheet._makeAlphaColor(0x20, self.importanceOverlay.fillColor)
-            self.importanceOverlay.pen.color = MapColors.Gray
+            self.importanceOverlay.fillColor = makeAlphaColor(0x20, self.importanceOverlay.fillColor)
+            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.highlightWorlds.fillColor = StyleSheet._makeAlphaColor(0x30, self.highlightWorlds.fillColor)
-            self.highlightWorlds.pen.color = MapColors.Gray
+            self.highlightWorlds.fillColor = makeAlphaColor(0x30, self.highlightWorlds.fillColor)
+            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
         elif self._style is travellermap.Style.Draft:
             # TODO: For some reason all text is getting underlining set
             inkOpacity = 0xB0
@@ -2514,15 +2656,15 @@ class StyleSheet(object):
             self.deepBackgroundOpacity = 0
 
             # TODO: I Need to handle alpha here
-            self.backgroundColor = MapColors.AntiqueWhite
-            foregroundColor = StyleSheet._makeAlphaColor(inkOpacity, MapColors.Black)
-            highlightColor = StyleSheet._makeAlphaColor(inkOpacity, MapColors.TravellerRed)
+            self.backgroundColor = travellermap.MapColours.AntiqueWhite
+            foregroundColor = makeAlphaColor(inkOpacity, travellermap.MapColours.Black)
+            highlightColor = makeAlphaColor(inkOpacity, travellermap.MapColours.TravellerRed)
 
-            lightColor = StyleSheet._makeAlphaColor(inkOpacity, MapColors.DarkCyan)
-            darkColor = StyleSheet._makeAlphaColor(inkOpacity, MapColors.Black)
-            dimColor = StyleSheet._makeAlphaColor(inkOpacity / 2, MapColors.Black)
+            lightColor = makeAlphaColor(inkOpacity, travellermap.MapColours.DarkCyan)
+            darkColor = makeAlphaColor(inkOpacity, travellermap.MapColours.Black)
+            dimColor = makeAlphaColor(inkOpacity / 2, travellermap.MapColours.Black)
 
-            self.subsectorGrid.pen.color = StyleSheet._makeAlphaColor(inkOpacity, MapColors.Firebrick)
+            self.subsectorGrid.pen.color = makeAlphaColor(inkOpacity, travellermap.MapColours.Firebrick)
 
             fontName = "Comic Sans MS"
             self.worlds.fontInfo.families = fontName
@@ -2580,23 +2722,23 @@ class StyleSheet(object):
             self.amberZone.pen.width = onePixel
             self.redZone.pen.width = onePixel * 2
 
-            self.microRoutes.pen.color = MapColors.Gray
+            self.microRoutes.pen.color = travellermap.MapColours.Gray
 
             self.parsecGrid.pen.color = lightColor
-            self.microBorders.textColor = StyleSheet._makeAlphaColor(inkOpacity, MapColors.Brown)
+            self.microBorders.textColor = makeAlphaColor(inkOpacity, travellermap.MapColours.Brown)
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
             self.numberAllHexes = True
 
-            self.populationOverlay.fillColor = StyleSheet._makeAlphaColor(0x40, self.populationOverlay.fillColor)
-            self.populationOverlay.pen.color = MapColors.Gray
+            self.populationOverlay.fillColor = makeAlphaColor(0x40, self.populationOverlay.fillColor)
+            self.populationOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.importanceOverlay.fillColor = StyleSheet._makeAlphaColor(0x20, self.importanceOverlay.fillColor)
-            self.importanceOverlay.pen.color = MapColors.Gray
+            self.importanceOverlay.fillColor = makeAlphaColor(0x20, self.importanceOverlay.fillColor)
+            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
 
-            self.highlightWorlds.fillColor = StyleSheet._makeAlphaColor(0x30, self.highlightWorlds.fillColor)
-            self.highlightWorlds.pen.color = MapColors.Gray
+            self.highlightWorlds.fillColor = makeAlphaColor(0x30, self.highlightWorlds.fillColor)
+            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
         elif self._style is travellermap.Style.Candy:
             self.useWorldImages = True
             self.pseudoRandomStars.visible = False
@@ -2629,7 +2771,7 @@ class StyleSheet(object):
             if self.scale < StyleSheet._CandyMinUwpScale:
                 self.worldDetails &= ~WorldDetails.Uwp
 
-            self.amberZone.pen.color = MapColors.Goldenrod
+            self.amberZone.pen.color = travellermap.MapColours.Goldenrod
             self.amberZone.pen.width = self.redZone.pen.width = 0.035
 
             self.sectorName.textStyle.rotation = 0
@@ -2643,14 +2785,14 @@ class StyleSheet(object):
             self.subsectorNames.textStyle.uppercase = True
 
             self.subsectorNames.textColor = self.sectorName.textColor = \
-                StyleSheet._makeAlphaColor(128, MapColors.Goldenrod)
+                makeAlphaColor(128, travellermap.MapColours.Goldenrod)
 
             self.microBorders.textStyle.rotation = 0
             self.microBorders.textStyle.translation = PointF(0, 0.25)
             self.microBorders.textStyle.scale = SizeF(1.0, 0.5) # Expand
             self.microBorders.textStyle.uppercase = True
 
-            self.microBorders.pen.color = StyleSheet._makeAlphaColor(128, MapColors.TravellerRed)
+            self.microBorders.pen.color = makeAlphaColor(128, travellermap.MapColours.TravellerRed)
             self.microRoutes.pen.width = \
                 routePenWidth if self.scale < StyleSheet._CandyMaxRouteRelativeScale else routePenWidth / 2
             self.macroBorders.pen.width = \
@@ -2670,15 +2812,15 @@ class StyleSheet(object):
             self.showGalaxyBackground = False
             self.lightBackground = False
 
-            self.backgroundColor = MapColors.Black
-            foregroundColor = MapColors.Cyan
-            highlightColor = MapColors.White
+            self.backgroundColor = travellermap.MapColours.Black
+            foregroundColor = travellermap.MapColours.Cyan
+            highlightColor = travellermap.MapColours.White
 
-            lightColor = MapColors.LightBlue
-            darkColor = MapColors.DarkBlue
-            dimColor = MapColors.DimGray
+            lightColor = travellermap.MapColours.LightBlue
+            darkColor = travellermap.MapColours.DarkBlue
+            dimColor = travellermap.MapColours.DimGray
 
-            self.subsectorGrid.pen.color = MapColors.Cyan
+            self.subsectorGrid.pen.color = travellermap.MapColours.Cyan
 
             fontNames = "Courier New"
             self.worlds.fontInfo.families = fontNames
@@ -2740,10 +2882,10 @@ class StyleSheet(object):
             self.amberZone.pen.width = onePixel
             self.redZone.pen.width = onePixel * 2
 
-            self.microRoutes.pen.color = MapColors.Gray
+            self.microRoutes.pen.color = travellermap.MapColours.Gray
 
-            self.parsecGrid.pen.color = MapColors.Plum
-            self.microBorders.textColor = MapColors.Cyan
+            self.parsecGrid.pen.color = travellermap.MapColours.Plum
+            self.microBorders.textColor = travellermap.MapColours.Cyan
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
@@ -2768,16 +2910,16 @@ class StyleSheet(object):
             self.deepBackgroundOpacity = 0
 
             self.backgroundColor = '#E6E7E8'
-            foregroundColor = MapColors.Black
-            highlightColor = MapColors.Red
+            foregroundColor = travellermap.MapColours.Black
+            highlightColor = travellermap.MapColours.Red
 
-            lightColor = MapColors.Black
-            darkColor = MapColors.Black
-            dimColor = MapColors.Gray
+            lightColor = travellermap.MapColours.Black
+            darkColor = travellermap.MapColours.Black
+            dimColor = travellermap.MapColours.Gray
 
             self.sectorGrid.pen.color = self.subsectorGrid.pen.color = self.parsecGrid.pen.color = foregroundColor
 
-            self.microBorders.textColor = MapColors.DarkSlateGray
+            self.microBorders.textColor = travellermap.MapColours.DarkSlateGray
 
             fontName = "Calibri,Arial"
             self.worlds.fontInfo.families = fontName
@@ -2824,13 +2966,13 @@ class StyleSheet(object):
             self.microBorders.pen.width = 0.11
             self.microBorders.pen.dashStyle = DashStyle.Dot
 
-            self.worldWater.fillColor = MapColors.MediumBlue
-            self.worldNoWater.fillColor = MapColors.DarkKhaki
+            self.worldWater.fillColor = travellermap.MapColours.MediumBlue
+            self.worldNoWater.fillColor = travellermap.MapColours.DarkKhaki
             self.worldWater.pen = AbstractPen(
-                MapColors.DarkGray,
+                travellermap.MapColours.DarkGray,
                 onePixel * 2)
             self.worldNoWater.pen = AbstractPen(
-                MapColors.DarkGray,
+                travellermap.MapColours.DarkGray,
                 onePixel * 2)
 
             self.showZonesAsPerimeters = True
@@ -2839,9 +2981,9 @@ class StyleSheet(object):
 
             self.greenZone.pen.color = '#80C676'
             self.amberZone.pen.color = '#FBB040'
-            self.redZone.pen.color = MapColors.Red
+            self.redZone.pen.color = travellermap.MapColours.Red
 
-            self.microBorders.textColor = MapColors.DarkSlateGray
+            self.microBorders.textColor = travellermap.MapColours.DarkSlateGray
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
@@ -2858,8 +3000,8 @@ class StyleSheet(object):
             self.worlds.textBackgroundStyle = TextBackgroundStyle.NoStyle
 
             self.uwp.fontInfo = FontInfo(self.hexNumber.fontInfo)
-            self.uwp.fillColor = MapColors.Black
-            self.uwp.textColor = MapColors.White
+            self.uwp.fillColor = travellermap.MapColours.Black
+            self.uwp.textColor = travellermap.MapColours.White
             self.uwp.textBackgroundStyle = TextBackgroundStyle.Filled
 
         # NOTE: This TODO came in with traveller map
@@ -2958,25 +3100,9 @@ class StyleSheet(object):
             scale=scale,
             minScale=minScale,
             maxScale=maxScale)
-        return StyleSheet._makeAlphaColor(
+        return makeAlphaColor(
             alpha=alpha,
             color=color)
-
-    def _makeAlphaColor(
-            alpha: typing.Union[float, int],
-            color: str
-            ) -> str:
-        length = len(color)
-        if (length != 7 and length != 9) or color[0] != '#':
-            raise ValueError(f'Invalid color "#{color}"')
-
-        alpha = int(alpha)
-        if alpha < 0:
-            alpha = 0
-        if alpha > 255:
-            alpha =255
-
-        return f'#{alpha:02X}{color[1 if length == 7 else 3:]}'
 
 class FontCache(object):
     def __init__(self, sheet: StyleSheet):
@@ -3211,6 +3337,17 @@ class GlyphDefs(object):
         return GlyphDefs.Circle
 
 # TODO: This is drawString from RenderUtils
+_TextFormatToStringAlignment = {
+    TextFormat.TopLeft: StringAlignment.TopRight,
+    TextFormat.TopCenter: StringAlignment.TopCenter,
+    TextFormat.TopRight: StringAlignment.TopRight,
+    TextFormat.MiddleLeft: StringAlignment.CenterLeft,
+    TextFormat.Center: StringAlignment.Centered,
+    TextFormat.MiddleRight: StringAlignment.CenterRight,
+    TextFormat.BottomLeft: StringAlignment.BottomLeft,
+    TextFormat.BottomCenter: StringAlignment.BottomCenter,
+    TextFormat.BottomRight: StringAlignment.BottomRight
+}
 def drawStringHelper(
         graphics: AbstractGraphics,
         text: str,
@@ -3224,6 +3361,15 @@ def drawStringHelper(
         return
 
     lines = text.split('\n')
+    if len(lines) <= 1:
+        graphics.drawString(
+            text=text,
+            font=font,
+            brush=brush,
+            x=x, y=y,
+            format=_TextFormatToStringAlignment.get(format))
+        return
+
     sizes = [graphics.measureString(line, font) for line in lines]
 
     # TODO: This needs updated to not use QT
@@ -3234,7 +3380,9 @@ def drawStringHelper(
     #fontUnitsToWorldUnits = qtFont.pointSize() / font.FontFamily.GetEmHeight(font.Style)
     fontUnitsToWorldUnits = font.emSize / qtFont.pointSize()
     lineSpacing = qtFontMetrics.lineSpacing() * fontUnitsToWorldUnits
-    ascent = qtFontMetrics.ascent() * fontUnitsToWorldUnits
+    # TODO: I've commented this line out, it's uncommented in the traveller map code but
+    # the value is never used
+    #ascent = qtFontMetrics.ascent() * fontUnitsToWorldUnits
     # NOTE: This was commented out in the Traveller Map source code
     #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
 
@@ -3362,23 +3510,21 @@ class RenderContext(object):
         Foreground = 1
         Overlay = 2
 
-    _HexEdge = math.tan(math.pi / 6) / 4 / travellermap.ParsecScaleX
-
     _GalaxyImageRect = RectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
     _RiftImageRect = RectangleF(-1374, -827, 2769, 1754)
 
     _PseudoRandomStarsChunkSize = 256
-    _PseudoRandomStarsMaxPerChunk = 800
+    _PseudoRandomStarsMaxPerChunk = 400
 
     _HexPath = AbstractPath(
         points=[
-            PointF(-0.5 + _HexEdge, -0.5),
-            PointF( 0.5 - _HexEdge, -0.5),
-            PointF( 0.5 + _HexEdge, 0),
-            PointF( 0.5 - _HexEdge, 0.5),
-            PointF(-0.5 + _HexEdge, 0.5),
-            PointF(-0.5 - _HexEdge, 0),
-            PointF(-0.5 + _HexEdge, -0.5)],
+            PointF(-0.5 + travellermap.HexWidthOffset, -0.5),
+            PointF( 0.5 - travellermap.HexWidthOffset, -0.5),
+            PointF( 0.5 + travellermap.HexWidthOffset, 0),
+            PointF( 0.5 - travellermap.HexWidthOffset, 0.5),
+            PointF(-0.5 + travellermap.HexWidthOffset, 0.5),
+            PointF(-0.5 - travellermap.HexWidthOffset, 0),
+            PointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
         types=[
             PathPointType.Start,
             PathPointType.Line,
@@ -3414,8 +3560,10 @@ class RenderContext(object):
         self._worldLabelCache = worldLabelCache
         self._styleCache = styleCache
         self._fontCache = FontCache(sheet=self._styles)
+        self._clipCache = ClipPathCache()
         self._tileSize = tileSize
         self._selector = RectSelector(rect=self._tileRect)
+        self._clipOutsectorBorders = True
         self._createLayers()
         self._updateSpaceTransforms()
 
@@ -3423,6 +3571,9 @@ class RenderContext(object):
         self._tileRect = rect
         self._selector.setRect(rect=self._tileRect)
         self._updateSpaceTransforms()
+
+    def setClipOutsectorBorders(self, enable: bool) -> None:
+        self._clipOutsectorBorders = enable
 
     def pixelSpaceToWorldSpace(self, pixel: Point, clamp: bool = True) -> PointF:
         world = self._worldSpaceToImageSpace.transform(pixel)
@@ -3635,6 +3786,7 @@ class RenderContext(object):
             RenderContext._PseudoRandomStarsChunkSize
 
         brush = AbstractBrush(self._styles.pseudoRandomStars.fillColor)
+        rect = RectangleF()
         with self._graphics.save():
             self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
 
@@ -3648,18 +3800,16 @@ class RenderContext(object):
                         int(RenderContext._PseudoRandomStarsMaxPerChunk / self._scale)
 
                     for _ in range(starCount):
-                        starX = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkLeft
-                        starY = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkTop
-                        d = rand.random() * 2
+                        rect.x = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkLeft
+                        rect.y = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkTop
+                        diameter = rand.random() * 2
+                        rect.width = diameter / self._scale * travellermap.ParsecScaleX
+                        rect.height = diameter / self._scale * travellermap.ParsecScaleY
 
                         self._graphics.drawEllipse(
                             pen=None,
                             brush=brush,
-                            rect=RectangleF(
-                                x=starX,
-                                y=starY,
-                                width=(d / self._scale * travellermap.ParsecScaleX),
-                                height=(d / self._scale * travellermap.ParsecScaleY)))
+                            rect=rect)
 
     def _drawRifts(self) -> None:
         if not self._styles.showRiftOverlay:
@@ -3784,26 +3934,28 @@ class RenderContext(object):
         pen = self._styles.parsecGrid.pen
 
         if self._styles.hexStyle == HexStyle.Square:
+            rect = RectangleF()
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
                     inset = 1
-                    self._graphics.drawRectangleOutline(
-                        pen,
-                        RectangleF(
-                            x=px + inset,
-                            y=py + inset + yOffset,
-                            width=1 - inset * 2,
-                            height=1 - inset * 2))
+                    rect.x = px + inset
+                    rect.y = py + inset + yOffset
+                    rect.height = rect.width = 1 - inset * 2
+                    self._graphics.drawRectangleOutline(pen=pen, rect=rect)
         elif self._styles.hexStyle == HexStyle.Hex:
-            points = [None] * 4
+            points = [PointF(), PointF(), PointF(), PointF()]
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
-                    points[0] = PointF(px + -RenderContext._HexEdge, py + 0.5 + yOffset)
-                    points[1] = PointF(px + RenderContext._HexEdge, py + 1.0 + yOffset)
-                    points[2] = PointF(px + 1.0 - RenderContext._HexEdge, py + 1.0 + yOffset)
-                    points[3] = PointF(px + 1.0 + RenderContext._HexEdge, py + 0.5 + yOffset)
+                    points[0].x = px + -travellermap.HexWidthOffset
+                    points[0].y = py + 0.5 + yOffset
+                    points[1].x = px + travellermap.HexWidthOffset
+                    points[1].y = py + 1.0 + yOffset
+                    points[2].x = px + 1.0 - travellermap.HexWidthOffset
+                    points[2].y = py + 1.0 + yOffset
+                    points[3].x = px + 1.0 + travellermap.HexWidthOffset
+                    points[3].y = py + 0.5 + yOffset
                     self._graphics.drawLines(pen, points)
 
         if self._styles.numberAllHexes and (self._styles.worldDetails & WorldDetails.Hex) != 0:
@@ -3913,11 +4065,11 @@ class RenderContext(object):
                     routeWidth = route.width()
                     routeStyle = self._styles.overrideLineStyle
                     if not routeStyle:
-                        if route.style() == traveller.Route.Style.Solid:
+                        if route.style() is traveller.Route.Style.Solid:
                             routeStyle = LineStyle.Solid
-                        elif route.style() == traveller.Route.Style.Dashed:
+                        elif route.style() is traveller.Route.Style.Dashed:
                             routeStyle = LineStyle.Dashed
-                        elif route.style() == traveller.Route.Style.Dotted:
+                        elif route.style() is traveller.Route.Style.Dotted:
                             routeStyle = LineStyle.Dotted
 
                     if not routeWidth or not routeColor or not routeStyle:
@@ -4016,7 +4168,7 @@ class RenderContext(object):
                         font = self._styles.microBorders.font
 
                     # TODO: Handle similar colours
-                    solidBrush.color = label.colour() if label.colour() else MapColors.TravellerAmber
+                    solidBrush.color = label.colour() if label.colour() else travellermap.MapColours.TravellerAmber
                     """
                     if (!styles.grayscale &&
                         label.Color != null &&
@@ -4909,8 +5061,126 @@ class RenderContext(object):
             rect=RectangleF(x=-radius, y=-radius, width=radius * 2, height=radius * 2))
 
     def _drawMicroBorders(self, layer: BorderLayer) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        fillAlpha = 64
+        shadeAlpha = 128
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+
+        pathType = \
+            ClipPathCache.PathType.Square \
+            if self._styles.microBorderStyle == MicroBorderStyle.Square else \
+            ClipPathCache.PathType.Hex
+
+        solidBrush = AbstractBrush()
+        pen = AbstractPen(self._styles.microBorders.pen) # TODO: Color.Empty)
+
+        penWidth = pen.width
+        for sector in self._selector.sectors():
+            # This looks craptacular for Candy style borders :(
+            shouldClip = self._clipOutsectorBorders and \
+                ((layer == RenderContext.BorderLayer.Fill) or \
+                    (self._styles.microBorderStyle != MicroBorderStyle.Curve))
+            clip = None
+            if shouldClip:
+                clip = self._clipCache.sectorClipPath(
+                    sectorX=sector.x(),
+                    sectorY=sector.y(),
+                    pathType=pathType)
+                if not self._tileRect.intersectsWith(clip.bounds):
+                    continue
+
+            with self._graphics.save():
+                if clip:
+                    self._graphics.intersectClipPath(path=clip)
+
+                self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.AntiAlias)
+
+                regions = \
+                    sector.regions() \
+                    if layer is RenderContext.BorderLayer.Regions else \
+                    sector.borders()
+
+                for region in regions:
+                    regionColor = region.colour()
+                    regionStyle = None
+
+                    if isinstance(region, traveller.Border):
+                        if region.style() is traveller.Border.Style.Solid:
+                            regionStyle = LineStyle.Solid
+                        elif region.style() is traveller.Border.Style.Dashed:
+                            regionStyle = LineStyle.Dashed
+                        elif region.style() is traveller.Border.Style.Dotted:
+                            regionStyle = LineStyle.Dotted
+
+                        if not regionColor or not regionStyle:
+                            defaultColor, defaultStyle = self._styleCache.defaultBorderStyle(region.allegiance())
+                            if not regionColor:
+                                regionColor = defaultColor
+                            if not regionStyle:
+                                regionStyle = defaultStyle
+
+                    if not regionColor:
+                        regionColor = self._styles.microRoutes.pen.color
+                    if not regionStyle:
+                        regionStyle = LineStyle.Solid
+
+                    if (layer is RenderContext.BorderLayer.Stroke) and (regionStyle is LineStyle.NoStyle):
+                        continue
+
+                    # TODO: Handle noticable colours
+                    """
+                    if (styles.grayscale ||
+                        !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor))
+                    {
+                        borderColor = styles.microBorders.pen.color; // default
+                    }
+                    """
+
+                    outline = region.absoluteOutline()
+                    drawPath = []
+                    for x, y in outline:
+                        drawPath.append(PointF(x=x, y=y))
+                    types = [PathPointType.Start]
+                    for _ in range(len(outline) - 1):
+                        types.append(PathPointType.Line)
+                    types[-1] |= PathPointType.CloseSubpath
+                    drawPath = AbstractPath(points=drawPath, types=types, closed=True)
+
+                    pen.color = regionColor
+                    pen.dashStyle = lineStyleToDashStyle(regionStyle)
+
+                    # Allow style to override
+                    if self._styles.microBorders.pen.dashStyle is not DashStyle.Solid:
+                        pen.dashStyle = self._styles.microBorders.pen.dashStyle
+                    else:
+                        pen.dashStyle = lineStyleToDashStyle(regionStyle)
+
+                    # Shade is a wide/solid outline under the main outline.
+                    if layer is RenderContext.BorderLayer.Shade:
+                        pen.width = penWidth * 2.5
+                        pen.dashStyle = DashStyle.Solid
+                        pen.color = makeAlphaColor(shadeAlpha, pen.color)
+
+                    # TODO: There should be alternate handling for curves but I don't think i'm
+                    # going to be able to support it as I'm not sure how to draw them with QPainter
+                    #if self._styles.microBorderStyle is not MicroBorderStyle.Curve:
+                    with self._graphics.save():
+                        # Clip to the path itself - this means adjacent borders don't clash
+                        self._graphics.intersectClipPath(path=drawPath)
+                        if layer is RenderContext.BorderLayer.Regions or layer is RenderContext.BorderLayer.Fill:
+                            try:
+                                red, green, blue, _ = travellermap.stringToColourChannels(colour=regionColor)
+                            except Exception as ex:
+                                logging.warning('Failed to parse region colour', exc_info=ex)
+                                continue
+                            solidBrush.color = travellermap.colourChannelsToString(
+                                red=red,
+                                green=green,
+                                blue=blue,
+                                alpha=fillAlpha)
+                            self._graphics.drawPathFill(brush=solidBrush, path=drawPath)
+                        elif layer is RenderContext.BorderLayer.Shade or layer is RenderContext.BorderLayer.Stroke:
+                            self._graphics.drawPathOutline(pen=pen, path=drawPath)
 
     def _zoneStyle(self, world: traveller.World) -> typing.Optional[StyleSheet.StyleElement]:
         zone = world.zone()
@@ -4949,13 +5219,13 @@ class RenderContext(object):
         for star in stellar.yieldStars():
             classification = star.string()
             if classification == 'D':
-                props.append((MapColors.White, MapColors.Black, 0.3))
+                props.append((travellermap.MapColours.White, travellermap.MapColours.Black, 0.3))
             # NOTE: This todo came in with traveller map code
             # TODO: Distinct rendering for black holes, neutron stars, pulsars
             elif classification == 'NS' or classification == 'PSR' or classification == 'BH':
-                props.append((MapColors.Black, MapColors.White, 0.8))
+                props.append((travellermap.MapColours.Black, travellermap.MapColours.White, 0.8))
             elif classification == 'BD':
-                props.append((MapColors.Brown, MapColors.Black, 0.3))
+                props.append((travellermap.MapColours.Brown, travellermap.MapColours.Black, 0.3))
             else:
                 color, radius = RenderContext._StarPropsMap.get(
                     star.code(element=traveller.Star.Element.SpectralClass),
@@ -4963,7 +5233,7 @@ class RenderContext(object):
                 if color:
                     luminance = star.code(element=traveller.Star.Element.LuminosityClass)
                     luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
-                    props.append((color, MapColors.Black, radius + luminance))
+                    props.append((color, travellermap.MapColours.Black, radius + luminance))
 
         props.sort(key=lambda p: p[2], reverse=True)
         return props
@@ -5082,14 +5352,16 @@ class QtGraphics(AbstractGraphics):
 
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipPath(self, path: AbstractPath) -> None:
-        path = self._painter.clipPath()
-        path.addPolygon(self._convertPath(path))
-        self._painter.setClipPath(path, operation=QtCore.Qt.ClipOperation.IntersectClip)
+        clipPath = self._painter.clipPath()
+        clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
+        clipPath.addPolygon(self._convertPath(path))
+        self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipRect(self, rect: RectangleF) -> None:
-        path = self._painter.clipPath()
-        path.addRect(self._convertRect(rect))
-        self._painter.setClipPath(path, operation=QtCore.Qt.ClipOperation.IntersectClip)
+        clipPath = self._painter.clipPath()
+        clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
+        clipPath.addRect(self._convertRect(rect))
+        self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(self, pen: AbstractPen, pt1: PointF, pt2: PointF) -> None:
@@ -5113,14 +5385,18 @@ class QtGraphics(AbstractGraphics):
             self._painter.drawPolyline(self._convertPoints(path.points))
     # TODO: This was an overload of drawPath in the traveller map code
     def drawPathFill(self, brush: AbstractBrush, path: AbstractPath):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPathFill')
-    def drawCurve(self, pen: AbstractPen, points: typing.Sequence[PointF], tension: float = 0.5):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawCurve')
+        self._painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        self._painter.setBrush(self._convertBrush(brush))
+        self._painter.drawPolygon(self._convertPath(path))
+
+    def drawCurve(self, pen: AbstractPen, path: AbstractPath, tension: float = 0.5):
+        self.drawLines(pen=pen, points=path.points)
     # TODO: This was an overload of drawClosedCurve in the traveller map code
-    def drawClosedCurveOutline(self, pen: AbstractPen, points: typing.Sequence[PointF], tension: float = 0.5):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawClosedCurveOutline')
-    def drawClosedCurveFill(self, brush: AbstractBrush, points: typing.Sequence[PointF], tension: float = 0.5):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawClosedCurveFill')
+    def drawClosedCurveOutline(self, pen: AbstractPen, path: AbstractPath, tension: float = 0.5):
+        self.drawPathOutline(pen=pen, path=path)
+    def drawClosedCurveFill(self, brush: AbstractBrush, path: AbstractPath, tension: float = 0.5):
+        self.drawPathOutline(brush=brush, path=path)
+
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawRectangleOutline(self, pen: AbstractPen, rect: RectangleF) -> None:
         self._painter.setPen(self._convertPen(pen))
@@ -5141,6 +5417,7 @@ class QtGraphics(AbstractGraphics):
         self._painter.setPen(self._convertPen(pen) if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(self._convertBrush(brush) if brush else QtCore.Qt.BrushStyle.NoBrush)
         self._painter.drawEllipse(self._convertRect(rect))
+
     def drawArc(
             self,
             pen: AbstractPen,
@@ -5203,10 +5480,15 @@ class QtGraphics(AbstractGraphics):
         fontMetrics = QtGui.QFontMetrics(qtFont)
         # TODO: Not sure if this should use bounds or tight bounds. It needs to
         # be correct for what will actually be rendered for different alignments
+        """
         contentPixelRect = fontMetrics.tightBoundingRect(text)
         fullPixelRect = fontMetrics.boundingRect(text)
         leftPadding = contentPixelRect.x() - fullPixelRect.x()
         topPadding = contentPixelRect.y() - fullPixelRect.y()
+        """
+        contentPixelRect = fontMetrics.tightBoundingRect(text)
+        leftPadding = 0
+        topPadding = fontMetrics.descent()
 
         self._painter.save()
         try:
@@ -5248,6 +5530,30 @@ class QtGraphics(AbstractGraphics):
                     QtCore.QPointF(
                         0 + leftPadding,
                         (contentPixelRect.height() / 2) - (topPadding / 2)),
+                    text)
+            elif format == StringAlignment.CenterRight:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        -contentPixelRect.width() - leftPadding,
+                        (contentPixelRect.height() / 2) - (topPadding / 2)),
+                    text)
+            elif format == StringAlignment.BottomLeft:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        0 + leftPadding,
+                        contentPixelRect.height()),
+                    text)
+            elif format == StringAlignment.BottomCenter:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        (-contentPixelRect.width() / 2) - (leftPadding / 2),
+                        contentPixelRect.height()),
+                    text)
+            elif format == StringAlignment.BottomRight:
+                self._painter.drawText(
+                    QtCore.QPointF(
+                        -contentPixelRect.width() - leftPadding,
+                        contentPixelRect.height()),
                     text)
         finally:
             self._painter.restore()
@@ -5291,6 +5597,9 @@ class QtGraphics(AbstractGraphics):
             ) -> typing.Sequence[QtCore.QPointF]:
         return [QtCore.QPointF(p.x, p.y) for p in points]
 
+    def _convertPath(self, path: AbstractPath) -> QtGui.QPolygonF:
+        return QtGui.QPolygonF(self._convertPoints(path.points))
+
     def _convertMatrix(self, transform: AbstractMatrix) -> QtGui.QTransform:
         return QtGui.QTransform(
             transform.m11,
@@ -5302,9 +5611,6 @@ class QtGraphics(AbstractGraphics):
             transform.offsetX,
             transform.offsetY,
             1)
-
-    def _convertPath(self, path: AbstractPath) -> QtGui.QPolygonF:
-        return QtGui.QPolygonF(self._convertPoints(path.points))
 
 class MapHackView(QtWidgets.QWidget):
     _MinScale = 0.0078125 # Math.Pow(2, -7);
@@ -5462,17 +5768,21 @@ class MapHackView(QtWidgets.QWidget):
             try:
                 self._graphics.setPainter(painter)
 
-                #pr = cProfile.Profile()
-                #pr.enable()
+                pr = None
+                if False:
+                    pr = cProfile.Profile()
+                    pr.enable()
 
                 self._renderer.render()
 
-                #pr.disable()
-                #s = io.StringIO()
-                #sortby = SortKey.TIME
-                #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-                #ps.print_stats()
-                #print(s.getvalue())
+                if pr:
+                    pr.disable()
+                    s = io.StringIO()
+                    sortby = SortKey.TIME
+                    #sortby = SortKey.CUMULATIVE
+                    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+                    ps.print_stats()
+                    print(s.getvalue())
             finally:
                 painter.end()
 

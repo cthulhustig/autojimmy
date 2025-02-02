@@ -47,6 +47,7 @@ class Sector(object):
             worlds: typing.Iterable[traveller.World],
             routes: typing.Iterable[traveller.Route],
             borders: typing.Iterable[traveller.Border],
+            regions: typing.Iterable[traveller.Region],
             labels: typing.Iterable[traveller.Label],
             subsectorNames: typing.Iterable[str] # Subsector names should be ordered in subsector order (i.e. A-P)
             ) -> None:
@@ -58,6 +59,7 @@ class Sector(object):
         self._worlds = list(worlds)
         self._routes = list(routes)
         self._borders = list(borders)
+        self._regions = list(regions)
         self._labels = list(labels)
         self._subsectorMap: typing.Dict[str, Subsector] = {}
 
@@ -104,6 +106,9 @@ class Sector(object):
 
     def borders(self) -> typing.Collection[traveller.Border]:
         return list(self._borders)
+
+    def regions(self) -> typing.Collection[traveller.Region]:
+        return list(self._regions)
 
     def labels(self) -> typing.Collection[traveller.Label]:
         return list(self._labels)

@@ -783,64 +783,6 @@ class WorldManager(object):
                     f'Failed to parse style sheet for sector {sectorName}',
                     exc_info=ex)
 
-        rawBorders = rawMetadata.borders()
-        borders = []
-        if rawBorders:
-            for rawBorder in rawBorders:
-                try:
-                    hexes = []
-                    for rawHex in rawBorder.hexList():
-                        hexes.append(travellermap.HexPosition(
-                            sectorX=sectorX,
-                            sectorY=sectorY,
-                            offsetX=int(rawHex[:2]),
-                            offsetY=int(rawHex[-2:])))
-
-                    labelHex = rawBorder.labelHex()
-                    if labelHex:
-                        labelHex = travellermap.HexPosition(
-                            sectorX=sectorX,
-                            sectorY=sectorY,
-                            offsetX=int(labelHex[:2]),
-                            offsetY=int(labelHex[-2:]))
-                    else:
-                        labelHex = None
-
-                    colour = rawBorder.colour()
-                    style = WorldManager._mapBorderStyle(rawBorder.style())
-
-                    if not colour or not style:
-                        # This order of precedence matches the order in the Traveller Map
-                        # DrawMicroBorders code
-                        stylePrecedence = [
-                            rawBorder.allegiance(),
-                            'Im']
-                        for tag in stylePrecedence:
-                            if tag in borderStyleMap:
-                                defaultColour, defaultStyle = borderStyleMap[tag]
-                                if not colour:
-                                    colour = defaultColour
-                                if not style:
-                                    style = defaultStyle
-                                break
-
-                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
-                    borders.append(traveller.Border(
-                        hexList=hexes,
-                        allegiance=rawBorder.allegiance(),
-                        showLabel=rawBorder.showLabel(),
-                        wrapLabel=rawBorder.wrapLabel(),
-                        labelHex=labelHex,
-                        labelOffsetX=rawBorder.labelOffsetX(),
-                        labelOffsetY=rawBorder.labelOffsetY(),
-                        label=rawBorder.label(),
-                        style=style,
-                        colour=colour))
-                except Exception as ex:
-                    logging.warning(
-                        f'Failed to process border {rawBorder.fileIndex()} in metadata for sector {sectorName}',
-                        exc_info=ex)
-
         rawRoutes = rawMetadata.routes()
         routes = []
         if rawRoutes:
@@ -895,6 +837,102 @@ class WorldManager(object):
                         f'Failed to process route {rawRoute.fileIndex()} in metadata for sector {sectorName}',
                         exc_info=ex)
 
+        rawBorders = rawMetadata.borders()
+        borders = []
+        if rawBorders:
+            for rawBorder in rawBorders:
+                try:
+                    hexes = []
+                    for rawHex in rawBorder.hexList():
+                        hexes.append(travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(rawHex[:2]),
+                            offsetY=int(rawHex[-2:])))
+
+                    labelHex = rawBorder.labelHex()
+                    if labelHex:
+                        labelHex = travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(labelHex[:2]),
+                            offsetY=int(labelHex[-2:]))
+                    else:
+                        labelHex = None
+
+                    colour = rawBorder.colour()
+                    style = WorldManager._mapBorderStyle(rawBorder.style())
+
+                    if not colour or not style:
+                        # This order of precedence matches the order in the Traveller Map
+                        # DrawMicroBorders code
+                        stylePrecedence = [
+                            rawBorder.allegiance(),
+                            'Im']
+                        for tag in stylePrecedence:
+                            if tag in borderStyleMap:
+                                defaultColour, defaultStyle = borderStyleMap[tag]
+                                if not colour:
+                                    colour = defaultColour
+                                if not style:
+                                    style = defaultStyle
+                                break
+
+                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    borders.append(traveller.Border(
+                        hexList=hexes,
+                        allegiance=rawBorder.allegiance(),
+                        showLabel=not not rawBorder.showLabel(), # Convert optional to bool
+                        wrapLabel=not not rawBorder.wrapLabel(),
+                        labelHex=labelHex,
+                        labelOffsetX=rawBorder.labelOffsetX(),
+                        labelOffsetY=rawBorder.labelOffsetY(),
+                        label=rawBorder.label(),
+                        style=style,
+                        colour=colour))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process border {rawBorder.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
+        rawRegions = rawMetadata.regions()
+        regions = []
+        if rawRegions:
+            for rawRegion in rawRegions:
+                try:
+                    hexes = []
+                    for rawHex in rawRegion.hexList():
+                        hexes.append(travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(rawHex[:2]),
+                            offsetY=int(rawHex[-2:])))
+
+                    labelHex = rawRegion.labelHex()
+                    if labelHex:
+                        labelHex = travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(labelHex[:2]),
+                            offsetY=int(labelHex[-2:]))
+                    else:
+                        labelHex = None
+
+                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    regions.append(traveller.Region(
+                        hexList=hexes,
+                        showLabel=not not rawRegion.showLabel(), # Convert optional to bool
+                        wrapLabel=not not rawRegion.wrapLabel(),
+                        labelHex=labelHex,
+                        labelOffsetX=rawRegion.labelOffsetX(),
+                        labelOffsetY=rawRegion.labelOffsetY(),
+                        label=rawRegion.label(),
+                        colour=rawRegion.colour()))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process region {rawRegion.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
         rawLabels = rawMetadata.labels()
         labels = []
         if rawLabels:
@@ -930,6 +968,7 @@ class WorldManager(object):
             worlds=worlds,
             routes=routes,
             borders=borders,
+            regions=regions,
             labels=labels,
             subsectorNames=subsectorMap.values())
 

@@ -1,5 +1,6 @@
 from .milieu import *
 from .options import *
+from .colour import *
 from .style import *
 from .url import *
 from .astrometrics import *
