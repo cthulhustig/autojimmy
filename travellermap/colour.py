@@ -1,12 +1,7 @@
-import enum
+import common
 import typing
 
-# NOTE: Because the enum has multiple entries with the same value (i.e. Aqua/Cyan)
-# you can get unexpected behaviour if you try to iterate over all colours with
-# something like 'for colour in MapColours:' as only the first entry using a given
-# value will show up (i.e. Cyan won't be included). If you need to iterate over all
-# colours MapColours.__members__ should be used instead
-class MapColours(enum.Enum):
+class MapColours(object):
     TravellerRed = '#E32736'
     TravellerAmber = '#FFCC00'
     TravellerGreen = '#048104'
@@ -152,7 +147,8 @@ class MapColours(enum.Enum):
     Yellow = '#FFFF00'
     YellowGreen = '#9ACD32'
 
-_NameToColourMap = {name.lower(): colour.value for name, colour in MapColours.__members__.items()}
+#[k for k, v in vars(CONSTANT).items() if not callable(v) and not k.startswith("__")]
+_NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(MapColours).items()}
 
 def stringToColourChannels(
         colour: str

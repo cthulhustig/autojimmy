@@ -241,6 +241,13 @@ def getSubclasses(
 
     return subclasses
 
+def getClassVariables(
+        classType: typing.Type[typing.Any]
+        ) -> typing.Mapping[str, typing.Any]:
+    return {
+        k: v for k, v in vars(classType).items()
+        if not callable(v) and not k.startswith("__")}
+
 def humanFriendlyListString(strings: typing.Sequence[str]) -> str:
     count = len(strings)
     if not count:
