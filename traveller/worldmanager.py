@@ -959,6 +959,11 @@ class WorldManager(object):
                         f'Failed to process label {rawLabel.fileIndex()} in metadata for sector {sectorName}',
                         exc_info=ex)
 
+        rawTags = rawMetadata.tags()
+        tags = []
+        if rawTags:
+            tags.extend(rawTags.split())
+
         return traveller.Sector(
             name=sectorName,
             alternateNames=rawMetadata.alternateNames(),
@@ -970,6 +975,7 @@ class WorldManager(object):
             borders=borders,
             regions=regions,
             labels=labels,
+            tags=tags,
             subsectorNames=subsectorMap.values())
 
     _RouteStyleMap = {

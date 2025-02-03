@@ -3067,6 +3067,11 @@ class StyleSheet(object):
         for i, layer in enumerate(layers):
             self.layerOrder[layer] = i
 
+        # TODO: Remove hacky code
+        self.minorHomeWorlds.visible = True
+        #self.droyneWorlds.visible = True
+        #self.ancientsWorlds.visible = True
+
     @staticmethod
     def _floatScaleInterpolate(
             minValue: float,
@@ -4375,20 +4380,92 @@ class RenderContext(object):
                     self._selector.setSlop(slop)
 
     def _drawDroyneOverlay(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.droyneWorlds.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+        solidBrush = AbstractBrush(self._styles.droyneWorlds.textColor)
+        for world in self._selector.worlds():
+            allegiance = world.allegiance()
+
+            droyne = allegiance == 'Dr' or allegiance == 'NaDr' or world.hasRemark('Droy')
+            chirpers = world.hasRemark('Chir')
+
+            if droyne or chirpers:
+                glyph = self._styles.droyneWorlds.content[0 if droyne else 1]
+                self._drawOverlayGlyph(
+                    glyph=glyph,
+                    font=self._styles.droyneWorlds.font,
+                    brush=solidBrush,
+                    position=world.hex())
 
     def _drawMinorHomeworldOverlay(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.minorHomeWorlds.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+        solidBrush = AbstractBrush(self._styles.minorHomeWorlds.textColor)
+        for world in self._selector.worlds():
+            if world.isMinorHomeworld():
+                self._drawOverlayGlyph(
+                    glyph=self._styles.minorHomeWorlds.content,
+                    font=self._styles.minorHomeWorlds.font,
+                    brush=solidBrush,
+                    position=world.hex())
 
     def _drawAncientWorldsOverlay(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        if not self._styles.ancientsWorlds.visible:
+            return
+
+        self._graphics.setSmoothingMode(AbstractGraphics.SmoothingMode.HighQuality)
+        solidBrush = AbstractBrush(self._styles.ancientsWorlds.textColor)
+        for world in self._selector.worlds():
+            if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
+                self._drawOverlayGlyph(
+                    glyph=self._styles.ancientsWorlds.content,
+                    font=self._styles.ancientsWorlds.font,
+                    brush=solidBrush,
+                    position=world.hex())
 
     def _drawSectorReviewStatusOverlay(self) -> None:
-        # TODO: Implement when I add loading worlds
-        pass
+        solidBrush = AbstractBrush()
+
+        if self._styles.dimUnofficialSectors and self._styles.worlds.visible:
+            solidBrush.color = makeAlphaColor(128, self._styles.backgroundColor)
+            for sector in self._selector.sectors():
+                if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
+                    clipPath = self._clipCache.sectorClipPath(
+                        sectorX=sector.x(),
+                        sectorY=sector.y(),
+                        pathType=ClipPathCache.PathType.Hex)
+
+                    self._graphics.drawPathFill(
+                        brush=solidBrush,
+                        path=clipPath)
+
+        if self._styles.colorCodeSectorStatus and self._styles.worlds.visible:
+            for sector in self._selector.sectors():
+                if sector.hasTag('Official'):
+                    solidBrush.color = makeAlphaColor(128, travellermap.MapColours.TravellerRed)
+                elif sector.hasTag('InReview'):
+                    solidBrush.color = makeAlphaColor(128, travellermap.MapColours.Orange)
+                elif sector.hasTag('Unreviewed'):
+                    solidBrush.color = makeAlphaColor(128, travellermap.MapColours.TravellerAmber)
+                elif sector.hasTag('Apocryphal'):
+                    solidBrush.color = makeAlphaColor(128, travellermap.MapColours.Magenta)
+                elif sector.hasTag('Preserve'):
+                    solidBrush.color = makeAlphaColor(128, travellermap.MapColours.TravellerGreen)
+                else:
+                    continue
+
+                clipPath = self._clipCache.sectorClipPath(
+                    sectorX=sector.x(),
+                    sectorY=sector.y(),
+                    pathType=ClipPathCache.PathType.Hex)
+
+                self._graphics.drawPathFill(
+                    brush=solidBrush,
+                    path=clipPath)
 
     def _drawWorld(self, world: traveller.World, layer: WorldLayer) -> None:
         uwp = world.uwp()
@@ -5181,6 +5258,19 @@ class RenderContext(object):
                             self._graphics.drawPathFill(brush=solidBrush, path=drawPath)
                         elif layer is RenderContext.BorderLayer.Shade or layer is RenderContext.BorderLayer.Stroke:
                             self._graphics.drawPathOutline(pen=pen, path=drawPath)
+
+    def _drawOverlayGlyph(
+            self,
+            glyph: str,
+            font: AbstractFont,
+            brush: AbstractBrush,
+            position: travellermap.HexPosition
+            ) -> None:
+        centerX, centerY = position.absoluteCenter()
+        with self._graphics.save():
+            self._graphics.translateTransform(centerX, centerY)
+            self._graphics.scaleTransform(1 / travellermap.ParsecScaleX, 1 / travellermap.ParsecScaleY)
+            self._graphics.drawString(glyph, font, brush, 0, 0, StringAlignment.Centered)
 
     def _zoneStyle(self, world: traveller.World) -> typing.Optional[StyleSheet.StyleElement]:
         zone = world.zone()

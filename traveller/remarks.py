@@ -27,6 +27,8 @@ class Remarks(object):
         self._sectorName = sectorName
         self._zone = zone
         self._tradeCodes: typing.Set[traveller.TradeCode] = set()
+        self._isMajorHomeworld = False
+        self._isMinorHomeworld = False
         self._sophontPercentages: typing.Dict[str, int] = dict()
         self._owningWorld = None
         self._colonyWorlds = []
@@ -67,6 +69,12 @@ class Remarks(object):
             sophont: str
             ) -> bool:
         return sophont in self._sophontPercentages
+
+    def isMajorHomeworld(self) -> bool:
+        return self._isMajorHomeworld
+
+    def isMinorHomeworld(self) -> bool:
+        return self._isMinorHomeworld
 
     def sophontPercentage(
             self,
@@ -153,6 +161,7 @@ class Remarks(object):
             if result:
                 sophontName = result.group(1)
                 self._sophontPercentages[sophontName] = 100
+                self._isMajorHomeworld = True
                 continue
 
             result = self._SophontMinorRacePattern.match(remark)
@@ -161,6 +170,7 @@ class Remarks(object):
                 sophontPercentageCode = result.group(2)
                 sophontPercentage = 100 if sophontPercentageCode == '' or sophontPercentageCode == 'W' else (int(sophontPercentageCode) * 10)
                 self._sophontPercentages[sophontName] = sophontPercentage
+                self._isMinorHomeworld = True
                 continue
 
             result = self._SophontDiebackWorldPattern.match(remark)

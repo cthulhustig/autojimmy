@@ -105,6 +105,12 @@ class World(object):
         starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
+    def isMajorHomeworld(self) -> bool:
+        return self._remarks.isMajorHomeworld()
+
+    def isMinorHomeworld(self) -> bool:
+        return self._remarks.isMinorHomeworld()
+
     def hasOwner(self) -> bool:
         return self._remarks.hasOwner()
 
