@@ -41,6 +41,7 @@ from .common.licensewidget import *
 from .common.infodialog import *
 from .common.singletonapplication import *
 from .common.plotwidgetex import *
+from .maprenderer.qtmapgraphics import *
 from .trader.tooltips import *
 from .trader.hexselectcombobox import *
 from .trader.taglevelcombobox import *
