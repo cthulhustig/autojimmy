@@ -715,9 +715,9 @@ class RenderContext(object):
                         if route.style() is traveller.Route.Style.Solid:
                             routeStyle = maprenderer.LineStyle.Solid
                         elif route.style() is traveller.Route.Style.Dashed:
-                            routeStyle = maprenderer.LineStyle.Dashed
+                            routeStyle = maprenderer.LineStyle.Dash
                         elif route.style() is traveller.Route.Style.Dotted:
-                            routeStyle = maprenderer.LineStyle.Dotted
+                            routeStyle = maprenderer.LineStyle.Dot
 
                     if not routeWidth or not routeColor or not routeStyle:
                         presidence = [route.allegiance(), route.type(), 'Im']
@@ -732,7 +732,7 @@ class RenderContext(object):
 
                     # In grayscale, convert default color and style to non-default style
                     if self._styles.grayscale and (not routeColor) and (not routeStyle):
-                        routeStyle = maprenderer.LineStyle.Dashed
+                        routeStyle = maprenderer.LineStyle.Dash
 
                     if not routeWidth:
                         routeWidth = 1.0
@@ -750,7 +750,7 @@ class RenderContext(object):
 
                     pen.setColor(routeColor)
                     pen.setWidth(routeWidth * baseWidth)
-                    pen.setDashStyle(maprenderer.lineStyleToDashStyle(routeStyle))
+                    pen.setStyle(routeStyle)
 
                     self._graphics.drawLine(pen, startPoint, endPoint)
 
@@ -1779,7 +1779,7 @@ class RenderContext(object):
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
                 brush.setColor(fillColour)
                 pen.setColor(lineColor)
-                pen.setDashStyle(maprenderer.DashStyle.Solid)
+                pen.setStyle(maprenderer.LineStyle.Solid)
                 pen.setWidth(self._styles.worlds.pen.width())
                 offset = RenderContext._starOffset(i)
                 offsetScale = 0.3
@@ -1887,9 +1887,9 @@ class RenderContext(object):
                         if region.style() is traveller.Border.Style.Solid:
                             regionStyle = maprenderer.LineStyle.Solid
                         elif region.style() is traveller.Border.Style.Dashed:
-                            regionStyle = maprenderer.LineStyle.Dashed
+                            regionStyle = maprenderer.LineStyle.Dash
                         elif region.style() is traveller.Border.Style.Dotted:
-                            regionStyle = maprenderer.LineStyle.Dotted
+                            regionStyle = maprenderer.LineStyle.Dot
 
                         if not regionColor or not regionStyle:
                             defaultColor, defaultStyle = self._styleCache.defaultBorderStyle(region.allegiance())
@@ -1902,9 +1902,6 @@ class RenderContext(object):
                         regionColor = self._styles.microRoutes.pen.color()
                     if not regionStyle:
                         regionStyle = maprenderer.LineStyle.Solid
-
-                    if (layer is RenderContext.BorderLayer.Stroke) and (regionStyle is maprenderer.LineStyle.NoStyle):
-                        continue
 
                     # TODO: Handle noticable colours
                     """
@@ -1926,16 +1923,16 @@ class RenderContext(object):
                     drawPath = maprenderer.AbstractPath(points=drawPath, types=types, closed=True)
 
                     pen.setColor(regionColor)
-                    pen.setDashStyle(maprenderer.lineStyleToDashStyle(regionStyle))
+                    pen.setStyle(regionStyle)
 
                     # Allow style to override
-                    if self._styles.microBorders.pen.dashStyle is not maprenderer.DashStyle.Solid:
-                        pen.setDashStyle(self._styles.microBorders.pen.dashStyle())
+                    if self._styles.microBorders.pen.style is not maprenderer.LineStyle.Solid:
+                        pen.setStyle(self._styles.microBorders.pen.style())
 
                     # Shade is a wide/solid outline under the main outline.
                     if layer is RenderContext.BorderLayer.Shade:
                         pen.setWidth(penWidth * 2.5)
-                        pen.setDashStyle(maprenderer.DashStyle.Solid)
+                        pen.setStyle(maprenderer.LineStyle.Solid)
                         pen.setColor(maprenderer.makeAlphaColor(
                             alpha=shadeAlpha,
                             color=pen.color()))

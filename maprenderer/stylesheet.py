@@ -575,7 +575,7 @@ class StyleSheet(object):
         self.redZone.pen.setWidth(0.05 * penScale)
 
         self.macroRoutes.pen.setWidth(borderPenWidth)
-        self.macroRoutes.pen.setDashStyle(maprenderer.DashStyle.Dash)
+        self.macroRoutes.pen.setStyle(maprenderer.LineStyle.Dash)
 
         self.populationOverlay.fillColor = '#80FFFF00'
         self.importanceOverlay.fillColor = '#2080FF00'
@@ -584,15 +584,15 @@ class StyleSheet(object):
         self.populationOverlay.pen = maprenderer.AbstractPen(
             color='#0000FF', # TODO: Color.Empty,
             width=0.03 * penScale,
-            dashStyle=maprenderer.DashStyle.Dash)
+            style=maprenderer.LineStyle.Dash)
         self.importanceOverlay.pen = maprenderer.AbstractPen(
             color='#0000FF', # TODO: Color.Empty,
             width=0.03 * penScale,
-            dashStyle=maprenderer.DashStyle.Dot)
+            style=maprenderer.LineStyle.Dot)
         self.highlightWorlds.pen = maprenderer.AbstractPen(
             color='#0000FF', # TODO: Color.Empty,
             width=0.03 * penScale,
-            dashStyle=maprenderer.DashStyle.DashDot)
+            style=maprenderer.LineStyle.DashDot)
 
         self.capitalOverlay.fillColor = maprenderer.makeAlphaColor(
             alpha=0x80,
@@ -907,7 +907,7 @@ class StyleSheet(object):
             self.worlds.largeFontInfo.style |= maprenderer.FontStyle.Underline
 
             self.microBorders.pen.setWidth(onePixel * 4)
-            self.microBorders.pen.setDashStyle(maprenderer.DashStyle.Dot)
+            self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
 
             self.worldNoWater.fillColor = foregroundColor
             self.worldWater.fillColor = '#0000FF' # TODO: Color.Empty
@@ -957,13 +957,13 @@ class StyleSheet(object):
             self.parsecGrid.visible = False
 
             self.subsectorGrid.pen.setWidth(0.03 * (64.0 / self.scale))
-            self.subsectorGrid.pen.setDashStyle(
-                style=maprenderer.DashStyle.Custom,
+            self.subsectorGrid.pen.setStyle(
+                style=maprenderer.LineStyle.Custom,
                 pattern=[10.0, 8.0])
 
             self.sectorGrid.pen.setWidth(0.03 * (64.0 / self.scale))
-            self.sectorGrid.pen.setDashStyle(
-                style=maprenderer.DashStyle.Custom,
+            self.sectorGrid.pen.setStyle(
+                style=maprenderer.LineStyle.Custom,
                 pattern=[10.0, 8.0])
 
             self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.Shadow
@@ -1084,7 +1084,7 @@ class StyleSheet(object):
             self.worlds.largeFontInfo.style |= maprenderer.FontStyle.Underline
 
             self.microBorders.pen.setWidth(onePixel * 4)
-            self.microBorders.pen.setDashStyle(maprenderer.DashStyle.Dot)
+            self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
 
             self.worldNoWater.fillColor = foregroundColor
             self.worldWater.fillColor = '#0000FF' # TODO: Color.Empty
@@ -1178,7 +1178,7 @@ class StyleSheet(object):
             self.sectorName.fontInfo.families = fontName
 
             self.microBorders.pen.setWidth(0.11)
-            self.microBorders.pen.setDashStyle(maprenderer.DashStyle.Dot)
+            self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
 
             self.worldWater.fillColor = travellermap.MapColours.MediumBlue
             self.worldNoWater.fillColor = travellermap.MapColours.DarkKhaki

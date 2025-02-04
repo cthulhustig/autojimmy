@@ -16,28 +16,13 @@ class StringAlignment(enum.Enum):
     BottomCenter = 8
     BottomRight = 9
 
-class DashStyle(enum.Enum):
+class LineStyle(enum.Enum):
     Solid = 0
     Dot = 1
     Dash = 2
     DashDot = 3
     DashDotDot = 4
     Custom = 5
-
-# TODO: Why is this needed when DashStyle exists?
-class LineStyle(enum.Enum):
-    Solid = 0 # Default
-    Dashed = 1
-    Dotted = 2
-    NoStyle = 3 # TODO: Was None in traveller map code
-
-_LineStyleToDashStyleMap = {
-    LineStyle.Solid: DashStyle.Solid,
-    LineStyle.Dashed: DashStyle.Dash,
-    LineStyle.Dotted: DashStyle.Dot
-}
-def lineStyleToDashStyle(lineStyle: LineStyle) -> DashStyle:
-    return _LineStyleToDashStyleMap.get(lineStyle, DashStyle.Solid)
 
 class FontStyle(enum.IntFlag):
     Regular = 0x0
@@ -433,29 +418,29 @@ class AbstractPen(object):
         self,
         color: str,
         width: float,
-        dashStyle: DashStyle = DashStyle.Solid,
-        dashPattern: typing.Optional[typing.Sequence[float]] = None
+        style: LineStyle = LineStyle.Solid,
+        pattern: typing.Optional[typing.Sequence[float]] = None
         ) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
             self._color = ''
             self._width = 0
-            self._dashStyle = DashStyle.Solid
-            self._dashPattern = None
+            self._style = LineStyle.Solid
+            self._pattern = None
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, AbstractPen):
                 raise TypeError('The other parameter must be an AbstractPen')
             self._color = other._color
             self._width = other._width
-            self._dashStyle = other._dashStyle
-            self._dashPattern = list(other._dashPattern) if other._dashPattern else None
+            self._style = other._style
+            self._pattern = list(other._pattern) if other._pattern else None
         else:
             self._color = args[0] if len(args) > 0 else kwargs['color']
             self._width = args[1] if len(args) > 1 else kwargs['width']
-            self._dashStyle = args[2] if len(args) > 2 else kwargs.get('dashStyle', DashStyle.Solid)
-            self._dashPattern = args[3] if len(args) > 3 else kwargs.get('dashPattern', None)
+            self._style = args[2] if len(args) > 2 else kwargs.get('style', LineStyle.Solid)
+            self._pattern = args[3] if len(args) > 3 else kwargs.get('pattern', None)
 
     def color(self) -> str:
         return self._color
@@ -469,30 +454,30 @@ class AbstractPen(object):
     def setWidth(self, width: float) -> None:
         self._width = width
 
-    def dashStyle(self) -> float:
-        return self._dashStyle
+    def style(self) -> float:
+        return self._style
 
-    def setDashStyle(
+    def setStyle(
             self,
-            style: DashStyle,
+            style: LineStyle,
             pattern: typing.Optional[typing.List[float]] = None
             ) -> None:
-        self._dashStyle = style
-        if (self._dashStyle is DashStyle.Custom):
+        self._style = style
+        if (self._style is LineStyle.Custom):
             if  pattern is not None:
-                self._dashPattern = list(pattern)
+                self._pattern = list(pattern)
         else:
-            self._dashPattern = None
+            self._pattern = None
 
-    def dashPattern(self) -> typing.Optional[typing.Sequence[float]]:
-        return self._dashPattern
+    def pattern(self) -> typing.Optional[typing.Sequence[float]]:
+        return self._pattern
 
-    def setDashPattern(
+    def setPattern(
             self,
             pattern: typing.Sequence[float]
             ) -> None:
-        self._dashStyle = DashStyle.Custom
-        self._dashPattern = list(pattern)
+        self._style = LineStyle.Custom
+        self._pattern = list(pattern)
 
 class AbstractBrush(object):
     @typing.overload

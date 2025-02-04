@@ -3,13 +3,13 @@ import typing
 from PyQt5 import QtCore, QtGui
 
 class QtMapGraphics(maprenderer.AbstractGraphics):
-    _DashStyleMap = {
-        maprenderer.DashStyle.Solid: QtCore.Qt.PenStyle.SolidLine,
-        maprenderer.DashStyle.Dot: QtCore.Qt.PenStyle.DotLine,
-        maprenderer.DashStyle.Dash: QtCore.Qt.PenStyle.DashLine,
-        maprenderer.DashStyle.DashDot: QtCore.Qt.PenStyle.DashDotLine,
-        maprenderer.DashStyle.DashDotDot: QtCore.Qt.PenStyle.DashDotDotLine,
-        maprenderer.DashStyle.Custom: QtCore.Qt.PenStyle.CustomDashLine}
+    _LineStyleMap = {
+        maprenderer.LineStyle.Solid: QtCore.Qt.PenStyle.SolidLine,
+        maprenderer.LineStyle.Dot: QtCore.Qt.PenStyle.DotLine,
+        maprenderer.LineStyle.Dash: QtCore.Qt.PenStyle.DashLine,
+        maprenderer.LineStyle.DashDot: QtCore.Qt.PenStyle.DashDotLine,
+        maprenderer.LineStyle.DashDotDot: QtCore.Qt.PenStyle.DashDotDotLine,
+        maprenderer.LineStyle.Custom: QtCore.Qt.PenStyle.CustomDashLine}
 
     def __init__(self):
         super().__init__()
@@ -319,10 +319,10 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     # so it will need to be parsed each time is even worse
     def _convertPen(self, pen: maprenderer.AbstractPen) -> QtGui.QPen:
         qtColor = QtGui.QColor(pen.color())
-        qtStyle = QtMapGraphics._DashStyleMap[pen.dashStyle()]
+        qtStyle = QtMapGraphics._LineStyleMap[pen.style()]
         qtPen = QtGui.QPen(qtColor, pen.width(), qtStyle)
         if qtStyle == QtCore.Qt.PenStyle.CustomDashLine:
-            qtPen.setDashPattern(pen.dashPattern())
+            qtPen.setDashPattern(pen.pattern())
         return qtPen
 
     # TODO: Creating a new font for every piece of text that gets drawn is

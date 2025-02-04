@@ -1,6 +1,6 @@
+import maprenderer
 import os
 import re
-import traveller
 import travellermap
 import typing
 
@@ -9,10 +9,10 @@ class DefaultStyleCache(object):
     _RoutePattern = re.compile(r'route\.(\w+)')
     _DefaultStylePath = 'res/styles/otu.css'
 
-    _RouteStyleMap = {
-        'solid': traveller.Route.Style.Solid,
-        'dashed': traveller.Route.Style.Dashed,
-        'dotted': traveller.Route.Style.Dotted}
+    _StyleMap = {
+        'solid': maprenderer.LineStyle.Solid,
+        'dashed': maprenderer.LineStyle.Dash,
+        'dotted': maprenderer.LineStyle.Dot}
 
     def __init__(self, basePath: str):
         self._borderStyles = {}
@@ -27,7 +27,7 @@ class DefaultStyleCache(object):
                 color = properties.get('color')
                 style = properties.get('style')
                 if style:
-                    style = DefaultStyleCache._RouteStyleMap.get(style.lower())
+                    style = DefaultStyleCache._StyleMap.get(style.lower())
                 self._borderStyles[key] = (color, style)
 
             match = DefaultStyleCache._RoutePattern.match(group)
@@ -36,7 +36,7 @@ class DefaultStyleCache(object):
                 color = properties.get('color')
                 style = properties.get('style')
                 if style:
-                    style = DefaultStyleCache._RouteStyleMap.get(style.lower())
+                    style = DefaultStyleCache._StyleMap.get(style.lower())
                 width = properties.get('width')
                 if width:
                     width = float(width)
@@ -44,11 +44,11 @@ class DefaultStyleCache(object):
 
     def defaultBorderStyle(self, key: str) -> typing.Tuple[
             typing.Optional[str], # Colour
-            typing.Optional[traveller.Border.Style]]:
+            typing.Optional[maprenderer.LineStyle]]:
         return self._borderStyles.get(key, (None, None))
 
     def defaultRouteStyle(self, key: str) -> typing.Tuple[
             typing.Optional[str], # Colour
-            typing.Optional[traveller.Route.Style],
+            typing.Optional[maprenderer.LineStyle],
             typing.Optional[float]]: # Width
         return self._routeStyles.get(key, (None, None, None))
