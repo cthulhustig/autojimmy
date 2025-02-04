@@ -434,28 +434,65 @@ class AbstractPen(object):
         color: str,
         width: float,
         dashStyle: DashStyle = DashStyle.Solid,
-        customDashPattern: typing.Optional[typing.List[float]] = None
+        dashPattern: typing.Optional[typing.Sequence[float]] = None
         ) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self.color = ''
-            self.width = 0
-            self.dashStyle = DashStyle.Solid
-            self.customDashPattern = None
+            self._color = ''
+            self._width = 0
+            self._dashStyle = DashStyle.Solid
+            self._dashPattern = None
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, AbstractPen):
                 raise TypeError('The other parameter must be an AbstractPen')
-            self.color = other.color
-            self.width = other.width
-            self.dashStyle = other.dashStyle
-            self.customDashPattern = list(other.customDashPattern) if other.customDashPattern else None
+            self._color = other._color
+            self._width = other._width
+            self._dashStyle = other._dashStyle
+            self._dashPattern = list(other._dashPattern) if other._dashPattern else None
         else:
-            self.color = args[0] if len(args) > 0 else kwargs['color']
-            self.width = args[1] if len(args) > 1 else kwargs['width']
-            self.dashStyle = args[2] if len(args) > 2 else kwargs.get('dashStyle', DashStyle.Solid)
-            self.customDashPattern = args[3] if len(args) > 3 else kwargs.get('customDashPattern', None)
+            self._color = args[0] if len(args) > 0 else kwargs['color']
+            self._width = args[1] if len(args) > 1 else kwargs['width']
+            self._dashStyle = args[2] if len(args) > 2 else kwargs.get('dashStyle', DashStyle.Solid)
+            self._dashPattern = args[3] if len(args) > 3 else kwargs.get('dashPattern', None)
+
+    def color(self) -> str:
+        return self._color
+
+    def setColor(self, color: str) -> None:
+        self._color = color
+
+    def width(self) -> float:
+        return self._width
+
+    def setWidth(self, width: float) -> None:
+        self._width = width
+
+    def dashStyle(self) -> float:
+        return self._dashStyle
+
+    def setDashStyle(
+            self,
+            style: DashStyle,
+            pattern: typing.Optional[typing.List[float]] = None
+            ) -> None:
+        self._dashStyle = style
+        if (self._dashStyle is DashStyle.Custom):
+            if  pattern is not None:
+                self._dashPattern = list(pattern)
+        else:
+            self._dashPattern = None
+
+    def dashPattern(self) -> typing.Optional[typing.Sequence[float]]:
+        return self._dashPattern
+
+    def setDashPattern(
+            self,
+            pattern: typing.Sequence[float]
+            ) -> None:
+        self._dashStyle = DashStyle.Custom
+        self._dashPattern = list(pattern)
 
 class AbstractBrush(object):
     @typing.overload
@@ -467,19 +504,25 @@ class AbstractBrush(object):
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self.color = ''
+            self._color = ''
         elif len(args) > 0:
             arg = args[0]
-            self.color = arg.color if isinstance(arg, AbstractBrush) else arg
+            self._color = arg._color if isinstance(arg, AbstractBrush) else arg
         elif 'other' in kwargs:
             other = kwargs['other']
             if not isinstance(other, AbstractBrush):
                 raise TypeError('The other parameter must be an AbstractBrush')
-            self.color = other.color
+            self._color = other._color
         elif 'color' in kwargs:
-            self.color = kwargs['color']
+            self._color = kwargs['color']
         else:
             raise ValueError('Invalid arguments')
+
+    def color(self) -> str:
+        return self._color
+
+    def setColor(self, color: str) -> None:
+        self._color = color
 
 # TODO: Using Qt fonts here is a temp hack. Tge traveller map version of
 # AbstractFont implementation uses a system drawing font class. I want to

@@ -224,7 +224,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         # TODO: It looks like Qt uses a pen for text rather than the brush
         # it may make more sense for it to just be a colour that is passed
         # to drawString
-        self._painter.setPen(QtGui.QColor(brush.color))
+        self._painter.setPen(QtGui.QColor(brush.color()))
         self._painter.setBrush(self._convertBrush(brush))
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
@@ -318,11 +318,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     # really inefficient. The fact I'm using a string for the colour
     # so it will need to be parsed each time is even worse
     def _convertPen(self, pen: maprenderer.AbstractPen) -> QtGui.QPen:
-        qtColor = QtGui.QColor(pen.color)
-        qtStyle = QtMapGraphics._DashStyleMap[pen.dashStyle]
-        qtPen = QtGui.QPen(qtColor, pen.width, qtStyle)
+        qtColor = QtGui.QColor(pen.color())
+        qtStyle = QtMapGraphics._DashStyleMap[pen.dashStyle()]
+        qtPen = QtGui.QPen(qtColor, pen.width(), qtStyle)
         if qtStyle == QtCore.Qt.PenStyle.CustomDashLine:
-            qtPen.setDashPattern(pen.customDashPattern)
+            qtPen.setDashPattern(pen.dashPattern())
         return qtPen
 
     # TODO: Creating a new font for every piece of text that gets drawn is
@@ -333,7 +333,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         return font.qtFont()
 
     def _convertBrush(self, brush: maprenderer.AbstractBrush) -> QtGui.QBrush:
-        return QtGui.QBrush(QtGui.QColor(brush.color))
+        return QtGui.QBrush(QtGui.QColor(brush.color()))
 
     def _convertRect(self, rect: maprenderer.AbstractRectangleF) -> QtCore.QRectF:
         return QtCore.QRectF(rect.x(), rect.y(), rect.width(), rect.height())

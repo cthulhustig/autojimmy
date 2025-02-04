@@ -164,10 +164,10 @@ class StyleSheet(object):
                 penColor = travellermap.MapColours.White
             elif maprenderer.WorldHelper.hasWater(world):
                 brushColor = self.worldWater.fillColor
-                penColor = self.worldWater.pen.color
+                penColor = self.worldWater.pen.color()
             else:
                 brushColor = self.worldNoWater.fillColor
-                penColor = self.worldNoWater.pen.color
+                penColor = self.worldNoWater.pen.color()
         else:
             # Classic colors
 
@@ -178,9 +178,9 @@ class StyleSheet(object):
                 if hasWater else \
                 self.worldNoWater.fillColor
             penColor = \
-                self.worldWater.pen.color \
+                self.worldWater.pen.color() \
                 if hasWater else \
-                self.worldNoWater.pen.color
+                self.worldNoWater.pen.color()
 
         return (penColor, brushColor)
 
@@ -507,17 +507,17 @@ class StyleSheet(object):
         self.capitals.fillColor = travellermap.MapColours.Wheat
         self.capitals.textColor = travellermap.MapColours.TravellerRed
         self.amberZone.visible = self.redZone.visible = True
-        self.amberZone.pen.color = travellermap.MapColours.TravellerAmber
-        self.redZone.pen.color = travellermap.MapColours.TravellerRed
-        self.macroBorders.pen.color = travellermap.MapColours.TravellerRed
-        self.macroRoutes.pen.color = travellermap.MapColours.White
-        self.microBorders.pen.color = travellermap.MapColours.Gray
-        self.microRoutes.pen.color = travellermap.MapColours.Gray
+        self.amberZone.pen.setColor(travellermap.MapColours.TravellerAmber)
+        self.redZone.pen.setColor(travellermap.MapColours.TravellerRed)
+        self.macroBorders.pen.setColor(travellermap.MapColours.TravellerRed)
+        self.macroRoutes.pen.setColor(travellermap.MapColours.White)
+        self.microBorders.pen.setColor(travellermap.MapColours.Gray)
+        self.microRoutes.pen.setColor(travellermap.MapColours.Gray)
 
         self.microBorders.textColor = travellermap.MapColours.TravellerAmber
         self.worldWater.fillColor = travellermap.MapColours.DeepSkyBlue
         self.worldNoWater.fillColor = travellermap.MapColours.White
-        self.worldNoWater.pen.color = '#0000FF' # TODO: Color.Empty;
+        self.worldNoWater.pen.setColor('#0000FF') # TODO: Color.Empty;
 
         gridColor = self._colorScaleInterpolate(
             scale=self.scale,
@@ -567,14 +567,15 @@ class StyleSheet(object):
 
         routePenWidth = 0.2 if self.scale <= 16 else (0.08 * penScale)
 
-        self.microBorders.pen.width = borderPenWidth
-        self.macroBorders.pen.width = borderPenWidth
-        self.microRoutes.pen.width = routePenWidth
+        self.microBorders.pen.setWidth(borderPenWidth)
+        self.macroBorders.pen.setWidth(borderPenWidth)
+        self.microRoutes.pen.setWidth(routePenWidth)
 
-        self.amberZone.pen.width = self.redZone.pen.width = 0.05 * penScale
+        self.amberZone.pen.setWidth(0.05 * penScale)
+        self.redZone.pen.setWidth(0.05 * penScale)
 
-        self.macroRoutes.pen.width = borderPenWidth
-        self.macroRoutes.pen.dashStyle = maprenderer.DashStyle.Dash
+        self.macroRoutes.pen.setWidth(borderPenWidth)
+        self.macroRoutes.pen.setDashStyle(maprenderer.DashStyle.Dash)
 
         self.populationOverlay.fillColor = '#80FFFF00'
         self.importanceOverlay.fillColor = '#2080FF00'
@@ -677,12 +678,12 @@ class StyleSheet(object):
 
             self.capitals.fillColor = travellermap.MapColours.DarkGray
             self.capitals.textColor = travellermap.MapColours.Black
-            self.amberZone.pen.color = travellermap.MapColours.LightGray
-            self.redZone.pen.color = travellermap.MapColours.Black
-            self.macroBorders.pen.color = travellermap.MapColours.Black
-            self.macroRoutes.pen.color = travellermap.MapColours.Gray
-            self.microBorders.pen.color = travellermap.MapColours.Black
-            self.microRoutes.pen.color = travellermap.MapColours.Gray
+            self.amberZone.pen.setColor(travellermap.MapColours.LightGray)
+            self.redZone.pen.setColor(travellermap.MapColours.Black)
+            self.macroBorders.pen.setColor(travellermap.MapColours.Black)
+            self.macroRoutes.pen.setColor(travellermap.MapColours.Gray)
+            self.microBorders.pen.setColor(travellermap.MapColours.Black)
+            self.microRoutes.pen.setColor(travellermap.MapColours.Gray)
 
             foregroundColor = travellermap.MapColours.Black
             self.backgroundColor = travellermap.MapColours.White
@@ -704,17 +705,17 @@ class StyleSheet(object):
             self.populationOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=highlightColor)
-            self.populationOverlay.pen.color = travellermap.MapColours.Gray
+            self.populationOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.importanceOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=highlightColor)
-            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
+            self.importanceOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.highlightWorlds.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=highlightColor)
-            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
+            self.highlightWorlds.pen.setColor(travellermap.MapColours.Gray)
         elif self._style is travellermap.Style.Fasa:
             self.showGalaxyBackground = False
             self.deepBackgroundOpacity = 0
@@ -731,22 +732,22 @@ class StyleSheet(object):
 
             self.capitals.fillColor = inkColor
             self.capitals.textColor = inkColor
-            self.amberZone.pen.color = inkColor
-            self.amberZone.pen.width = onePixel * 2
-            self.redZone.pen.color = '#0000FF' # TODO: Color.Empty
+            self.amberZone.pen.color(inkColor)
+            self.amberZone.pen.setWidth(onePixel * 2)
+            self.redZone.pen.setColor('#0000FF') # TODO: Color.Empty
             self.redZone.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x80,
                 color=inkColor)
 
-            self.macroBorders.pen.color = inkColor
-            self.macroRoutes.pen.color = inkColor
+            self.macroBorders.pen.setColor(inkColor)
+            self.macroRoutes.pen.setColor(inkColor)
 
-            self.microBorders.pen.color = inkColor
-            self.microBorders.pen.width = onePixel * 2
+            self.microBorders.pen.setColor(inkColor)
+            self.microBorders.pen.setWidth(onePixel * 2)
             self.microBorders.fontInfo.size *= 0.6
             self.microBorders.fontInfo.style = maprenderer.FontStyle.Regular
 
-            self.microRoutes.pen.color = inkColor
+            self.microRoutes.pen.setColor(inkColor)
 
             lightColor = maprenderer.makeAlphaColor(
                 alpha=0x80,
@@ -758,14 +759,14 @@ class StyleSheet(object):
             self.hexStyle = maprenderer.HexStyle.Hex
             self.microBorderStyle = maprenderer.MicroBorderStyle.Curve
 
-            self.parsecGrid.pen.color = lightColor
-            self.sectorGrid.pen.color = lightColor
-            self.subsectorGrid.pen.color = lightColor
+            self.parsecGrid.pen.setColor(lightColor)
+            self.sectorGrid.pen.setColor(lightColor)
+            self.subsectorGrid.pen.setColor(lightColor)
 
             self.worldWater.fillColor = inkColor
             self.worldNoWater.fillColor = inkColor
-            self.worldWater.pen.color = '#0000FF' # TODO: Color.Empty
-            self.worldNoWater.pen.color = '#0000FF' # TODO: Color.Empty
+            self.worldWater.pen.setColor('#0000FF') # TODO: Color.Empty
+            self.worldNoWater.pen.setColor('#0000FF') # TODO: Color.Empty
 
             self.showWorldDetailColors = False
 
@@ -785,17 +786,17 @@ class StyleSheet(object):
             self.populationOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=highlightColor)
-            self.populationOverlay.pen.color = travellermap.MapColours.Gray
+            self.populationOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.importanceOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=highlightColor)
-            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
+            self.importanceOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.highlightWorlds.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=highlightColor)
-            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
+            self.highlightWorlds.pen.setColor(travellermap.MapColours.Gray)
         elif self._style is travellermap.Style.Print:
             self.lightBackground = True
 
@@ -804,11 +805,11 @@ class StyleSheet(object):
             lightColor = travellermap.MapColours.DarkGray
             darkColor = travellermap.MapColours.DarkGray
             dimColor = travellermap.MapColours.LightGray
-            self.microRoutes.pen.color = travellermap.MapColours.Gray
+            self.microRoutes.pen.setColor(travellermap.MapColours.Gray)
 
             self.microBorders.textColor = travellermap.MapColours.Brown
 
-            self.amberZone.pen.color = travellermap.MapColours.TravellerAmber
+            self.amberZone.pen.setColor(travellermap.MapColours.TravellerAmber)
             self.worldNoWater.fillColor = travellermap.MapColours.White
             self.worldNoWater.pen = maprenderer.AbstractPen(travellermap.MapColours.Black, onePixel)
 
@@ -817,17 +818,17 @@ class StyleSheet(object):
             self.populationOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=self.populationOverlay.fillColor)
-            self.populationOverlay.pen.color = travellermap.MapColours.Gray
+            self.populationOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.importanceOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=self.importanceOverlay.fillColor)
-            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
+            self.importanceOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.highlightWorlds.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=self.highlightWorlds.fillColor)
-            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
+            self.highlightWorlds.pen.setColor(travellermap.MapColours.Gray)
         elif self._style is travellermap.Style.Draft:
             # TODO: For some reason all text is getting underlining set
             inkOpacity = 0xB0
@@ -856,9 +857,9 @@ class StyleSheet(object):
                 alpha=inkOpacity / 2,
                 color=travellermap.MapColours.Black)
 
-            self.subsectorGrid.pen.color = maprenderer.makeAlphaColor(
+            self.subsectorGrid.pen.setColor(maprenderer.makeAlphaColor(
                 alpha=inkOpacity,
-                color=travellermap.MapColours.Firebrick)
+                color=travellermap.MapColours.Firebrick))
 
             fontName = "Comic Sans MS"
             self.worlds.fontInfo.families = fontName
@@ -905,20 +906,20 @@ class StyleSheet(object):
 
             self.worlds.largeFontInfo.style |= maprenderer.FontStyle.Underline
 
-            self.microBorders.pen.width = onePixel * 4
-            self.microBorders.pen.dashStyle = maprenderer.DashStyle.Dot
+            self.microBorders.pen.setWidth(onePixel * 4)
+            self.microBorders.pen.setDashStyle(maprenderer.DashStyle.Dot)
 
             self.worldNoWater.fillColor = foregroundColor
             self.worldWater.fillColor = '#0000FF' # TODO: Color.Empty
             self.worldWater.pen = maprenderer.AbstractPen(foregroundColor, onePixel * 2)
 
-            self.amberZone.pen.color = foregroundColor
-            self.amberZone.pen.width = onePixel
-            self.redZone.pen.width = onePixel * 2
+            self.amberZone.pen.setColor(foregroundColor)
+            self.amberZone.pen.setWidth(onePixel)
+            self.redZone.pen.setWidth(onePixel * 2)
 
-            self.microRoutes.pen.color = travellermap.MapColours.Gray
+            self.microRoutes.pen.setColor(travellermap.MapColours.Gray)
 
-            self.parsecGrid.pen.color = lightColor
+            self.parsecGrid.pen.setColor(lightColor)
             self.microBorders.textColor = maprenderer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.MapColours.Brown)
@@ -930,17 +931,17 @@ class StyleSheet(object):
             self.populationOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=self.populationOverlay.fillColor)
-            self.populationOverlay.pen.color = travellermap.MapColours.Gray
+            self.populationOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.importanceOverlay.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=self.importanceOverlay.fillColor)
-            self.importanceOverlay.pen.color = travellermap.MapColours.Gray
+            self.importanceOverlay.pen.setColor(travellermap.MapColours.Gray)
 
             self.highlightWorlds.fillColor = maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=self.highlightWorlds.fillColor)
-            self.highlightWorlds.pen.color = travellermap.MapColours.Gray
+            self.highlightWorlds.pen.setColor(travellermap.MapColours.Gray)
         elif self._style is travellermap.Style.Candy:
             self.useWorldImages = True
             self.pseudoRandomStars.visible = False
@@ -955,13 +956,15 @@ class StyleSheet(object):
             self.subsectorGrid.visible = self.subsectorGrid.visible and (self.scale >= 32)
             self.parsecGrid.visible = False
 
-            self.subsectorGrid.pen.width = 0.03 * (64.0 / self.scale)
-            self.subsectorGrid.pen.dashStyle = maprenderer.DashStyle.Custom
-            self.subsectorGrid.pen.customDashPattern = [10.0, 8.0]
+            self.subsectorGrid.pen.setWidth(0.03 * (64.0 / self.scale))
+            self.subsectorGrid.pen.setDashStyle(
+                style=maprenderer.DashStyle.Custom,
+                pattern=[10.0, 8.0])
 
-            self.sectorGrid.pen.width = 0.03 * (64.0 / self.scale)
-            self.sectorGrid.pen.dashStyle = maprenderer.DashStyle.Custom
-            self.sectorGrid.pen.customDashPattern = [10.0, 8.0]
+            self.sectorGrid.pen.setWidth(0.03 * (64.0 / self.scale))
+            self.sectorGrid.pen.setDashStyle(
+                style=maprenderer.DashStyle.Custom,
+                pattern=[10.0, 8.0])
 
             self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.Shadow
 
@@ -975,8 +978,9 @@ class StyleSheet(object):
             if self.scale < StyleSheet._CandyMinUwpScale:
                 self.worldDetails &= ~maprenderer.WorldDetails.Uwp
 
-            self.amberZone.pen.color = travellermap.MapColours.Goldenrod
-            self.amberZone.pen.width = self.redZone.pen.width = 0.035
+            self.amberZone.pen.setColor(travellermap.MapColours.Goldenrod)
+            self.amberZone.pen.setWidth(0.035)
+            self.redZone.pen.setWidth(0.035)
 
             self.sectorName.textStyle.rotation = 0
             self.sectorName.textStyle.translation = maprenderer.AbstractPointF(0, -0.25)
@@ -998,15 +1002,15 @@ class StyleSheet(object):
             self.microBorders.textStyle.scale = maprenderer.AbstractSizeF(1.0, 0.5) # Expand
             self.microBorders.textStyle.uppercase = True
 
-            self.microBorders.pen.color = maprenderer.makeAlphaColor(
+            self.microBorders.pen.setColor(maprenderer.makeAlphaColor(
                 alpha=128,
-                color=travellermap.MapColours.TravellerRed)
-            self.microRoutes.pen.width = \
-                routePenWidth if self.scale < StyleSheet._CandyMaxRouteRelativeScale else routePenWidth / 2
-            self.macroBorders.pen.width = \
-                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4
-            self.microBorders.pen.width = \
-                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4
+                color=travellermap.MapColours.TravellerRed))
+            self.microRoutes.pen.setWidth(
+                routePenWidth if self.scale < StyleSheet._CandyMaxRouteRelativeScale else routePenWidth / 2)
+            self.macroBorders.pen.setWidth(
+                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
+            self.microBorders.pen.setWidth(
+                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
 
             self.worlds.textStyle.rotation = 0
             self.worlds.textStyle.scale = maprenderer.AbstractSizeF(1, 0.5) # Expand
@@ -1028,7 +1032,7 @@ class StyleSheet(object):
             darkColor = travellermap.MapColours.DarkBlue
             dimColor = travellermap.MapColours.DimGray
 
-            self.subsectorGrid.pen.color = travellermap.MapColours.Cyan
+            self.subsectorGrid.pen.setColor(travellermap.MapColours.Cyan)
 
             fontNames = "Courier New"
             self.worlds.fontInfo.families = fontNames
@@ -1079,20 +1083,20 @@ class StyleSheet(object):
 
             self.worlds.largeFontInfo.style |= maprenderer.FontStyle.Underline
 
-            self.microBorders.pen.width = onePixel * 4
-            self.microBorders.pen.dashStyle = maprenderer.DashStyle.Dot
+            self.microBorders.pen.setWidth(onePixel * 4)
+            self.microBorders.pen.setDashStyle(maprenderer.DashStyle.Dot)
 
             self.worldNoWater.fillColor = foregroundColor
             self.worldWater.fillColor = '#0000FF' # TODO: Color.Empty
             self.worldWater.pen = maprenderer.AbstractPen(foregroundColor, onePixel * 2)
 
-            self.amberZone.pen.color = foregroundColor
-            self.amberZone.pen.width = onePixel
-            self.redZone.pen.width = onePixel * 2
+            self.amberZone.pen.setColor(foregroundColor)
+            self.amberZone.pen.setWidth(onePixel)
+            self.redZone.pen.setWidth(onePixel * 2)
 
-            self.microRoutes.pen.color = travellermap.MapColours.Gray
+            self.microRoutes.pen.setColor(travellermap.MapColours.Gray)
 
-            self.parsecGrid.pen.color = travellermap.MapColours.Plum
+            self.parsecGrid.pen.setColor(travellermap.MapColours.Plum)
             self.microBorders.textColor = travellermap.MapColours.Cyan
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
@@ -1125,7 +1129,9 @@ class StyleSheet(object):
             darkColor = travellermap.MapColours.Black
             dimColor = travellermap.MapColours.Gray
 
-            self.sectorGrid.pen.color = self.subsectorGrid.pen.color = self.parsecGrid.pen.color = foregroundColor
+            self.sectorGrid.pen.setColor(foregroundColor)
+            self.subsectorGrid.pen.setColor(foregroundColor)
+            self.parsecGrid.pen.setColor(foregroundColor)
 
             self.microBorders.textColor = travellermap.MapColours.DarkSlateGray
 
@@ -1171,8 +1177,8 @@ class StyleSheet(object):
             self.subsectorNames.fontInfo.families = fontName
             self.sectorName.fontInfo.families = fontName
 
-            self.microBorders.pen.width = 0.11
-            self.microBorders.pen.dashStyle = maprenderer.DashStyle.Dot
+            self.microBorders.pen.setWidth(0.11)
+            self.microBorders.pen.setDashStyle(maprenderer.DashStyle.Dot)
 
             self.worldWater.fillColor = travellermap.MapColours.MediumBlue
             self.worldNoWater.fillColor = travellermap.MapColours.DarkKhaki
@@ -1185,11 +1191,13 @@ class StyleSheet(object):
 
             self.showZonesAsPerimeters = True
             self.greenZone.visible = True
-            self.greenZone.pen.width = self.amberZone.pen.width = self.redZone.pen.width = 0.05
+            self.greenZone.pen.setWidth(0.05)
+            self.amberZone.pen.setWidth(0.05)
+            self.redZone.pen.setWidth(0.05)
 
-            self.greenZone.pen.color = '#80C676'
-            self.amberZone.pen.color = '#FBB040'
-            self.redZone.pen.color = travellermap.MapColours.Red
+            self.greenZone.pen.setColor('#80C676')
+            self.amberZone.pen.setColor('#FBB040')
+            self.redZone.pen.setColor(travellermap.MapColours.Red)
 
             self.microBorders.textColor = travellermap.MapColours.DarkSlateGray
 

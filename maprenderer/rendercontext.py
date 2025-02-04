@@ -686,7 +686,7 @@ class RenderContext(object):
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
             pen = maprenderer.AbstractPen(self._styles.microRoutes.pen)
-            baseWidth = self._styles.microRoutes.pen.width
+            baseWidth = self._styles.microRoutes.pen.width()
 
             for sector in self._selector.sectors():
                 for route in sector.routes():
@@ -737,7 +737,7 @@ class RenderContext(object):
                     if not routeWidth:
                         routeWidth = 1.0
                     if not routeColor:
-                        routeColor = self._styles.microRoutes.pen.color
+                        routeColor = self._styles.microRoutes.pen.color()
                     if not routeStyle:
                         routeStyle = maprenderer.LineStyle.Solid
 
@@ -748,9 +748,9 @@ class RenderContext(object):
                         routeColor = styles.microRoutes.pen.color; // default
                     """
 
-                    pen.color = routeColor
-                    pen.width = routeWidth * baseWidth
-                    pen.dashStyle = maprenderer.lineStyleToDashStyle(routeStyle)
+                    pen.setColor(routeColor)
+                    pen.setWidth(routeWidth * baseWidth)
+                    pen.setDashStyle(maprenderer.lineStyleToDashStyle(routeStyle))
 
                     self._graphics.drawLine(pen, startPoint, endPoint)
 
@@ -765,7 +765,7 @@ class RenderContext(object):
 
             solidBrush = maprenderer.AbstractBrush()
             for sector in self._selector.sectors():
-                solidBrush.color = self._styles.microBorders.textColor
+                solidBrush.setColor(self._styles.microBorders.textColor)
 
                 for border in sector.borders():
                     label = border.label()
@@ -816,7 +816,8 @@ class RenderContext(object):
                         font = self._styles.microBorders.font
 
                     # TODO: Handle similar colours
-                    solidBrush.color = label.colour() if label.colour() else travellermap.MapColours.TravellerAmber
+                    solidBrush.setColor(
+                        label.colour() if label.colour() else travellermap.MapColours.TravellerAmber)
                     """
                     if (!styles.grayscale &&
                         label.Color != null &&
@@ -1087,9 +1088,9 @@ class RenderContext(object):
         solidBrush = maprenderer.AbstractBrush()
 
         if self._styles.dimUnofficialSectors and self._styles.worlds.visible:
-            solidBrush.color = maprenderer.makeAlphaColor(
+            solidBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=128,
-                color=self._styles.backgroundColor)
+                color=self._styles.backgroundColor))
             for sector in self._selector.sectors():
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
                     clipPath = self._clipCache.sectorClipPath(
@@ -1104,25 +1105,25 @@ class RenderContext(object):
         if self._styles.colorCodeSectorStatus and self._styles.worlds.visible:
             for sector in self._selector.sectors():
                 if sector.hasTag('Official'):
-                    solidBrush.color = maprenderer.makeAlphaColor(
+                    solidBrush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.TravellerRed)
+                        color=travellermap.MapColours.TravellerRed))
                 elif sector.hasTag('InReview'):
-                    solidBrush.color = maprenderer.makeAlphaColor(
+                    solidBrush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.Orange)
+                        color=travellermap.MapColours.Orange))
                 elif sector.hasTag('Unreviewed'):
-                    solidBrush.color = maprenderer.makeAlphaColor(
+                    solidBrush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.TravellerAmber)
+                        color=travellermap.MapColours.TravellerAmber))
                 elif sector.hasTag('Apocryphal'):
-                    solidBrush.color = maprenderer.makeAlphaColor(
+                    solidBrush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.Magenta)
+                        color=travellermap.MapColours.Magenta))
                 elif sector.hasTag('Preserve'):
-                    solidBrush.color = maprenderer.makeAlphaColor(
+                    solidBrush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.TravellerGreen)
+                        color=travellermap.MapColours.TravellerGreen))
                 else:
                     continue
 
@@ -1222,7 +1223,7 @@ class RenderContext(object):
                                         brush=maprenderer.AbstractBrush(elem.fillColor),
                                         pen=None,
                                         rect=maprenderer.AbstractRectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
-                                if elem.pen.color:
+                                if elem.pen.color():
                                     if renderName and self._styles.fillMicroBorders:
                                         # TODO: Is saving the state actually needed here?
                                         with self._graphics.save():
@@ -1468,7 +1469,7 @@ class RenderContext(object):
                                     brush = maprenderer.AbstractBrush(brushColor) if brushColor else None
                                     pen = maprenderer.AbstractPen(self._styles.worldWater.pen) if penColor else None
                                     if pen:
-                                        pen.color = penColor
+                                        pen.setColor(penColor)
                                     self._graphics.drawEllipse(
                                         pen=pen,
                                         brush=brush,
@@ -1756,10 +1757,10 @@ class RenderContext(object):
             solidBrush = maprenderer.AbstractBrush()
             pen = maprenderer.AbstractPen()
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
-                solidBrush.color = fillColour
-                pen.color = lineColor
-                pen.dashStyle = maprenderer.DashStyle.Solid
-                pen.width = self._styles.worlds.pen.width
+                solidBrush.setColor(fillColour)
+                pen.setColor(lineColor)
+                pen.setDashStyle(maprenderer.DashStyle.Solid)
+                pen.setWidth(self._styles.worlds.pen.width())
                 offset = RenderContext._starOffset(i)
                 offsetScale = 0.3
                 radius *= 0.15
@@ -1831,7 +1832,7 @@ class RenderContext(object):
         solidBrush = maprenderer.AbstractBrush()
         pen = maprenderer.AbstractPen(self._styles.microBorders.pen) # TODO: Color.Empty)
 
-        penWidth = pen.width
+        penWidth = pen.width()
         for sector in self._selector.sectors():
             # This looks craptacular for Candy style borders :(
             shouldClip = self._clipOutsectorBorders and \
@@ -1878,7 +1879,7 @@ class RenderContext(object):
                                 regionStyle = defaultStyle
 
                     if not regionColor:
-                        regionColor = self._styles.microRoutes.pen.color
+                        regionColor = self._styles.microRoutes.pen.color()
                     if not regionStyle:
                         regionStyle = maprenderer.LineStyle.Solid
 
@@ -1904,22 +1905,20 @@ class RenderContext(object):
                     types[-1] |= maprenderer.PathPointType.CloseSubpath
                     drawPath = maprenderer.AbstractPath(points=drawPath, types=types, closed=True)
 
-                    pen.color = regionColor
-                    pen.dashStyle = maprenderer.lineStyleToDashStyle(regionStyle)
+                    pen.setColor(regionColor)
+                    pen.setDashStyle(maprenderer.lineStyleToDashStyle(regionStyle))
 
                     # Allow style to override
                     if self._styles.microBorders.pen.dashStyle is not maprenderer.DashStyle.Solid:
-                        pen.dashStyle = self._styles.microBorders.pen.dashStyle
-                    else:
-                        pen.dashStyle = maprenderer.lineStyleToDashStyle(regionStyle)
+                        pen.setDashStyle(self._styles.microBorders.pen.dashStyle())
 
                     # Shade is a wide/solid outline under the main outline.
                     if layer is RenderContext.BorderLayer.Shade:
-                        pen.width = penWidth * 2.5
-                        pen.dashStyle = maprenderer.DashStyle.Solid
-                        pen.color = maprenderer.makeAlphaColor(
+                        pen.setWidth(penWidth * 2.5)
+                        pen.setDashStyle(maprenderer.DashStyle.Solid)
+                        pen.setColor(maprenderer.makeAlphaColor(
                             alpha=shadeAlpha,
-                            color=pen.color)
+                            color=pen.color()))
 
                     # TODO: There should be alternate handling for curves but I don't think i'm
                     # going to be able to support it as I'm not sure how to draw them with QPainter
@@ -1933,11 +1932,11 @@ class RenderContext(object):
                             except Exception as ex:
                                 logging.warning('Failed to parse region colour', exc_info=ex)
                                 continue
-                            solidBrush.color = travellermap.colourChannelsToString(
+                            solidBrush.setColor(travellermap.colourChannelsToString(
                                 red=red,
                                 green=green,
                                 blue=blue,
-                                alpha=fillAlpha)
+                                alpha=fillAlpha))
                             self._graphics.drawPathFill(brush=solidBrush, path=drawPath)
                         elif layer is RenderContext.BorderLayer.Shade or layer is RenderContext.BorderLayer.Stroke:
                             self._graphics.drawPathOutline(pen=pen, path=drawPath)
