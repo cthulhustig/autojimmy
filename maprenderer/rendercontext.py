@@ -11,7 +11,7 @@ import typing
 def _drawLabelHelper(
         graphics: maprenderer.AbstractGraphics,
         text: str,
-        center: maprenderer.PointF,
+        center: maprenderer.AbstractPointF,
         font: maprenderer.AbstractFont,
         brush: maprenderer.AbstractBrush,
         labelStyle: maprenderer.LabelStyle
@@ -23,20 +23,20 @@ def _drawLabelHelper(
             text = text.replace(' ', '\n')
 
         graphics.translateTransform(
-            dx=center.x,
-            dy=center.y)
+            dx=center.x(),
+            dy=center.y())
         graphics.scaleTransform(
             scaleX=1.0 / travellermap.ParsecScaleX,
             scaleY=1.0 / travellermap.ParsecScaleY)
 
         graphics.translateTransform(
-            dx=labelStyle.translation.x,
-            dy=labelStyle.translation.y)
+            dx=labelStyle.translation.x(),
+            dy=labelStyle.translation.y())
         graphics.rotateTransform(
             degrees=labelStyle.rotation)
         graphics.scaleTransform(
-            scaleX=labelStyle.scale.width,
-            scaleY=labelStyle.scale.height)
+            scaleX=labelStyle.scale.width(),
+            scaleY=labelStyle.scale.height())
 
         if labelStyle.rotation != 0:
             graphics.setSmoothingMode(
@@ -61,7 +61,7 @@ def _drawGlyphHelper(
         glyph: maprenderer.Glyph,
         fonts: maprenderer.FontCache,
         brush: maprenderer.AbstractBrush,
-        pt: maprenderer.PointF
+        pt: maprenderer.AbstractPointF
         ) -> None:
     font = fonts.glyphFont
     s = glyph.characters
@@ -81,8 +81,8 @@ def _drawGlyphHelper(
         text=s,
         font=font,
         brush=brush,
-        x=pt.x,
-        y=pt.y,
+        x=pt.x(),
+        y=pt.y(),
         format=maprenderer.StringAlignment.Centered)
 
 class RenderContext(object):
@@ -108,21 +108,21 @@ class RenderContext(object):
         Foreground = 1
         Overlay = 2
 
-    _GalaxyImageRect = maprenderer.RectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
-    _RiftImageRect = maprenderer.RectangleF(-1374, -827, 2769, 1754)
+    _GalaxyImageRect = maprenderer.AbstractRectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
+    _RiftImageRect = maprenderer.AbstractRectangleF(-1374, -827, 2769, 1754)
 
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 400
 
     _HexPath = maprenderer.AbstractPath(
         points=[
-            maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5),
-            maprenderer.PointF( 0.5 - travellermap.HexWidthOffset, -0.5),
-            maprenderer.PointF( 0.5 + travellermap.HexWidthOffset, 0),
-            maprenderer.PointF( 0.5 - travellermap.HexWidthOffset, 0.5),
-            maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, 0.5),
-            maprenderer.PointF(-0.5 - travellermap.HexWidthOffset, 0),
-            maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
+            maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, -0.5),
+            maprenderer.AbstractPointF( 0.5 - travellermap.HexWidthOffset, -0.5),
+            maprenderer.AbstractPointF( 0.5 + travellermap.HexWidthOffset, 0),
+            maprenderer.AbstractPointF( 0.5 - travellermap.HexWidthOffset, 0.5),
+            maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, 0.5),
+            maprenderer.AbstractPointF(-0.5 - travellermap.HexWidthOffset, 0),
+            maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
         types=[
             maprenderer.PathPointType.Start,
             maprenderer.PathPointType.Line,
@@ -185,7 +185,7 @@ class RenderContext(object):
         self._outputPixelY = outputPixelY
         self._updateView()
 
-    def setTileRect(self, rect: maprenderer.RectangleF) -> None:
+    def setTileRect(self, rect: maprenderer.AbstractRectangleF) -> None:
         self._tileRect = rect
         self._selector.setRect(rect=self._tileRect)
         self._updateView()
@@ -203,14 +203,14 @@ class RenderContext(object):
             pixelY: int,
             clamp: bool = True
             ) -> typing.Tuple[float, float]:
-        point = maprenderer.PointF(pixelX, pixelY)
+        point = maprenderer.AbstractPointF(pixelX, pixelY)
         world = self._worldSpaceToImageSpace.transform(point)
         if not clamp:
-            return (world.x, world.y)
+            return (world.x(), world.y())
 
         return (
-            round(world.x + 0.5),
-            round(world.y + (0.5 if (world.x % 2) == 0 else 0)))
+            round(world.x() + 0.5),
+            round(world.y() + (0.5 if (world.x() % 2) == 0 else 0)))
 
     def render(self) -> None:
         with self._graphics.save():
@@ -303,7 +303,7 @@ class RenderContext(object):
     def _updateView(self):
         absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
         absoluteHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
-        self._tileRect = maprenderer.RectangleF(
+        self._tileRect = maprenderer.AbstractRectangleF(
             x=self._absoluteCenterX - (absoluteWidth / 2),
             y=self._absoluteCenterY - (absoluteHeight / 2),
             width=absoluteWidth,
@@ -313,8 +313,8 @@ class RenderContext(object):
 
         m = maprenderer.AbstractMatrix()
         m.translatePrepend(
-            dx=-self._tileRect.left * self._scale * travellermap.ParsecScaleX,
-            dy=-self._tileRect.top * self._scale * travellermap.ParsecScaleY)
+            dx=-self._tileRect.left() * self._scale * travellermap.ParsecScaleX,
+            dy=-self._tileRect.top() * self._scale * travellermap.ParsecScaleY)
         m.scalePrepend(
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
@@ -332,8 +332,8 @@ class RenderContext(object):
         # NOTE: This is a comment from the original Traveller Map source code
         # HACK: Due to limited precisions of floats, tileRect can end up not covering
         # the full bitmap when far from the origin.
-        rect = maprenderer.RectangleF(self._tileRect)
-        rect.inflate(rect.width * 0.1, rect.height * 0.1)
+        rect = maprenderer.AbstractRectangleF(self._tileRect)
+        rect.inflate(rect.width() * 0.1, rect.height() * 0.1)
         self._graphics.drawRectangleFill(brush, rect)
 
     # TODO: When zooming in and out the background doesn't stay in a consistent
@@ -360,8 +360,8 @@ class RenderContext(object):
             h = nebulaImageHeight * backgroundImageScale
 
             # Offset of the background, relative to the canvas
-            ox = (-self._tileRect.left * self._scale * travellermap.ParsecScaleX) % w
-            oy = (-self._tileRect.top * self._scale * travellermap.ParsecScaleY) % h
+            ox = (-self._tileRect.left() * self._scale * travellermap.ParsecScaleX) % w
+            oy = (-self._tileRect.top() * self._scale * travellermap.ParsecScaleY) % h
             if (ox > 0):
                 ox -= w
             if (oy > 0):
@@ -375,15 +375,15 @@ class RenderContext(object):
             if (oy + ny * h < self._outputPixelY):
                 ny += 1
 
-            imageRect = maprenderer.RectangleF(x=ox, y=oy, width=w + 1, height=h + 1)
+            imageRect = maprenderer.AbstractRectangleF(x=ox, y=oy, width=w + 1, height=h + 1)
             for _ in range(nx):
-                imageRect.y=oy
+                imageRect.setY(oy)
                 for _ in range(ny):
                     self._graphics.drawImage(
                         self._imageCache.nebulaImage,
                         imageRect)
-                    imageRect.y += h
-                imageRect.x += w
+                    imageRect.setY(imageRect.y() + h)
+                imageRect.setX(imageRect.x() + w)
 
     def _drawGalaxyBackground(self) -> None:
         if not self._styles.showGalaxyBackground:
@@ -414,17 +414,17 @@ class RenderContext(object):
         if not self._styles.pseudoRandomStars.visible:
             return
 
-        startX = math.floor(self._tileRect.left / RenderContext._PseudoRandomStarsChunkSize) * \
+        startX = math.floor(self._tileRect.left() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
-        startY = math.floor(self._tileRect.top / RenderContext._PseudoRandomStarsChunkSize) * \
+        startY = math.floor(self._tileRect.top() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
-        finishX = math.ceil(self._tileRect.right / RenderContext._PseudoRandomStarsChunkSize) * \
+        finishX = math.ceil(self._tileRect.right() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
-        finishY = math.ceil(self._tileRect.bottom / RenderContext._PseudoRandomStarsChunkSize) * \
+        finishY = math.ceil(self._tileRect.bottom() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
 
         brush = maprenderer.AbstractBrush(self._styles.pseudoRandomStars.fillColor)
-        rect = maprenderer.RectangleF()
+        rect = maprenderer.AbstractRectangleF()
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
@@ -439,11 +439,11 @@ class RenderContext(object):
                         int(RenderContext._PseudoRandomStarsMaxPerChunk / self._scale)
 
                     for _ in range(starCount):
-                        rect.x = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkLeft
-                        rect.y = rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkTop
+                        rect.setX(rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkLeft)
+                        rect.setY(rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkTop)
                         diameter = rand.random() * 2
-                        rect.width = diameter / self._scale * travellermap.ParsecScaleX
-                        rect.height = diameter / self._scale * travellermap.ParsecScaleY
+                        rect.setWidth(diameter / self._scale * travellermap.ParsecScaleX)
+                        rect.setHeight(diameter / self._scale * travellermap.ParsecScaleY)
 
                         self._graphics.drawEllipse(
                             pen=None,
@@ -494,10 +494,10 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        h = ((math.floor((self._tileRect.left) / travellermap.SectorWidth) - 1) - travellermap.ReferenceSectorX) * \
+        h = ((math.floor((self._tileRect.left()) / travellermap.SectorWidth) - 1) - travellermap.ReferenceSectorX) * \
             travellermap.SectorWidth - travellermap.ReferenceHexX
         gridSlop = 10
-        while h <= (self._tileRect.right + travellermap.SectorWidth):
+        while h <= (self._tileRect.right() + travellermap.SectorWidth):
             with self._graphics.save():
                 self._graphics.translateTransform(dx=h, dy=0)
                 self._graphics.scaleTransform(
@@ -505,17 +505,17 @@ class RenderContext(object):
                     scaleY=1 / travellermap.ParsecScaleY)
                 self._graphics.drawLine(
                     pen=self._styles.sectorGrid.pen,
-                    pt1=maprenderer.PointF(0, self._tileRect.top - gridSlop),
-                    pt2=maprenderer.PointF(0, self._tileRect.bottom + gridSlop))
+                    pt1=maprenderer.AbstractPointF(0, self._tileRect.top() - gridSlop),
+                    pt2=maprenderer.AbstractPointF(0, self._tileRect.bottom() + gridSlop))
             h += travellermap.SectorWidth
 
-        v = ((math.floor((self._tileRect.top) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
+        v = ((math.floor((self._tileRect.top()) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
             travellermap.SectorHeight - travellermap.ReferenceHexY
-        while v <= (self._tileRect.bottom + travellermap.SectorHeight):
+        while v <= (self._tileRect.bottom() + travellermap.SectorHeight):
             self._graphics.drawLine(
                 pen=self._styles.sectorGrid.pen,
-                pt1=maprenderer.PointF(self._tileRect.left - gridSlop, v),
-                pt2=maprenderer.PointF(self._tileRect.right + gridSlop, v))
+                pt1=maprenderer.AbstractPointF(self._tileRect.left() - gridSlop, v),
+                pt2=maprenderer.AbstractPointF(self._tileRect.right() + gridSlop, v))
             v += travellermap.SectorHeight
 
     def _drawSubsectorGrid(self) -> None:
@@ -525,9 +525,9 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        hmin = int(math.floor(self._tileRect.left / travellermap.SubsectorWidth) - 1 -
+        hmin = int(math.floor(self._tileRect.left() / travellermap.SubsectorWidth) - 1 -
                    travellermap.ReferenceSectorX)
-        hmax = int(math.ceil((self._tileRect.right + travellermap.SubsectorWidth +
+        hmax = int(math.ceil((self._tileRect.right() + travellermap.SubsectorWidth +
                               travellermap.ReferenceHexX) / travellermap.SubsectorWidth))
         gridSlop = 10
         for hi in range(hmin, hmax + 1):
@@ -536,8 +536,8 @@ class RenderContext(object):
             h = hi * travellermap.SubsectorWidth - travellermap.ReferenceHexX
             self._graphics.drawLine(
                 pen=self._styles.subsectorGrid.pen,
-                pt1=maprenderer.PointF(h, self._tileRect.top - gridSlop),
-                pt2=maprenderer.PointF(h, self._tileRect.bottom + gridSlop))
+                pt1=maprenderer.AbstractPointF(h, self._tileRect.top() - gridSlop),
+                pt2=maprenderer.AbstractPointF(h, self._tileRect.bottom() + gridSlop))
             with self._graphics.save():
                 self._graphics.translateTransform(dx=h, dy=0)
                 self._graphics.scaleTransform(
@@ -545,12 +545,12 @@ class RenderContext(object):
                     scaleY=1 / travellermap.ParsecScaleY)
                 self._graphics.drawLine(
                     pen=self._styles.subsectorGrid.pen,
-                    pt1=maprenderer.PointF(0, self._tileRect.top - gridSlop),
-                    pt2=maprenderer.PointF(0, self._tileRect.bottom + gridSlop))
+                    pt1=maprenderer.AbstractPointF(0, self._tileRect.top() - gridSlop),
+                    pt2=maprenderer.AbstractPointF(0, self._tileRect.bottom() + gridSlop))
 
-        vmin = int(math.floor(self._tileRect.top / travellermap.SubsectorHeight) - 1 -
+        vmin = int(math.floor(self._tileRect.top() / travellermap.SubsectorHeight) - 1 -
                    travellermap.ReferenceSectorY)
-        vmax = int(math.ceil((self._tileRect.bottom + travellermap.SubsectorHeight +
+        vmax = int(math.ceil((self._tileRect.bottom() + travellermap.SubsectorHeight +
                               travellermap.ReferenceHexY) / travellermap.SubsectorHeight))
         for vi in range(vmin, vmax + 1):
             if (vi % 4) == 0:
@@ -558,8 +558,8 @@ class RenderContext(object):
             v = vi * travellermap.SubsectorHeight - travellermap.ReferenceHexY
             self._graphics.drawLine(
                 pen=self._styles.subsectorGrid.pen,
-                pt1=maprenderer.PointF(self._tileRect.left - gridSlop, v),
-                pt2=maprenderer.PointF(self._tileRect.right + gridSlop, v))
+                pt1=maprenderer.AbstractPointF(self._tileRect.left() - gridSlop, v),
+                pt2=maprenderer.AbstractPointF(self._tileRect.right() + gridSlop, v))
 
     def _drawParsecGrid(self) -> None:
         if not self._styles.parsecGrid.visible:
@@ -570,36 +570,37 @@ class RenderContext(object):
 
         parsecSlop = 1
 
-        hx = int(math.floor(self._tileRect.x))
-        hw = int(math.ceil(self._tileRect.width))
-        hy = int(math.floor(self._tileRect.y))
-        hh = int(math.ceil(self._tileRect.height))
+        hx = int(math.floor(self._tileRect.x()))
+        hw = int(math.ceil(self._tileRect.width()))
+        hy = int(math.floor(self._tileRect.y()))
+        hh = int(math.ceil(self._tileRect.height()))
 
         pen = self._styles.parsecGrid.pen
 
         if self._styles.hexStyle == maprenderer.HexStyle.Square:
-            rect = maprenderer.RectangleF()
+            rect = maprenderer.AbstractRectangleF()
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
                     inset = 1
-                    rect.x = px + inset
-                    rect.y = py + inset + yOffset
-                    rect.height = rect.width = 1 - inset * 2
+                    rect.setX(px + inset)
+                    rect.setY(py + inset + yOffset)
+                    rect.setWidth(1 - inset * 2)
+                    rect.setHeight(1 - inset * 2)
                     self._graphics.drawRectangleOutline(pen=pen, rect=rect)
         elif self._styles.hexStyle == maprenderer.HexStyle.Hex:
-            points = [maprenderer.PointF(), maprenderer.PointF(), maprenderer.PointF(), maprenderer.PointF()]
+            points = [maprenderer.AbstractPointF(), maprenderer.AbstractPointF(), maprenderer.AbstractPointF(), maprenderer.AbstractPointF()]
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
-                    points[0].x = px + -travellermap.HexWidthOffset
-                    points[0].y = py + 0.5 + yOffset
-                    points[1].x = px + travellermap.HexWidthOffset
-                    points[1].y = py + 1.0 + yOffset
-                    points[2].x = px + 1.0 - travellermap.HexWidthOffset
-                    points[2].y = py + 1.0 + yOffset
-                    points[3].x = px + 1.0 + travellermap.HexWidthOffset
-                    points[3].y = py + 0.5 + yOffset
+                    points[0].setX(px + -travellermap.HexWidthOffset)
+                    points[0].setY(py + 0.5 + yOffset)
+                    points[1].setX(px + travellermap.HexWidthOffset)
+                    points[1].setY(py + 1.0 + yOffset)
+                    points[2].setX(px + 1.0 - travellermap.HexWidthOffset)
+                    points[2].setY(py + 1.0 + yOffset)
+                    points[3].setX(px + 1.0 + travellermap.HexWidthOffset)
+                    points[3].setY(py + 0.5 + yOffset)
                     self._graphics.drawLines(pen, points)
 
         if self._styles.numberAllHexes and (self._styles.worldDetails & maprenderer.WorldDetails.Hex) != 0:
@@ -651,7 +652,7 @@ class RenderContext(object):
                 _drawLabelHelper(
                     graphics=self._graphics,
                     text=subsector.name(),
-                    center=maprenderer.PointF(x=centerX, y=centerY),
+                    center=maprenderer.AbstractPointF(x=centerX, y=centerY),
                     font=self._styles.subsectorNames.font,
                     brush=brush,
                     labelStyle=self._styles.subsectorNames.textStyle)
@@ -782,9 +783,9 @@ class RenderContext(object):
                         continue
                     labelPos = RenderContext._hexToCenter(labelPos)
                     if border.labelOffsetX():
-                        labelPos.x += border.labelOffsetX() * 0.7
+                        labelPos.setX(labelPos.x() + (border.labelOffsetX() * 0.7))
                     if border.labelOffsetY():
-                        labelPos.y -= border.labelOffsetY() * 0.7
+                        labelPos.setY(labelPos.y() - (border.labelOffsetY() * 0.7))
 
                     _drawLabelHelper(
                         graphics=self._graphics,
@@ -803,9 +804,9 @@ class RenderContext(object):
                     # NOTE: This todo came in with the traveller map code
                     # TODO: Adopt some of the tweaks from .MSEC
                     if label.offsetX():
-                        labelPos.x += label.offsetX() * 0.7
+                        labelPos.setX(labelPos.x() + (label.offsetX() * 0.7))
                     if label.offsetY():
-                        labelPos.y -= label.offsetY() * 0.7
+                        labelPos.setY(labelPos.y() - (label.offsetY() * 0.7))
 
                     if label.size() is traveller.Label.Size.Small:
                         font = self._styles.microBorders.smallFont
@@ -860,7 +861,7 @@ class RenderContext(object):
             _drawLabelHelper(
                 graphics=self._graphics,
                 text=name,
-                center=maprenderer.PointF(x=centerX, y=centerY),
+                center=maprenderer.AbstractPointF(x=centerX, y=centerY),
                 font=self._styles.sectorName.font,
                 brush=maprenderer.AbstractBrush(self._styles.sectorName.textColor),
                 labelStyle=self._styles.sectorName.textStyle)
@@ -940,8 +941,8 @@ class RenderContext(object):
                     self._styles.macroRoutes.textHighlightColor)
                 with self._graphics.save():
                     self._graphics.translateTransform(
-                        dx=label.position.x,
-                        dy=label.position.y)
+                        dx=label.position.x(),
+                        dy=label.position.y())
                     self._graphics.scaleTransform(
                         scaleX=1.0 / travellermap.ParsecScaleX,
                         scaleY=1.0 / travellermap.ParsecScaleY)
@@ -980,8 +981,8 @@ class RenderContext(object):
             with self._graphics.save():
                 font = self._styles.megaNames.smallFont if label.minor else self._styles.megaNames.font
                 self._graphics.translateTransform(
-                    dx=label.position.x,
-                    dy=label.position.y)
+                    dx=label.position.x(),
+                    dy=label.position.y())
                 self._graphics.scaleTransform(
                     scaleX=1.0 / travellermap.ParsecScaleX,
                     scaleY=1.0 / travellermap.ParsecScaleY)
@@ -1150,8 +1151,8 @@ class RenderContext(object):
             center = RenderContext._hexToCenter(world.hex())
 
             self._graphics.translateTransform(
-                dx=center.x,
-                dy=center.y)
+                dx=center.x(),
+                dy=center.y())
             self._graphics.scaleTransform(
                 scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
                 scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
@@ -1220,13 +1221,13 @@ class RenderContext(object):
                                     self._graphics.drawEllipse(
                                         brush=maprenderer.AbstractBrush(elem.fillColor),
                                         pen=None,
-                                        rect=maprenderer.RectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
+                                        rect=maprenderer.AbstractRectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
                                 if elem.pen.color:
                                     if renderName and self._styles.fillMicroBorders:
                                         # TODO: Is saving the state actually needed here?
                                         with self._graphics.save():
                                             self._graphics.intersectClipRect(
-                                                rect=maprenderer.RectangleF(
+                                                rect=maprenderer.AbstractRectangleF(
                                                     x=-0.5,
                                                     y=-0.5,
                                                     width=1,
@@ -1234,7 +1235,7 @@ class RenderContext(object):
                                             self._graphics.drawEllipse(
                                                 pen=elem.pen,
                                                 brush=None,
-                                                rect=maprenderer.RectangleF(
+                                                rect=maprenderer.AbstractRectangleF(
                                                     x=-0.4,
                                                     y=-0.4,
                                                     width=0.8,
@@ -1243,7 +1244,7 @@ class RenderContext(object):
                                         self._graphics.drawEllipse(
                                             pen=elem.pen,
                                             brush=None,
-                                            rect=maprenderer.RectangleF(
+                                            rect=maprenderer.AbstractRectangleF(
                                                 x=-0.4,
                                                 y=-0.4,
                                                 width=0.8,
@@ -1263,8 +1264,8 @@ class RenderContext(object):
                             text=hex,
                             font=self._styles.hexNumber.font,
                             brush=maprenderer.AbstractBrush(self._styles.hexNumber.textColor),
-                            x=self._styles.hexNumber.position.x,
-                            y=self._styles.hexNumber.position.y,
+                            x=self._styles.hexNumber.position.x(),
+                            y=self._styles.hexNumber.position.y(),
                             format=maprenderer.StringAlignment.TopCenter)
 
                 if layer is RenderContext.WorldLayer.Foreground:
@@ -1281,8 +1282,8 @@ class RenderContext(object):
                             maprenderer.WorldHelper.hasGasGiants(world):
                             self._drawGasGiant(
                                 self._styles.worlds.textColor,
-                                self._styles.gasGiantPosition.x,
-                                self._styles.gasGiantPosition.y,
+                                self._styles.gasGiantPosition.x(),
+                                self._styles.gasGiantPosition.y(),
                                 0.05,
                                 self._styles.showGasGiantRing)
 
@@ -1420,8 +1421,8 @@ class RenderContext(object):
                         else:
                             with self._graphics.save():
                                 self._graphics.translateTransform(
-                                    dx=self._styles.discPosition.x,
-                                    dy=self._styles.discPosition.y)
+                                    dx=self._styles.discPosition.x(),
+                                    dy=self._styles.discPosition.y())
                                 if uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0:
                                     if (self._styles.worldDetails & maprenderer.WorldDetails.Asteroids) != 0:
                                         # Basic pattern, with probability varying per position:
@@ -1437,14 +1438,14 @@ class RenderContext(object):
 
                                         # Random generator is seeded with world location so it is always the same
                                         rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
-                                        rect = maprenderer.RectangleF()
+                                        rect = maprenderer.AbstractRectangleF()
                                         for i in range(len(lpx)):
                                             if rand.random() < lpr[i]:
-                                                rect.x = lpx[i] * 0.035
-                                                rect.y = lpy[i] * 0.035
+                                                rect.setX(lpx[i] * 0.035)
+                                                rect.setY(lpy[i] * 0.035)
 
-                                                rect.width = 0.04 + rand.random() * 0.03
-                                                rect.height = 0.04 + rand.random() * 0.03
+                                                rect.setWidth(0.04 + rand.random() * 0.03)
+                                                rect.setHeight(0.04 + rand.random() * 0.03)
 
                                                 # If necessary, add jitter here
                                                 #rect.x += 0
@@ -1461,7 +1462,7 @@ class RenderContext(object):
                                             glyph=maprenderer.GlyphDefs.DiamondX,
                                             fonts=self._fontCache,
                                             brush=maprenderer.AbstractBrush(self._styles.worlds.textColor),
-                                            pt=maprenderer.PointF(0, 0))
+                                            pt=maprenderer.AbstractPointF(0, 0))
                                 else:
                                     penColor, brushColor = self._styles.worldColors(world)
                                     brush = maprenderer.AbstractBrush(brushColor) if brushColor else None
@@ -1471,7 +1472,7 @@ class RenderContext(object):
                                     self._graphics.drawEllipse(
                                         pen=pen,
                                         brush=brush,
-                                        rect=maprenderer.RectangleF(
+                                        rect=maprenderer.AbstractRectangleF(
                                             x=-self._styles.discRadius,
                                             y=-self._styles.discRadius,
                                             width=2 * self._styles.discRadius,
@@ -1481,7 +1482,7 @@ class RenderContext(object):
                         self._graphics.drawEllipse(
                             brush=maprenderer.AbstractBrush(self._styles.worlds.textColor),
                             pen=None,
-                            rect=maprenderer.RectangleF(
+                            rect=maprenderer.AbstractRectangleF(
                                 x=-self._styles.discRadius,
                                 y=-self._styles.discRadius,
                                 width=2 * self._styles.discRadius,
@@ -1524,8 +1525,8 @@ class RenderContext(object):
                                 text=alleg,
                                 font=self._styles.worlds.smallFont,
                                 brush=maprenderer.AbstractBrush(self._styles.worlds.textColor),
-                                x=self._styles.allegiancePosition.x,
-                                y=self._styles.allegiancePosition.y,
+                                x=self._styles.allegiancePosition.x(),
+                                y=self._styles.allegiancePosition.y(),
                                 format=maprenderer.StringAlignment.Centered)
             else: # styles.useWorldImages
                 # "Eye-Candy" style
@@ -1553,7 +1554,7 @@ class RenderContext(object):
                                 image=maprenderer.WorldHelper.worldImage(
                                     world=world,
                                     images=self._imageCache),
-                                rect=maprenderer.RectangleF(
+                                rect=maprenderer.AbstractRectangleF(
                                     x=-imageRadius * scaleX,
                                     y=-imageRadius * scaleY,
                                     width=imageRadius * 2 * scaleX,
@@ -1563,7 +1564,7 @@ class RenderContext(object):
                         self._graphics.drawEllipse(
                             brush=maprenderer.AbstractBrush(self._styles.worlds.textColor),
                             pen=None,
-                            rect=maprenderer.RectangleF(
+                            rect=maprenderer.AbstractRectangleF(
                                 x=-self._styles.discRadius,
                                 y=-self._styles.discRadius,
                                 width=2 * self._styles.discRadius,
@@ -1584,7 +1585,7 @@ class RenderContext(object):
                                 self._styles.amberZone.pen \
                                 if zone is traveller.ZoneType.AmberZone else \
                                 self._styles.redZone.pen
-                            rect = maprenderer.RectangleF(
+                            rect = maprenderer.AbstractRectangleF(
                                 x=-decorationRadius,
                                 y=-decorationRadius,
                                 width=decorationRadius * 2,
@@ -1632,7 +1633,7 @@ class RenderContext(object):
                             font=self._styles.hexNumber.font,
                             brush=maprenderer.AbstractBrush(self._styles.worlds.textColor),
                             x=decorationRadius,
-                            y=self._styles.uwp.position.y,
+                            y=self._styles.uwp.position.y(),
                             format=maprenderer.StringAlignment.CenterLeft)
 
                     if renderName:
@@ -1654,12 +1655,12 @@ class RenderContext(object):
                                 dx=decorationRadius,
                                 dy=0.0)
                             self._graphics.scaleTransform(
-                                scaleX=self._styles.worlds.textStyle.scale.width,
-                                scaleY=self._styles.worlds.textStyle.scale.height)
+                                scaleX=self._styles.worlds.textStyle.scale.width(),
+                                scaleY=self._styles.worlds.textStyle.scale.height())
                             self._graphics.translateTransform(
                                 dx=self._graphics.measureString(
                                     text=name,
-                                    font=self._styles.worlds.font).width / 2,
+                                    font=self._styles.worlds.font).width() / 2,
                                 dy=0.0) # Left align
 
                             self._drawWorldLabel(
@@ -1675,7 +1676,7 @@ class RenderContext(object):
             backgroundStyle: maprenderer.TextBackgroundStyle,
             brush: maprenderer.AbstractBrush,
             color: str,
-            position: maprenderer.PointF,
+            position: maprenderer.AbstractPointF,
             font: maprenderer.AbstractFont,
             text: str
             ) -> None:
@@ -1687,19 +1688,19 @@ class RenderContext(object):
                 # TODO: Implement this with a clipping region instead
                 self._graphics.drawRectangleFill(
                     brush=maprenderer.AbstractBrush(self._styles.backgroundColor),
-                    rect=maprenderer.RectangleF(
-                        x=position.x - size.width / 2,
-                        y=position.y - size.height / 2,
-                        width=size.width,
-                        height=size.height))
+                    rect=maprenderer.AbstractRectangleF(
+                        x=position.x() - size.width() / 2,
+                        y=position.y() - size.height() / 2,
+                        width=size.width(),
+                        height=size.height()))
         elif backgroundStyle is maprenderer.TextBackgroundStyle.Filled:
             self._graphics.drawRectangleFill(
                 brush=brush,
-                rect=maprenderer.RectangleF(
-                    x=position.x - size.width / 2,
-                    y=position.y - size.height / 2,
-                    width=size.width,
-                    height=size.height))
+                rect=maprenderer.AbstractRectangleF(
+                    x=position.x() - size.width() / 2,
+                    y=position.y() - size.height() / 2,
+                    width=size.width(),
+                    height=size.height()))
         elif backgroundStyle is maprenderer.TextBackgroundStyle.Outline or \
             backgroundStyle is maprenderer.TextBackgroundStyle.Shadow:
             # NOTE: This todo came over from traveller map
@@ -1727,8 +1728,8 @@ class RenderContext(object):
                         text=text,
                         font=font,
                         brush=brush,
-                        x=position.x + sx * dx,
-                        y=position.y + sy * dy,
+                        x=position.x() + sx * dx,
+                        y=position.y() + sy * dy,
                         format=maprenderer.StringAlignment.Centered)
                     dy += outlineSkip
                 dx += outlineSkip
@@ -1737,8 +1738,8 @@ class RenderContext(object):
             text=text,
             font=font,
             brush=maprenderer.AbstractBrush(color),
-            x=position.x,
-            y=position.y,
+            x=position.x(),
+            y=position.y(),
             format=maprenderer.StringAlignment.Centered)
 
     def _drawStars(self, world: traveller.World) -> None:
@@ -1747,7 +1748,7 @@ class RenderContext(object):
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
             center = self._hexToCenter(world.hex())
 
-            self._graphics.translateTransform(dx=center.x, dy=center.y)
+            self._graphics.translateTransform(dx=center.x(), dy=center.y())
             self._graphics.scaleTransform(
                 scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
                 scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
@@ -1765,9 +1766,9 @@ class RenderContext(object):
                 self._graphics.drawEllipse(
                     pen=pen,
                     brush=solidBrush,
-                    rect=maprenderer.RectangleF(
-                        x=offset.x * offsetScale - radius,
-                        y=offset.y * offsetScale - radius,
+                    rect=maprenderer.AbstractRectangleF(
+                        x=offset.x() * offsetScale - radius,
+                        y=offset.y() * offsetScale - radius,
                         width=radius * 2,
                         height=radius * 2))
 
@@ -1784,7 +1785,7 @@ class RenderContext(object):
             self._graphics.drawEllipse(
                 brush=maprenderer.AbstractBrush(color),
                 pen=None,
-                rect=maprenderer.RectangleF(
+                rect=maprenderer.AbstractRectangleF(
                     x=-radius,
                     y=-radius,
                     width=radius * 2,
@@ -1795,7 +1796,7 @@ class RenderContext(object):
                 self._graphics.drawEllipse(
                     pen=maprenderer.AbstractPen(color=color, width=radius / 4),
                     brush=None,
-                    rect=maprenderer.RectangleF(
+                    rect=maprenderer.AbstractRectangleF(
                         x=-radius * 1.75,
                         y=-radius * 0.4,
                         width=radius * 1.75 * 2,
@@ -1813,7 +1814,7 @@ class RenderContext(object):
         self._graphics.drawEllipse(
             pen=element.pen,
             brush=maprenderer.AbstractBrush(element.fillColor),
-            rect=maprenderer.RectangleF(x=-radius, y=-radius, width=radius * 2, height=radius * 2))
+            rect=maprenderer.AbstractRectangleF(x=-radius, y=-radius, width=radius * 2, height=radius * 2))
 
     def _drawMicroBorders(self, layer: BorderLayer) -> None:
         fillAlpha = 64
@@ -1842,7 +1843,7 @@ class RenderContext(object):
                     sectorX=sector.x(),
                     sectorY=sector.y(),
                     pathType=pathType)
-                if not self._tileRect.intersectsWith(clip.bounds):
+                if not self._tileRect.intersectsWith(clip.bounds()):
                     continue
 
             with self._graphics.save():
@@ -1896,7 +1897,7 @@ class RenderContext(object):
                     outline = region.absoluteOutline()
                     drawPath = []
                     for x, y in outline:
-                        drawPath.append(maprenderer.PointF(x=x, y=y))
+                        drawPath.append(maprenderer.AbstractPointF(x=x, y=y))
                     types = [maprenderer.PathPointType.Start]
                     for _ in range(len(outline) - 1):
                         types.append(maprenderer.PathPointType.Line)
@@ -2022,26 +2023,26 @@ class RenderContext(object):
         math.sin(math.pi * 1 / 3), math.sin(math.pi * 2 / 3), math.sin(math.pi * 3 / 3),
         math.sin(math.pi * 4 / 3), math.sin(math.pi * 5 / 3), math.sin(math.pi * 6 / 3)]
     @staticmethod
-    def _starOffset(index: int) -> maprenderer.PointF:
+    def _starOffset(index: int) -> maprenderer.AbstractPointF:
         if index >= len(RenderContext._StarOffsetX):
             index = (index % (len(RenderContext._StarOffsetX) - 1)) + 1
-        return maprenderer.PointF(RenderContext._StarOffsetX[index], RenderContext._StarOffsetY[index])
+        return maprenderer.AbstractPointF(RenderContext._StarOffsetX[index], RenderContext._StarOffsetY[index])
 
     @staticmethod
-    def _offsetRouteSegment(startPoint: maprenderer.PointF, endPoint: maprenderer.PointF, offset: float) -> None:
-        dx = (endPoint.x - startPoint.x) * travellermap.ParsecScaleX
-        dy = (endPoint.y - startPoint.y) * travellermap.ParsecScaleY
+    def _offsetRouteSegment(startPoint: maprenderer.AbstractPointF, endPoint: maprenderer.AbstractPointF, offset: float) -> None:
+        dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * travellermap.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
         if not length:
             return # No offset
         ddx = (dx * offset / length) / travellermap.ParsecScaleX
         ddy = (dy * offset / length) / travellermap.ParsecScaleY
-        startPoint.x += ddx
-        startPoint.y += ddy
-        endPoint.x -= ddx
-        endPoint.y -= ddy
+        startPoint.setX(startPoint.x() + ddx)
+        startPoint.setY(startPoint.y() + ddy)
+        endPoint.setX(endPoint.x() - ddx)
+        endPoint.setY(endPoint.y() - ddy)
 
     @staticmethod
-    def _hexToCenter(hex: travellermap.HexPosition) -> maprenderer.PointF:
+    def _hexToCenter(hex: travellermap.HexPosition) -> maprenderer.AbstractPointF:
         centerX, centerY = hex.absoluteCenter()
-        return maprenderer.PointF(x=centerX, y=centerY)
+        return maprenderer.AbstractPointF(x=centerX, y=centerY)

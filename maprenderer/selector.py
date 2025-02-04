@@ -10,16 +10,16 @@ class RectSelector(object):
             slop: float = 0.3 # Arbitrary, but 0.25 not enough for some routes.
             ) -> None:
         self._slop = slop
-        self._rect = maprenderer.RectangleF()
+        self._rect = maprenderer.AbstractRectangleF()
 
         self._cachedSectors = None
         self._cachedWorlds = None
 
-    def rect(self) -> maprenderer.RectangleF:
-        return maprenderer.RectangleF(self._rect)
+    def rect(self) -> maprenderer.AbstractRectangleF:
+        return maprenderer.AbstractRectangleF(self._rect)
 
-    def setRect(self, rect: maprenderer.RectangleF) -> None:
-        self._rect = maprenderer.RectangleF(rect)
+    def setRect(self, rect: maprenderer.AbstractRectangleF) -> None:
+        self._rect = maprenderer.AbstractRectangleF(rect)
         self._cachedSectors = None
         self._cachedWorlds = None
 
@@ -35,17 +35,17 @@ class RectSelector(object):
         if self._cachedSectors is not None:
             return self._cachedSectors
 
-        rect = maprenderer.RectangleF(self._rect)
+        rect = maprenderer.AbstractRectangleF(self._rect)
         if self._slop:
             rect.inflate(
-                x=rect.width * self._slop,
-                y=rect.height * self._slop)
+                x=rect.width() * self._slop,
+                y=rect.height() * self._slop)
 
-        left = int(math.floor((rect.left + travellermap.ReferenceHexX) / travellermap.SectorWidth))
-        right = int(math.floor((rect.right + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+        left = int(math.floor((rect.left() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+        right = int(math.floor((rect.right() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
 
-        top = int(math.floor((rect.top + travellermap.ReferenceHexY) / travellermap.SectorHeight))
-        bottom = int(math.floor((rect.bottom + travellermap.ReferenceHexY) / travellermap.SectorHeight))
+        top = int(math.floor((rect.top() + travellermap.ReferenceHexY) / travellermap.SectorHeight))
+        bottom = int(math.floor((rect.bottom() + travellermap.ReferenceHexY) / travellermap.SectorHeight))
 
         self._cachedSectors = traveller.WorldManager.instance().sectorsInArea(
             upperLeft=travellermap.HexPosition(
@@ -65,17 +65,17 @@ class RectSelector(object):
         if self._cachedWorlds is not None:
             return self._cachedWorlds
 
-        rect = maprenderer.RectangleF(self._rect)
+        rect = maprenderer.AbstractRectangleF(self._rect)
         if self._slop:
             rect.inflate(
-                x=rect.width * self._slop,
-                y=rect.height * self._slop)
+                x=rect.width() * self._slop,
+                y=rect.height() * self._slop)
 
-        left = int(math.floor(rect.left))
-        right = int(math.ceil(rect.right))
+        left = int(math.floor(rect.left()))
+        right = int(math.ceil(rect.right()))
 
-        top = int(math.floor(rect.top))
-        bottom = int(math.ceil(rect.bottom))
+        top = int(math.floor(rect.top()))
+        bottom = int(math.ceil(rect.bottom()))
 
         self._cachedWorlds = traveller.WorldManager.instance().worldsInArea(
             upperLeft=travellermap.HexPosition(absoluteX=left, absoluteY=top),

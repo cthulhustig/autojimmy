@@ -88,7 +88,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         clipPath.addPolygon(self._convertPath(path))
         self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
     # TODO: This was an overload of intersectClip in traveller map code
-    def intersectClipRect(self, rect: maprenderer.RectangleF) -> None:
+    def intersectClipRect(self, rect: maprenderer.AbstractRectangleF) -> None:
         clipPath = self._painter.clipPath()
         clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
         clipPath.addRect(self._convertRect(rect))
@@ -98,15 +98,15 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawLine(
             self,
             pen: maprenderer.AbstractPen,
-            pt1: maprenderer.PointF,
-            pt2: maprenderer.PointF
+            pt1: maprenderer.AbstractPointF,
+            pt2: maprenderer.AbstractPointF
             ) -> None:
         self._painter.setPen(self._convertPen(pen))
         self._painter.drawLine(
             self._convertPoint(pt1),
             self._convertPoint(pt2))
 
-    def drawLines(self, pen: maprenderer.AbstractPen, points: typing.Sequence[maprenderer.PointF]):
+    def drawLines(self, pen: maprenderer.AbstractPen, points: typing.Sequence[maprenderer.AbstractPointF]):
         self._painter.setPen(self._convertPen(pen))
         self._painter.drawPolyline(self._convertPoints(points))
 
@@ -118,7 +118,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         if path.closed:
             self._painter.drawPolygon(self._convertPath(path))
         else:
-            self._painter.drawPolyline(self._convertPoints(path.points))
+            self._painter.drawPolyline(self._convertPoints(path.points()))
     # TODO: This was an overload of drawPath in the traveller map code
     def drawPathFill(self, brush: maprenderer.AbstractBrush, path: maprenderer.AbstractPath):
         self._painter.setPen(QtCore.Qt.PenStyle.NoPen)
@@ -126,7 +126,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.drawPolygon(self._convertPath(path))
 
     def drawCurve(self, pen: maprenderer.AbstractPen, path: maprenderer.AbstractPath, tension: float = 0.5):
-        self.drawLines(pen=pen, points=path.points)
+        self.drawLines(pen=pen, points=path.points())
     # TODO: This was an overload of drawClosedCurve in the traveller map code
     def drawClosedCurveOutline(self, pen: maprenderer.AbstractPen, path: maprenderer.AbstractPath, tension: float = 0.5):
         self.drawPathOutline(pen=pen, path=path)
@@ -134,12 +134,12 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self.drawPathOutline(brush=brush, path=path)
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawRectangleOutline(self, pen: maprenderer.AbstractPen, rect: maprenderer.RectangleF) -> None:
+    def drawRectangleOutline(self, pen: maprenderer.AbstractPen, rect: maprenderer.AbstractRectangleF) -> None:
         self._painter.setPen(self._convertPen(pen))
         self._painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
         self._painter.drawRect(self._convertRect(rect))
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawRectangleFill(self, brush: maprenderer.AbstractBrush, rect: maprenderer.RectangleF) -> None:
+    def drawRectangleFill(self, brush: maprenderer.AbstractBrush, rect: maprenderer.AbstractRectangleF) -> None:
         self._painter.setPen(QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(self._convertBrush(brush))
         self._painter.drawRect(self._convertRect(rect))
@@ -149,7 +149,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             self,
             pen: typing.Optional[maprenderer.AbstractPen],
             brush: typing.Optional[maprenderer.AbstractBrush],
-            rect: maprenderer.RectangleF
+            rect: maprenderer.AbstractRectangleF
             ) -> None:
         self._painter.setPen(self._convertPen(pen) if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(self._convertBrush(brush) if brush else QtCore.Qt.BrushStyle.NoBrush)
@@ -158,7 +158,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawArc(
             self,
             pen: maprenderer.AbstractPen,
-            rect: maprenderer.RectangleF,
+            rect: maprenderer.AbstractRectangleF,
             startDegrees: float,
             sweepDegrees: float
             ) -> None:
@@ -172,23 +172,23 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawImage(
             self,
             image: maprenderer.AbstractImage,
-            rect: maprenderer.RectangleF
+            rect: maprenderer.AbstractRectangleF
             ) -> None:
         self._painter.drawImage(
             self._convertRect(rect),
-            image.image)
+            image.qtImage())
     def drawImageAlpha(
             self,
             alpha: float,
             image: maprenderer.AbstractImage,
-            rect: maprenderer.RectangleF
+            rect: maprenderer.AbstractRectangleF
             ) -> None:
         oldAlpha = self._painter.opacity()
         self._painter.setOpacity(alpha)
         try:
             self._painter.drawImage(
                 self._convertRect(rect),
-                image.image)
+                image.qtImage())
         finally:
             self._painter.setOpacity(oldAlpha)
 
@@ -196,9 +196,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             self,
             text: str,
             font: maprenderer.AbstractFont
-            ) -> maprenderer.SizeF:
+            ) -> maprenderer.AbstractSizeF:
         qtFont = self._convertFont(font)
-        scale = font.emSize / qtFont.pointSize()
+        scale = font.emSize() / qtFont.pointSize()
 
         fontMetrics = QtGui.QFontMetrics(qtFont)
         # TODO: Not sure if this should use bounds or tight bounds. It needs to
@@ -207,7 +207,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         #contentPixelRect = fontMetrics.boundingRect(text)
         contentPixelRect.moveTo(0, 0)
 
-        return maprenderer.SizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
+        return maprenderer.AbstractSizeF(contentPixelRect.width() * scale, contentPixelRect.height() * scale)
 
     def drawString(
             self,
@@ -218,7 +218,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             format: maprenderer.StringAlignment
             ) -> None:
         qtFont = self._convertFont(font)
-        scale = font.emSize / qtFont.pointSize()
+        scale = font.emSize() / qtFont.pointSize()
 
         self._painter.setFont(qtFont)
         # TODO: It looks like Qt uses a pen for text rather than the brush
@@ -330,34 +330,34 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     # so it will need to be parsed each time is even worse
     def _convertFont(self, font: maprenderer.AbstractFont) -> QtGui.QFont:
         # TODO: This is a temp hack, AbstractFont shouldn't be using QFont
-        return font.font
+        return font.qtFont()
 
     def _convertBrush(self, brush: maprenderer.AbstractBrush) -> QtGui.QBrush:
         return QtGui.QBrush(QtGui.QColor(brush.color))
 
-    def _convertRect(self, rect: maprenderer.RectangleF) -> QtCore.QRectF:
-        return QtCore.QRectF(rect.x, rect.y, rect.width, rect.height)
+    def _convertRect(self, rect: maprenderer.AbstractRectangleF) -> QtCore.QRectF:
+        return QtCore.QRectF(rect.x(), rect.y(), rect.width(), rect.height())
 
-    def _convertPoint(self, point: maprenderer.PointF) -> QtCore.QPointF:
-        return QtCore.QPointF(point.x, point.y)
+    def _convertPoint(self, point: maprenderer.AbstractPointF) -> QtCore.QPointF:
+        return QtCore.QPointF(point.x(), point.y())
 
     def _convertPoints(
             self,
-            points: typing.Sequence[maprenderer.PointF]
+            points: typing.Sequence[maprenderer.AbstractPointF]
             ) -> typing.Sequence[QtCore.QPointF]:
-        return [QtCore.QPointF(p.x, p.y) for p in points]
+        return [QtCore.QPointF(p.x(), p.y()) for p in points]
 
     def _convertPath(self, path: maprenderer.AbstractPath) -> QtGui.QPolygonF:
-        return QtGui.QPolygonF(self._convertPoints(path.points))
+        return QtGui.QPolygonF(self._convertPoints(path.points()))
 
     def _convertMatrix(self, transform: maprenderer.AbstractMatrix) -> QtGui.QTransform:
         return QtGui.QTransform(
-            transform.m11,
-            transform.m12,
+            transform.m11(),
+            transform.m12(),
             0,
-            transform.m21,
-            transform.m22,
+            transform.m21(),
+            transform.m22(),
             0,
-            transform.offsetX,
-            transform.offsetY,
+            transform.offsetX(),
+            transform.offsetY(),
             1)

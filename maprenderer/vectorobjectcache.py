@@ -16,9 +16,9 @@ class VectorObject(object):
             scaleY: float,
             nameX: float,
             nameY: float,
-            points: typing.Sequence[maprenderer.PointF],
+            points: typing.Sequence[maprenderer.AbstractPointF],
             types: typing.Optional[typing.Sequence[maprenderer.PathPointType]] = None,
-            bounds: typing.Optional[maprenderer.RectangleF] = None,
+            bounds: typing.Optional[maprenderer.AbstractRectangleF] = None,
             closed: bool = False,
             mapOptions: maprenderer.MapOptions = 0):
         super().__init__()
@@ -35,38 +35,38 @@ class VectorObject(object):
         self.nameY = nameY
         self.closed = closed
         self.mapOptions = mapOptions
-        self._pathDataPoints = [maprenderer.PointF(p) for p in points]
+        self._pathDataPoints = [maprenderer.AbstractPointF(p) for p in points]
         # TODO: This uses byte instead of PathPointType
         self._pathDataTypes = list(types) if types else None
         self._minScale = None
         self._maxScale = None
-        self._cachedBounds = maprenderer.RectangleF(bounds) if bounds else None
+        self._cachedBounds = maprenderer.AbstractRectangleF(bounds) if bounds else None
         self._cachedPath: typing.Optional[maprenderer.AbstractPath] = None
 
     @property
-    def pathDataPoints(self) -> typing.Sequence[maprenderer.PointF]:
+    def pathDataPoints(self) -> typing.Sequence[maprenderer.AbstractPointF]:
         return self._pathDataPoints
 
     @property
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> maprenderer.AbstractRectangleF:
         # Compute bounds if not already set
         if (not self._cachedBounds) and self.pathDataPoints:
             left = right = top = bottom = None
             for point in self._pathDataPoints:
-                if (not left) or (point.x < left):
-                    left = point.x
-                if (not right) or (point.x > right):
-                    right = point.x
-                if (not top) or (point.y < top):
-                    top = point.y
-                if (not bottom) or (point.y > bottom):
-                    bottom = point.y
-            self._cachedBounds = maprenderer.RectangleF(
+                if (not left) or (point.x() < left):
+                    left = point.x()
+                if (not right) or (point.x() > right):
+                    right = point.x()
+                if (not top) or (point.y() < top):
+                    top = point.y()
+                if (not bottom) or (point.y() > bottom):
+                    bottom = point.y()
+            self._cachedBounds = maprenderer.AbstractRectangleF(
                 x=left,
                 y=top,
                 width=right - left,
                 height=bottom - top)
-        return maprenderer.RectangleF(self._cachedBounds) # Don't return internal copy
+        return maprenderer.AbstractRectangleF(self._cachedBounds) # Don't return internal copy
 
     @property
     def pathDataTypes(self) -> typing.List[int]:
@@ -95,7 +95,7 @@ class VectorObject(object):
     def draw(
             self,
             graphics: maprenderer.AbstractGraphics,
-            rect: maprenderer.RectangleF,
+            rect: maprenderer.AbstractRectangleF,
             pen: maprenderer.AbstractPen) -> None:
         transformedBounds = self._transformedBounds()
         if transformedBounds.intersectsWith(rect):
@@ -107,7 +107,7 @@ class VectorObject(object):
     def drawName(
             self,
             graphics: maprenderer.AbstractGraphics,
-            rect: maprenderer.RectangleF,
+            rect: maprenderer.AbstractRectangleF,
             font: maprenderer.AbstractFont,
             textBrush: maprenderer.AbstractBrush,
             labelStyle: maprenderer.LabelStyle
@@ -121,7 +121,7 @@ class VectorObject(object):
 
             with graphics.save():
                 # TODO: Need to check rotation works here, GREAT RIFT text should be rotated (when I add support for it)
-                graphics.translateTransform(dx=pos.x, dy=pos.y)
+                graphics.translateTransform(dx=pos.x(), dy=pos.y())
                 graphics.scaleTransform(
                     scaleX=1.0 / travellermap.ParsecScaleX,
                     scaleY=1.0 / travellermap.ParsecScaleY)
@@ -134,31 +134,33 @@ class VectorObject(object):
                     brush=textBrush,
                     x=0, y=0)
 
-    def _transformedBounds(self) -> maprenderer.RectangleF:
+    def _transformedBounds(self) -> maprenderer.AbstractRectangleF:
         bounds = self.bounds
 
-        bounds.x -= self.originX
-        bounds.y -= self.originY
+        # TODO: I think subtraction and multiply could be combined in
+        # single update
+        bounds.setX(bounds.x() - self.originX)
+        bounds.setY(bounds.y() - self.originY)
 
-        bounds.x *= self.scaleX
-        bounds.y *= self.scaleY
-        bounds.width *= self.scaleX
-        bounds.height *= self.scaleY
-        if bounds.width < 0:
-            bounds.x += bounds.width
-            bounds.width = -bounds.width
-        if bounds.height < 0:
-            bounds.y += bounds.height
-            bounds.height = -bounds.height
+        bounds.setX(bounds.x() * self.scaleX)
+        bounds.setY(bounds.y() * self.scaleY)
+        bounds.setWidth(bounds.width() * self.scaleX)
+        bounds.setHeight(bounds.height() * self.scaleY)
+        if bounds.width() < 0:
+            bounds.setX(bounds.x() + bounds.width())
+            bounds.setWidth(-bounds.width())
+        if bounds.height() < 0:
+            bounds.setY(bounds.y() + bounds.height())
+            bounds.setHeight(-bounds.height())
 
         return bounds
 
-    def _namePosition(self) -> maprenderer.PointF:
+    def _namePosition(self) -> maprenderer.AbstractPointF:
         bounds = self.bounds
         transformedBounds = self._transformedBounds()
-        center = transformedBounds.centre
-        center.x += transformedBounds.width * (self.nameX / bounds.width)
-        center.y += transformedBounds.height * (self.nameY / bounds.height)
+        center = transformedBounds.centre()
+        center.setX(center.x() + (transformedBounds.width() * (self.nameX / bounds.width())))
+        center.setY(center.y() + (transformedBounds.height() * (self.nameY / bounds.height())))
 
         return center
 
@@ -285,7 +287,7 @@ class VectorObjectCache(object):
         bounds = None
         if xElement is not None and yElement is not None \
             and widthElement is not None and heightElement is not None:
-            bounds = maprenderer.RectangleF(
+            bounds = maprenderer.AbstractRectangleF(
                 x=float(xElement.text),
                 y=float(yElement.text),
                 width=float(widthElement.text),
@@ -303,7 +305,7 @@ class VectorObjectCache(object):
             if element is not None:
                 y = float(element.text)
 
-            points.append(maprenderer.PointF(x=x, y=y))
+            points.append(maprenderer.AbstractPointF(x=x, y=y))
 
         element = rootElement.find('./PathDataTypes')
         types = None

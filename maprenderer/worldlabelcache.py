@@ -12,13 +12,13 @@ class WorldLabel(object):
             self,
             name: str,
             mapOptions: maprenderer.MapOptions,
-            location: maprenderer.PointF,
+            location: maprenderer.AbstractPointF,
             labelBiasX: int = 0,
             labelBiasY: int = 0,
             ) -> None:
         self.name = name
         self.mapOptions = mapOptions
-        self.location = maprenderer.PointF(location)
+        self.location = maprenderer.AbstractPointF(location)
         self.labelBiasX = labelBiasX
         self.labelBiasY = labelBiasY
 
@@ -31,10 +31,10 @@ class WorldLabel(object):
             labelBrush: maprenderer.AbstractBrush,
             labelFont: maprenderer.AbstractFont
             ) -> None:
-        pt = maprenderer.PointF(self.location)
+        pt = maprenderer.AbstractPointF(self.location)
 
         with graphics.save():
-            graphics.translateTransform(dx=pt.x, dy=pt.y)
+            graphics.translateTransform(dx=pt.x(), dy=pt.y())
             graphics.scaleTransform(
                 scaleX=1.0 / travellermap.ParsecScaleX,
                 scaleY=1.0 / travellermap.ParsecScaleY)
@@ -47,7 +47,7 @@ class WorldLabel(object):
             graphics.drawEllipse(
                 pen=pen,
                 brush=brush,
-                rect=maprenderer.RectangleF(x=-radius / 2, y=-radius / 2, width=radius, height=radius))
+                rect=maprenderer.AbstractRectangleF(x=-radius / 2, y=-radius / 2, width=radius, height=radius))
 
             if self.labelBiasX > 0:
                 if self.labelBiasY < 0:
@@ -120,7 +120,7 @@ class WorldLabelCache(object):
                     raise RuntimeError('Location element has no Hex attribute')
                 location = traveller.WorldManager.instance().sectorHexToPosition(f'{sector} {hex}')
                 centerX, centerY = location.absoluteCenter()
-                location = maprenderer.PointF(x=centerX, y=centerY)
+                location = maprenderer.AbstractPointF(x=centerX, y=centerY)
 
                 biasXElement = worldElement.find('./LabelBiasX')
                 biasX = 0

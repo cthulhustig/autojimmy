@@ -41,12 +41,12 @@ def drawStringHelper(
     sizes = [graphics.measureString(line, font) for line in lines]
 
     # TODO: This needs updated to not use QT
-    qtFont = font.font
+    qtFont = font.qtFont()
     qtFontMetrics = QtGui.QFontMetrics(qtFont)
 
     # TODO: Not sure how to calculate this
     #fontUnitsToWorldUnits = qtFont.pointSize() / font.FontFamily.GetEmHeight(font.Style)
-    fontUnitsToWorldUnits = font.emSize / qtFont.pointSize()
+    fontUnitsToWorldUnits = font.emSize() / qtFont.pointSize()
     lineSpacing = qtFontMetrics.lineSpacing() * fontUnitsToWorldUnits
     # TODO: I've commented this line out, it's uncommented in the traveller map code but
     # the value is never used
@@ -54,8 +54,8 @@ def drawStringHelper(
     # NOTE: This was commented out in the Traveller Map source code
     #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
 
-    maxWidthRect = max(sizes, key=lambda rect: rect.width)
-    boundingSize = maprenderer.SizeF(width=maxWidthRect.width, height=lineSpacing * len(sizes))
+    maxWidthRect = max(sizes, key=lambda size: size.width())
+    boundingSize = maprenderer.AbstractSizeF(width=maxWidthRect.width(), height=lineSpacing * len(sizes))
 
     # Offset from baseline to top-left.
     y += lineSpacing / 2
@@ -64,11 +64,11 @@ def drawStringHelper(
     if format == maprenderer.TextFormat.MiddleLeft or \
         format == maprenderer.TextFormat.Center or \
         format == maprenderer.TextFormat.MiddleRight:
-        y -= boundingSize.height / 2
+        y -= boundingSize.height() / 2
     elif format == maprenderer.TextFormat.BottomLeft or \
         format == maprenderer.TextFormat.BottomCenter or \
         format == maprenderer.TextFormat.BottomRight:
-        y -= boundingSize.height
+        y -= boundingSize.height()
 
     if format == maprenderer.TextFormat.TopCenter or \
         format == maprenderer.TextFormat.Center or \
@@ -84,7 +84,7 @@ def drawStringHelper(
             text=line,
             font=font,
             brush=brush,
-            x=x + widthFactor * size.width + size.width / 2,
+            x=x + widthFactor * size.width() + size.width() / 2,
             y=y,
             format=maprenderer.StringAlignment.Centered)
         y += lineSpacing

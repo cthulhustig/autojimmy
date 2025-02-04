@@ -205,131 +205,164 @@ class WorldDetails(enum.IntFlag):
     Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight
     Poster = Atlas | Hex | AllNames | Asteroids
 
-class SizeF(object):
+class AbstractSizeF(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'SizeF') -> None: ...
+    def __init__(self, other: 'AbstractSizeF') -> None: ...
     @typing.overload
     def __init__(self, width: float, height: float) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self.width = self.height = 0
+            self._width = self._height = 0
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, SizeF):
+            if not isinstance(other, AbstractSizeF):
                 raise TypeError('The other parameter must be a SizeF')
-            self.width = other.width
-            self.height = other.height
+            self._width = other._width
+            self._height = other._height
         else:
-            self.width = float(args[0] if len(args) > 0 else kwargs['width'])
-            self.height = float(args[1] if len(args) > 1 else kwargs['height'])
+            self._width = float(args[0] if len(args) > 0 else kwargs['width'])
+            self._height = float(args[1] if len(args) > 1 else kwargs['height'])
 
     def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, SizeF):
-            return self.width == other.width and self.height == other.height
+        if isinstance(other, AbstractSizeF):
+            return self._width == other._width and self._height == other._height
         return super().__eq__(other)
 
-class PointF(object):
+    def width(self) -> int:
+        return self._width
+
+    def setWidth(self, width: float) -> None:
+        self._width = width
+
+    def height(self) -> int:
+        return self._height
+
+    def setHeight(self, height: float) -> None:
+        self._height = height
+
+class AbstractPointF(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'PointF') -> None: ...
+    def __init__(self, other: 'AbstractPointF') -> None: ...
     @typing.overload
     def __init__(self, x: float, y: float) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self.x = self.y = 0
+            self._x = self._y = 0
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, PointF):
+            if not isinstance(other, AbstractPointF):
                 raise TypeError('The other parameter must be a PointF')
-            self.x = other.x
-            self.y = other.y
+            self._x = other._x
+            self._y = other._y
         else:
-            self.x = args[0] if len(args) > 0 else kwargs['x']
-            self.y = args[1] if len(args) > 1 else kwargs['y']
+            self._x = args[0] if len(args) > 0 else kwargs['x']
+            self._y = args[1] if len(args) > 1 else kwargs['y']
 
     def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, PointF):
-            return self.x == other.x and self.y == other.y
+        if isinstance(other, AbstractPointF):
+            return self._x == other._y and self.y == other.y
         return super().__eq__(other)
 
-class RectangleF(object):
+    def x(self) -> float:
+        return self._x
+
+    def setX(self, x: float) -> None:
+        self._x = x
+
+    def y(self) -> float:
+        return self._y
+
+    def setY(self, y: float) -> None:
+        self._y = y
+
+# TODO: This (and PointF) could do with an offsetX, offsetY functions as there
+# are quite a few places that are having to do get x/y then set x/y with modifier
+class AbstractRectangleF(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'RectangleF') -> None: ...
+    def __init__(self, other: 'AbstractRectangleF') -> None: ...
     @typing.overload
     def __init__(self, x: float, y: float, width: float, height: float) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self.x = self.y = self.width = self.height = 0
+            self._x = self._y = self._width = self._height = 0
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, RectangleF):
+            if not isinstance(other, AbstractRectangleF):
                 raise TypeError('The other parameter must be a RectangleF')
-            self.x = other.x
-            self.y = other.y
-            self.width = other.width
-            self.height = other.height
+            self._x = other._x
+            self._y = other._y
+            self._width = other._width
+            self._height = other._height
         else:
-            self.x = float(args[0] if len(args) > 0 else kwargs['x'])
-            self.y = float(args[1] if len(args) > 1 else kwargs['y'])
-            self.width = float(args[2] if len(args) > 2 else kwargs['width'])
-            self.height = float(args[3] if len(args) > 3 else kwargs['height'])
+            self._x = float(args[0] if len(args) > 0 else kwargs['x'])
+            self._y = float(args[1] if len(args) > 1 else kwargs['y'])
+            self._width = float(args[2] if len(args) > 2 else kwargs['width'])
+            self._height = float(args[3] if len(args) > 3 else kwargs['height'])
 
-    @property
+    def x(self) -> float:
+        return self._x
+
+    def setX(self, x: float) -> None:
+        self._x = x
+
+    def y(self) -> float:
+        return self._y
+
+    def setY(self, y: float) -> None:
+        self._y = y
+
+    def width(self) -> float:
+        return self._width
+
+    def setWidth(self, width: float) -> None:
+        self._width = width
+
+    def height(self) -> float:
+        return self._height
+
+    def setHeight(self, height: float) -> None:
+        self._height = height
+
     def left(self) -> float:
-        return self.x
+        return self._x
 
-    @property
     def right(self) -> float:
-        return self.x + self.width
+        return self._x + self._width
 
-    @property
     def top(self) -> float:
-        return self.y
+        return self._y
 
-    @property
     def bottom(self) -> float:
-        return self.y + self.height
+        return self._y + self._height
 
-    @property
-    def centre(self) -> PointF:
-        return PointF(self.x + (self.width / 2), self.y + (self.height / 2))
-    @centre.setter
-    def centre(self, center: PointF) -> PointF:
-        self.x = center.x - (self.width / 2)
-        self.y = center.y - (self.height / 2)
-
-    @property
-    def location(self) -> PointF:
-        return PointF(self.x, self.y)
-    @location.setter
-    def location(self, location: PointF) -> None:
-        self.x = location.x
-        self.y = location.y
+    def centre(self) -> AbstractPointF:
+        return AbstractPointF(self._x + (self._width / 2), self._y + (self._height / 2))
 
     def inflate(self, x: float, y: float) -> None:
-        self.x -= x
-        self.y -= y
-        self.width += x * 2
-        self.height += y * 2
+        self._x -= x
+        self._y -= y
+        self._width += x * 2
+        self._height += y * 2
 
-    def intersectsWith(self, rect: 'RectangleF') -> bool:
-        return (rect.x < self.x + self.width) and \
-            (self.x < rect.x + rect.width) and \
-            (rect.y < self.y + self.height) and \
-            (self.y < rect.y + rect.height)
+    def intersectsWith(self, rect: 'AbstractRectangleF') -> bool:
+        return (rect._x < self._x + self._width) and \
+            (self._x < rect._x + rect._width) and \
+            (rect._y < self._y + self._height) and \
+            (self._y < rect._y + rect._height)
 
     def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, RectangleF):
-            return self.x == other.x and self.y == other.y and\
-                self.height == other.height and self.width == other.width
+        if isinstance(other, AbstractRectangleF):
+            return self._x == other._x and self._y == other._y and\
+                self._height == other._height and self._width == other._width
         return super().__eq__(other)
 
 class FontInfo():
@@ -456,35 +489,44 @@ class AbstractBrush(object):
 # TODO: Need to do something with GraphicsUnit
 class AbstractFont(object):
     def __init__(self, families: str, emSize: float, style: FontStyle, units: GraphicsUnit):
-        self.families = families
-        self.emSize = emSize
-        self.style = style
-        self.units = units
+        self._families = families
+        self._family = None
+        self._emSize = emSize
+        self._style = style
+        self._units = units
 
-        self.font = None
-        for family in self.families.split(','):
+        self._font = None
+        for family in self._families.split(','):
             try:
-                self.font = QtGui.QFont(family)
-                if self.font:
+                self._font = QtGui.QFont(family)
+                if self._font:
                     # Qt doesn't support floating point fonts so instead the font that
                     # is created is always the same point size and we scale it to the
                     # required em size
                     #self.font.setPointSizeF(emSize)
-                    self.font.setPointSizeF(10)
-                    if style & FontStyle.Bold:
-                        self.font.setBold(True)
-                    if style & FontStyle.Italic:
-                        self.font.setItalic(True)
-                    if style & FontStyle.Underline:
-                        self.font.setUnderline(True)
-                    if style & FontStyle.Strikeout:
-                        self.font.setStrikeOut(True)
+                    self._font.setPointSizeF(10)
+                    if self._style & FontStyle.Bold:
+                        self._font.setBold(True)
+                    if self._style & FontStyle.Italic:
+                        self._font.setItalic(True)
+                    if self._style & FontStyle.Underline:
+                        self._font.setUnderline(True)
+                    if self._style & FontStyle.Strikeout:
+                        self._font.setStrikeOut(True)
+
+                    self._family = family
                     break
             except:
-                self.font = None
+                self._font = None
 
-        if not self.font:
+        if not self._font:
             raise RuntimeError("No matching font family")
+
+    def qtFont(self) -> QtGui.QFont:
+        return self._font
+
+    def emSize(self) -> float:
+        return self._emSize
 
 class AbstractMatrix(object):
     _IdentityMatrix = numpy.identity(3)
@@ -517,47 +559,23 @@ class AbstractMatrix(object):
 
             self._matrix = AbstractMatrix._createNumpyMatrix(m11=m11, m12=m12, m21=m21, m22=m22, dx=dx, dy=dy)
 
-    @property
     def m11(self) -> float:
         return self._matrix[0][0]
-    @m11.setter
-    def m11(self, val: float) -> None:
-        self._matrix[0][0] = val
 
-    @property
     def m12(self) -> float:
         return self._matrix[0][1]
-    @m12.setter
-    def m12(self, val: float) -> None:
-        self._matrix[0][1] = val
 
-    @property
     def m21(self) -> float:
         return self._matrix[1][0]
-    @m21.setter
-    def m21(self, val: float) -> None:
-        self._matrix[1][0] = val
 
-    @property
     def m22(self) -> float:
         return self._matrix[1][1]
-    @m22.setter
-    def m22(self, val: float) -> None:
-        self._matrix[1][1] = val
 
-    @property
     def offsetX(self) -> float:
         return self._matrix[0][2]
-    @offsetX.setter
-    def offsetX(self, val: float) -> None:
-        self._matrix[0][2] = val
 
-    @property
     def offsetY(self) -> float:
         return self._matrix[1][2]
-    @offsetY.setter
-    def offsetY(self, val: float) -> None:
-        self._matrix[1][2] = val
 
     def isIdentity(self) -> bool:
         return self._matrix == AbstractMatrix._IdentityMatrix
@@ -565,7 +583,7 @@ class AbstractMatrix(object):
     def invert(self) -> None:
         self._matrix = numpy.linalg.inv(self._matrix)
 
-    def rotatePrepend(self, degrees: float, center: PointF) -> None:
+    def rotatePrepend(self, degrees: float, center: AbstractPointF) -> None:
         degrees %= 360
         radians = math.radians(degrees)
         sinAngle = math.sin(radians)
@@ -576,8 +594,8 @@ class AbstractMatrix(object):
             m12=sinAngle,
             m21=-sinAngle,
             m22=cosAngle,
-            dx=center.x * (1 - cosAngle) + center.y * sinAngle,
-            dy=center.y * (1 - cosAngle) + center.x * sinAngle)
+            dx=center.x() * (1 - cosAngle) + center.y() * sinAngle,
+            dy=center.y() * (1 - cosAngle) + center.x() * sinAngle)
 
         self._matrix = self._matrix.dot(rotationMatrix)
 
@@ -609,15 +627,15 @@ class AbstractMatrix(object):
     def numpyMatrix(self) -> numpy.matrix:
         return self._matrix
 
-    def transform(self, point: PointF) -> PointF:
-        result = self._matrix.dot([point.x, point.y, 1])
+    def transform(self, point: AbstractPointF) -> AbstractPointF:
+        result = self._matrix.dot([point.x(), point.y(), 1])
         x = result[0]
         y = result[1]
         w = result[2]
         if w != 0:
             x /= w
             y /= w
-        return PointF(x, y)
+        return AbstractPointF(x, y)
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, AbstractMatrix):
@@ -672,7 +690,7 @@ class PathPointType(enum.IntFlag):
 class AbstractPath(object):
     def __init__(
             self,
-            points: typing.Sequence[PointF],
+            points: typing.Sequence[AbstractPointF],
             types: typing.Sequence[PathPointType],
             closed: bool
             ):
@@ -683,30 +701,27 @@ class AbstractPath(object):
         self.closed = closed
         self._bounds = None # Calculate on demand
 
-    @property
-    def points(self) -> typing.Sequence[PointF]:
+    def points(self) -> typing.Sequence[AbstractPointF]:
         return self._points
-    @property
     def types(self) -> typing.Sequence[PathPointType]:
         return self._types
 
-    @property
-    def bounds(self) -> RectangleF:
+    def bounds(self) -> AbstractRectangleF:
         if self._bounds is not None:
             return self._bounds
 
         minX = maxX = minY = maxY = None
         for point in self._points:
-            if minX is None or point.x < minX:
-                minX = point.x
-            if maxX is None or point.x > maxX:
-                maxX = point.x
-            if minY is None or point.y < minY:
-                minY = point.y
-            if maxY is None or point.y > maxY:
-                maxY = point.y
+            if minX is None or point.x() < minX:
+                minX = point.x()
+            if maxX is None or point.x() > maxX:
+                maxX = point.x()
+            if minY is None or point.y() < minY:
+                minY = point.y()
+            if maxY is None or point.y() > maxY:
+                maxY = point.y()
 
-        self._bounds = RectangleF(
+        self._bounds = AbstractRectangleF(
             x=minX,
             y=minY,
             width=maxX - minX,
@@ -718,30 +733,31 @@ class AbstractPath(object):
 # a way that they can still be rendered efficiently
 class AbstractImage(object):
     def __init__(self, path: str):
-        self.path = path
+        self._path = path
 
-        self.image = QtGui.QImage(self.path, None)
-        if not self.image:
-            raise RuntimeError(f'Failed to load {self.path}')
+        self._image = QtGui.QImage(self._path, None)
+        if not self._image:
+            raise RuntimeError(f'Failed to load {self._path}')
 
-    @property
+    def qtImage(self) -> QtGui.QImage:
+        return self._image
+
     def width(self) -> int:
-        return self.image.width()
-    @property
+        return self._image.width()
     def height(self) -> int:
-        return self.image.height()
+        return self._image.height()
 
 class LabelStyle(object):
     def __init__(
             self,
             rotation: float = 0,
-            scale: SizeF = 1,
-            translation: typing.Optional[PointF] = None,
+            scale: AbstractSizeF = 1,
+            translation: typing.Optional[AbstractPointF] = None,
             uppercase: bool = False,
             wrap: bool = False
             ) -> None:
         self.rotation = rotation
         self.scale = scale
-        self.translation = translation if translation else PointF()
+        self.translation = translation if translation else AbstractPointF()
         self.uppercase = uppercase
         self.wrap = wrap

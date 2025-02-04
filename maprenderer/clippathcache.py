@@ -75,7 +75,7 @@ class ClipPathCache(object):
         for x in range(0, travellermap.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._TopOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(maprenderer.AbstractPointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 
@@ -87,7 +87,7 @@ class ClipPathCache(object):
                 count -= 1
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._RightOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(maprenderer.AbstractPointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=(originY + y) + offsetY))
 
@@ -96,7 +96,7 @@ class ClipPathCache(object):
         for x in range(travellermap.SectorWidth - 1, -1, -2):
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._BottomOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(maprenderer.AbstractPointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=(originY + y) + offsetY))
 
@@ -108,7 +108,7 @@ class ClipPathCache(object):
                 count -= 1
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._LeftOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(maprenderer.AbstractPointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 
@@ -124,8 +124,8 @@ class ClipPathCache(object):
     def _sectorBounds(
             sectorX: int,
             sectorY: int
-            ) -> maprenderer.RectangleF:
-        return maprenderer.RectangleF(
+            ) -> maprenderer.AbstractRectangleF:
+        return maprenderer.AbstractRectangleF(
             x=(sectorX * travellermap.SectorWidth) - travellermap.ReferenceHexX,
             y=(sectorY * travellermap.SectorHeight) - travellermap.ReferenceHexY,
             width=travellermap.SectorWidth,

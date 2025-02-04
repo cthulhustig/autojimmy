@@ -59,7 +59,7 @@ class StyleSheet(object):
             self.smallFontInfo = maprenderer.FontInfo()
             self.mediumFontInfo = maprenderer.FontInfo()
             self.largeFontInfo = maprenderer.FontInfo()
-            self.position = maprenderer.PointF()
+            self.position = maprenderer.AbstractPointF()
 
             # TODO: Still to fill out
             self._font = None
@@ -229,13 +229,13 @@ class StyleSheet(object):
         self.capitalOverlayAltB = StyleSheet.StyleElement()
         self.showStellarOverlay = False
 
-        self.discPosition = maprenderer.PointF(0, 0)
+        self.discPosition = maprenderer.AbstractPointF(0, 0)
         self.discRadius = 0.1
-        self.gasGiantPosition = maprenderer.PointF(0, 0)
-        self.allegiancePosition = maprenderer.PointF(0, 0)
-        self.baseTopPosition = maprenderer.PointF(0, 0)
-        self.baseBottomPosition = maprenderer.PointF(0, 0)
-        self.baseMiddlePosition = maprenderer.PointF(0, 0)
+        self.gasGiantPosition = maprenderer.AbstractPointF(0, 0)
+        self.allegiancePosition = maprenderer.AbstractPointF(0, 0)
+        self.baseTopPosition = maprenderer.AbstractPointF(0, 0)
+        self.baseBottomPosition = maprenderer.AbstractPointF(0, 0)
+        self.baseMiddlePosition = maprenderer.AbstractPointF(0, 0)
 
         self.uwp = StyleSheet.StyleElement()
         self.starport = StyleSheet.StyleElement()
@@ -388,38 +388,38 @@ class StyleSheet(object):
             x = 0.225
             y = 0.125
 
-            self.baseTopPosition = maprenderer.PointF(-x, -y)
-            self.baseBottomPosition = maprenderer.PointF(-x, y)
-            self.gasGiantPosition =  maprenderer.PointF(x, -y)
-            self.allegiancePosition = maprenderer.PointF(x, y)
+            self.baseTopPosition = maprenderer.AbstractPointF(-x, -y)
+            self.baseBottomPosition = maprenderer.AbstractPointF(-x, y)
+            self.gasGiantPosition =  maprenderer.AbstractPointF(x, -y)
+            self.allegiancePosition = maprenderer.AbstractPointF(x, y)
 
-            self.baseMiddlePosition = maprenderer.PointF(
+            self.baseMiddlePosition = maprenderer.AbstractPointF(
                 -0.35 if ((self.options & maprenderer.MapOptions.ForceHexes) != 0) else -0.2,
                 0)
-            self.starport.position = maprenderer.PointF(0, -0.24)
-            self.uwp.position = maprenderer.PointF(0, 0.24)
-            self.worlds.position = maprenderer.PointF(0, 0.4)
+            self.starport.position = maprenderer.AbstractPointF(0, -0.24)
+            self.uwp.position = maprenderer.AbstractPointF(0, 0.24)
+            self.worlds.position = maprenderer.AbstractPointF(0, 0.4)
         else:
             # Poster-style
 
             x = 0.25
             y = 0.18
 
-            self.baseTopPosition = maprenderer.PointF(-x, -y)
-            self.baseBottomPosition = maprenderer.PointF(-x, y)
-            self.gasGiantPosition = maprenderer.PointF(x, -y)
-            self.allegiancePosition = maprenderer.PointF(x, y)
+            self.baseTopPosition = maprenderer.AbstractPointF(-x, -y)
+            self.baseBottomPosition = maprenderer.AbstractPointF(-x, y)
+            self.gasGiantPosition = maprenderer.AbstractPointF(x, -y)
+            self.allegiancePosition = maprenderer.AbstractPointF(x, y)
 
-            self.baseMiddlePosition = maprenderer.PointF(-0.35, 0)
-            self.starport.position = maprenderer.PointF(0, -0.225)
-            self.uwp.position = maprenderer.PointF(0, 0.225)
-            self.worlds.position = maprenderer.PointF(0, 0.37)#  Don't hide hex bottom, leave room for UWP
+            self.baseMiddlePosition = maprenderer.AbstractPointF(-0.35, 0)
+            self.starport.position = maprenderer.AbstractPointF(0, -0.225)
+            self.uwp.position = maprenderer.AbstractPointF(0, 0.225)
+            self.worlds.position = maprenderer.AbstractPointF(0, 0.37)#  Don't hide hex bottom, leave room for UWP
 
         if self.scale >= StyleSheet._WorldUwpMinScale:
             self.worldDetails |= maprenderer.WorldDetails.Uwp
-            self.baseBottomPosition.y = 0.1
-            self.baseMiddlePosition.y = (self.baseBottomPosition.y + self.baseTopPosition.y) / 2
-            self.allegiancePosition.Y = 0.1
+            self.baseBottomPosition.setY(0.1)
+            self.baseMiddlePosition.setY((self.baseBottomPosition.y() + self.baseTopPosition.y()) / 2)
+            self.allegiancePosition.setY(0.1)
 
         if self.worlds.visible:
             fontScale = \
@@ -490,9 +490,6 @@ class StyleSheet(object):
             size=6.5 / 1.4,
             style=maprenderer.FontStyle.Italic)
 
-        test = self.macroNames.font
-        families = test.font.families()
-
         megaNameScaleFactor = min(35, 0.75 * onePixel)
         self.megaNames.fontInfo = maprenderer.FontInfo(
             StyleSheet._DefaultFont,
@@ -537,24 +534,24 @@ class StyleSheet(object):
             max(0.01, onePixel))
 
         self.microBorders.textStyle.rotation = 0
-        self.microBorders.textStyle.translation = maprenderer.PointF(0, 0)
-        self.microBorders.textStyle.scale = maprenderer.SizeF(1.0, 1.0)
+        self.microBorders.textStyle.translation = maprenderer.AbstractPointF(0, 0)
+        self.microBorders.textStyle.scale = maprenderer.AbstractSizeF(1.0, 1.0)
         self.microBorders.textStyle.uppercase = False
 
         self.sectorName.textStyle.rotation = -50 # degrees
-        self.sectorName.textStyle.translation = maprenderer.PointF(0, 0)
-        self.sectorName.textStyle.scale = maprenderer.SizeF(0.75, 1.0)
+        self.sectorName.textStyle.translation = maprenderer.AbstractPointF(0, 0)
+        self.sectorName.textStyle.scale = maprenderer.AbstractSizeF(0.75, 1.0)
         self.sectorName.textStyle.uppercase = False
         self.sectorName.textStyle.wrap = True
 
         self.subsectorNames.textStyle = self.sectorName.textStyle
 
         self.worlds.textStyle.rotation = 0
-        self.worlds.textStyle.scale = maprenderer.SizeF(1.0, 1.0)
-        self.worlds.textStyle.translation = maprenderer.PointF(self.worlds.position)
+        self.worlds.textStyle.scale = maprenderer.AbstractSizeF(1.0, 1.0)
+        self.worlds.textStyle.translation = maprenderer.AbstractPointF(self.worlds.position)
         self.worlds.textStyle.uppercase = False
 
-        self.hexNumber.position = maprenderer.PointF(0, -0.5)
+        self.hexNumber.position = maprenderer.AbstractPointF(0, -0.5)
 
         self.showNebulaBackground = False
         self.showGalaxyBackground = self.deepBackgroundOpacity > 0.0
@@ -610,7 +607,7 @@ class StyleSheet(object):
 
         self.placeholder.content = "*"
         self.placeholder.fontInfo = maprenderer.FontInfo("Georgia", 0.6)
-        self.placeholder.position = maprenderer.PointF(0, 0.17)
+        self.placeholder.position = maprenderer.AbstractPointF(0, 0.17)
 
         self.anomaly.content = "\u2316"; # POSITION INDICATOR
         self.anomaly.fontInfo = maprenderer.FontInfo("Arial Unicode MS,Segoe UI Symbol", 0.6)
@@ -779,7 +776,7 @@ class StyleSheet(object):
             self.worldDetails &= ~maprenderer.WorldDetails.Highlight
             self.worldDetails &= ~maprenderer.WorldDetails.Uwp
             self.worlds.fontInfo.size *= 0.85
-            self.worlds.textStyle.translation = maprenderer.PointF(0, 0.25)
+            self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, 0.25)
 
             self.numberAllHexes = True
             self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Subsector
@@ -982,13 +979,13 @@ class StyleSheet(object):
             self.amberZone.pen.width = self.redZone.pen.width = 0.035
 
             self.sectorName.textStyle.rotation = 0
-            self.sectorName.textStyle.translation = maprenderer.PointF(0, -0.25)
-            self.sectorName.textStyle.scale = maprenderer.SizeF(0.5, 0.25)
+            self.sectorName.textStyle.translation = maprenderer.AbstractPointF(0, -0.25)
+            self.sectorName.textStyle.scale = maprenderer.AbstractSizeF(0.5, 0.25)
             self.sectorName.textStyle.uppercase = True
 
             self.subsectorNames.textStyle.rotation = 0
-            self.subsectorNames.textStyle.translation = maprenderer.PointF(0, -0.25)
-            self.subsectorNames.textStyle.scale = maprenderer.SizeF(0.3, 0.15) #  Expand
+            self.subsectorNames.textStyle.translation = maprenderer.AbstractPointF(0, -0.25)
+            self.subsectorNames.textStyle.scale = maprenderer.AbstractSizeF(0.3, 0.15) #  Expand
             self.subsectorNames.textStyle.uppercase = True
 
             self.subsectorNames.textColor = self.sectorName.textColor = \
@@ -997,8 +994,8 @@ class StyleSheet(object):
                     color=travellermap.MapColours.Goldenrod)
 
             self.microBorders.textStyle.rotation = 0
-            self.microBorders.textStyle.translation = maprenderer.PointF(0, 0.25)
-            self.microBorders.textStyle.scale = maprenderer.SizeF(1.0, 0.5) # Expand
+            self.microBorders.textStyle.translation = maprenderer.AbstractPointF(0, 0.25)
+            self.microBorders.textStyle.scale = maprenderer.AbstractSizeF(1.0, 0.5) # Expand
             self.microBorders.textStyle.uppercase = True
 
             self.microBorders.pen.color = maprenderer.makeAlphaColor(
@@ -1012,8 +1009,8 @@ class StyleSheet(object):
                 borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4
 
             self.worlds.textStyle.rotation = 0
-            self.worlds.textStyle.scale = maprenderer.SizeF(1, 0.5) # Expand
-            self.worlds.textStyle.translation = maprenderer.PointF(0, 0)
+            self.worlds.textStyle.scale = maprenderer.AbstractSizeF(1, 0.5) # Expand
+            self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, 0)
             self.worlds.textStyle.uppercase = True
 
             if (self.scale > StyleSheet._CandyMaxWorldRelativeScale):
@@ -1060,14 +1057,14 @@ class StyleSheet(object):
             self.microBorders.fontInfo.style |= maprenderer.FontStyle.Underline
 
             self.sectorName.textColor = foregroundColor
-            self.sectorName.textStyle.scale = maprenderer.SizeF(1, 1)
+            self.sectorName.textStyle.scale = maprenderer.AbstractSizeF(1, 1)
             self.sectorName.textStyle.rotation = 0
             self.sectorName.textStyle.uppercase = True
             self.sectorName.fontInfo.style |= maprenderer.FontStyle.Bold
             self.sectorName.fontInfo.size *= 0.5
 
             self.subsectorNames.textColor = foregroundColor
-            self.subsectorNames.textStyle.scale = maprenderer.SizeF(1, 1)
+            self.subsectorNames.textStyle.scale = maprenderer.AbstractSizeF(1, 1)
             self.subsectorNames.textStyle.rotation = 0
             self.subsectorNames.textStyle.uppercase = True
             self.subsectorNames.fontInfo.style |= maprenderer.FontStyle.Bold
@@ -1143,7 +1140,7 @@ class StyleSheet(object):
             self.worlds.largeFontInfo.style = maprenderer.FontStyle.Bold
 
             self.hexNumber.fontInfo = maprenderer.FontInfo(self.worlds.fontInfo)
-            self.hexNumber.position.y = -0.49
+            self.hexNumber.position.setY(-0.49)
             self.starport.fontInfo.style = maprenderer.FontStyle.Italic
 
             self.macroNames.fontInfo.families = fontName
@@ -1199,14 +1196,14 @@ class StyleSheet(object):
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
             self.discRadius = 0.11
-            self.gasGiantPosition = maprenderer.PointF(0, -0.23)
-            self.baseTopPosition = maprenderer.PointF(-0.22, -0.21)
-            self.baseMiddlePosition = maprenderer.PointF(-0.32, 0.17)
-            self.baseBottomPosition = maprenderer.PointF(0.22, -0.21)
-            self.starport.position = maprenderer.PointF(0.175, 0.17)
-            self.uwp.position = maprenderer.PointF(0, 0.40)
-            self.discPosition = maprenderer.PointF(-self.discRadius, 0.16)
-            self.worlds.textStyle.translation = maprenderer.PointF(0, -0.04)
+            self.gasGiantPosition = maprenderer.AbstractPointF(0, -0.23)
+            self.baseTopPosition = maprenderer.AbstractPointF(-0.22, -0.21)
+            self.baseMiddlePosition = maprenderer.AbstractPointF(-0.32, 0.17)
+            self.baseBottomPosition = maprenderer.AbstractPointF(0.22, -0.21)
+            self.starport.position = maprenderer.AbstractPointF(0.175, 0.17)
+            self.uwp.position = maprenderer.AbstractPointF(0, 0.40)
+            self.discPosition = maprenderer.AbstractPointF(-self.discRadius, 0.16)
+            self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, -0.04)
 
             self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
 
