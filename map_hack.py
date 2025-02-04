@@ -29,8 +29,7 @@ class MapHackView(QtWidgets.QWidget):
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
 
-        self._viewCenterMapPos = maprenderer.PointF(0, 0) # TODO: I think this is actually in world/absolute coordinates
-        self._tileSize = maprenderer.Size(self.width(), self.height())
+        self._absoluteCenterPos = QtCore.QPointF(0, 0)
         self._scale = MapHackView._DefaultScale
         self._options = \
             maprenderer.MapOptions.SectorGrid | maprenderer.MapOptions.SubsectorGrid | \
@@ -51,10 +50,9 @@ class MapHackView(QtWidgets.QWidget):
         self._worldLabelCache = maprenderer.WorldLabelCache(basePath='./data/map/')
         self._styleCache = maprenderer.DefaultStyleCache(basePath='./data/map/')
         maprenderer.WorldHelper.loadData(basePath='./data/map/') # TODO: Not sure where this should live
-        self._renderer = self._createRender()
+        self._renderer = self._createRenderer()
 
-        self._isDragging = False
-        self._dragPixelPos: typing.Optional[QtCore.QPoint] = None
+        self._worldDragStart: typing.Optional[QtCore.QPointF] = None
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -66,46 +64,52 @@ class MapHackView(QtWidgets.QWidget):
         super().mousePressEvent(event)
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            self._dragPixelPos = event.pos()
+            worldCursorX, worldCursorY = self._renderer.pixelSpaceToWorldSpace(
+                pixelX=event.x(),
+                pixelY=event.y(),
+                clamp=False)
+            self._worldDragStart = QtCore.QPointF(worldCursorX, worldCursorY)
 
-            # TODO: This is borked, need to figure out how to convert a float world space coordinate
-            # to an int absolute coordinate
-            absCursor = self._renderer.pixelSpaceToWorldSpace(pixel=maprenderer.Point(event.x(), event.y()))
-            relCursor = travellermap.absoluteSpaceToRelativeSpace((absCursor.x, absCursor.y))
-            print(f'ABS: {absCursor.x} {absCursor.y} HEX:{relCursor[2]} {relCursor[3]}')
+            # TODO: Remove debug code
+            worldClampedX, worldClampedY = self._renderer.pixelSpaceToWorldSpace(
+                pixelX=event.x(),
+                pixelY=event.y(),
+                clamp=True)
+            sectorX, sectorY, offsetX, offsetY = travellermap.absoluteSpaceToRelativeSpace(
+                (worldClampedX, worldClampedY))
+            print(f'ABS: {worldClampedX} {worldClampedY} SECTOR: {sectorX} {sectorY} HEX:{offsetX} {offsetY}')
 
     # TODO: There is an issue with the drag move where the point you start the
     # drag on isn't staying under the cursor
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
-        if self._renderer and self._dragPixelPos:
-            point = event.pos()
-            screenDelta = point - self._dragPixelPos
-            mapDelta = maprenderer.PointF(
-                screenDelta.x() / self._scale,
-                screenDelta.y() / self._scale)
-            self._dragPixelPos = point
+        if self._renderer and self._worldDragStart:
+            worldCurrentPos = self._renderer.pixelSpaceToWorldSpace(
+                pixelX=event.pos().x(),
+                pixelY=event.pos().y(),
+                clamp=False) # Float value for extra accuracy
+            worldDeltaX = worldCurrentPos[0] - self._worldDragStart.x()
+            worldDeltaY = worldCurrentPos[1] - self._worldDragStart.y()
 
-            self._viewCenterMapPos.x -= mapDelta.x
-            self._viewCenterMapPos.y -= mapDelta.y
-            self._renderer.setTileRect(
-                rect=self._calculateTileRect())
-            self.repaint()
+            self._absoluteCenterPos.setX(
+                self._absoluteCenterPos.x() - worldDeltaX)
+            self._absoluteCenterPos.setY(
+                self._absoluteCenterPos.y() - worldDeltaY)
+            self._updateRendererView()
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseReleaseEvent(event)
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            self._dragPixelPos = None
+            self._worldDragStart = None
 
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
-        self._dragPixelPos = None
+        self._worldDragStart = None
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self._tileSize = maprenderer.Size(self.width(), self.height())
-        self._renderer = self._createRender()
+        self._renderer = self._createRenderer()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
@@ -113,55 +117,53 @@ class MapHackView(QtWidgets.QWidget):
         if self._renderer:
             dx = dy = None
             if event.key() == QtCore.Qt.Key.Key_Left:
-                mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
-                dx = -mapWidth / 10
+                width = self.width() / (self._scale * travellermap.ParsecScaleX)
+                dx = -width / 10
             elif event.key() == QtCore.Qt.Key.Key_Right:
-                mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
-                dx = mapWidth / 10
+                width = self.width() / (self._scale * travellermap.ParsecScaleX)
+                dx = width / 10
             elif event.key() == QtCore.Qt.Key.Key_Up:
-                mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
-                dy = -mapHeight / 10
+                height = self.height() / (self._scale * travellermap.ParsecScaleY)
+                dy = -height / 10
             elif event.key() == QtCore.Qt.Key.Key_Down:
-                mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
-                dy = mapHeight / 10
+                height = self.height() / (self._scale * travellermap.ParsecScaleY)
+                dy = height / 10
 
             if dx != None or dy != None:
                 if dx != None:
-                    self._viewCenterMapPos.x += dx
+                    self._absoluteCenterPos.setX(self._absoluteCenterPos.x() + dx)
                 if dy != None:
-                    self._viewCenterMapPos.y += dy
-                self._renderer.setTileRect(
-                    rect=self._calculateTileRect())
-                self.repaint()
+                    self._absoluteCenterPos.setY(self._absoluteCenterPos.y() + dy)
+                self._updateRendererView()
+
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
 
         if self._renderer:
             cursorScreenPos = event.pos()
-            oldCursorMapPos = self._renderer.pixelSpaceToWorldSpace(maprenderer.PointF(
-                cursorScreenPos.x(),
-                cursorScreenPos.y()),
+            oldWorldCursorX, oldWorldCursorY = self._renderer.pixelSpaceToWorldSpace(
+                pixelX=cursorScreenPos.x(),
+                pixelY=cursorScreenPos.y(),
                 clamp=False) # Float value for extra accuracy
 
             if event.angleDelta().y() > 0:
                 self._scale *= MapHackView._WheelScaleMultiplier
             else:
                 self._scale /= MapHackView._WheelScaleMultiplier
-            self._renderer = self._createRender()
+            self._renderer = self._createRenderer()
 
-            newCursorMapPos = self._renderer.pixelSpaceToWorldSpace(maprenderer.PointF(
-                cursorScreenPos.x(),
-                cursorScreenPos.y()),
+            newWorldCursorX, newWorldCursorY = self._renderer.pixelSpaceToWorldSpace(
+                pixelX=cursorScreenPos.x(),
+                pixelY=cursorScreenPos.y(),
                 clamp=False)
 
-            self._viewCenterMapPos.x += oldCursorMapPos.x - newCursorMapPos.x
-            self._viewCenterMapPos.y += oldCursorMapPos.y - newCursorMapPos.y
+            self._absoluteCenterPos.setX(
+                self._absoluteCenterPos.x() + (oldWorldCursorX - newWorldCursorX))
+            self._absoluteCenterPos.setY(
+                self._absoluteCenterPos.y() + (oldWorldCursorY - newWorldCursorY))
 
-            self._renderer.setTileRect(
-                rect=self._calculateTileRect())
-
-            self.repaint()
+            self._updateRendererView()
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         if not self._graphics or not self._renderer:
@@ -191,12 +193,14 @@ class MapHackView(QtWidgets.QWidget):
             finally:
                 painter.end()
 
-    def _createRender(self) -> maprenderer.RenderContext:
+    def _createRenderer(self) -> maprenderer.RenderContext:
         return maprenderer.RenderContext(
             graphics=self._graphics,
-            tileRect=self._calculateTileRect(),
-            tileSize=self._tileSize,
+            absoluteCenterX=self._absoluteCenterPos.x(),
+            absoluteCenterY=self._absoluteCenterPos.y(),
             scale=self._scale,
+            outputPixelX=self.width(),
+            outputPixelY=self.height(),
             styles=maprenderer.StyleSheet(
                 scale=self._scale,
                 options=self._options,
@@ -208,14 +212,17 @@ class MapHackView(QtWidgets.QWidget):
             styleCache=self._styleCache,
             options=self._options)
 
-    def _calculateTileRect(self) -> maprenderer.RectangleF:
-        mapWidth = self._tileSize.width / (self._scale * travellermap.ParsecScaleX)
-        mapHeight = self._tileSize.height / (self._scale * travellermap.ParsecScaleY)
-        return maprenderer.RectangleF(
-            x=self._viewCenterMapPos.x - (mapWidth / 2),
-            y=self._viewCenterMapPos.y - (mapHeight / 2),
-            width=mapWidth,
-            height=mapHeight)
+    def _updateRendererView(self) -> None:
+        if not self._renderer:
+            self._createRenderer()
+            return
+        self._renderer.setView(
+            absoluteCenterX=self._absoluteCenterPos.x(),
+            absoluteCenterY=self._absoluteCenterPos.y(),
+            scale=self._scale,
+            outputPixelX=self.width(),
+            outputPixelY=self.height())
+        self.repaint()
 
 class MyWidget(gui.WindowWidget):
     def __init__(self):

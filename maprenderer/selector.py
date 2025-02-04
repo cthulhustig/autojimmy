@@ -7,11 +7,10 @@ import typing
 class RectSelector(object):
     def __init__(
             self,
-            rect: maprenderer.RectangleF,
             slop: float = 0.3 # Arbitrary, but 0.25 not enough for some routes.
             ) -> None:
         self._slop = slop
-        self._rect = maprenderer.RectangleF(rect)
+        self._rect = maprenderer.RectangleF()
 
         self._cachedSectors = None
         self._cachedWorlds = None

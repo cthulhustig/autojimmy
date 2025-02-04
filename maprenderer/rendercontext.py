@@ -136,9 +136,11 @@ class RenderContext(object):
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
-            tileRect: maprenderer.RectangleF, # Region to render in map coordinates
-            tileSize: maprenderer.Size, # Pixel size of view to render to
+            absoluteCenterX: float,
+            absoluteCenterY: float,
             scale: float,
+            outputPixelX: int,
+            outputPixelY: int,
             styles: maprenderer.StyleSheet,
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
@@ -148,8 +150,11 @@ class RenderContext(object):
             options: maprenderer.MapOptions
             ) -> None:
         self._graphics = graphics
-        self._tileRect = tileRect
+        self._absoluteCenterX = absoluteCenterX
+        self._absoluteCenterY = absoluteCenterY
         self._scale = scale
+        self._outputPixelX = outputPixelX
+        self._outputPixelY = outputPixelY
         self._options = options
         self._styles = styles
         self._imageCache = imageCache
@@ -159,29 +164,53 @@ class RenderContext(object):
         self._styleCache = styleCache
         self._fontCache = maprenderer.FontCache(sheet=self._styles)
         self._clipCache = maprenderer.ClipPathCache()
-        self._tileSize = tileSize
-        self._selector = maprenderer.RectSelector(rect=self._tileRect)
-        self._clipOutsectorBorders = True
+        self._selector = maprenderer.RectSelector()
+        self._clipOutsectorBorders = True # TODO: Rename this to clipSectorBorders
+        self._tileRect = None
         self._createLayers()
-        self._updateSpaceTransforms()
+        self._updateView()
+
+    def setView(
+            self,
+            absoluteCenterX: float,
+            absoluteCenterY: float,
+            scale: float,
+            outputPixelX: int,
+            outputPixelY: int,
+            ) -> None:
+        self._absoluteCenterX = absoluteCenterX
+        self._absoluteCenterY = absoluteCenterY
+        self._scale = scale
+        self._outputPixelX = outputPixelX
+        self._outputPixelY = outputPixelY
+        self._updateView()
 
     def setTileRect(self, rect: maprenderer.RectangleF) -> None:
         self._tileRect = rect
         self._selector.setRect(rect=self._tileRect)
-        self._updateSpaceTransforms()
+        self._updateView()
 
     def setClipOutsectorBorders(self, enable: bool) -> None:
         self._clipOutsectorBorders = enable
 
-    def pixelSpaceToWorldSpace(self, pixel: maprenderer.Point, clamp: bool = True) -> maprenderer.PointF:
-        world = self._worldSpaceToImageSpace.transform(pixel)
+    # TODO: I should probably rename everything that uses abstract
+    # coordinates to use world coordinates. This is a pretty big job
+    # so need to be sure but it would keep terminology the same as
+    # Traveller Map
+    def pixelSpaceToWorldSpace(
+            self,
+            pixelX: int,
+            pixelY: int,
+            clamp: bool = True
+            ) -> typing.Tuple[float, float]:
+        point = maprenderer.PointF(pixelX, pixelY)
+        world = self._worldSpaceToImageSpace.transform(point)
+        if not clamp:
+            return (world.x, world.y)
 
-        if clamp:
-            x = round(world.x + 0.5)
-            y = round(world.y + (0.5 if x % 2 == 0 else 0))
-            world = maprenderer.PointF(x, y)
-
-        return world
+        return (
+            round(world.x + 0.5),
+            round(world.y + (0.5 if (world.x % 2) == 0 else 0)))
 
     def render(self) -> None:
         with self._graphics.save():
@@ -271,10 +300,17 @@ class RenderContext(object):
 
         self._layers.sort(key=lambda l: self._styles.layerOrder[l.id])
 
-    # TODO: I'm not sure about the use of the term world space
-    # here. It comes from traveller map but as far as I can tell
-    # it's actually dealing with map space
-    def _updateSpaceTransforms(self):
+    def _updateView(self):
+        absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
+        absoluteHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
+        self._tileRect = maprenderer.RectangleF(
+            x=self._absoluteCenterX - (absoluteWidth / 2),
+            y=self._absoluteCenterY - (absoluteHeight / 2),
+            width=absoluteWidth,
+            height=absoluteHeight)
+
+        self._selector.setRect(self._tileRect)
+
         m = maprenderer.AbstractMatrix()
         m.translatePrepend(
             dx=-self._tileRect.left * self._scale * travellermap.ParsecScaleX,
@@ -332,11 +368,11 @@ class RenderContext(object):
                 oy -= h
 
             # Number of copies needed to cover the canvas
-            nx = 1 + int(math.floor(self._tileSize.width / w))
-            ny = 1 + int(math.floor(self._tileSize.height / h))
-            if (ox + nx * w < self._tileSize.width):
+            nx = 1 + int(math.floor(self._outputPixelX / w))
+            ny = 1 + int(math.floor(self._outputPixelY / h))
+            if (ox + nx * w < self._outputPixelX):
                 nx += 1
-            if (oy + ny * h < self._tileSize.height):
+            if (oy + ny * h < self._outputPixelY):
                 ny += 1
 
             imageRect = maprenderer.RectangleF(x=ox, y=oy, width=w + 1, height=h + 1)

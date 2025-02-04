@@ -136,54 +136,54 @@ class MapOptions(enum.IntFlag):
     StellarOverlay = 0x80000
 
 class LayerId(enum.Enum):
-        #------------------------------------------------------------
-        # Background
-        #------------------------------------------------------------
+    #------------------------------------------------------------
+    # Background
+    #------------------------------------------------------------
 
-        Background_Solid = 0
-        Background_NebulaTexture = 1
-        Background_Galaxy = 2
+    Background_Solid = 0
+    Background_NebulaTexture = 1
+    Background_Galaxy = 2
 
-        Background_PseudoRandomStars = 3
-        Background_Rifts = 4
+    Background_PseudoRandomStars = 3
+    Background_Rifts = 4
 
-        #------------------------------------------------------------
-        #Foreground
-        #------------------------------------------------------------
+    #------------------------------------------------------------
+    #Foreground
+    #------------------------------------------------------------
 
-        Macro_Borders = 5
-        Macro_Routes = 6
+    Macro_Borders = 5
+    Macro_Routes = 6
 
-        Grid_Sector = 7
-        Grid_Subsector = 8
-        Grid_Parsec = 9
+    Grid_Sector = 7
+    Grid_Subsector = 8
+    Grid_Parsec = 9
 
-        Names_Subsector = 10
+    Names_Subsector = 10
 
-        Micro_BordersFill = 11
-        Micro_BordersShade = 12
-        Micro_BordersStroke = 13
-        Micro_Routes = 14
-        Micro_BorderExplicitLabels = 15
+    Micro_BordersFill = 11
+    Micro_BordersShade = 12
+    Micro_BordersStroke = 13
+    Micro_Routes = 14
+    Micro_BorderExplicitLabels = 15
 
-        Names_Sector = 16
+    Names_Sector = 16
 
-        Macro_GovernmentRiftRouteNames = 17
-        Macro_CapitalsAndHomeWorlds = 18
-        Mega_GalaxyScaleLabels = 19
+    Macro_GovernmentRiftRouteNames = 17
+    Macro_CapitalsAndHomeWorlds = 18
+    Mega_GalaxyScaleLabels = 19
 
-        Worlds_Background = 20
-        Worlds_Foreground = 21
-        Worlds_Overlays = 22
+    Worlds_Background = 20
+    Worlds_Foreground = 21
+    Worlds_Overlays = 22
 
-        #------------------------------------------------------------
-        # Overlays
-        #------------------------------------------------------------
+    #------------------------------------------------------------
+    # Overlays
+    #------------------------------------------------------------
 
-        Overlay_DroyneChirperWorlds = 23
-        Overlay_MinorHomeworlds = 24
-        Overlay_AncientsWorlds = 25
-        Overlay_ReviewStatus = 26
+    Overlay_DroyneChirperWorlds = 23
+    Overlay_MinorHomeworlds = 24
+    Overlay_AncientsWorlds = 25
+    Overlay_ReviewStatus = 26
 
 class WorldDetails(enum.IntFlag):
     NoDetails = 0 # TODO: Was None in traveller map code
@@ -204,46 +204,6 @@ class WorldDetails(enum.IntFlag):
     Dotmap = NoDetails
     Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight
     Poster = Atlas | Hex | AllNames | Asteroids
-
-class Size(object):
-    @typing.overload
-    def __init__(self) -> None: ...
-    @typing.overload
-    def __init__(self, other: 'Size') -> None: ...
-    @typing.overload
-    def __init__(self, width: int, height: int) -> None: ...
-
-    def __init__(self, *args, **kwargs) -> None:
-        if not args and not kwargs:
-            self._width = self._height = 0
-        elif len(args) + len(kwargs) == 1:
-            other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, Size):
-                raise TypeError('The other parameter must be a Size')
-            self._width = other.width
-            self._height = other.height
-        else:
-            self._width = int(args[0] if len(args) > 0 else kwargs['width'])
-            self._height = int(args[1] if len(args) > 1 else kwargs['height'])
-
-    @property
-    def width(self) -> int:
-        return self._width
-    @width.setter
-    def width(self, width: int) -> None:
-        self._width = int(width)
-
-    @property
-    def height(self) -> int:
-        return self._height
-    @height.setter
-    def height(self, height: int) -> None:
-        self._height = int(height)
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, Size):
-            return self.width == other.width and self.height == other.height
-        return super().__eq__(other)
 
 class SizeF(object):
     @typing.overload
@@ -269,50 +229,6 @@ class SizeF(object):
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, SizeF):
             return self.width == other.width and self.height == other.height
-        return super().__eq__(other)
-
-class Point(object):
-    @typing.overload
-    def __init__(self) -> None: ...
-    @typing.overload
-    def __init__(self, other: 'PointF') -> None: ...
-    @typing.overload
-    def __init__(self, x: int, y: int) -> None: ...
-
-    def __init__(self, *args, **kwargs) -> None:
-        if not args and not kwargs:
-            self.x = self.y = 0
-        elif len(args) + len(kwargs) == 1:
-            other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, Point):
-                raise TypeError('The other parameter must be a Point')
-            self.x = other.x
-            self.y = other.y
-        else:
-            self.x = int(args[0] if len(args) > 0 else kwargs['x'])
-            self.y = int(args[1] if len(args) > 1 else kwargs['y'])
-
-    def __init__(self, x: int, y: int):
-        self._x = int(x)
-        self._y = int(y)
-
-    @property
-    def x(self) -> int:
-        return self._x
-    @x.setter
-    def x(self, x: int) -> None:
-        self._x = int(x)
-
-    @property
-    def y(self) -> int:
-        return self._y
-    @y.setter
-    def y(self, y: int) -> None:
-        self._y = int(y)
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, Point):
-            return self.x == other.x and self.y == other.y
         return super().__eq__(other)
 
 class PointF(object):
@@ -693,7 +609,7 @@ class AbstractMatrix(object):
     def numpyMatrix(self) -> numpy.matrix:
         return self._matrix
 
-    def transform(self, point: typing.Union[Point, PointF]) -> PointF:
+    def transform(self, point: PointF) -> PointF:
         result = self._matrix.dot([point.x, point.y, 1])
         x = result[0]
         y = result[1]
