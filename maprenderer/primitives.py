@@ -432,10 +432,7 @@ class AbstractPen(object):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, AbstractPen):
                 raise TypeError('The other parameter must be an AbstractPen')
-            self._color = other._color
-            self._width = other._width
-            self._style = other._style
-            self._pattern = list(other._pattern) if other._pattern else None
+            self.copyFrom(other)
         else:
             self._color = args[0] if len(args) > 0 else kwargs['color']
             self._width = args[1] if len(args) > 1 else kwargs['width']
@@ -479,6 +476,15 @@ class AbstractPen(object):
         self._style = LineStyle.Custom
         self._pattern = list(pattern)
 
+    def copyFrom(
+            self,
+            other: 'AbstractPen'
+            ) -> None:
+        self._color = other._color
+        self._width = other._width
+        self._style = other._style
+        self._pattern = list(other._pattern) if other._pattern else None
+
 class AbstractBrush(object):
     @typing.overload
     def __init__(self) -> None: ...
@@ -497,7 +503,7 @@ class AbstractBrush(object):
             other = kwargs['other']
             if not isinstance(other, AbstractBrush):
                 raise TypeError('The other parameter must be an AbstractBrush')
-            self._color = other._color
+            self.copyFrom(other)
         elif 'color' in kwargs:
             self._color = kwargs['color']
         else:
@@ -508,6 +514,12 @@ class AbstractBrush(object):
 
     def setColor(self, color: str) -> None:
         self._color = color
+
+    def copyFrom(
+            self,
+            other: 'AbstractBrush'
+            ) -> None:
+        self._color = other._color
 
 # TODO: Using Qt fonts here is a temp hack. Tge traveller map version of
 # AbstractFont implementation uses a system drawing font class. I want to

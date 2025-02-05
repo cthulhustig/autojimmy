@@ -685,7 +685,8 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
-            pen = maprenderer.AbstractPen(self._styles.microRoutes.pen)
+
+            pen = maprenderer.AbstractPen()
             baseWidth = self._styles.microRoutes.pen.width()
 
             for sector in self._selector.sectors():
@@ -1164,6 +1165,7 @@ class RenderContext(object):
             self._graphics.rotateTransform(
                 degrees=self._styles.hexRotation)
 
+            pen = maprenderer.AbstractPen()
             brush = maprenderer.AbstractBrush()
 
             if layer is RenderContext.WorldLayer.Overlay:
@@ -1479,13 +1481,13 @@ class RenderContext(object):
                                             pt=maprenderer.AbstractPointF(0, 0))
                                 else:
                                     penColor, brushColor = self._styles.worldColors(world)
+                                    if penColor:
+                                        pen.copyFrom(self._styles.worldWater.pen)
+                                        pen.setColor(penColor)
                                     if brushColor:
                                         brush.setColor(brushColor)
-                                    pen = maprenderer.AbstractPen(self._styles.worldWater.pen) if penColor else None
-                                    if pen:
-                                        pen.setColor(penColor)
                                     self._graphics.drawEllipse(
-                                        pen=pen,
+                                        pen=pen if penColor else None,
                                         brush=brush if brushColor else None,
                                         rect=maprenderer.AbstractRectangleF(
                                             x=-self._styles.discRadius,
@@ -1774,8 +1776,8 @@ class RenderContext(object):
                 scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
                 scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
 
-            brush = maprenderer.AbstractBrush()
             pen = maprenderer.AbstractPen()
+            brush = maprenderer.AbstractBrush()
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
                 brush.setColor(fillColour)
                 pen.setColor(lineColor)
@@ -1849,8 +1851,8 @@ class RenderContext(object):
             if self._styles.microBorderStyle == maprenderer.MicroBorderStyle.Square else \
             maprenderer.ClipPathCache.PathType.Hex
 
+        pen = maprenderer.AbstractPen(self._styles.microBorders.pen)
         brush = maprenderer.AbstractBrush()
-        pen = maprenderer.AbstractPen(self._styles.microBorders.pen) # TODO: Color.Empty)
 
         penWidth = pen.width()
         for sector in self._selector.sectors():
