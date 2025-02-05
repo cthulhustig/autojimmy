@@ -96,7 +96,7 @@ class AbstractGraphics(object):
 
     def measureString(self, text: str, font: maprenderer.AbstractFont) -> maprenderer.AbstractSizeF:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
-    def drawString(self, text: str, font: maprenderer.AbstractFont, brush: maprenderer.AbstractBrush, x: float, y: float, format: maprenderer.StringAlignment) -> None:
+    def drawString(self, text: str, font: maprenderer.AbstractFont, brush: maprenderer.AbstractBrush, x: float, y: float, format: maprenderer.TextAlignment) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawString')
 
     def save(self) -> AbstractGraphicsState:

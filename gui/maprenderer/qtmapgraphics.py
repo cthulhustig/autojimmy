@@ -215,7 +215,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             font: maprenderer.AbstractFont,
             brush: maprenderer.AbstractBrush,
             x: float, y: float,
-            format: maprenderer.StringAlignment
+            format: maprenderer.TextAlignment
             ) -> None:
         qtFont = self._convertFont(font)
         scale = font.emSize() / qtFont.pointSize()
@@ -245,61 +245,61 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             self.translateTransform(x, y)
             self.scaleTransform(scale, scale)
 
-            if format == maprenderer.StringAlignment.Baseline:
+            if format == maprenderer.TextAlignment.Baseline:
                 # TODO: Handle BaseLine strings
                 #float fontUnitsToWorldUnits = font.Size / font.FontFamily.GetEmHeight(font.Style);
                 #float ascent = font.FontFamily.GetCellAscent(font.Style) * fontUnitsToWorldUnits;
                 #g.DrawString(s, font.Font, this.brush, x, y - ascent);
                 self._painter.drawText(QtCore.QPointF(x, y), text)
-            elif format == maprenderer.StringAlignment.Centered:
+            elif format == maprenderer.TextAlignment.Centered:
                 self._painter.drawText(
                     QtCore.QPointF(
                         (-contentPixelRect.width() / 2) - (leftPadding / 2),
                         (contentPixelRect.height() / 2) - (topPadding / 2)),
                     text)
-            elif format == maprenderer.StringAlignment.TopLeft:
+            elif format == maprenderer.TextAlignment.TopLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
                         0 + leftPadding,
                         contentPixelRect.height() + topPadding),
                     text)
-            elif format == maprenderer.StringAlignment.TopCenter:
+            elif format == maprenderer.TextAlignment.TopCenter:
                 self._painter.drawText(
                     QtCore.QPointF(
                         (-contentPixelRect.width() / 2) - (leftPadding / 2),
                         contentPixelRect.height() + topPadding),
                     text)
-            elif format == maprenderer.StringAlignment.TopRight:
+            elif format == maprenderer.TextAlignment.TopRight:
                 self._painter.drawText(
                     QtCore.QPointF(
                         -contentPixelRect.width() - leftPadding,
                         contentPixelRect.height() + topPadding),
                     text)
-            elif format == maprenderer.StringAlignment.CenterLeft:
+            elif format == maprenderer.TextAlignment.MiddleLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
                         0 + leftPadding,
                         (contentPixelRect.height() / 2) - (topPadding / 2)),
                     text)
-            elif format == maprenderer.StringAlignment.CenterRight:
+            elif format == maprenderer.TextAlignment.MiddleRight:
                 self._painter.drawText(
                     QtCore.QPointF(
                         -contentPixelRect.width() - leftPadding,
                         (contentPixelRect.height() / 2) - (topPadding / 2)),
                     text)
-            elif format == maprenderer.StringAlignment.BottomLeft:
+            elif format == maprenderer.TextAlignment.BottomLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
                         0 + leftPadding,
                         contentPixelRect.height()),
                     text)
-            elif format == maprenderer.StringAlignment.BottomCenter:
+            elif format == maprenderer.TextAlignment.BottomCenter:
                 self._painter.drawText(
                     QtCore.QPointF(
                         (-contentPixelRect.width() / 2) - (leftPadding / 2),
                         contentPixelRect.height()),
                     text)
-            elif format == maprenderer.StringAlignment.BottomRight:
+            elif format == maprenderer.TextAlignment.BottomRight:
                 self._painter.drawText(
                     QtCore.QPointF(
                         -contentPixelRect.width() - leftPadding,

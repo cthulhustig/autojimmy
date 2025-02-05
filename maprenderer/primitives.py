@@ -4,14 +4,14 @@ import math
 import numpy
 import typing
 
-class StringAlignment(enum.Enum):
+class TextAlignment(enum.Enum):
     Baseline = 0
     Centered = 1
     TopLeft = 2
     TopCenter = 3
     TopRight = 4
-    CenterLeft = 5
-    CenterRight = 6
+    MiddleLeft = 5
+    MiddleRight = 6
     BottomLeft = 7
     BottomCenter = 8
     BottomRight = 9
@@ -30,18 +30,6 @@ class FontStyle(enum.IntFlag):
     Italic = 0x2
     Underline = 0x4
     Strikeout = 0x8
-
-# TODO: This should probably be combined with StringAlignment
-class TextFormat(enum.Enum):
-    TopLeft = 0
-    TopCenter = 1
-    TopRight = 2
-    MiddleLeft = 3
-    Center = 4
-    MiddleRight = 5
-    BottomLeft = 6
-    BottomCenter = 7
-    BottomRight = 8
 
 class TextBackgroundStyle(enum.Enum):
     NoStyle = 0 # TODO: Was non in traveller map code

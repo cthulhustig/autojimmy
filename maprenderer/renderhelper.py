@@ -4,18 +4,6 @@ from PyQt5 import QtGui # TODO: Get rid of the need for this include
 # TODO: Ideally I want to refactor things so this file isn't needed. All rendering
 # should live in the render context
 
-# TODO: This is drawString from RenderUtils
-_TextFormatToStringAlignment = {
-    maprenderer.TextFormat.TopLeft: maprenderer.StringAlignment.TopRight,
-    maprenderer.TextFormat.TopCenter: maprenderer.StringAlignment.TopCenter,
-    maprenderer.TextFormat.TopRight: maprenderer.StringAlignment.TopRight,
-    maprenderer.TextFormat.MiddleLeft: maprenderer.StringAlignment.CenterLeft,
-    maprenderer.TextFormat.Center: maprenderer.StringAlignment.Centered,
-    maprenderer.TextFormat.MiddleRight: maprenderer.StringAlignment.CenterRight,
-    maprenderer.TextFormat.BottomLeft: maprenderer.StringAlignment.BottomLeft,
-    maprenderer.TextFormat.BottomCenter: maprenderer.StringAlignment.BottomCenter,
-    maprenderer.TextFormat.BottomRight: maprenderer.StringAlignment.BottomRight
-}
 def drawStringHelper(
         graphics: maprenderer.AbstractGraphics,
         text: str,
@@ -23,7 +11,7 @@ def drawStringHelper(
         brush: maprenderer.AbstractBrush,
         x: float,
         y: float,
-        format: maprenderer.TextFormat = maprenderer.TextFormat.Center
+        format: maprenderer.TextAlignment = maprenderer.TextAlignment.Centered
         ) -> None:
     if not text:
         return
@@ -35,7 +23,7 @@ def drawStringHelper(
             font=font,
             brush=brush,
             x=x, y=y,
-            format=_TextFormatToStringAlignment.get(format))
+            format=format)
         return
 
     sizes = [graphics.measureString(line, font) for line in lines]
@@ -61,22 +49,22 @@ def drawStringHelper(
     y += lineSpacing / 2
 
     widthFactor = 0
-    if format == maprenderer.TextFormat.MiddleLeft or \
-        format == maprenderer.TextFormat.Center or \
-        format == maprenderer.TextFormat.MiddleRight:
+    if format == maprenderer.TextAlignment.MiddleLeft or \
+        format == maprenderer.TextAlignment.Centered or \
+        format == maprenderer.TextAlignment.MiddleRight:
         y -= boundingSize.height() / 2
-    elif format == maprenderer.TextFormat.BottomLeft or \
-        format == maprenderer.TextFormat.BottomCenter or \
-        format == maprenderer.TextFormat.BottomRight:
+    elif format == maprenderer.TextAlignment.BottomLeft or \
+        format == maprenderer.TextAlignment.BottomCenter or \
+        format == maprenderer.TextAlignment.BottomRight:
         y -= boundingSize.height()
 
-    if format == maprenderer.TextFormat.TopCenter or \
-        format == maprenderer.TextFormat.Center or \
-        format == maprenderer.TextFormat.BottomCenter:
+    if format == maprenderer.TextAlignment.TopCenter or \
+        format == maprenderer.TextAlignment.Centered or \
+        format == maprenderer.TextAlignment.BottomCenter:
             widthFactor = -0.5
-    elif format == maprenderer.TextFormat.TopRight or \
-        format == maprenderer.TextFormat.MiddleRight or \
-        format == maprenderer.TextFormat.BottomRight:
+    elif format == maprenderer.TextAlignment.TopRight or \
+        format == maprenderer.TextAlignment.MiddleRight or \
+        format == maprenderer.TextAlignment.BottomRight:
             widthFactor = -1
 
     for line, size in zip(lines, sizes):
@@ -86,5 +74,5 @@ def drawStringHelper(
             brush=brush,
             x=x + widthFactor * size.width() + size.width() / 2,
             y=y,
-            format=maprenderer.StringAlignment.Centered)
+            format=maprenderer.TextAlignment.Centered)
         y += lineSpacing

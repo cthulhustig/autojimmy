@@ -83,7 +83,7 @@ def _drawGlyphHelper(
         brush=brush,
         x=pt.x(),
         y=pt.y(),
-        format=maprenderer.StringAlignment.Centered)
+        format=maprenderer.TextAlignment.Centered)
 
 class RenderContext(object):
     class LayerAction(object):
@@ -627,7 +627,7 @@ class RenderContext(object):
                             self._styles.hexNumber.font,
                             brush,
                             0, 0,
-                            maprenderer.StringAlignment.TopCenter)
+                            maprenderer.TextAlignment.TopCenter)
 
     def _drawSubsectorNames(self) -> None:
         if not self._styles.subsectorNames.visible:
@@ -1278,7 +1278,7 @@ class RenderContext(object):
                             brush=brush,
                             x=self._styles.hexNumber.position.x(),
                             y=self._styles.hexNumber.position.y(),
-                            format=maprenderer.StringAlignment.TopCenter)
+                            format=maprenderer.TextAlignment.TopCenter)
 
                 if layer is RenderContext.WorldLayer.Foreground:
                     elem = self._zoneStyle(world)
@@ -1547,7 +1547,7 @@ class RenderContext(object):
                                 brush=brush,
                                 x=self._styles.allegiancePosition.x(),
                                 y=self._styles.allegiancePosition.y(),
-                                format=maprenderer.StringAlignment.Centered)
+                                format=maprenderer.TextAlignment.Centered)
             else: # styles.useWorldImages
                 # "Eye-Candy" style
                 worldSize = world.physicalSize()
@@ -1656,7 +1656,7 @@ class RenderContext(object):
                             brush=brush,
                             x=decorationRadius,
                             y=self._styles.uwp.position.y(),
-                            format=maprenderer.StringAlignment.CenterLeft)
+                            format=maprenderer.TextAlignment.MiddleLeft)
 
                     if renderName:
                         name = world.name()
@@ -1753,7 +1753,7 @@ class RenderContext(object):
                         brush=brush,
                         x=position.x() + sx * dx,
                         y=position.y() + sy * dy,
-                        format=maprenderer.StringAlignment.Centered)
+                        format=maprenderer.TextAlignment.Centered)
                     dy += outlineSkip
                 dx += outlineSkip
 
@@ -1763,7 +1763,7 @@ class RenderContext(object):
             brush=maprenderer.AbstractBrush(color),
             x=position.x(),
             y=position.y(),
-            format=maprenderer.StringAlignment.Centered)
+            format=maprenderer.TextAlignment.Centered)
 
     def _drawStars(self, world: traveller.World) -> None:
         with self._graphics.save():
@@ -1971,7 +1971,7 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.translateTransform(centerX, centerY)
             self._graphics.scaleTransform(1 / travellermap.ParsecScaleX, 1 / travellermap.ParsecScaleY)
-            self._graphics.drawString(glyph, font, brush, 0, 0, maprenderer.StringAlignment.Centered)
+            self._graphics.drawString(glyph, font, brush, 0, 0, maprenderer.TextAlignment.Centered)
 
     def _zoneStyle(
             self,

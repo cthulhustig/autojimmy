@@ -189,7 +189,6 @@ class StyleSheet(object):
         self.backgroundColor = travellermap.MapColours.Black
 
         self.imageBorderColor = ''
-        self.imageBorderWidth = 0.2
 
         self.showNebulaBackground = False
         self.showGalaxyBackground = False
@@ -1118,7 +1117,6 @@ class StyleSheet(object):
             #layers.MoveAfter(LayerId.Worlds_Background, LayerId.Micro_BordersStroke);
             #layers.MoveAfter(LayerId.Worlds_Foreground, LayerId.Micro_Routes);
 
-            self.imageBorderWidth = 0.1
             self.deepBackgroundOpacity = 0
 
             self.backgroundColor = '#E6E7E8'

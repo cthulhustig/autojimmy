@@ -51,25 +51,25 @@ class WorldLabel(object):
 
             if self.labelBiasX > 0:
                 if self.labelBiasY < 0:
-                    format = maprenderer.TextFormat.BottomLeft
+                    format = maprenderer.TextAlignment.BottomLeft
                 elif self.labelBiasY > 0:
-                    format = maprenderer.TextFormat.TopLeft
+                    format = maprenderer.TextAlignment.TopLeft
                 else:
-                    format = maprenderer.TextFormat.MiddleLeft
+                    format = maprenderer.TextAlignment.MiddleLeft
             elif self.labelBiasX < 0:
                 if self.labelBiasY < 0:
-                    format = maprenderer.TextFormat.BottomRight
+                    format = maprenderer.TextAlignment.BottomRight
                 elif self.labelBiasY > 0:
-                    format = maprenderer.TextFormat.TopRight
+                    format = maprenderer.TextAlignment.TopRight
                 else:
-                    format = maprenderer.TextFormat.MiddleRight
+                    format = maprenderer.TextAlignment.MiddleRight
             else:
                 if self.labelBiasY < 0:
-                    format = maprenderer.TextFormat.BottomCenter
+                    format = maprenderer.TextAlignment.BottomCenter
                 elif self.labelBiasY > 0:
-                    format = maprenderer.TextFormat.TopCenter
+                    format = maprenderer.TextAlignment.TopCenter
                 else:
-                    format = maprenderer.TextFormat.Center
+                    format = maprenderer.TextAlignment.Centered
 
             maprenderer.drawStringHelper(
                 graphics=graphics,
