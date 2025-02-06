@@ -355,13 +355,16 @@ class FontInfo():
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, FontInfo):
                 raise TypeError('The other parameter must be a FontInfo')
-            self.families = other.families
-            self.size = other.size
-            self.style = other.style
+            self.copyFrom(other)
         else:
             self.families = args[0] if len(args) > 0 else kwargs['families']
             self.size = float(args[1] if len(args) > 1 else kwargs['size'])
             self.style = args[2] if len(args) > 2 else kwargs.get('style', FontStyle.Regular)
+
+    def copyFrom(self, other: 'FontInfo') -> None:
+        self.families = other.families
+        self.size = other.size
+        self.style = other.style
 
     def makeFont(self) -> 'AbstractFont':
         if not self.families:
@@ -776,16 +779,35 @@ class AbstractImage(object):
         return self._image.height()
 
 class LabelStyle(object):
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
     def __init__(
             self,
             rotation: float = 0,
-            scale: AbstractSizeF = 1,
+            scale: typing.Optional[AbstractSizeF] = None,
+            translation: typing.Optional[AbstractPointF] = None,
+            uppercase: bool = False,
+            wrap: bool = False
+            ) -> None: ...
+
+    def __init__(
+            self,
+            rotation: float = 0,
+            scale: typing.Optional[AbstractSizeF] = None,
             translation: typing.Optional[AbstractPointF] = None,
             uppercase: bool = False,
             wrap: bool = False
             ) -> None:
         self.rotation = rotation
-        self.scale = scale
-        self.translation = translation if translation else AbstractPointF()
+        self.scale = AbstractSizeF(scale) if scale else AbstractSizeF(width=1, height=1)
+        self.translation = AbstractPointF(translation) if translation else AbstractPointF()
         self.uppercase = uppercase
         self.wrap = wrap
+
+    def copyFrom(self, other: 'LabelStyle') -> None:
+        self.rotation = other.rotation
+        self.scale = AbstractSizeF(other.scale)
+        self.translation = AbstractPointF(other.translation)
+        self.uppercase = other.uppercase
+        self.wrap = other.wrap

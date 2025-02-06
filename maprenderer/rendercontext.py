@@ -242,6 +242,11 @@ class RenderContext(object):
                 layer.Run(this);
                 timers.Add(new Timer(layer.id.ToString()));
                 """
+
+                # TODO: This should probably save the render state before each
+                # layer and restore it afterwards so no one layer can affect another.
+                # If I do this I can remove a load of save states from inside
+                # layer action handlers
                 layer.action()
 
     def _createLayers(self) -> None:
@@ -326,15 +331,14 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        # TODO: Inefficient to create this every frame
-        brush = maprenderer.AbstractBrush(self._styles.backgroundColor)
-
         # NOTE: This is a comment from the original Traveller Map source code
         # HACK: Due to limited precisions of floats, tileRect can end up not covering
         # the full bitmap when far from the origin.
         rect = maprenderer.AbstractRectangleF(self._tileRect)
         rect.inflate(rect.width() * 0.1, rect.height() * 0.1)
-        self._graphics.drawRectangleFill(brush, rect)
+        self._graphics.drawRectangleFill(
+            brush=self._styles.backgroundBrush,
+            rect=rect)
 
     # TODO: When zooming in and out the background doesn't stay in a consistent
     # place between zoom levels. I think traveller map technically has the same
@@ -423,7 +427,6 @@ class RenderContext(object):
         finishY = math.ceil(self._tileRect.bottom() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
 
-        brush = maprenderer.AbstractBrush(self._styles.pseudoRandomStars.fillColor)
         rect = maprenderer.AbstractRectangleF()
         with self._graphics.save():
             self._graphics.setSmoothingMode(
@@ -447,7 +450,7 @@ class RenderContext(object):
 
                         self._graphics.drawEllipse(
                             pen=None,
-                            brush=brush,
+                            brush=self._styles.pseudoRandomStars.fillBrush,
                             rect=rect)
 
     def _drawRifts(self) -> None:
@@ -604,7 +607,6 @@ class RenderContext(object):
                     self._graphics.drawLines(pen, points)
 
         if self._styles.numberAllHexes and (self._styles.worldDetails & maprenderer.WorldDetails.Hex) != 0:
-            brush = maprenderer.AbstractBrush(self._styles.hexNumber.textColor)
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
@@ -625,7 +627,7 @@ class RenderContext(object):
                         self._graphics.drawString(
                             hex,
                             self._styles.hexNumber.font,
-                            brush,
+                            self._styles.hexNumber.textBrush,
                             0, 0,
                             maprenderer.TextAlignment.TopCenter)
 
@@ -635,7 +637,6 @@ class RenderContext(object):
 
         not self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        brush = maprenderer.AbstractBrush(self._styles.subsectorNames.textColor)
         for sector in self._selector.sectors():
             for index, subsector in enumerate(sector.subsectors()):
                 name = subsector.name()
@@ -654,7 +655,7 @@ class RenderContext(object):
                     text=subsector.name(),
                     center=maprenderer.AbstractPointF(x=centerX, y=centerY),
                     font=self._styles.subsectorNames.font,
-                    brush=brush,
+                    brush=self._styles.subsectorNames.textBrush,
                     labelStyle=self._styles.subsectorNames.textStyle)
 
     def _drawMicroBordersFill(self) -> None:
@@ -766,7 +767,7 @@ class RenderContext(object):
 
             brush = maprenderer.AbstractBrush()
             for sector in self._selector.sectors():
-                brush.setColor(self._styles.microBorders.textColor)
+                brush.copyFrom(self._styles.microBorders.textBrush)
 
                 for border in sector.borders():
                     label = border.label()
@@ -849,7 +850,6 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        brush = maprenderer.AbstractBrush(self._styles.sectorName.textColor)
         for sector in self._selector.sectors():
             # TODO: Traveller Map would use the sector label first and only
             # fall back to the name if if there was no label. I need to work out
@@ -867,7 +867,7 @@ class RenderContext(object):
                 text=name,
                 center=maprenderer.AbstractPointF(x=centerX, y=centerY),
                 font=self._styles.sectorName.font,
-                brush=brush,
+                brush=self._styles.sectorName.textBrush,
                 labelStyle=self._styles.sectorName.textStyle)
 
     def _drawMacroNames(self) -> None:
@@ -888,10 +888,10 @@ class RenderContext(object):
                 self._styles.macroNames.font \
                 if major else \
                 self._styles.macroNames.smallFont
-            brush.setColor(
-                self._styles.macroNames.textColor
-                if major else
-                self._styles.macroNames.textHighlightColor)
+            brush = \
+                self._styles.macroNames.textBrush \
+                if major else \
+                self._styles.macroNames.textHighlightBrush
             vec.drawName(
                 graphics=self._graphics,
                 rect=self._tileRect,
@@ -906,10 +906,10 @@ class RenderContext(object):
                 self._styles.macroNames.font \
                 if major else \
                 self._styles.macroNames.smallFont
-            brush.setColor(
-                self._styles.macroNames.textColor
-                if major else
-                self._styles.macroNames.textHighlightColor)
+            brush = \
+                self._styles.macroNames.textBrush \
+                if major else \
+                self._styles.macroNames.textHighlightBrush
             vec.drawName(
                 graphics=self._graphics,
                 rect=self._tileRect,
@@ -927,10 +927,10 @@ class RenderContext(object):
                     self._styles.macroNames.font \
                     if major else \
                     self._styles.macroNames.smallFont
-                brush.setColor(
-                    self._styles.macroRoutes.textColor
-                    if major else
-                    self._styles.macroRoutes.textHighlightColor)
+                brush = \
+                    self._styles.macroRoutes.textBrush \
+                    if major else \
+                    self._styles.macroRoutes.textHighlightBrush
                 vec.drawName(
                     graphics=self._graphics,
                     rect=self._tileRect,
@@ -941,10 +941,10 @@ class RenderContext(object):
         if (self._options & maprenderer.MapOptions.NamesMinor) != 0:
             for label in self._mapLabelCache.minorLabels:
                 font = self._styles.macroNames.smallFont if label.minor else self._styles.macroNames.mediumFont
-                brush.setColor(
-                    self._styles.macroRoutes.textColor
-                    if label.minor else
-                    self._styles.macroRoutes.textHighlightColor)
+                brush = \
+                    self._styles.macroRoutes.textBrush \
+                    if label.minor else \
+                    self._styles.macroRoutes.textHighlightBrush
                 with self._graphics.save():
                     self._graphics.translateTransform(
                         dx=label.position.x(),
@@ -967,13 +967,12 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-            brush = maprenderer.AbstractBrush(self._styles.capitals.textColor)
             for worldLabel in self._worldLabelCache.labels:
                 if (worldLabel.mapOptions & self._options) != 0:
                     worldLabel.paint(
                         graphics=self._graphics,
-                        dotColor=self._styles.capitals.fillColor,
-                        labelBrush=brush,
+                        dotBrush=self._styles.capitals.fillBrush,
+                        labelBrush=self._styles.capitals.textBrush,
                         labelFont=self._styles.macroNames.smallFont)
 
     def _drawMegaLabels(self) -> None:
@@ -982,7 +981,6 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        brush = maprenderer.AbstractBrush(self._styles.megaNames.textColor)
         for label in self._mapLabelCache.megaLabels:
             with self._graphics.save():
                 font = self._styles.megaNames.smallFont if label.minor else self._styles.megaNames.font
@@ -996,7 +994,7 @@ class RenderContext(object):
                     graphics=self._graphics,
                     text=label.text,
                     font=font,
-                    brush=brush,
+                    brush=self._styles.megaNames.textBrush,
                     x=0, y=0)
 
     def _drawWorldsBackground(self) -> None:
@@ -1044,7 +1042,6 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        brush = maprenderer.AbstractBrush(self._styles.droyneWorlds.textColor)
         for world in self._selector.worlds():
             allegiance = world.allegiance()
 
@@ -1056,7 +1053,7 @@ class RenderContext(object):
                 self._drawOverlayGlyph(
                     glyph=glyph,
                     font=self._styles.droyneWorlds.font,
-                    brush=brush,
+                    brush=self._styles.droyneWorlds.textBrush,
                     position=world.hex())
 
     def _drawMinorHomeworldOverlay(self) -> None:
@@ -1065,13 +1062,12 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        brush = maprenderer.AbstractBrush(self._styles.minorHomeWorlds.textColor)
         for world in self._selector.worlds():
             if world.isMinorHomeworld():
                 self._drawOverlayGlyph(
                     glyph=self._styles.minorHomeWorlds.content,
                     font=self._styles.minorHomeWorlds.font,
-                    brush=brush,
+                    brush=self._styles.minorHomeWorlds.textBrush,
                     position=world.hex())
 
     def _drawAncientWorldsOverlay(self) -> None:
@@ -1080,13 +1076,12 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        brush = maprenderer.AbstractBrush(self._styles.ancientsWorlds.textColor)
         for world in self._selector.worlds():
             if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
                     glyph=self._styles.ancientsWorlds.content,
                     font=self._styles.ancientsWorlds.font,
-                    brush=brush,
+                    brush=self._styles.ancientsWorlds.textBrush,
                     position=world.hex())
 
     def _drawSectorReviewStatusOverlay(self) -> None:
@@ -1095,7 +1090,7 @@ class RenderContext(object):
         if self._styles.dimUnofficialSectors and self._styles.worlds.visible:
             brush.setColor(maprenderer.makeAlphaColor(
                 alpha=128,
-                color=self._styles.backgroundColor))
+                color=self._styles.backgroundBrush.color()))
             for sector in self._selector.sectors():
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
                     clipPath = self._clipCache.sectorClipPath(
@@ -1166,7 +1161,6 @@ class RenderContext(object):
                 degrees=self._styles.hexRotation)
 
             pen = maprenderer.AbstractPen()
-            brush = maprenderer.AbstractBrush()
 
             if layer is RenderContext.WorldLayer.Overlay:
                 if self._styles.populationOverlay.visible and (world.population() > 0):
@@ -1226,13 +1220,12 @@ class RenderContext(object):
                                         pen=elem.pen,
                                         path=RenderContext._HexPath)
                             else:
-                                if elem.fillColor:
-                                    brush.setColor(elem.fillColor)
+                                if elem.fillBrush:
                                     self._graphics.drawEllipse(
-                                        brush=brush,
+                                        brush=elem.fillBrush,
                                         pen=None,
                                         rect=maprenderer.AbstractRectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
-                                if elem.pen.color():
+                                if elem.pen:
                                     if renderName and self._styles.fillMicroBorders:
                                         # TODO: Is saving the state actually needed here?
                                         with self._graphics.save():
@@ -1271,11 +1264,10 @@ class RenderContext(object):
                         else:
                             hex=f'{hex.offsetX():02d}{hex.offsetY():02d}'
 
-                        brush.setColor(self._styles.hexNumber.textColor)
                         self._graphics.drawString(
                             text=hex,
                             font=self._styles.hexNumber.font,
-                            brush=brush,
+                            brush=self._styles.hexNumber.textBrush,
                             x=self._styles.hexNumber.position.x(),
                             y=self._styles.hexNumber.position.y(),
                             format=maprenderer.TextAlignment.TopCenter)
@@ -1284,7 +1276,7 @@ class RenderContext(object):
                     elem = self._zoneStyle(world)
                     worldTextBackgroundStyle = \
                         maprenderer.TextBackgroundStyle.NoStyle \
-                        if (not elem or not elem.fillColor) else \
+                        if (not elem or not elem.fillBrush) else \
                         self._styles.worlds.textBackgroundStyle
 
                     # TODO: Implement placeholders, this should be
@@ -1293,32 +1285,30 @@ class RenderContext(object):
                         if ((self._styles.worldDetails & maprenderer.WorldDetails.GasGiant) != 0) and \
                             maprenderer.WorldHelper.hasGasGiants(world):
                             self._drawGasGiant(
-                                self._styles.worlds.textColor,
-                                self._styles.gasGiantPosition.x(),
-                                self._styles.gasGiantPosition.y(),
-                                0.05,
-                                self._styles.showGasGiantRing)
+                                brush=self._styles.worlds.textBrush,
+                                x=self._styles.gasGiantPosition.x(),
+                                y=self._styles.gasGiantPosition.y(),
+                                radius=0.05,
+                                ring=self._styles.showGasGiantRing)
 
                         if (self._styles.worldDetails & maprenderer.WorldDetails.Starport) != 0:
                             starport = uwp.code(traveller.UWP.Element.StarPort)
                             if self._styles.showTL:
                                 starport += "-" + uwp.code(traveller.UWP.Element.TechLevel)
 
-                            brush.setColor(self._styles.uwp.fillColor)
                             self._drawWorldLabel(
-                                backgroundStyle=worldTextBackgroundStyle,
-                                brush=brush,
-                                color=self._styles.worlds.textColor,
+                                bkStyle=worldTextBackgroundStyle,
+                                bkBrush=self._styles.uwp.fillBrush,
+                                textBrush=self._styles.worlds.textBrush,
                                 position=self._styles.starport.position,
                                 font=self._styles.starport.font,
                                 text=starport)
 
                         if renderUWP:
-                            brush.setColor(self._styles.uwp.fillColor)
                             self._drawWorldLabel(
-                                backgroundStyle=self._styles.uwp.textBackgroundStyle,
-                                brush=brush,
-                                color=self._styles.uwp.textColor,
+                                bkStyle=self._styles.uwp.textBackgroundStyle,
+                                bkBrush=self._styles.uwp.fillBrush,
+                                textBrush=self._styles.uwp.textBrush,
                                 position=self._styles.uwp.position,
                                 font=self._styles.hexNumber.font,
                                 text=uwp.string())
@@ -1349,10 +1339,10 @@ class RenderContext(object):
                                         pt = self._styles.baseBottomPosition
                                         bottomUsed = True
 
-                                    brush.setColor(
-                                        self._styles.worlds.textHighlightColor
-                                        if glyph.highlight else
-                                        self._styles.worlds.textColor)
+                                    brush = \
+                                        self._styles.worlds.textHighlightBrush \
+                                        if glyph.highlight else \
+                                        self._styles.worlds.textBrush
                                     _drawGlyphHelper(
                                         graphics=self._graphics,
                                         glyph=glyph,
@@ -1427,9 +1417,9 @@ class RenderContext(object):
                         if False:
                             e = self._styles.anomaly if world.isAnomaly() else self._styles.placeholder
                             self._drawWorldLabel(
-                                backgroundStyle=e.textBackgroundStyle,
-                                brush=AbstractBrush(self._styles.worlds.textColor),
-                                color=e.textColor,
+                                bkStyle=e.textBackgroundStyle,
+                                bkBrush=self._styles.worlds.textBrush,
+                                textBrush=e.textColor, # TODO: This will need converted to a brush
                                 position=e.position,
                                 font=e.font,
                                 text=e.content)
@@ -1449,8 +1439,6 @@ class RenderContext(object):
                                         lpy = [-2, -2, -2, 0, 0, 0, 0, 2, 2, 2]
                                         lpr = [0.5, 0.9, 0.5, 0.6, 0.9, 0.9, 0.6, 0.5, 0.9, 0.5]
 
-                                        brush.setColor(self._styles.worlds.textColor)
-
                                         # Random generator is seeded with world location so it is always the same
                                         rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
                                         rect = maprenderer.AbstractRectangleF()
@@ -1467,28 +1455,32 @@ class RenderContext(object):
                                                 #rect.y += 0
 
                                                 self._graphics.drawEllipse(
-                                                    brush=brush,
+                                                    brush=self._styles.worlds.textBrush,
                                                     pen=None,
                                                     rect=rect)
                                     else:
                                         # Just a glyph
-                                        brush.setColor(self._styles.worlds.textColor)
                                         _drawGlyphHelper(
                                             graphics=self._graphics,
                                             glyph=maprenderer.GlyphDefs.DiamondX,
                                             fonts=self._fontCache,
-                                            brush=brush,
+                                            brush=self._styles.worlds.textBrush,
                                             pt=maprenderer.AbstractPointF(0, 0))
                                 else:
+                                    # TODO: Creating pens/brushes here every time isn't great.
+                                    # The style sheet should probably return brush/pen objects
+                                    # rather than string colours. It might make sense to move
+                                    # the logic elsewhere so it can be cached
                                     penColor, brushColor = self._styles.worldColors(world)
+                                    pen = brush = None
                                     if penColor:
-                                        pen.copyFrom(self._styles.worldWater.pen)
+                                        pen = maprenderer.AbstractPen(self._styles.worldWater.pen)
                                         pen.setColor(penColor)
                                     if brushColor:
-                                        brush.setColor(brushColor)
+                                        brush = maprenderer.AbstractBrush(brushColor)
                                     self._graphics.drawEllipse(
-                                        pen=pen if penColor else None,
-                                        brush=brush if brushColor else None,
+                                        pen=pen,
+                                        brush=brush,
                                         rect=maprenderer.AbstractRectangleF(
                                             x=-self._styles.discRadius,
                                             y=-self._styles.discRadius,
@@ -1496,9 +1488,8 @@ class RenderContext(object):
                                             height=2 * self._styles.discRadius))
                     elif not world.isAnomaly():
                         # Dotmap
-                        brush.setColor(self._styles.worlds.textColor)
                         self._graphics.drawEllipse(
-                            brush=brush,
+                            brush=self._styles.worlds.textBrush,
                             pen=None,
                             rect=maprenderer.AbstractRectangleF(
                                 x=-self._styles.discRadius,
@@ -1513,20 +1504,20 @@ class RenderContext(object):
                             self._styles.worlds.textStyle.uppercase:
                             name = name.upper()
 
-                        textColor = \
-                            self._styles.worlds.textHighlightColor \
+                        textBrush = \
+                            self._styles.worlds.textHighlightBrush \
                             if isCapital and highlight else \
-                            self._styles.worlds.textColor
+                            self._styles.worlds.textBrush
+
                         font = \
                             self._styles.worlds.largeFont \
                             if (isHiPop or isCapital) and highlight else \
                             self._styles.worlds.font
 
-                        brush.setColor(self._styles.worlds.textColor)
                         self._drawWorldLabel(
-                            backgroundStyle=worldTextBackgroundStyle,
-                            brush=brush,
-                            color=textColor,
+                            bkStyle=worldTextBackgroundStyle,
+                            bkBrush=self._styles.worlds.textBrush,
+                            textBrush=textBrush,
                             position=self._styles.worlds.textStyle.translation,
                             font=font,
                             text=name)
@@ -1540,11 +1531,10 @@ class RenderContext(object):
                             if self._styles.lowerCaseAllegiance:
                                 alleg = alleg.lower()
 
-                            brush.setColor(self._styles.worlds.textColor)
                             self._graphics.drawString(
                                 text=alleg,
                                 font=self._styles.worlds.smallFont,
-                                brush=brush,
+                                brush=self._styles.worlds.textBrush,
                                 x=self._styles.allegiancePosition.x(),
                                 y=self._styles.allegiancePosition.y(),
                                 format=maprenderer.TextAlignment.Centered)
@@ -1561,9 +1551,9 @@ class RenderContext(object):
                         if False:
                             e = self._styles.anomaly if world.isAnomaly() else self._styles.placeholder
                             self._drawWorldLabel(
-                                backgroundStyle=e.textBackgroundStyle,
-                                brush=AbstractBrush(self._styles.worlds.textColor),
-                                color=e.textColor,
+                                bkStyle=e.textBackgroundStyle,
+                                bkBrush=self._styles.worlds.textBrush,
+                                textBrush=e.textColor,
                                 position=e.position,
                                 font=e.font,
                                 text=e.content)
@@ -1581,9 +1571,8 @@ class RenderContext(object):
                                     height=imageRadius * 2 * scaleY))
                     elif not world.isAnomaly():
                         # Dotmap
-                        brush.setColor(self._styles.worlds.textColor)
                         self._graphics.drawEllipse(
-                            brush=brush,
+                            brush=self._styles.worlds.textBrush,
                             pen=None,
                             rect=maprenderer.AbstractRectangleF(
                                 x=-self._styles.discRadius,
@@ -1639,7 +1628,7 @@ class RenderContext(object):
                         if self._styles.showGasGiantRing:
                             decorationRadius += symbolRadius
                         self._drawGasGiant(
-                            color=self._styles.worlds.textHighlightColor,
+                            brush=self._styles.worlds.textHighlightBrush,
                             x=decorationRadius,
                             y=0,
                             radius=symbolRadius,
@@ -1649,11 +1638,10 @@ class RenderContext(object):
                     if renderUWP:
                         # NOTE: This todo came in with the traveller map code
                         # TODO: Scale, like the name text.
-                        brush.setColor(self._styles.worlds.textColor)
                         self._graphics.drawString(
                             text=uwp.string(),
                             font=self._styles.hexNumber.font,
-                            brush=brush,
+                            brush=self._styles.worlds.textBrush,
                             x=decorationRadius,
                             y=self._styles.uwp.position.y(),
                             format=maprenderer.TextAlignment.MiddleLeft)
@@ -1665,10 +1653,10 @@ class RenderContext(object):
 
                         with self._graphics.save():
                             highlight = (self._styles.worldDetails & maprenderer.WorldDetails.Highlight) != 0
-                            textColor = \
-                                self._styles.worlds.textHighlightColor \
+                            textBrush = \
+                                self._styles.worlds.textHighlightBrush \
                                 if isCapital and highlight else \
-                                self._styles.worlds.textColor
+                                self._styles.worlds.textBrush
 
                             if self._styles.worlds.textStyle.uppercase:
                                 name = name.upper()
@@ -1685,47 +1673,46 @@ class RenderContext(object):
                                     font=self._styles.worlds.font).width() / 2,
                                 dy=0.0) # Left align
 
-                            brush.setColor(self._styles.worlds.textColor)
                             self._drawWorldLabel(
-                                backgroundStyle=self._styles.worlds.textBackgroundStyle,
-                                brush=brush,
-                                color=textColor,
+                                bkStyle=self._styles.worlds.textBackgroundStyle,
+                                bkBrush=self._styles.worlds.textBrush,
+                                textBrush=textBrush,
                                 position=self._styles.worlds.textStyle.translation,
                                 font=self._styles.worlds.font,
                                 text=name)
 
     def _drawWorldLabel(
             self,
-            backgroundStyle: maprenderer.TextBackgroundStyle,
-            brush: maprenderer.AbstractBrush,
-            color: str,
+            bkStyle: maprenderer.TextBackgroundStyle,
+            bkBrush: maprenderer.AbstractBrush,
+            textBrush: str,
             position: maprenderer.AbstractPointF,
             font: maprenderer.AbstractFont,
             text: str
             ) -> None:
         size = self._graphics.measureString(text=text, font=font)
 
-        if backgroundStyle is maprenderer.TextBackgroundStyle.Rectangle:
+        if bkStyle is maprenderer.TextBackgroundStyle.Rectangle:
             if not self._styles.fillMicroBorders:
                 # NOTE: This todo came over from traveller map
                 # TODO: Implement this with a clipping region instead
                 self._graphics.drawRectangleFill(
-                    brush=maprenderer.AbstractBrush(self._styles.backgroundColor),
+                    brush=self._styles.backgroundBrush,
                     rect=maprenderer.AbstractRectangleF(
                         x=position.x() - size.width() / 2,
                         y=position.y() - size.height() / 2,
                         width=size.width(),
                         height=size.height()))
-        elif backgroundStyle is maprenderer.TextBackgroundStyle.Filled:
+        elif bkStyle is maprenderer.TextBackgroundStyle.Filled:
             self._graphics.drawRectangleFill(
-                brush=brush,
+                brush=bkBrush,
                 rect=maprenderer.AbstractRectangleF(
                     x=position.x() - size.width() / 2,
                     y=position.y() - size.height() / 2,
                     width=size.width(),
                     height=size.height()))
-        elif backgroundStyle is maprenderer.TextBackgroundStyle.Outline or \
-            backgroundStyle is maprenderer.TextBackgroundStyle.Shadow:
+        elif bkStyle is maprenderer.TextBackgroundStyle.Outline or \
+            bkStyle is maprenderer.TextBackgroundStyle.Shadow:
             # NOTE: This todo came over from traveller map
             # TODO: These scaling factors are constant for a render; compute once
 
@@ -1740,8 +1727,7 @@ class RenderContext(object):
             outlineSize = 2
             outlineSkip = 1
 
-            outlineStart = -outlineSize if backgroundStyle is maprenderer.TextBackgroundStyle.Outline else 0
-            brush = maprenderer.AbstractBrush(self._styles.backgroundColor)
+            outlineStart = -outlineSize if bkStyle is maprenderer.TextBackgroundStyle.Outline else 0
 
             dx = outlineStart
             while dx <= outlineSize:
@@ -1750,7 +1736,9 @@ class RenderContext(object):
                     self._graphics.drawString(
                         text=text,
                         font=font,
-                        brush=brush,
+                        # TODO: This doesn't seem right. I think this is drawing a shadow behind the text
+                        # but if it's just drawing the background colour will you actually see it??
+                        brush=self._styles.backgroundBrush,
                         x=position.x() + sx * dx,
                         y=position.y() + sy * dy,
                         format=maprenderer.TextAlignment.Centered)
@@ -1760,7 +1748,7 @@ class RenderContext(object):
         self._graphics.drawString(
             text=text,
             font=font,
-            brush=maprenderer.AbstractBrush(color),
+            brush=textBrush,
             x=position.x(),
             y=position.y(),
             format=maprenderer.TextAlignment.Centered)
@@ -1797,7 +1785,7 @@ class RenderContext(object):
 
     def _drawGasGiant(
             self,
-            color: str,
+            brush: maprenderer.AbstractBrush,
             x: float,
             y: float,
             radius: float,
@@ -1806,7 +1794,7 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.translateTransform(dx=x, dy=y)
             self._graphics.drawEllipse(
-                brush=maprenderer.AbstractBrush(color),
+                brush=brush,
                 pen=None,
                 rect=maprenderer.AbstractRectangleF(
                     x=-radius,
@@ -1817,7 +1805,9 @@ class RenderContext(object):
             if ring:
                 self._graphics.rotateTransform(degrees=-30)
                 self._graphics.drawEllipse(
-                    pen=maprenderer.AbstractPen(color=color, width=radius / 4),
+                    # TODO: Creating a pen each time is bad. Could store gas giant
+                    # brush & pen a specific objects in the style sheet
+                    pen=maprenderer.AbstractPen(color=brush.color(), width=radius / 4),
                     brush=None,
                     rect=maprenderer.AbstractRectangleF(
                         x=-radius * 1.75,
@@ -1836,7 +1826,7 @@ class RenderContext(object):
 
         self._graphics.drawEllipse(
             pen=element.pen,
-            brush=maprenderer.AbstractBrush(element.fillColor),
+            brush=element.fillBrush,
             rect=maprenderer.AbstractRectangleF(x=-radius, y=-radius, width=radius * 2, height=radius * 2))
 
     def _drawMicroBorders(self, layer: BorderLayer) -> None:
@@ -1928,7 +1918,7 @@ class RenderContext(object):
                     pen.setStyle(regionStyle)
 
                     # Allow style to override
-                    if self._styles.microBorders.pen.style is not maprenderer.LineStyle.Solid:
+                    if self._styles.microBorders.pen.style() is not maprenderer.LineStyle.Solid:
                         pen.setStyle(self._styles.microBorders.pen.style())
 
                     # Shade is a wide/solid outline under the main outline.

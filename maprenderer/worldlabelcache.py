@@ -27,7 +27,7 @@ class WorldLabel(object):
     def paint(
             self,
             graphics: maprenderer.AbstractGraphics,
-            dotColor: str,
+            dotBrush: maprenderer.AbstractBrush,
             labelBrush: maprenderer.AbstractBrush,
             labelFont: maprenderer.AbstractFont
             ) -> None:
@@ -40,13 +40,13 @@ class WorldLabel(object):
                 scaleY=1.0 / travellermap.ParsecScaleY)
 
             radius = 3
-            brush = maprenderer.AbstractBrush(dotColor)
-            pen = maprenderer.AbstractPen(dotColor, 1)
             graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
             graphics.drawEllipse(
-                pen=pen,
-                brush=brush,
+                # TODO: Creating a pen every time isn't good
+                # TODO: Need to double check this pen width is correct
+                pen=maprenderer.AbstractPen(dotBrush.color(), 1),
+                brush=dotBrush,
                 rect=maprenderer.AbstractRectangleF(x=-radius / 2, y=-radius / 2, width=radius, height=radius))
 
             if self.labelBiasX > 0:

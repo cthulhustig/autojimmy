@@ -1,3 +1,4 @@
+import travellermap
 import typing
 
 def loadTabFile(path: str) -> typing.Tuple[
@@ -25,9 +26,7 @@ def makeAlphaColor(
         alpha: typing.Union[float, int],
         color: str
         ) -> str:
-    length = len(color)
-    if (length != 7 and length != 9) or color[0] != '#':
-        raise ValueError(f'Invalid color "#{color}"')
+    red, green, blue, _ = travellermap.stringToColourChannels(colour=color)
 
     alpha = int(alpha)
     if alpha < 0:
@@ -35,4 +34,4 @@ def makeAlphaColor(
     if alpha > 255:
         alpha =255
 
-    return f'#{alpha:02X}{color[1 if length == 7 else 3:]}'
+    return f'#{alpha:02X}{red:02X}{green:02X}{blue:02X}'
