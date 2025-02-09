@@ -480,6 +480,8 @@ class QtMapFont(maprenderer.AbstractFont):
         self._fontMetrics = QtGui.QFontMetrics(self._font)
         self._lineSpacing = self._fontMetrics.lineSpacing()
 
+        self._sizeCache: typing.Dict[str, typing.Tuple[float, float]] = {}
+
     def family(self) -> str:
         return self._family
 
@@ -494,6 +496,14 @@ class QtMapFont(maprenderer.AbstractFont):
 
     def lineSpacing(self) -> float:
         return self._lineSpacing
+
+    def qtMeasureText(self, text: str) -> typing.Tuple[float, float]:
+        size = self._sizeCache.get(text)
+        if not size:
+            rect = self._fontMetrics.tightBoundingRect(text)
+            size = (rect.width(), rect.height())
+            self._sizeCache[text] = size
+        return size
 
     def qtFont(self) -> QtGui.QFont:
         return self._font
@@ -766,16 +776,12 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             font: QtMapFont
             ) -> typing.Tuple[float, float]: # (width, height)
         qtFont = font.qtFont()
-        qtFontMetrics = font.qtFontMetrics()
         scale = font.emSize() / qtFont.pointSizeF()
 
         # TODO: Not sure if this should use bounds or tight bounds. It needs to
         # be correct for what will actually be rendered for different alignments
-        contentPixelRect = qtFontMetrics.tightBoundingRect(text)
-        #contentPixelRect = qtFontMetrics.boundingRect(text)
-        contentPixelRect.moveTo(0, 0)
-
-        return (contentPixelRect.width() * scale, contentPixelRect.height() * scale)
+        contextX, contentY = font.qtMeasureText(text)
+        return (contextX * scale, contentY * scale)
 
     def drawString(
             self,
@@ -789,7 +795,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         qtFontMetrics = font.qtFontMetrics()
         scale = font.emSize() / qtFont.pointSizeF()
 
-        contentPixelRect = qtFontMetrics.tightBoundingRect(text)
+        contentX, contentY = font.qtMeasureText(text)
         leftPadding = 0
         topPadding = qtFontMetrics.descent()
 
@@ -817,38 +823,38 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             elif format == maprenderer.TextAlignment.Centered:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        (-contentPixelRect.width() / 2) - (leftPadding / 2),
-                        (contentPixelRect.height() / 2) - (topPadding / 2)),
+                        (-contentX / 2) - (leftPadding / 2),
+                        (contentY / 2) - (topPadding / 2)),
                     text)
             elif format == maprenderer.TextAlignment.TopLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
                         leftPadding,
-                        contentPixelRect.height()),
+                        contentY),
                     text)
             elif format == maprenderer.TextAlignment.TopCenter:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        (-contentPixelRect.width() / 2) - (leftPadding / 2),
-                        contentPixelRect.height()),
+                        (-contentX / 2) - (leftPadding / 2),
+                        contentY),
                     text)
             elif format == maprenderer.TextAlignment.TopRight:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width() - leftPadding,
-                        contentPixelRect.height()),
+                        -contentX - leftPadding,
+                        contentY),
                     text)
             elif format == maprenderer.TextAlignment.MiddleLeft:
                 self._painter.drawText(
                     QtCore.QPointF(
                         leftPadding,
-                        (contentPixelRect.height() / 2) - (topPadding / 2)),
+                        (contentY / 2) - (topPadding / 2)),
                     text)
             elif format == maprenderer.TextAlignment.MiddleRight:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width() - leftPadding,
-                        (contentPixelRect.height() / 2) - (topPadding / 2)),
+                        -contentX - leftPadding,
+                        (contentY / 2) - (topPadding / 2)),
                     text)
             elif format == maprenderer.TextAlignment.BottomLeft:
                 self._painter.drawText(
@@ -857,13 +863,13 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             elif format == maprenderer.TextAlignment.BottomCenter:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        (-contentPixelRect.width() / 2) - (leftPadding / 2),
+                        (-contentX / 2) - (leftPadding / 2),
                         -topPadding),
                     text)
             elif format == maprenderer.TextAlignment.BottomRight:
                 self._painter.drawText(
                     QtCore.QPointF(
-                        -contentPixelRect.width() - leftPadding,
+                        -contentX - leftPadding,
                         -topPadding),
                     text)
         finally:
