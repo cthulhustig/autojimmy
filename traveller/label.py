@@ -12,7 +12,6 @@ class Label(object):
             text: str,
             hex: travellermap.HexPosition,
             colour: str,
-            wrap: bool,
             size: typing.Optional[Size],
             offsetX: typing.Optional[float],
             offsetY: typing.Optional[float]
@@ -20,7 +19,6 @@ class Label(object):
         self._text = text
         self._hex = hex
         self._colour = colour
-        self._wrap = wrap
         self._size = size
         self._offsetX = offsetX
         self._offsetY = offsetY
@@ -33,9 +31,6 @@ class Label(object):
 
     def colour(self) -> str:
         return self._colour
-
-    def wrap(self) -> bool:
-        return self._wrap
 
     def size(self) -> typing.Optional[Size]:
         return self._size

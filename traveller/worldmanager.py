@@ -30,6 +30,11 @@ class WorldManager(object):
     _BorderStylePattern = re.compile(r'border\.(\w+)')
     _RouteStylePattern = re.compile(r'route\.(\w+)')
 
+    # Pattern used by Traveller Map to replace white space with '\n' to do
+    # word wrapping
+    # Use with `_WrapPattern.sub('\n', label)` to  replace
+    _LineWrapPattern = re.compile(r'\s+(?![a-z])')
+
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
     _SubsectorPerSectorX = 4
@@ -878,17 +883,25 @@ class WorldManager(object):
                                     style = defaultStyle
                                 break
 
-                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    # Default label to allegiance and word wrap now so it doesn't need
+                    # to be done every time the border is rendered
+                    label = rawBorder.label()
+                    if not label and rawBorder.allegiance():
+                        label = traveller.AllegianceManager.instance().allegianceName(
+                            allegianceCode=rawBorder.allegiance(),
+                            sectorName=sectorName)
+                    if label and rawBorder.wrapLabel():
+                        label = WorldManager._LineWrapPattern.sub('\n', label)
+
                     borders.append(traveller.Border(
                         hexList=hexes,
                         allegiance=rawBorder.allegiance(),
-                        # Show/hide label use the same defaults as the traveller map Border class
+                        # Show label use the same defaults as the traveller map Border class
                         showLabel=rawBorder.showLabel() if rawBorder.showLabel() != None else True,
-                        wrapLabel=rawBorder.wrapLabel() if rawBorder.wrapLabel() != None else False,
+                        label=label,
                         labelHex=labelHex,
                         labelOffsetX=rawBorder.labelOffsetX(),
                         labelOffsetY=rawBorder.labelOffsetY(),
-                        label=rawBorder.label(),
                         style=style,
                         colour=colour))
                 except Exception as ex:
@@ -919,16 +932,19 @@ class WorldManager(object):
                     else:
                         labelHex = None
 
-                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    # Line wrap now so it doesn't need to be done every time the border is rendered
+                    label = rawRegion.label()
+                    if label and rawRegion.wrapLabel():
+                        label = WorldManager._LineWrapPattern.sub('\n', label)
+
                     regions.append(traveller.Region(
                         hexList=hexes,
-                        # Show/hide label use the same defaults as the Traveller Map Border class
+                        # Show label use the same defaults as the Traveller Map Border class
                         showLabel=rawRegion.showLabel() if rawRegion.showLabel() != None else True,
-                        wrapLabel=rawRegion.wrapLabel() if rawRegion.wrapLabel() != None else False,
+                        label=label,
                         labelHex=labelHex,
                         labelOffsetX=rawRegion.labelOffsetX(),
                         labelOffsetY=rawRegion.labelOffsetY(),
-                        label=rawRegion.label(),
                         colour=rawRegion.colour()))
                 except Exception as ex:
                     logging.warning(
@@ -947,13 +963,15 @@ class WorldManager(object):
                         offsetX=int(hex[:2]),
                         offsetY=int(hex[-2:]))
 
-                    # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
+                    # Line wrap now so it doesn't need to be done every time the border is rendered
+                    text = rawLabel.text()
+                    if rawLabel.wrap():
+                        text = WorldManager._LineWrapPattern.sub('\n', text)
+
                     labels.append(traveller.Label(
-                        text=rawLabel.text(),
+                        text=text,
                         hex=hex,
                         colour=rawLabel.colour(),
-                        # Wrap uses the same default as Traveller Map Label class
-                        wrap=rawLabel.wrap() if rawLabel.wrap() != None else False,
                         size=WorldManager._mapLabelSize(rawLabel.size()),
                         offsetX=rawLabel.offsetX(),
                         offsetY=rawLabel.offsetY()))

@@ -32,7 +32,6 @@ class Region(object):
             self,
             hexList: typing.Iterable[travellermap.HexPosition],
             showLabel: bool,
-            wrapLabel: bool,
             labelHex: typing.Optional[travellermap.HexPosition],
             labelOffsetX: typing.Optional[float],
             labelOffsetY: typing.Optional[float],
@@ -41,7 +40,6 @@ class Region(object):
             ) -> None:
         self._hexList = list(hexList)
         self._showLabel = showLabel
-        self._wrapLabel = wrapLabel
         self._labelHex = labelHex
         self._labelOffsetX = labelOffsetX
         self._labelOffsetY = labelOffsetY
@@ -54,9 +52,6 @@ class Region(object):
 
     def showLabel(self) -> bool:
         return self._showLabel
-
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
 
     def labelHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._labelHex

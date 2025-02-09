@@ -14,7 +14,6 @@ class Border(traveller.Region):
             hexList: typing.Iterable[travellermap.HexPosition],
             allegiance: typing.Optional[str],
             showLabel: bool,
-            wrapLabel: bool,
             labelHex: typing.Optional[travellermap.HexPosition],
             labelOffsetX: typing.Optional[float],
             labelOffsetY: typing.Optional[float],
@@ -25,7 +24,6 @@ class Border(traveller.Region):
         super().__init__(
             hexList=hexList,
             showLabel=showLabel,
-            wrapLabel=wrapLabel,
             labelHex=labelHex,
             labelOffsetX=labelOffsetX,
             labelOffsetY=labelOffsetY,

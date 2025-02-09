@@ -681,7 +681,6 @@ class RenderContext(object):
 
                     self._graphics.drawLine(pen, startPoint, endPoint)
 
-    _WrapPattern = re.compile(r'\s+(?![a-z])')
     def _drawMicroLabels(self) -> None:
         if not self._styleSheet.showMicroNames:
             return
@@ -699,19 +698,10 @@ class RenderContext(object):
                     if not border.showLabel():
                         continue
 
-                    labelPos = border.labelHex()
-                    if not labelPos:
-                        continue
-
                     label = border.label()
-                    if not label and border.allegiance():
-                        label = traveller.AllegianceManager.instance().allegianceName(
-                            allegianceCode=border.allegiance(),
-                            sectorName=sector.name())
-                    if not label:
+                    labelPos = border.labelHex()
+                    if not label or not labelPos:
                         continue
-                    if border.wrapLabel():
-                        label = RenderContext._WrapPattern.sub('\n', label)
 
                     labelPos = RenderContext._hexToCenter(labelPos)
                     if border.labelOffsetX():
@@ -735,9 +725,6 @@ class RenderContext(object):
                     if not label or not labelPos:
                         continue
 
-                    if region.wrapLabel():
-                        label = RenderContext._WrapPattern.sub('\n', label)
-
                     labelPos = RenderContext._hexToCenter(labelPos)
                     if region.labelOffsetX():
                         labelPos.setX(labelPos.x() + (region.labelOffsetX() * 0.7))
@@ -753,8 +740,6 @@ class RenderContext(object):
 
                 for label in sector.labels():
                     text = label.text()
-                    if label.wrap():
-                        text = RenderContext._WrapPattern.sub('\n', text)
 
                     labelPos = RenderContext._hexToCenter(label.hex())
                     # NOTE: This todo came in with the traveller map code

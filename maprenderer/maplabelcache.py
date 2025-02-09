@@ -17,7 +17,7 @@ class MapLabel(object):
 
 class MapLabelCache(object):
     # TODO: These files should be pulled from DataStore to get caching and
-    # filesystem layering    
+    # filesystem layering
     _MinorLabelsPath = 'res/labels/minor_labels.tab'
     _MajorLabelsPath = 'res/labels/mega_labels.tab'
 
