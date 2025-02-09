@@ -669,11 +669,10 @@ class RenderContext(object):
                         routeStyle = maprenderer.LineStyle.Solid
 
                     # Ensure color is visible
-                    # TODO: Handle making colour visible
-                    """
-                    if (styles.grayscale || !ColorUtil.NoticeableDifference(routeColor.Value, styles.backgroundColor))
-                        routeColor = styles.microRoutes.pen.color; // default
-                    """
+                    # TODO: Handle making colour visible, should be
+                    # styles.grayscale || !ColorUtil.NoticeableDifference(routeColor.Value, styles.backgroundColor)
+                    if self._styleSheet.grayscale:
+                        routeColor = self._styleSheet.microRoutes.pen.color() # default
 
                     pen.setColor(routeColor)
                     pen.setWidth(routeWidth * baseWidth)
@@ -681,6 +680,7 @@ class RenderContext(object):
 
                     self._graphics.drawLine(pen, startPoint, endPoint)
 
+    _LabelDefaultColor = travellermap.MapColours.TravellerAmber
     def _drawMicroLabels(self) -> None:
         if not self._styleSheet.showMicroNames:
             return
@@ -756,23 +756,20 @@ class RenderContext(object):
                     else:
                         font = self._styleSheet.microBorders.font
 
-                    # TODO: Handle similar colours
-                    brush.setColor(
-                        label.colour() if label.colour() else travellermap.MapColours.TravellerAmber)
-                    """
-                    if (!styles.grayscale &&
-                        label.Color != null &&
-                        ColorUtil.NoticeableDifference(label.Color.Value, styles.backgroundColor) &&
-                        (label.Color != Label.DefaultColor))
-                        brush.Color = label.Color.Value;
-                    else
-                        brush.Color = styles.microBorders.textColor;
-                    """
+                    # TODO: Handle similar colours, should have this in it somewhere
+                    # ColorUtil.NoticeableDifference(label.Color.Value, styles.backgroundColor) &&
+                    useLabelColor = \
+                        not self._styleSheet.grayscale and \
+                        label.colour() and \
+                        (label.colour() != RenderContext._LabelDefaultColor)
+                    if useLabelColor:
+                        brush.setColor(label.colour())
+
                     self._drawLabel(
                         text=text,
                         center=labelPos,
                         font=font,
-                        brush=brush,
+                        brush=brush if useLabelColor else self._styleSheet.microBorders.textBrush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
     def _drawSectorNames(self) -> None:
@@ -1869,14 +1866,10 @@ class RenderContext(object):
                     if not regionStyle:
                         regionStyle = maprenderer.LineStyle.Solid
 
-                    # TODO: Handle noticable colours
-                    """
-                    if (styles.grayscale ||
-                        !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor))
-                    {
-                        borderColor = styles.microBorders.pen.color; // default
-                    }
-                    """
+                    # TODO: Handle noticable colours, this should be
+                    # styles.grayscale || !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor
+                    if self._styleSheet.grayscale:
+                        regionColor = self._styleSheet.microBorders.pen.color() # default
 
                     # TODO: Doing this conversion every frame is very inefficient
                     outline = region.absoluteOutline()

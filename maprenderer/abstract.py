@@ -143,8 +143,12 @@ class AbstractImage(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractImage so must implement height')
 
 class AbstractFont(object):
+    def family(self) -> str:
+        raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement family')
     def emSize(self) -> float:
         raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement emSize')
+    def style(self) -> maprenderer.FontStyle:
+        raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement style')
     def pointSize(self) -> float:
         raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement pointSize')
     def lineSpacing(self) -> float:
@@ -229,7 +233,7 @@ class AbstractGraphics(object):
 
     def createFont(
             self,
-            families: str,
+            family: str,
             emSize: float,
             style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
             ) -> AbstractFont:

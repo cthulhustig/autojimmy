@@ -4,39 +4,6 @@ import traveller
 import travellermap
 import typing
 
-class FontInfo():
-    @typing.overload
-    def __init__(self) -> None: ...
-    @typing.overload
-    def __init__(self, other: 'FontInfo') -> None: ...
-    @typing.overload
-    def __init__(
-        self,
-        families: str,
-        size: float,
-        style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
-        ) -> None: ...
-
-    def __init__(self, *args, **kwargs):
-        if not args and not kwargs:
-            self.families = ''
-            self.size = 0
-            self.style = maprenderer.FontStyle.Regular
-        elif len(args) + len(kwargs) == 1:
-            other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, FontInfo):
-                raise TypeError('The other parameter must be a FontInfo')
-            self.copyFrom(other)
-        else:
-            self.families = args[0] if len(args) > 0 else kwargs['families']
-            self.size = float(args[1] if len(args) > 1 else kwargs['size'])
-            self.style = args[2] if len(args) > 2 else kwargs.get('style', maprenderer.FontStyle.Regular)
-
-    def copyFrom(self, other: 'FontInfo') -> None:
-        self.families = other.families
-        self.size = other.size
-        self.style = other.style
-
 class StyleSheet(object):
     _DefaultFont = 'Arial'
 
@@ -77,10 +44,7 @@ class StyleSheet(object):
     _T5AllegianceCodeMinScale = 64
 
     class StyleElement(object):
-        def __init__(
-                self,
-                graphics: maprenderer.AbstractGraphics
-                ) -> None:
+        def __init__(self) -> None:
             self.visible = False
             # TODO: This should probably be an AbstractBrush to avoid having to create it all the time
             self.content = ''
@@ -91,58 +55,11 @@ class StyleSheet(object):
 
             self.textStyle = maprenderer.LabelStyle()
             self.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
-            self.fontInfo = maprenderer.FontInfo()
-            self.smallFontInfo = maprenderer.FontInfo()
-            self.mediumFontInfo = maprenderer.FontInfo()
-            self.largeFontInfo = maprenderer.FontInfo()
+            self.font: typing.Optional[maprenderer.AbstractFont] = None
+            self.smallFont: typing.Optional[maprenderer.AbstractFont] = None
+            self.mediumFont: typing.Optional[maprenderer.AbstractFont] = None
+            self.largeFont: typing.Optional[maprenderer.AbstractFont] = None
             self.position = maprenderer.AbstractPointF()
-
-            self._graphics = graphics
-            self._font = None
-            self._smallFont = None
-            self._mediumFont = None
-            self._largeFont = None
-
-        @property
-        def font(self) -> maprenderer.AbstractFont:
-            if not self._font:
-                if not self.fontInfo:
-                    raise RuntimeError('AbstractFont has no fontInfo')
-                self._font = self._graphics.createFont(
-                    families=self.fontInfo.families,
-                    emSize=self.fontInfo.size,
-                    style=self.fontInfo.style)
-            return self._font
-        @property
-        def smallFont(self) -> maprenderer.AbstractFont:
-            if not self._smallFont:
-                if not self.smallFontInfo:
-                    raise RuntimeError('AbstractFont has no font smallFontInfo')
-                self._smallFont = self._graphics.createFont(
-                    families=self.smallFontInfo.families,
-                    emSize=self.smallFontInfo.size,
-                    style=self.smallFontInfo.style)
-            return self._smallFont
-        @property
-        def mediumFont(self) -> maprenderer.AbstractFont:
-            if not self._mediumFont:
-                if not self.mediumFontInfo:
-                    raise RuntimeError('AbstractFont has no font mediumFontInfo')
-                self._mediumFont = self._graphics.createFont(
-                    families=self.mediumFontInfo.families,
-                    emSize=self.mediumFontInfo.size,
-                    style=self.mediumFontInfo.style)
-            return self._mediumFont
-        @property
-        def largeFont(self) -> maprenderer.AbstractFont:
-            if not self._largeFont:
-                if not self.largeFontInfo:
-                    raise RuntimeError('AbstractFont has no font largeFontInfo')
-                self._largeFont = self._graphics.createFont(
-                    families=self.largeFontInfo.families,
-                    emSize=self.largeFontInfo.size,
-                    style=self.largeFontInfo.style)
-            return self._largeFont
 
     def __init__(
             self,
@@ -155,6 +72,13 @@ class StyleSheet(object):
         self._options = options
         self._style = style
         self._graphics = graphics
+        self._fontCache: typing.Dict[
+            typing.Tuple[
+                str, # Family
+                int, # emSize
+                maprenderer.FontStyle
+                ],
+            maprenderer.AbstractFont] = {}
         self._handleConfigUpdate()
 
     @property
@@ -165,6 +89,10 @@ class StyleSheet(object):
         if scale == self._scale:
             return # Nothing to do
         self._scale = scale
+
+        # Clear font cache to stop it becoming to bloated
+        self._fontCache.clear()
+
         self._handleConfigUpdate()
 
     @property
@@ -270,21 +198,21 @@ class StyleSheet(object):
 
         self.t5AllegianceCodes = False
 
-        self.highlightWorlds = StyleSheet.StyleElement(graphics=self._graphics)
+        self.highlightWorlds = StyleSheet.StyleElement()
         self.highlightWorldsPattern: typing.Optional[maprenderer.HighlightWorldPattern] = None
 
-        self.droyneWorlds = StyleSheet.StyleElement(graphics=self._graphics)
-        self.ancientsWorlds = StyleSheet.StyleElement(graphics=self._graphics)
-        self.minorHomeWorlds = StyleSheet.StyleElement(graphics=self._graphics)
+        self.droyneWorlds = StyleSheet.StyleElement()
+        self.ancientsWorlds = StyleSheet.StyleElement()
+        self.minorHomeWorlds = StyleSheet.StyleElement()
 
         # Worlds
-        self.worlds = StyleSheet.StyleElement(graphics=self._graphics)
+        self.worlds = StyleSheet.StyleElement()
         self.showWorldDetailColors = False
-        self.populationOverlay = StyleSheet.StyleElement(graphics=self._graphics)
-        self.importanceOverlay = StyleSheet.StyleElement(graphics=self._graphics)
-        self.capitalOverlay = StyleSheet.StyleElement(graphics=self._graphics)
-        self.capitalOverlayAltA = StyleSheet.StyleElement(graphics=self._graphics)
-        self.capitalOverlayAltB = StyleSheet.StyleElement(graphics=self._graphics)
+        self.populationOverlay = StyleSheet.StyleElement()
+        self.importanceOverlay = StyleSheet.StyleElement()
+        self.capitalOverlay = StyleSheet.StyleElement()
+        self.capitalOverlayAltA = StyleSheet.StyleElement()
+        self.capitalOverlayAltB = StyleSheet.StyleElement()
         self.showStellarOverlay = False
 
         self.discPosition = maprenderer.AbstractPointF(0, 0)
@@ -295,8 +223,8 @@ class StyleSheet(object):
         self.baseBottomPosition = maprenderer.AbstractPointF(0, 0)
         self.baseMiddlePosition = maprenderer.AbstractPointF(0, 0)
 
-        self.uwp = StyleSheet.StyleElement(graphics=self._graphics)
-        self.starport = StyleSheet.StyleElement(graphics=self._graphics)
+        self.uwp = StyleSheet.StyleElement()
+        self.starport = StyleSheet.StyleElement()
 
         self.worldDetails: maprenderer.WorldDetails = maprenderer.WorldDetails.NoDetails
         self.lowerCaseAllegiance = False
@@ -311,35 +239,35 @@ class StyleSheet(object):
         self.showZonesAsPerimeters = False
 
         # Hex Coordinates
-        self.hexNumber = StyleSheet.StyleElement(graphics=self._graphics)
+        self.hexNumber = StyleSheet.StyleElement()
         self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Sector
         self.numberAllHexes = False
 
         # Sector Name
-        self.sectorName = StyleSheet.StyleElement(graphics=self._graphics)
+        self.sectorName = StyleSheet.StyleElement()
         self.showSomeSectorNames = False
         self.showAllSectorNames = False
 
-        self.capitals = StyleSheet.StyleElement(graphics=self._graphics)
-        self.subsectorNames = StyleSheet.StyleElement(graphics=self._graphics)
-        self.greenZone = StyleSheet.StyleElement(graphics=self._graphics)
-        self.amberZone = StyleSheet.StyleElement(graphics=self._graphics)
-        self.redZone = StyleSheet.StyleElement(graphics=self._graphics)
-        self.sectorGrid = StyleSheet.StyleElement(graphics=self._graphics)
-        self.subsectorGrid = StyleSheet.StyleElement(graphics=self._graphics)
-        self.parsecGrid = StyleSheet.StyleElement(graphics=self._graphics)
-        self.worldWater = StyleSheet.StyleElement(graphics=self._graphics)
-        self.worldNoWater = StyleSheet.StyleElement(graphics=self._graphics)
-        self.macroRoutes = StyleSheet.StyleElement(graphics=self._graphics)
-        self.microRoutes = StyleSheet.StyleElement(graphics=self._graphics)
-        self.macroBorders = StyleSheet.StyleElement(graphics=self._graphics)
-        self.macroNames = StyleSheet.StyleElement(graphics=self._graphics)
-        self.megaNames = StyleSheet.StyleElement(graphics=self._graphics)
-        self.pseudoRandomStars = StyleSheet.StyleElement(graphics=self._graphics)
-        self.placeholder = StyleSheet.StyleElement(graphics=self._graphics)
-        self.anomaly = StyleSheet.StyleElement(graphics=self._graphics)
+        self.capitals = StyleSheet.StyleElement()
+        self.subsectorNames = StyleSheet.StyleElement()
+        self.greenZone = StyleSheet.StyleElement()
+        self.amberZone = StyleSheet.StyleElement()
+        self.redZone = StyleSheet.StyleElement()
+        self.sectorGrid = StyleSheet.StyleElement()
+        self.subsectorGrid = StyleSheet.StyleElement()
+        self.parsecGrid = StyleSheet.StyleElement()
+        self.worldWater = StyleSheet.StyleElement()
+        self.worldNoWater = StyleSheet.StyleElement()
+        self.macroRoutes = StyleSheet.StyleElement()
+        self.microRoutes = StyleSheet.StyleElement()
+        self.macroBorders = StyleSheet.StyleElement()
+        self.macroNames = StyleSheet.StyleElement()
+        self.megaNames = StyleSheet.StyleElement()
+        self.pseudoRandomStars = StyleSheet.StyleElement()
+        self.placeholder = StyleSheet.StyleElement()
+        self.anomaly = StyleSheet.StyleElement()
 
-        self.microBorders = StyleSheet.StyleElement(graphics=self._graphics)
+        self.microBorders = StyleSheet.StyleElement()
         self.fillMicroBorders = False
         self.shadeMicroBorders = False
         self.showMicroNames = False
@@ -487,86 +415,90 @@ class StyleSheet(object):
                 if (self.scale <= 96) or (self.style == travellermap.Style.Candy) else \
                 96 / min(self.scale, 192)
 
-            self.worlds.fontInfo = maprenderer.FontInfo(
-                StyleSheet._DefaultFont,
-                0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
-                maprenderer.FontStyle.Bold)
+            self.worlds.font = self._createFont(
+                families=StyleSheet._DefaultFont,
+                emSize=0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
+                style=maprenderer.FontStyle.Bold)
 
             if self._graphics.supportsWingdings():
-                self.wingdingsFont = self._graphics.createFont(
+                self.wingdingsFont = self._createFont(
                     families='Wingdings',
                     emSize=0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.175 * fontScale))
                 self.glyphCharMap = None
-            self.glyphFont = self._graphics.createFont(
+            self.glyphFont = self._createFont(
                 families='Arial Unicode MS,Segoe UI Symbol,Arial',
                 emSize=0.175 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
                 style=maprenderer.FontStyle.Bold)
 
-            self.uwp.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, 0.1 * fontScale)
-            self.hexNumber.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, 0.1 * fontScale)
-            self.worlds.smallFontInfo = maprenderer.FontInfo(
-                StyleSheet._DefaultFont,
-                0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.1 * fontScale))
-            self.worlds.largeFontInfo = maprenderer.FontInfo(self.worlds.fontInfo)
-            self.starport.fontInfo = \
-                maprenderer.FontInfo(self.worlds.smallFontInfo) \
+            self.uwp.font = self.hexNumber.font = self._createFont(
+                families=StyleSheet._DefaultFont,
+                emSize=0.1 * fontScale)
+            self.worlds.smallFont = self._createFont(
+                families=StyleSheet._DefaultFont,
+                emSize=0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.1 * fontScale))
+            self.worlds.largeFont = self.worlds.font
+            self.starport.font = \
+                self.worlds.smallFont \
                 if (self.scale < StyleSheet._WorldFullMinScale) else \
-                maprenderer.FontInfo(self.worlds.fontInfo)
+                self.worlds.font
 
-        self.sectorName.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, 5.5)
-        self.subsectorNames.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, 1.5)
+        self.sectorName.font = self._createFont(
+            families=StyleSheet._DefaultFont,
+            emSize=5.5)
+        self.subsectorNames.font = self._createFont(
+            families=StyleSheet._DefaultFont,
+            emSize=1.5)
 
         overlayFontSize = max(onePixel * 12, 0.375)
-        self.droyneWorlds.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, overlayFontSize)
-        self.ancientsWorlds.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, overlayFontSize)
-        self.minorHomeWorlds.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, overlayFontSize)
+        self.droyneWorlds.font = self.ancientsWorlds.font = self.minorHomeWorlds.font = \
+            self._createFont(StyleSheet._DefaultFont, overlayFontSize)
 
         self.droyneWorlds.content = "\u2605\u2606" # BLACK STAR / WHITE STAR
         self.minorHomeWorlds.content = "\u273B" # TEARDROP-SPOKED ASTERISK
         self.ancientsWorlds.content = "\u2600" # BLACK SUN WITH RAYS
 
-        self.microBorders.fontInfo = maprenderer.FontInfo(
-            StyleSheet._DefaultFont,
+        self.microBorders.font = self._createFont(
+            families=StyleSheet._DefaultFont,
             # TODO: This was == rather tan <= but in my implementation scale isn't
             # usually going to be an integer value so <= seems more appropriate.
             # Just need to check it shouldn't be >=
-            0.6 if self.scale <= StyleSheet._MicroNameMinScale else 0.25,
-            maprenderer.FontStyle.Bold)
-        self.microBorders.smallFontInfo = maprenderer.FontInfo(
-            families=StyleSheet._DefaultFont,
-            size=0.15,
+            emSize=0.6 if self.scale <= StyleSheet._MicroNameMinScale else 0.25,
             style=maprenderer.FontStyle.Bold)
-        self.microBorders.largeFontInfo = maprenderer.FontInfo(
+        self.microBorders.smallFont = self._createFont(
             families=StyleSheet._DefaultFont,
-            size=0.75,
+            emSize=0.15,
+            style=maprenderer.FontStyle.Bold)
+        self.microBorders.largeFont = self._createFont(
+            families=StyleSheet._DefaultFont,
+            emSize=0.75,
             style=maprenderer.FontStyle.Bold)
 
-        self.macroNames.fontInfo = maprenderer.FontInfo(
+        self.macroNames.font = self._createFont(
             families=StyleSheet._DefaultFont,
-            size=8 / 1.4,
+            emSize=8 / 1.4,
             style=maprenderer.FontStyle.Bold)
-        self.macroNames.smallFontInfo = maprenderer.FontInfo(
+        self.macroNames.smallFont = self._createFont(
             families=StyleSheet._DefaultFont,
-            size=5 / 1.4,
+            emSize=5 / 1.4,
             style=maprenderer.FontStyle.Regular)
-        self.macroNames.mediumFontInfo = maprenderer.FontInfo(
+        self.macroNames.mediumFont = self._createFont(
             families=StyleSheet._DefaultFont,
-            size=6.5 / 1.4,
+            emSize=6.5 / 1.4,
             style=maprenderer.FontStyle.Italic)
 
         megaNameScaleFactor = min(35, 0.75 * onePixel)
-        self.megaNames.fontInfo = maprenderer.FontInfo(
-            StyleSheet._DefaultFont,
-            24 * megaNameScaleFactor,
-            maprenderer.FontStyle.Bold)
-        self.megaNames.mediumFontInfo = maprenderer.FontInfo(
-            StyleSheet._DefaultFont,
-            22 * megaNameScaleFactor,
-            maprenderer.FontStyle.Regular)
-        self.megaNames.smallFontInfo = maprenderer.FontInfo(
-            StyleSheet._DefaultFont,
-            18 * megaNameScaleFactor,
-            maprenderer.FontStyle.Italic)
+        self.megaNames.font = self._createFont(
+            families=StyleSheet._DefaultFont,
+            emSize=24 * megaNameScaleFactor,
+            style=maprenderer.FontStyle.Bold)
+        self.megaNames.mediumFont = self._createFont(
+            families=StyleSheet._DefaultFont,
+            emSize=22 * megaNameScaleFactor,
+            style=maprenderer.FontStyle.Regular)
+        self.megaNames.smallFont = self._createFont(
+            families=StyleSheet._DefaultFont,
+            emSize=18 * megaNameScaleFactor,
+            style=maprenderer.FontStyle.Italic)
 
         # Cap pen widths when zooming in
         penScale = 1 if self.scale <= 64 else (64 / self.scale)
@@ -691,11 +623,15 @@ class StyleSheet(object):
         fadeSectorSubsectorNames = True
 
         self.placeholder.content = "*"
-        self.placeholder.fontInfo = maprenderer.FontInfo("Georgia", 0.6)
+        self.placeholder.font = self._createFont(
+            families='Georgia',
+            emSize=0.6)
         self.placeholder.position = maprenderer.AbstractPointF(0, 0.17)
 
         self.anomaly.content = "\u2316"; # POSITION INDICATOR
-        self.anomaly.fontInfo = maprenderer.FontInfo("Arial Unicode MS,Segoe UI Symbol", 0.6)
+        self.anomaly.font = self._createFont(
+            families='Arial Unicode MS,Segoe UI Symbol',
+            emSize=0.6)
 
         # Generic colors; applied to various elements by default (see end of this method).
         # May be overridden by specific styles
@@ -830,8 +766,10 @@ class StyleSheet(object):
 
             self.microBorders.pen.setColor(inkColor)
             self.microBorders.pen.setWidth(onePixel * 2)
-            self.microBorders.fontInfo.size *= 0.6
-            self.microBorders.fontInfo.style = maprenderer.FontStyle.Regular
+            self.microBorders.font = self._createFont(
+                families=self.microBorders.font.family(),
+                emSize=self.microBorders.font.emSize() * 0.6,
+                style=maprenderer.FontStyle.Regular)
 
             self.microRoutes.pen.setColor(inkColor)
 
@@ -862,8 +800,13 @@ class StyleSheet(object):
             self.worldDetails &= ~maprenderer.WorldDetails.GasGiant
             self.worldDetails &= ~maprenderer.WorldDetails.Highlight
             self.worldDetails &= ~maprenderer.WorldDetails.Uwp
-            self.worlds.fontInfo.size *= 0.85
-            self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, 0.25)
+
+            if self.worlds.visible:
+                self.worlds.font = self._createFont(
+                    families=self.worlds.font.family(),
+                    emSize=self.worlds.font.emSize() * 0.85,
+                    style=self.worlds.font.style())
+                self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, 0.25)
 
             self.numberAllHexes = True
             self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Subsector
@@ -949,50 +892,97 @@ class StyleSheet(object):
                 alpha=inkOpacity,
                 color=travellermap.MapColours.Firebrick))
 
-            fontName = "Comic Sans MS"
-            self.worlds.fontInfo.families = fontName
-            self.worlds.smallFontInfo.families = fontName
-            self.starport.fontInfo.families = fontName
-            self.worlds.largeFontInfo.families = fontName
-            self.worlds.largeFontInfo.size = self.worlds.fontInfo.size * 1.25
-            self.worlds.fontInfo.size *= 0.8
+            # TODO: This causes a lot of fonts to be thrown away and new ones created
+            fontName = 'Comic Sans MS'
 
-            self.macroNames.fontInfo.families = fontName
-            self.macroNames.mediumFontInfo.families = fontName
-            self.macroNames.smallFontInfo.families = fontName
-            self.megaNames.fontInfo.families = fontName
-            self.megaNames.mediumFontInfo.families = fontName
-            self.megaNames.smallFontInfo.families = fontName
-            self.microBorders.smallFontInfo.families = fontName
-            self.microBorders.largeFontInfo.families = fontName
-            self.microBorders.fontInfo.families = fontName
-            self.macroBorders.fontInfo.families = fontName
-            self.macroRoutes.fontInfo.families = fontName
-            self.capitals.fontInfo.families = fontName
-            self.macroBorders.smallFontInfo.families = fontName
+            # The large font needs to be updated before the standard font as the large
+            # fonts size is dependent on the standard fonts old size (based on the
+            # Traveller Map code)
+            if self.worlds.visible:
+                self.worlds.largeFont = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.font.emSize() * 1.25,
+                    style=self.worlds.largeFont.style() | maprenderer.FontStyle.Underline)
+                self.worlds.smallFont = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.smallFont.emSize(),
+                    style=self.worlds.smallFont.style())
+                self.worlds.font = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.font.emSize() * 0.8,
+                    style=self.worlds.font.style())
+                self.worlds.textStyle.uppercase = True
+                # NOTE: This TODO came in from Traveller Map
+                # TODO: Decide on this. It's nice to not overwrite the parsec grid, but
+                # it looks very cluttered, especially amber/red zones.
+                self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
 
+                self.starport.font = self._createFont(
+                    families=fontName,
+                    emSize=self.starport.font.emSize(),
+                    style=self.starport.font.style())
+
+            # TODO: Why is syntax highlighting unhappy here
+            self.macroNames.font = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.font.emSize(),
+                style=self.macroNames.font.style())
+            self.macroNames.mediumFont = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.mediumFont.emSize(),
+                style=self.macroNames.mediumFont.style())
+            self.macroNames.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.smallFont.emSize(),
+                style=self.macroNames.smallFont.style())
+
+            self.megaNames.font = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.font.emSize(),
+                style=self.megaNames.font.style())
+            self.megaNames.mediumFont = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.mediumFont.emSize(),
+                style=self.megaNames.mediumFont.style())
+            self.megaNames.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.smallFont.emSize(),
+                style=self.megaNames.smallFont.style())
+
+            # TODO: Why is syntax highlighting unhappy here
+            self.microBorders.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.smallFont.emSize(),
+                style=self.microBorders.smallFont.style())
+            self.microBorders.largeFont = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.largeFont.emSize(),
+                style=self.microBorders.largeFont.style())
+            self.microBorders.font = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.font.emSize(),
+                style=self.microBorders.font.style())
             self.microBorders.textStyle.uppercase = True
+            self.microBorders.textBrush.setColor(maprenderer.makeAlphaColor(
+                alpha=inkOpacity,
+                color=travellermap.MapColours.Brown))
 
-            self.sectorName.textStyle.uppercase = True
+            self.subsectorNames.font = self._createFont(
+                families=fontName,
+                emSize=self.subsectorNames.font.emSize(),
+                style=self.subsectorNames.font.style())
             self.subsectorNames.textStyle.uppercase = True
-
             # NOTE: This TODO came in from Traveller Map
             # TODO: Render small, around edges
             self.subsectorNames.visible = False
 
-            self.worlds.textStyle.uppercase = True
-
-            # NOTE: This TODO came in from Traveller Map
-            # TODO: Decide on this. It's nice to not overwrite the parsec grid, but
-            # it looks very cluttered, especially amber/red zones.
-            self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
+            self.sectorName.font = self._createFont(
+                families=fontName,
+                emSize=self.sectorName.font.emSize(),
+                style=self.sectorName.font.style())
+            self.sectorName.textStyle.uppercase = True
 
             self.worldDetails &= ~maprenderer.WorldDetails.Allegiance
-
-            self.subsectorNames.fontInfo.families = fontName
-            self.sectorName.fontInfo.families = fontName
-
-            self.worlds.largeFontInfo.style |= maprenderer.FontStyle.Underline
 
             self.microBorders.pen.setWidth(onePixel * 4)
             self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
@@ -1010,9 +1000,6 @@ class StyleSheet(object):
             self.microRoutes.pen.setColor(travellermap.MapColours.Gray)
 
             self.parsecGrid.pen.setColor(lightColor)
-            self.microBorders.textBrush.setColor(maprenderer.makeAlphaColor(
-                alpha=inkOpacity,
-                color=travellermap.MapColours.Brown))
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
@@ -1128,59 +1115,94 @@ class StyleSheet(object):
 
             self.subsectorGrid.pen.setColor(travellermap.MapColours.Cyan)
 
-            fontNames = "Courier New"
-            self.worlds.fontInfo.families = fontNames
-            self.worlds.smallFontInfo.families = fontNames
-            self.starport.fontInfo.families = fontNames
-            self.worlds.largeFontInfo.families = fontNames
-            self.worlds.largeFontInfo.size = self.worlds.fontInfo.size * 1.25
-            self.worlds.fontInfo.size *= 0.8
+            # TODO: This causes a lot of fonts to be thrown away and new ones created
+            fontName = 'Courier New'
 
-            self.macroNames.fontInfo.families = fontNames
-            self.macroNames.mediumFontInfo.families = fontNames
-            self.macroNames.smallFontInfo.families = fontNames
-            self.megaNames.fontInfo.families = fontNames
-            self.megaNames.mediumFontInfo.families = fontNames
-            self.megaNames.smallFontInfo.families = fontNames
-            self.microBorders.smallFontInfo.families = fontNames
-            self.microBorders.largeFontInfo.families = fontNames
-            self.microBorders.fontInfo.families = fontNames
-            self.macroBorders.fontInfo.families = fontNames
-            self.macroRoutes.fontInfo.families = fontNames
-            self.capitals.fontInfo.families = fontNames
-            self.macroBorders.smallFontInfo.families = fontNames
+            # The large font needs to be updated before the standard font as the large
+            # fonts size is dependent on the standard fonts old size (based on the
+            # Traveller Map code)
+            if self.worlds.visible:
+                self.worlds.largeFont = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.font.emSize() * 1.25,
+                    style=self.worlds.largeFont.style() | maprenderer.FontStyle.Underline)
+                self.worlds.smallFont = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.smallFont.emSize(),
+                    style=self.worlds.smallFont.style())
+                self.worlds.font = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.font.emSize() * 0.8,
+                    style=self.worlds.font.style())
+                self.worlds.textStyle.uppercase = True
+                self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
 
-            self.worlds.textStyle.uppercase = True
+                self.starport.font = self._createFont(
+                    families=fontName,
+                    emSize=self.starport.font.emSize(),
+                    style=self.starport.font.style())
+
+            self.macroNames.font = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.font.emSize(),
+                style=self.macroNames.font.style())
+            self.macroNames.mediumFont = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.mediumFont.emSize(),
+                style=self.macroNames.mediumFont.style())
+            self.macroNames.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.smallFont.emSize(),
+                style=self.macroNames.smallFont.style())
+
+            self.megaNames.font = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.font.emSize(),
+                style=self.megaNames.font.style())
+            self.megaNames.mediumFont = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.mediumFont.emSize(),
+                style=self.megaNames.mediumFont.style())
+            self.megaNames.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.smallFont.emSize(),
+                style=self.megaNames.smallFont.style())
+
+            self.microBorders.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.smallFont.emSize(),
+                style=self.microBorders.smallFont.style())
+            self.microBorders.largeFont = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.largeFont.emSize(),
+                style=self.microBorders.largeFont.style())
+            self.microBorders.font = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.font.emSize(),
+                style=self.microBorders.font.style() | maprenderer.FontStyle.Underline)
             self.microBorders.textStyle.uppercase = True
-            self.microBorders.fontInfo.style |= maprenderer.FontStyle.Underline
+            self.microBorders.pen.setWidth(onePixel * 4)
+            self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
 
+            self.sectorName.font = self._createFont(
+                families=fontName,
+                emSize=self.sectorName.font.emSize() * 0.5,
+                style=self.sectorName.font.style() | maprenderer.FontStyle.Bold)
             self.sectorName.textBrush = self._graphics.createBrush(
                 color=foregroundColor)
             self.sectorName.textStyle.scale = maprenderer.SizeF(1, 1)
             self.sectorName.textStyle.rotation = 0
             self.sectorName.textStyle.uppercase = True
-            self.sectorName.fontInfo.style |= maprenderer.FontStyle.Bold
-            self.sectorName.fontInfo.size *= 0.5
 
+            self.subsectorNames.font = self._createFont(
+                families=fontName,
+                emSize=self.subsectorNames.font.emSize() * 0.5,
+                style=self.subsectorNames.font.style() | maprenderer.FontStyle.Bold)
             self.subsectorNames.textBrush = self._graphics.createBrush(
                 color=foregroundColor)
             self.subsectorNames.textStyle.scale = maprenderer.SizeF(1, 1)
             self.subsectorNames.textStyle.rotation = 0
             self.subsectorNames.textStyle.uppercase = True
-            self.subsectorNames.fontInfo.style |= maprenderer.FontStyle.Bold
-            self.subsectorNames.fontInfo.size *= 0.5
-
-            self.worlds.textStyle.uppercase = True
-
-            self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
-
-            self.subsectorNames.fontInfo.families = fontNames
-            self.sectorName.fontInfo.families = fontNames
-
-            self.worlds.largeFontInfo.style |= maprenderer.FontStyle.Underline
-
-            self.microBorders.pen.setWidth(onePixel * 4)
-            self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
 
             self.worldNoWater.fillBrush.setColor(foregroundColor)
             self.worldWater.fillBrush.setColor('#0000FF') # TODO: Color.Empty
@@ -1232,50 +1254,102 @@ class StyleSheet(object):
 
             self.microBorders.textBrush.setColor(travellermap.MapColours.DarkSlateGray)
 
-            fontName = "Calibri,Arial"
-            self.worlds.fontInfo.families = fontName
-            self.worlds.smallFontInfo.families = fontName
-            self.starport.fontInfo.families = fontName
-            self.starport.fontInfo.style = maprenderer.FontStyle.Regular
-            self.worlds.largeFontInfo.families = fontName
-
-            self.worlds.fontInfo.style = maprenderer.FontStyle.Regular
-            self.worlds.largeFontInfo.style = maprenderer.FontStyle.Bold
-
-            self.hexNumber.fontInfo = maprenderer.FontInfo(self.worlds.fontInfo)
-            self.hexNumber.position.setY(-0.49)
-            self.starport.fontInfo.style = maprenderer.FontStyle.Italic
-
-            self.macroNames.fontInfo.families = fontName
-            self.macroNames.mediumFontInfo.families = fontName
-            self.macroNames.smallFontInfo.families = fontName
-            self.megaNames.fontInfo.families = fontName
-            self.megaNames.mediumFontInfo.families = fontName
-            self.megaNames.smallFontInfo.families = fontName
-            self.microBorders.smallFontInfo.families = fontName
-            self.microBorders.largeFontInfo.families = fontName
-            self.microBorders.fontInfo.families = fontName
-            self.macroBorders.fontInfo.families = fontName
-            self.macroRoutes.fontInfo.families = fontName
-            self.capitals.fontInfo.families = fontName
-            self.macroBorders.smallFontInfo.families = fontName
-
-            self.microBorders.textStyle.uppercase = True
-
-            self.sectorName.textStyle.uppercase = True
-            self.subsectorNames.textStyle.uppercase = True
-
-            self.subsectorNames.visible = False
-
-            self.worlds.textStyle.uppercase = True
+            fontName = 'Calibri,Arial'
 
             self.worldDetails &= ~maprenderer.WorldDetails.Allegiance
 
-            self.subsectorNames.fontInfo.families = fontName
-            self.sectorName.fontInfo.families = fontName
+            if self.worlds.visible:
+                self.worlds.font = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.font.emSize(),
+                    style=maprenderer.FontStyle.Regular)
+                self.worlds.smallFont = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.smallFont.emSize(),
+                    style=self.worlds.smallFont.style())
+                self.worlds.largeFont = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.largeFont.emSize(),
+                    style=maprenderer.FontStyle.Bold)
+                self.worlds.textStyle.uppercase = True
+                self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, -0.04)
+                self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
 
+                self.starport.font = self._createFont(
+                    families=fontName,
+                    emSize=self.starport.font.emSize(),
+                    style=maprenderer.FontStyle.Italic)
+                self.starport.position = maprenderer.AbstractPointF(0.175, 0.17)
+
+                self.hexNumber.font = self._createFont(
+                    families=fontName,
+                    emSize=self.worlds.font.emSize(),
+                    style=self.worlds.font.style())
+                self.hexNumber.position.setY(-0.49)
+
+                self.uwp.font = self.hexNumber.font
+                self.uwp.textBackgroundStyle = maprenderer.TextBackgroundStyle.Filled
+                self.uwp.position = maprenderer.AbstractPointF(0, 0.40)
+                self.uwp.fillBrush = self._graphics.createBrush(
+                    color=travellermap.MapColours.Black)
+                self.uwp.textBrush = self._graphics.createBrush(
+                    color=travellermap.MapColours.White)
+
+            self.macroNames.font = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.font.emSize(),
+                style=self.macroNames.font.style())
+            self.macroNames.mediumFont = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.mediumFont.emSize(),
+                style=self.macroNames.mediumFont.style())
+            self.macroNames.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.macroNames.smallFont.emSize(),
+                style=self.macroNames.smallFont.style())
+
+            self.megaNames.font = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.font.emSize(),
+                style=self.megaNames.font.style())
+            self.megaNames.mediumFont = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.mediumFont.emSize(),
+                style=self.megaNames.mediumFont.style())
+            self.megaNames.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.megaNames.smallFont.emSize(),
+                style=self.megaNames.smallFont.style())
+
+            self.microBorders.smallFont = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.smallFont.emSize(),
+                style=self.microBorders.smallFont.style())
+            self.microBorders.largeFont = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.largeFont.emSize(),
+                style=self.microBorders.largeFont.style())
+            self.microBorders.font = self._createFont(
+                families=fontName,
+                emSize=self.microBorders.font.emSize(),
+                style=self.microBorders.font.style())
+            self.microBorders.textStyle.uppercase = True
             self.microBorders.pen.setWidth(0.11)
             self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
+            self.microBorders.textBrush.setColor(travellermap.MapColours.DarkSlateGray)
+
+            self.sectorName.font = self._createFont(
+                families=fontName,
+                emSize=self.sectorName.font.emSize(),
+                style=self.sectorName.font.style())
+            self.sectorName.textStyle.uppercase = True
+
+            self.subsectorNames.font = self._createFont(
+                families=fontName,
+                emSize=self.subsectorNames.font.emSize(),
+                style=self.subsectorNames.font.style())
+            self.subsectorNames.textStyle.uppercase = True
+            self.subsectorNames.visible = False
 
             self.worldWater.fillBrush.setColor(travellermap.MapColours.MediumBlue)
             self.worldNoWater.fillBrush.setColor(travellermap.MapColours.DarkKhaki)
@@ -1287,6 +1361,7 @@ class StyleSheet(object):
                 width=onePixel * 2)
 
             self.showZonesAsPerimeters = True
+
             self.greenZone.visible = True
             self.greenZone.pen = self._graphics.createPen(
                 color='#80C676',
@@ -1296,8 +1371,6 @@ class StyleSheet(object):
             self.redZone.pen.setColor(travellermap.MapColours.Red)
             self.redZone.pen.setWidth(0.05)
 
-            self.microBorders.textBrush.setColor(travellermap.MapColours.DarkSlateGray)
-
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
             self.discRadius = 0.11
@@ -1305,19 +1378,7 @@ class StyleSheet(object):
             self.baseTopPosition = maprenderer.AbstractPointF(-0.22, -0.21)
             self.baseMiddlePosition = maprenderer.AbstractPointF(-0.32, 0.17)
             self.baseBottomPosition = maprenderer.AbstractPointF(0.22, -0.21)
-            self.starport.position = maprenderer.AbstractPointF(0.175, 0.17)
-            self.uwp.position = maprenderer.AbstractPointF(0, 0.40)
             self.discPosition = maprenderer.AbstractPointF(-self.discRadius, 0.16)
-            self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, -0.04)
-
-            self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
-
-            self.uwp.fontInfo = maprenderer.FontInfo(self.hexNumber.fontInfo)
-            self.uwp.fillBrush = self._graphics.createBrush(
-                color=travellermap.MapColours.Black)
-            self.uwp.textBrush = self._graphics.createBrush(
-                color=travellermap.MapColours.White)
-            self.uwp.textBackgroundStyle = maprenderer.TextBackgroundStyle.Filled
 
         # NOTE: This TODO came in with traveller map
         # TODO: Do this with opacity.
@@ -1394,6 +1455,33 @@ class StyleSheet(object):
         self.layerOrder.clear()
         for i, layer in enumerate(layers):
             self.layerOrder[layer] = i
+
+    def _createFont(
+            self,
+            families: str,
+            emSize: float,
+            style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
+            ) -> maprenderer.AbstractFont:
+        for family in families.split(','):
+            key = (family, emSize, style)
+            font = self._fontCache.get(key)
+            if font:
+                return font
+
+            try:
+                font = self._graphics.createFont(
+                    family=family,
+                    emSize=emSize,
+                    style=style)
+            except:
+                # TODO: Log something at debug level
+                continue
+
+            if font:
+                self._fontCache[key] = font
+                return font
+
+        raise RuntimeError(f'No font found out of families list "{families}"')
 
     @staticmethod
     def _floatScaleInterpolate(

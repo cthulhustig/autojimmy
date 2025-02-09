@@ -456,43 +456,38 @@ class QtMapFont(maprenderer.AbstractFont):
 
     def __init__(
             self,
-            families: str,
+            family: str,
             emSize: float,
             style: maprenderer.FontStyle
             ) -> None:
-        self._families = families
-        self._family = None
+        self._family = family
         self._emSize = emSize
         self._style = style
 
-        self._font = None
-        for family in self._families.split(','):
-            try:
-                self._font = QtGui.QFont(family)
-                if self._font:
-                    self._font.setPointSizeF(QtMapFont._TextPointSize)
-                    if self._style & maprenderer.FontStyle.Bold:
-                        self._font.setBold(True)
-                    if self._style & maprenderer.FontStyle.Italic:
-                        self._font.setItalic(True)
-                    if self._style & maprenderer.FontStyle.Underline:
-                        self._font.setUnderline(True)
-                    if self._style & maprenderer.FontStyle.Strikeout:
-                        self._font.setStrikeOut(True)
-
-                    self._family = family
-                    break
-            except:
-                self._font = None
-
+        self._font = QtGui.QFont(family)
         if not self._font:
-            raise RuntimeError("No matching font family")
+            raise ValueError(f'Unknown font "{family}"')
+        self._font.setPointSizeF(QtMapFont._TextPointSize)
+        if self._style & maprenderer.FontStyle.Bold:
+            self._font.setBold(True)
+        if self._style & maprenderer.FontStyle.Italic:
+            self._font.setItalic(True)
+        if self._style & maprenderer.FontStyle.Underline:
+            self._font.setUnderline(True)
+        if self._style & maprenderer.FontStyle.Strikeout:
+            self._font.setStrikeOut(True)
 
         self._fontMetrics = QtGui.QFontMetrics(self._font)
         self._lineSpacing = self._fontMetrics.lineSpacing()
 
+    def family(self) -> str:
+        return self._family
+
     def emSize(self) -> float:
         return self._emSize
+
+    def style(self) -> maprenderer.FontStyle:
+        return self._style
 
     def pointSize(self) -> float:
         return self._TextPointSize
@@ -602,13 +597,13 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def createFont(
             self,
-            families: str,
+            family: str,
             emSize: float,
             style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
             ) -> QtMapFont:
         # TODO: Traveller Map has this as 1.4 (in makeFont) but I found I needed
         # to lower it to get fonts rendering the correct size.
-        return QtMapFont(families=families, emSize=emSize * 1.1, style=style)
+        return QtMapFont(family=family, emSize=emSize * 1.1, style=style)
 
     def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
         antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \
