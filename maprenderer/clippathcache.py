@@ -44,7 +44,11 @@ class ClipPathCache(object):
         (-0.5 - travellermap.HexWidthOffset, -1) # Center left of next hex
     ]
 
-    def __init__(self):
+    def __init__(
+            self,
+            graphics: maprenderer.AbstractGraphics
+            ) -> None:
+        self._graphics = graphics
         self._sectorClipPaths: typing.Mapping[
             typing.Tuple[
                 int, # Sector X position
@@ -116,17 +120,6 @@ class ClipPathCache(object):
         types.extend([maprenderer.PathPointType.Line] * (len(points) - 2))
         types.append([maprenderer.PathPointType.Line | maprenderer.PathPointType.CloseSubpath])
 
-        path = maprenderer.AbstractPath(points=points, types=types, closed=True)
+        path = self._graphics.createPath(points=points, types=types, closed=True)
         self._sectorClipPaths[key] = path
         return path
-
-    @staticmethod
-    def _sectorBounds(
-            sectorX: int,
-            sectorY: int
-            ) -> maprenderer.AbstractRectangleF:
-        return maprenderer.AbstractRectangleF(
-            x=(sectorX * travellermap.SectorWidth) - travellermap.ReferenceHexX,
-            y=(sectorY * travellermap.SectorHeight) - travellermap.ReferenceHexY,
-            width=travellermap.SectorWidth,
-            height=travellermap.SectorHeight)

@@ -7,6 +7,8 @@ import typing
 class DefaultStyleCache(object):
     _BorderPattern = re.compile(r'border\.(\w+)')
     _RoutePattern = re.compile(r'route\.(\w+)')
+    # TODO: This file should be pulled from DataStore to get caching and
+    # filesystem layering
     _DefaultStylePath = 'res/styles/otu.css'
 
     _StyleMap = {

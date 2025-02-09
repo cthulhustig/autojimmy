@@ -9,6 +9,7 @@ import xml.etree.ElementTree
 class VectorObject(object):
     def __init__(
             self,
+            graphics: maprenderer.AbstractGraphics,
             name: str,
             originX: float,
             originY: float,
@@ -20,12 +21,14 @@ class VectorObject(object):
             types: typing.Optional[typing.Sequence[maprenderer.PathPointType]] = None,
             bounds: typing.Optional[maprenderer.AbstractRectangleF] = None,
             closed: bool = False,
-            mapOptions: maprenderer.MapOptions = 0):
+            mapOptions: maprenderer.MapOptions = 0
+            ) -> None:
         super().__init__()
 
         if types and (len(points) != len(types)):
             raise ValueError('VectorObject path point and type vectors have different lengths')
 
+        self._graphics = graphics
         self.name = name
         self.originX = originX
         self.originY = originY
@@ -40,7 +43,7 @@ class VectorObject(object):
         self._pathDataTypes = list(types) if types else None
         self._minScale = None
         self._maxScale = None
-        self._cachedBounds = maprenderer.AbstractRectangleF(bounds) if bounds else None
+        self._cachedBounds = self._graphics.copyRectangle(bounds) if bounds else None
         self._cachedPath: typing.Optional[maprenderer.AbstractPath] = None
 
     @property
@@ -61,12 +64,13 @@ class VectorObject(object):
                     top = point.y()
                 if (not bottom) or (point.y() > bottom):
                     bottom = point.y()
-            self._cachedBounds = maprenderer.AbstractRectangleF(
+            self._cachedBounds = self._graphics.createRectangle(
                 x=left,
                 y=top,
                 width=right - left,
                 height=bottom - top)
-        return maprenderer.AbstractRectangleF(self._cachedBounds) # Don't return internal copy
+        # TODO: Returning a copy is wasteful, is it needed?
+        return self._graphics.copyRectangle(self._cachedBounds) # Don't return internal copy
 
     @property
     def pathDataTypes(self) -> typing.List[int]:
@@ -85,7 +89,7 @@ class VectorObject(object):
         if not self.pathDataPoints:
             raise RuntimeError('Invalid VectorObject - PathDataPoints required')
         if not self._cachedPath:
-            self._cachedPath = maprenderer.AbstractPath(
+            self._cachedPath = self._graphics.createPath(
                 points=self.pathDataPoints,
                 types=self.pathDataTypes,
                 closed=self.closed)
@@ -96,7 +100,8 @@ class VectorObject(object):
             self,
             graphics: maprenderer.AbstractGraphics,
             rect: maprenderer.AbstractRectangleF,
-            pen: maprenderer.AbstractPen) -> None:
+            pen: maprenderer.AbstractPen
+            ) -> None:
         transformedBounds = self._transformedBounds()
         if transformedBounds.intersectsWith(rect):
             with graphics.save():
@@ -177,6 +182,8 @@ class VectorObject(object):
 # rendering more complex/inefficient. My implementation splits sub paths into
 # multiple VectorObject to avoid repeated processing at render time
 class VectorObjectCache(object):
+    # TODO: These files should be pulled from DataStore to get caching and
+    # filesystem layering
     _BorderFiles = [
         'res/Vectors/Imperium.xml',
         'res/Vectors/Aslan.xml',
@@ -201,7 +208,12 @@ class VectorObjectCache(object):
         'res/Vectors/J4Route.xml',
         'res/Vectors/CoreRoute.xml']
 
-    def __init__(self, basePath: str):
+    def __init__(
+            self,
+            graphics: maprenderer.AbstractGraphics,
+            basePath: str
+            ) -> None:
+        self._graphics = graphics
         self.borders = self._loadFiles(basePath, VectorObjectCache._BorderFiles)
         self.rifts = self._loadFiles(basePath, VectorObjectCache._RiftFiles)
         self.routes = self._loadFiles(basePath, VectorObjectCache._RouteFiles)
@@ -276,8 +288,8 @@ class VectorObjectCache(object):
         #element = rootElement.find('./Type')
 
         # NOTE: Loading the bounds from the file when it's present rather than
-        # regenerating it from the points is important as it the bounds in the
-        # file doesn't always match the bounds of the points (e.g. the Solomani
+        # regenerating it from the points is important as the bounds in the file
+        # doesn't always match the bounds of the points (e.g. the Solomani
         # Sphere). As the bounds determine where the name name is drawn it needs
         # to match what Traveller Map uses.
         xElement = rootElement.find('./Bounds/X')
@@ -287,7 +299,7 @@ class VectorObjectCache(object):
         bounds = None
         if xElement is not None and yElement is not None \
             and widthElement is not None and heightElement is not None:
-            bounds = maprenderer.AbstractRectangleF(
+            bounds = self._graphics.createRectangle(
                 x=float(xElement.text),
                 y=float(yElement.text),
                 width=float(widthElement.text),
@@ -330,6 +342,7 @@ class VectorObjectCache(object):
                     isFirstVector = not vectors
                     nextIndex = currentIndex + (0 if isStartPoint else 1)
                     vectors.append(VectorObject(
+                        graphics=self._graphics,
                         name=name if isFirstVector else '', # Only set name on first to avoid multiple rendering
                         originX=originX,
                         originY=originY,
@@ -351,6 +364,7 @@ class VectorObjectCache(object):
         else:
             # No path data types so this is just a single path
             return [VectorObject(
+                graphics=self._graphics,
                 name=name,
                 originX=originX,
                 originY=originY,

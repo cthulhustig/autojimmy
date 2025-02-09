@@ -4,6 +4,39 @@ import traveller
 import travellermap
 import typing
 
+class FontInfo():
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'FontInfo') -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        families: str,
+        size: float,
+        style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
+        ) -> None: ...
+
+    def __init__(self, *args, **kwargs):
+        if not args and not kwargs:
+            self.families = ''
+            self.size = 0
+            self.style = maprenderer.FontStyle.Regular
+        elif len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, FontInfo):
+                raise TypeError('The other parameter must be a FontInfo')
+            self.copyFrom(other)
+        else:
+            self.families = args[0] if len(args) > 0 else kwargs['families']
+            self.size = float(args[1] if len(args) > 1 else kwargs['size'])
+            self.style = args[2] if len(args) > 2 else kwargs.get('style', maprenderer.FontStyle.Regular)
+
+    def copyFrom(self, other: 'FontInfo') -> None:
+        self.families = other.families
+        self.size = other.size
+        self.style = other.style
+
 class StyleSheet(object):
     _DefaultFont = 'Arial'
 
@@ -44,7 +77,10 @@ class StyleSheet(object):
     _T5AllegianceCodeMinScale = 64
 
     class StyleElement(object):
-        def __init__(self):
+        def __init__(
+                self,
+                graphics: maprenderer.AbstractGraphics
+                ) -> None:
             self.visible = False
             # TODO: This should probably be an AbstractBrush to avoid having to create it all the time
             self.content = ''
@@ -61,6 +97,7 @@ class StyleSheet(object):
             self.largeFontInfo = maprenderer.FontInfo()
             self.position = maprenderer.AbstractPointF()
 
+            self._graphics = graphics
             self._font = None
             self._smallFont = None
             self._mediumFont = None
@@ -71,39 +108,53 @@ class StyleSheet(object):
             if not self._font:
                 if not self.fontInfo:
                     raise RuntimeError('AbstractFont has no fontInfo')
-                self._font = self.fontInfo.makeFont()
+                self._font = self._graphics.createFont(
+                    families=self.fontInfo.families,
+                    emSize=self.fontInfo.size,
+                    style=self.fontInfo.style)
             return self._font
         @property
         def smallFont(self) -> maprenderer.AbstractFont:
             if not self._smallFont:
                 if not self.smallFontInfo:
                     raise RuntimeError('AbstractFont has no font smallFontInfo')
-                self._smallFont = self.smallFontInfo.makeFont()
+                self._smallFont = self._graphics.createFont(
+                    families=self.smallFontInfo.families,
+                    emSize=self.smallFontInfo.size,
+                    style=self.smallFontInfo.style)
             return self._smallFont
         @property
         def mediumFont(self) -> maprenderer.AbstractFont:
             if not self._mediumFont:
                 if not self.mediumFontInfo:
                     raise RuntimeError('AbstractFont has no font mediumFontInfo')
-                self._mediumFont = self.mediumFontInfo.makeFont()
+                self._mediumFont = self._graphics.createFont(
+                    families=self.mediumFontInfo.families,
+                    emSize=self.mediumFontInfo.size,
+                    style=self.mediumFontInfo.style)
             return self._mediumFont
         @property
         def largeFont(self) -> maprenderer.AbstractFont:
             if not self._largeFont:
                 if not self.largeFontInfo:
                     raise RuntimeError('AbstractFont has no font largeFontInfo')
-                self._largeFont = self.largeFontInfo.makeFont()
+                self._largeFont = self._graphics.createFont(
+                    families=self.largeFontInfo.families,
+                    emSize=self.largeFontInfo.size,
+                    style=self.largeFontInfo.style)
             return self._largeFont
 
     def __init__(
             self,
             scale: float,
             options: maprenderer.MapOptions,
-            style: travellermap.Style
+            style: travellermap.Style,
+            graphics: maprenderer.AbstractGraphics
             ):
         self._scale = scale
         self._options = options
         self._style = style
+        self._graphics = graphics
         self._handleConfigUpdate()
 
     @property
@@ -111,6 +162,8 @@ class StyleSheet(object):
         return self._scale
     @scale.setter
     def scale(self, scale: float) -> None:
+        if scale == self._scale:
+            return # Nothing to do
         self._scale = scale
         self._handleConfigUpdate()
 
@@ -119,6 +172,8 @@ class StyleSheet(object):
         return self._options
     @options.setter
     def options(self, options: maprenderer.MapOptions) -> None:
+        if options == self._options:
+            return # Nothing to do
         self._options = options
         self._handleConfigUpdate()
 
@@ -127,6 +182,8 @@ class StyleSheet(object):
         return self._style
     @scale.setter
     def style(self, style: float) -> None:
+        if style == self._style:
+            return # Nothing to do
         self._style = style
         self._handleConfigUpdate()
 
@@ -187,8 +244,8 @@ class StyleSheet(object):
         # Options
 
         # TODO: This should be changed to backgroundBrush
-        self.backgroundBrush = maprenderer.AbstractBrush(
-            travellermap.MapColours.Black)
+        self.backgroundBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.Black)
 
         self.showNebulaBackground = False
         self.showGalaxyBackground = False
@@ -205,27 +262,29 @@ class StyleSheet(object):
         self.riftOpacity = 0.0 # TODO: Not sure about this
 
         self.hexContentScale = 1.0
+        # TODO: Is hex rotation actually used for anything? Removing it
+        # would reduce the number of transforms
         self.hexRotation = 0
 
         self.routeEndAdjust = 0.25
 
         self.t5AllegianceCodes = False
 
-        self.highlightWorlds = StyleSheet.StyleElement()
+        self.highlightWorlds = StyleSheet.StyleElement(graphics=self._graphics)
         self.highlightWorldsPattern: typing.Optional[maprenderer.HighlightWorldPattern] = None
 
-        self.droyneWorlds = StyleSheet.StyleElement()
-        self.ancientsWorlds = StyleSheet.StyleElement()
-        self.minorHomeWorlds = StyleSheet.StyleElement()
+        self.droyneWorlds = StyleSheet.StyleElement(graphics=self._graphics)
+        self.ancientsWorlds = StyleSheet.StyleElement(graphics=self._graphics)
+        self.minorHomeWorlds = StyleSheet.StyleElement(graphics=self._graphics)
 
         # Worlds
-        self.worlds = StyleSheet.StyleElement()
+        self.worlds = StyleSheet.StyleElement(graphics=self._graphics)
         self.showWorldDetailColors = False
-        self.populationOverlay = StyleSheet.StyleElement()
-        self.importanceOverlay = StyleSheet.StyleElement()
-        self.capitalOverlay = StyleSheet.StyleElement()
-        self.capitalOverlayAltA = StyleSheet.StyleElement()
-        self.capitalOverlayAltB = StyleSheet.StyleElement()
+        self.populationOverlay = StyleSheet.StyleElement(graphics=self._graphics)
+        self.importanceOverlay = StyleSheet.StyleElement(graphics=self._graphics)
+        self.capitalOverlay = StyleSheet.StyleElement(graphics=self._graphics)
+        self.capitalOverlayAltA = StyleSheet.StyleElement(graphics=self._graphics)
+        self.capitalOverlayAltB = StyleSheet.StyleElement(graphics=self._graphics)
         self.showStellarOverlay = False
 
         self.discPosition = maprenderer.AbstractPointF(0, 0)
@@ -236,13 +295,15 @@ class StyleSheet(object):
         self.baseBottomPosition = maprenderer.AbstractPointF(0, 0)
         self.baseMiddlePosition = maprenderer.AbstractPointF(0, 0)
 
-        self.uwp = StyleSheet.StyleElement()
-        self.starport = StyleSheet.StyleElement()
+        self.uwp = StyleSheet.StyleElement(graphics=self._graphics)
+        self.starport = StyleSheet.StyleElement(graphics=self._graphics)
 
-        #self.glyphFont = FontInfo() # TODO: Need to figure out defaults
         self.worldDetails: maprenderer.WorldDetails = maprenderer.WorldDetails.NoDetails
         self.lowerCaseAllegiance = False
-        #self.wingdingFont = FontInfo() # TODO: Need to figure out defaults
+
+        self.wingdingFont: typing.Optional[maprenderer.AbstractFont] = None
+        self.glyphFont: typing.Optional[maprenderer.AbstractFont] = None
+
         self.showGasGiantRing = False
 
         self.showTL = False
@@ -250,35 +311,35 @@ class StyleSheet(object):
         self.showZonesAsPerimeters = False
 
         # Hex Coordinates
-        self.hexNumber = StyleSheet.StyleElement()
+        self.hexNumber = StyleSheet.StyleElement(graphics=self._graphics)
         self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Sector
         self.numberAllHexes = False
 
         # Sector Name
-        self.sectorName = StyleSheet.StyleElement()
+        self.sectorName = StyleSheet.StyleElement(graphics=self._graphics)
         self.showSomeSectorNames = False
         self.showAllSectorNames = False
 
-        self.capitals = StyleSheet.StyleElement()
-        self.subsectorNames = StyleSheet.StyleElement()
-        self.greenZone = StyleSheet.StyleElement()
-        self.amberZone = StyleSheet.StyleElement()
-        self.redZone = StyleSheet.StyleElement()
-        self.sectorGrid = StyleSheet.StyleElement()
-        self.subsectorGrid = StyleSheet.StyleElement()
-        self.parsecGrid = StyleSheet.StyleElement()
-        self.worldWater = StyleSheet.StyleElement()
-        self.worldNoWater = StyleSheet.StyleElement()
-        self.macroRoutes = StyleSheet.StyleElement()
-        self.microRoutes = StyleSheet.StyleElement()
-        self.macroBorders = StyleSheet.StyleElement()
-        self.macroNames = StyleSheet.StyleElement()
-        self.megaNames = StyleSheet.StyleElement()
-        self.pseudoRandomStars = StyleSheet.StyleElement()
-        self.placeholder = StyleSheet.StyleElement()
-        self.anomaly = StyleSheet.StyleElement()
+        self.capitals = StyleSheet.StyleElement(graphics=self._graphics)
+        self.subsectorNames = StyleSheet.StyleElement(graphics=self._graphics)
+        self.greenZone = StyleSheet.StyleElement(graphics=self._graphics)
+        self.amberZone = StyleSheet.StyleElement(graphics=self._graphics)
+        self.redZone = StyleSheet.StyleElement(graphics=self._graphics)
+        self.sectorGrid = StyleSheet.StyleElement(graphics=self._graphics)
+        self.subsectorGrid = StyleSheet.StyleElement(graphics=self._graphics)
+        self.parsecGrid = StyleSheet.StyleElement(graphics=self._graphics)
+        self.worldWater = StyleSheet.StyleElement(graphics=self._graphics)
+        self.worldNoWater = StyleSheet.StyleElement(graphics=self._graphics)
+        self.macroRoutes = StyleSheet.StyleElement(graphics=self._graphics)
+        self.microRoutes = StyleSheet.StyleElement(graphics=self._graphics)
+        self.macroBorders = StyleSheet.StyleElement(graphics=self._graphics)
+        self.macroNames = StyleSheet.StyleElement(graphics=self._graphics)
+        self.megaNames = StyleSheet.StyleElement(graphics=self._graphics)
+        self.pseudoRandomStars = StyleSheet.StyleElement(graphics=self._graphics)
+        self.placeholder = StyleSheet.StyleElement(graphics=self._graphics)
+        self.anomaly = StyleSheet.StyleElement(graphics=self._graphics)
 
-        self.microBorders = StyleSheet.StyleElement()
+        self.microBorders = StyleSheet.StyleElement(graphics=self._graphics)
         self.fillMicroBorders = False
         self.shadeMicroBorders = False
         self.showMicroNames = False
@@ -316,14 +377,14 @@ class StyleSheet(object):
         self.riftOpacity = StyleSheet._floatScaleInterpolate(
             minValue=0,
             maxValue=0.85,
-            scale=self._scale,
+            scale=self.scale,
             minScale=1 / 4,
             maxScale=4)
 
         self.deepBackgroundOpacity = StyleSheet._floatScaleInterpolate(
             minValue=1,
             maxValue=0,
-            scale=self._scale,
+            scale=self.scale,
             minScale=1 / 8,
             maxScale=2)
 
@@ -370,7 +431,7 @@ class StyleSheet(object):
             ((self.options & maprenderer.MapOptions.WorldColors) != 0)
         self.populationOverlay.visible = (self.options & maprenderer.MapOptions.PopulationOverlay) != 0
         self.importanceOverlay.visible = (self.options & maprenderer.MapOptions.ImportanceOverlay) != 0
-        self.capitalOverlay.visible = (self.options & maprenderer.MapOptions.WorldColors) != 0
+        self.capitalOverlay.visible = (self.options & maprenderer.MapOptions.CapitalOverlay) != 0
         self.showStellarOverlay = (self._options & maprenderer.MapOptions.StellarOverlay) != 0
 
         self.lowerCaseAllegiance = (self.scale < StyleSheet._WorldFullMinScale)
@@ -430,13 +491,17 @@ class StyleSheet(object):
                 StyleSheet._DefaultFont,
                 0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
                 maprenderer.FontStyle.Bold)
-            self.wingdingFont = maprenderer.FontInfo(
-                "Wingdings",
-                0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.175 * fontScale))
-            self.glyphFont = maprenderer.FontInfo(
-                "Arial Unicode MS,Segoe UI Symbol,Arial",
-                0.175 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
-                maprenderer.FontStyle.Bold)
+
+            if self._graphics.supportsWingdings():
+                self.wingdingsFont = self._graphics.createFont(
+                    families='Wingdings',
+                    emSize=0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.175 * fontScale))
+                self.glyphCharMap = None
+            self.glyphFont = self._graphics.createFont(
+                families='Arial Unicode MS,Segoe UI Symbol,Arial',
+                emSize=0.175 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
+                style=maprenderer.FontStyle.Bold)
+
             self.uwp.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, 0.1 * fontScale)
             self.hexNumber.fontInfo = maprenderer.FontInfo(StyleSheet._DefaultFont, 0.1 * fontScale)
             self.worlds.smallFontInfo = maprenderer.FontInfo(
@@ -513,68 +578,74 @@ class StyleSheet(object):
 
         routePenWidth = 0.2 if self.scale <= 16 else (0.08 * penScale)
 
-        self.capitals.fillBrush = maprenderer.AbstractBrush(
-            travellermap.MapColours.Wheat)
-        self.capitals.textBrush = maprenderer.AbstractBrush(
-            travellermap.MapColours.TravellerRed)
+        self.capitals.fillBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.Wheat)
+        self.capitals.textBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.TravellerRed)
         self.amberZone.visible = self.redZone.visible = True
-        self.amberZone.pen = maprenderer.AbstractPen(
-            travellermap.MapColours.TravellerAmber,
-            0.05 * penScale)
-        self.redZone.pen = maprenderer.AbstractPen(
-            travellermap.MapColours.TravellerRed,
-            0.05 * penScale)
-        self.macroBorders.pen = maprenderer.AbstractPen(
-            travellermap.MapColours.TravellerRed,
-            borderPenWidth)
-        self.macroRoutes.pen = maprenderer.AbstractPen(
-            travellermap.MapColours.White,
-            borderPenWidth,
-            maprenderer.LineStyle.Dash)
-        self.microBorders.pen = maprenderer.AbstractPen(
-            travellermap.MapColours.Gray,
-            borderPenWidth)
-        self.microRoutes.pen = maprenderer.AbstractPen(
-            travellermap.MapColours.Gray,
-            routePenWidth)
+        self.amberZone.pen = self._graphics.createPen(
+            color=travellermap.MapColours.TravellerAmber,
+            width=0.05 * penScale)
+        self.redZone.pen = self._graphics.createPen(
+            color=travellermap.MapColours.TravellerRed,
+            width=0.05 * penScale)
+        self.macroBorders.pen = self._graphics.createPen(
+            color=travellermap.MapColours.TravellerRed,
+            width=borderPenWidth)
+        self.macroRoutes.pen = self._graphics.createPen(
+            color=travellermap.MapColours.White,
+            width=borderPenWidth,
+            style=maprenderer.LineStyle.Dash)
+        self.microBorders.pen = self._graphics.createPen(
+            color=travellermap.MapColours.Gray,
+            width=borderPenWidth)
+        self.microRoutes.pen = self._graphics.createPen(
+            color=travellermap.MapColours.Gray,
+            width=routePenWidth)
 
-        self.microBorders.textBrush = maprenderer.AbstractBrush(
-            travellermap.MapColours.TravellerAmber)
-        self.worldWater.fillBrush = maprenderer.AbstractBrush(
-            travellermap.MapColours.DeepSkyBlue)
-        self.worldNoWater.fillBrush = maprenderer.AbstractBrush(
-            travellermap.MapColours.White)
-        self.worldNoWater.pen = maprenderer.AbstractPen('#0000FF', onePixel) # TODO: Color.Empty;
+        self.microBorders.textBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.TravellerAmber)
+        self.worldWater.fillBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.DeepSkyBlue)
+        self.worldNoWater.fillBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.White)
+        self.worldNoWater.pen = self._graphics.createPen(
+            color='#0000FF', # TODO: Color.Empty;
+            width=onePixel)
 
         gridColor = self._colorScaleInterpolate(
             scale=self.scale,
             minScale=StyleSheet._SectorGridMinScale,
             maxScale=StyleSheet._SectorGridFullScale,
             color=travellermap.MapColours.Gray)
-        self.parsecGrid.pen = maprenderer.AbstractPen(gridColor, onePixel)
-        self.subsectorGrid.pen = maprenderer.AbstractPen(gridColor, onePixel * 2)
-        self.sectorGrid.pen = maprenderer.AbstractPen(
-            gridColor,
-            (4 if self.subsectorGrid.visible else 2) * onePixel)
-        self.worldWater.pen = maprenderer.AbstractPen(
-            '#0000FF', # TODO: Color.Empty,
-            max(0.01, onePixel))
+        self.parsecGrid.pen = self._graphics.createPen(
+            color=gridColor,
+            width=onePixel)
+        self.subsectorGrid.pen = self._graphics.createPen(
+            color=gridColor,
+            width=onePixel * 2)
+        self.sectorGrid.pen = self._graphics.createPen(
+            color=gridColor,
+            width=(4 if self.subsectorGrid.visible else 2) * onePixel)
+        self.worldWater.pen = self._graphics.createPen(
+            color='#0000FF', # TODO: Color.Empty,
+            width=max(0.01, onePixel))
 
         self.microBorders.textStyle.rotation = 0
         self.microBorders.textStyle.translation = maprenderer.AbstractPointF(0, 0)
-        self.microBorders.textStyle.scale = maprenderer.AbstractSizeF(1.0, 1.0)
+        self.microBorders.textStyle.scale = maprenderer.SizeF(1.0, 1.0)
         self.microBorders.textStyle.uppercase = False
 
         self.sectorName.textStyle.rotation = -50 # degrees
         self.sectorName.textStyle.translation = maprenderer.AbstractPointF(0, 0)
-        self.sectorName.textStyle.scale = maprenderer.AbstractSizeF(0.75, 1.0)
+        self.sectorName.textStyle.scale = maprenderer.SizeF(0.75, 1.0)
         self.sectorName.textStyle.uppercase = False
         self.sectorName.textStyle.wrap = True
 
         self.subsectorNames.textStyle = self.sectorName.textStyle
 
         self.worlds.textStyle.rotation = 0
-        self.worlds.textStyle.scale = maprenderer.AbstractSizeF(1.0, 1.0)
+        self.worlds.textStyle.scale = maprenderer.SizeF(1.0, 1.0)
         self.worlds.textStyle.translation = maprenderer.AbstractPointF(self.worlds.position)
         self.worlds.textStyle.uppercase = False
 
@@ -584,33 +655,36 @@ class StyleSheet(object):
         self.showGalaxyBackground = self.deepBackgroundOpacity > 0.0
         self.useWorldImages = False
 
-        self.populationOverlay.fillBrush = maprenderer.AbstractBrush('#80FFFF00')
-        self.importanceOverlay.fillBrush = maprenderer.AbstractBrush('#2080FF00')
-        self.highlightWorlds.fillBrush = maprenderer.AbstractBrush('#80FF0000')
+        self.populationOverlay.fillBrush = self._graphics.createBrush(
+            color='#80FFFF00')
+        self.importanceOverlay.fillBrush = self._graphics.createBrush(
+            color='#2080FF00')
+        self.highlightWorlds.fillBrush = self._graphics.createBrush(
+            color='#80FF0000')
 
-        self.populationOverlay.pen = maprenderer.AbstractPen(
+        self.populationOverlay.pen = self._graphics.createPen(
             color='#0000FF', # TODO: Color.Empty,
             width=0.03 * penScale,
             style=maprenderer.LineStyle.Dash)
-        self.importanceOverlay.pen = maprenderer.AbstractPen(
+        self.importanceOverlay.pen = self._graphics.createPen(
             color='#0000FF', # TODO: Color.Empty,
             width=0.03 * penScale,
             style=maprenderer.LineStyle.Dot)
-        self.highlightWorlds.pen = maprenderer.AbstractPen(
+        self.highlightWorlds.pen =self._graphics.createPen(
             color='#0000FF', # TODO: Color.Empty,
             width=0.03 * penScale,
             style=maprenderer.LineStyle.DashDot)
 
-        self.capitalOverlay.fillBrush = maprenderer.AbstractBrush(
-            maprenderer.makeAlphaColor(
+        self.capitalOverlay.fillBrush = self._graphics.createBrush(
+            color=maprenderer.makeAlphaColor(
                 alpha=0x80,
                 color=travellermap.MapColours.TravellerGreen))
-        self.capitalOverlayAltA.fillBrush = maprenderer.AbstractBrush(
-            maprenderer.makeAlphaColor(
+        self.capitalOverlayAltA.fillBrush = self._graphics.createBrush(
+            color=maprenderer.makeAlphaColor(
                 alpha=0x80,
                 color=travellermap.MapColours.Blue))
-        self.capitalOverlayAltB.fillBrush = maprenderer.AbstractBrush(
-            maprenderer.makeAlphaColor(
+        self.capitalOverlayAltB.fillBrush = self._graphics.createBrush(
+            color=maprenderer.makeAlphaColor(
                 alpha=0x80,
                 color=travellermap.MapColours.TravellerAmber))
 
@@ -746,10 +820,10 @@ class StyleSheet(object):
             self.amberZone.pen.setColor(inkColor)
             self.amberZone.pen.setWidth(onePixel * 2)
             self.redZone.pen.setColor('#0000FF') # TODO: Color.Empty
-            self.redZone.fillBrush = maprenderer.AbstractBrush(
-                maprenderer.makeAlphaColor(
-                    alpha=0x80,
-                    color=inkColor))
+            self.redZone.fillBrush = self._graphics.createBrush(
+                color=maprenderer.makeAlphaColor(
+                        alpha=0x80,
+                        color=inkColor))
 
             self.macroBorders.pen.setColor(inkColor)
             self.macroRoutes.pen.setColor(inkColor)
@@ -823,9 +897,9 @@ class StyleSheet(object):
 
             self.amberZone.pen.setColor(travellermap.MapColours.TravellerAmber)
             self.worldNoWater.fillBrush.setColor(travellermap.MapColours.White)
-            self.worldNoWater.pen = maprenderer.AbstractPen(
-                travellermap.MapColours.Black,
-                onePixel)
+            self.worldNoWater.pen = self._graphics.createPen(
+                color=travellermap.MapColours.Black,
+                width=onePixel)
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
 
@@ -925,9 +999,9 @@ class StyleSheet(object):
 
             self.worldNoWater.fillBrush.setColor(foregroundColor)
             self.worldWater.fillBrush.setColor('#0000FF') # TODO: Color.Empty
-            self.worldWater.pen = maprenderer.AbstractPen(
-                foregroundColor,
-                onePixel * 2)
+            self.worldWater.pen = self._graphics.createPen(
+                color=foregroundColor,
+                width=onePixel * 2)
 
             self.amberZone.pen.setColor(foregroundColor)
             self.amberZone.pen.setWidth(onePixel)
@@ -1000,26 +1074,26 @@ class StyleSheet(object):
 
             self.sectorName.textStyle.rotation = 0
             self.sectorName.textStyle.translation = maprenderer.AbstractPointF(0, -0.25)
-            self.sectorName.textStyle.scale = maprenderer.AbstractSizeF(0.5, 0.25)
+            self.sectorName.textStyle.scale = maprenderer.SizeF(0.5, 0.25)
             self.sectorName.textStyle.uppercase = True
 
             self.subsectorNames.textStyle.rotation = 0
             self.subsectorNames.textStyle.translation = maprenderer.AbstractPointF(0, -0.25)
-            self.subsectorNames.textStyle.scale = maprenderer.AbstractSizeF(0.3, 0.15) #  Expand
+            self.subsectorNames.textStyle.scale = maprenderer.SizeF(0.3, 0.15) #  Expand
             self.subsectorNames.textStyle.uppercase = True
 
-            self.subsectorNames.textBrush = maprenderer.AbstractBrush(
-                maprenderer.makeAlphaColor(
+            self.subsectorNames.textBrush = self._graphics.createBrush(
+                color=maprenderer.makeAlphaColor(
                     alpha=128,
                     color=travellermap.MapColours.Goldenrod))
-            self.sectorName.textBrush = maprenderer.AbstractBrush(
-                maprenderer.makeAlphaColor(
+            self.sectorName.textBrush = self._graphics.createBrush(
+                color=maprenderer.makeAlphaColor(
                     alpha=128,
                     color=travellermap.MapColours.Goldenrod))
 
             self.microBorders.textStyle.rotation = 0
             self.microBorders.textStyle.translation = maprenderer.AbstractPointF(0, 0.25)
-            self.microBorders.textStyle.scale = maprenderer.AbstractSizeF(1.0, 0.5) # Expand
+            self.microBorders.textStyle.scale = maprenderer.SizeF(1.0, 0.5) # Expand
             self.microBorders.textStyle.uppercase = True
 
             self.microBorders.pen.setColor(maprenderer.makeAlphaColor(
@@ -1033,7 +1107,7 @@ class StyleSheet(object):
                 borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
 
             self.worlds.textStyle.rotation = 0
-            self.worlds.textStyle.scale = maprenderer.AbstractSizeF(1, 0.5) # Expand
+            self.worlds.textStyle.scale = maprenderer.SizeF(1, 0.5) # Expand
             self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, 0)
             self.worlds.textStyle.uppercase = True
 
@@ -1080,15 +1154,17 @@ class StyleSheet(object):
             self.microBorders.textStyle.uppercase = True
             self.microBorders.fontInfo.style |= maprenderer.FontStyle.Underline
 
-            self.sectorName.textBrush = maprenderer.AbstractBrush(foregroundColor)
-            self.sectorName.textStyle.scale = maprenderer.AbstractSizeF(1, 1)
+            self.sectorName.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
+            self.sectorName.textStyle.scale = maprenderer.SizeF(1, 1)
             self.sectorName.textStyle.rotation = 0
             self.sectorName.textStyle.uppercase = True
             self.sectorName.fontInfo.style |= maprenderer.FontStyle.Bold
             self.sectorName.fontInfo.size *= 0.5
 
-            self.subsectorNames.textBrush = maprenderer.AbstractBrush(foregroundColor)
-            self.subsectorNames.textStyle.scale = maprenderer.AbstractSizeF(1, 1)
+            self.subsectorNames.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
+            self.subsectorNames.textStyle.scale = maprenderer.SizeF(1, 1)
             self.subsectorNames.textStyle.rotation = 0
             self.subsectorNames.textStyle.uppercase = True
             self.subsectorNames.fontInfo.style |= maprenderer.FontStyle.Bold
@@ -1108,9 +1184,9 @@ class StyleSheet(object):
 
             self.worldNoWater.fillBrush.setColor(foregroundColor)
             self.worldWater.fillBrush.setColor('#0000FF') # TODO: Color.Empty
-            self.worldWater.pen = maprenderer.AbstractPen(
-                foregroundColor,
-                onePixel * 2)
+            self.worldWater.pen = self._graphics.createPen(
+                color=foregroundColor,
+                width=onePixel * 2)
 
             self.amberZone.pen.setColor(foregroundColor)
             self.amberZone.pen.setWidth(onePixel)
@@ -1203,16 +1279,18 @@ class StyleSheet(object):
 
             self.worldWater.fillBrush.setColor(travellermap.MapColours.MediumBlue)
             self.worldNoWater.fillBrush.setColor(travellermap.MapColours.DarkKhaki)
-            self.worldWater.pen = maprenderer.AbstractPen(
-                travellermap.MapColours.DarkGray,
-                onePixel * 2)
-            self.worldNoWater.pen = maprenderer.AbstractPen(
-                travellermap.MapColours.DarkGray,
-                onePixel * 2)
+            self.worldWater.pen = self._graphics.createPen(
+                color=travellermap.MapColours.DarkGray,
+                width=onePixel * 2)
+            self.worldNoWater.pen = self._graphics.createPen(
+                color=travellermap.MapColours.DarkGray,
+                width=onePixel * 2)
 
             self.showZonesAsPerimeters = True
             self.greenZone.visible = True
-            self.greenZone.pen = maprenderer.AbstractPen('#80C676', 0.05)
+            self.greenZone.pen = self._graphics.createPen(
+                color='#80C676',
+                width=0.05)
             self.amberZone.pen.setColor('#FBB040')
             self.amberZone.pen.setWidth(0.05)
             self.redZone.pen.setColor(travellermap.MapColours.Red)
@@ -1235,28 +1313,33 @@ class StyleSheet(object):
             self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
 
             self.uwp.fontInfo = maprenderer.FontInfo(self.hexNumber.fontInfo)
-            self.uwp.fillBrush = maprenderer.AbstractBrush(travellermap.MapColours.Black)
-            self.uwp.textBrush = maprenderer.AbstractBrush(travellermap.MapColours.White)
+            self.uwp.fillBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.Black)
+            self.uwp.textBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.White)
             self.uwp.textBackgroundStyle = maprenderer.TextBackgroundStyle.Filled
 
         # NOTE: This TODO came in with traveller map
         # TODO: Do this with opacity.
-        if fadeSectorSubsectorNames:
-            self.sectorName.textBrush = maprenderer.AbstractBrush()
-            self.subsectorNames.textBrush = maprenderer.AbstractBrush()
+        if fadeSectorSubsectorNames and \
+            (not self.sectorName.textBrush or not self.subsectorNames.textBrush):
             if self.scale < 16:
-                self.sectorName.textBrush.setColor(foregroundColor)
-                self.subsectorNames.textBrush.setColor(foregroundColor)
+                fadeColor = foregroundColor
             elif self.scale < 48:
-                self.sectorName.textBrush.setColor(darkColor)
-                self.subsectorNames.textBrush.setColor(darkColor)
+                fadeColor = darkColor
             else:
-                self.sectorName.textBrush.setColor(dimColor)
-                self.subsectorNames.textBrush.setColor(dimColor)
+                fadeColor = dimColor
+
+            fadeBrush = self._graphics.createBrush(color=fadeColor)
+            if not self.sectorName.textBrush:
+                self.sectorName.textBrush = fadeBrush
+            if not self.subsectorNames.textBrush:
+                self.subsectorNames.textBrush = fadeBrush
 
         # Base element colors on foreground/light/dim/dark/highlight, if not specified by style.
         if not self.pseudoRandomStars.fillBrush:
-            self.pseudoRandomStars.fillBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.pseudoRandomStars.fillBrush = self._graphics.createBrush(
+                color=foregroundColor)
 
         if not self.droyneWorlds.textBrush:
             self.droyneWorlds.textBrush = self.microBorders.textBrush
@@ -1266,34 +1349,46 @@ class StyleSheet(object):
             self.ancientsWorlds.textBrush = self.microBorders.textBrush
 
         if not self.megaNames.textBrush:
-            self.megaNames.textBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.megaNames.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
         if not self.megaNames.textHighlightBrush:
-            self.megaNames.textHighlightBrush = maprenderer.AbstractBrush(highlightColor)
+            self.megaNames.textHighlightBrush = self._graphics.createBrush(
+                color=highlightColor)
 
         if not self.macroNames.textBrush:
-            self.macroNames.textBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.macroNames.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
         if not self.macroNames.textHighlightBrush:
-            self.macroNames.textHighlightBrush = maprenderer.AbstractBrush(highlightColor)
+            self.macroNames.textHighlightBrush = self._graphics.createBrush(
+                color=highlightColor)
 
         if not self.macroRoutes.textBrush:
-            self.macroRoutes.textBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.macroRoutes.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
         if not self.macroRoutes.textHighlightBrush:
-            self.macroRoutes.textHighlightBrush = maprenderer.AbstractBrush(highlightColor)
+            self.macroRoutes.textHighlightBrush = self._graphics.createBrush(
+                color=highlightColor)
 
         if not self.worlds.textBrush:
-            self.worlds.textBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.worlds.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
         if not self.worlds.textHighlightBrush:
-            self.worlds.textHighlightBrush = maprenderer.AbstractBrush(highlightColor)
+            self.worlds.textHighlightBrush = self._graphics.createBrush(
+                color=highlightColor)
 
         if not self.hexNumber.textBrush:
-            self.hexNumber.textBrush = maprenderer.AbstractBrush(lightColor)
+            self.hexNumber.textBrush = self._graphics.createBrush(
+                color=lightColor)
         if not self.uwp.textBrush:
-            self.uwp.textBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.uwp.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
 
         if not self.placeholder.textBrush:
-            self.placeholder.textBrush = maprenderer.AbstractBrush(foregroundColor)
+            self.placeholder.textBrush = self._graphics.createBrush(
+                color=foregroundColor)
         if not self.anomaly.textBrush:
-            self.anomaly.textBrush = maprenderer.AbstractBrush(highlightColor)
+            self.anomaly.textBrush = self._graphics.createBrush(
+                color=highlightColor)
 
         # Convert list into a id -> index mapping.
         self.layerOrder.clear()
@@ -1313,9 +1408,9 @@ class StyleSheet(object):
         if scale >= maxScale:
             return maxValue
 
-        logscale = math.log(scale, 2.0)
-        logmin = math.log(minScale, 2.0)
-        logmax = math.log(maxScale, 2.0)
+        logscale = math.log2(scale)
+        logmin = math.log2(minScale)
+        logmax = math.log2(maxScale)
         p = (logscale - logmin) / (logmax - logmin)
         value = minValue + (maxValue - minValue) * p
         return value

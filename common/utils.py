@@ -8,6 +8,14 @@ import platform
 import re
 import typing
 
+def stringToBool(string: str, strict: bool = False) -> bool:
+    lower = string.lower()
+    if lower == 'true':
+        return True
+    if strict and lower != 'false':
+        raise ValueError(f'Unable to convert "{string}" to a boolean')
+    return False
+
 def hasMethod(obj: typing.Any, method: str, includeSubclasses=True) -> bool:
     classType = obj if isinstance(obj, type) else type(obj)
     value = classType.__dict__.get(method)

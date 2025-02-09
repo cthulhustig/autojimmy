@@ -49,6 +49,7 @@ class Sector(object):
             borders: typing.Iterable[traveller.Border],
             regions: typing.Iterable[traveller.Region],
             labels: typing.Iterable[traveller.Label],
+            selected: bool,
             tags: typing.Iterable[str],
             subsectorNames: typing.Iterable[str] # Subsector names should be ordered in subsector order (i.e. A-P)
             ) -> None:
@@ -62,6 +63,7 @@ class Sector(object):
         self._borders = list(borders)
         self._regions = list(regions)
         self._labels = list(labels)
+        self._selected = selected
         self._tags = set(tags)
         self._subsectorMap: typing.Dict[str, Subsector] = {}
 
@@ -114,6 +116,13 @@ class Sector(object):
 
     def labels(self) -> typing.Collection[traveller.Label]:
         return list(self._labels)
+
+    # The concept of 'selected' comes from Traveller Map and what it is isn't
+    # exactly clear. The only thing I've noticed it do is when rendering if
+    # it's configured to only show some sector names, it only shows the names
+    # for sectors that are selected.
+    def selected(self) -> bool:
+        return self._selected
 
     def tags(self) -> typing.Iterable[str]:
         return list(self._tags)

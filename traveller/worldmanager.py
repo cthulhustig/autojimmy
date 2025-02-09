@@ -882,8 +882,9 @@ class WorldManager(object):
                     borders.append(traveller.Border(
                         hexList=hexes,
                         allegiance=rawBorder.allegiance(),
-                        showLabel=not not rawBorder.showLabel(), # Convert optional to bool
-                        wrapLabel=not not rawBorder.wrapLabel(),
+                        # Show/hide label use the same defaults as the traveller map Border class
+                        showLabel=rawBorder.showLabel() if rawBorder.showLabel() != None else True,
+                        wrapLabel=rawBorder.wrapLabel() if rawBorder.wrapLabel() != None else False,
                         labelHex=labelHex,
                         labelOffsetX=rawBorder.labelOffsetX(),
                         labelOffsetY=rawBorder.labelOffsetY(),
@@ -921,8 +922,9 @@ class WorldManager(object):
                     # TODO: Could possibly apply wrap here, i think it's just inserting \n based on a regex?????
                     regions.append(traveller.Region(
                         hexList=hexes,
-                        showLabel=not not rawRegion.showLabel(), # Convert optional to bool
-                        wrapLabel=not not rawRegion.wrapLabel(),
+                        # Show/hide label use the same defaults as the Traveller Map Border class
+                        showLabel=rawRegion.showLabel() if rawRegion.showLabel() != None else True,
+                        wrapLabel=rawRegion.wrapLabel() if rawRegion.wrapLabel() != None else False,
                         labelHex=labelHex,
                         labelOffsetX=rawRegion.labelOffsetX(),
                         labelOffsetY=rawRegion.labelOffsetY(),
@@ -950,8 +952,9 @@ class WorldManager(object):
                         text=rawLabel.text(),
                         hex=hex,
                         colour=rawLabel.colour(),
+                        # Wrap uses the same default as Traveller Map Label class
+                        wrap=rawLabel.wrap() if rawLabel.wrap() != None else False,
                         size=WorldManager._mapLabelSize(rawLabel.size()),
-                        wrap=rawLabel.wrap(),
                         offsetX=rawLabel.offsetX(),
                         offsetY=rawLabel.offsetY()))
                 except Exception as ex:
@@ -975,6 +978,7 @@ class WorldManager(object):
             borders=borders,
             regions=regions,
             labels=labels,
+            selected=rawMetadata.selected() if rawMetadata.selected() else False,
             tags=tags,
             subsectorNames=subsectorMap.values())
 

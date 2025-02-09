@@ -26,24 +26,19 @@ def drawStringHelper(
             format=format)
         return
 
-    sizes = [graphics.measureString(line, font) for line in lines]
-
-    # TODO: This needs updated to not use QT
-    qtFont = font.qtFont()
-    qtFontMetrics = QtGui.QFontMetrics(qtFont)
+    widths = [graphics.measureString(line, font)[0] for line in lines]
 
     # TODO: Not sure how to calculate this
     #fontUnitsToWorldUnits = qtFont.pointSize() / font.FontFamily.GetEmHeight(font.Style)
-    fontUnitsToWorldUnits = font.emSize() / qtFont.pointSize()
-    lineSpacing = qtFontMetrics.lineSpacing() * fontUnitsToWorldUnits
+    fontUnitsToWorldUnits = font.emSize() / font.pointSize()
+    lineSpacing = font.lineSpacing() * fontUnitsToWorldUnits
     # TODO: I've commented this line out, it's uncommented in the traveller map code but
     # the value is never used
     #ascent = qtFontMetrics.ascent() * fontUnitsToWorldUnits
     # NOTE: This was commented out in the Traveller Map source code
     #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
 
-    maxWidthRect = max(sizes, key=lambda size: size.width())
-    boundingSize = maprenderer.AbstractSizeF(width=maxWidthRect.width(), height=lineSpacing * len(sizes))
+    totalHeight = lineSpacing * len(widths)
 
     # Offset from baseline to top-left.
     y += lineSpacing / 2
@@ -52,11 +47,11 @@ def drawStringHelper(
     if format == maprenderer.TextAlignment.MiddleLeft or \
         format == maprenderer.TextAlignment.Centered or \
         format == maprenderer.TextAlignment.MiddleRight:
-        y -= boundingSize.height() / 2
+        y -= totalHeight / 2
     elif format == maprenderer.TextAlignment.BottomLeft or \
         format == maprenderer.TextAlignment.BottomCenter or \
         format == maprenderer.TextAlignment.BottomRight:
-        y -= boundingSize.height()
+        y -= totalHeight
 
     if format == maprenderer.TextAlignment.TopCenter or \
         format == maprenderer.TextAlignment.Centered or \
@@ -67,12 +62,12 @@ def drawStringHelper(
         format == maprenderer.TextAlignment.BottomRight:
             widthFactor = -1
 
-    for line, size in zip(lines, sizes):
+    for line, width in zip(lines, widths):
         graphics.drawString(
             text=line,
             font=font,
             brush=brush,
-            x=x + widthFactor * size.width() + size.width() / 2,
+            x=x + widthFactor * width + width / 2,
             y=y,
             format=maprenderer.TextAlignment.Centered)
         y += lineSpacing

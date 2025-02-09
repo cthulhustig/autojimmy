@@ -1,3 +1,4 @@
+import common
 import enum
 import logging
 import maprenderer
@@ -7,83 +8,6 @@ import re
 import traveller
 import travellermap
 import typing
-
-def _drawLabelHelper(
-        graphics: maprenderer.AbstractGraphics,
-        text: str,
-        center: maprenderer.AbstractPointF,
-        font: maprenderer.AbstractFont,
-        brush: maprenderer.AbstractBrush,
-        labelStyle: maprenderer.LabelStyle
-        ) -> None:
-    with graphics.save():
-        if labelStyle.uppercase:
-            text = text.upper()
-        if labelStyle.wrap:
-            text = text.replace(' ', '\n')
-
-        graphics.translateTransform(
-            dx=center.x(),
-            dy=center.y())
-        graphics.scaleTransform(
-            scaleX=1.0 / travellermap.ParsecScaleX,
-            scaleY=1.0 / travellermap.ParsecScaleY)
-
-        graphics.translateTransform(
-            dx=labelStyle.translation.x(),
-            dy=labelStyle.translation.y())
-        graphics.rotateTransform(
-            degrees=labelStyle.rotation)
-        graphics.scaleTransform(
-            scaleX=labelStyle.scale.width(),
-            scaleY=labelStyle.scale.height())
-
-        if labelStyle.rotation != 0:
-            graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
-
-        maprenderer.drawStringHelper(
-            graphics=graphics,
-            text=text,
-            font=font,
-            brush=brush,
-            x=0, y=0)
-
-_DingMap = {
-    '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)
-    '\u2756': '\x76', # U+2756 (BLACK DIAMOND MINUS WHITE X)
-    '\u2726': '\xAA', # U+2726 (BLACK FOUR POINTED STAR)
-    '\u2605': '\xAB', # U+2605 (BLACK STAR)
-    '\u2736': '\xAC'} # U+2736 (BLACK SIX POINTED STAR)
-
-def _drawGlyphHelper(
-        graphics: maprenderer.AbstractGraphics,
-        glyph: maprenderer.Glyph,
-        fonts: maprenderer.FontCache,
-        brush: maprenderer.AbstractBrush,
-        pt: maprenderer.AbstractPointF
-        ) -> None:
-    font = fonts.glyphFont
-    s = glyph.characters
-    if graphics.supportsWingdings():
-        dings = ''
-        for c in s:
-            c = _DingMap.get(c)
-            if c is None:
-                dings = ''
-                break
-            dings += c
-        if dings:
-            font = fonts.wingdingFont
-            s = dings
-
-    graphics.drawString(
-        text=s,
-        font=font,
-        brush=brush,
-        x=pt.x(),
-        y=pt.y(),
-        format=maprenderer.TextAlignment.Centered)
 
 class RenderContext(object):
     class LayerAction(object):
@@ -108,30 +32,11 @@ class RenderContext(object):
         Foreground = 1
         Overlay = 2
 
-    _GalaxyImageRect = maprenderer.AbstractRectangleF(-18257, -26234, 36551, 32462) # Chosen to match T5 pp.416
-    _RiftImageRect = maprenderer.AbstractRectangleF(-1374, -827, 2769, 1754)
+    _MinScale = 0.0078125; # Math.Pow(2, -7)
+    _MaxScale = 512; # Math.Pow(2, 9)
 
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 400
-
-    _HexPath = maprenderer.AbstractPath(
-        points=[
-            maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, -0.5),
-            maprenderer.AbstractPointF( 0.5 - travellermap.HexWidthOffset, -0.5),
-            maprenderer.AbstractPointF( 0.5 + travellermap.HexWidthOffset, 0),
-            maprenderer.AbstractPointF( 0.5 - travellermap.HexWidthOffset, 0.5),
-            maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, 0.5),
-            maprenderer.AbstractPointF(-0.5 - travellermap.HexWidthOffset, 0),
-            maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
-        types=[
-            maprenderer.PathPointType.Start,
-            maprenderer.PathPointType.Line,
-            maprenderer.PathPointType.Line,
-            maprenderer.PathPointType.Line,
-            maprenderer.PathPointType.Line,
-            maprenderer.PathPointType.Line,
-            maprenderer.PathPointType.Line | maprenderer.PathPointType.CloseSubpath],
-        closed=True)
 
     def __init__(
             self,
@@ -141,7 +46,7 @@ class RenderContext(object):
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
-            styles: maprenderer.StyleSheet,
+            style: travellermap.Style,
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
             mapLabelCache: maprenderer.MapLabelCache,
@@ -152,21 +57,50 @@ class RenderContext(object):
         self._graphics = graphics
         self._absoluteCenterX = absoluteCenterX
         self._absoluteCenterY = absoluteCenterY
-        self._scale = scale
+        self._scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
         self._options = options
-        self._styles = styles
+        self._styleSheet = maprenderer.StyleSheet(
+            scale=self._scale,
+            options=self._options,
+            style=style,
+            graphics=self._graphics)
         self._imageCache = imageCache
         self._vectorCache = vectorCache
         self._mapLabelCache = mapLabelCache
         self._worldLabelCache = worldLabelCache
         self._styleCache = styleCache
-        self._fontCache = maprenderer.FontCache(sheet=self._styles)
-        self._clipCache = maprenderer.ClipPathCache()
-        self._selector = maprenderer.RectSelector()
+        self._clipCache = maprenderer.ClipPathCache(
+            graphics=self._graphics)
+        self._selector = maprenderer.RectSelector(
+            graphics=self._graphics)
         self._clipOutsectorBorders = True # TODO: Rename this to clipSectorBorders
-        self._tileRect = None
+        self._absoluteViewRect = None
+
+        self._hexOutlinePath = self._graphics.createPath(
+            points=[
+                maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, -0.5),
+                maprenderer.AbstractPointF( 0.5 - travellermap.HexWidthOffset, -0.5),
+                maprenderer.AbstractPointF( 0.5 + travellermap.HexWidthOffset, 0),
+                maprenderer.AbstractPointF( 0.5 - travellermap.HexWidthOffset, 0.5),
+                maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, 0.5),
+                maprenderer.AbstractPointF(-0.5 - travellermap.HexWidthOffset, 0),
+                maprenderer.AbstractPointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
+            types=[
+                maprenderer.PathPointType.Start,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Line | maprenderer.PathPointType.CloseSubpath],
+            closed=True)
+
+        # Chosen to match T5 pp.416
+        self._galaxyImageRect = self._graphics.createRectangle(-18257, -26234, 36551, 32462)
+        self._riftImageRect = self._graphics.createRectangle(-1374, -827, 2769, 1754)
+
         self._createLayers()
         self._updateView()
 
@@ -180,39 +114,24 @@ class RenderContext(object):
             ) -> None:
         self._absoluteCenterX = absoluteCenterX
         self._absoluteCenterY = absoluteCenterY
-        self._scale = scale
+        self._scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
-        self._updateView()
 
-    def setTileRect(self, rect: maprenderer.AbstractRectangleF) -> None:
-        self._tileRect = rect
-        self._selector.setRect(rect=self._tileRect)
+        self._styleSheet.scale = self._styleSheetScale()
+
         self._updateView()
 
     def setClipOutsectorBorders(self, enable: bool) -> None:
         self._clipOutsectorBorders = enable
 
-    # TODO: I should probably rename everything that uses abstract
-    # coordinates to use world coordinates. This is a pretty big job
-    # so need to be sure but it would keep terminology the same as
-    # Traveller Map
-    def pixelSpaceToWorldSpace(
-            self,
-            pixelX: int,
-            pixelY: int,
-            clamp: bool = True
-            ) -> typing.Tuple[float, float]:
-        point = maprenderer.AbstractPointF(pixelX, pixelY)
-        world = self._worldSpaceToImageSpace.transform(point)
-        if not clamp:
-            return (world.x(), world.y())
-
-        return (
-            round(world.x() + 0.5),
-            round(world.y() + (0.5 if (world.x() % 2) == 0 else 0)))
-
     def render(self) -> None:
+        #mapX, mapY = travellermap.absoluteSpaceToMapSpace((self._absoluteCenterX, self._absoluteCenterY))
+        #logScale = travellermap.linearScaleToLogScale(self._scale)
+        #print(f'Center {self._absoluteCenterX} {self._absoluteCenterY}')
+        #print(f'Scale linear={self._scale} log={logScale}')
+        #print(f'{mapX}!{mapY}!{logScale}')
+
         with self._graphics.save():
             # Overall, rendering is all in world-space; individual steps may transform back
             # to image-space as needed.
@@ -303,29 +222,36 @@ class RenderContext(object):
             RenderContext.LayerAction(maprenderer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay, clip=True),
         ]
 
-        self._layers.sort(key=lambda l: self._styles.layerOrder[l.id])
+        self._layers.sort(key=lambda l: self._styleSheet.layerOrder[l.id])
+
+    # The style sheet scale is different from the actual scale to simulate
+    # the way Traveller Map fonts and
+    def _styleSheetScale(self) -> float:
+        logScale = round(travellermap.linearScaleToLogScale(self._scale))
+        return travellermap.logScaleToLinearScale(logScale)
 
     def _updateView(self):
         absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
         absoluteHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
-        self._tileRect = maprenderer.AbstractRectangleF(
+        self._absoluteViewRect = self._graphics.createRectangle(
             x=self._absoluteCenterX - (absoluteWidth / 2),
             y=self._absoluteCenterY - (absoluteHeight / 2),
             width=absoluteWidth,
             height=absoluteHeight)
 
-        self._selector.setRect(self._tileRect)
+        # This needs to be done after _absoluteViewRect is calculated
+        self._selector.setRect(self._absoluteViewRect)
 
-        m = maprenderer.AbstractMatrix()
+        m = self._graphics.createIdentityMatrix()
         m.translatePrepend(
-            dx=-self._tileRect.left() * self._scale * travellermap.ParsecScaleX,
-            dy=-self._tileRect.top() * self._scale * travellermap.ParsecScaleY)
+            dx=-self._absoluteViewRect.left() * self._scale * travellermap.ParsecScaleX,
+            dy=-self._absoluteViewRect.top() * self._scale * travellermap.ParsecScaleY)
         m.scalePrepend(
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
-        self._imageSpaceToWorldSpace = maprenderer.AbstractMatrix(m)
+        self._imageSpaceToWorldSpace = self._graphics.copyMatrix(other=m)
         m.invert()
-        self._worldSpaceToImageSpace = maprenderer.AbstractMatrix(m)
+        self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
 
     def _drawBackground(self) -> None:
         self._graphics.setSmoothingMode(
@@ -334,10 +260,10 @@ class RenderContext(object):
         # NOTE: This is a comment from the original Traveller Map source code
         # HACK: Due to limited precisions of floats, tileRect can end up not covering
         # the full bitmap when far from the origin.
-        rect = maprenderer.AbstractRectangleF(self._tileRect)
+        rect = self._graphics.copyRectangle(self._absoluteViewRect)
         rect.inflate(rect.width() * 0.1, rect.height() * 0.1)
         self._graphics.drawRectangleFill(
-            brush=self._styles.backgroundBrush,
+            brush=self._styleSheet.backgroundBrush,
             rect=rect)
 
     # TODO: When zooming in and out the background doesn't stay in a consistent
@@ -349,7 +275,7 @@ class RenderContext(object):
     # I suspect I could do something in this function that effectively mimics
     # this behaviour
     def _drawNebulaBackground(self) -> None:
-        if not self._styles.showNebulaBackground:
+        if not self._styleSheet.showNebulaBackground:
             return
 
         # Render in image-space so it scales/tiles nicely
@@ -364,8 +290,8 @@ class RenderContext(object):
             h = nebulaImageHeight * backgroundImageScale
 
             # Offset of the background, relative to the canvas
-            ox = (-self._tileRect.left() * self._scale * travellermap.ParsecScaleX) % w
-            oy = (-self._tileRect.top() * self._scale * travellermap.ParsecScaleY) % h
+            ox = (-self._absoluteViewRect.left() * self._scale * travellermap.ParsecScaleX) % w
+            oy = (-self._absoluteViewRect.top() * self._scale * travellermap.ParsecScaleY) % h
             if (ox > 0):
                 ox -= w
             if (oy > 0):
@@ -379,7 +305,7 @@ class RenderContext(object):
             if (oy + ny * h < self._outputPixelY):
                 ny += 1
 
-            imageRect = maprenderer.AbstractRectangleF(x=ox, y=oy, width=w + 1, height=h + 1)
+            imageRect = self._graphics.createRectangle(x=ox, y=oy, width=w + 1, height=h + 1)
             for _ in range(nx):
                 imageRect.setY(oy)
                 for _ in range(ny):
@@ -390,19 +316,19 @@ class RenderContext(object):
                 imageRect.setX(imageRect.x() + w)
 
     def _drawGalaxyBackground(self) -> None:
-        if not self._styles.showGalaxyBackground:
+        if not self._styleSheet.showGalaxyBackground:
             return
 
-        if self._styles.deepBackgroundOpacity > 0 and \
-            RenderContext._GalaxyImageRect.intersectsWith(self._tileRect):
+        if self._styleSheet.deepBackgroundOpacity > 0 and \
+            self._galaxyImageRect.intersectsWith(self._absoluteViewRect):
             galaxyImage = \
                 self._imageCache.galaxyImageGray \
-                if self._styles.lightBackground else \
+                if self._styleSheet.lightBackground else \
                 self._imageCache.galaxyImage
             self._graphics.drawImageAlpha(
-                self._styles.deepBackgroundOpacity,
+                self._styleSheet.deepBackgroundOpacity,
                 galaxyImage,
-                RenderContext._GalaxyImageRect)
+                self._galaxyImageRect)
 
     # NOTE: How this is implemented differs from the Traveller Map implementation
     # as Traveller Map achieves consistent random star positioning by seeding the
@@ -415,19 +341,19 @@ class RenderContext(object):
     # stars by sector. The downside of this is you always have to draw process
     # all stars for all sectors overlapped by the viewport
     def _drawPseudoRandomStars(self) -> None:
-        if not self._styles.pseudoRandomStars.visible:
+        if not self._styleSheet.pseudoRandomStars.visible:
             return
 
-        startX = math.floor(self._tileRect.left() / RenderContext._PseudoRandomStarsChunkSize) * \
+        startX = math.floor(self._absoluteViewRect.left() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
-        startY = math.floor(self._tileRect.top() / RenderContext._PseudoRandomStarsChunkSize) * \
+        startY = math.floor(self._absoluteViewRect.top() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
-        finishX = math.ceil(self._tileRect.right() / RenderContext._PseudoRandomStarsChunkSize) * \
+        finishX = math.ceil(self._absoluteViewRect.right() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
-        finishY = math.ceil(self._tileRect.bottom() / RenderContext._PseudoRandomStarsChunkSize) * \
+        finishY = math.ceil(self._absoluteViewRect.bottom() / RenderContext._PseudoRandomStarsChunkSize) * \
             RenderContext._PseudoRandomStarsChunkSize
 
-        rect = maprenderer.AbstractRectangleF()
+        rect = self._graphics.createRectangle()
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
@@ -450,22 +376,22 @@ class RenderContext(object):
 
                         self._graphics.drawEllipse(
                             pen=None,
-                            brush=self._styles.pseudoRandomStars.fillBrush,
+                            brush=self._styleSheet.pseudoRandomStars.fillBrush,
                             rect=rect)
 
     def _drawRifts(self) -> None:
-        if not self._styles.showRiftOverlay:
+        if not self._styleSheet.showRiftOverlay:
             return
 
-        if self._styles.riftOpacity > 0 and \
-            RenderContext._RiftImageRect.intersectsWith(self._tileRect):
+        if self._styleSheet.riftOpacity > 0 and \
+            self._riftImageRect.intersectsWith(self._absoluteViewRect):
             self._graphics.drawImageAlpha(
-                alpha=self._styles.riftOpacity,
+                alpha=self._styleSheet.riftOpacity,
                 image=self._imageCache.riftImage,
-                rect=self._RiftImageRect)
+                rect=self._riftImageRect)
 
     def _drawMacroBorders(self) -> None:
-        if not self._styles.macroBorders.visible:
+        if not self._styleSheet.macroBorders.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -474,11 +400,11 @@ class RenderContext(object):
             if (vector.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
                 vector.draw(
                     graphics=self._graphics,
-                    rect=self._tileRect,
-                    pen=self._styles.macroBorders.pen)
+                    rect=self._absoluteViewRect,
+                    pen=self._styleSheet.macroBorders.pen)
 
     def _drawMacroRoutes(self) -> None:
-        if not self._styles.macroRoutes.visible:
+        if not self._styleSheet.macroRoutes.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -487,50 +413,50 @@ class RenderContext(object):
             if (vector.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
                 vector.draw(
                     graphics=self._graphics,
-                    rect=self._tileRect,
-                    pen=self._styles.macroRoutes.pen)
+                    rect=self._absoluteViewRect,
+                    pen=self._styleSheet.macroRoutes.pen)
 
     def _drawSectorGrid(self) -> None:
-        if not self._styles.sectorGrid.visible:
+        if not self._styleSheet.sectorGrid.visible:
             return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        h = ((math.floor((self._tileRect.left()) / travellermap.SectorWidth) - 1) - travellermap.ReferenceSectorX) * \
+        h = ((math.floor((self._absoluteViewRect.left()) / travellermap.SectorWidth) - 1) - travellermap.ReferenceSectorX) * \
             travellermap.SectorWidth - travellermap.ReferenceHexX
         gridSlop = 10
-        while h <= (self._tileRect.right() + travellermap.SectorWidth):
+        while h <= (self._absoluteViewRect.right() + travellermap.SectorWidth):
             with self._graphics.save():
                 self._graphics.translateTransform(dx=h, dy=0)
                 self._graphics.scaleTransform(
                     scaleX=1 / travellermap.ParsecScaleX,
                     scaleY=1 / travellermap.ParsecScaleY)
                 self._graphics.drawLine(
-                    pen=self._styles.sectorGrid.pen,
-                    pt1=maprenderer.AbstractPointF(0, self._tileRect.top() - gridSlop),
-                    pt2=maprenderer.AbstractPointF(0, self._tileRect.bottom() + gridSlop))
+                    pen=self._styleSheet.sectorGrid.pen,
+                    pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
+                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop))
             h += travellermap.SectorWidth
 
-        v = ((math.floor((self._tileRect.top()) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
+        v = ((math.floor((self._absoluteViewRect.top()) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
             travellermap.SectorHeight - travellermap.ReferenceHexY
-        while v <= (self._tileRect.bottom() + travellermap.SectorHeight):
+        while v <= (self._absoluteViewRect.bottom() + travellermap.SectorHeight):
             self._graphics.drawLine(
-                pen=self._styles.sectorGrid.pen,
-                pt1=maprenderer.AbstractPointF(self._tileRect.left() - gridSlop, v),
-                pt2=maprenderer.AbstractPointF(self._tileRect.right() + gridSlop, v))
+                pen=self._styleSheet.sectorGrid.pen,
+                pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
+                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v))
             v += travellermap.SectorHeight
 
     def _drawSubsectorGrid(self) -> None:
-        if not self._styles.subsectorGrid.visible:
+        if not self._styleSheet.subsectorGrid.visible:
             return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        hmin = int(math.floor(self._tileRect.left() / travellermap.SubsectorWidth) - 1 -
+        hmin = int(math.floor(self._absoluteViewRect.left() / travellermap.SubsectorWidth) - 1 -
                    travellermap.ReferenceSectorX)
-        hmax = int(math.ceil((self._tileRect.right() + travellermap.SubsectorWidth +
+        hmax = int(math.ceil((self._absoluteViewRect.right() + travellermap.SubsectorWidth +
                               travellermap.ReferenceHexX) / travellermap.SubsectorWidth))
         gridSlop = 10
         for hi in range(hmin, hmax + 1):
@@ -538,34 +464,34 @@ class RenderContext(object):
                 continue
             h = hi * travellermap.SubsectorWidth - travellermap.ReferenceHexX
             self._graphics.drawLine(
-                pen=self._styles.subsectorGrid.pen,
-                pt1=maprenderer.AbstractPointF(h, self._tileRect.top() - gridSlop),
-                pt2=maprenderer.AbstractPointF(h, self._tileRect.bottom() + gridSlop))
+                pen=self._styleSheet.subsectorGrid.pen,
+                pt1=maprenderer.AbstractPointF(h, self._absoluteViewRect.top() - gridSlop),
+                pt2=maprenderer.AbstractPointF(h, self._absoluteViewRect.bottom() + gridSlop))
             with self._graphics.save():
                 self._graphics.translateTransform(dx=h, dy=0)
                 self._graphics.scaleTransform(
                     scaleX=1 / travellermap.ParsecScaleX,
                     scaleY=1 / travellermap.ParsecScaleY)
                 self._graphics.drawLine(
-                    pen=self._styles.subsectorGrid.pen,
-                    pt1=maprenderer.AbstractPointF(0, self._tileRect.top() - gridSlop),
-                    pt2=maprenderer.AbstractPointF(0, self._tileRect.bottom() + gridSlop))
+                    pen=self._styleSheet.subsectorGrid.pen,
+                    pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
+                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop))
 
-        vmin = int(math.floor(self._tileRect.top() / travellermap.SubsectorHeight) - 1 -
+        vmin = int(math.floor(self._absoluteViewRect.top() / travellermap.SubsectorHeight) - 1 -
                    travellermap.ReferenceSectorY)
-        vmax = int(math.ceil((self._tileRect.bottom() + travellermap.SubsectorHeight +
+        vmax = int(math.ceil((self._absoluteViewRect.bottom() + travellermap.SubsectorHeight +
                               travellermap.ReferenceHexY) / travellermap.SubsectorHeight))
         for vi in range(vmin, vmax + 1):
             if (vi % 4) == 0:
                 continue
             v = vi * travellermap.SubsectorHeight - travellermap.ReferenceHexY
             self._graphics.drawLine(
-                pen=self._styles.subsectorGrid.pen,
-                pt1=maprenderer.AbstractPointF(self._tileRect.left() - gridSlop, v),
-                pt2=maprenderer.AbstractPointF(self._tileRect.right() + gridSlop, v))
+                pen=self._styleSheet.subsectorGrid.pen,
+                pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
+                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v))
 
     def _drawParsecGrid(self) -> None:
-        if not self._styles.parsecGrid.visible:
+        if not self._styleSheet.parsecGrid.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -573,15 +499,15 @@ class RenderContext(object):
 
         parsecSlop = 1
 
-        hx = int(math.floor(self._tileRect.x()))
-        hw = int(math.ceil(self._tileRect.width()))
-        hy = int(math.floor(self._tileRect.y()))
-        hh = int(math.ceil(self._tileRect.height()))
+        hx = int(math.floor(self._absoluteViewRect.x()))
+        hw = int(math.ceil(self._absoluteViewRect.width()))
+        hy = int(math.floor(self._absoluteViewRect.y()))
+        hh = int(math.ceil(self._absoluteViewRect.height()))
 
-        pen = self._styles.parsecGrid.pen
+        pen = self._styleSheet.parsecGrid.pen
 
-        if self._styles.hexStyle == maprenderer.HexStyle.Square:
-            rect = maprenderer.AbstractRectangleF()
+        if self._styleSheet.hexStyle == maprenderer.HexStyle.Square:
+            rect = self._graphics.createRectangle()
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
@@ -591,7 +517,7 @@ class RenderContext(object):
                     rect.setWidth(1 - inset * 2)
                     rect.setHeight(1 - inset * 2)
                     self._graphics.drawRectangleOutline(pen=pen, rect=rect)
-        elif self._styles.hexStyle == maprenderer.HexStyle.Hex:
+        elif self._styleSheet.hexStyle == maprenderer.HexStyle.Hex:
             points = [maprenderer.AbstractPointF(), maprenderer.AbstractPointF(), maprenderer.AbstractPointF(), maprenderer.AbstractPointF()]
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
@@ -606,12 +532,12 @@ class RenderContext(object):
                     points[3].setY(py + 0.5 + yOffset)
                     self._graphics.drawLines(pen, points)
 
-        if self._styles.numberAllHexes and (self._styles.worldDetails & maprenderer.WorldDetails.Hex) != 0:
+        if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0:
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - parsecSlop, hy + hh + parsecSlop):
 
-                    if self._styles.hexCoordinateStyle == maprenderer.HexCoordinateStyle.Subsector:
+                    if self._styleSheet.hexCoordinateStyle == maprenderer.HexCoordinateStyle.Subsector:
                         # TODO: Need to implement Subsector hex number. Not sure what this
                         # actually is
                         hex = 'TODO'
@@ -622,17 +548,17 @@ class RenderContext(object):
                     with self._graphics.save():
                         self._graphics.translateTransform(px + 0.5, py + yOffset)
                         self._graphics.scaleTransform(
-                            self._styles.hexContentScale / travellermap.ParsecScaleX,
-                            self._styles.hexContentScale / travellermap.ParsecScaleY)
+                            self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
+                            self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
                         self._graphics.drawString(
                             hex,
-                            self._styles.hexNumber.font,
-                            self._styles.hexNumber.textBrush,
+                            self._styleSheet.hexNumber.font,
+                            self._styleSheet.hexNumber.textBrush,
                             0, 0,
                             maprenderer.TextAlignment.TopCenter)
 
     def _drawSubsectorNames(self) -> None:
-        if not self._styles.subsectorNames.visible:
+        if not self._styleSheet.subsectorNames.visible:
             return
 
         not self._graphics.setSmoothingMode(
@@ -650,45 +576,44 @@ class RenderContext(object):
                     sector.y(),
                     int(travellermap.SubsectorWidth * (2 * ssx + 1) // 2),
                     int(travellermap.SubsectorHeight * (2 * ssy + 1) // 2)))
-                _drawLabelHelper(
-                    graphics=self._graphics,
+                self._drawLabel(
                     text=subsector.name(),
                     center=maprenderer.AbstractPointF(x=centerX, y=centerY),
-                    font=self._styles.subsectorNames.font,
-                    brush=self._styles.subsectorNames.textBrush,
-                    labelStyle=self._styles.subsectorNames.textStyle)
+                    font=self._styleSheet.subsectorNames.font,
+                    brush=self._styleSheet.subsectorNames.textBrush,
+                    labelStyle=self._styleSheet.subsectorNames.textStyle)
 
     def _drawMicroBordersFill(self) -> None:
-        if not self._styles.microBorders.visible:
+        if not self._styleSheet.microBorders.visible:
             return
 
         self._drawMicroBorders(RenderContext.BorderLayer.Regions)
 
-        if self._styles.fillMicroBorders:
+        if self._styleSheet.fillMicroBorders:
             self._drawMicroBorders(RenderContext.BorderLayer.Fill)
 
     def _drawMicroBordersShade(self) -> None:
-        if not self._styles.microBorders.visible or not self._styles.shadeMicroBorders:
+        if not self._styleSheet.microBorders.visible or not self._styleSheet.shadeMicroBorders:
             return
 
         self._drawMicroBorders(RenderContext.BorderLayer.Shade)
 
     def _drawMicroBordersStroke(self) -> None:
-        if not self._styles.microBorders.visible:
+        if not self._styleSheet.microBorders.visible:
             return
 
         self._drawMicroBorders(RenderContext.BorderLayer.Stroke)
 
     def _drawMicroRoutes(self) -> None:
-        if not self._styles.microRoutes.visible:
+        if not self._styleSheet.microRoutes.visible:
             return
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            pen = maprenderer.AbstractPen()
-            baseWidth = self._styles.microRoutes.pen.width()
+            pen = self._graphics.createPen()
+            baseWidth = self._styleSheet.microRoutes.pen.width()
 
             for sector in self._selector.sectors():
                 for route in sector.routes():
@@ -708,11 +633,11 @@ class RenderContext(object):
                     endPoint = RenderContext._hexToCenter(endPoint)
 
                     # Shorten line to leave room for world glyph
-                    self._offsetRouteSegment(startPoint, endPoint, self._styles.routeEndAdjust)
+                    self._offsetRouteSegment(startPoint, endPoint, self._styleSheet.routeEndAdjust)
 
                     routeColor = route.colour()
                     routeWidth = route.width()
-                    routeStyle = self._styles.overrideLineStyle
+                    routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
                         if route.style() is traveller.Route.Style.Solid:
                             routeStyle = maprenderer.LineStyle.Solid
@@ -733,13 +658,13 @@ class RenderContext(object):
                                 routeWidth = defaltWidth
 
                     # In grayscale, convert default color and style to non-default style
-                    if self._styles.grayscale and (not routeColor) and (not routeStyle):
+                    if self._styleSheet.grayscale and (not routeColor) and (not routeStyle):
                         routeStyle = maprenderer.LineStyle.Dash
 
                     if not routeWidth:
                         routeWidth = 1.0
                     if not routeColor:
-                        routeColor = self._styles.microRoutes.pen.color()
+                        routeColor = self._styleSheet.microRoutes.pen.color()
                     if not routeStyle:
                         routeStyle = maprenderer.LineStyle.Solid
 
@@ -758,18 +683,26 @@ class RenderContext(object):
 
     _WrapPattern = re.compile(r'\s+(?![a-z])')
     def _drawMicroLabels(self) -> None:
-        if not self._styles.showMicroNames:
+        if not self._styleSheet.showMicroNames:
             return
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            brush = maprenderer.AbstractBrush()
+            brush = self._graphics.createBrush()
             for sector in self._selector.sectors():
-                brush.copyFrom(self._styles.microBorders.textBrush)
+                brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
+                # TODO: I suspect I'm not drawing text for regions
                 for border in sector.borders():
+                    if not border.showLabel():
+                        continue
+
+                    labelPos = border.labelHex()
+                    if not labelPos:
+                        continue
+
                     label = border.label()
                     if not label and border.allegiance():
                         label = traveller.AllegianceManager.instance().allegianceName(
@@ -777,25 +710,46 @@ class RenderContext(object):
                             sectorName=sector.name())
                     if not label:
                         continue
-                    if border.wrapLabel:
+                    if border.wrapLabel():
                         label = RenderContext._WrapPattern.sub('\n', label)
 
-                    labelPos = border.labelHex()
-                    if not labelPos:
-                        continue
                     labelPos = RenderContext._hexToCenter(labelPos)
                     if border.labelOffsetX():
                         labelPos.setX(labelPos.x() + (border.labelOffsetX() * 0.7))
                     if border.labelOffsetY():
                         labelPos.setY(labelPos.y() - (border.labelOffsetY() * 0.7))
 
-                    _drawLabelHelper(
-                        graphics=self._graphics,
+                    self._drawLabel(
                         text=label,
                         center=labelPos,
-                        font=self._styles.microBorders.font,
+                        font=self._styleSheet.microBorders.font,
                         brush=brush,
-                        labelStyle=self._styles.microBorders.textStyle)
+                        labelStyle=self._styleSheet.microBorders.textStyle)
+
+                for region in sector.regions():
+                    if not region.showLabel():
+                        continue
+
+                    label = region.label()
+                    labelPos = region.labelHex()
+                    if not label or not labelPos:
+                        continue
+
+                    if region.wrapLabel():
+                        label = RenderContext._WrapPattern.sub('\n', label)
+
+                    labelPos = RenderContext._hexToCenter(labelPos)
+                    if region.labelOffsetX():
+                        labelPos.setX(labelPos.x() + (region.labelOffsetX() * 0.7))
+                    if region.labelOffsetY():
+                        labelPos.setY(labelPos.y() - (region.labelOffsetY() * 0.7))
+
+                    self._drawLabel(
+                        text=label,
+                        center=labelPos,
+                        font=self._styleSheet.microBorders.font,
+                        brush=brush,
+                        labelStyle=self._styleSheet.microBorders.textStyle)
 
                 for label in sector.labels():
                     text = label.text()
@@ -811,11 +765,11 @@ class RenderContext(object):
                         labelPos.setY(labelPos.y() - (label.offsetY() * 0.7))
 
                     if label.size() is traveller.Label.Size.Small:
-                        font = self._styles.microBorders.smallFont
+                        font = self._styleSheet.microBorders.smallFont
                     elif label.size() is traveller.Label.Size.Large:
-                        font = self._styles.microBorders.largeFont
+                        font = self._styleSheet.microBorders.largeFont
                     else:
-                        font = self._styles.microBorders.font
+                        font = self._styleSheet.microBorders.font
 
                     # TODO: Handle similar colours
                     brush.setColor(
@@ -829,28 +783,24 @@ class RenderContext(object):
                     else
                         brush.Color = styles.microBorders.textColor;
                     """
-                    _drawLabelHelper(
-                        graphics=self._graphics,
+                    self._drawLabel(
                         text=text,
                         center=labelPos,
                         font=font,
                         brush=brush,
-                        labelStyle=self._styles.microBorders.textStyle)
+                        labelStyle=self._styleSheet.microBorders.textStyle)
 
     def _drawSectorNames(self) -> None:
-        if not (self._styles.showSomeSectorNames or self._styles.showAllSectorNames):
-            return
-
-        if not self._styles.showAllSectorNames:
-            # TODO: Add support for only showing selected sectors. I think
-            # this happens when you zoom out a bit and it still shows some
-            # sector names (Core, Ley) but not all
+        if not (self._styleSheet.showSomeSectorNames or self._styleSheet.showAllSectorNames):
             return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for sector in self._selector.sectors():
+            if not self._styleSheet.showAllSectorNames and not sector.selected():
+                continue
+
             # TODO: Traveller Map would use the sector label first and only
             # fall back to the name if if there was no label. I need to work out
             # where that label is being loaded from
@@ -862,22 +812,21 @@ class RenderContext(object):
                 int(travellermap.SectorWidth // 2),
                 int(travellermap.SectorHeight // 2)))
 
-            _drawLabelHelper(
-                graphics=self._graphics,
+            self._drawLabel(
                 text=name,
                 center=maprenderer.AbstractPointF(x=centerX, y=centerY),
-                font=self._styles.sectorName.font,
-                brush=self._styles.sectorName.textBrush,
-                labelStyle=self._styles.sectorName.textStyle)
+                font=self._styleSheet.sectorName.font,
+                brush=self._styleSheet.sectorName.textBrush,
+                labelStyle=self._styleSheet.sectorName.textStyle)
 
     def _drawMacroNames(self) -> None:
-        if  not self._styles.macroNames.visible:
+        if  not self._styleSheet.macroNames.visible:
             return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        brush = maprenderer.AbstractBrush()
+        brush = self._graphics.createBrush()
 
         for vec in self._vectorCache.borders:
             if (vec.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
@@ -885,16 +834,16 @@ class RenderContext(object):
             major = (vec.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
             labelStyle = maprenderer.LabelStyle(uppercase=major)
             font = \
-                self._styles.macroNames.font \
+                self._styleSheet.macroNames.font \
                 if major else \
-                self._styles.macroNames.smallFont
+                self._styleSheet.macroNames.smallFont
             brush = \
-                self._styles.macroNames.textBrush \
+                self._styleSheet.macroNames.textBrush \
                 if major else \
-                self._styles.macroNames.textHighlightBrush
+                self._styleSheet.macroNames.textHighlightBrush
             vec.drawName(
                 graphics=self._graphics,
-                rect=self._tileRect,
+                rect=self._absoluteViewRect,
                 font=font,
                 textBrush=brush,
                 labelStyle=labelStyle)
@@ -903,48 +852,48 @@ class RenderContext(object):
             major = (vec.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
             labelStyle = maprenderer.LabelStyle(rotation=35, uppercase=major)
             font = \
-                self._styles.macroNames.font \
+                self._styleSheet.macroNames.font \
                 if major else \
-                self._styles.macroNames.smallFont
+                self._styleSheet.macroNames.smallFont
             brush = \
-                self._styles.macroNames.textBrush \
+                self._styleSheet.macroNames.textBrush \
                 if major else \
-                self._styles.macroNames.textHighlightBrush
+                self._styleSheet.macroNames.textHighlightBrush
             vec.drawName(
                 graphics=self._graphics,
-                rect=self._tileRect,
+                rect=self._absoluteViewRect,
                 font=font,
                 textBrush=brush,
                 labelStyle=labelStyle)
 
-        if self._styles.macroRoutes.visible:
+        if self._styleSheet.macroRoutes.visible:
             for vec in self._vectorCache.routes:
                 if (vec.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
                     continue
                 major = (vec.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
                 labelStyle = maprenderer.LabelStyle(uppercase=major)
                 font = \
-                    self._styles.macroNames.font \
+                    self._styleSheet.macroNames.font \
                     if major else \
-                    self._styles.macroNames.smallFont
+                    self._styleSheet.macroNames.smallFont
                 brush = \
-                    self._styles.macroRoutes.textBrush \
+                    self._styleSheet.macroRoutes.textBrush \
                     if major else \
-                    self._styles.macroRoutes.textHighlightBrush
+                    self._styleSheet.macroRoutes.textHighlightBrush
                 vec.drawName(
                     graphics=self._graphics,
-                    rect=self._tileRect,
+                    rect=self._absoluteViewRect,
                     font=font,
                     textBrush=brush,
                     labelStyle=labelStyle)
 
         if (self._options & maprenderer.MapOptions.NamesMinor) != 0:
             for label in self._mapLabelCache.minorLabels:
-                font = self._styles.macroNames.smallFont if label.minor else self._styles.macroNames.mediumFont
+                font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
-                    self._styles.macroRoutes.textBrush \
+                    self._styleSheet.macroRoutes.textBrush \
                     if label.minor else \
-                    self._styles.macroRoutes.textHighlightBrush
+                    self._styleSheet.macroRoutes.textHighlightBrush
                 with self._graphics.save():
                     self._graphics.translateTransform(
                         dx=label.position.x(),
@@ -960,7 +909,7 @@ class RenderContext(object):
                         x=0, y=0)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
-        if (not self._styles.capitals.visible) or \
+        if (not self._styleSheet.capitals.visible) or \
             ((self._options & maprenderer.MapOptions.WorldsMask) == 0):
             return
 
@@ -971,19 +920,19 @@ class RenderContext(object):
                 if (worldLabel.mapOptions & self._options) != 0:
                     worldLabel.paint(
                         graphics=self._graphics,
-                        dotBrush=self._styles.capitals.fillBrush,
-                        labelBrush=self._styles.capitals.textBrush,
-                        labelFont=self._styles.macroNames.smallFont)
+                        dotBrush=self._styleSheet.capitals.fillBrush,
+                        labelBrush=self._styleSheet.capitals.textBrush,
+                        labelFont=self._styleSheet.macroNames.smallFont)
 
     def _drawMegaLabels(self) -> None:
-        if not self._styles.megaNames.visible:
+        if not self._styleSheet.megaNames.visible:
             return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
         for label in self._mapLabelCache.megaLabels:
             with self._graphics.save():
-                font = self._styles.megaNames.smallFont if label.minor else self._styles.megaNames.font
+                font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.translateTransform(
                     dx=label.position.x(),
                     dy=label.position.y())
@@ -994,11 +943,12 @@ class RenderContext(object):
                     graphics=self._graphics,
                     text=label.text,
                     font=font,
-                    brush=self._styles.megaNames.textBrush,
+                    brush=self._styleSheet.megaNames.textBrush,
                     x=0, y=0)
 
     def _drawWorldsBackground(self) -> None:
-        if not self._styles.worlds.visible or self._styles.showStellarOverlay:
+        if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
+            or not self._styleSheet.worldDetails or self._styleSheet.worldDetails is maprenderer.WorldDetails.NoDetails:
             return
 
         for world in self._selector.worlds():
@@ -1007,37 +957,75 @@ class RenderContext(object):
                 layer=RenderContext.WorldLayer.Background)
 
     def _drawWorldsForeground(self) -> None:
-        if not self._styles.worlds.visible or self._styles.showStellarOverlay:
+        if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay:
             return
 
-        for world in self._selector.worlds():
-            self._drawWorld(
-                world=world,
-                layer=RenderContext.WorldLayer.Foreground)
+        if not self._styleSheet.worldDetails or self._styleSheet.worldDetails is maprenderer.WorldDetails.NoDetails:
+            with self._graphics.save():
+                self._graphics.setSmoothingMode(
+                    maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+
+
+                xScale = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
+                yScale = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
+                halfWidth = self._styleSheet.discRadius * xScale
+                halfHeight = self._styleSheet.discRadius * yScale
+
+                #if halfWidth <= 0.5 or halfHeight <= 0.5:
+                if ((halfWidth * self._scale) <= 1) or ((halfHeight * self._scale) <= 1):
+                    # TODO: Creating this pen every frame isn't great
+                    pen = self._graphics.createPen(
+                        color=self._styleSheet.worlds.textBrush.color(),
+                        width=(1 / self._scale),
+                        style=maprenderer.LineStyle.Solid)
+                    for world in self._selector.worlds():
+                        self._graphics.drawPoint(
+                            pen=pen,
+                            point=RenderContext._hexToCenter(world.hex()))
+                else:
+                    width = halfWidth * 2
+                    height = halfHeight * 2
+                    rect = self._graphics.createRectangle()
+                    for world in self._selector.worlds():
+                        center = RenderContext._hexToCenter(world.hex())
+                        rect.setRect(
+                            x=center.x() - halfWidth,
+                            y=center.y() - halfHeight,
+                            width=width,
+                            height=height)
+                        self._graphics.drawEllipse(
+                            brush=self._styleSheet.worlds.textBrush,
+                            pen=None,
+                            rect=rect)
+        else:
+            for world in self._selector.worlds():
+                self._drawWorld(
+                    world=world,
+                    layer=RenderContext.WorldLayer.Foreground)
 
     def _drawWorldsOverlay(self) -> None:
-        if not self._styles.worlds.visible:
+        if not self._styleSheet.worlds.visible:
             return
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-            if self._styles.showStellarOverlay:
+            if self._styleSheet.showStellarOverlay:
                 for world in self._selector.worlds():
                     self._drawStars(world)
-            elif self._styles.hasWorldOverlays:
-                slop = self._selector.slop()
-                self._selector.setSlop(max(slop, math.log(self._scale, 2.0) - 4))
+            elif self._styleSheet.hasWorldOverlays:
+                slop = self._selector.worldSlop()
+                self._selector.setSectorSlop(max(slop, math.log2(self._scale) - 4))
                 try:
                     for world in self._selector.worlds():
                         self._drawWorld(
                             world=world,
                             layer=RenderContext.WorldLayer.Overlay)
                 finally:
-                    self._selector.setSlop(slop)
+                    self._selector.setWorldSlop(slop)
 
     def _drawDroyneOverlay(self) -> None:
-        if not self._styles.droyneWorlds.visible:
+        if not self._styleSheet.droyneWorlds.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -1049,15 +1037,15 @@ class RenderContext(object):
             chirpers = world.hasRemark('Chir')
 
             if droyne or chirpers:
-                glyph = self._styles.droyneWorlds.content[0 if droyne else 1]
+                glyph = self._styleSheet.droyneWorlds.content[0 if droyne else 1]
                 self._drawOverlayGlyph(
                     glyph=glyph,
-                    font=self._styles.droyneWorlds.font,
-                    brush=self._styles.droyneWorlds.textBrush,
+                    font=self._styleSheet.droyneWorlds.font,
+                    brush=self._styleSheet.droyneWorlds.textBrush,
                     position=world.hex())
 
     def _drawMinorHomeworldOverlay(self) -> None:
-        if not self._styles.minorHomeWorlds.visible:
+        if not self._styleSheet.minorHomeWorlds.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -1065,13 +1053,13 @@ class RenderContext(object):
         for world in self._selector.worlds():
             if world.isMinorHomeworld():
                 self._drawOverlayGlyph(
-                    glyph=self._styles.minorHomeWorlds.content,
-                    font=self._styles.minorHomeWorlds.font,
-                    brush=self._styles.minorHomeWorlds.textBrush,
+                    glyph=self._styleSheet.minorHomeWorlds.content,
+                    font=self._styleSheet.minorHomeWorlds.font,
+                    brush=self._styleSheet.minorHomeWorlds.textBrush,
                     position=world.hex())
 
     def _drawAncientWorldsOverlay(self) -> None:
-        if not self._styles.ancientsWorlds.visible:
+        if not self._styleSheet.ancientsWorlds.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -1079,18 +1067,18 @@ class RenderContext(object):
         for world in self._selector.worlds():
             if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
-                    glyph=self._styles.ancientsWorlds.content,
-                    font=self._styles.ancientsWorlds.font,
-                    brush=self._styles.ancientsWorlds.textBrush,
+                    glyph=self._styleSheet.ancientsWorlds.content,
+                    font=self._styleSheet.ancientsWorlds.font,
+                    brush=self._styleSheet.ancientsWorlds.textBrush,
                     position=world.hex())
 
     def _drawSectorReviewStatusOverlay(self) -> None:
-        brush = maprenderer.AbstractBrush()
+        brush = self._graphics.createBrush()
 
-        if self._styles.dimUnofficialSectors and self._styles.worlds.visible:
+        if self._styleSheet.dimUnofficialSectors and self._styleSheet.worlds.visible:
             brush.setColor(maprenderer.makeAlphaColor(
                 alpha=128,
-                color=self._styles.backgroundBrush.color()))
+                color=self._styleSheet.backgroundBrush.color()))
             for sector in self._selector.sectors():
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
                     clipPath = self._clipCache.sectorClipPath(
@@ -1102,7 +1090,7 @@ class RenderContext(object):
                         brush=brush,
                         path=clipPath)
 
-        if self._styles.colorCodeSectorStatus and self._styles.worlds.visible:
+        if self._styleSheet.colorCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors():
                 if sector.hasTag('Official'):
                     brush.setColor(maprenderer.makeAlphaColor(
@@ -1139,11 +1127,18 @@ class RenderContext(object):
     def _drawWorld(self, world: traveller.World, layer: WorldLayer) -> None:
         uwp = world.uwp()
         isPlaceholder = False # TODO: Handle placeholder worlds
-        isCapital = maprenderer.WorldHelper.isCapital(world)
-        isHiPop = maprenderer.WorldHelper.isHighPopulation(world)
-        renderName = ((self._styles.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
-            (((self._styles.worldDetails & maprenderer.WorldDetails.KeyNames) != 0) and (isCapital or isHiPop))
-        renderUWP = (self._styles.worldDetails & maprenderer.WorldDetails.Uwp) != 0
+        isCapital = isHiPop = False
+        renderName = False
+        if ((self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
+            ((self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0):
+            isCapital = maprenderer.WorldHelper.isCapital(world)
+            isHiPop = maprenderer.WorldHelper.isHighPopulation(world)
+            renderName = ((self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
+                (isCapital or isHiPop)
+        renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
+
+        # TODO: This calls self._graphics.createRectangle quite a lot, could
+        # it just be created once then updated at different stages as needed?
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
@@ -1155,20 +1150,18 @@ class RenderContext(object):
                 dx=center.x(),
                 dy=center.y())
             self._graphics.scaleTransform(
-                scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
-                scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
+                scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
+                scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
             self._graphics.rotateTransform(
-                degrees=self._styles.hexRotation)
-
-            pen = maprenderer.AbstractPen()
+                degrees=self._styleSheet.hexRotation)
 
             if layer is RenderContext.WorldLayer.Overlay:
-                if self._styles.populationOverlay.visible and (world.population() > 0):
+                if self._styleSheet.populationOverlay.visible and (world.population() > 0):
                     self._drawOverlay(
-                        element=self._styles.populationOverlay,
+                        element=self._styleSheet.populationOverlay,
                         radius=math.sqrt(world.population() / math.pi) * 0.00002)
 
-                if self._styles.importanceOverlay.visible:
+                if self._styleSheet.importanceOverlay.visible:
                     # TODO: Handle importance overlay
                     """
                     int im = world.CalculatedImportance;
@@ -1178,7 +1171,7 @@ class RenderContext(object):
                     }
                     """
 
-                if self._styles.capitalOverlay.visible:
+                if self._styleSheet.capitalOverlay.visible:
                     # TODO: Handle capital overlay
                     """
                     bool hasIm = world.CalculatedImportance >= 4;
@@ -1201,13 +1194,13 @@ class RenderContext(object):
                 }
                 """
 
-            if not self._styles.useWorldImages:
+            if not self._styleSheet.useWorldImages:
                 # Normal (non-"Eye Candy") styles
                 if layer is RenderContext.WorldLayer.Background:
-                    if (self._styles.worldDetails & maprenderer.WorldDetails.Zone) != 0:
+                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0:
                         elem = self._zoneStyle(world)
                         if elem and elem.visible:
-                            if self._styles.showZonesAsPerimeters:
+                            if self._styleSheet.showZonesAsPerimeters:
                                 with self._graphics.save():
                                     # TODO: Why is this 2 separate scale transforms?
                                     self._graphics.scaleTransform(
@@ -1218,19 +1211,19 @@ class RenderContext(object):
                                         scaleY=0.95)
                                     self._graphics.drawPathOutline(
                                         pen=elem.pen,
-                                        path=RenderContext._HexPath)
+                                        path=self._hexOutlinePath)
                             else:
                                 if elem.fillBrush:
                                     self._graphics.drawEllipse(
                                         brush=elem.fillBrush,
                                         pen=None,
-                                        rect=maprenderer.AbstractRectangleF(x=-0.4, y=-0.4, width=0.8, height=0.8))
+                                        rect=self._graphics.createRectangle(x=-0.4, y=-0.4, width=0.8, height=0.8))
                                 if elem.pen:
-                                    if renderName and self._styles.fillMicroBorders:
+                                    if renderName and self._styleSheet.fillMicroBorders:
                                         # TODO: Is saving the state actually needed here?
                                         with self._graphics.save():
                                             self._graphics.intersectClipRect(
-                                                rect=maprenderer.AbstractRectangleF(
+                                                rect=self._graphics.createRectangle(
                                                     x=-0.5,
                                                     y=-0.5,
                                                     width=1,
@@ -1238,7 +1231,7 @@ class RenderContext(object):
                                             self._graphics.drawEllipse(
                                                 pen=elem.pen,
                                                 brush=None,
-                                                rect=maprenderer.AbstractRectangleF(
+                                                rect=self._graphics.createRectangle(
                                                     x=-0.4,
                                                     y=-0.4,
                                                     width=0.8,
@@ -1247,17 +1240,17 @@ class RenderContext(object):
                                         self._graphics.drawEllipse(
                                             pen=elem.pen,
                                             brush=None,
-                                            rect=maprenderer.AbstractRectangleF(
+                                            rect=self._graphics.createRectangle(
                                                 x=-0.4,
                                                 y=-0.4,
                                                 width=0.8,
                                                 height=0.8))
 
-                    if not self._styles.numberAllHexes and \
-                        ((self._styles.worldDetails & maprenderer.WorldDetails.Hex) != 0):
+                    if not self._styleSheet.numberAllHexes and \
+                        ((self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0):
 
                         hex = world.hex()
-                        if self._styles.hexContentScale is maprenderer.HexCoordinateStyle.Subsector:
+                        if self._styleSheet.hexContentScale is maprenderer.HexCoordinateStyle.Subsector:
                             # TODO: Handle subsector hex whatever that is
                             #hex=f'{hex.offsetX():02d}{hex.offsetY():02d}'
                             hex='TODO'
@@ -1266,10 +1259,10 @@ class RenderContext(object):
 
                         self._graphics.drawString(
                             text=hex,
-                            font=self._styles.hexNumber.font,
-                            brush=self._styles.hexNumber.textBrush,
-                            x=self._styles.hexNumber.position.x(),
-                            y=self._styles.hexNumber.position.y(),
+                            font=self._styleSheet.hexNumber.font,
+                            brush=self._styleSheet.hexNumber.textBrush,
+                            x=self._styleSheet.hexNumber.position.x(),
+                            y=self._styleSheet.hexNumber.position.y(),
                             format=maprenderer.TextAlignment.TopCenter)
 
                 if layer is RenderContext.WorldLayer.Foreground:
@@ -1277,45 +1270,45 @@ class RenderContext(object):
                     worldTextBackgroundStyle = \
                         maprenderer.TextBackgroundStyle.NoStyle \
                         if (not elem or not elem.fillBrush) else \
-                        self._styles.worlds.textBackgroundStyle
+                        self._styleSheet.worlds.textBackgroundStyle
 
                     # TODO: Implement placeholders, this should be
                     # if (!isPlaceholder)
                     if True:
-                        if ((self._styles.worldDetails & maprenderer.WorldDetails.GasGiant) != 0) and \
+                        if ((self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0) and \
                             maprenderer.WorldHelper.hasGasGiants(world):
                             self._drawGasGiant(
-                                brush=self._styles.worlds.textBrush,
-                                x=self._styles.gasGiantPosition.x(),
-                                y=self._styles.gasGiantPosition.y(),
+                                brush=self._styleSheet.worlds.textBrush,
+                                x=self._styleSheet.gasGiantPosition.x(),
+                                y=self._styleSheet.gasGiantPosition.y(),
                                 radius=0.05,
-                                ring=self._styles.showGasGiantRing)
+                                ring=self._styleSheet.showGasGiantRing)
 
-                        if (self._styles.worldDetails & maprenderer.WorldDetails.Starport) != 0:
+                        if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Starport) != 0:
                             starport = uwp.code(traveller.UWP.Element.StarPort)
-                            if self._styles.showTL:
+                            if self._styleSheet.showTL:
                                 starport += "-" + uwp.code(traveller.UWP.Element.TechLevel)
 
                             self._drawWorldLabel(
                                 bkStyle=worldTextBackgroundStyle,
-                                bkBrush=self._styles.uwp.fillBrush,
-                                textBrush=self._styles.worlds.textBrush,
-                                position=self._styles.starport.position,
-                                font=self._styles.starport.font,
+                                bkBrush=self._styleSheet.uwp.fillBrush,
+                                textBrush=self._styleSheet.worlds.textBrush,
+                                position=self._styleSheet.starport.position,
+                                font=self._styleSheet.starport.font,
                                 text=starport)
 
                         if renderUWP:
                             self._drawWorldLabel(
-                                bkStyle=self._styles.uwp.textBackgroundStyle,
-                                bkBrush=self._styles.uwp.fillBrush,
-                                textBrush=self._styles.uwp.textBrush,
-                                position=self._styles.uwp.position,
-                                font=self._styles.hexNumber.font,
+                                bkStyle=self._styleSheet.uwp.textBackgroundStyle,
+                                bkBrush=self._styleSheet.uwp.fillBrush,
+                                textBrush=self._styleSheet.uwp.textBrush,
+                                position=self._styleSheet.uwp.position,
+                                font=self._styleSheet.hexNumber.font,
                                 text=uwp.string())
 
                         # NOTE: This todo came in with the traveller map code
                         # TODO: Mask off background for glyphs
-                        if (self._styles.worldDetails & maprenderer.WorldDetails.Bases) != 0:
+                        if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Bases) != 0:
                             bases = world.bases()
                             baseCount = bases.count()
 
@@ -1333,20 +1326,18 @@ class RenderContext(object):
                                     allegiance=world.allegiance(),
                                     code=traveller.Bases.code(bases[0]))
                                 if glyph.isPrintable:
-                                    pt = self._styles.baseTopPosition
+                                    pt = self._styleSheet.baseTopPosition
                                     if glyph.bias is maprenderer.Glyph.GlyphBias.Bottom and \
-                                        not self._styles.ignoreBaseBias:
-                                        pt = self._styles.baseBottomPosition
+                                        not self._styleSheet.ignoreBaseBias:
+                                        pt = self._styleSheet.baseBottomPosition
                                         bottomUsed = True
 
                                     brush = \
-                                        self._styles.worlds.textHighlightBrush \
+                                        self._styleSheet.worlds.textHighlightBrush \
                                         if glyph.highlight else \
-                                        self._styles.worlds.textBrush
-                                    _drawGlyphHelper(
-                                        graphics=self._graphics,
+                                        self._styleSheet.worlds.textBrush
+                                    self._drawWorldGlyph(
                                         glyph=glyph,
-                                        fonts=self._fontCache,
                                         brush=brush,
                                         pt=pt)
 
@@ -1362,10 +1353,8 @@ class RenderContext(object):
                                         self._styles.worlds.textHighlightColor \
                                         if glyph.isHighlighted else \
                                         self._styles.worlds.textColor
-                                    drawGlyphHelper(
-                                        graphics=self._graphics,
+                                    self._drawWorldGlyph(
                                         glyph=glyph,
-                                        fonts=self._fontCache,
                                         brush=brush,
                                         position=pt)
 
@@ -1377,10 +1366,8 @@ class RenderContext(object):
                                         self._styles.worlds.textHighlightColor \
                                         if glyph.isHighlighted else \
                                         self._styles.worlds.textColor
-                                    drawGlyphHelper(
-                                        graphics=self._graphics,
+                                    self._drawWorldGlyph(
                                         glyph=glyph,
-                                        fonts=self._fontCache,
                                         brush=brush,
                                         position=self._styles.baseMiddlePosition)
                             """
@@ -1403,22 +1390,20 @@ class RenderContext(object):
                                     self._styles.worlds.textHighlightColor \
                                     if glyph.isHighlighted else \
                                     self._styles.worlds.textColor
-                                drawGlyphHelper(
-                                    graphics=self._graphics,
+                                self._drawWorldGlyph(
                                     glyph=glyph,
-                                    fonts=self._fontCache,
                                     brush=brush,
                                     position=self._styles.baseMiddlePosition)
                             """
 
-                    if (self._styles.worldDetails & maprenderer.WorldDetails.Type) != 0:
+                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0:
                         # TODO: Handle placeholders, this should be
                         # if (isPlaceholder)
                         if False:
-                            e = self._styles.anomaly if world.isAnomaly() else self._styles.placeholder
+                            e = self._styleSheet.anomaly if world.isAnomaly() else self._styleSheet.placeholder
                             self._drawWorldLabel(
                                 bkStyle=e.textBackgroundStyle,
-                                bkBrush=self._styles.worlds.textBrush,
+                                bkBrush=self._styleSheet.worlds.textBrush,
                                 textBrush=e.textColor, # TODO: This will need converted to a brush
                                 position=e.position,
                                 font=e.font,
@@ -1426,10 +1411,10 @@ class RenderContext(object):
                         else:
                             with self._graphics.save():
                                 self._graphics.translateTransform(
-                                    dx=self._styles.discPosition.x(),
-                                    dy=self._styles.discPosition.y())
+                                    dx=self._styleSheet.discPosition.x(),
+                                    dy=self._styleSheet.discPosition.y())
                                 if uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0:
-                                    if (self._styles.worldDetails & maprenderer.WorldDetails.Asteroids) != 0:
+                                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Asteroids) != 0:
                                         # Basic pattern, with probability varying per position:
                                         #   o o o
                                         #  o o o o
@@ -1441,7 +1426,7 @@ class RenderContext(object):
 
                                         # Random generator is seeded with world location so it is always the same
                                         rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
-                                        rect = maprenderer.AbstractRectangleF()
+                                        rect = self._graphics.createRectangle()
                                         for i in range(len(lpx)):
                                             if rand.random() < lpr[i]:
                                                 rect.setX(lpx[i] * 0.035)
@@ -1455,88 +1440,89 @@ class RenderContext(object):
                                                 #rect.y += 0
 
                                                 self._graphics.drawEllipse(
-                                                    brush=self._styles.worlds.textBrush,
+                                                    brush=self._styleSheet.worlds.textBrush,
                                                     pen=None,
                                                     rect=rect)
                                     else:
                                         # Just a glyph
-                                        _drawGlyphHelper(
-                                            graphics=self._graphics,
+                                        self._drawWorldGlyph(
                                             glyph=maprenderer.GlyphDefs.DiamondX,
-                                            fonts=self._fontCache,
-                                            brush=self._styles.worlds.textBrush,
+                                            brush=self._styleSheet.worlds.textBrush,
                                             pt=maprenderer.AbstractPointF(0, 0))
                                 else:
                                     # TODO: Creating pens/brushes here every time isn't great.
                                     # The style sheet should probably return brush/pen objects
                                     # rather than string colours. It might make sense to move
                                     # the logic elsewhere so it can be cached
-                                    penColor, brushColor = self._styles.worldColors(world)
+                                    penColor, brushColor = self._styleSheet.worldColors(world)
                                     pen = brush = None
                                     if penColor:
-                                        pen = maprenderer.AbstractPen(self._styles.worldWater.pen)
-                                        pen.setColor(penColor)
+                                        pen = self._graphics.createPen(
+                                            color=penColor,
+                                            width=self._styleSheet.worldWater.pen.width(),
+                                            style=self._styleSheet.worldWater.pen.style(),
+                                            pattern=self._styleSheet.worldWater.pen.pattern())
                                     if brushColor:
-                                        brush = maprenderer.AbstractBrush(brushColor)
+                                        brush = self._graphics.createBrush(color=brushColor)
                                     self._graphics.drawEllipse(
                                         pen=pen,
                                         brush=brush,
-                                        rect=maprenderer.AbstractRectangleF(
-                                            x=-self._styles.discRadius,
-                                            y=-self._styles.discRadius,
-                                            width=2 * self._styles.discRadius,
-                                            height=2 * self._styles.discRadius))
+                                        rect=self._graphics.createRectangle(
+                                            x=-self._styleSheet.discRadius,
+                                            y=-self._styleSheet.discRadius,
+                                            width=2 * self._styleSheet.discRadius,
+                                            height=2 * self._styleSheet.discRadius))
                     elif not world.isAnomaly():
                         # Dotmap
                         self._graphics.drawEllipse(
-                            brush=self._styles.worlds.textBrush,
+                            brush=self._styleSheet.worlds.textBrush,
                             pen=None,
-                            rect=maprenderer.AbstractRectangleF(
-                                x=-self._styles.discRadius,
-                                y=-self._styles.discRadius,
-                                width=2 * self._styles.discRadius,
-                                height=2 * self._styles.discRadius))
+                            rect=self._graphics.createRectangle(
+                                x=-self._styleSheet.discRadius,
+                                y=-self._styleSheet.discRadius,
+                                width=2 * self._styleSheet.discRadius,
+                                height=2 * self._styleSheet.discRadius))
 
                     if renderName:
                         name = world.name()
-                        highlight = (self._styles.worldDetails & maprenderer.WorldDetails.Highlight) != 0
+                        highlight = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Highlight) != 0
                         if (isHiPop and highlight) or \
-                            self._styles.worlds.textStyle.uppercase:
+                            self._styleSheet.worlds.textStyle.uppercase:
                             name = name.upper()
 
                         textBrush = \
-                            self._styles.worlds.textHighlightBrush \
+                            self._styleSheet.worlds.textHighlightBrush \
                             if isCapital and highlight else \
-                            self._styles.worlds.textBrush
+                            self._styleSheet.worlds.textBrush
 
                         font = \
-                            self._styles.worlds.largeFont \
+                            self._styleSheet.worlds.largeFont \
                             if (isHiPop or isCapital) and highlight else \
-                            self._styles.worlds.font
+                            self._styleSheet.worlds.font
 
                         self._drawWorldLabel(
                             bkStyle=worldTextBackgroundStyle,
-                            bkBrush=self._styles.worlds.textBrush,
+                            bkBrush=self._styleSheet.worlds.textBrush,
                             textBrush=textBrush,
-                            position=self._styles.worlds.textStyle.translation,
+                            position=self._styleSheet.worlds.textStyle.translation,
                             font=font,
                             text=name)
 
-                    if (self._styles.worldDetails & maprenderer.WorldDetails.Allegiance) != 0:
+                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Allegiance) != 0:
                         alleg = maprenderer.WorldHelper.allegianceCode(
                             world=world,
                             ignoreDefault=True,
-                            useLegacy=not self._styles.t5AllegianceCodes)
+                            useLegacy=not self._styleSheet.t5AllegianceCodes)
                         if alleg:
-                            if self._styles.lowerCaseAllegiance:
+                            if self._styleSheet.lowerCaseAllegiance:
                                 alleg = alleg.lower()
 
                             self._graphics.drawString(
                                 text=alleg,
-                                font=self._styles.worlds.smallFont,
-                                brush=self._styles.worlds.textBrush,
-                                x=self._styles.allegiancePosition.x(),
-                                y=self._styles.allegiancePosition.y(),
+                                font=self._styleSheet.worlds.smallFont,
+                                brush=self._styleSheet.worlds.textBrush,
+                                x=self._styleSheet.allegiancePosition.x(),
+                                y=self._styleSheet.allegiancePosition.y(),
                                 format=maprenderer.TextAlignment.Centered)
             else: # styles.useWorldImages
                 # "Eye-Candy" style
@@ -1545,14 +1531,14 @@ class RenderContext(object):
                 decorationRadius = imageRadius
 
                 if layer is RenderContext.WorldLayer.Background:
-                    if (self._styles.worldDetails & maprenderer.WorldDetails.Type) != 0:
+                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0:
                         # TODO: Handle placeholders, this should be
                         #if isPlaceholder:
                         if False:
-                            e = self._styles.anomaly if world.isAnomaly() else self._styles.placeholder
+                            e = self._styleSheet.anomaly if world.isAnomaly() else self._styleSheet.placeholder
                             self._drawWorldLabel(
                                 bkStyle=e.textBackgroundStyle,
-                                bkBrush=self._styles.worlds.textBrush,
+                                bkBrush=self._styleSheet.worlds.textBrush,
                                 textBrush=e.textColor,
                                 position=e.position,
                                 font=e.font,
@@ -1564,7 +1550,7 @@ class RenderContext(object):
                                 image=maprenderer.WorldHelper.worldImage(
                                     world=world,
                                     images=self._imageCache),
-                                rect=maprenderer.AbstractRectangleF(
+                                rect=self._graphics.createRectangle(
                                     x=-imageRadius * scaleX,
                                     y=-imageRadius * scaleY,
                                     width=imageRadius * 2 * scaleX,
@@ -1572,13 +1558,13 @@ class RenderContext(object):
                     elif not world.isAnomaly():
                         # Dotmap
                         self._graphics.drawEllipse(
-                            brush=self._styles.worlds.textBrush,
+                            brush=self._styleSheet.worlds.textBrush,
                             pen=None,
-                            rect=maprenderer.AbstractRectangleF(
-                                x=-self._styles.discRadius,
-                                y=-self._styles.discRadius,
-                                width=2 * self._styles.discRadius,
-                                height=2 * self._styles.discRadius))
+                            rect=self._graphics.createRectangle(
+                                x=-self._styleSheet.discRadius,
+                                y=-self._styleSheet.discRadius,
+                                width=2 * self._styleSheet.discRadius,
+                                height=2 * self._styleSheet.discRadius))
 
                 # TODO: Support placeholders, this should be
                 # if (isPlaceholder)
@@ -1588,14 +1574,14 @@ class RenderContext(object):
                 if layer is RenderContext.WorldLayer.Foreground:
                     decorationRadius += 0.1
 
-                    if (self._styles.worldDetails & maprenderer.WorldDetails.Zone) != 0:
+                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0:
                         zone = world.zone()
                         if zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.RedZone:
                             pen = \
-                                self._styles.amberZone.pen \
+                                self._styleSheet.amberZone.pen \
                                 if zone is traveller.ZoneType.AmberZone else \
-                                self._styles.redZone.pen
-                            rect = maprenderer.AbstractRectangleF(
+                                self._styleSheet.redZone.pen
+                            rect = self._graphics.createRectangle(
                                 x=-decorationRadius,
                                 y=-decorationRadius,
                                 width=decorationRadius * 2,
@@ -1623,16 +1609,16 @@ class RenderContext(object):
                                 sweepDegrees=80)
                             decorationRadius += 0.1
 
-                    if (self._styles.worldDetails & maprenderer.WorldDetails.GasGiant) != 0:
+                    if (self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0:
                         symbolRadius = 0.05
-                        if self._styles.showGasGiantRing:
+                        if self._styleSheet.showGasGiantRing:
                             decorationRadius += symbolRadius
                         self._drawGasGiant(
-                            brush=self._styles.worlds.textHighlightBrush,
+                            brush=self._styleSheet.worlds.textHighlightBrush,
                             x=decorationRadius,
                             y=0,
                             radius=symbolRadius,
-                            ring=self._styles.showGasGiantRing)
+                            ring=self._styleSheet.showGasGiantRing)
                         decorationRadius += 0.1
 
                     if renderUWP:
@@ -1640,10 +1626,10 @@ class RenderContext(object):
                         # TODO: Scale, like the name text.
                         self._graphics.drawString(
                             text=uwp.string(),
-                            font=self._styles.hexNumber.font,
-                            brush=self._styles.worlds.textBrush,
+                            font=self._styleSheet.hexNumber.font,
+                            brush=self._styleSheet.worlds.textBrush,
                             x=decorationRadius,
-                            y=self._styles.uwp.position.y(),
+                            y=self._styleSheet.uwp.position.y(),
                             format=maprenderer.TextAlignment.MiddleLeft)
 
                     if renderName:
@@ -1652,33 +1638,33 @@ class RenderContext(object):
                             name.upper()
 
                         with self._graphics.save():
-                            highlight = (self._styles.worldDetails & maprenderer.WorldDetails.Highlight) != 0
+                            highlight = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Highlight) != 0
                             textBrush = \
-                                self._styles.worlds.textHighlightBrush \
+                                self._styleSheet.worlds.textHighlightBrush \
                                 if isCapital and highlight else \
-                                self._styles.worlds.textBrush
+                                self._styleSheet.worlds.textBrush
 
-                            if self._styles.worlds.textStyle.uppercase:
+                            if self._styleSheet.worlds.textStyle.uppercase:
                                 name = name.upper()
 
                             self._graphics.translateTransform(
                                 dx=decorationRadius,
                                 dy=0.0)
                             self._graphics.scaleTransform(
-                                scaleX=self._styles.worlds.textStyle.scale.width(),
-                                scaleY=self._styles.worlds.textStyle.scale.height())
+                                scaleX=self._styleSheet.worlds.textStyle.scale.width(),
+                                scaleY=self._styleSheet.worlds.textStyle.scale.height())
                             self._graphics.translateTransform(
                                 dx=self._graphics.measureString(
                                     text=name,
-                                    font=self._styles.worlds.font).width() / 2,
+                                    font=self._styleSheet.worlds.font)[0] / 2,
                                 dy=0.0) # Left align
 
                             self._drawWorldLabel(
-                                bkStyle=self._styles.worlds.textBackgroundStyle,
-                                bkBrush=self._styles.worlds.textBrush,
+                                bkStyle=self._styleSheet.worlds.textBackgroundStyle,
+                                bkBrush=self._styleSheet.worlds.textBrush,
                                 textBrush=textBrush,
-                                position=self._styles.worlds.textStyle.translation,
-                                font=self._styles.worlds.font,
+                                position=self._styleSheet.worlds.textStyle.translation,
+                                font=self._styleSheet.worlds.font,
                                 text=name)
 
     def _drawWorldLabel(
@@ -1690,35 +1676,35 @@ class RenderContext(object):
             font: maprenderer.AbstractFont,
             text: str
             ) -> None:
-        size = self._graphics.measureString(text=text, font=font)
+        width, height = self._graphics.measureString(text=text, font=font)
 
         if bkStyle is maprenderer.TextBackgroundStyle.Rectangle:
-            if not self._styles.fillMicroBorders:
+            if not self._styleSheet.fillMicroBorders:
                 # NOTE: This todo came over from traveller map
                 # TODO: Implement this with a clipping region instead
                 self._graphics.drawRectangleFill(
-                    brush=self._styles.backgroundBrush,
-                    rect=maprenderer.AbstractRectangleF(
-                        x=position.x() - size.width() / 2,
-                        y=position.y() - size.height() / 2,
-                        width=size.width(),
-                        height=size.height()))
+                    brush=self._styleSheet.backgroundBrush,
+                    rect=self._graphics.createRectangle(
+                        x=position.x() - width / 2,
+                        y=position.y() - height / 2,
+                        width=width,
+                        height=height))
         elif bkStyle is maprenderer.TextBackgroundStyle.Filled:
             self._graphics.drawRectangleFill(
                 brush=bkBrush,
-                rect=maprenderer.AbstractRectangleF(
-                    x=position.x() - size.width() / 2,
-                    y=position.y() - size.height() / 2,
-                    width=size.width(),
-                    height=size.height()))
+                rect=self._graphics.createRectangle(
+                    x=position.x() - width / 2,
+                    y=position.y() - height / 2,
+                    width=width,
+                    height=height))
         elif bkStyle is maprenderer.TextBackgroundStyle.Outline or \
             bkStyle is maprenderer.TextBackgroundStyle.Shadow:
             # NOTE: This todo came over from traveller map
             # TODO: These scaling factors are constant for a render; compute once
 
             # Invert the current scaling transforms
-            sx = 1.0 / self._styles.hexContentScale
-            sy = 1.0 / self._styles.hexContentScale
+            sx = 1.0 / self._styleSheet.hexContentScale
+            sy = 1.0 / self._styleSheet.hexContentScale
             sx *= travellermap.ParsecScaleX
             sy *= travellermap.ParsecScaleY
             sx /= self._scale * travellermap.ParsecScaleX
@@ -1738,7 +1724,7 @@ class RenderContext(object):
                         font=font,
                         # TODO: This doesn't seem right. I think this is drawing a shadow behind the text
                         # but if it's just drawing the background colour will you actually see it??
-                        brush=self._styles.backgroundBrush,
+                        brush=self._styleSheet.backgroundBrush,
                         x=position.x() + sx * dx,
                         y=position.y() + sy * dy,
                         format=maprenderer.TextAlignment.Centered)
@@ -1761,23 +1747,23 @@ class RenderContext(object):
 
             self._graphics.translateTransform(dx=center.x(), dy=center.y())
             self._graphics.scaleTransform(
-                scaleX=self._styles.hexContentScale / travellermap.ParsecScaleX,
-                scaleY=self._styles.hexContentScale / travellermap.ParsecScaleY)
+                scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
+                scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
 
-            pen = maprenderer.AbstractPen()
-            brush = maprenderer.AbstractBrush()
+            pen = self._graphics.createPen()
+            pen.setStyle(maprenderer.LineStyle.Solid)
+            pen.setWidth(self._styleSheet.worlds.pen.width())
+            brush = self._graphics.createBrush()
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
                 brush.setColor(fillColour)
                 pen.setColor(lineColor)
-                pen.setStyle(maprenderer.LineStyle.Solid)
-                pen.setWidth(self._styles.worlds.pen.width())
                 offset = RenderContext._starOffset(i)
                 offsetScale = 0.3
                 radius *= 0.15
                 self._graphics.drawEllipse(
                     pen=pen,
                     brush=brush,
-                    rect=maprenderer.AbstractRectangleF(
+                    rect=self._graphics.createRectangle(
                         x=offset.x() * offsetScale - radius,
                         y=offset.y() * offsetScale - radius,
                         width=radius * 2,
@@ -1796,7 +1782,7 @@ class RenderContext(object):
             self._graphics.drawEllipse(
                 brush=brush,
                 pen=None,
-                rect=maprenderer.AbstractRectangleF(
+                rect=self._graphics.createRectangle(
                     x=-radius,
                     y=-radius,
                     width=radius * 2,
@@ -1807,9 +1793,9 @@ class RenderContext(object):
                 self._graphics.drawEllipse(
                     # TODO: Creating a pen each time is bad. Could store gas giant
                     # brush & pen a specific objects in the style sheet
-                    pen=maprenderer.AbstractPen(color=brush.color(), width=radius / 4),
+                    pen=self._graphics.createPen(color=brush.color(), width=radius / 4),
                     brush=None,
-                    rect=maprenderer.AbstractRectangleF(
+                    rect=self._graphics.createRectangle(
                         x=-radius * 1.75,
                         y=-radius * 0.4,
                         width=radius * 1.75 * 2,
@@ -1827,7 +1813,10 @@ class RenderContext(object):
         self._graphics.drawEllipse(
             pen=element.pen,
             brush=element.fillBrush,
-            rect=maprenderer.AbstractRectangleF(x=-radius, y=-radius, width=radius * 2, height=radius * 2))
+            rect=self._graphics.createRectangle(
+                x=-radius,
+                y=-radius, width=radius * 2,
+                height=radius * 2))
 
     def _drawMicroBorders(self, layer: BorderLayer) -> None:
         fillAlpha = 64
@@ -1838,25 +1827,25 @@ class RenderContext(object):
 
         pathType = \
             maprenderer.ClipPathCache.PathType.Square \
-            if self._styles.microBorderStyle == maprenderer.MicroBorderStyle.Square else \
+            if self._styleSheet.microBorderStyle == maprenderer.MicroBorderStyle.Square else \
             maprenderer.ClipPathCache.PathType.Hex
 
-        pen = maprenderer.AbstractPen(self._styles.microBorders.pen)
-        brush = maprenderer.AbstractBrush()
+        pen = self._graphics.createPen(width=self._styleSheet.microBorders.pen.width())
+        brush = self._graphics.createBrush()
 
         penWidth = pen.width()
         for sector in self._selector.sectors():
             # This looks craptacular for Candy style borders :(
             shouldClip = self._clipOutsectorBorders and \
                 ((layer == RenderContext.BorderLayer.Fill) or \
-                    (self._styles.microBorderStyle != maprenderer.MicroBorderStyle.Curve))
+                    (self._styleSheet.microBorderStyle != maprenderer.MicroBorderStyle.Curve))
             clip = None
             if shouldClip:
                 clip = self._clipCache.sectorClipPath(
                     sectorX=sector.x(),
                     sectorY=sector.y(),
                     pathType=pathType)
-                if not self._tileRect.intersectsWith(clip.bounds()):
+                if not self._absoluteViewRect.intersectsWith(clip.bounds()):
                     continue
 
             with self._graphics.save():
@@ -1891,7 +1880,7 @@ class RenderContext(object):
                                 regionStyle = defaultStyle
 
                     if not regionColor:
-                        regionColor = self._styles.microRoutes.pen.color()
+                        regionColor = self._styleSheet.microRoutes.pen.color()
                     if not regionStyle:
                         regionStyle = maprenderer.LineStyle.Solid
 
@@ -1904,6 +1893,7 @@ class RenderContext(object):
                     }
                     """
 
+                    # TODO: Doing this conversion every frame is very inefficient
                     outline = region.absoluteOutline()
                     drawPath = []
                     for x, y in outline:
@@ -1912,14 +1902,14 @@ class RenderContext(object):
                     for _ in range(len(outline) - 1):
                         types.append(maprenderer.PathPointType.Line)
                     types[-1] |= maprenderer.PathPointType.CloseSubpath
-                    drawPath = maprenderer.AbstractPath(points=drawPath, types=types, closed=True)
+                    drawPath = self._graphics.createPath(points=drawPath, types=types, closed=True)
 
                     pen.setColor(regionColor)
                     pen.setStyle(regionStyle)
 
                     # Allow style to override
-                    if self._styles.microBorders.pen.style() is not maprenderer.LineStyle.Solid:
-                        pen.setStyle(self._styles.microBorders.pen.style())
+                    if self._styleSheet.microBorders.pen.style() is not maprenderer.LineStyle.Solid:
+                        pen.setStyle(self._styleSheet.microBorders.pen.style())
 
                     # Shade is a wide/solid outline under the main outline.
                     if layer is RenderContext.BorderLayer.Shade:
@@ -1950,6 +1940,40 @@ class RenderContext(object):
                         elif layer is RenderContext.BorderLayer.Shade or layer is RenderContext.BorderLayer.Stroke:
                             self._graphics.drawPathOutline(pen=pen, path=drawPath)
 
+    _WorldDingMap = {
+        '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)
+        '\u2756': '\x76', # U+2756 (BLACK DIAMOND MINUS WHITE X)
+        '\u2726': '\xAA', # U+2726 (BLACK FOUR POINTED STAR)
+        '\u2605': '\xAB', # U+2605 (BLACK STAR)
+        '\u2736': '\xAC'} # U+2736 (BLACK SIX POINTED STAR)
+    def _drawWorldGlyph(
+            self,
+            glyph: maprenderer.Glyph,
+            brush: maprenderer.AbstractBrush,
+            pt: maprenderer.AbstractPointF
+            ) -> None:
+        font = self._styleSheet.glyphFont
+        s = glyph.characters
+        if self._styleSheet.wingdingFont:
+            dings = ''
+            for c in s:
+                c = RenderContext._WorldDingMap.get(c)
+                if c is None:
+                    dings = ''
+                    break
+                dings += c
+            if dings:
+                font = self._styleSheet.wingdingFont
+                s = dings
+
+        self._graphics.drawString(
+            text=s,
+            font=font,
+            brush=brush,
+            x=pt.x(),
+            y=pt.y(),
+            format=maprenderer.TextAlignment.Centered)
+
     def _drawOverlayGlyph(
             self,
             glyph: str,
@@ -1959,9 +1983,59 @@ class RenderContext(object):
             ) -> None:
         centerX, centerY = position.absoluteCenter()
         with self._graphics.save():
-            self._graphics.translateTransform(centerX, centerY)
-            self._graphics.scaleTransform(1 / travellermap.ParsecScaleX, 1 / travellermap.ParsecScaleY)
-            self._graphics.drawString(glyph, font, brush, 0, 0, maprenderer.TextAlignment.Centered)
+            self._graphics.translateTransform(
+                dx=centerX,
+                dy=centerY)
+            self._graphics.scaleTransform(
+                scaleX=1 / travellermap.ParsecScaleX,
+                scaleY=1 / travellermap.ParsecScaleY)
+            self._graphics.drawString(
+                text=glyph,
+                font=font,
+                brush=brush,
+                x=0, y=0,
+                format=maprenderer.TextAlignment.Centered)
+
+    def _drawLabel(
+            self,
+            text: str,
+            center: maprenderer.AbstractPointF,
+            font: maprenderer.AbstractFont,
+            brush: maprenderer.AbstractBrush,
+            labelStyle: maprenderer.LabelStyle
+            ) -> None:
+        with self._graphics.save():
+            if labelStyle.uppercase:
+                text = text.upper()
+            if labelStyle.wrap:
+                text = text.replace(' ', '\n')
+
+            self._graphics.translateTransform(
+                dx=center.x(),
+                dy=center.y())
+            self._graphics.scaleTransform(
+                scaleX=1.0 / travellermap.ParsecScaleX,
+                scaleY=1.0 / travellermap.ParsecScaleY)
+
+            self._graphics.translateTransform(
+                dx=labelStyle.translation.x(),
+                dy=labelStyle.translation.y())
+            self._graphics.rotateTransform(
+                degrees=labelStyle.rotation)
+            self._graphics.scaleTransform(
+                scaleX=labelStyle.scale.width(),
+                scaleY=labelStyle.scale.height())
+
+            if labelStyle.rotation != 0:
+                self._graphics.setSmoothingMode(
+                    maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+
+            maprenderer.drawStringHelper(
+                graphics=self._graphics,
+                text=text,
+                font=font,
+                brush=brush,
+                x=0, y=0)
 
     def _zoneStyle(
             self,
@@ -1969,13 +2043,13 @@ class RenderContext(object):
             ) -> typing.Optional[maprenderer.StyleSheet.StyleElement]:
         zone = world.zone()
         if zone is traveller.ZoneType.AmberZone:
-            return self._styles.amberZone
+            return self._styleSheet.amberZone
         if zone is traveller.ZoneType.RedZone:
-            return self._styles.redZone
+            return self._styleSheet.redZone
         # TODO: Handle placeholders, this should be
         # if (styles.greenZone.visible && !world.IsPlaceholder)
-        if self._styles.greenZone.visible:
-            return self._styles.greenZone
+        if self._styleSheet.greenZone.visible:
+            return self._styleSheet.greenZone
         return None
 
     _StarPropsMap = {

@@ -7,39 +7,52 @@ import typing
 class RectSelector(object):
     def __init__(
             self,
-            slop: float = 0.3 # Arbitrary, but 0.25 not enough for some routes.
+            # TODO: Having this use graphics doesn't really make sense as it's only so
+            # it can create a single rect. Might be nicer if it had it's own rect class
+            # or something
+            graphics: maprenderer.AbstractGraphics,
+            sectorSlop: float = 0.3, # Arbitrary, but 0.25 not enough for some routes.
+            worldSlop: float = 0.1
             ) -> None:
-        self._slop = slop
-        self._rect = maprenderer.AbstractRectangleF()
+        self._graphics = graphics
+        self._sectorSlop = sectorSlop
+        self._worldSlop = worldSlop
+        self._rect = self._graphics.createRectangle()
 
         self._cachedSectors = None
         self._cachedWorlds = None
 
     def rect(self) -> maprenderer.AbstractRectangleF:
-        return maprenderer.AbstractRectangleF(self._rect)
+        return self._graphics.copyRectangle(self._rect)
 
     def setRect(self, rect: maprenderer.AbstractRectangleF) -> None:
-        self._rect = maprenderer.AbstractRectangleF(rect)
+        self._rect = self._graphics.copyRectangle(rect)
         self._cachedSectors = None
         self._cachedWorlds = None
 
-    def slop(self) -> float:
-        return self._slop
+    def sectorSlop(self) -> float:
+        return self._sectorSlop
 
-    def setSlop(self, slop) -> None:
-        self._slop = slop
+    def setSectorSlop(self, slop) -> None:
+        self._sectorSlop = slop
         self._cachedSectors = None
+
+    def worldSlop(self) -> float:
+        return self._sectorSlop
+
+    def setWorldSlop(self, slop) -> None:
+        self._sectorSlop = slop
         self._cachedWorlds = None
 
     def sectors(self) -> typing.Iterable[traveller.Sector]:
         if self._cachedSectors is not None:
             return self._cachedSectors
 
-        rect = maprenderer.AbstractRectangleF(self._rect)
-        if self._slop:
+        rect = self._graphics.copyRectangle(self._rect)
+        if self._sectorSlop:
             rect.inflate(
-                x=rect.width() * self._slop,
-                y=rect.height() * self._slop)
+                x=rect.width() * self._sectorSlop,
+                y=rect.height() * self._sectorSlop)
 
         left = int(math.floor((rect.left() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
         right = int(math.floor((rect.right() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
@@ -59,17 +72,19 @@ class RectSelector(object):
                 offsetX=0, # TODO: Should this be 0 or 1 (same for below)
                 offsetY=0))
 
+        #print(f'Sectors={len(self._cachedSectors)}')
+
         return self._cachedSectors
 
     def worlds(self) -> typing.Iterable[traveller.World]:
         if self._cachedWorlds is not None:
             return self._cachedWorlds
 
-        rect = maprenderer.AbstractRectangleF(self._rect)
-        if self._slop:
+        rect = self._graphics.copyRectangle(self._rect)
+        if self._worldSlop:
             rect.inflate(
-                x=rect.width() * self._slop,
-                y=rect.height() * self._slop)
+                x=rect.width() * self._worldSlop,
+                y=rect.height() * self._worldSlop)
 
         left = int(math.floor(rect.left()))
         right = int(math.ceil(rect.right()))
@@ -80,5 +95,7 @@ class RectSelector(object):
         self._cachedWorlds = traveller.WorldManager.instance().worldsInArea(
             upperLeft=travellermap.HexPosition(absoluteX=left, absoluteY=top),
             lowerRight=travellermap.HexPosition(absoluteX=right, absoluteY=bottom))
+
+        #print(f'Worlds={len(self._cachedWorlds)}')
 
         return self._cachedWorlds

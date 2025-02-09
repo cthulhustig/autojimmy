@@ -6,6 +6,7 @@ import io
 import locale
 import logging
 import maprenderer
+import math
 import os
 import traveller
 import travellermap
@@ -13,12 +14,48 @@ import typing
 import cProfile, pstats, io
 from pstats import SortKey
 
+class Scale(object):
+    def __init__(self, value: float, linear: bool) -> None:
+        self._linear = value if linear else None
+        self._log = value if not linear else None
+
+    @property
+    def linear(self) -> float:
+        if self._linear is None:
+            self._linear = travellermap.logScaleToLinearScale(self._log)
+        return self._linear
+    @linear.setter
+    def linear(self, value: float) -> None:
+        if value == self._linear:
+            return # Nothing to do
+        self._linear = value
+        if self._log is not None:
+            self._log = None
+
+    @property
+    def log(self) -> float:
+        if self._log is None:
+            self._log = travellermap.linearScaleToLogScale(self._linear)
+        return self._log
+    @log.setter
+    def log(self, value: float) -> None:
+        if value == self._log:
+            return # Nothing to do
+        self._log = value
+        if self._linear is not None:
+            self._linear = None
+
 class MapHackView(QtWidgets.QWidget):
-    _MinScale = 0.0078125 # Math.Pow(2, -7);
-    _MaxScale = 512 # Math.Pow(2, 9);
+    _MinScale = -7
+    _MaxScale = 9
+    _DefaultCenterX = 0
+    _DefaultCenterY = 0
     _DefaultScale = 64
+    #_DefaultScale = travellermap.logScaleToLinearScale(1)
+    #_DefaultCenterX, _DefaultCenterY  = (-175,46)
 
     _WheelScaleMultiplier = 1.5
+    _WheelLogScaleDelta = 0.15
 
     _ZoomInScale = 1.25
     _ZoomOutScale = 0.8
@@ -29,23 +66,27 @@ class MapHackView(QtWidgets.QWidget):
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
 
-        self._absoluteCenterPos = QtCore.QPointF(0, 0)
-        self._scale = MapHackView._DefaultScale
+        self._absoluteCenterPos = QtCore.QPointF(
+            MapHackView._DefaultCenterX,
+            MapHackView._DefaultCenterY)
+        self._viewScale = Scale(value=MapHackView._DefaultScale, linear=True)
         self._options = \
             maprenderer.MapOptions.SectorGrid | maprenderer.MapOptions.SubsectorGrid | \
-            maprenderer.MapOptions.SectorsSelected | maprenderer.MapOptions.SectorsAll | \
+            maprenderer.MapOptions.SectorsSelected | \
             maprenderer.MapOptions.BordersMajor | maprenderer.MapOptions.BordersMinor | \
             maprenderer.MapOptions.NamesMajor | maprenderer.MapOptions.NamesMinor | \
             maprenderer.MapOptions.WorldsCapitals | maprenderer.MapOptions.WorldsHomeworlds | \
-            maprenderer.MapOptions.RoutesSelectedDeprecated | \
-            maprenderer.MapOptions.PrintStyleDeprecated | maprenderer.MapOptions.CandyStyleDeprecated | \
-            maprenderer.MapOptions.ForceHexes | maprenderer.MapOptions.WorldColors | \
+            maprenderer.MapOptions.ForceHexes | maprenderer.MapOptions.WorldColors  | \
             maprenderer.MapOptions.FilledBorders
         self._style = travellermap.Style.Poster
         #self._style = travellermap.Style.Candy
         self._graphics = gui.QtMapGraphics()
-        self._imageCache = maprenderer.ImageCache(basePath='./data/map/')
-        self._vectorCache = maprenderer.VectorObjectCache(basePath='./data/map/')
+        self._imageCache = maprenderer.ImageCache(
+            graphics=self._graphics,
+            basePath='./data/map/')
+        self._vectorCache = maprenderer.VectorObjectCache(
+            graphics=self._graphics,
+            basePath='./data/map/')
         self._mapLabelCache = maprenderer.MapLabelCache(basePath='./data/map/')
         self._worldLabelCache = maprenderer.WorldLabelCache(basePath='./data/map/')
         self._styleCache = maprenderer.DefaultStyleCache(basePath='./data/map/')
@@ -64,14 +105,14 @@ class MapHackView(QtWidgets.QWidget):
         super().mousePressEvent(event)
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            worldCursorX, worldCursorY = self._renderer.pixelSpaceToWorldSpace(
+            worldCursorX, worldCursorY = self._pixelSpaceToWorldSpace(
                 pixelX=event.x(),
                 pixelY=event.y(),
                 clamp=False)
             self._worldDragStart = QtCore.QPointF(worldCursorX, worldCursorY)
 
             # TODO: Remove debug code
-            worldClampedX, worldClampedY = self._renderer.pixelSpaceToWorldSpace(
+            worldClampedX, worldClampedY = self._pixelSpaceToWorldSpace(
                 pixelX=event.x(),
                 pixelY=event.y(),
                 clamp=True)
@@ -84,7 +125,7 @@ class MapHackView(QtWidgets.QWidget):
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
         if self._renderer and self._worldDragStart:
-            worldCurrentPos = self._renderer.pixelSpaceToWorldSpace(
+            worldCurrentPos = self._pixelSpaceToWorldSpace(
                 pixelX=event.pos().x(),
                 pixelY=event.pos().y(),
                 clamp=False) # Float value for extra accuracy
@@ -109,7 +150,7 @@ class MapHackView(QtWidgets.QWidget):
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self._renderer = self._createRenderer()
+        self._updateRendererView()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
@@ -117,16 +158,16 @@ class MapHackView(QtWidgets.QWidget):
         if self._renderer:
             dx = dy = None
             if event.key() == QtCore.Qt.Key.Key_Left:
-                width = self.width() / (self._scale * travellermap.ParsecScaleX)
+                width = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
                 dx = -width / 10
             elif event.key() == QtCore.Qt.Key.Key_Right:
-                width = self.width() / (self._scale * travellermap.ParsecScaleX)
+                width = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
                 dx = width / 10
             elif event.key() == QtCore.Qt.Key.Key_Up:
-                height = self.height() / (self._scale * travellermap.ParsecScaleY)
+                height = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
                 dy = -height / 10
             elif event.key() == QtCore.Qt.Key.Key_Down:
-                height = self.height() / (self._scale * travellermap.ParsecScaleY)
+                height = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
                 dy = height / 10
 
             if dx != None or dy != None:
@@ -142,18 +183,17 @@ class MapHackView(QtWidgets.QWidget):
 
         if self._renderer:
             cursorScreenPos = event.pos()
-            oldWorldCursorX, oldWorldCursorY = self._renderer.pixelSpaceToWorldSpace(
+            oldWorldCursorX, oldWorldCursorY = self._pixelSpaceToWorldSpace(
                 pixelX=cursorScreenPos.x(),
                 pixelY=cursorScreenPos.y(),
                 clamp=False) # Float value for extra accuracy
 
-            if event.angleDelta().y() > 0:
-                self._scale *= MapHackView._WheelScaleMultiplier
-            else:
-                self._scale /= MapHackView._WheelScaleMultiplier
-            self._renderer = self._createRenderer()
+            logViewScale = self._viewScale.log
+            logViewScale += MapHackView._WheelLogScaleDelta if event.angleDelta().y() > 0 else -MapHackView._WheelLogScaleDelta
+            logViewScale = common.clamp(logViewScale, MapHackView._MinScale, MapHackView._MaxScale)
+            self._viewScale.log = logViewScale
 
-            newWorldCursorX, newWorldCursorY = self._renderer.pixelSpaceToWorldSpace(
+            newWorldCursorX, newWorldCursorY = self._pixelSpaceToWorldSpace(
                 pixelX=cursorScreenPos.x(),
                 pixelY=cursorScreenPos.y(),
                 clamp=False)
@@ -193,18 +233,35 @@ class MapHackView(QtWidgets.QWidget):
             finally:
                 painter.end()
 
+    def _pixelSpaceToWorldSpace(
+            self,
+            pixelX: float,
+            pixelY: float,
+            clamp: bool = False
+            ) -> typing.Tuple[float, float]:
+        scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
+        scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+        width = self.width() / scaleX
+        height = self.height() / scaleY
+        offsetX = pixelX / scaleX
+        offsetY = pixelY / scaleY
+        worldX = (self._absoluteCenterPos.x() - (width / 2)) + offsetX
+        worldY = (self._absoluteCenterPos.y() - (height / 2)) + offsetY
+        if not clamp:
+            return (worldX, worldY)
+        return (
+            round(worldX + 0.5),
+            round(worldY + (0.5 if (worldX % 2) == 0 else 0)))
+
     def _createRenderer(self) -> maprenderer.RenderContext:
         return maprenderer.RenderContext(
             graphics=self._graphics,
             absoluteCenterX=self._absoluteCenterPos.x(),
             absoluteCenterY=self._absoluteCenterPos.y(),
-            scale=self._scale,
+            scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height(),
-            styles=maprenderer.StyleSheet(
-                scale=self._scale,
-                options=self._options,
-                style=self._style),
+            style=self._style,
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
             mapLabelCache=self._mapLabelCache,
@@ -219,7 +276,7 @@ class MapHackView(QtWidgets.QWidget):
         self._renderer.setView(
             absoluteCenterX=self._absoluteCenterPos.x(),
             absoluteCenterY=self._absoluteCenterPos.y(),
-            scale=self._scale,
+            scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height())
         self.repaint()

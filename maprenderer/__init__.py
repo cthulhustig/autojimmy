@@ -1,9 +1,9 @@
 from .utils import *
 from .glyphs import *
 from .primitives import *
-from .selector import *
 from .abstract import *
 from .renderhelper import *
+from .selector import *
 from .imagecache import *
 from .maplabelcache import *
 from .worldlabelcache import *
@@ -12,5 +12,4 @@ from .defaultstylecache import *
 from .clippathcache import *
 from .worldhelper import *
 from .stylesheet import *
-from .fontcache import *
 from .rendercontext import *

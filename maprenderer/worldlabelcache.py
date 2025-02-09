@@ -45,9 +45,15 @@ class WorldLabel(object):
             graphics.drawEllipse(
                 # TODO: Creating a pen every time isn't good
                 # TODO: Need to double check this pen width is correct
-                pen=maprenderer.AbstractPen(dotBrush.color(), 1),
+                pen=graphics.createPen(color=dotBrush.color(), width=1),
                 brush=dotBrush,
-                rect=maprenderer.AbstractRectangleF(x=-radius / 2, y=-radius / 2, width=radius, height=radius))
+                # TODO: This radius is static so rect could be created
+                # once rather than every frame
+                rect=graphics.createRectangle(
+                    x=-radius / 2,
+                    y=-radius / 2,
+                    width=radius,
+                    height=radius))
 
             if self.labelBiasX > 0:
                 if self.labelBiasY < 0:
@@ -82,6 +88,8 @@ class WorldLabel(object):
 
 # TODO: Should possibly combine this with map label cache
 class WorldLabelCache(object):
+    # TODO: This file should be pulled from DataStore to get caching and
+    # filesystem layering
     _WorldLabelPath = 'res/labels/Worlds.xml'
 
     def __init__(self, basePath: str):
@@ -123,11 +131,11 @@ class WorldLabelCache(object):
                 location = maprenderer.AbstractPointF(x=centerX, y=centerY)
 
                 biasXElement = worldElement.find('./LabelBiasX')
-                biasX = 0
+                biasX = 1 # Default comes from traveller map default
                 if biasXElement is not None:
                     biasX = int(biasXElement.text)
                 biasYElement = worldElement.find('./LabelBiasY')
-                biasY = 0
+                biasY = 1 # Default comes from traveller map default
                 if biasYElement is not None:
                     biasY = int(biasYElement.text)
 

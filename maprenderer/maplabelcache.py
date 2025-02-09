@@ -1,3 +1,4 @@
+import common
 import maprenderer
 import os
 import typing
@@ -15,6 +16,8 @@ class MapLabel(object):
         self.minor = minor
 
 class MapLabelCache(object):
+    # TODO: These files should be pulled from DataStore to get caching and
+    # filesystem layering    
     _MinorLabelsPath = 'res/labels/minor_labels.tab'
     _MajorLabelsPath = 'res/labels/mega_labels.tab'
 
@@ -31,5 +34,5 @@ class MapLabelCache(object):
             labels.append(MapLabel(
                 text=data['Text'].replace('\\n', '\n'),
                 position=maprenderer.AbstractPointF(x=float(data['X']), y=float(data['Y'])),
-                minor=bool(data['Minor'].lower() == 'true')))
+                minor=common.stringToBool(data['Minor'], strict=False)))
         return labels

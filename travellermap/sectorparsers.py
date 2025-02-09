@@ -316,6 +316,7 @@ class RawMetadata(object):
             subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
             x: int,
             y: int,
+            selected: typing.Optional[bool],
             tags: typing.Optional[str],
             allegiances: typing.Optional[typing.Iterable[RawAllegiance]],
             routes: typing.Optional[typing.Iterable[RawRoute]],
@@ -331,6 +332,7 @@ class RawMetadata(object):
         self._subsectorNames = subsectorNames
         self._x = x
         self._y = y
+        self._selected = selected
         self._tags = tags
         self._allegiances = allegiances
         self._routes = routes
@@ -370,6 +372,9 @@ class RawMetadata(object):
 
     def y(self) -> int:
         return self._y
+
+    def selected(self) -> typing.Optional[bool]:
+        return self._selected
 
     def tags(self) -> typing.Optional[str]:
         return self._tags
@@ -916,6 +921,7 @@ def readXMLMetadata(
         subsectorNames=subsectorNames,
         x=x,
         y=y,
+        selected=_optionalConvertToBool(sectorElement.get('Selected'), 'Selected', 'Sector', identifier),
         tags=sectorElement.get('Tags'),
         allegiances=allegiances,
         routes=routes,
@@ -1131,6 +1137,7 @@ def readJSONMetadata(
         subsectorNames=subsectorNames,
         x=x,
         y=y,
+        selected=_optionalConvertToBool(sectorElement.get('Selected'), 'Selected', 'Sector', identifier),
         tags=sectorElement.get('Tags'),
         allegiances=allegiances,
         routes=routes,
@@ -1160,6 +1167,9 @@ def writeXMLMetadata(
         identifier: str
         ) -> bytes:
     sectorAttributes = {}
+
+    if metadata.selected() != None:
+        sectorAttributes['Selected'] = str(metadata.selected())
 
     # NOTE: The Traveller Map documentation doesn't mention Tags or Abbreviation for the XML
     # format but the XSD does have them
