@@ -75,6 +75,10 @@ class QtMapRectangleF(maprenderer.AbstractRectangleF):
                 self._x + self._width,
                 self._y + self._height)
 
+    def translate(self, dx: float, dy: float) -> None:
+        self._x += dx
+        self._y += dy
+
     def copyFrom(self, other: 'QtMapRectangleF') -> None:
         self._x, self._y, self._width, self._height = other.rect()
         if self._qtRect:
@@ -88,6 +92,77 @@ class QtMapRectangleF(maprenderer.AbstractRectangleF):
         if not self._qtRect:
             self._qtRect = QtCore.QRectF(self._x, self._y, self._width, self._height)
         return self._qtRect
+
+class QtMapPointList(maprenderer.AbstractPath):
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'QtMapPath') -> None: ...
+    @typing.overload
+    def __init__(self, points: typing.Sequence[maprenderer.AbstractPointF]) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) == 1:
+            arg = args[0]
+            if isinstance(arg, QtMapPointList):
+                self._points = list(arg.points())
+            else:
+                self._points = list(arg)
+        elif 'other' in kwargs:
+            other = kwargs['other']
+            if not isinstance(other, QtMapPointList):
+                raise TypeError('The other parameter must be a QtMapPointList')
+            self._points = list(other.points())
+        else:
+            self._points = list(kwargs['points'])
+
+        # These are created on demand
+        self._bounds: typing.Optional[maprenderer.AbstractRectangleF] = None
+        self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
+
+    def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+        return self._points
+
+    def bounds(self) -> maprenderer.AbstractRectangleF:
+        if self._bounds is not None:
+            return self._bounds
+
+        minX = maxX = minY = maxY = None
+        for point in self._points:
+            if minX is None or point.x() < minX:
+                minX = point.x()
+            if maxX is None or point.x() > maxX:
+                maxX = point.x()
+            if minY is None or point.y() < minY:
+                minY = point.y()
+            if maxY is None or point.y() > maxY:
+                maxY = point.y()
+
+        self._bounds = QtMapRectangleF(
+            x=minX,
+            y=minY,
+            width=maxX - minX,
+            height=maxY - minY)
+        return self._bounds
+
+    def translate(self, dx: float, dy: float) -> None:
+        for point in self._points:
+            point.translate(dx, dy)
+        if self._bounds:
+            self._bounds.translate(dx, dy)
+        if self._qtPolygon:
+            self._qtPolygon.translate(dx, dy)
+
+    def copyFrom(self, other: 'QtMapPath') -> None:
+        self._points = list(other.points())
+        self._bounds = None # Calculate on demand
+        self._qtPolygon = None # TODO: is it possible to update an existing polygon?
+
+    def qtPolygon(self) -> QtGui.QPolygonF:
+        if not self._qtPolygon:
+            self._qtPolygon = QtGui.QPolygonF(
+                [QtCore.QPointF(p.x(), p.y()) for p in self._points])
+        return self._qtPolygon
 
 class QtMapPath(maprenderer.AbstractPath):
     @typing.overload
@@ -120,8 +195,9 @@ class QtMapPath(maprenderer.AbstractPath):
             if len(self._points) != len(self._types):
                 raise ValueError('Point and type vectors have different lengths')
 
-        self._bounds = None # Calculate on demand
-        self._qtPolygon = None # Create Qt path on demand
+        # These are created on demand
+        self._bounds: typing.Optional[maprenderer.AbstractRectangleF] = None
+        self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
         return self._points
@@ -153,6 +229,14 @@ class QtMapPath(maprenderer.AbstractPath):
             width=maxX - minX,
             height=maxY - minY)
         return self._bounds
+
+    def translate(self, dx: float, dy: float) -> None:
+        for point in self._points:
+            point.translate(dx, dy)
+        if self._bounds:
+            self._bounds.translate(dx, dy)
+        if self._qtPolygon:
+            self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'QtMapPath') -> None:
         self._points = list(other.points())
@@ -554,9 +638,16 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             height: float = 0
             ) -> QtMapRectangleF:
         return QtMapRectangleF(x=x, y=y, width=width, height=height)
-
     def copyRectangle(self, other: maprenderer.AbstractRectangleF) -> QtMapRectangleF:
         return QtMapRectangleF(other=other)
+
+    def createPointList(
+            self,
+            points: typing.Sequence[maprenderer.AbstractPointF]
+            ) -> QtMapPointList:
+        return QtMapPointList(points=points)
+    def copyPointList(self, other: maprenderer.AbstractPath) -> QtMapPointList:
+        return QtMapPointList(other=other)
 
     def createPath(
             self,
@@ -615,7 +706,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         # to lower it to get fonts rendering the correct size.
         return QtMapFont(family=family, emSize=emSize * 1.1, style=style)
 
+    # NOTE: Smoothing is disabled as it has a huge performance hit and doesn't seem to
+    # give a noticeable improvement
+    # TODO: Need to check this on other OS
     def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
+        """
         antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \
             mode == maprenderer.AbstractGraphics.SmoothingMode.AntiAlias
 
@@ -628,6 +723,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setRenderHint(
             QtGui.QPainter.RenderHint.SmoothPixmapTransform,
             antialias)
+        """
+        pass
 
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         if scaleX == 1.0 and scaleY == 1.0:
@@ -670,6 +767,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawPoint(self, pen: QtMapPen, point: maprenderer.AbstractPointF) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
+    def drawPoints(self, pen: QtMapPen, points: QtMapPointList) -> None:
+        self._painter.setPen(pen.qtPen())
+        self._painter.drawPoints(points.qtPolygon())
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(
@@ -682,10 +782,6 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.drawLine(
             self._convertPoint(pt1),
             self._convertPoint(pt2))
-
-    def drawLines(self, pen: QtMapPen, points: typing.Sequence[maprenderer.AbstractPointF]):
-        self._painter.setPen(pen.qtPen())
-        self._painter.drawPolyline(self._convertPoints(points))
 
     # TODO: I don't know if a path is a segmented line or a closed polygon
     # TODO: This was an overload of drawPath in the traveller map code

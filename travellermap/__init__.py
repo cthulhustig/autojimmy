@@ -2,8 +2,9 @@ from .milieu import *
 from .options import *
 from .colour import *
 from .style import *
-from .url import *
 from .astrometrics import *
+from .scale import *
+from .url import *
 from .sectorparsers import *
 from .mapimage import *
 from .datastore import *

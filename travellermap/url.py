@@ -35,12 +35,6 @@ _StyleOptionMap = {
     travellermap.Style.Mongoose: 'mongoose'
 }
 
-def linearScaleToLogScale(linearScale: float) -> float:
-    return 1 + math.log2(linearScale)
-
-def logScaleToLinearScale(logScale: float) -> float:
-    return math.pow(2, logScale - 1)
-
 def formatMapUrl(
         baseMapUrl: str,
         milieu: travellermap.Milieu,
@@ -61,7 +55,7 @@ def formatMapUrl(
         options=options,
         minimal=minimal)
     if (mapPosition != None) and (linearScale != None):
-        logScale = linearScaleToLogScale(linearScale=linearScale)
+        logScale = travellermap.linearScaleToLogScale(linearScale=linearScale)
         queryList.append(f'p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}')
 
     if queryList:
@@ -255,4 +249,4 @@ def parseScaleFromMapUrl(
     tokens = paramValues[0].split('!')
     if len(tokens) != 3:
         return None
-    return logScaleToLinearScale(float(tokens[2]))
+    return travellermap.logScaleToLinearScale(float(tokens[2]))

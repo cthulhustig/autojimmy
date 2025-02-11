@@ -4,7 +4,6 @@ import logging
 import maprenderer
 import math
 import random
-import re
 import traveller
 import travellermap
 import typing
@@ -72,6 +71,8 @@ class RenderContext(object):
         self._worldLabelCache = worldLabelCache
         self._styleCache = styleCache
         self._clipCache = maprenderer.ClipPathCache(
+            graphics=self._graphics)
+        self._starfieldCache = maprenderer.StarfieldCache(
             graphics=self._graphics)
         self._selector = maprenderer.RectSelector(
             graphics=self._graphics)
@@ -166,7 +167,9 @@ class RenderContext(object):
                 # layer and restore it afterwards so no one layer can affect another.
                 # If I do this I can remove a load of save states from inside
                 # layer action handlers
-                layer.action()
+                #with common.DebugTimer(string=str(layer.action)):
+                if True:
+                    layer.action()
 
     def _createLayers(self) -> None:
         # TODO: This list probably only needs created once
@@ -221,6 +224,13 @@ class RenderContext(object):
             RenderContext.LayerAction(maprenderer.LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay, clip=True),
             RenderContext.LayerAction(maprenderer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay, clip=True),
         ]
+
+        """
+        self._layers: typing.List[RenderContext.LayerAction] = [
+            RenderContext.LayerAction(maprenderer.LayerId.Background_Solid, self._drawBackground, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars, clip=True),
+        ]
+        """
 
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder[l.id])
 
@@ -344,40 +354,34 @@ class RenderContext(object):
         if not self._styleSheet.pseudoRandomStars.visible:
             return
 
-        startX = math.floor(self._absoluteViewRect.left() / RenderContext._PseudoRandomStarsChunkSize) * \
-            RenderContext._PseudoRandomStarsChunkSize
-        startY = math.floor(self._absoluteViewRect.top() / RenderContext._PseudoRandomStarsChunkSize) * \
-            RenderContext._PseudoRandomStarsChunkSize
-        finishX = math.ceil(self._absoluteViewRect.right() / RenderContext._PseudoRandomStarsChunkSize) * \
-            RenderContext._PseudoRandomStarsChunkSize
-        finishY = math.ceil(self._absoluteViewRect.bottom() / RenderContext._PseudoRandomStarsChunkSize) * \
-            RenderContext._PseudoRandomStarsChunkSize
+        chunkParsecs = self._starfieldCache.chunkParsecs()
+        startX = math.floor(self._absoluteViewRect.left() / chunkParsecs)
+        startY = math.floor(self._absoluteViewRect.top() / chunkParsecs)
+        finishX = math.ceil(self._absoluteViewRect.right() / chunkParsecs)
+        finishY = math.ceil(self._absoluteViewRect.bottom() / chunkParsecs)
 
-        rect = self._graphics.createRectangle()
-        with self._graphics.save():
-            self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+        r, g, b, _ = travellermap.stringToColourChannels(
+            self._styleSheet.pseudoRandomStars.fillBrush.color())
+        color = travellermap.colourChannelsToString(
+            r, g, b,
+            alpha=int(255 / self._starfieldCache.intensitySteps()))
+        pen = self._graphics.createPen(
+            color=color,
+            width=1 / self._scale) # One pixel
 
-            for chunkLeft in range(startX, finishX + 1, RenderContext._PseudoRandomStarsChunkSize):
-                for chunkTop in range(startY, finishY + 1, RenderContext._PseudoRandomStarsChunkSize):
-                    rand = random.Random((chunkLeft << 8) ^ chunkTop)
+        self._graphics.setSmoothingMode(
+            maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-                    starCount =  \
-                        RenderContext._PseudoRandomStarsMaxPerChunk \
-                        if self._scale >= 1 else \
-                        int(RenderContext._PseudoRandomStarsMaxPerChunk / self._scale)
-
-                    for _ in range(starCount):
-                        rect.setX(rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkLeft)
-                        rect.setY(rand.random() * RenderContext._PseudoRandomStarsChunkSize + chunkTop)
-                        diameter = rand.random() * 2
-                        rect.setWidth(diameter / self._scale * travellermap.ParsecScaleX)
-                        rect.setHeight(diameter / self._scale * travellermap.ParsecScaleY)
-
-                        self._graphics.drawEllipse(
-                            pen=None,
-                            brush=self._styleSheet.pseudoRandomStars.fillBrush,
-                            rect=rect)
+        for x in range(startX, finishX + 1):
+            for y in range(startY, finishY + 1):
+                with self._graphics.save():
+                    starfield = self._starfieldCache.sectorStarfield(
+                        chunkX=x,
+                        chunkY=y)
+                    self._graphics.translateTransform(
+                        dx=x * chunkParsecs,
+                        dy=y * chunkParsecs)
+                    self._graphics.drawPoints(pen=pen, points=starfield)
 
     def _drawRifts(self) -> None:
         if not self._styleSheet.showRiftOverlay:
@@ -518,19 +522,30 @@ class RenderContext(object):
                     rect.setHeight(1 - inset * 2)
                     self._graphics.drawRectangleOutline(pen=pen, rect=rect)
         elif self._styleSheet.hexStyle == maprenderer.HexStyle.Hex:
-            points = [maprenderer.AbstractPointF(), maprenderer.AbstractPointF(), maprenderer.AbstractPointF(), maprenderer.AbstractPointF()]
-            for px in range(hx - parsecSlop, hx + hw + parsecSlop):
+            startX = hx - parsecSlop
+            startY = hy - parsecSlop
+            points = [
+                maprenderer.AbstractPointF(startX + -travellermap.HexWidthOffset, startY + 0.5),
+                maprenderer.AbstractPointF(startX + travellermap.HexWidthOffset, startY + 1.0),
+                maprenderer.AbstractPointF(startX + 1.0 - travellermap.HexWidthOffset, startY + 1.0),
+                maprenderer.AbstractPointF(startX + 1.0 + travellermap.HexWidthOffset, startY + 0.5)]
+            types = [
+                maprenderer.PathPointType.Start,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Line,
+                maprenderer.PathPointType.Start | maprenderer.PathPointType.CloseSubpath]
+            path = self._graphics.createPath(points=points, types=types, closed=False)
+            for px in range(startX, hx + hw + parsecSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
-                for py in range(hy - parsecSlop, hy + hh + parsecSlop):
-                    points[0].setX(px + -travellermap.HexWidthOffset)
-                    points[0].setY(py + 0.5 + yOffset)
-                    points[1].setX(px + travellermap.HexWidthOffset)
-                    points[1].setY(py + 1.0 + yOffset)
-                    points[2].setX(px + 1.0 - travellermap.HexWidthOffset)
-                    points[2].setY(py + 1.0 + yOffset)
-                    points[3].setX(px + 1.0 + travellermap.HexWidthOffset)
-                    points[3].setY(py + 0.5 + yOffset)
-                    self._graphics.drawLines(pen, points)
+
+                if yOffset:
+                    path.translate(0, yOffset)
+
+                for py in range(startY, hy + hh + parsecSlop):
+                    self._graphics.drawPathOutline(pen, path)
+                    path.translate(0, 1)
+
+                path.translate(1, -((py - startY) + yOffset + 1))
 
         if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0:
             for px in range(hx - parsecSlop, hx + hw + parsecSlop):
@@ -561,27 +576,24 @@ class RenderContext(object):
         if not self._styleSheet.subsectorNames.visible:
             return
 
-        not self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        for sector in self._selector.sectors():
-            for index, subsector in enumerate(sector.subsectors()):
-                name = subsector.name()
-                if not name:
-                    continue
+        self._graphics.setSmoothingMode(
+             maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-                ssx = index % 4
-                ssy = index // 4
-                centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
-                    sector.x(),
-                    sector.y(),
-                    int(travellermap.SubsectorWidth * (2 * ssx + 1) // 2),
-                    int(travellermap.SubsectorHeight * (2 * ssy + 1) // 2)))
-                self._drawLabel(
-                    text=subsector.name(),
-                    center=maprenderer.AbstractPointF(x=centerX, y=centerY),
-                    font=self._styleSheet.subsectorNames.font,
-                    brush=self._styleSheet.subsectorNames.textBrush,
-                    labelStyle=self._styleSheet.subsectorNames.textStyle)
+        for subsector in self._selector.subsectors():
+            ulHex, brHex = subsector.extent()
+            left = ulHex.absoluteX() - 1
+            top = ulHex.absoluteY() - 1
+            right = brHex.absoluteX()
+            bottom = brHex.absoluteY()
+
+            self._drawLabel(
+                text=subsector.name(),
+                center=maprenderer.AbstractPointF(
+                    x=(left + right) / 2,
+                    y=(top + bottom) / 2),
+                font=self._styleSheet.subsectorNames.font,
+                brush=self._styleSheet.subsectorNames.textBrush,
+                labelStyle=self._styleSheet.subsectorNames.textStyle)
 
     def _drawMicroBordersFill(self) -> None:
         if not self._styleSheet.microBorders.visible:

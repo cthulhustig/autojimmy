@@ -12,15 +12,18 @@ class RectSelector(object):
             # or something
             graphics: maprenderer.AbstractGraphics,
             sectorSlop: float = 0.3, # Arbitrary, but 0.25 not enough for some routes.
+            subsectorSlop: float = 0.1,
             worldSlop: float = 0.1
             ) -> None:
         self._graphics = graphics
         self._sectorSlop = sectorSlop
+        self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
         self._rect = self._graphics.createRectangle()
 
-        self._cachedSectors = None
-        self._cachedWorlds = None
+        self._cachedSectors: typing.Optional[typing.List[traveller.Sector]] = None
+        self._cachedSubsectors: typing.Optional[typing.List[traveller.Subsector]] = None
+        self._cachedWorlds: typing.Optional[typing.List[traveller.World]] = None
 
     def rect(self) -> maprenderer.AbstractRectangleF:
         return self._graphics.copyRectangle(self._rect)
@@ -28,19 +31,27 @@ class RectSelector(object):
     def setRect(self, rect: maprenderer.AbstractRectangleF) -> None:
         self._rect = self._graphics.copyRectangle(rect)
         self._cachedSectors = None
+        self._cachedSubsectors = None
         self._cachedWorlds = None
 
     def sectorSlop(self) -> float:
         return self._sectorSlop
 
-    def setSectorSlop(self, slop) -> None:
+    def setSectorSlop(self, slop: float) -> None:
         self._sectorSlop = slop
         self._cachedSectors = None
+
+    def subsectorSlop(self) -> float:
+        return self._subsectorSlop
+
+    def setSubsectorSlop(self, slop: float) -> None:
+        self._subsectorSlop = slop
+        self._cachedSubsectors = None
 
     def worldSlop(self) -> float:
         return self._sectorSlop
 
-    def setWorldSlop(self, slop) -> None:
+    def setWorldSlop(self, slop: float) -> None:
         self._sectorSlop = slop
         self._cachedWorlds = None
 
@@ -75,6 +86,28 @@ class RectSelector(object):
         #print(f'Sectors={len(self._cachedSectors)}')
 
         return self._cachedSectors
+
+    def subsectors(self) -> typing.Iterable[traveller.Subsector]:
+        if self._cachedSubsectors is not None:
+            return self._cachedSubsectors
+
+        rect = self._graphics.copyRectangle(self._rect)
+        if self._subsectorSlop:
+            rect.inflate(
+                x=rect.width() * self._subsectorSlop,
+                y=rect.height() * self._subsectorSlop)
+
+        left = int(math.floor(rect.left()))
+        right = int(math.ceil(rect.right()))
+
+        top = int(math.floor(rect.top()))
+        bottom = int(math.ceil(rect.bottom()))
+
+        self._cachedSubsectors = traveller.WorldManager.instance().subsectorsInArea(
+            upperLeft=travellermap.HexPosition(absoluteX=left, absoluteY=top),
+            lowerRight=travellermap.HexPosition(absoluteX=right, absoluteY=bottom))
+
+        return self._cachedSubsectors
 
     def worlds(self) -> typing.Iterable[traveller.World]:
         if self._cachedWorlds is not None:

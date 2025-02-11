@@ -10,6 +10,7 @@ from .worldlabelcache import *
 from .vectorobjectcache import *
 from .defaultstylecache import *
 from .clippathcache import *
+from .starfieldcache import *
 from .worldhelper import *
 from .stylesheet import *
 from .rendercontext import *

@@ -1,16 +1,35 @@
 import traveller
+import travellermap
 import typing
 
 class Subsector(object):
     def __init__(
             self,
+            indexX: int,
+            indexY: int,
             name: str,
             sectorName: str,
+            extent: typing.Tuple[
+                travellermap.HexPosition,
+                travellermap.HexPosition],
             worlds: typing.Iterable[traveller.World],
             ) -> None:
+        self._indexX = indexX
+        self._indexY = indexY
+        self._code = chr(ord('A') + ((indexY * 4) + indexX))
         self._name = name
         self._sectorName = sectorName
+        self._extent = extent
         self._worlds = worlds
+
+    def indexX(self) -> int:
+        return self._indexX
+
+    def indexY(self) -> int:
+        return self._indexY
+
+    def code(self) -> str:
+        return self._code
 
     def name(self) -> str:
         return self._name
@@ -23,6 +42,11 @@ class Subsector(object):
 
     def worlds(self) -> typing.Collection[traveller.World]:
         return list(self._worlds)
+
+    def extent(self) -> typing.Tuple[
+            travellermap.HexPosition,
+            travellermap.HexPosition]:
+        return self._extent
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)
@@ -66,6 +90,17 @@ class Sector(object):
         self._selected = selected
         self._tags = set(tags)
         self._subsectorMap: typing.Dict[str, Subsector] = {}
+        self._extent = (
+            travellermap.HexPosition(
+                sectorX=x,
+                sectorY=y,
+                offsetX=1,
+                offsetY=1),
+            travellermap.HexPosition(
+                sectorX=x,
+                sectorY=y,
+                offsetX=travellermap.SectorWidth,
+                offsetY=travellermap.SectorHeight))
 
         subsectorWorldsMap: typing.Dict[str, typing.List[traveller.World]] = {}
         for subsectorName in subsectorNames:
@@ -76,11 +111,31 @@ class Sector(object):
             subsectorWorlds = subsectorWorldsMap[world.subsectorName()]
             subsectorWorlds.append(world)
 
-        for subsectorName, subsectorWorlds in subsectorWorldsMap.items():
-            self._subsectorMap[subsectorName] = Subsector(
+        self._subsectorIndexMap: typing.Dict[
+            typing.Tuple[int, int],
+            Subsector] = {}
+        for index, (subsectorName, subsectorWorlds) in enumerate(subsectorWorldsMap.items()):
+            indexX = index % 4
+            indexY = index // 4
+            ulHex = travellermap.HexPosition(
+                sectorX=x,
+                sectorY=y,
+                offsetX=(indexX * travellermap.SubsectorWidth) + 1,
+                offsetY=(indexY * travellermap.SubsectorHeight) + 1)
+            brHex = travellermap.HexPosition(
+                sectorX=x,
+                sectorY=y,
+                offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
+                offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
+            subsector = Subsector(
+                indexX=indexX,
+                indexY=indexY,
                 name=subsectorName,
                 sectorName=self._name,
+                extent=(ulHex, brHex),
                 worlds=subsectorWorlds)
+            self._subsectorMap[subsectorName] = subsector
+            self._subsectorIndexMap[(indexX, indexY)] = subsector
 
     def name(self) -> str:
         return self._name
@@ -133,11 +188,17 @@ class Sector(object):
     def subsectorNames(self) -> typing.Sequence[str]:
         return list(self._subsectorMap.keys())
 
-    def subsector(self, name: str) -> typing.Optional[Subsector]:
+    def subsectorByName(self, name: str) -> typing.Optional[Subsector]:
         return self._subsectorMap.get(name)
+
+    def subsectorByIndex(self, indexX: int, indexY: int) -> typing.Optional[Subsector]:
+        return self._subsectorIndexMap.get((indexX, indexY))
 
     def subsectors(self) -> typing.Sequence[Subsector]:
         return list(self._subsectorMap.values())
+
+    def extent(self) -> typing.Tuple[travellermap.HexPosition, travellermap.HexPosition]:
+        return self._extent
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)

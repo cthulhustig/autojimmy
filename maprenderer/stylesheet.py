@@ -90,9 +90,6 @@ class StyleSheet(object):
             return # Nothing to do
         self._scale = scale
 
-        # Clear font cache to stop it becoming to bloated
-        self._fontCache.clear()
-
         self._handleConfigUpdate()
 
     @property

@@ -14,44 +14,13 @@ import typing
 import cProfile, pstats, io
 from pstats import SortKey
 
-class Scale(object):
-    def __init__(self, value: float, linear: bool) -> None:
-        self._linear = value if linear else None
-        self._log = value if not linear else None
-
-    @property
-    def linear(self) -> float:
-        if self._linear is None:
-            self._linear = travellermap.logScaleToLinearScale(self._log)
-        return self._linear
-    @linear.setter
-    def linear(self, value: float) -> None:
-        if value == self._linear:
-            return # Nothing to do
-        self._linear = value
-        if self._log is not None:
-            self._log = None
-
-    @property
-    def log(self) -> float:
-        if self._log is None:
-            self._log = travellermap.linearScaleToLogScale(self._linear)
-        return self._log
-    @log.setter
-    def log(self, value: float) -> None:
-        if value == self._log:
-            return # Nothing to do
-        self._log = value
-        if self._linear is not None:
-            self._linear = None
-
 class MapHackView(QtWidgets.QWidget):
     _MinScale = -7
     _MaxScale = 9
     _DefaultCenterX = 0
     _DefaultCenterY = 0
     _DefaultScale = 64
-    #_DefaultScale = travellermap.logScaleToLinearScale(1)
+    _DefaultScale = travellermap.logScaleToLinearScale(1)
     #_DefaultCenterX, _DefaultCenterY  = (-175,46)
 
     _WheelScaleMultiplier = 1.5
@@ -69,7 +38,7 @@ class MapHackView(QtWidgets.QWidget):
         self._absoluteCenterPos = QtCore.QPointF(
             MapHackView._DefaultCenterX,
             MapHackView._DefaultCenterY)
-        self._viewScale = Scale(value=MapHackView._DefaultScale, linear=True)
+        self._viewScale = travellermap.Scale(value=MapHackView._DefaultScale, linear=True)
         self._options = \
             maprenderer.MapOptions.SectorGrid | maprenderer.MapOptions.SubsectorGrid | \
             maprenderer.MapOptions.SectorsSelected | \
@@ -112,13 +81,17 @@ class MapHackView(QtWidgets.QWidget):
             self._worldDragStart = QtCore.QPointF(worldCursorX, worldCursorY)
 
             # TODO: Remove debug code
+            worldRawX, worldRawY = self._pixelSpaceToWorldSpace(
+                pixelX=event.x(),
+                pixelY=event.y(),
+                clamp=False)
             worldClampedX, worldClampedY = self._pixelSpaceToWorldSpace(
                 pixelX=event.x(),
                 pixelY=event.y(),
                 clamp=True)
             sectorX, sectorY, offsetX, offsetY = travellermap.absoluteSpaceToRelativeSpace(
                 (worldClampedX, worldClampedY))
-            print(f'ABS: {worldClampedX} {worldClampedY} SECTOR: {sectorX} {sectorY} HEX:{offsetX} {offsetY}')
+            print(f'RAW: {worldRawX} {worldRawY} ABS: {worldClampedX} {worldClampedY} SECTOR: {sectorX} {sectorY} HEX:{offsetX} {offsetY}')
 
     # TODO: There is an issue with the drag move where the point you start the
     # drag on isn't staying under the cursor

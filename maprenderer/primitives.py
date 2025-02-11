@@ -233,6 +233,10 @@ class AbstractPointF(object):
     def setY(self, y: float) -> None:
         self._y = y
 
+    def translate(self, dx: float, dy: float) -> None:
+        self._x += dx
+        self._y += dy
+
 class HighlightWorldPattern(object):
     class Field(enum.Enum):
         Starport = 0

@@ -228,6 +228,15 @@ class WorldManager(object):
             upperLeft=upperLeft,
             lowerRight=lowerRight))
 
+    def subsectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.List[traveller.Subsector]:
+        return list(self.yieldSubsectorsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight))
+
     def worldsInArea(
             self,
             upperLeft: travellermap.HexPosition,
@@ -341,6 +350,27 @@ class WorldManager(object):
                     yield sector
                 y += 1
             x += 1
+
+    def yieldSubsectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.Subsector, None, None]:
+        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
+        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
+
+        for x in range(startX, finishX + travellermap.SubsectorWidth, travellermap.SubsectorWidth):
+            for y in range(startY, finishY + travellermap.SubsectorHeight, travellermap.SubsectorHeight):
+                sectorX, sectorY, offsetX, offsetY = \
+                    travellermap.absoluteSpaceToRelativeSpace((x, y))
+                sector = self._sectorPositionMap.get((sectorX, sectorY))
+                if not sector:
+                    continue
+                subsector = sector.subsectorByIndex(
+                    indexX=(offsetX - 1) // WorldManager._SubsectorHexWidth,
+                    indexY=(offsetY - 1) // WorldManager._SubsectorHexHeight)
+                if subsector:
+                    yield subsector
 
     def yieldWorldsInArea(
             self,

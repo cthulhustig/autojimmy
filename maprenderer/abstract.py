@@ -25,6 +25,8 @@ class AbstractRectangleF(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement rect')
     def setRect(self, x: float, y: float, width: float, height: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement setRect')
+    def translate(self, dx: float, dy: float) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement translate')
     def copyFrom(self, other: 'AbstractRectangleF') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement copyFrom')
 
@@ -68,6 +70,16 @@ class AbstractRectangleF(object):
                 selfHeight == otherHeight and selfWidth == otherWidth
         return super().__eq__(other)
 
+class AbstractPointList(object):
+    def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement points')
+    def bounds(self) -> AbstractRectangleF:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement bounds')
+    def translate(self, dx: float, dy: float) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement translate')
+    def copyFrom(self, other: 'AbstractPointList') -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement copyFrom')
+
 class AbstractPath(object):
     def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
@@ -77,6 +89,8 @@ class AbstractPath(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
     def bounds(self) -> AbstractRectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement bounds')
+    def translate(self, dx: float, dy: float) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement translate')
     def copyFrom(self, other: 'AbstractPath') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement copyFrom')
 
@@ -187,6 +201,14 @@ class AbstractGraphics(object):
     def copyRectangle(self, other: AbstractRectangleF) -> AbstractRectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyRectangle')
 
+    def createPointList(
+            self,
+            points: typing.Sequence[maprenderer.AbstractPointF]
+            ) -> AbstractPointList:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPointList')
+    def copyPointList(self, other: AbstractPointList) -> AbstractPointList:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyPointList')
+
     def createPath(
             self,
             points: typing.Sequence[maprenderer.AbstractPointF],
@@ -263,12 +285,12 @@ class AbstractGraphics(object):
 
     def drawPoint(self, pen: AbstractPen, point: maprenderer.AbstractPointF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
+    def drawPoints(self, pen: AbstractPen, points: AbstractPointList) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoints')
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(self, pen: AbstractPen, pt1: maprenderer.AbstractPointF, pt2: maprenderer.AbstractPointF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLine')
-    def drawLines(self, pen: AbstractPen, points: typing.Sequence[maprenderer.AbstractPointF]):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLines')
     # TODO: This was an overload of drawPath in the traveller map code
     def drawPathOutline(self, pen: AbstractPen, path: AbstractPath):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPathOutline')

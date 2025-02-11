@@ -933,7 +933,7 @@ class WorldSearch(object):
         if not subsectorName:
             return self._searchWorldList(worldList=sector, maxResults=maxResults)
         else:
-            subsector = sector.subsector(name=subsectorName)
+            subsector = sector.subsectorByName(name=subsectorName)
             if not subsector:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorldList(worldList=subsector, maxResults=maxResults)
