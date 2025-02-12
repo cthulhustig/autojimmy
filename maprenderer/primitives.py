@@ -22,6 +22,11 @@ class LineStyle(enum.Enum):
     DashDotDot = 4
     Custom = 5
 
+class PenTip(enum.Enum):
+    Flat = 0
+    Square = 1
+    Round = 2
+
 class FontStyle(enum.IntFlag):
     Regular = 0x0
     Bold = 0x1

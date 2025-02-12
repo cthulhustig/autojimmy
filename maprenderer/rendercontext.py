@@ -635,7 +635,7 @@ class RenderContext(object):
             with self._graphics.save():
                 self._graphics.intersectClipPath(path=clip)
 
-                regions = self._sectorCache.sectorRegions(x=sector.x(), y=sector.y())
+                regions = self._sectorCache.regionOutlines(x=sector.x(), y=sector.y())
                 if regions:
                     for outline in regions:
                         if not self._absoluteViewRect.intersectsWith(outline.bounds()):
@@ -644,7 +644,7 @@ class RenderContext(object):
                             outline=outline,
                             brush=brush)
 
-                borders = self._sectorCache.sectorBorders(x=sector.x(), y=sector.y())
+                borders = self._sectorCache.borderOutlines(x=sector.x(), y=sector.y())
                 if borders:
                     for outline in borders:
                         if not self._absoluteViewRect.intersectsWith(outline.bounds()):
@@ -998,37 +998,31 @@ class RenderContext(object):
                 self._graphics.setSmoothingMode(
                     maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
+                # Scale by the parsec scale so we are rendering in a coordinate
+                # space that has the same scaling on the x & y axis (I think the
+                # term is isotropic scaling). This is works on the assumption
+                # that the world points to be rendered have already been
+                # transformed into this coordinate space. It's necessary because
+                # (for speed) the worlds are being rendered as points with the
+                # pen width giving them their size. If this was done in absolute
+                # coordinate space (where x & y don't scale the same) then the
+                # point would be drawn as an oval
+                self._graphics.scaleTransform(
+                    scaleX=1 / travellermap.ParsecScaleX,
+                    scaleY=1 / travellermap.ParsecScaleY)
 
-                xScale = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
-                yScale = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
-                halfWidth = self._styleSheet.discRadius * xScale
-                halfHeight = self._styleSheet.discRadius * yScale
+                pen = self._graphics.createPen(
+                    color=self._styleSheet.worlds.textBrush.color(),
+                    width=self._styleSheet.discRadius * self._styleSheet.hexContentScale * 2,
+                    style=maprenderer.LineStyle.Solid,
+                    tip=maprenderer.PenTip.Round) # Rounded end cap so a circle is drawn
 
-                #if halfWidth <= 0.5 or halfHeight <= 0.5:
-                if ((halfWidth * self._scale) <= 1) or ((halfHeight * self._scale) <= 1):
-                    # TODO: Creating this pen every frame isn't great
-                    pen = self._graphics.createPen(
-                        color=self._styleSheet.worlds.textBrush.color(),
-                        width=(1 / self._scale),
-                        style=maprenderer.LineStyle.Solid)
-                    for world in self._selector.worlds():
-                        self._graphics.drawPoint(
-                            point=RenderContext._hexToCenter(world.hex()),
-                            pen=pen)
-                else:
-                    width = halfWidth * 2
-                    height = halfHeight * 2
-                    rect = self._graphics.createRectangle()
-                    for world in self._selector.worlds():
-                        center = RenderContext._hexToCenter(world.hex())
-                        rect.setRect(
-                            x=center.x() - halfWidth,
-                            y=center.y() - halfHeight,
-                            width=width,
-                            height=height)
-                        self._graphics.drawEllipse(
-                            rect=rect,
-                            brush=self._styleSheet.worlds.textBrush)
+                for sector in self._selector.sectors():
+                    worlds = self._sectorCache.isotropicWorldPoints(
+                        x=sector.x(),
+                        y=sector.y())
+                    if worlds:
+                        self._graphics.drawPoints(points=worlds, pen=pen)
         else:
             for world in self._selector.worlds():
                 self._drawWorld(

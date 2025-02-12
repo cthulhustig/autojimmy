@@ -2,6 +2,9 @@ import enum
 import maprenderer
 import typing
 
+# TODO: I'm in two minds if this should be an abstract object. I don't think
+# it has the same perf advantages as when dealing with more complex structures
+# (it might even be slower due to all the if checks in the implementation)
 # TODO: This (and PointF) could do with an offsetX, offsetY functions as there
 # are quite a few places that are having to do get x/y then set x/y with modifier
 class AbstractRectangleF(object):
@@ -244,7 +247,8 @@ class AbstractGraphics(object):
             color: str = '',
             width: float = 1,
             style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
-            pattern: typing.Optional[typing.Sequence[float]] = None
+            pattern: typing.Optional[typing.Sequence[float]] = None,
+            tip: maprenderer.PenTip = maprenderer.PenTip.Flat
             ) -> AbstractPen:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPen')
     def copyPen(self, other: AbstractPen) -> AbstractPen:

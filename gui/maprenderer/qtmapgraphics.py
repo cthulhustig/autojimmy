@@ -401,6 +401,11 @@ class QtMapPen(maprenderer.AbstractPen):
         maprenderer.LineStyle.DashDotDot: QtCore.Qt.PenStyle.DashDotDotLine,
         maprenderer.LineStyle.Custom: QtCore.Qt.PenStyle.CustomDashLine}
 
+    _PenTipMap = {
+        maprenderer.PenTip.Flat: QtCore.Qt.PenCapStyle.FlatCap,
+        maprenderer.PenTip.Square: QtCore.Qt.PenCapStyle.SquareCap,
+        maprenderer.PenTip.Round: QtCore.Qt.PenCapStyle.RoundCap}
+
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
@@ -411,7 +416,8 @@ class QtMapPen(maprenderer.AbstractPen):
         color: str,
         width: float,
         style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
-        pattern: typing.Optional[typing.Sequence[float]] = None
+        pattern: typing.Optional[typing.Sequence[float]] = None,
+        tip: maprenderer.PenTip = maprenderer.PenTip.Flat
         ) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
@@ -420,6 +426,7 @@ class QtMapPen(maprenderer.AbstractPen):
             self._width = 0
             self._style = maprenderer.LineStyle.Solid
             self._pattern = None
+            self._tip = maprenderer.PenTip.Flat
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, QtMapPen):
@@ -428,11 +435,13 @@ class QtMapPen(maprenderer.AbstractPen):
             self._width = other.width()
             self._style = other.style()
             self._pattern = list(other.pattern()) if other.pattern() else None
+            self._tip = other.tip()
         else:
             self._color = args[0] if len(args) > 0 else kwargs['color']
             self._width = args[1] if len(args) > 1 else kwargs['width']
             self._style = args[2] if len(args) > 2 else kwargs['style']
             self._pattern = args[3] if len(args) > 3 else kwargs.get('pattern')
+            self._tip = args[4] if len(args) > 4 else kwargs['tip']
 
         self._qtPen = None
 
@@ -484,6 +493,16 @@ class QtMapPen(maprenderer.AbstractPen):
         if self._qtPen:
             self._qtPen.setDashPattern(pattern)
 
+    def tip(self) -> maprenderer.PenTip:
+        return self._tip
+
+    def setTip(self, tip: maprenderer.PenTip):
+        if tip == self._tip:
+            return tip
+        self._tip = tip
+        if self._qtPen:
+            self._qtPen.setCapStyle(QtMapPen._PenTipMap[tip])
+
     def copyFrom(
             self,
             other: 'QtMapPen'
@@ -498,6 +517,7 @@ class QtMapPen(maprenderer.AbstractPen):
             self._qtPen.setStyle(QtMapPen._LineStyleMap[self._style])
             if self._style is maprenderer.LineStyle.Custom:
                 self._qtPen.setDashPattern(self._pattern)
+            self._qtPen.setCapStyle(QtMapPen._PenTipMap[self._tip])
 
     def qtPen(self) -> QtGui.QPen:
         if not self._qtPen:
@@ -507,6 +527,7 @@ class QtMapPen(maprenderer.AbstractPen):
                 QtMapPen._LineStyleMap[self._style])
             if self._style is maprenderer.LineStyle.Custom:
                 self._qtPen.setDashPattern(self._pattern)
+            self._qtPen.setCapStyle(QtMapPen._PenTipMap[self._tip])
         return self._qtPen
 
 class QtMapImage(maprenderer.AbstractImage):
@@ -684,9 +705,10 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             color: str = '',
             width: float = 1,
             style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
-            pattern: typing.Optional[typing.Sequence[float]] = None
+            pattern: typing.Optional[typing.Sequence[float]] = None,
+            tip: maprenderer.PenTip = maprenderer.PenTip.Flat
             ) -> QtMapPen:
-        return QtMapPen(color=color, width=width, style=style, pattern=pattern)
+        return QtMapPen(color=color, width=width, style=style, pattern=pattern, tip=tip)
     def copyPen(self, other: maprenderer.AbstractPen) -> QtMapPen:
         return QtMapPen(other=other)
 

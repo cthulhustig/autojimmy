@@ -36,6 +36,10 @@ class SectorCache(object):
             ) -> None:
         self._graphics = graphics
         self._styleCache = styleCache
+        self._worldsCache: typing.Dict[
+            typing.Union[int, int], # Sector x/y
+            maprenderer.AbstractPointList
+        ] = {}
         self._borderCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
             typing.List[SectorOutline]
@@ -45,7 +49,36 @@ class SectorCache(object):
             typing.List[SectorOutline]
         ] = {}
 
-    def sectorBorders(
+    def isotropicWorldPoints(
+            self,
+            x: int,
+            y: int
+            ) -> typing.Optional[maprenderer.AbstractPointList]:
+        key = (x, y)
+        worlds = self._worldsCache.get(key)
+        if worlds is not None:
+            return worlds
+
+        sector = traveller.WorldManager.instance().sectorByPosition(
+            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        if not sector:
+            # Don't cache the fact the sector doesn't exist to avoid memory bloat
+            return None
+
+        points = []
+        for world in sector.worlds():
+            hex = world.hex()
+            centerX, centerY = hex.absoluteCenter()
+            points.append(maprenderer.AbstractPointF(
+                # Scale center point by parsec scale to convert to isotropic coordinates
+                x=centerX * travellermap.ParsecScaleX,
+                y=centerY * travellermap.ParsecScaleY))
+
+        worlds = self._graphics.createPointList(points=points)
+        self._worldsCache[key] = worlds
+        return worlds
+
+    def borderOutlines(
             self,
             x: int,
             y: int
@@ -67,7 +100,7 @@ class SectorCache(object):
         self._borderCache[key] = borders
         return borders
 
-    def sectorRegions(
+    def regionOutlines(
             self,
             x: int,
             y: int
