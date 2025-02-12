@@ -3,6 +3,7 @@ import maprenderer
 import travellermap
 import typing
 
+# TODO: Should probably move this into SectorCache
 class ClipPathCache(object):
     class PathType(enum.Enum):
         Hex = 0

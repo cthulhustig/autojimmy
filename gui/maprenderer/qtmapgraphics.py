@@ -767,7 +767,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawPoint(self, pen: QtMapPen, point: maprenderer.AbstractPointF) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
-    def drawPoints(self, pen: QtMapPen, points: QtMapPointList) -> None:
+    def drawPoints(self, points: QtMapPointList, pen: QtMapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoints(points.qtPolygon())
 
@@ -783,47 +783,35 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             self._convertPoint(pt1),
             self._convertPoint(pt2))
 
-    # TODO: I don't know if a path is a segmented line or a closed polygon
-    # TODO: This was an overload of drawPath in the traveller map code
-    def drawPathOutline(self, pen: QtMapPen, path: QtMapPath):
-        self._painter.setPen(pen.qtPen())
-        self._painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+    def drawPath(
+            self,
+            path: QtMapPath,
+            pen: typing.Optional[QtMapPen] = None,
+            brush: typing.Optional[QtMapBrush] = None
+            ) -> None:
+        self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
+        self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
         if path.closed():
             self._painter.drawPolygon(path.qtPolygon())
         else:
             self._painter.drawPolyline(path.qtPolygon())
-    # TODO: This was an overload of drawPath in the traveller map code
-    def drawPathFill(self, brush: QtMapBrush, path: QtMapPath):
-        self._painter.setPen(QtCore.Qt.PenStyle.NoPen)
-        self._painter.setBrush(brush.qtBrush())
-        self._painter.drawPolygon(path.qtPolygon())
 
-    def drawCurve(self, pen: QtMapPen, path: QtMapPath, tension: float = 0.5):
-        self._painter.setPen(pen.qtPen())
-        self._painter.drawPolyline(path.qtPolygon())
-    # TODO: This was an overload of drawClosedCurve in the traveller map code
-    def drawClosedCurveOutline(self, pen: QtMapPen, path: QtMapPath, tension: float = 0.5):
-        self.drawPathOutline(pen=pen, path=path)
-    def drawClosedCurveFill(self, brush: QtMapBrush, path: QtMapPath, tension: float = 0.5):
-        self.drawPathOutline(brush=brush, path=path)
-
-    # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawRectangleOutline(self, pen: QtMapPen, rect: QtMapRectangleF) -> None:
-        self._painter.setPen(pen.qtPen())
-        self._painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
-        self._painter.drawRect(rect.qtRect())
-    # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawRectangleFill(self, brush: QtMapBrush, rect: QtMapRectangleF) -> None:
-        self._painter.setPen(QtCore.Qt.PenStyle.NoPen)
-        self._painter.setBrush(brush.qtBrush())
+    def drawRectangle(
+            self,
+            rect: QtMapRectangleF,
+            pen: typing.Optional[QtMapPen] = None,
+            brush: typing.Optional[QtMapBrush] = None
+            ) -> None:
+        self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
+        self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
         self._painter.drawRect(rect.qtRect())
 
     # TODO: This has changed quite a bit from the traveller map interface
     def drawEllipse(
             self,
-            pen: typing.Optional[QtMapPen],
-            brush: typing.Optional[QtMapBrush],
-            rect: QtMapRectangleF
+            rect: QtMapRectangleF,
+            pen: typing.Optional[QtMapPen] = None,
+            brush: typing.Optional[QtMapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
@@ -831,10 +819,10 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def drawArc(
             self,
-            pen: QtMapPen,
             rect: QtMapRectangleF,
             startDegrees: float,
-            sweepDegrees: float
+            sweepDegrees: float,
+            pen: QtMapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
         # NOTE: Angles are in 1/16th of a degree

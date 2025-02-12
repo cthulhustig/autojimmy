@@ -283,37 +283,48 @@ class AbstractGraphics(object):
     def intersectClipRect(self, rect: AbstractRectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
 
+    # TODO: Hopefully I can get rid of the singular version at some point
     def drawPoint(self, pen: AbstractPen, point: maprenderer.AbstractPointF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
-    def drawPoints(self, pen: AbstractPen, points: AbstractPointList) -> None:
+    def drawPoints(self, points: AbstractPointList, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoints')
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(self, pen: AbstractPen, pt1: maprenderer.AbstractPointF, pt2: maprenderer.AbstractPointF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLine')
-    # TODO: This was an overload of drawPath in the traveller map code
-    def drawPathOutline(self, pen: AbstractPen, path: AbstractPath):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPathOutline')
-    # TODO: This was an overload of drawPath in the traveller map code
-    def drawPathFill(self, brush: AbstractBrush, path: AbstractPath):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPathFill')
-    def drawCurve(self, pen: AbstractPen, points: typing.Sequence[maprenderer.AbstractPointF], tension: float = 0.5):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawCurve')
-    # TODO: This was an overload of drawClosedCurve in the traveller map code
-    def drawClosedCurveOutline(self, pen: AbstractPen, points: typing.Sequence[maprenderer.AbstractPointF], tension: float = 0.5):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawClosedCurveOutline')
-    def drawClosedCurveFill(self, brush: AbstractBrush, points: typing.Sequence[maprenderer.AbstractPointF], tension: float = 0.5):
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawClosedCurveFill')
-    # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawRectangleOutline(self, pen: AbstractPen, rect: AbstractRectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawRectangleOutline')
-    # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawRectangleFill(self, brush: AbstractBrush, rect: AbstractRectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawRectangleFill')
+
+    def drawPath(
+            self,
+            path: AbstractPath,
+            pen: typing.Optional[AbstractPen] = None,
+            brush: typing.Optional[AbstractBrush] = None
+            ) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPath')
+
+    def drawRectangle(
+            self,
+            rect: AbstractRectangleF,
+            pen: typing.Optional[AbstractPen] = None,
+            brush: typing.Optional[AbstractBrush] = None
+            ) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawRectangle')
+
     # TODO: This has changed quite a bit from the traveller map interface
-    def drawEllipse(self, pen: typing.Optional[AbstractPen], brush: typing.Optional[AbstractBrush], rect: AbstractRectangleF):
+    def drawEllipse(
+            self,
+            rect: AbstractRectangleF,
+            pen: typing.Optional[AbstractPen] = None,
+            brush: typing.Optional[AbstractBrush] = None
+            ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawEllipse')
-    def drawArc(self, pen: AbstractPen, rect: AbstractRectangleF, startDegrees: float, sweepDegrees: float) -> None:
+
+    def drawArc(
+            self,
+            rect: AbstractRectangleF,
+            startDegrees: float,
+            sweepDegrees: float,
+            pen: AbstractPen
+            ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
 
     def drawImage(self, image: AbstractImage, rect: AbstractRectangleF) -> None:

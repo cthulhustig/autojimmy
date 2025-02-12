@@ -43,17 +43,17 @@ class WorldLabel(object):
             graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
             graphics.drawEllipse(
-                # TODO: Creating a pen every time isn't good
-                # TODO: Need to double check this pen width is correct
-                pen=graphics.createPen(color=dotBrush.color(), width=1),
-                brush=dotBrush,
                 # TODO: This radius is static so rect could be created
                 # once rather than every frame
                 rect=graphics.createRectangle(
                     x=-radius / 2,
                     y=-radius / 2,
                     width=radius,
-                    height=radius))
+                    height=radius),
+                # TODO: Creating a pen every time isn't good
+                # TODO: Need to double check this pen width is correct
+                pen=graphics.createPen(color=dotBrush.color(), width=1),
+                brush=dotBrush)
 
             if self.labelBiasX > 0:
                 if self.labelBiasY < 0:

@@ -5,6 +5,7 @@ import travellermap
 import typing
 import xml.etree.ElementTree
 
+# TODO: Revisit this class, I suspect it could be more efficient
 # TODO: This should probably live elsewhere
 class VectorObject(object):
     def __init__(
@@ -107,7 +108,7 @@ class VectorObject(object):
             with graphics.save():
                 graphics.scaleTransform(scaleX=self.scaleX, scaleY=self.scaleY)
                 graphics.translateTransform(dx=-self.originX, dy=-self.originY)
-                graphics.drawPathOutline(pen, self.path)
+                graphics.drawPath(path=self.path, pen=pen)
 
     def drawName(
             self,

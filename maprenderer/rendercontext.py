@@ -72,6 +72,9 @@ class RenderContext(object):
         self._styleCache = styleCache
         self._clipCache = maprenderer.ClipPathCache(
             graphics=self._graphics)
+        self._sectorCache = maprenderer.SectorCache(
+            graphics=self._graphics,
+            styleCache=self._styleCache)
         self._starfieldCache = maprenderer.StarfieldCache(
             graphics=self._graphics)
         self._selector = maprenderer.RectSelector(
@@ -198,9 +201,7 @@ class RenderContext(object):
 
             RenderContext.LayerAction(maprenderer.LayerId.Names_Subsector, self._drawSubsectorNames, clip=True),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersFill, self._drawMicroBordersFill, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersShade, self._drawMicroBordersShade, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersStroke, self._drawMicroBordersStroke, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersStroke, self._drawMicroBorders, clip=True),
             RenderContext.LayerAction(maprenderer.LayerId.Micro_Routes, self._drawMicroRoutes, clip=True),
             RenderContext.LayerAction(maprenderer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels, clip=True),
 
@@ -272,9 +273,9 @@ class RenderContext(object):
         # the full bitmap when far from the origin.
         rect = self._graphics.copyRectangle(self._absoluteViewRect)
         rect.inflate(rect.width() * 0.1, rect.height() * 0.1)
-        self._graphics.drawRectangleFill(
-            brush=self._styleSheet.backgroundBrush,
-            rect=rect)
+        self._graphics.drawRectangle(
+            rect=rect,
+            brush=self._styleSheet.backgroundBrush)
 
     # TODO: When zooming in and out the background doesn't stay in a consistent
     # place between zoom levels. I think traveller map technically has the same
@@ -381,7 +382,7 @@ class RenderContext(object):
                     self._graphics.translateTransform(
                         dx=x * chunkParsecs,
                         dy=y * chunkParsecs)
-                    self._graphics.drawPoints(pen=pen, points=starfield)
+                    self._graphics.drawPoints(points=starfield, pen=pen)
 
     def _drawRifts(self) -> None:
         if not self._styleSheet.showRiftOverlay:
@@ -520,7 +521,7 @@ class RenderContext(object):
                     rect.setY(py + inset + yOffset)
                     rect.setWidth(1 - inset * 2)
                     rect.setHeight(1 - inset * 2)
-                    self._graphics.drawRectangleOutline(pen=pen, rect=rect)
+                    self._graphics.drawRectangle(rect=rect, pen=pen)
         elif self._styleSheet.hexStyle == maprenderer.HexStyle.Hex:
             startX = hx - parsecSlop
             startY = hy - parsecSlop
@@ -542,7 +543,7 @@ class RenderContext(object):
                     path.translate(0, yOffset)
 
                 for py in range(startY, hy + hh + parsecSlop):
-                    self._graphics.drawPathOutline(pen, path)
+                    self._graphics.drawPath(path=path, pen=pen)
                     path.translate(0, 1)
 
                 path.translate(1, -((py - startY) + yOffset + 1))
@@ -595,26 +596,64 @@ class RenderContext(object):
                 brush=self._styleSheet.subsectorNames.textBrush,
                 labelStyle=self._styleSheet.subsectorNames.textStyle)
 
-    def _drawMicroBordersFill(self) -> None:
+    def _drawMicroBorders(self) -> None:
         if not self._styleSheet.microBorders.visible:
             return
 
-        self._drawMicroBorders(RenderContext.BorderLayer.Regions)
+        self._graphics.setSmoothingMode(
+                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        if self._styleSheet.fillMicroBorders:
-            self._drawMicroBorders(RenderContext.BorderLayer.Fill)
+        pathType = \
+            maprenderer.ClipPathCache.PathType.Square \
+            if self._styleSheet.microBorderStyle == maprenderer.MicroBorderStyle.Square else \
+            maprenderer.ClipPathCache.PathType.Hex
 
-    def _drawMicroBordersShade(self) -> None:
-        if not self._styleSheet.microBorders.visible or not self._styleSheet.shadeMicroBorders:
-            return
+        penWidth = self._styleSheet.microBorders.pen.width()
+        # HACK: Due to the fact clipping to the outline being drawn
+        # doesn't work with Qt (see HACK below), it means outlines
+        # appear twice as thick as they do in Traveller Map. This
+        # scales the width to account for this
+        penWidth *= 0.5
+        pen = self._graphics.createPen(width=penWidth)
+        brush = self._graphics.createBrush()
 
-        self._drawMicroBorders(RenderContext.BorderLayer.Shade)
+        shadePen = None
+        if self._styleSheet.shadeMicroBorders:
+            # Shade is a wide/solid outline under the main outline.
+            shadePen = self._graphics.createPen(
+                width=penWidth * 2.5,
+                style=maprenderer.LineStyle.Solid)
 
-    def _drawMicroBordersStroke(self) -> None:
-        if not self._styleSheet.microBorders.visible:
-            return
+        for sector in self._selector.sectors():
+            clip = self._clipCache.sectorClipPath(
+                sectorX=sector.x(),
+                sectorY=sector.y(),
+                pathType=pathType)
+            if not self._absoluteViewRect.intersectsWith(clip.bounds()):
+                continue
 
-        self._drawMicroBorders(RenderContext.BorderLayer.Stroke)
+            with self._graphics.save():
+                self._graphics.intersectClipPath(path=clip)
+
+                regions = self._sectorCache.sectorRegions(x=sector.x(), y=sector.y())
+                if regions:
+                    for outline in regions:
+                        if not self._absoluteViewRect.intersectsWith(outline.bounds()):
+                            continue # Outline isn't on screen
+                        self._drawMicroBorder(
+                            outline=outline,
+                            brush=brush)
+
+                borders = self._sectorCache.sectorBorders(x=sector.x(), y=sector.y())
+                if borders:
+                    for outline in borders:
+                        if not self._absoluteViewRect.intersectsWith(outline.bounds()):
+                            continue # Outline isn't on screen
+                        self._drawMicroBorder(
+                            outline=outline,
+                            brush=brush,
+                            pen=pen,
+                            shadePen=shadePen)
 
     def _drawMicroRoutes(self) -> None:
         if not self._styleSheet.microRoutes.visible:
@@ -974,8 +1013,8 @@ class RenderContext(object):
                         style=maprenderer.LineStyle.Solid)
                     for world in self._selector.worlds():
                         self._graphics.drawPoint(
-                            pen=pen,
-                            point=RenderContext._hexToCenter(world.hex()))
+                            point=RenderContext._hexToCenter(world.hex()),
+                            pen=pen)
                 else:
                     width = halfWidth * 2
                     height = halfHeight * 2
@@ -988,9 +1027,8 @@ class RenderContext(object):
                             width=width,
                             height=height)
                         self._graphics.drawEllipse(
-                            brush=self._styleSheet.worlds.textBrush,
-                            pen=None,
-                            rect=rect)
+                            rect=rect,
+                            brush=self._styleSheet.worlds.textBrush)
         else:
             for world in self._selector.worlds():
                 self._drawWorld(
@@ -1080,9 +1118,9 @@ class RenderContext(object):
                         sectorY=sector.y(),
                         pathType=maprenderer.ClipPathCache.PathType.Hex)
 
-                    self._graphics.drawPathFill(
-                        brush=brush,
-                        path=clipPath)
+                    self._graphics.drawPath(
+                        path=clipPath,
+                        brush=brush)
 
         if self._styleSheet.colorCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors():
@@ -1114,9 +1152,9 @@ class RenderContext(object):
                     sectorY=sector.y(),
                     pathType=maprenderer.ClipPathCache.PathType.Hex)
 
-                self._graphics.drawPathFill(
-                    brush=brush,
-                    path=clipPath)
+                self._graphics.drawPath(
+                    path=clipPath,
+                    brush=brush)
 
     def _drawWorld(self, world: traveller.World, layer: WorldLayer) -> None:
         uwp = world.uwp()
@@ -1203,15 +1241,14 @@ class RenderContext(object):
                                     self._graphics.scaleTransform(
                                         scaleX=0.95,
                                         scaleY=0.95)
-                                    self._graphics.drawPathOutline(
-                                        pen=elem.pen,
-                                        path=self._hexOutlinePath)
+                                    self._graphics.drawPath(
+                                        path=self._hexOutlinePath,
+                                        pen=elem.pen)
                             else:
                                 if elem.fillBrush:
                                     self._graphics.drawEllipse(
-                                        brush=elem.fillBrush,
-                                        pen=None,
-                                        rect=self._graphics.createRectangle(x=-0.4, y=-0.4, width=0.8, height=0.8))
+                                        rect=self._graphics.createRectangle(x=-0.4, y=-0.4, width=0.8, height=0.8),
+                                        brush=elem.fillBrush)
                                 if elem.pen:
                                     if renderName and self._styleSheet.fillMicroBorders:
                                         # TODO: Is saving the state actually needed here?
@@ -1223,22 +1260,20 @@ class RenderContext(object):
                                                     width=1,
                                                     height=0.65 if renderUWP else 0.75))
                                             self._graphics.drawEllipse(
-                                                pen=elem.pen,
-                                                brush=None,
                                                 rect=self._graphics.createRectangle(
                                                     x=-0.4,
                                                     y=-0.4,
                                                     width=0.8,
-                                                    height=0.8))
+                                                    height=0.8),
+                                                pen=elem.pen)
                                     else:
                                         self._graphics.drawEllipse(
-                                            pen=elem.pen,
-                                            brush=None,
                                             rect=self._graphics.createRectangle(
                                                 x=-0.4,
                                                 y=-0.4,
                                                 width=0.8,
-                                                height=0.8))
+                                                height=0.8),
+                                            pen=elem.pen)
 
                     if not self._styleSheet.numberAllHexes and \
                         ((self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0):
@@ -1434,9 +1469,8 @@ class RenderContext(object):
                                                 #rect.y += 0
 
                                                 self._graphics.drawEllipse(
-                                                    brush=self._styleSheet.worlds.textBrush,
-                                                    pen=None,
-                                                    rect=rect)
+                                                    rect=rect,
+                                                    brush=self._styleSheet.worlds.textBrush)
                                     else:
                                         # Just a glyph
                                         self._drawWorldGlyph(
@@ -1459,23 +1493,22 @@ class RenderContext(object):
                                     if brushColor:
                                         brush = self._graphics.createBrush(color=brushColor)
                                     self._graphics.drawEllipse(
-                                        pen=pen,
-                                        brush=brush,
                                         rect=self._graphics.createRectangle(
                                             x=-self._styleSheet.discRadius,
                                             y=-self._styleSheet.discRadius,
                                             width=2 * self._styleSheet.discRadius,
-                                            height=2 * self._styleSheet.discRadius))
+                                            height=2 * self._styleSheet.discRadius),
+                                        pen=pen,
+                                        brush=brush)
                     elif not world.isAnomaly():
                         # Dotmap
                         self._graphics.drawEllipse(
-                            brush=self._styleSheet.worlds.textBrush,
-                            pen=None,
                             rect=self._graphics.createRectangle(
                                 x=-self._styleSheet.discRadius,
                                 y=-self._styleSheet.discRadius,
                                 width=2 * self._styleSheet.discRadius,
-                                height=2 * self._styleSheet.discRadius))
+                                height=2 * self._styleSheet.discRadius),
+                            brush=self._styleSheet.worlds.textBrush)
 
                     if renderName:
                         name = world.name()
@@ -1552,13 +1585,12 @@ class RenderContext(object):
                     elif not world.isAnomaly():
                         # Dotmap
                         self._graphics.drawEllipse(
-                            brush=self._styleSheet.worlds.textBrush,
-                            pen=None,
                             rect=self._graphics.createRectangle(
                                 x=-self._styleSheet.discRadius,
                                 y=-self._styleSheet.discRadius,
                                 width=2 * self._styleSheet.discRadius,
-                                height=2 * self._styleSheet.discRadius))
+                                height=2 * self._styleSheet.discRadius),
+                            brush=self._styleSheet.worlds.textBrush)
 
                 # TODO: Support placeholders, this should be
                 # if (isPlaceholder)
@@ -1582,25 +1614,25 @@ class RenderContext(object):
                                 height=decorationRadius * 2)
 
                             self._graphics.drawArc(
-                                pen=pen,
                                 rect=rect,
                                 startDegrees=5,
-                                sweepDegrees=80)
+                                sweepDegrees=80,
+                                pen=pen)
                             self._graphics.drawArc(
-                                pen=pen,
                                 rect=rect,
                                 startDegrees=95,
-                                sweepDegrees=80)
+                                sweepDegrees=80,
+                                pen=pen)
                             self._graphics.drawArc(
-                                pen=pen,
                                 rect=rect,
                                 startDegrees=185,
-                                sweepDegrees=80)
+                                sweepDegrees=80,
+                                pen=pen)
                             self._graphics.drawArc(
-                                pen=pen,
                                 rect=rect,
                                 startDegrees=275,
-                                sweepDegrees=80)
+                                sweepDegrees=80,
+                                pen=pen)
                             decorationRadius += 0.1
 
                     if (self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0:
@@ -1676,21 +1708,21 @@ class RenderContext(object):
             if not self._styleSheet.fillMicroBorders:
                 # NOTE: This todo came over from traveller map
                 # TODO: Implement this with a clipping region instead
-                self._graphics.drawRectangleFill(
-                    brush=self._styleSheet.backgroundBrush,
+                self._graphics.drawRectangle(
                     rect=self._graphics.createRectangle(
                         x=position.x() - width / 2,
                         y=position.y() - height / 2,
                         width=width,
-                        height=height))
+                        height=height),
+                    brush=self._styleSheet.backgroundBrush)
         elif bkStyle is maprenderer.TextBackgroundStyle.Filled:
-            self._graphics.drawRectangleFill(
-                brush=bkBrush,
+            self._graphics.drawRectangle(
                 rect=self._graphics.createRectangle(
                     x=position.x() - width / 2,
                     y=position.y() - height / 2,
                     width=width,
-                    height=height))
+                    height=height),
+                brush=bkBrush)
         elif bkStyle is maprenderer.TextBackgroundStyle.Outline or \
             bkStyle is maprenderer.TextBackgroundStyle.Shadow:
             # NOTE: This todo came over from traveller map
@@ -1755,13 +1787,13 @@ class RenderContext(object):
                 offsetScale = 0.3
                 radius *= 0.15
                 self._graphics.drawEllipse(
-                    pen=pen,
-                    brush=brush,
                     rect=self._graphics.createRectangle(
                         x=offset.x() * offsetScale - radius,
                         y=offset.y() * offsetScale - radius,
                         width=radius * 2,
-                        height=radius * 2))
+                        height=radius * 2),
+                    pen=pen,
+                    brush=brush)
 
     def _drawGasGiant(
             self,
@@ -1774,26 +1806,24 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.translateTransform(dx=x, dy=y)
             self._graphics.drawEllipse(
-                brush=brush,
-                pen=None,
                 rect=self._graphics.createRectangle(
                     x=-radius,
                     y=-radius,
                     width=radius * 2,
-                    height=radius * 2))
+                    height=radius * 2),
+                brush=brush)
 
             if ring:
                 self._graphics.rotateTransform(degrees=-30)
                 self._graphics.drawEllipse(
-                    # TODO: Creating a pen each time is bad. Could store gas giant
-                    # brush & pen a specific objects in the style sheet
-                    pen=self._graphics.createPen(color=brush.color(), width=radius / 4),
-                    brush=None,
                     rect=self._graphics.createRectangle(
                         x=-radius * 1.75,
                         y=-radius * 0.4,
                         width=radius * 1.75 * 2,
-                        height=radius * 0.4 * 2))
+                        height=radius * 0.4 * 2),
+                    # TODO: Creating a pen each time is bad. Could store gas giant
+                    # brush & pen a specific objects in the style sheet
+                    pen=self._graphics.createPen(color=brush.color(), width=radius / 4))
 
     def _drawOverlay(
             self,
@@ -1805,130 +1835,94 @@ class RenderContext(object):
             return
 
         self._graphics.drawEllipse(
-            pen=element.pen,
-            brush=element.fillBrush,
             rect=self._graphics.createRectangle(
                 x=-radius,
                 y=-radius, width=radius * 2,
-                height=radius * 2))
+                height=radius * 2),
+            pen=element.pen,
+            brush=element.fillBrush)
 
-    def _drawMicroBorders(self, layer: BorderLayer) -> None:
-        fillAlpha = 64
-        shadeAlpha = 128
+    _MicroBorderFillAlpha = 64
+    _MicroBorderShadeAlpha = 128
+    def _drawMicroBorder(
+            self,
+            outline: maprenderer.SectorOutline,
+            brush: maprenderer.AbstractBrush,
+            pen: typing.Optional[maprenderer.AbstractPen] = None,
+            shadePen: typing.Optional[maprenderer.AbstractPen] = None
+            ) -> None:
+        # Clip to the path itself - this means adjacent borders don't clash
+        # HACK: I've disabled this as it doesn't do what it is
+        # intended when rendering with Qt so there is no point
+        # wasting the time setting the new clip path. This also
+        # means there is no point in saving the state
+        # The intention is this should prevent anything being
+        # drawn outside the exact bounds of the outline. This is
+        # done due to the fact the line has a width which would
+        # mean what was drawn would normally extend half the pen
+        # width outside the the boundary. In Traveller Map the
+        # result is when two regions are touching, you can see
+        # both border colours along the edges where they touch.
+        # Unfortunately it doesn't look like Qt applies the clip
+        # path to the pen width so the effect doesn't work.
+        # It should be noted that this clipping not working also
+        # has the side effect that (if it wasn't accounted for)
+        # borders would be drawn twice as wide as they are in
+        # Traveller Map
+        # NOTE: If I ever do figure out how to make this work
+        # I think it would only need to be set if drawing the
+        # outline (i.e. not when just filling)
+        #with self._graphics.save():
+        #    self._graphics.intersectClipPath(path=outline.path())
 
-        self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+        color = outline.color()
+        if not color:
+            color = self._styleSheet.microRoutes.pen.color()
 
-        pathType = \
-            maprenderer.ClipPathCache.PathType.Square \
-            if self._styleSheet.microBorderStyle == maprenderer.MicroBorderStyle.Square else \
-            maprenderer.ClipPathCache.PathType.Hex
+        style = outline.style()
+        if not style:
+            style = maprenderer.LineStyle.Solid
 
-        pen = self._graphics.createPen(width=self._styleSheet.microBorders.pen.width())
-        brush = self._graphics.createBrush()
+        # TODO: Handle noticable colours, this should be
+        # styles.grayscale || !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor
+        if self._styleSheet.grayscale:
+            color = self._styleSheet.microBorders.pen.color() # default
 
-        penWidth = pen.width()
-        for sector in self._selector.sectors():
-            # This looks craptacular for Candy style borders :(
-            shouldClip = self._clipOutsectorBorders and \
-                ((layer == RenderContext.BorderLayer.Fill) or \
-                    (self._styleSheet.microBorderStyle != maprenderer.MicroBorderStyle.Curve))
-            clip = None
-            if shouldClip:
-                clip = self._clipCache.sectorClipPath(
-                    sectorX=sector.x(),
-                    sectorY=sector.y(),
-                    pathType=pathType)
-                if not self._absoluteViewRect.intersectsWith(clip.bounds()):
-                    continue
+        try:
+            brush.setColor(maprenderer.makeAlphaColor(
+                alpha=RenderContext._MicroBorderFillAlpha,
+                color=color))
+        except Exception as ex:
+            logging.warning('Failed to parse region colour', exc_info=ex)
+            return
 
-            with self._graphics.save():
-                if clip:
-                    self._graphics.intersectClipPath(path=clip)
+        if pen:
+            pen.setColor(color)
+            pen.setStyle(
+                style
+                if self._styleSheet.microBorders.pen.style() is maprenderer.LineStyle.Solid else
+                self._styleSheet.microBorders.pen.style())
 
-                self._graphics.setSmoothingMode(
-                    maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+        if shadePen:
+            try:
+                color = maprenderer.makeAlphaColor(
+                    alpha=RenderContext._MicroBorderShadeAlpha,
+                    color=color)
+            except Exception as ex:
+                logging.warning('Failed to parse region colour', exc_info=ex)
+                return
+            shadePen.setColor(color)
+            pen.setStyle(maprenderer.LineStyle.Solid)
 
-                regions = \
-                    sector.regions() \
-                    if layer is RenderContext.BorderLayer.Regions else \
-                    sector.borders()
+        self._graphics.drawPath(
+            path=outline.path(),
+            pen=shadePen if shadePen else pen,
+            brush=brush)
 
-                for region in regions:
-                    regionColor = region.colour()
-                    regionStyle = None
-
-                    if isinstance(region, traveller.Border):
-                        if region.style() is traveller.Border.Style.Solid:
-                            regionStyle = maprenderer.LineStyle.Solid
-                        elif region.style() is traveller.Border.Style.Dashed:
-                            regionStyle = maprenderer.LineStyle.Dash
-                        elif region.style() is traveller.Border.Style.Dotted:
-                            regionStyle = maprenderer.LineStyle.Dot
-
-                        if not regionColor or not regionStyle:
-                            defaultColor, defaultStyle = self._styleCache.defaultBorderStyle(region.allegiance())
-                            if not regionColor:
-                                regionColor = defaultColor
-                            if not regionStyle:
-                                regionStyle = defaultStyle
-
-                    if not regionColor:
-                        regionColor = self._styleSheet.microRoutes.pen.color()
-                    if not regionStyle:
-                        regionStyle = maprenderer.LineStyle.Solid
-
-                    # TODO: Handle noticable colours, this should be
-                    # styles.grayscale || !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor
-                    if self._styleSheet.grayscale:
-                        regionColor = self._styleSheet.microBorders.pen.color() # default
-
-                    # TODO: Doing this conversion every frame is very inefficient
-                    outline = region.absoluteOutline()
-                    drawPath = []
-                    for x, y in outline:
-                        drawPath.append(maprenderer.AbstractPointF(x=x, y=y))
-                    types = [maprenderer.PathPointType.Start]
-                    for _ in range(len(outline) - 1):
-                        types.append(maprenderer.PathPointType.Line)
-                    types[-1] |= maprenderer.PathPointType.CloseSubpath
-                    drawPath = self._graphics.createPath(points=drawPath, types=types, closed=True)
-
-                    pen.setColor(regionColor)
-                    pen.setStyle(regionStyle)
-
-                    # Allow style to override
-                    if self._styleSheet.microBorders.pen.style() is not maprenderer.LineStyle.Solid:
-                        pen.setStyle(self._styleSheet.microBorders.pen.style())
-
-                    # Shade is a wide/solid outline under the main outline.
-                    if layer is RenderContext.BorderLayer.Shade:
-                        pen.setWidth(penWidth * 2.5)
-                        pen.setStyle(maprenderer.LineStyle.Solid)
-                        pen.setColor(maprenderer.makeAlphaColor(
-                            alpha=shadeAlpha,
-                            color=pen.color()))
-
-                    # TODO: There should be alternate handling for curves but I don't think i'm
-                    # going to be able to support it as I'm not sure how to draw them with QPainter
-                    #if self._styles.microBorderStyle is not MicroBorderStyle.Curve:
-                    with self._graphics.save():
-                        # Clip to the path itself - this means adjacent borders don't clash
-                        self._graphics.intersectClipPath(path=drawPath)
-                        if layer is RenderContext.BorderLayer.Regions or layer is RenderContext.BorderLayer.Fill:
-                            try:
-                                red, green, blue, _ = travellermap.stringToColourChannels(colour=regionColor)
-                            except Exception as ex:
-                                logging.warning('Failed to parse region colour', exc_info=ex)
-                                continue
-                            brush.setColor(travellermap.colourChannelsToString(
-                                red=red,
-                                green=green,
-                                blue=blue,
-                                alpha=fillAlpha))
-                            self._graphics.drawPathFill(brush=brush, path=drawPath)
-                        elif layer is RenderContext.BorderLayer.Shade or layer is RenderContext.BorderLayer.Stroke:
-                            self._graphics.drawPathOutline(pen=pen, path=drawPath)
+        if pen and shadePen:
+            self._graphics.drawPath(
+                path=outline.path(),
+                pen=pen)
 
     _WorldDingMap = {
         '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)
