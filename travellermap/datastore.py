@@ -1241,6 +1241,7 @@ class DataStore(object):
                 #if canonicalName.find('Solomani Rim') < 0:
                 #if canonicalName.find('Core') < 0:
                 #if canonicalName.find('Zarushagar') < 0:
+                #if canonicalName.find('Daibei') < 0:
                 #    continue
 
                 abbreviation = sectorElement.get('Abbreviation')

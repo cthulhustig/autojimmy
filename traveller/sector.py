@@ -9,6 +9,8 @@ class Subsector(object):
             indexY: int,
             name: str,
             sectorName: str,
+            sectorX: int,
+            sectorY: int,
             extent: typing.Tuple[
                 travellermap.HexPosition,
                 travellermap.HexPosition],
@@ -18,6 +20,8 @@ class Subsector(object):
         self._indexY = indexY
         self._code = chr(ord('A') + ((indexY * 4) + indexX))
         self._name = name
+        self._sectorX = sectorX
+        self._sectorY = sectorY
         self._sectorName = sectorName
         self._extent = extent
         self._worlds = worlds
@@ -36,6 +40,12 @@ class Subsector(object):
 
     def sectorName(self) -> str:
         return self._sectorName
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
 
     def worldCount(self) -> int:
         return len(self._worlds)
@@ -132,6 +142,8 @@ class Sector(object):
                 indexY=indexY,
                 name=subsectorName,
                 sectorName=self._name,
+                sectorX=self._x,
+                sectorY=self._y,
                 extent=(ulHex, brHex),
                 worlds=subsectorWorlds)
             self._subsectorMap[subsectorName] = subsector

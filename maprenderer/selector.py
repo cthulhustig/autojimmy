@@ -11,9 +11,9 @@ class RectSelector(object):
             # it can create a single rect. Might be nicer if it had it's own rect class
             # or something
             graphics: maprenderer.AbstractGraphics,
-            sectorSlop: float = 0.3, # Arbitrary, but 0.25 not enough for some routes.
-            subsectorSlop: float = 0.1,
-            worldSlop: float = 0.1
+            sectorSlop: int = 1, # Numbers of sectors
+            subsectorSlop: int = 1, # Number of subsectors
+            worldSlop: int = 1 # Number of parsecs
             ) -> None:
         self._graphics = graphics
         self._sectorSlop = sectorSlop
@@ -21,57 +21,62 @@ class RectSelector(object):
         self._worldSlop = worldSlop
         self._rect = self._graphics.createRectangle()
 
-        self._cachedSectors: typing.Optional[typing.List[traveller.Sector]] = None
-        self._cachedSubsectors: typing.Optional[typing.List[traveller.Subsector]] = None
-        self._cachedWorlds: typing.Optional[typing.List[traveller.World]] = None
+        self._tightSectors: typing.Optional[typing.List[traveller.Sector]] = None
+        self._sloppySectors: typing.Optional[typing.List[traveller.Sector]] = None
+
+        self._tightSubsectors: typing.Optional[typing.List[traveller.Subsector]] = None
+        self._sloppySubsectors: typing.Optional[typing.List[traveller.Subsector]] = None
+
+        self._tightWorlds: typing.Optional[typing.List[traveller.World]] = None
+        self._sloppyWorlds: typing.Optional[typing.List[traveller.World]] = None
 
     def rect(self) -> maprenderer.AbstractRectangleF:
         return self._graphics.copyRectangle(self._rect)
 
     def setRect(self, rect: maprenderer.AbstractRectangleF) -> None:
         self._rect = self._graphics.copyRectangle(rect)
-        self._cachedSectors = None
-        self._cachedSubsectors = None
-        self._cachedWorlds = None
+        self._tightSectors = self._sloppySectors = None
+        self._tightSubsectors = self._sloppySubsectors = None
+        self._tightWorlds = self._sloppyWorlds = None
 
     def sectorSlop(self) -> float:
         return self._sectorSlop
 
     def setSectorSlop(self, slop: float) -> None:
         self._sectorSlop = slop
-        self._cachedSectors = None
+        self._sloppySectors = None
 
     def subsectorSlop(self) -> float:
         return self._subsectorSlop
 
     def setSubsectorSlop(self, slop: float) -> None:
         self._subsectorSlop = slop
-        self._cachedSubsectors = None
+        self._sloppySubsectors = None
 
     def worldSlop(self) -> float:
         return self._sectorSlop
 
     def setWorldSlop(self, slop: float) -> None:
         self._sectorSlop = slop
-        self._cachedWorlds = None
+        self._sloppyWorlds = None
 
-    def sectors(self) -> typing.Iterable[traveller.Sector]:
-        if self._cachedSectors is not None:
-            return self._cachedSectors
+    def sectors(self, tight: bool = False) -> typing.Iterable[traveller.Sector]:
+        sectors = self._tightSectors if tight else self._sloppySectors
+        if sectors is not None:
+            return sectors
 
-        rect = self._graphics.copyRectangle(self._rect)
+        sloppyRect = self._graphics.copyRectangle(self._rect)
         if self._sectorSlop:
-            rect.inflate(
-                x=rect.width() * self._sectorSlop,
-                y=rect.height() * self._sectorSlop)
+            sloppyRect.inflate(
+                x=self._sectorSlop * travellermap.SectorWidth,
+                y=self._sectorSlop * travellermap.SectorHeight)
 
-        left = int(math.floor((rect.left() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
-        right = int(math.floor((rect.right() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+        left = int(math.floor((sloppyRect.left() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+        right = int(math.floor((sloppyRect.right() + travellermap.ReferenceHexX) / travellermap.SectorWidth))
+        top = int(math.floor((sloppyRect.top() + travellermap.ReferenceHexY) / travellermap.SectorHeight))
+        bottom = int(math.floor((sloppyRect.bottom() + travellermap.ReferenceHexY) / travellermap.SectorHeight))
 
-        top = int(math.floor((rect.top() + travellermap.ReferenceHexY) / travellermap.SectorHeight))
-        bottom = int(math.floor((rect.bottom() + travellermap.ReferenceHexY) / travellermap.SectorHeight))
-
-        self._cachedSectors = traveller.WorldManager.instance().sectorsInArea(
+        self._sloppySectors = traveller.WorldManager.instance().sectorsInArea(
             upperLeft=travellermap.HexPosition(
                 sectorX=left,
                 sectorY=top,
@@ -83,41 +88,75 @@ class RectSelector(object):
                 offsetX=0, # TODO: Should this be 0 or 1 (same for below)
                 offsetY=0))
 
-        #print(f'Sectors={len(self._cachedSectors)}')
+        if not self._sectorSlop:
+            self._tightSectors = self._sloppySectors
 
-        return self._cachedSectors
+        if tight and self._tightSectors is None:
+            rect = self._graphics.createRectangle()
+            self._tightSectors = []
+            for sector in self._sloppySectors:
+                left, top, width, height = travellermap.sectorBoundingRect(
+                    sector=(sector.x(), sector.y()))
+                rect.setRect(x=left, y=top, width=width, height=height)
+                if self._rect.intersectsWith(other=rect):
+                    self._tightSectors.append(sector)
 
-    def subsectors(self) -> typing.Iterable[traveller.Subsector]:
-        if self._cachedSubsectors is not None:
-            return self._cachedSubsectors
+        #print('Sectors: Sloppy={sloppy} Tight={tight}'.format(
+        #    sloppy=len(self._sloppySectors),
+        #    tight=len(self._tightSectors) if self._tightSectors is not None else 'None'))
 
-        rect = self._graphics.copyRectangle(self._rect)
+        return self._tightSectors if tight else self._sloppySectors
+
+    def subsectors(self, tight: bool = True) -> typing.Iterable[traveller.Subsector]:
+        subsectors = self._tightSubsectors if tight else self._sloppySubsectors
+        if subsectors is not None:
+            return subsectors
+
+        sloppyRect = self._graphics.copyRectangle(self._rect)
         if self._subsectorSlop:
-            rect.inflate(
-                x=rect.width() * self._subsectorSlop,
-                y=rect.height() * self._subsectorSlop)
+            sloppyRect.inflate(
+                x=self._subsectorSlop * travellermap.SubsectorWidth,
+                y=self._subsectorSlop * travellermap.SubsectorHeight)
 
-        left = int(math.floor(rect.left()))
-        right = int(math.ceil(rect.right()))
+        left = int(math.floor(sloppyRect.left()))
+        right = int(math.ceil(sloppyRect.right()))
 
-        top = int(math.floor(rect.top()))
-        bottom = int(math.ceil(rect.bottom()))
+        top = int(math.floor(sloppyRect.top()))
+        bottom = int(math.ceil(sloppyRect.bottom()))
 
-        self._cachedSubsectors = traveller.WorldManager.instance().subsectorsInArea(
+        self._sloppySubsectors = traveller.WorldManager.instance().subsectorsInArea(
             upperLeft=travellermap.HexPosition(absoluteX=left, absoluteY=top),
             lowerRight=travellermap.HexPosition(absoluteX=right, absoluteY=bottom))
 
-        return self._cachedSubsectors
+        if not self._subsectorSlop:
+            self._tightSubsectors = self._sloppySubsectors
 
-    def worlds(self) -> typing.Iterable[traveller.World]:
-        if self._cachedWorlds is not None:
-            return self._cachedWorlds
+        if tight and self._tightSubsectors is None:
+            rect = self._graphics.createRectangle()
+            self._tightSubsectors = []
+            for subsector in self._sloppySubsectors:
+                left, top, width, height = travellermap.subsectorBoundingRect(
+                    subsector=(
+                        subsector.sectorX(), subsector.sectorY(),
+                        subsector.indexX(), subsector.indexY()))
+                rect.setRect(x=left, y=top, width=width, height=height)
+                if self._rect.intersectsWith(other=rect):
+                    self._tightSubsectors.append(subsector)
+
+        #print('Subsectors: Sloppy={sloppy} Tight={tight}'.format(
+        #    sloppy=len(self._sloppySubsectors),
+        #    tight=len(self._tightSubsectors) if self._tightSubsectors is not None else 'None'))
+
+        return self._tightSubsectors if tight else self._sloppySubsectors
+
+    def worlds(self, tight: bool = False) -> typing.Iterable[traveller.World]:
+        worlds = self._tightWorlds if tight else self._sloppyWorlds
+        if worlds is not None:
+            return worlds
 
         rect = self._graphics.copyRectangle(self._rect)
         if self._worldSlop:
-            rect.inflate(
-                x=rect.width() * self._worldSlop,
-                y=rect.height() * self._worldSlop)
+            rect.inflate(x=self._worldSlop, y=self._worldSlop)
 
         left = int(math.floor(rect.left()))
         right = int(math.ceil(rect.right()))
@@ -125,10 +164,25 @@ class RectSelector(object):
         top = int(math.floor(rect.top()))
         bottom = int(math.ceil(rect.bottom()))
 
-        self._cachedWorlds = traveller.WorldManager.instance().worldsInArea(
+        self._sloppyWorlds = traveller.WorldManager.instance().worldsInArea(
             upperLeft=travellermap.HexPosition(absoluteX=left, absoluteY=top),
             lowerRight=travellermap.HexPosition(absoluteX=right, absoluteY=bottom))
 
-        #print(f'Worlds={len(self._cachedWorlds)}')
+        if not self._worldSlop:
+            self._tightWorlds = self._sloppyWorlds
 
-        return self._cachedWorlds
+        if tight and self._tightWorlds is None:
+            rect = self._graphics.createRectangle()
+            self._tightWorlds = []
+            for world in self._sloppyWorlds:
+                left, top, width, height = travellermap.hexBoundingRect(
+                    absolute=world.hex().absolute())
+                rect.setRect(x=left, y=top, width=width, height=height)
+                if self._rect.intersectsWith(other=rect):
+                    self._tightWorlds.append(world)
+
+        #print('Worlds: Sloppy={sloppy} Tight={tight}'.format(
+        #    sloppy=len(self._sloppyWorlds),
+        #    tight=len(self._tightWorlds) if self._tightWorlds is not None else 'None'))
+
+        return self._tightWorlds if tight else self._sloppyWorlds

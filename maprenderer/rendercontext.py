@@ -824,8 +824,8 @@ class RenderContext(object):
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
     def _drawSectorNames(self) -> None:
-        if not (self._styleSheet.showSomeSectorNames or self._styleSheet.showAllSectorNames):
-            return
+        #if not (self._styleSheet.showSomeSectorNames or self._styleSheet.showAllSectorNames):
+        #    return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
@@ -1017,7 +1017,7 @@ class RenderContext(object):
                     style=maprenderer.LineStyle.Solid,
                     tip=maprenderer.PenTip.Round) # Rounded end cap so a circle is drawn
 
-                for sector in self._selector.sectors():
+                for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
                         x=sector.x(),
                         y=sector.y())
@@ -1105,7 +1105,7 @@ class RenderContext(object):
             brush.setColor(maprenderer.makeAlphaColor(
                 alpha=128,
                 color=self._styleSheet.backgroundBrush.color()))
-            for sector in self._selector.sectors():
+            for sector in self._selector.sectors(tight=True):
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
                     clipPath = self._clipCache.sectorClipPath(
                         sectorX=sector.x(),
@@ -1117,7 +1117,7 @@ class RenderContext(object):
                         brush=brush)
 
         if self._styleSheet.colorCodeSectorStatus and self._styleSheet.worlds.visible:
-            for sector in self._selector.sectors():
+            for sector in self._selector.sectors(tight=True):
                 if sector.hasTag('Official'):
                     brush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
@@ -1165,7 +1165,6 @@ class RenderContext(object):
 
         # TODO: This calls self._graphics.createRectangle quite a lot, could
         # it just be created once then updated at different stages as needed?
-
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)

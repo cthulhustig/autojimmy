@@ -102,7 +102,7 @@ def tileSpaceToMapSpace(
 # returns a bounding box that contains the full extent of all hexes in the sector.
 def sectorBoundingRect(
         sector: typing.Tuple[int, int],
-        ) -> typing.Tuple[int, int, int, int]:
+        ) -> typing.Tuple[float, float, float, float]:
     left = (sector[0] * SectorWidth) - ReferenceHexX
     bottom = (sector[1] * SectorHeight) - ReferenceHexY
     width = SectorWidth
@@ -110,10 +110,47 @@ def sectorBoundingRect(
 
     # Adjust to completely contain all hexes in the sector
     height += 0.5
-    left += 0.5 - HexWidthOffset
+    # TODO: This was previously using the commented out line but
+    # this looks like it was a bug, either that or the Map Proxy
+    # compositor is doing something odd that meant it was actually
+    # correct. If I draw the bounds in my map renderer with the
+    # old version it's drawn in the wrong place. Need to do some
+    # testing with map proxy and custom sectors to make sure I've
+    # not broken it (it looks like this function was only called
+    # from custom sector code)
+    #left += 0.5 - HexWidthOffset
+    left -= HexWidthOffset
     width += HexWidthOffset * 2
 
     return (left, bottom, width, height)
+
+def subsectorBoundingRect(
+        subsector: typing.Tuple[
+            int, int, # Sector x/y
+            int, int], # Subsector index x/y
+        ) -> typing.Tuple[float, float, float, float]:
+    left = ((subsector[0] * SectorWidth) - ReferenceHexX) + \
+        (subsector[2] * SubsectorWidth)
+    bottom = ((subsector[1] * SectorHeight) - ReferenceHexY) + \
+        (subsector[3] * SubsectorHeight)
+    width = SubsectorWidth
+    height = SubsectorHeight
+
+    # Adjust to completely contain all hexes in the sector
+    height += 0.5
+    left -= HexWidthOffset
+    width += HexWidthOffset * 2
+
+    return (left, bottom, width, height)
+
+def hexBoundingRect(
+        absolute: typing.Tuple[int, int]
+        ) -> typing.Tuple[float, float, float, float]:
+    return (
+        absolute[0] - (1 + HexWidthOffset),
+        absolute[1] - (0.5 if absolute[0] % 2 else 1),
+        1 + (2 * HexWidthOffset),
+        1)
 
 # Similar to sectorBoundingRect but gets the largest absolute coordinate rect that can
 # fit inside the sector without overlapping any hexes from adjacent sectors. This is
@@ -121,7 +158,7 @@ def sectorBoundingRect(
 # this sector
 def sectorInteriorRect(
         sector: typing.Tuple[int, int],
-        ) -> typing.Tuple[int, int, int, int]:
+        ) -> typing.Tuple[float, float, float, float]:
     left = (sector[0] * SectorWidth) - ReferenceHexX
     bottom = (sector[1] * SectorHeight) - ReferenceHexY
     width = SectorWidth
@@ -130,7 +167,10 @@ def sectorInteriorRect(
     # Shrink to fit within the hexes of this sector
     bottom += 0.5
     height -= 1
-    left += 0.5 + HexWidthOffset
+    # TODO: Need to do testing with map proxy and custom sectors to see
+    # if this change hasn't broken anything (See TODO in sectorBoundingRect)
+    #left += 0.5 + HexWidthOffset
+    left += HexWidthOffset
     width -= (HexWidthOffset * 2)
 
     return (left, bottom, width, height)
