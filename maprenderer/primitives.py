@@ -65,16 +65,16 @@ class MapOptions(enum.IntFlag):
 
     BordersMajor = 0x0010
     BordersMinor = 0x0020
-    BordersMask = BordersMajor | BordersMinor,
+    BordersMask = BordersMajor | BordersMinor
 
     NamesMajor = 0x0040
     NamesMinor = 0x0080
-    NamesMask = NamesMajor | NamesMinor,
+    NamesMask = NamesMajor | NamesMinor
 
     # TODO: Do I need these if they're deprecated?
     WorldsCapitals = 0x0100
     WorldsHomeworlds = 0x0200
-    WorldsMask = WorldsCapitals | WorldsHomeworlds,
+    WorldsMask = WorldsCapitals | WorldsHomeworlds
 
     RoutesSelectedDeprecated = 0x0400
 
@@ -295,7 +295,7 @@ class PathPointType(enum.IntFlag):
     #
     # Summary:
     #     The endpoint of a subpath.
-    CloseSubpath = 0x80,
+    CloseSubpath = 0x80
     #
     # Summary:
     #     A cubic Bézier curve.
