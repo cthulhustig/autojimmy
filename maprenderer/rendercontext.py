@@ -808,8 +808,8 @@ class RenderContext(object):
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
     def _drawSectorNames(self) -> None:
-        #if not (self._styleSheet.showSomeSectorNames or self._styleSheet.showAllSectorNames):
-        #    return
+        if not (self._styleSheet.showSomeSectorNames or self._styleSheet.showAllSectorNames):
+            return
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
