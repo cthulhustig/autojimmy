@@ -120,50 +120,31 @@ class StyleSheet(object):
             self.showStellarOverlay or \
             self.capitalOverlay.visible
 
-    def worldColors(
+    def worldStyleElement(
             self,
             world: traveller.World
-            ) -> typing.Tuple[
-                typing.Optional[str], # Pen colour
-                typing.Optional[str]]: # Brush colour
-        penColor = None
-        brushColor = None
-
+            ) -> StyleElement:
         if self.showWorldDetailColors:
             if maprenderer.WorldHelper.isAgricultural(world) and maprenderer.WorldHelper.isRich(world):
-                penColor = brushColor = travellermap.MapColours.TravellerAmber
+                return self.worldRichAgricultural
             elif maprenderer.WorldHelper.isAgricultural(world):
-                penColor = brushColor = travellermap.MapColours.TravellerGreen
+                return self.worldAgricultural
             elif maprenderer.WorldHelper.isRich(world):
-                penColor = brushColor = travellermap.MapColours.Purple
+                return self.worldRich
             elif maprenderer.WorldHelper.isIndustrial(world):
-                penColor = brushColor = '#888888' # Gray
+                return self.worldIndustrial
             elif world.uwp().numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10:
-                penColor = brushColor = '#CC6626' # Rust
+                return self.worldHarshAtmosphere
             elif maprenderer.WorldHelper.isVacuum(world):
-                brushColor = travellermap.MapColours.Black
-                penColor = travellermap.MapColours.White
+                return self.worldVacuum
             elif maprenderer.WorldHelper.hasWater(world):
-                brushColor = self.worldWater.fillBrush.color()
-                penColor = self.worldWater.pen.color()
+                return self.worldWater
             else:
-                brushColor = self.worldNoWater.fillBrush.color()
-                penColor = self.worldNoWater.pen.color()
-        else:
-            # Classic colors
+                return self.worldNoWater
 
-            # World disc
-            hasWater = maprenderer.WorldHelper.hasWater(world)
-            brushColor = \
-                self.worldWater.fillBrush.color() \
-                if hasWater else \
-                self.worldNoWater.fillBrush.color()
-            penColor = \
-                self.worldWater.pen.color() \
-                if hasWater else \
-                self.worldNoWater.pen.color()
-
-        return (penColor, brushColor)
+        # Classic colors
+        hasWater = maprenderer.WorldHelper.hasWater(world)
+        return self.worldWater if hasWater else self.worldNoWater
 
     def _handleConfigUpdate(self) -> None:
         # Options
@@ -187,9 +168,6 @@ class StyleSheet(object):
         self.riftOpacity = 0.0 # TODO: Not sure about this
 
         self.hexContentScale = 1.0
-        # TODO: Is hex rotation actually used for anything? Removing it
-        # would reduce the number of transforms
-        self.hexRotation = 0
 
         self.routeEndAdjust = 0.25
 
@@ -258,13 +236,20 @@ class StyleSheet(object):
         self.macroRoutes = StyleSheet.StyleElement()
         self.microRoutes = StyleSheet.StyleElement()
         self.macroBorders = StyleSheet.StyleElement()
+        self.microBorders = StyleSheet.StyleElement()
         self.macroNames = StyleSheet.StyleElement()
         self.megaNames = StyleSheet.StyleElement()
         self.pseudoRandomStars = StyleSheet.StyleElement()
         self.placeholder = StyleSheet.StyleElement()
         self.anomaly = StyleSheet.StyleElement()
 
-        self.microBorders = StyleSheet.StyleElement()
+        self.worldRichAgricultural = StyleSheet.StyleElement()
+        self.worldAgricultural = StyleSheet.StyleElement()
+        self.worldRich = StyleSheet.StyleElement()
+        self.worldIndustrial = StyleSheet.StyleElement()
+        self.worldHarshAtmosphere = StyleSheet.StyleElement()
+        self.worldVacuum = StyleSheet.StyleElement()
+
         self.fillMicroBorders = False
         self.shadeMicroBorders = False
         self.showMicroNames = False
@@ -528,19 +513,18 @@ class StyleSheet(object):
         self.microBorders.pen = self._graphics.createPen(
             color=travellermap.MapColours.Gray,
             width=borderPenWidth)
+        self.microBorders.textBrush = self._graphics.createBrush(
+            color=travellermap.MapColours.TravellerAmber)
         self.microRoutes.pen = self._graphics.createPen(
             color=travellermap.MapColours.Gray,
             width=routePenWidth)
 
-        self.microBorders.textBrush = self._graphics.createBrush(
-            color=travellermap.MapColours.TravellerAmber)
         self.worldWater.fillBrush = self._graphics.createBrush(
             color=travellermap.MapColours.DeepSkyBlue)
+        self.worldWater.pen = None
         self.worldNoWater.fillBrush = self._graphics.createBrush(
             color=travellermap.MapColours.White)
-        self.worldNoWater.pen = self._graphics.createPen(
-            color='#0000FF', # TODO: Color.Empty;
-            width=onePixel)
+        self.worldNoWater.pen = None
 
         gridColor = self._colorScaleInterpolate(
             scale=self.scale,
@@ -556,9 +540,6 @@ class StyleSheet(object):
         self.sectorGrid.pen = self._graphics.createPen(
             color=gridColor,
             width=(4 if self.subsectorGrid.visible else 2) * onePixel)
-        self.worldWater.pen = self._graphics.createPen(
-            color='#0000FF', # TODO: Color.Empty,
-            width=max(0.01, onePixel))
 
         self.microBorders.textStyle.rotation = 0
         self.microBorders.textStyle.translation = maprenderer.AbstractPointF(0, 0)
@@ -592,15 +573,15 @@ class StyleSheet(object):
             color='#80FF0000')
 
         self.populationOverlay.pen = self._graphics.createPen(
-            color='#0000FF', # TODO: Color.Empty,
+            color='#00FF00', # TODO: Color.Empty,
             width=0.03 * penScale,
             style=maprenderer.LineStyle.Dash)
         self.importanceOverlay.pen = self._graphics.createPen(
-            color='#0000FF', # TODO: Color.Empty,
+            color='#00FF00', # TODO: Color.Empty,
             width=0.03 * penScale,
             style=maprenderer.LineStyle.Dot)
         self.highlightWorlds.pen =self._graphics.createPen(
-            color='#0000FF', # TODO: Color.Empty,
+            color='#00FF00', # TODO: Color.Empty,
             width=0.03 * penScale,
             style=maprenderer.LineStyle.DashDot)
 
@@ -710,11 +691,10 @@ class StyleSheet(object):
             highlightColor = travellermap.MapColours.Gray
             self.microBorders.textBrush.setColor(travellermap.MapColours.Gray)
             self.worldWater.fillBrush.setColor(travellermap.MapColours.Black)
-            self.worldNoWater.fillBrush.setColor('#0000FF') # TODO: Color.Empty
-
             self.worldNoWater.fillBrush.setColor(travellermap.MapColours.White)
-            self.worldNoWater.pen.setColor(travellermap.MapColours.Black)
-            self.worldNoWater.pen.setWidth(onePixel)
+            self.worldNoWater.pen = self._graphics.createPen(
+                color=travellermap.MapColours.Black,
+                width=onePixel)
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
 
@@ -752,7 +732,7 @@ class StyleSheet(object):
             self.capitals.textBrush.setColor(inkColor)
             self.amberZone.pen.setColor(inkColor)
             self.amberZone.pen.setWidth(onePixel * 2)
-            self.redZone.pen.setColor('#0000FF') # TODO: Color.Empty
+            self.redZone.pen = None
             self.redZone.fillBrush = self._graphics.createBrush(
                 color=maprenderer.makeAlphaColor(
                         alpha=0x80,
@@ -786,8 +766,8 @@ class StyleSheet(object):
 
             self.worldWater.fillBrush.setColor(inkColor)
             self.worldNoWater.fillBrush.setColor(inkColor)
-            self.worldWater.pen.setColor('#0000FF') # TODO: Color.Empty
-            self.worldNoWater.pen.setColor('#0000FF') # TODO: Color.Empty
+            self.worldWater.pen = None
+            self.worldNoWater.pen = None
 
             self.showWorldDetailColors = False
 
@@ -985,7 +965,7 @@ class StyleSheet(object):
             self.microBorders.pen.setStyle(maprenderer.LineStyle.Dot)
 
             self.worldNoWater.fillBrush.setColor(foregroundColor)
-            self.worldWater.fillBrush.setColor('#0000FF') # TODO: Color.Empty
+            self.worldWater.fillBrush = None
             self.worldWater.pen = self._graphics.createPen(
                 color=foregroundColor,
                 width=onePixel * 2)
@@ -1202,7 +1182,7 @@ class StyleSheet(object):
             self.subsectorNames.textStyle.uppercase = True
 
             self.worldNoWater.fillBrush.setColor(foregroundColor)
-            self.worldWater.fillBrush.setColor('#0000FF') # TODO: Color.Empty
+            self.worldWater.fillBrush = None
             self.worldWater.pen = self._graphics.createPen(
                 color=foregroundColor,
                 width=onePixel * 2)
@@ -1447,6 +1427,27 @@ class StyleSheet(object):
         if not self.anomaly.textBrush:
             self.anomaly.textBrush = self._graphics.createBrush(
                 color=highlightColor)
+
+        if self.showWorldDetailColors:
+            self.worldRichAgricultural.fillBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.TravellerAmber)
+            self.worldAgricultural.fillBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.TravellerGreen)
+            self.worldRich.fillBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.Purple)
+            self.worldIndustrial.fillBrush = self._graphics.createBrush(
+                color='#888888') # Gray
+            self.worldHarshAtmosphere.fillBrush = self._graphics.createBrush(
+                color='#CC6626') # Rust
+            self.worldVacuum.fillBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.Black)
+            self.worldVacuum.fillBrush = self._graphics.createBrush(
+                color=travellermap.MapColours.Black)
+            self.worldVacuum.pen = self._graphics.createPen(
+                color=travellermap.MapColours.White,
+                width=self.worldWater.pen.width() if self.worldWater.pen else onePixel,
+                style=self.worldWater.pen.style() if self.worldWater.pen else maprenderer.LineStyle.Solid,
+                pattern=self.worldWater.pen.pattern()if self.worldWater.pen else None)
 
         # Convert list into a id -> index mapping.
         self.layerOrder.clear()

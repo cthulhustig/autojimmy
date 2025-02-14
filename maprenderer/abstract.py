@@ -150,6 +150,10 @@ class AbstractPen(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement pattern')
     def setPattern(self, pattern: typing.Sequence[float]) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setPattern')
+    def tip(self) -> maprenderer.PenTip:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement tip')
+    def setTip(self, tip: maprenderer.PenTip) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setTip')
     def copyFrom(self, other: 'AbstractPen') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement copyFrom')
 

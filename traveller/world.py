@@ -44,6 +44,9 @@ class World(object):
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
         self._bases = traveller.Bases(bases)
 
+        # Importance is calculated on demand
+        self._importance = None
+
     def name(self, includeSubsector: bool = False) -> str:
         if includeSubsector:
             return f'{self._name} ({self._subsectorName})'
@@ -241,8 +244,78 @@ class World(object):
                 travellermap.HexPosition
             ]
             ) -> int:
-        return self._hexPosition.parsecsTo(
+        return self._hex.parsecsTo(
             dest.hex() if isinstance(dest, World) else dest)
+
+    # This is based on code from Traveller Map which I believe is
+    # based on the T5.10 rules
+    def importance(self) -> int:
+        if self._importance is None:
+            self._importance = 0
+
+            starportCode = self._uwp.code(traveller.UWP.Element.StarPort)
+            techLevel = self._uwp.numeric(traveller.UWP.Element.TechLevel, default=0)
+            population = self._uwp.numeric(traveller.UWP.Element.Population, default=0)
+            atmosphere = self._uwp.numeric(traveller.UWP.Element.Atmosphere, default=-1)
+            hydrographics = self._uwp.numeric(traveller.UWP.Element.Hydrographics, default=-1)
+
+            if 'AB'.find(starportCode) >= 0:
+                self._importance += 1
+            elif 'DEX'.find(starportCode) >= 0:
+                self._importance -= 1
+
+            if techLevel >= 16:
+                self._importance += 2
+            elif techLevel >= 10:
+                self._importance += 1
+            elif techLevel <= 8:
+                self._importance -= 1
+
+            if population >= 9:
+                self._importance += 1
+            elif population <= 6:
+                self._importance -= 1
+
+            isAgricultural = \
+                (atmosphere >= 4 and atmosphere <= 9) and \
+                (hydrographics >= 4 and hydrographics <= 8) and \
+                (population >= 5 and population <= 7)
+            isRich = \
+                (atmosphere == 6 or atmosphere == 8) and \
+                (population >= 6 and population <= 8)
+            isIndustrial = \
+                ((atmosphere >= 0 and atmosphere <= 2) or \
+                 (atmosphere == 4) or \
+                 (atmosphere == 7) or
+                 (atmosphere >= 9 and atmosphere <= 12)) and \
+                 (population >= 9)
+            if isAgricultural:
+                self._importance += 1
+            if isRich:
+                self._importance += 1
+            if isIndustrial:
+                self._importance += 1
+
+            # NOTE: The definition of hasNavalBase intentionally doesn't include
+            # things like VargrNavalBase as Traveller Map doesn't
+            hasNavalBase = self._bases.hasBase(traveller.BaseType.ImperialNavalBase) or \
+                self._bases.hasBase(traveller.BaseType.NavalBase)
+            hasOtherServiceBase = self._bases.hasBase(traveller.BaseType.ImperialScoutBase) or \
+                self._bases.hasBase(traveller.BaseType.MilitaryBase) or \
+                self._bases.hasBase(traveller.BaseType.ExplorationBase) or \
+                self._bases.hasBase(traveller.BaseType.VargrCorsairBase)
+            hasServiceSpecialBase = self._bases.hasBase(traveller.BaseType.WayStation) or \
+                self._bases.hasBase(traveller.BaseType.NavalDepot)
+            hasAslanAndTlaukhuBase = self._bases.hasBase(traveller.BaseType.AslanClanBase) and \
+                self._bases.hasBase(traveller.BaseType.AslanTlaukhuBase)
+            if hasNavalBase and hasOtherServiceBase:
+                self._importance += 1
+            if hasServiceSpecialBase:
+                self._importance += 1
+            if hasAslanAndTlaukhuBase:
+                self._importance += 1
+
+        return self._importance
 
     # Prevent deep and shallow copies of world objects some code
     # (specifically the jump route calculations) expect there to
