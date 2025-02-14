@@ -786,7 +786,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         clipPath.addRect(rect.qtRect())
         self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
-    def drawPoint(self, pen: QtMapPen, point: maprenderer.AbstractPointF) -> None:
+    def drawPoint(self, point: maprenderer.AbstractPointF, pen: QtMapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
     def drawPoints(self, points: QtMapPointList, pen: QtMapPen) -> None:
@@ -796,14 +796,21 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(
             self,
-            pen: QtMapPen,
             pt1: maprenderer.AbstractPointF,
-            pt2: maprenderer.AbstractPointF
+            pt2: maprenderer.AbstractPointF,
+            pen: QtMapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawLine(
             self._convertPoint(pt1),
             self._convertPoint(pt2))
+    def drawLines(
+            self,
+            points: QtMapPointList,
+            pen: QtMapPen
+            ) -> None:
+        self._painter.setPen(pen.qtPen())
+        self._painter.drawLines(points.qtPolygon())
 
     def drawPath(
             self,

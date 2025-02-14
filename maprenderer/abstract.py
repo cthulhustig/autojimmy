@@ -292,14 +292,25 @@ class AbstractGraphics(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
 
     # TODO: Hopefully I can get rid of the singular version at some point
-    def drawPoint(self, pen: AbstractPen, point: maprenderer.AbstractPointF) -> None:
+    def drawPoint(self, point: maprenderer.AbstractPointF, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
     def drawPoints(self, points: AbstractPointList, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoints')
 
     # TODO: There was also an overload that takes 4 individual floats in the traveller map code
-    def drawLine(self, pen: AbstractPen, pt1: maprenderer.AbstractPointF, pt2: maprenderer.AbstractPointF) -> None:
+    def drawLine(
+            self,
+            pt1: maprenderer.AbstractPointF,
+            pt2: maprenderer.AbstractPointF,
+            pen: AbstractPen
+            ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLine')
+    def drawLines(
+            self,
+            points: AbstractPointList,
+            pen: AbstractPen
+            ) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLines')
 
     def drawPath(
             self,

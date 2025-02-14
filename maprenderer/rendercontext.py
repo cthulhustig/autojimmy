@@ -438,18 +438,18 @@ class RenderContext(object):
                     scaleX=1 / travellermap.ParsecScaleX,
                     scaleY=1 / travellermap.ParsecScaleY)
                 self._graphics.drawLine(
-                    pen=self._styleSheet.sectorGrid.pen,
                     pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
-                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop))
+                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop),
+                    pen=self._styleSheet.sectorGrid.pen)
             h += travellermap.SectorWidth
 
         v = ((math.floor((self._absoluteViewRect.top()) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
             travellermap.SectorHeight - travellermap.ReferenceHexY
         while v <= (self._absoluteViewRect.bottom() + travellermap.SectorHeight):
             self._graphics.drawLine(
-                pen=self._styleSheet.sectorGrid.pen,
                 pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
-                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v))
+                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v),
+                pen=self._styleSheet.sectorGrid.pen)
             v += travellermap.SectorHeight
 
     def _drawSubsectorGrid(self) -> None:
@@ -469,18 +469,18 @@ class RenderContext(object):
                 continue
             h = hi * travellermap.SubsectorWidth - travellermap.ReferenceHexX
             self._graphics.drawLine(
-                pen=self._styleSheet.subsectorGrid.pen,
                 pt1=maprenderer.AbstractPointF(h, self._absoluteViewRect.top() - gridSlop),
-                pt2=maprenderer.AbstractPointF(h, self._absoluteViewRect.bottom() + gridSlop))
+                pt2=maprenderer.AbstractPointF(h, self._absoluteViewRect.bottom() + gridSlop),
+                pen=self._styleSheet.subsectorGrid.pen)
             with self._graphics.save():
                 self._graphics.translateTransform(dx=h, dy=0)
                 self._graphics.scaleTransform(
                     scaleX=1 / travellermap.ParsecScaleX,
                     scaleY=1 / travellermap.ParsecScaleY)
                 self._graphics.drawLine(
-                    pen=self._styleSheet.subsectorGrid.pen,
                     pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
-                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop))
+                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop),
+                    pen=self._styleSheet.subsectorGrid.pen)
 
         vmin = int(math.floor(self._absoluteViewRect.top() / travellermap.SubsectorHeight) - 1 -
                    travellermap.ReferenceSectorY)
@@ -491,9 +491,9 @@ class RenderContext(object):
                 continue
             v = vi * travellermap.SubsectorHeight - travellermap.ReferenceHexY
             self._graphics.drawLine(
-                pen=self._styleSheet.subsectorGrid.pen,
                 pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
-                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v))
+                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v),
+                pen=self._styleSheet.subsectorGrid.pen)
 
     def _drawParsecGrid(self) -> None:
         if not self._styleSheet.parsecGrid.visible:
@@ -635,7 +635,7 @@ class RenderContext(object):
             with self._graphics.save():
                 self._graphics.intersectClipPath(path=clip)
 
-                regions = self._sectorCache.regionOutlines(x=sector.x(), y=sector.y())
+                regions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
                 if regions:
                     for outline in regions:
                         if not self._absoluteViewRect.intersectsWith(outline.bounds()):
@@ -644,7 +644,7 @@ class RenderContext(object):
                             outline=outline,
                             brush=brush)
 
-                borders = self._sectorCache.borderOutlines(x=sector.x(), y=sector.y())
+                borders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
                 if borders:
                     for outline in borders:
                         if not self._absoluteViewRect.intersectsWith(outline.bounds()):
@@ -667,26 +667,8 @@ class RenderContext(object):
             baseWidth = self._styleSheet.microRoutes.pen.width()
 
             for sector in self._selector.sectors():
-                for route in sector.routes():
-                    # Compute source/target sectors (may be offset)
-                    startPoint = route.startHex()
-                    endPoint = route.endHex()
-
-                    # If drawing dashed lines twice and the start/end are swapped the
-                    # dashes don't overlap correctly. So "sort" the points.
-                    needsSwap = (startPoint.absoluteX() < endPoint.absoluteX()) or \
-                        (startPoint.absoluteX() == endPoint.absoluteX() and \
-                         startPoint.absoluteY() < endPoint.absoluteY())
-                    if needsSwap:
-                        (startPoint, endPoint) = (endPoint, startPoint)
-
-                    startPoint = RenderContext._hexToCenter(startPoint)
-                    endPoint = RenderContext._hexToCenter(endPoint)
-
-                    # Shorten line to leave room for world glyph
-                    self._offsetRouteSegment(startPoint, endPoint, self._styleSheet.routeEndAdjust)
-
-                    routeColor = route.colour()
+                for route in self._sectorCache.routeLines(x=sector.x(), y=sector.y()):
+                    routeColor = route.color()
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
@@ -729,7 +711,9 @@ class RenderContext(object):
                     pen.setWidth(routeWidth * baseWidth)
                     pen.setStyle(routeStyle)
 
-                    self._graphics.drawLine(pen, startPoint, endPoint)
+                    self._graphics.drawLines(
+                        points=route.points(),
+                        pen=pen)
 
     _LabelDefaultColor = travellermap.MapColours.TravellerAmber
     def _drawMicroLabels(self) -> None:
@@ -1828,7 +1812,7 @@ class RenderContext(object):
     _MicroBorderShadeAlpha = 128
     def _drawMicroBorder(
             self,
-            outline: maprenderer.SectorOutline,
+            outline: maprenderer.SectorPath,
             brush: maprenderer.AbstractBrush,
             pen: typing.Optional[maprenderer.AbstractPen] = None,
             shadePen: typing.Optional[maprenderer.AbstractPen] = None

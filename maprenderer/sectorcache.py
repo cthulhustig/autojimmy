@@ -1,9 +1,10 @@
 import maprenderer
+import math
 import traveller
 import travellermap
 import typing
 
-class SectorOutline(object):
+class SectorPath(object):
     def __init__(
             self,
             path: maprenderer.AbstractPath,
@@ -26,9 +27,47 @@ class SectorOutline(object):
     def bounds(self) -> maprenderer.AbstractRectangleF:
         return self._path.bounds()
 
+class SectorLines(object):
+    def __init__(
+            self,
+            points: typing.Iterable[maprenderer.AbstractPointList],
+            color: typing.Optional[str],
+            width: typing.Optional[float],
+            style: typing.Optional[maprenderer.LineStyle],
+            type: typing.Optional[str],
+            allegiance: typing.Optional[str]
+            ) -> None:
+        self._points = points
+        self._color = color
+        self._width = width
+        self._style = style
+        self._type = type
+        self._allegiance = allegiance
+
+    def points(self) -> maprenderer.AbstractPointList:
+        return self._points
+
+    def color(self) -> typing.Optional[str]:
+        return self._color
+
+    def width(self) -> typing.Optional[float]:
+        return self._width
+
+    def style(self) -> typing.Optional[maprenderer.LineStyle]:
+        return self._style
+
+    def type(self) -> typing.Optional[str]:
+        return self._type
+
+    def allegiance(self) -> typing.Optional[str]:
+        return self._allegiance
+
 # TODO: Should probably flatten style cache into this code as I think it's
 # the only thing that actually uses it
 class SectorCache(object):
+    # This was moved from the style sheet as it never actually changes
+    _RouteEndAdjust = 0.25
+
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
@@ -42,11 +81,15 @@ class SectorCache(object):
         ] = {}
         self._borderCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
-            typing.List[SectorOutline]
+            typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
-            typing.List[SectorOutline]
+            typing.List[SectorPath]
+        ] = {}
+        self._routeCache: typing.Dict[
+            typing.Union[int, int], # Sector x/y
+            typing.List[SectorLines]
         ] = {}
 
     def isotropicWorldPoints(
@@ -78,11 +121,11 @@ class SectorCache(object):
         self._worldsCache[key] = worlds
         return worlds
 
-    def borderOutlines(
+    def borderPaths(
             self,
             x: int,
             y: int
-            ) -> typing.Optional[typing.List[SectorOutline]]:
+            ) -> typing.Optional[typing.List[SectorPath]]:
         key = (x, y)
         borders = self._borderCache.get(key)
         if borders is not None:
@@ -100,11 +143,11 @@ class SectorCache(object):
         self._borderCache[key] = borders
         return borders
 
-    def regionOutlines(
+    def regionPaths(
             self,
             x: int,
             y: int
-            ) -> typing.Optional[typing.List[SectorOutline]]:
+            ) -> typing.Optional[typing.List[SectorPath]]:
         key = (x, y)
         regions = self._regionCache.get(key)
         if regions is not None:
@@ -122,10 +165,81 @@ class SectorCache(object):
         self._regionCache[key] = regions
         return regions
 
+    def routeLines(
+            self,
+            x: int,
+            y: int
+            ) -> typing.Optional[typing.List[SectorLines]]:
+        key = (x, y)
+        routes = self._routeCache.get(key)
+        if routes is not None:
+            return routes
+
+        sector = traveller.WorldManager.instance().sectorByPosition(
+            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        if not sector:
+            # Don't cache the fact the sector doesn't exist to avoid memory bloat
+            return None
+
+        routePointsMap: typing.Dict[
+            typing.Tuple[
+                typing.Optional[str], # Color
+                typing.Optional[float], # Width
+                typing.Optional[maprenderer.LineStyle], # Line style
+                typing.Optional[str], # Type
+                typing.Optional[str]], # Allegiance
+            typing.List[maprenderer.AbstractPointF]] = {}
+        for route in sector.routes():
+            # Compute source/target sectors (may be offset)
+            startPoint = route.startHex()
+            endPoint = route.endHex()
+
+            # If drawing dashed lines twice and the start/end are swapped the
+            # dashes don't overlap correctly. So "sort" the points.
+            needsSwap = (startPoint.absoluteX() < endPoint.absoluteX()) or \
+                (startPoint.absoluteX() == endPoint.absoluteX() and \
+                    startPoint.absoluteY() < endPoint.absoluteY())
+            if needsSwap:
+                (startPoint, endPoint) = (endPoint, startPoint)
+
+            centerX, centerY = startPoint.absoluteCenter()
+            startPoint = maprenderer.AbstractPointF(x=centerX, y=centerY)
+
+            centerX, centerY = endPoint.absoluteCenter()
+            endPoint = maprenderer.AbstractPointF(x=centerX, y=centerY)
+
+            # Shorten line to leave room for world glyph
+            SectorCache._offsetRouteSegment(
+                startPoint=startPoint,
+                endPoint=endPoint,
+                offset=SectorCache._RouteEndAdjust)
+
+            routeKey = (route.colour(), route.width(), route.style(), route.type(), route.allegiance())
+            routePoints = routePointsMap.get(routeKey)
+            if not routePoints:
+                routePoints = []
+                routePointsMap[routeKey] = routePoints
+
+            routePoints.append(startPoint)
+            routePoints.append(endPoint)
+
+        routes = []
+        for (color, width, style, type, allegiance), points in routePointsMap.items():
+            routes.append(SectorLines(
+                points=self._graphics.createPointList(points=points),
+                color=color,
+                width=width,
+                style=style,
+                type=type,
+                allegiance=allegiance))
+        self._routeCache[key] = routes
+
+        return routes
+
     def _createOutline(
             self,
             source: typing.Union[traveller.Region, traveller.Border]
-            ) -> SectorOutline:
+            ) -> SectorPath:
         color = source.colour()
         style = None
 
@@ -154,4 +268,22 @@ class SectorCache(object):
         types[-1] |= maprenderer.PathPointType.CloseSubpath
         outline = self._graphics.createPath(points=drawPath, types=types, closed=True)
 
-        return SectorOutline(path=outline, color=color, style=style)
+        return SectorPath(path=outline, color=color, style=style)
+
+    @staticmethod
+    def _offsetRouteSegment(
+            startPoint: maprenderer.AbstractPointF,
+            endPoint: maprenderer.AbstractPointF,
+            offset: float
+            ) -> None:
+        dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * travellermap.ParsecScaleY
+        length = math.sqrt(dx * dx + dy * dy)
+        if not length:
+            return # No offset
+        ddx = (dx * offset / length) / travellermap.ParsecScaleX
+        ddy = (dy * offset / length) / travellermap.ParsecScaleY
+        startPoint.setX(startPoint.x() + ddx)
+        startPoint.setY(startPoint.y() + ddy)
+        endPoint.setX(endPoint.x() - ddx)
+        endPoint.setY(endPoint.y() - ddy)
