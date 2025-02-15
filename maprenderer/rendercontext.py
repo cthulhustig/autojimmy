@@ -77,6 +77,9 @@ class RenderContext(object):
         self._sectorCache = maprenderer.SectorCache(
             graphics=self._graphics,
             styleCache=self._styleCache)
+        self._worldCache = maprenderer.WorldCache(
+            graphics=self._graphics,
+            imageCache=self._imageCache)
         self._starfieldCache = maprenderer.StarfieldCache(
             graphics=self._graphics)
         self._selector = maprenderer.RectSelector(
@@ -239,7 +242,7 @@ class RenderContext(object):
         """
         self._layers: typing.List[RenderContext.LayerAction] = [
             RenderContext.LayerAction(maprenderer.LayerId.Background_Solid, self._drawBackground, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Foreground, self._drawWorldsForeground, clip=False),
         ]
         """
 
@@ -598,7 +601,9 @@ class RenderContext(object):
         # scales the width to account for this
         penWidth *= 0.5
         pen = self._graphics.createPen(width=penWidth)
-        brush = self._graphics.createBrush()
+        brush = None
+        if self._styleSheet.fillMicroBorders:
+            brush = self._graphics.createBrush()
 
         shadePen = None
         if self._styleSheet.shadeMicroBorders:
@@ -1109,15 +1114,13 @@ class RenderContext(object):
                     brush=brush)
 
     def _drawWorldBackground(self, world: traveller.World) -> None:
-        isPlaceholder = False # TODO: Handle placeholder worlds
-        isCapital = isHiPop = False
+        worldInfo = self._worldCache.getWorldInfo(world=world)
+
         renderName = False
         if ((self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
             ((self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0):
-            isCapital = maprenderer.WorldHelper.isCapital(world)
-            isHiPop = maprenderer.WorldHelper.isHighPopulation(world)
             renderName = ((self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
-                (isCapital or isHiPop)
+                (worldInfo.isCapital or worldInfo.isHiPop)
         renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
 
         rect = self._graphics.createRectangle()
@@ -1125,11 +1128,9 @@ class RenderContext(object):
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            center = RenderContext._hexToCenter(world.hex())
-
             self._graphics.translateTransform(
-                dx=center.x(),
-                dy=center.y())
+                dx=worldInfo.hexCenter.x(),
+                dy=worldInfo.hexCenter.y())
             self._graphics.scaleTransform(
                 scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
                 scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
@@ -1137,7 +1138,7 @@ class RenderContext(object):
             if not self._styleSheet.useWorldImages:
                 # Normal (non-"Eye Candy") styles
                 if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0:
-                    elem = self._zoneStyle(world)
+                    elem = self._zoneStyle(worldInfo)
                     if elem and elem.visible:
                         if self._styleSheet.showZonesAsPerimeters:
                             with self._graphics.save():
@@ -1176,13 +1177,11 @@ class RenderContext(object):
                 if not self._styleSheet.numberAllHexes and \
                     ((self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0):
 
-                    hex = world.hex()
-                    if self._styleSheet.hexContentScale is maprenderer.HexCoordinateStyle.Subsector:
-                        # TODO: Handle subsector hex whatever that is
-                        #hex=f'{hex.offsetX():02d}{hex.offsetY():02d}'
-                        hex='TODO'
-                    else:
-                        hex=f'{hex.offsetX():02d}{hex.offsetY():02d}'
+                    # TODO: Handle subsector hex whatever that is
+                    hex = \
+                        'TODO' \
+                        if self._styleSheet.hexContentScale is maprenderer.HexCoordinateStyle.Subsector else \
+                        worldInfo.hexString
 
                     self._graphics.drawString(
                         text=hex,
@@ -1193,12 +1192,9 @@ class RenderContext(object):
                         format=maprenderer.TextAlignment.TopCenter)
             else: # styles.useWorldImages
                 # "Eye-Candy" style
-                worldSize = world.physicalSize()
-                imageRadius = (0.6 if worldSize <= 0 else (0.3 * (worldSize / 5.0 + 0.2))) / 2
-
                 if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0:
-                    if isPlaceholder:
-                        e = self._styleSheet.anomaly if world.isAnomaly() else self._styleSheet.placeholder
+                    if worldInfo.isPlaceholder:
+                        e = self._styleSheet.anomaly if worldInfo.isAnomaly else self._styleSheet.placeholder
                         self._drawWorldLabel(
                             bkStyle=e.textBackgroundStyle,
                             bkBrush=self._styleSheet.worlds.textBrush,
@@ -1207,19 +1203,17 @@ class RenderContext(object):
                             font=e.font,
                             text=e.content)
                     else:
-                        scaleX = 1.5 if worldSize <= 0 else 1
-                        scaleY = 1.0 if worldSize <= 0 else 1
+                        scaleX = 1.5 if worldInfo.worldSize <= 0 else 1
+                        scaleY = 1.0 if worldInfo.worldSize <= 0 else 1
                         rect.setRect(
-                            x=-imageRadius * scaleX,
-                            y=-imageRadius * scaleY,
-                            width=imageRadius * 2 * scaleX,
-                            height=imageRadius * 2 * scaleY)
+                            x=-worldInfo.imageRadius * scaleX,
+                            y=-worldInfo.imageRadius * scaleY,
+                            width=worldInfo.imageRadius * 2 * scaleX,
+                            height=worldInfo.imageRadius * 2 * scaleY)
                         self._graphics.drawImage(
-                            image=maprenderer.WorldHelper.worldImage(
-                                world=world,
-                                images=self._imageCache),
+                            image=worldInfo.worldImage,
                             rect=rect)
-                elif not world.isAnomaly():
+                elif not worldInfo.isAnomaly:
                     # Dotmap
                     rect.setRect(
                         x=-self._styleSheet.discRadius,
@@ -1231,42 +1225,36 @@ class RenderContext(object):
                         brush=self._styleSheet.worlds.textBrush)
 
     def _drawWorldForeground(self, world: traveller.World) -> None:
-        uwp = world.uwp()
-        isPlaceholder = False # TODO: Handle placeholder worlds
-        isCapital = isHiPop = False
+        worldInfo = self._worldCache.getWorldInfo(world=world)
         renderName = False
         if ((self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
             ((self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0):
-            isCapital = maprenderer.WorldHelper.isCapital(world)
-            isHiPop = maprenderer.WorldHelper.isHighPopulation(world)
             renderName = ((self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0) or \
-                (isCapital or isHiPop)
+                (worldInfo.isCapital or worldInfo.isHiPop)
         renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            center = RenderContext._hexToCenter(world.hex())
-
             self._graphics.translateTransform(
-                dx=center.x(),
-                dy=center.y())
+                dx=worldInfo.hexCenter.x(),
+                dy=worldInfo.hexCenter.y())
             self._graphics.scaleTransform(
                 scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
                 scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
 
             if not self._styleSheet.useWorldImages:
                 # Normal (non-"Eye Candy") styles
-                elem = self._zoneStyle(world)
+                elem = self._zoneStyle(worldInfo)
                 worldTextBackgroundStyle = \
                     maprenderer.TextBackgroundStyle.NoStyle \
                     if (not elem or not elem.fillBrush) else \
                     self._styleSheet.worlds.textBackgroundStyle
 
-                if not isPlaceholder:
-                    if ((self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0) and \
-                        maprenderer.WorldHelper.hasGasGiants(world):
+                if not worldInfo.isPlaceholder:
+                    if worldInfo.hasGasGiant and \
+                        ((self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0):
                         self._drawGasGiant(
                             brush=self._styleSheet.worlds.textBrush,
                             x=self._styleSheet.gasGiantPosition.x(),
@@ -1275,9 +1263,9 @@ class RenderContext(object):
                             ring=self._styleSheet.showGasGiantRing)
 
                     if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Starport) != 0:
-                        starport = uwp.code(traveller.UWP.Element.StarPort)
+                        starport = worldInfo.starport
                         if self._styleSheet.showTL:
-                            starport += "-" + uwp.code(traveller.UWP.Element.TechLevel)
+                            starport += "-" + worldInfo.techLevel
 
                         self._drawWorldLabel(
                             bkStyle=worldTextBackgroundStyle,
@@ -1294,14 +1282,11 @@ class RenderContext(object):
                             textBrush=self._styleSheet.uwp.textBrush,
                             position=self._styleSheet.uwp.position,
                             font=self._styleSheet.hexNumber.font,
-                            text=uwp.string())
+                            text=worldInfo.uwpString)
 
                     # NOTE: This todo came in with the traveller map code
                     # TODO: Mask off background for glyphs
                     if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Bases) != 0:
-                        bases = world.bases()
-                        baseCount = bases.count()
-
                         # TODO: Handle base allegiances
                         """
                         # Special case: Show Zho Naval+Military as diamond
@@ -1311,25 +1296,21 @@ class RenderContext(object):
 
                         # Base 1
                         bottomUsed = False
-                        if baseCount:
-                            glyph = maprenderer.GlyphDefs.fromBaseCode(
-                                allegiance=world.allegiance(),
-                                code=traveller.Bases.code(bases[0]))
-                            if glyph.isPrintable:
-                                pt = self._styleSheet.baseTopPosition
-                                if glyph.bias is maprenderer.Glyph.GlyphBias.Bottom and \
-                                    not self._styleSheet.ignoreBaseBias:
-                                    pt = self._styleSheet.baseBottomPosition
-                                    bottomUsed = True
+                        if worldInfo.baseGlyph and worldInfo.baseGlyph.isPrintable:
+                            pt = self._styleSheet.baseTopPosition
+                            if worldInfo.baseGlyph.bias is maprenderer.Glyph.GlyphBias.Bottom and \
+                                not self._styleSheet.ignoreBaseBias:
+                                pt = self._styleSheet.baseBottomPosition
+                                bottomUsed = True
 
-                                brush = \
-                                    self._styleSheet.worlds.textHighlightBrush \
-                                    if glyph.highlight else \
-                                    self._styleSheet.worlds.textBrush
-                                self._drawWorldGlyph(
-                                    glyph=glyph,
-                                    brush=brush,
-                                    pt=pt)
+                            brush = \
+                                self._styleSheet.worlds.textHighlightBrush \
+                                if worldInfo.baseGlyph.highlight else \
+                                self._styleSheet.worlds.textBrush
+                            self._drawWorldGlyph(
+                                glyph=worldInfo.baseGlyph,
+                                brush=brush,
+                                pt=pt)
 
                         # Base 2
                         # TODO: Add support for legacyAllegiance
@@ -1388,8 +1369,8 @@ class RenderContext(object):
 
                 if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0:
                     # TODO: Handle placeholders, this should be
-                    if isPlaceholder:
-                        e = self._styleSheet.anomaly if world.isAnomaly() else self._styleSheet.placeholder
+                    if worldInfo.isPlaceholder:
+                        e = self._styleSheet.anomaly if worldInfo.isAnomaly else self._styleSheet.placeholder
                         self._drawWorldLabel(
                             bkStyle=e.textBackgroundStyle,
                             bkBrush=self._styleSheet.worlds.textBrush,
@@ -1402,35 +1383,12 @@ class RenderContext(object):
                             self._graphics.translateTransform(
                                 dx=self._styleSheet.discPosition.x(),
                                 dy=self._styleSheet.discPosition.y())
-                            if uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0:
+                            if worldInfo.asteroidRectangles:
                                 if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Asteroids) != 0:
-                                    # Basic pattern, with probability varying per position:
-                                    #   o o o
-                                    #  o o o o
-                                    #   o o o
-
-                                    lpx = [-2, 0, 2, -3, -1, 1, 3, -2, 0, 2]
-                                    lpy = [-2, -2, -2, 0, 0, 0, 0, 2, 2, 2]
-                                    lpr = [0.5, 0.9, 0.5, 0.6, 0.9, 0.9, 0.6, 0.5, 0.9, 0.5]
-
-                                    # Random generator is seeded with world location so it is always the same
-                                    rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
-                                    rect = self._graphics.createRectangle()
-                                    for i in range(len(lpx)):
-                                        if rand.random() < lpr[i]:
-                                            rect.setX(lpx[i] * 0.035)
-                                            rect.setY(lpy[i] * 0.035)
-
-                                            rect.setWidth(0.04 + rand.random() * 0.03)
-                                            rect.setHeight(0.04 + rand.random() * 0.03)
-
-                                            # If necessary, add jitter here
-                                            #rect.x += 0
-                                            #rect.y += 0
-
-                                            self._graphics.drawEllipse(
-                                                rect=rect,
-                                                brush=self._styleSheet.worlds.textBrush)
+                                    for asteroidRect in worldInfo.asteroidRectangles:
+                                        self._graphics.drawEllipse(
+                                            rect=asteroidRect,
+                                            brush=self._styleSheet.worlds.textBrush)
                                 else:
                                     # Just a glyph
                                     self._drawWorldGlyph(
@@ -1438,7 +1396,7 @@ class RenderContext(object):
                                         brush=self._styleSheet.worlds.textBrush,
                                         pt=maprenderer.AbstractPointF(0, 0))
                             else:
-                                e = self._styleSheet.worldStyleElement(world)
+                                e = self._worldStyle(worldInfo)
                                 self._graphics.drawEllipse(
                                     rect=self._graphics.createRectangle(
                                         x=-self._styleSheet.discRadius,
@@ -1447,7 +1405,7 @@ class RenderContext(object):
                                         height=2 * self._styleSheet.discRadius),
                                     pen=e.pen,
                                     brush=e.fillBrush)
-                elif not world.isAnomaly():
+                elif not worldInfo.isAnomaly:
                     # Dotmap
                     self._graphics.drawEllipse(
                         rect=self._graphics.createRectangle(
@@ -1458,20 +1416,20 @@ class RenderContext(object):
                         brush=self._styleSheet.worlds.textBrush)
 
                 if renderName:
-                    name = world.name()
+                    name = worldInfo.name
                     highlight = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Highlight) != 0
-                    if (isHiPop and highlight) or \
+                    if (worldInfo.isHiPop and highlight) or \
                         self._styleSheet.worlds.textStyle.uppercase:
-                        name = name.upper()
+                        name = worldInfo.upperName
 
                     textBrush = \
                         self._styleSheet.worlds.textHighlightBrush \
-                        if isCapital and highlight else \
+                        if worldInfo.isCapital and highlight else \
                         self._styleSheet.worlds.textBrush
 
                     font = \
                         self._styleSheet.worlds.largeFont \
-                        if (isHiPop or isCapital) and highlight else \
+                        if (worldInfo.isHiPop or worldInfo.isCapital) and highlight else \
                         self._styleSheet.worlds.font
 
                     self._drawWorldLabel(
@@ -1499,20 +1457,17 @@ class RenderContext(object):
                             y=self._styleSheet.allegiancePosition.y(),
                             format=maprenderer.TextAlignment.Centered)
             else: # styles.useWorldImages
-                if isPlaceholder:
+                # "Eye-Candy" style
+                if worldInfo.isPlaceholder:
                     return
 
-                # "Eye-Candy" style
-                worldSize = world.physicalSize()
-                imageRadius = (0.6 if worldSize <= 0 else (0.3 * (worldSize / 5.0 + 0.2))) / 2
-                decorationRadius = imageRadius + 0.1
+                decorationRadius = worldInfo.imageRadius + 0.1
 
                 if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0:
-                    zone = world.zone()
-                    if zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.RedZone:
+                    if worldInfo.isAmberZone or worldInfo.isRedZone:
                         pen = \
                             self._styleSheet.amberZone.pen \
-                            if zone is traveller.ZoneType.AmberZone else \
+                            if worldInfo.isAmberZone else \
                             self._styleSheet.redZone.pen
                         rect = self._graphics.createRectangle(
                             x=-decorationRadius,
@@ -1558,7 +1513,7 @@ class RenderContext(object):
                     # NOTE: This todo came in with the traveller map code
                     # TODO: Scale, like the name text.
                     self._graphics.drawString(
-                        text=uwp.string(),
+                        text=worldInfo.uwpString,
                         font=self._styleSheet.hexNumber.font,
                         brush=self._styleSheet.worlds.textBrush,
                         x=decorationRadius,
@@ -1566,19 +1521,16 @@ class RenderContext(object):
                         format=maprenderer.TextAlignment.MiddleLeft)
 
                 if renderName:
-                    name = world.name()
-                    if isHiPop:
-                        name.upper()
+                    name = worldInfo.name
+                    if worldInfo.isHiPop or self._styleSheet.worlds.textStyle.uppercase:
+                        worldInfo.upperName
 
                     with self._graphics.save():
                         highlight = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Highlight) != 0
                         textBrush = \
                             self._styleSheet.worlds.textHighlightBrush \
-                            if isCapital and highlight else \
+                            if worldInfo.isCapital and highlight else \
                             self._styleSheet.worlds.textBrush
-
-                        if self._styleSheet.worlds.textStyle.uppercase:
-                            name = name.upper()
 
                         self._graphics.translateTransform(
                             dx=decorationRadius,
@@ -1601,43 +1553,39 @@ class RenderContext(object):
                             text=name)
 
     def _drawWorldOverlay(self, world: traveller.World) -> None:
+        worldInfo = self._worldCache.getWorldInfo(world=world)
+
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            center = RenderContext._hexToCenter(world.hex())
-
             self._graphics.translateTransform(
-                dx=center.x(),
-                dy=center.y())
+                dx=worldInfo.hexCenter.x(),
+                dy=worldInfo.hexCenter.y())
             self._graphics.scaleTransform(
                 scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
                 scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
 
-            if self._styleSheet.populationOverlay.visible and (world.population() > 0):
+            if self._styleSheet.populationOverlay.visible and worldInfo.populationOverlayRadius > 0:
                 self._drawOverlay(
                     element=self._styleSheet.populationOverlay,
-                    radius=math.sqrt(world.population() / math.pi) * 0.00002)
+                    radius=worldInfo.populationOverlayRadius)
 
-            if self._styleSheet.importanceOverlay.visible:
-                importance = world.importance()
-                if importance > 0:
-                    self._drawOverlay(
-                        element=self._styleSheet.importanceOverlay,
-                        radius=(importance - 0.5) * travellermap.ParsecScaleX)
+            if self._styleSheet.importanceOverlay.visible and worldInfo.importanceOverlayRadius > 0:
+                self._drawOverlay(
+                    element=self._styleSheet.importanceOverlay,
+                    radius=worldInfo.importanceOverlayRadius)
 
             if self._styleSheet.capitalOverlay.visible:
-                isImportant = world.importance() >= 4
-                isCapital = maprenderer.WorldHelper.isCapital()
-                if isImportant and isCapital:
+                if worldInfo.isImportant and worldInfo.isCapital:
                     self._drawOverlay(
                         element=self._styleSheet.capitalOverlay,
                         radius=2 * travellermap.ParsecScaleX)
-                elif isImportant:
+                elif worldInfo.isImportant:
                     self._drawOverlay(
                         element=self._styleSheet.capitalOverlayAltA,
                         radius=2 * travellermap.ParsecScaleX)
-                elif isCapital:
+                elif worldInfo.isCapital:
                     self._drawOverlay(
                         element=self._styleSheet.capitalOverlayAltB,
                         radius=2 * travellermap.ParsecScaleX)
@@ -1697,8 +1645,6 @@ class RenderContext(object):
                     self._graphics.drawString(
                         text=text,
                         font=font,
-                        # TODO: This doesn't seem right. I think this is drawing a shadow behind the text
-                        # but if it's just drawing the background colour will you actually see it??
                         brush=self._styleSheet.backgroundBrush,
                         x=position.x() + sx * dx,
                         y=position.y() + sy * dy,
@@ -1796,7 +1742,7 @@ class RenderContext(object):
     def _drawMicroBorder(
             self,
             outline: maprenderer.SectorPath,
-            brush: maprenderer.AbstractBrush,
+            brush: typing.Optional[maprenderer.AbstractBrush] = None,
             pen: typing.Optional[maprenderer.AbstractPen] = None,
             shadePen: typing.Optional[maprenderer.AbstractPen] = None
             ) -> None:
@@ -1837,13 +1783,14 @@ class RenderContext(object):
         if self._styleSheet.grayscale:
             color = self._styleSheet.microBorders.pen.color() # default
 
-        try:
-            brush.setColor(maprenderer.makeAlphaColor(
-                alpha=RenderContext._MicroBorderFillAlpha,
-                color=color))
-        except Exception as ex:
-            logging.warning('Failed to parse region colour', exc_info=ex)
-            return
+        if brush:
+            try:
+                brush.setColor(maprenderer.makeAlphaColor(
+                    alpha=RenderContext._MicroBorderFillAlpha,
+                    color=color))
+            except Exception as ex:
+                logging.warning('Failed to parse region colour', exc_info=ex)
+                return
 
         if pen:
             pen.setColor(color)
@@ -2006,18 +1953,42 @@ class RenderContext(object):
 
     def _zoneStyle(
             self,
-            world: traveller.World
+            worldInfo: maprenderer.WorldInfo
             ) -> typing.Optional[maprenderer.StyleSheet.StyleElement]:
-        zone = world.zone()
-        if zone is traveller.ZoneType.AmberZone:
+        if worldInfo.isAmberZone:
             return self._styleSheet.amberZone
-        if zone is traveller.ZoneType.RedZone:
+        if worldInfo.isRedZone:
             return self._styleSheet.redZone
         # TODO: Handle placeholders, this should be
         # if (styles.greenZone.visible && !world.IsPlaceholder)
         if self._styleSheet.greenZone.visible:
             return self._styleSheet.greenZone
         return None
+
+    def _worldStyle(
+            self,
+            worldInfo: maprenderer.WorldInfo
+            ) -> maprenderer.StyleSheet.StyleElement:
+        if self._styleSheet.showWorldDetailColors:
+            if worldInfo.isAgricultural and worldInfo.isRich:
+                return self._styleSheet.worldRichAgricultural
+            elif worldInfo.isAgricultural:
+                return self._styleSheet.worldAgricultural
+            elif worldInfo.isRich:
+                return self._styleSheet.worldRich
+            elif worldInfo.isIndustrial:
+                return self._styleSheet.worldIndustrial
+            elif worldInfo.isHarshAtmosphere:
+                return self._styleSheet.worldHarshAtmosphere
+            elif worldInfo.isVacuum:
+                return self._styleSheet.worldVacuum
+            elif worldInfo.hasWater:
+                return self._styleSheet.worldWater
+            else:
+                return self._styleSheet.worldNoWater
+
+        # Classic colors
+        return self._styleSheet.worldWater if worldInfo.hasWater else self._styleSheet.worldNoWater
 
     _StarPropsMap = {
         'O': ('#9DB4FF', 4),

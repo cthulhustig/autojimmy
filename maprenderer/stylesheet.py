@@ -120,32 +120,6 @@ class StyleSheet(object):
             self.showStellarOverlay or \
             self.capitalOverlay.visible
 
-    def worldStyleElement(
-            self,
-            world: traveller.World
-            ) -> StyleElement:
-        if self.showWorldDetailColors:
-            if maprenderer.WorldHelper.isAgricultural(world) and maprenderer.WorldHelper.isRich(world):
-                return self.worldRichAgricultural
-            elif maprenderer.WorldHelper.isAgricultural(world):
-                return self.worldAgricultural
-            elif maprenderer.WorldHelper.isRich(world):
-                return self.worldRich
-            elif maprenderer.WorldHelper.isIndustrial(world):
-                return self.worldIndustrial
-            elif world.uwp().numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10:
-                return self.worldHarshAtmosphere
-            elif maprenderer.WorldHelper.isVacuum(world):
-                return self.worldVacuum
-            elif maprenderer.WorldHelper.hasWater(world):
-                return self.worldWater
-            else:
-                return self.worldNoWater
-
-        # Classic colors
-        hasWater = maprenderer.WorldHelper.hasWater(world)
-        return self.worldWater if hasWater else self.worldNoWater
-
     def _handleConfigUpdate(self) -> None:
         # Options
 

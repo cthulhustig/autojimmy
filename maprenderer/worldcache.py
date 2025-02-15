@@ -1,0 +1,222 @@
+import maprenderer
+import math
+import random
+import traveller
+import travellermap
+import typing
+
+"""
+
+            else: # styles.useWorldImages
+                if isPlaceholder:
+                    return
+
+                # "Eye-Candy" style
+                worldSize = world.physicalSize()
+                imageRadius = (0.6 if worldSize <= 0 else (0.3 * (worldSize / 5.0 + 0.2))) / 2
+                decorationRadius = imageRadius + 0.1
+
+                if (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0:
+                    zone = world.zone()
+                    if zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.RedZone:
+                        pen = \
+                            self._styleSheet.amberZone.pen \
+                            if zone is traveller.ZoneType.AmberZone else \
+                            self._styleSheet.redZone.pen
+                        rect = self._graphics.createRectangle(
+                            x=-decorationRadius,
+                            y=-decorationRadius,
+                            width=decorationRadius * 2,
+                            height=decorationRadius * 2)
+
+                        self._graphics.drawArc(
+                            rect=rect,
+                            startDegrees=5,
+                            sweepDegrees=80,
+                            pen=pen)
+                        self._graphics.drawArc(
+                            rect=rect,
+                            startDegrees=95,
+                            sweepDegrees=80,
+                            pen=pen)
+                        self._graphics.drawArc(
+                            rect=rect,
+                            startDegrees=185,
+                            sweepDegrees=80,
+                            pen=pen)
+                        self._graphics.drawArc(
+                            rect=rect,
+                            startDegrees=275,
+                            sweepDegrees=80,
+                            pen=pen)
+                        decorationRadius += 0.1
+
+                if (self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0:
+                    symbolRadius = 0.05
+                    if self._styleSheet.showGasGiantRing:
+                        decorationRadius += symbolRadius
+                    self._drawGasGiant(
+                        brush=self._styleSheet.worlds.textHighlightBrush,
+                        x=decorationRadius,
+                        y=0,
+                        radius=symbolRadius,
+                        ring=self._styleSheet.showGasGiantRing)
+                    decorationRadius += 0.1
+
+                if renderUWP:
+                    # NOTE: This todo came in with the traveller map code
+                    # TODO: Scale, like the name text.
+                    self._graphics.drawString(
+                        text=uwp.string(),
+                        font=self._styleSheet.hexNumber.font,
+                        brush=self._styleSheet.worlds.textBrush,
+                        x=decorationRadius,
+                        y=self._styleSheet.uwp.position.y(),
+                        format=maprenderer.TextAlignment.MiddleLeft)
+
+                if renderName:
+                    name = world.name()
+                    if isHiPop or self._styleSheet.worlds.textStyle.uppercase:
+                        name.upper()
+
+                    with self._graphics.save():
+                        highlight = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Highlight) != 0
+                        textBrush = \
+                            self._styleSheet.worlds.textHighlightBrush \
+                            if isCapital and highlight else \
+                            self._styleSheet.worlds.textBrush
+
+                        self._graphics.translateTransform(
+                            dx=decorationRadius,
+                            dy=0.0)
+                        self._graphics.scaleTransform(
+                            scaleX=self._styleSheet.worlds.textStyle.scale.width(),
+                            scaleY=self._styleSheet.worlds.textStyle.scale.height())
+                        self._graphics.translateTransform(
+                            dx=self._graphics.measureString(
+                                text=name,
+                                font=self._styleSheet.worlds.font)[0] / 2,
+                            dy=0.0) # Left align
+
+                        self._drawWorldLabel(
+                            bkStyle=self._styleSheet.worlds.textBackgroundStyle,
+                            bkBrush=self._styleSheet.worlds.textBrush,
+                            textBrush=textBrush,
+                            position=self._styleSheet.worlds.textStyle.translation,
+                            font=self._styleSheet.worlds.font,
+                            text=name)
+"""
+
+class WorldInfo(object):
+    # Basic asteroid pattern, with probability varying per position:
+    #   o o o
+    #  o o o o
+    #   o o o
+    _AsteroidXPositions = [-2, 0, 2, -3, -1, 1, 3, -2, 0, 2]
+    _AsteroidYPositions = [-2, -2, -2, 0, 0, 0, 0, 2, 2, 2]
+    _AsteroidRadii = [0.5, 0.9, 0.5, 0.6, 0.9, 0.9, 0.6, 0.5, 0.9, 0.5]
+
+    def __init__(
+            self,
+            world: traveller.World,
+            graphics: maprenderer.AbstractGraphics,
+            imageCache: maprenderer.ImageCache
+            ) -> None:
+        self.name = world.name()
+        self.upperName = self.name.upper()
+
+        worldHex = world.hex()
+        self.hexString = f'{worldHex.offsetX():02d}{worldHex.offsetY():02d}'
+
+        hexCenterX, hexCenterY = worldHex.absoluteCenter()
+        self.hexCenter = maprenderer.AbstractPointF(x=hexCenterX, y=hexCenterY)
+
+        uwp = world.uwp()
+        self.uwpString = uwp.string()
+
+        self.isPlaceholder = False # TODO: Handle placeholder worlds
+
+        self.isCapital = maprenderer.WorldHelper.isCapital(world)
+        self.isHiPop = maprenderer.WorldHelper.isHighPopulation(world)
+        self.isAgricultural = maprenderer.WorldHelper.isAgricultural(world)
+        self.isRich = maprenderer.WorldHelper.isRich(world)
+        self.isIndustrial = maprenderer.WorldHelper.isIndustrial(world)
+
+        self.isVacuum = maprenderer.WorldHelper.isVacuum(world)
+        self.isHarshAtmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10
+
+        self.isAsteroids = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0
+        self.asteroidRectangles = None
+        if self.isAsteroids:
+            # Random generator is seeded with world location so it is always the same
+            rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
+            self.asteroidRectangles = []
+            for i in range(len(WorldInfo._AsteroidXPositions)):
+                if rand.random() < WorldInfo._AsteroidRadii[i]:
+                    self.asteroidRectangles.append(graphics.createRectangle(
+                        x=WorldInfo._AsteroidXPositions[i] * 0.035,
+                        y=WorldInfo._AsteroidYPositions[i] * 0.035,
+                        width=0.04 + rand.random() * 0.03,
+                        height=0.04 + rand.random() * 0.03))
+
+        self.isAnomaly = world.isAnomaly()
+
+        # Split zone into separate bools for faster checks
+        self.isAmberZone = world.zone() is traveller.ZoneType.AmberZone
+        self.isRedZone = world.zone() is traveller.ZoneType.RedZone
+
+        self.hasWater = maprenderer.WorldHelper.hasWater(world)
+        self.hasGasGiant = maprenderer.WorldHelper.hasGasGiants(world)
+
+        self.starport = uwp.code(traveller.UWP.Element.StarPort)
+        self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
+
+        bases = world.bases()
+        self.baseGlyph = None
+        if bases.count():
+            self.baseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+                allegiance=world.allegiance(),
+                code=traveller.Bases.code(bases[0]))
+
+        self.worldSize = world.physicalSize()
+        self.worldImage = maprenderer.WorldHelper.worldImage(
+                                world=world,
+                                images=imageCache)
+        self.imageRadius = (0.6 if self.worldSize <= 0 else (0.3 * (self.worldSize / 5.0 + 0.2))) / 2
+
+        self.populationOverlayRadius = \
+            self.populationOverlayRadius = math.sqrt(world.population() / math.pi) * 0.00002 \
+            if world.population() > 0 else \
+            0
+
+        self.importance = world.importance()
+        self.isImportant = world.importance() >= 4
+        self.importanceOverlayRadius = \
+            (self.importance - 0.5) * travellermap.ParsecScaleX \
+            if self.importance > 0 else \
+            0
+
+class WorldCache(object):
+    def __init__(
+            self,
+            graphics: maprenderer.AbstractGraphics,
+            imageCache: maprenderer.ImageCache
+            ) -> None:
+        self._graphics = graphics
+        self._imageCache = imageCache
+        self._infoCache: typing.Dict[
+            traveller.World,
+            WorldInfo] = {}
+
+    def getWorldInfo(
+            self,
+            world: traveller.World
+            ) -> WorldInfo:
+        worldInfo = self._infoCache.get(world)
+        if not worldInfo:
+            worldInfo = WorldInfo(
+                world=world,
+                graphics=self._graphics,
+                imageCache=self._imageCache)
+            self._infoCache[world] = worldInfo
+        return worldInfo
