@@ -37,6 +37,8 @@ class RenderContext(object):
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 400
 
+    _ParsecGridSlop = 1
+
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
@@ -105,8 +107,10 @@ class RenderContext(object):
         self._galaxyImageRect = self._graphics.createRectangle(-18257, -26234, 36551, 32462)
         self._riftImageRect = self._graphics.createRectangle(-1374, -827, 2769, 1754)
 
+        self._parsecGrid = None
+
         self._createLayers()
-        self._updateView()
+        self._updateView(True)
 
     def setView(
             self,
@@ -116,15 +120,21 @@ class RenderContext(object):
             outputPixelX: int,
             outputPixelY: int,
             ) -> None:
+        scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
+        viewAreaChanged = \
+            scale != self._scale or \
+            outputPixelX != self._outputPixelX or \
+            outputPixelY != self._outputPixelY
+
         self._absoluteCenterX = absoluteCenterX
         self._absoluteCenterY = absoluteCenterY
-        self._scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
+        self._scale = scale
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
 
         self._styleSheet.scale = self._styleSheetScale()
 
-        self._updateView()
+        self._updateView(viewAreaChanged)
 
     def setClipOutsectorBorders(self, enable: bool) -> None:
         self._clipOutsectorBorders = enable
@@ -241,7 +251,7 @@ class RenderContext(object):
         logScale = round(travellermap.linearScaleToLogScale(self._scale))
         return travellermap.logScaleToLinearScale(logScale)
 
-    def _updateView(self):
+    def _updateView(self, viewAreaChanged: bool):
         absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
         absoluteHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
         self._absoluteViewRect = self._graphics.createRectangle(
@@ -263,6 +273,12 @@ class RenderContext(object):
         self._imageSpaceToWorldSpace = self._graphics.copyMatrix(other=m)
         m.invert()
         self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
+
+        if viewAreaChanged:
+            if self._styleSheet.parsecGrid.visible:
+                self._parsecGrid = self._generateParsecGrid()
+            else:
+                self._parsecGrid = None
 
     def _drawBackground(self) -> None:
         self._graphics.setSmoothingMode(
@@ -502,56 +518,23 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        parsecSlop = 1
-
-        hx = int(math.floor(self._absoluteViewRect.x()))
-        hw = int(math.ceil(self._absoluteViewRect.width()))
-        hy = int(math.floor(self._absoluteViewRect.y()))
-        hh = int(math.ceil(self._absoluteViewRect.height()))
-
-        pen = self._styleSheet.parsecGrid.pen
-
-        if self._styleSheet.hexStyle == maprenderer.HexStyle.Square:
-            rect = self._graphics.createRectangle()
-            for px in range(hx - parsecSlop, hx + hw + parsecSlop):
-                yOffset = 0 if ((px % 2) != 0) else 0.5
-                for py in range(hy - parsecSlop, hy + hh + parsecSlop):
-                    inset = 1
-                    rect.setX(px + inset)
-                    rect.setY(py + inset + yOffset)
-                    rect.setWidth(1 - inset * 2)
-                    rect.setHeight(1 - inset * 2)
-                    self._graphics.drawRectangle(rect=rect, pen=pen)
-        elif self._styleSheet.hexStyle == maprenderer.HexStyle.Hex:
-            startX = hx - parsecSlop
-            startY = hy - parsecSlop
-            points = [
-                maprenderer.AbstractPointF(startX + -travellermap.HexWidthOffset, startY + 0.5),
-                maprenderer.AbstractPointF(startX + travellermap.HexWidthOffset, startY + 1.0),
-                maprenderer.AbstractPointF(startX + 1.0 - travellermap.HexWidthOffset, startY + 1.0),
-                maprenderer.AbstractPointF(startX + 1.0 + travellermap.HexWidthOffset, startY + 0.5)]
-            types = [
-                maprenderer.PathPointType.Start,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Start | maprenderer.PathPointType.CloseSubpath]
-            path = self._graphics.createPath(points=points, types=types, closed=False)
-            for px in range(startX, hx + hw + parsecSlop):
-                yOffset = 0 if ((px % 2) != 0) else 0.5
-
-                if yOffset:
-                    path.translate(0, yOffset)
-
-                for py in range(startY, hy + hh + parsecSlop):
-                    self._graphics.drawPath(path=path, pen=pen)
-                    path.translate(0, 1)
-
-                path.translate(1, -((py - startY) + yOffset + 1))
+        if self._parsecGrid:
+            with self._graphics.save():
+                offsetX = math.floor(self._absoluteViewRect.left())
+                offsetY = math.floor(self._absoluteViewRect.top()) + (0.5 if offsetX % 2 else 0)
+                self._graphics.translateTransform(dx=offsetX, dy=offsetY)
+                self._graphics.drawLines(
+                    points=self._parsecGrid,
+                    pen=self._styleSheet.parsecGrid.pen)
 
         if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0:
-            for px in range(hx - parsecSlop, hx + hw + parsecSlop):
+            hx = int(math.floor(self._absoluteViewRect.x()))
+            hw = int(math.ceil(self._absoluteViewRect.width()))
+            hy = int(math.floor(self._absoluteViewRect.y()))
+            hh = int(math.ceil(self._absoluteViewRect.height()))
+            for px in range(hx - RenderContext._ParsecGridSlop, hx + hw + RenderContext._ParsecGridSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
-                for py in range(hy - parsecSlop, hy + hh + parsecSlop):
+                for py in range(hy - RenderContext._ParsecGridSlop, hy + hh + RenderContext._ParsecGridSlop):
 
                     if self._styleSheet.hexCoordinateStyle == maprenderer.HexCoordinateStyle.Subsector:
                         # TODO: Need to implement Subsector hex number. Not sure what this
@@ -1986,6 +1969,40 @@ class RenderContext(object):
                 font=font,
                 brush=brush,
                 x=0, y=0)
+
+    def _generateParsecGrid(self) -> maprenderer.AbstractPointList:
+        parsecWidth = int(math.ceil(self._absoluteViewRect.width())) + \
+            RenderContext._ParsecGridSlop
+        parsecHeight = int(math.ceil(self._absoluteViewRect.height())) + \
+            RenderContext._ParsecGridSlop
+
+        points = []
+        for px in range(-RenderContext._ParsecGridSlop, parsecWidth):
+            yOffset = 0 if ((px % 2) != 0) else 0.5
+            for py in range(-RenderContext._ParsecGridSlop, parsecHeight):
+                point1 = maprenderer.AbstractPointF(
+                    x=px + -travellermap.HexWidthOffset,
+                    y=py + 0.5 + yOffset)
+                point2 = maprenderer.AbstractPointF(
+                    x=px + travellermap.HexWidthOffset,
+                    y=py + 1.0 + yOffset)
+                point3 = maprenderer.AbstractPointF(
+                    x=px + 1.0 - travellermap.HexWidthOffset,
+                    y=py + 1.0 + yOffset)
+                point4 = maprenderer.AbstractPointF(
+                    x=px + 1.0 + travellermap.HexWidthOffset,
+                    y=py + 0.5 + yOffset)
+
+                points.append(point1)
+                points.append(point2)
+
+                points.append(point2)
+                points.append(point3)
+
+                points.append(point3)
+                points.append(point4)
+
+        return self._graphics.createPointList(points=points)
 
     def _zoneStyle(
             self,
