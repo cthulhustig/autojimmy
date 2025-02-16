@@ -1115,6 +1115,12 @@ class RenderContext(object):
             renderZone = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0
             renderType = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0
 
+            discRect = self._graphics.createRectangle(
+                x=-self._styleSheet.discRadius,
+                y=-self._styleSheet.discRadius,
+                width=self._styleSheet.discRadius * 2,
+                height=self._styleSheet.discRadius * 2)
+
             for world in self._selector.worlds():
                 worldInfo = self._worldCache.getWorldInfo(world=world)
                 renderName = False
@@ -1285,21 +1291,13 @@ class RenderContext(object):
                                     else:
                                         e = self._worldStyle(worldInfo)
                                         self._graphics.drawEllipse(
-                                            rect=self._graphics.createRectangle(
-                                                x=-self._styleSheet.discRadius,
-                                                y=-self._styleSheet.discRadius,
-                                                width=2 * self._styleSheet.discRadius,
-                                                height=2 * self._styleSheet.discRadius),
+                                            rect=discRect,
                                             pen=e.pen,
                                             brush=e.fillBrush)
                         elif not worldInfo.isAnomaly:
                             # Dotmap
                             self._graphics.drawEllipse(
-                                rect=self._graphics.createRectangle(
-                                    x=-self._styleSheet.discRadius,
-                                    y=-self._styleSheet.discRadius,
-                                    width=2 * self._styleSheet.discRadius,
-                                    height=2 * self._styleSheet.discRadius),
+                                rect=discRect,
                                 brush=self._styleSheet.worlds.textBrush)
 
                         if renderName:
