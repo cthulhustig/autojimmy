@@ -317,6 +317,17 @@ class StyleSheet(object):
         self.importanceOverlay.visible = (self.options & maprenderer.MapOptions.ImportanceOverlay) != 0
         self.capitalOverlay.visible = (self.options & maprenderer.MapOptions.CapitalOverlay) != 0
         self.showStellarOverlay = (self._options & maprenderer.MapOptions.StellarOverlay) != 0
+        self.ancientsWorlds.visible = (self.options & maprenderer.MapOptions.AncientWorlds) != 0
+        self.droyneWorlds.visible = (self.options & maprenderer.MapOptions.DroyneWorlds) != 0
+        self.minorHomeWorlds.visible = (self.options & maprenderer.MapOptions.MinorHomeWorlds) != 0
+
+        # Force ancient worlds, droyne worlds & minor home world overlays off
+        # when zoomed out as it kills performance to the point it effectively
+        # locks up the app
+        # TODO: Look into why this is happening
+        if self.scale < 2:
+            self.ancientsWorlds.visible = self.droyneWorlds.visible = \
+                self.minorHomeWorlds.visible = False
 
         self.lowerCaseAllegiance = (self.scale < StyleSheet._WorldFullMinScale)
         self.showGasGiantRing = (self.scale >= StyleSheet._WorldUwpMinScale)

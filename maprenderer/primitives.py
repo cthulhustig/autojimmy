@@ -90,6 +90,10 @@ class MapOptions(enum.IntFlag):
     CapitalOverlay = 0x40000
     StellarOverlay = 0x80000
 
+    AncientWorlds = 0x100000
+    DroyneWorlds = 0x200000
+    MinorHomeWorlds = 0x400000
+
 class LayerId(enum.Enum):
     #------------------------------------------------------------
     # Background

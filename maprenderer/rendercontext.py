@@ -548,16 +548,18 @@ class RenderContext(object):
                         hex = f'{relativePos[2]:02d}{relativePos[3]:02d}'
 
                     with self._graphics.save():
-                        self._graphics.translateTransform(px + 0.5, py + yOffset)
+                        scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
+                        scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
                         self._graphics.scaleTransform(
-                            self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
-                            self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
+                            scaleX=scaleX,
+                            scaleY=scaleY)
                         self._graphics.drawString(
-                            hex,
-                            self._styleSheet.hexNumber.font,
-                            self._styleSheet.hexNumber.textBrush,
-                            0, 0,
-                            maprenderer.TextAlignment.TopCenter)
+                            text=hex,
+                            font=self._styleSheet.hexNumber.font,
+                            brush=self._styleSheet.hexNumber.textBrush,
+                            x=(px + 0.5) / scaleX,
+                            y=(py + yOffset) / scaleY,
+                            format=maprenderer.TextAlignment.TopCenter)
 
     def _drawSubsectorNames(self) -> None:
         if not self._styleSheet.subsectorNames.visible:
@@ -900,9 +902,6 @@ class RenderContext(object):
                     if label.minor else \
                     self._styleSheet.macroRoutes.textHighlightBrush
                 with self._graphics.save():
-                    self._graphics.translateTransform(
-                        dx=label.position.x(),
-                        dy=label.position.y())
                     self._graphics.scaleTransform(
                         scaleX=1.0 / travellermap.ParsecScaleX,
                         scaleY=1.0 / travellermap.ParsecScaleY)
@@ -911,7 +910,8 @@ class RenderContext(object):
                         text=label.text,
                         font=font,
                         brush=brush,
-                        x=0, y=0)
+                        x=label.position.x() * travellermap.ParsecScaleX,
+                        y=label.position.y() * travellermap.ParsecScaleY)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if (not self._styleSheet.capitals.visible) or \
@@ -938,9 +938,6 @@ class RenderContext(object):
         for label in self._mapLabelCache.megaLabels:
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
-                self._graphics.translateTransform(
-                    dx=label.position.x(),
-                    dy=label.position.y())
                 self._graphics.scaleTransform(
                     scaleX=1.0 / travellermap.ParsecScaleX,
                     scaleY=1.0 / travellermap.ParsecScaleY)
@@ -949,7 +946,8 @@ class RenderContext(object):
                     text=label.text,
                     font=font,
                     brush=self._styleSheet.megaNames.textBrush,
-                    x=0, y=0)
+                    x=label.position.x() * travellermap.ParsecScaleX,
+                    y=label.position.y() * travellermap.ParsecScaleY)
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
@@ -1863,9 +1861,6 @@ class RenderContext(object):
             ) -> None:
         centerX, centerY = position.absoluteCenter()
         with self._graphics.save():
-            self._graphics.translateTransform(
-                dx=centerX,
-                dy=centerY)
             self._graphics.scaleTransform(
                 scaleX=1 / travellermap.ParsecScaleX,
                 scaleY=1 / travellermap.ParsecScaleY)
@@ -1873,7 +1868,8 @@ class RenderContext(object):
                 text=glyph,
                 font=font,
                 brush=brush,
-                x=0, y=0,
+                x=centerX * travellermap.ParsecScaleX,
+                y=centerY * travellermap.ParsecScaleY,
                 format=maprenderer.TextAlignment.Centered)
 
     def _drawLabel(
