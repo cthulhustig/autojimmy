@@ -166,7 +166,7 @@ class StyleSheet(object):
 
         self.discPosition = maprenderer.AbstractPointF(0, 0)
         self.discRadius = 0.1
-        self.gasGiantPosition = maprenderer.AbstractPointF(0, 0)
+        self.gasGiantRadius = 0.05
         self.allegiancePosition = maprenderer.AbstractPointF(0, 0)
         self.baseTopPosition = maprenderer.AbstractPointF(0, 0)
         self.baseBottomPosition = maprenderer.AbstractPointF(0, 0)
@@ -216,6 +216,7 @@ class StyleSheet(object):
         self.pseudoRandomStars = StyleSheet.StyleElement()
         self.placeholder = StyleSheet.StyleElement()
         self.anomaly = StyleSheet.StyleElement()
+        self.gasGiant = StyleSheet.StyleElement()
 
         self.worldRichAgricultural = StyleSheet.StyleElement()
         self.worldAgricultural = StyleSheet.StyleElement()
@@ -330,7 +331,9 @@ class StyleSheet(object):
                 self.minorHomeWorlds.visible = False
 
         self.lowerCaseAllegiance = (self.scale < StyleSheet._WorldFullMinScale)
+
         self.showGasGiantRing = (self.scale >= StyleSheet._WorldUwpMinScale)
+        self.gasGiant.visible = True
 
         self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.Rectangle
 
@@ -345,7 +348,7 @@ class StyleSheet(object):
 
             self.baseTopPosition = maprenderer.AbstractPointF(-x, -y)
             self.baseBottomPosition = maprenderer.AbstractPointF(-x, y)
-            self.gasGiantPosition =  maprenderer.AbstractPointF(x, -y)
+            self.gasGiant.position =  maprenderer.AbstractPointF(x, -y)
             self.allegiancePosition = maprenderer.AbstractPointF(x, y)
 
             self.baseMiddlePosition = maprenderer.AbstractPointF(
@@ -362,7 +365,7 @@ class StyleSheet(object):
 
             self.baseTopPosition = maprenderer.AbstractPointF(-x, -y)
             self.baseBottomPosition = maprenderer.AbstractPointF(-x, y)
-            self.gasGiantPosition = maprenderer.AbstractPointF(x, -y)
+            self.gasGiant.position = maprenderer.AbstractPointF(x, -y)
             self.allegiancePosition = maprenderer.AbstractPointF(x, y)
 
             self.baseMiddlePosition = maprenderer.AbstractPointF(-0.35, 0)
@@ -1060,6 +1063,12 @@ class StyleSheet(object):
             self.worlds.textStyle.translation = maprenderer.AbstractPointF(0, 0)
             self.worlds.textStyle.uppercase = True
 
+            self.gasGiant.fillBrush = self._graphics.createBrush(
+                color=highlightColor)
+            self.gasGiant.pen = self._graphics.createPen(
+                color=highlightColor,
+                width=self.gasGiantRadius / 4)
+
             if (self.scale > StyleSheet._CandyMaxWorldRelativeScale):
                 self.hexContentScale = StyleSheet._CandyMaxWorldRelativeScale / self.scale
         elif self._style is travellermap.Style.Terminal:
@@ -1336,7 +1345,7 @@ class StyleSheet(object):
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
             self.discRadius = 0.11
-            self.gasGiantPosition = maprenderer.AbstractPointF(0, -0.23)
+            self.gasGiant.position = maprenderer.AbstractPointF(0, -0.23)
             self.baseTopPosition = maprenderer.AbstractPointF(-0.22, -0.21)
             self.baseMiddlePosition = maprenderer.AbstractPointF(-0.32, 0.17)
             self.baseBottomPosition = maprenderer.AbstractPointF(0.22, -0.21)
@@ -1412,6 +1421,13 @@ class StyleSheet(object):
         if not self.anomaly.textBrush:
             self.anomaly.textBrush = self._graphics.createBrush(
                 color=highlightColor)
+
+        if not self.gasGiant.fillBrush:
+            self.gasGiant.fillBrush = self.worlds.textBrush
+        if not self.gasGiant.pen:
+            self.gasGiant.pen = self._graphics.createPen(
+                color=self.worlds.textBrush.color(),
+                width=self.gasGiantRadius / 4)
 
         if self.showWorldDetailColors:
             self.worldRichAgricultural.fillBrush = self._graphics.createBrush(

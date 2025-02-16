@@ -961,6 +961,7 @@ class RenderContext(object):
         renderSubsector = self._styleSheet.hexContentScale is maprenderer.HexCoordinateStyle.Subsector
         renderType = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0
 
+        rect = self._graphics.createRectangle()
         for world in self._selector.worlds():
             worldInfo = self._worldCache.getWorldInfo(world=world)
 
@@ -969,7 +970,6 @@ class RenderContext(object):
                 renderName = renderAllNames or worldInfo.isCapital or worldInfo.isHiPop
             renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
 
-            rect = self._graphics.createRectangle()
             with self._graphics.save():
                 self._graphics.setSmoothingMode(
                     maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
@@ -1149,11 +1149,8 @@ class RenderContext(object):
                         if not worldInfo.isPlaceholder:
                             if worldInfo.hasGasGiant and renderGasGiants:
                                 self._drawGasGiant(
-                                    brush=self._styleSheet.worlds.textBrush,
-                                    x=self._styleSheet.gasGiantPosition.x(),
-                                    y=self._styleSheet.gasGiantPosition.y(),
-                                    radius=0.05,
-                                    ring=self._styleSheet.showGasGiantRing)
+                                    x=self._styleSheet.gasGiant.position.x(),
+                                    y=self._styleSheet.gasGiant.position.y())
 
                             if renderStarport:
                                 starport = worldInfo.starport
@@ -1382,15 +1379,11 @@ class RenderContext(object):
                                 decorationRadius += 0.1
 
                         if renderGasGiants:
-                            symbolRadius = 0.05
                             if self._styleSheet.showGasGiantRing:
-                                decorationRadius += symbolRadius
+                                decorationRadius += self._styleSheet.gasGiantRadius
                             self._drawGasGiant(
-                                brush=self._styleSheet.worlds.textHighlightBrush,
                                 x=decorationRadius,
-                                y=0,
-                                radius=symbolRadius,
-                                ring=self._styleSheet.showGasGiantRing)
+                                y=0)
                             decorationRadius += 0.1
 
                         if renderUWP:
@@ -1688,33 +1681,34 @@ class RenderContext(object):
 
     def _drawGasGiant(
             self,
-            brush: maprenderer.AbstractBrush,
             x: float,
-            y: float,
-            radius: float,
-            ring: bool
+            y: float
             ) -> None:
         with self._graphics.save():
-            self._graphics.translateTransform(dx=x, dy=y)
-            self._graphics.drawEllipse(
-                rect=self._graphics.createRectangle(
-                    x=-radius,
-                    y=-radius,
-                    width=radius * 2,
-                    height=radius * 2),
-                brush=brush)
+            width = self._styleSheet.gasGiantRadius * 2
 
-            if ring:
+            rect = self._graphics.createRectangle(
+                x=x - self._styleSheet.gasGiantRadius,
+                y=y - self._styleSheet.gasGiantRadius,
+                width=width,
+                height=width)
+
+            self._graphics.drawEllipse(
+                rect=rect,
+                brush=self._styleSheet.gasGiant.fillBrush)
+
+            if self._styleSheet.showGasGiantRing:
+                self._graphics.translateTransform(dx=x, dy=y)
                 self._graphics.rotateTransform(degrees=-30)
+
+                rect.setRect(
+                    x=-self._styleSheet.gasGiantRadius * 1.75,
+                    y=-self._styleSheet.gasGiantRadius * 0.4,
+                    width=self._styleSheet.gasGiantRadius * 1.75 * 2,
+                    height=self._styleSheet.gasGiantRadius * 0.4 * 2)
                 self._graphics.drawEllipse(
-                    rect=self._graphics.createRectangle(
-                        x=-radius * 1.75,
-                        y=-radius * 0.4,
-                        width=radius * 1.75 * 2,
-                        height=radius * 0.4 * 2),
-                    # TODO: Creating a pen each time is bad. Could store gas giant
-                    # brush & pen a specific objects in the style sheet
-                    pen=self._graphics.createPen(color=brush.color(), width=radius / 4))
+                    rect=rect,
+                    pen=self._styleSheet.gasGiant.pen)
 
     def _drawOverlay(
             self,
