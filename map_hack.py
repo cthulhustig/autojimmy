@@ -20,7 +20,7 @@ class MapHackView(QtWidgets.QWidget):
     _DefaultCenterX = 0
     _DefaultCenterY = 0
     _DefaultScale = 64
-    _DefaultScale = travellermap.logScaleToLinearScale(1)
+    _DefaultScale = travellermap.logScaleToLinearScale(5.5)
     #_DefaultCenterX, _DefaultCenterY  = (-175,46)
 
     _WheelScaleMultiplier = 1.5
@@ -45,8 +45,7 @@ class MapHackView(QtWidgets.QWidget):
             maprenderer.MapOptions.BordersMajor | maprenderer.MapOptions.BordersMinor | \
             maprenderer.MapOptions.NamesMajor | maprenderer.MapOptions.NamesMinor | \
             maprenderer.MapOptions.WorldsCapitals | maprenderer.MapOptions.WorldsHomeworlds | \
-            maprenderer.MapOptions.ForceHexes | maprenderer.MapOptions.WorldColors  | \
-            maprenderer.MapOptions.FilledBorders
+            maprenderer.MapOptions.ForceHexes | maprenderer.MapOptions.WorldColors
         self._style = travellermap.Style.Poster
         #self._style = travellermap.Style.Candy
         self._graphics = gui.QtMapGraphics()
@@ -150,6 +149,9 @@ class MapHackView(QtWidgets.QWidget):
                     self._absoluteCenterPos.setY(self._absoluteCenterPos.y() + dy)
                 self._updateRendererView()
 
+            if event.key() == QtCore.Qt.Key.Key_F1:
+                self._debugHack()
+
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
@@ -244,7 +246,7 @@ class MapHackView(QtWidgets.QWidget):
 
     def _updateRendererView(self) -> None:
         if not self._renderer:
-            self._createRenderer()
+            self._renderer = self._createRenderer()
             return
         self._renderer.setView(
             absoluteCenterX=self._absoluteCenterPos.x(),
@@ -253,6 +255,52 @@ class MapHackView(QtWidgets.QWidget):
             outputPixelX=self.width(),
             outputPixelY=self.height())
         self.repaint()
+
+    def _debugHack(self):
+        tempGraphics = gui.QtMapGraphics()
+        tempRenderer = maprenderer.RenderContext(
+                    graphics=tempGraphics,
+                    absoluteCenterX=self._absoluteCenterPos.x(),
+                    absoluteCenterY=self._absoluteCenterPos.y(),
+                    scale=self._viewScale.linear,
+                    outputPixelX=self.width(),
+                    outputPixelY=self.height(),
+                    style=self._style,
+                    imageCache=self._imageCache,
+                    vectorCache=self._vectorCache,
+                    mapLabelCache=self._mapLabelCache,
+                    worldLabelCache=self._worldLabelCache,
+                    styleCache=self._styleCache,
+                    options=self._options)
+
+        image = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format.Format_ARGB32)
+        painter = QtGui.QPainter()
+        painter.begin(image)
+
+        tempGraphics.setPainter(painter)
+
+        try:
+            # Render once before profiling to pre-load caches.
+            tempRenderer.render()
+
+            print('Profiling')
+            pr = cProfile.Profile()
+            pr.enable()
+
+            for _ in range(100):
+                tempRenderer.render()
+
+            pr.disable()
+            s = io.StringIO()
+            sortby = SortKey.TIME
+            #sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            print(s.getvalue())
+        finally:
+            painter.end()
+
+        #image.save("output.png")
 
 class MyWidget(gui.WindowWidget):
     def __init__(self):

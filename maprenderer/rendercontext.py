@@ -3,7 +3,6 @@ import enum
 import logging
 import maprenderer
 import math
-import random
 import traveller
 import travellermap
 import typing
@@ -63,7 +62,7 @@ class RenderContext(object):
         self._outputPixelY = outputPixelY
         self._options = options
         self._styleSheet = maprenderer.StyleSheet(
-            scale=self._scale,
+            scale=self._styleSheetScale(),
             options=self._options,
             style=style,
             graphics=self._graphics)

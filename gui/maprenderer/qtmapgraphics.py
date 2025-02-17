@@ -333,13 +333,13 @@ class QtMapMatrix(maprenderer.AbstractMatrix):
         self._qtMatrix = transform
 
     def prepend(self, matrix: 'QtMapMatrix') -> None:
-        self._qtMatrix = matrix.qtMatrix() * self._qtMatrix
+        self._qtMatrix = matrix.qtTransform() * self._qtMatrix
 
     def transform(self, point: maprenderer.AbstractPointF) -> maprenderer.AbstractPointF:
         qtPoint = self._qtMatrix.map(QtCore.QPointF(point.x(), point.y()))
         return maprenderer.AbstractPointF(qtPoint.x(), qtPoint.y())
 
-    def qtMatrix(self) -> QtGui.QTransform:
+    def qtTransform(self) -> QtGui.QTransform:
         return self._qtMatrix
 
 class QtMapBrush(maprenderer.AbstractBrush):
@@ -771,7 +771,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             transform * self._painter.transform())
     def multiplyTransform(self, matrix: QtMapMatrix) -> None:
         self._painter.setTransform(
-            matrix.qtMatrix() * self._painter.transform())
+            matrix.qtTransform() * self._painter.transform())
 
     # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipPath(self, path: QtMapPath) -> None:
@@ -914,8 +914,13 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
         self._painter.save()
         try:
-            self.translateTransform(x, y)
-            self.scaleTransform(scale, scale)
+            transform = QtGui.QTransform()
+            if x != 0.0 or y != 0.0:
+                transform.translate(x, y)
+            if scale != 1.0:
+                transform.scale(scale, scale)
+            self._painter.setTransform(
+                transform * self._painter.transform())
 
             self._painter.setFont(qtFont)
             # TODO: It looks like Qt uses a pen for text rather than the brush
