@@ -47,12 +47,12 @@ class RenderContext(object):
             outputPixelX: int,
             outputPixelY: int,
             style: travellermap.Style,
+            options: maprenderer.MapOptions,
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
             mapLabelCache: maprenderer.MapLabelCache,
             worldLabelCache: maprenderer.WorldLabelCache,
-            styleCache: maprenderer.DefaultStyleCache,
-            options: maprenderer.MapOptions
+            styleCache: maprenderer.DefaultStyleCache
             ) -> None:
         self._graphics = graphics
         self._absoluteCenterX = absoluteCenterX
@@ -85,6 +85,8 @@ class RenderContext(object):
             graphics=self._graphics)
         self._clipOutsectorBorders = True # TODO: Rename this to clipSectorBorders
         self._absoluteViewRect = None
+        self._imageSpaceToWorldSpace = None
+        self._worldSpaceToImageSpace = None
 
         self._hexOutlinePath = self._graphics.createPath(
             points=[
@@ -112,7 +114,7 @@ class RenderContext(object):
         self._parsecGrid = None
 
         self._createLayers()
-        self._updateView(True)
+        self._updateView()
 
     def setView(
             self,
@@ -123,10 +125,6 @@ class RenderContext(object):
             outputPixelY: int,
             ) -> None:
         scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
-        viewAreaChanged = \
-            scale != self._scale or \
-            outputPixelX != self._outputPixelX or \
-            outputPixelY != self._outputPixelY
 
         self._absoluteCenterX = absoluteCenterX
         self._absoluteCenterY = absoluteCenterY
@@ -136,7 +134,19 @@ class RenderContext(object):
 
         self._styleSheet.scale = self._styleSheetScale()
 
-        self._updateView(viewAreaChanged)
+        self._updateView()
+
+    def setStyle(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        self._styleSheet.style = style
+
+    def setOptions(
+            self,
+            options: maprenderer.MapOptions
+            ) -> None:
+        self._styleSheet.options = options
 
     def setClipOutsectorBorders(self, enable: bool) -> None:
         self._clipOutsectorBorders = enable
@@ -154,34 +164,6 @@ class RenderContext(object):
             self._graphics.multiplyTransform(self._imageSpaceToWorldSpace)
 
             for layer in self._layers:
-                # TODO: Implement clipping if I need it
-                """
-                // HACK: Clipping to tileRect rapidly becomes inaccurate away from
-                // the origin due to float precision. Only do it if really necessary.
-                bool clip = layer.clip && (ctx.ForceClip ||
-                    !((ClipPath == null) && (graphics is BitmapGraphics)));
-
-                // Impose a clipping region if desired, or remove it if not.
-                if (clip && state == null)
-                {
-                    state = graphics.Save();
-                    if (ClipPath != null) graphics.IntersectClip(ClipPath);
-                    else graphics.IntersectClip(tileRect);
-                }
-                else if (!clip && state != null)
-                {
-                    state.Dispose();
-                    state = null;
-                }
-
-                layer.Run(this);
-                timers.Add(new Timer(layer.id.ToString()));
-                """
-
-                # TODO: This should probably save the render state before each
-                # layer and restore it afterwards so no one layer can affect another.
-                # If I do this I can remove a load of save states from inside
-                # layer action handlers
                 #with common.DebugTimer(string=str(layer.action)):
                 if True:
                     layer.action()
@@ -253,9 +235,13 @@ class RenderContext(object):
         logScale = round(travellermap.linearScaleToLogScale(self._scale))
         return travellermap.logScaleToLinearScale(logScale)
 
-    def _updateView(self, viewAreaChanged: bool):
+    def _updateView(self):
         absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
         absoluteHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
+        viewAreaChanged = (self._absoluteViewRect is None) or \
+            (absoluteWidth != self._absoluteViewRect.width()) or \
+            (absoluteHeight != self._absoluteViewRect.height())
+
         self._absoluteViewRect = self._graphics.createRectangle(
             x=self._absoluteCenterX - (absoluteWidth / 2),
             y=self._absoluteCenterY - (absoluteHeight / 2),
@@ -276,11 +262,11 @@ class RenderContext(object):
         m.invert()
         self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
 
-        if viewAreaChanged:
-            if self._styleSheet.parsecGrid.visible:
+        if self._styleSheet.parsecGrid.visible:
+            if viewAreaChanged or not self._parsecGrid:
                 self._parsecGrid = self._generateParsecGrid()
-            else:
-                self._parsecGrid = None
+        else:
+            self._parsecGrid = None
 
     def _drawBackground(self) -> None:
         self._graphics.setSmoothingMode(

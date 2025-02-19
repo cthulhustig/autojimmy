@@ -29,6 +29,10 @@ class MapHackView(QtWidgets.QWidget):
     _ZoomInScale = 1.25
     _ZoomOutScale = 0.8
 
+    _DelayedRendering = False
+    _TileSize = 256 # Pixels
+    _TileTimerMsecs = 20
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -46,6 +50,7 @@ class MapHackView(QtWidgets.QWidget):
             maprenderer.MapOptions.NamesMajor | maprenderer.MapOptions.NamesMinor | \
             maprenderer.MapOptions.WorldsCapitals | maprenderer.MapOptions.WorldsHomeworlds | \
             maprenderer.MapOptions.ForceHexes | maprenderer.MapOptions.WorldColors
+
         self._style = travellermap.Style.Poster
         #self._style = travellermap.Style.Candy
         self._graphics = gui.QtMapGraphics()
@@ -62,6 +67,16 @@ class MapHackView(QtWidgets.QWidget):
         self._renderer = self._createRenderer()
 
         self._worldDragStart: typing.Optional[QtCore.QPointF] = None
+
+        self._tileCache: typing.Dict[
+            typing.Tuple[int, int], # Tile space coordinates
+            QtGui.QImage] = {}
+
+        self._tileTimer = QtCore.QTimer()
+        self._tileTimer.setInterval(MapHackView._TileTimerMsecs)
+        self._tileTimer.setSingleShot(True)
+        self._tileTimer.timeout.connect(self._handleTileTimer)
+        self._tileQueue = []
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -151,7 +166,22 @@ class MapHackView(QtWidgets.QWidget):
 
             if event.key() == QtCore.Qt.Key.Key_F1:
                 self._debugHack()
-
+            elif event.key() == QtCore.Qt.Key.Key_F2:
+                self._style = common.incrementEnum(
+                    value=self._style,
+                    count=1)
+                if self._renderer:
+                    self._renderer.setStyle(self._style)
+                self._clearTileCache()
+            elif event.key() == QtCore.Qt.Key.Key_F3:
+                self._style = common.decrementEnum(
+                    value=self._style,
+                    count=1)
+                if self._renderer:
+                    self._renderer.setStyle(self._style)
+                self._clearTileCache()
+            elif event.key() == QtCore.Qt.Key.Key_F7:
+                self.update()
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
@@ -167,6 +197,9 @@ class MapHackView(QtWidgets.QWidget):
             logViewScale += MapHackView._WheelLogScaleDelta if event.angleDelta().y() > 0 else -MapHackView._WheelLogScaleDelta
             logViewScale = common.clamp(logViewScale, MapHackView._MinScale, MapHackView._MaxScale)
             self._viewScale.log = logViewScale
+
+            # Clear tile cache so it repopulates for the new scale
+            self._tileCache.clear()
 
             newWorldCursorX, newWorldCursorY = self._pixelSpaceToWorldSpace(
                 pixelX=cursorScreenPos.x(),
@@ -186,25 +219,12 @@ class MapHackView(QtWidgets.QWidget):
 
         # TODO: Remove debug timer
         with common.DebugTimer('Draw Time'):
+            tiles = self._currentDrawTiles()
+
             painter = QtGui.QPainter(self)
             try:
-                self._graphics.setPainter(painter)
-
-                pr = None
-                if False:
-                    pr = cProfile.Profile()
-                    pr.enable()
-
-                self._renderer.render()
-
-                if pr:
-                    pr.disable()
-                    s = io.StringIO()
-                    sortby = SortKey.TIME
-                    #sortby = SortKey.CUMULATIVE
-                    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-                    ps.print_stats()
-                    print(s.getvalue())
+                for x, y, image in tiles:
+                    painter.drawImage(QtCore.QPointF(x, y), image)
             finally:
                 painter.end()
 
@@ -216,17 +236,40 @@ class MapHackView(QtWidgets.QWidget):
             ) -> typing.Tuple[float, float]:
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+
         width = self.width() / scaleX
         height = self.height() / scaleY
+
         offsetX = pixelX / scaleX
         offsetY = pixelY / scaleY
+
         worldX = (self._absoluteCenterPos.x() - (width / 2)) + offsetX
         worldY = (self._absoluteCenterPos.y() - (height / 2)) + offsetY
+
         if not clamp:
             return (worldX, worldY)
         return (
             round(worldX + 0.5),
             round(worldY + (0.5 if (worldX % 2) == 0 else 0)))
+
+    def _worldSpaceToPixelSpace(
+            self,
+            worldX: float,
+            worldY: float
+            ) -> typing.Tuple[float, float]:
+        scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
+        scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+
+        width = self.width() / scaleX
+        height = self.height() / scaleY
+
+        offsetX = worldX - (self._absoluteCenterPos.x() - (width / 2))
+        offsetY = worldY - (self._absoluteCenterPos.y() - (height / 2))
+
+        pixelX = offsetX * scaleX
+        pixelY = offsetY * scaleY
+
+        return (pixelX, pixelY)
 
     def _createRenderer(self) -> maprenderer.RenderContext:
         return maprenderer.RenderContext(
@@ -248,13 +291,111 @@ class MapHackView(QtWidgets.QWidget):
         if not self._renderer:
             self._renderer = self._createRenderer()
             return
+        # This shouldn't be needed when using tile rendering
+        """
         self._renderer.setView(
             absoluteCenterX=self._absoluteCenterPos.x(),
             absoluteCenterY=self._absoluteCenterPos.y(),
             scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height())
+        """
         self.repaint()
+
+    def _currentDrawTiles(self) -> typing.Iterable[typing.Tuple[
+            int, # x pixel position
+            int, # y pixel position
+            QtGui.QImage
+            ]]:
+        scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
+        scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+        absoluteViewWidth = self.width() / scaleX
+        absoluteViewHeight = self.height() / scaleY
+        absoluteViewLeft = self._absoluteCenterPos.x() - (absoluteViewWidth / 2)
+        absoluteViewRight = absoluteViewLeft + absoluteViewWidth
+        absoluteViewTop = self._absoluteCenterPos.y() - (absoluteViewHeight / 2)
+        absoluteViewBottom = absoluteViewTop + absoluteViewHeight
+
+        absoluteTileWidth = MapHackView._TileSize / scaleX
+        absoluteTileHeight = MapHackView._TileSize / scaleY
+        leftTile = math.floor(absoluteViewLeft / absoluteTileWidth)
+        rightTile = math.floor(absoluteViewRight / absoluteTileWidth)
+        topTile = math.floor(absoluteViewTop / absoluteTileHeight)
+        bottomTile = math.floor(absoluteViewBottom / absoluteTileHeight)
+
+        offsetX = (absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX
+        offsetY = (absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY
+
+        self._tileTimer.stop()
+        self._tileQueue.clear()
+
+        tiles = []
+        for x in range(leftTile, rightTile + 1):
+            for y in range(topTile, bottomTile + 1):
+                key = (x, y)
+                image = self._tileCache.get(key)
+                if not image:
+                    if MapHackView._DelayedRendering:
+                        self._tileQueue.append(key)
+                        continue
+                    image = self._renderTile(x, y)
+                    self._tileCache[key] = image
+
+                tiles.append((
+                    ((x - leftTile)  * MapHackView._TileSize) - offsetX,
+                    ((y - topTile) * MapHackView._TileSize) - offsetY,
+                    image))
+
+        if self._tileQueue:
+            self._tileTimer.start()
+
+        return tiles
+
+    def _clearTileCache(self) -> None:
+        self._tileCache.clear()
+        self.update()
+
+    def _renderTile(self, x: int, y: int) -> QtGui.QImage:
+        scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
+        scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+        absoluteWidth = MapHackView._TileSize / (scaleX * travellermap.ParsecScaleX)
+        absoluteHeight = MapHackView._TileSize / (scaleY * travellermap.ParsecScaleY)
+
+        absoluteTileCenterX = ((x * MapHackView._TileSize) / scaleX) + (absoluteWidth / 2)
+        absoluteTileCenterY = ((y * MapHackView._TileSize) / scaleY) + (absoluteHeight / 2)
+
+        image = QtGui.QImage(
+            MapHackView._TileSize,
+            MapHackView._TileSize,
+            QtGui.QImage.Format.Format_ARGB32)
+        painter = QtGui.QPainter()
+        painter.begin(image)
+        try:
+            self._graphics.setPainter(painter)
+            self._renderer.setView(
+                absoluteCenterX=absoluteTileCenterX,
+                absoluteCenterY=absoluteTileCenterY,
+                scale=self._viewScale.linear,
+                outputPixelX=MapHackView._TileSize,
+                outputPixelY=MapHackView._TileSize)
+            self._renderer.render()
+        finally:
+            painter.end()
+
+        return image
+
+    def _handleTileTimer(self) -> None:
+        """
+        for tileX, tileY in self._tileQueue:
+            self._tileCache[(tileX, tileY)] = self._renderTile(tileX, tileY)
+        self._tileQueue.clear()
+        """
+        tileX, tileY = self._tileQueue.pop()
+        with common.DebugTimer('Tile Render'):
+            self._tileCache[(tileX, tileY)] = self._renderTile(tileX, tileY)
+        if self._tileQueue:
+            self._tileTimer.start()
+        self.update()
 
     def _debugHack(self):
         tempGraphics = gui.QtMapGraphics()
@@ -281,13 +422,19 @@ class MapHackView(QtWidgets.QWidget):
 
         try:
             # Render once before profiling to pre-load caches.
-            tempRenderer.render()
+            #tempRenderer.render()
 
             print('Profiling')
             pr = cProfile.Profile()
             pr.enable()
 
-            for _ in range(100):
+            for _ in range(20):
+                tempRenderer.setView(
+                    absoluteCenterX=self._absoluteCenterPos.x(),
+                    absoluteCenterY=self._absoluteCenterPos.y(),
+                    scale=self._viewScale.linear,
+                    outputPixelX=self.width(),
+                    outputPixelY=self.height())
                 tempRenderer.render()
 
             pr.disable()

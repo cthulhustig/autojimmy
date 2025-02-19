@@ -271,6 +271,8 @@ class HighlightWorldPattern(object):
         self.max = max
         self.matches = list(matches)
 
+# TODO: I think this type is pointless as my rendering engine doesn't support
+# gaps on paths or curves
 class PathPointType(enum.IntFlag):
     #
     # Summary:
