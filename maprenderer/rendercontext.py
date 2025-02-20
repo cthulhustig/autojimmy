@@ -416,7 +416,7 @@ class RenderContext(object):
                 vector.draw(
                     graphics=self._graphics,
                     rect=self._absoluteViewRect,
-                    pen=self._styleSheet.macroBorders.pen)
+                    pen=self._styleSheet.macroBorders.linePen)
 
     def _drawMacroRoutes(self) -> None:
         if not self._styleSheet.macroRoutes.visible:
@@ -429,7 +429,7 @@ class RenderContext(object):
                 vector.draw(
                     graphics=self._graphics,
                     rect=self._absoluteViewRect,
-                    pen=self._styleSheet.macroRoutes.pen)
+                    pen=self._styleSheet.macroRoutes.linePen)
 
     def _drawSectorGrid(self) -> None:
         if not self._styleSheet.sectorGrid.visible:
@@ -450,7 +450,7 @@ class RenderContext(object):
                 self._graphics.drawLine(
                     pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
                     pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop),
-                    pen=self._styleSheet.sectorGrid.pen)
+                    pen=self._styleSheet.sectorGrid.linePen)
             h += travellermap.SectorWidth
 
         v = ((math.floor((self._absoluteViewRect.top()) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
@@ -459,7 +459,7 @@ class RenderContext(object):
             self._graphics.drawLine(
                 pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
                 pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v),
-                pen=self._styleSheet.sectorGrid.pen)
+                pen=self._styleSheet.sectorGrid.linePen)
             v += travellermap.SectorHeight
 
     def _drawSubsectorGrid(self) -> None:
@@ -481,7 +481,7 @@ class RenderContext(object):
             self._graphics.drawLine(
                 pt1=maprenderer.AbstractPointF(h, self._absoluteViewRect.top() - gridSlop),
                 pt2=maprenderer.AbstractPointF(h, self._absoluteViewRect.bottom() + gridSlop),
-                pen=self._styleSheet.subsectorGrid.pen)
+                pen=self._styleSheet.subsectorGrid.linePen)
             with self._graphics.save():
                 self._graphics.translateTransform(dx=h, dy=0)
                 self._graphics.scaleTransform(
@@ -490,7 +490,7 @@ class RenderContext(object):
                 self._graphics.drawLine(
                     pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
                     pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop),
-                    pen=self._styleSheet.subsectorGrid.pen)
+                    pen=self._styleSheet.subsectorGrid.linePen)
 
         vmin = int(math.floor(self._absoluteViewRect.top() / travellermap.SubsectorHeight) - 1 -
                    travellermap.ReferenceSectorY)
@@ -503,7 +503,7 @@ class RenderContext(object):
             self._graphics.drawLine(
                 pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
                 pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v),
-                pen=self._styleSheet.subsectorGrid.pen)
+                pen=self._styleSheet.subsectorGrid.linePen)
 
     def _drawParsecGrid(self) -> None:
         if not self._styleSheet.parsecGrid.visible:
@@ -519,7 +519,7 @@ class RenderContext(object):
                 self._graphics.translateTransform(dx=offsetX, dy=offsetY)
                 self._graphics.drawLines(
                     points=self._parsecGrid,
-                    pen=self._styleSheet.parsecGrid.pen)
+                    pen=self._styleSheet.parsecGrid.linePen)
 
         if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0:
             hx = int(math.floor(self._absoluteViewRect.x()))
@@ -587,7 +587,7 @@ class RenderContext(object):
             if self._styleSheet.microBorderStyle == maprenderer.MicroBorderStyle.Square else \
             maprenderer.ClipPathCache.PathType.Hex
 
-        penWidth = self._styleSheet.microBorders.pen.width()
+        penWidth = self._styleSheet.microBorders.linePen.width()
         # HACK: Due to the fact clipping to the outline being drawn
         # doesn't work with Qt (see HACK below), it means outlines
         # appear twice as thick as they do in Traveller Map. This
@@ -645,7 +645,7 @@ class RenderContext(object):
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             pen = self._graphics.createPen()
-            baseWidth = self._styleSheet.microRoutes.pen.width()
+            baseWidth = self._styleSheet.microRoutes.linePen.width()
 
             for sector in self._selector.sectors():
                 for route in self._sectorCache.routeLines(x=sector.x(), y=sector.y()):
@@ -678,7 +678,7 @@ class RenderContext(object):
                     if not routeWidth:
                         routeWidth = 1.0
                     if not routeColor:
-                        routeColor = self._styleSheet.microRoutes.pen.color()
+                        routeColor = self._styleSheet.microRoutes.linePen.color()
                     if not routeStyle:
                         routeStyle = maprenderer.LineStyle.Solid
 
@@ -686,7 +686,7 @@ class RenderContext(object):
                     # TODO: Handle making colour visible, should be
                     # styles.grayscale || !ColorUtil.NoticeableDifference(routeColor.Value, styles.backgroundColor)
                     if self._styleSheet.grayscale:
-                        routeColor = self._styleSheet.microRoutes.pen.color() # default
+                        routeColor = self._styleSheet.microRoutes.linePen.color() # default
 
                     pen.setColor(routeColor)
                     pen.setWidth(routeWidth * baseWidth)
@@ -982,14 +982,14 @@ class RenderContext(object):
                                         scaleY=0.95 * travellermap.ParsecScaleY)
                                     self._graphics.drawPath(
                                         path=self._hexOutlinePath,
-                                        pen=elem.pen)
+                                        pen=elem.linePen)
                             else:
                                 if elem.fillBrush:
                                     rect.setRect(x=-0.4, y=-0.4, width=0.8, height=0.8)
                                     self._graphics.drawEllipse(
                                         rect=rect,
                                         brush=elem.fillBrush)
-                                if elem.pen:
+                                if elem.linePen:
                                     if renderName and self._styleSheet.fillMicroBorders:
                                         with self._graphics.save():
                                             rect.setRect(
@@ -1002,12 +1002,12 @@ class RenderContext(object):
                                             rect.setRect(x=-0.4, y=-0.4, width=0.8, height=0.8)
                                             self._graphics.drawEllipse(
                                                 rect=rect,
-                                                pen=elem.pen)
+                                                pen=elem.linePen)
                                     else:
                                         rect.setRect(x=-0.4, y=-0.4, width=0.8, height=0.8)
                                         self._graphics.drawEllipse(
                                             rect=rect,
-                                            pen=elem.pen)
+                                            pen=elem.linePen)
 
                     if not self._styleSheet.numberAllHexes and renderHex:
                         # TODO: Handle subsector hex whatever that is
@@ -1278,7 +1278,7 @@ class RenderContext(object):
                                         e = self._worldStyle(worldInfo)
                                         self._graphics.drawEllipse(
                                             rect=discRect,
-                                            pen=e.pen,
+                                            pen=e.linePen,
                                             brush=e.fillBrush)
                         elif not worldInfo.isAnomaly:
                             # Dotmap
@@ -1336,9 +1336,9 @@ class RenderContext(object):
                         if renderZone:
                             if worldInfo.isAmberZone or worldInfo.isRedZone:
                                 pen = \
-                                    self._styleSheet.amberZone.pen \
+                                    self._styleSheet.amberZone.linePen \
                                     if worldInfo.isAmberZone else \
-                                    self._styleSheet.redZone.pen
+                                    self._styleSheet.redZone.linePen
                                 rect = self._graphics.createRectangle(
                                     x=-decorationRadius,
                                     y=-decorationRadius,
@@ -1651,7 +1651,7 @@ class RenderContext(object):
 
             pen = self._graphics.createPen()
             pen.setStyle(maprenderer.LineStyle.Solid)
-            pen.setWidth(self._styleSheet.worlds.pen.width())
+            pen.setWidth(self._styleSheet.worlds.linePen.width())
             brush = self._graphics.createBrush()
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
                 brush.setColor(fillColour)
@@ -1697,7 +1697,7 @@ class RenderContext(object):
                     height=self._styleSheet.gasGiantRadius * 0.4 * 2)
                 self._graphics.drawEllipse(
                     rect=rect,
-                    pen=self._styleSheet.gasGiant.pen)
+                    pen=self._styleSheet.gasGiant.linePen)
 
     def _drawOverlay(
             self,
@@ -1713,7 +1713,7 @@ class RenderContext(object):
                 x=-radius,
                 y=-radius, width=radius * 2,
                 height=radius * 2),
-            pen=element.pen,
+            pen=element.linePen,
             brush=element.fillBrush)
 
     _MicroBorderFillAlpha = 64
@@ -1751,7 +1751,7 @@ class RenderContext(object):
 
         color = outline.color()
         if not color:
-            color = self._styleSheet.microRoutes.pen.color()
+            color = self._styleSheet.microRoutes.linePen.color()
 
         style = outline.style()
         if not style:
@@ -1760,7 +1760,7 @@ class RenderContext(object):
         # TODO: Handle noticable colours, this should be
         # styles.grayscale || !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor
         if self._styleSheet.grayscale:
-            color = self._styleSheet.microBorders.pen.color() # default
+            color = self._styleSheet.microBorders.linePen.color() # default
 
         if brush:
             try:
@@ -1775,8 +1775,8 @@ class RenderContext(object):
             pen.setColor(color)
             pen.setStyle(
                 style
-                if self._styleSheet.microBorders.pen.style() is maprenderer.LineStyle.Solid else
-                self._styleSheet.microBorders.pen.style())
+                if self._styleSheet.microBorders.linePen.style() is maprenderer.LineStyle.Solid else
+                self._styleSheet.microBorders.linePen.style())
 
         if shadePen:
             try:
