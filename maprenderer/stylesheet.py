@@ -1076,7 +1076,6 @@ class StyleSheet(object):
             self.showGalaxyBackground = False
             self.lightBackground = False
 
-            self.backgroundBrush.setColor(travellermap.MapColours.Black)
             foregroundColor = travellermap.MapColours.Cyan
             highlightColor = travellermap.MapColours.White
 

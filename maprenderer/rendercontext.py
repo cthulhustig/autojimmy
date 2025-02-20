@@ -824,8 +824,6 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        brush = self._graphics.createBrush()
-
         for vec in self._vectorCache.borders:
             if (vec.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
                 continue
