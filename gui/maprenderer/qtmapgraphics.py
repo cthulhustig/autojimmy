@@ -888,6 +888,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         contextX, contentY = font.qtMeasureText(text)
         return (contextX * scale, contentY * scale)
 
+    # TODO: Could I add some sort of simple bounds checking that
+    # doesn't draw text if it's completely off screen? I think
+    # I could get the diagonal length of the text rect and use
+    # that as the width/height of an AABB to compare against the
+    # display area.
     def drawString(
             self,
             text: str,
@@ -915,13 +920,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
                 transform * self._painter.transform())
 
             self._painter.setFont(qtFont)
-            # TODO: It looks like Qt uses a pen for text rather than the brush
-            # it may make more sense for it to just be a colour that is passed
-            # to drawString. This means the call to setBrush can probably be
-            # removed
+
+            # The Traveller Map code uses brushes for text but Qt uses the
+            # current pen
             qtBrush = brush.qtBrush()
             self._painter.setPen(qtBrush.color())
-            self._painter.setBrush(qtBrush)
 
             if format == maprenderer.TextAlignment.Baseline:
                 # TODO: Handle BaseLine strings. I'm thinking just drop support
