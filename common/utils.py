@@ -1,10 +1,13 @@
+import cProfile
 import datetime
 import enum
 import ipaddress
+import io
 import itertools
 import locale
 import math
 import platform
+import pstats
 import re
 import typing
 
@@ -319,3 +322,19 @@ class DebugTimer():
     def __exit__(self, type, value, traceback):
         delta = utcnow() - self._startTime
         print(f'{self._string}: {delta.total_seconds() * 1000}ms')
+
+class Profiler():
+    def __init__(self, sortBy = pstats.SortKey.TIME):
+        self._sortBy = sortBy
+        self._profiler = cProfile.Profile()
+
+    def __enter__(self) -> 'DebugTimer':
+        self._profiler.enable()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._profiler.disable()
+        stream = io.StringIO()
+        stats = pstats.Stats(self._profiler, stream=stream).sort_stats(self._sortBy)
+        stats.print_stats()
+        print(stream.getvalue())

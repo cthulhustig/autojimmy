@@ -1,0 +1,53 @@
+import common
+import maprenderer
+import travellermap
+
+class GridCache(object):
+    _Slop = 1
+
+    def __init__(
+            self,
+            graphics: maprenderer.AbstractGraphics,
+            capacity: int):
+        self._graphics = graphics
+        self._cache = common.LRUCache(capacity=capacity)
+
+    def grid(
+            self,
+            parsecWidth: int,
+            parsecHeight: int
+            ) -> maprenderer.AbstractPointList:
+        key = (parsecWidth, parsecHeight)
+        grid = self._cache.get(key)
+        if grid:
+            return grid
+
+        points = []
+        for px in range(-GridCache._Slop, parsecWidth + GridCache._Slop):
+            yOffset = 0 if ((px % 2) != 0) else 0.5
+            for py in range(-GridCache._Slop, parsecHeight + GridCache._Slop):
+                point1 = maprenderer.AbstractPointF(
+                    x=px + -travellermap.HexWidthOffset,
+                    y=py + 0.5 + yOffset)
+                point2 = maprenderer.AbstractPointF(
+                    x=px + travellermap.HexWidthOffset,
+                    y=py + 1.0 + yOffset)
+                point3 = maprenderer.AbstractPointF(
+                    x=px + 1.0 - travellermap.HexWidthOffset,
+                    y=py + 1.0 + yOffset)
+                point4 = maprenderer.AbstractPointF(
+                    x=px + 1.0 + travellermap.HexWidthOffset,
+                    y=py + 0.5 + yOffset)
+
+                points.append(point1)
+                points.append(point2)
+
+                points.append(point2)
+                points.append(point3)
+
+                points.append(point3)
+                points.append(point4)
+
+        grid = self._graphics.createPointList(points=points)
+        self._cache[key] = grid
+        return grid

@@ -36,6 +36,7 @@ class RenderContext(object):
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 400
 
+    _GridCacheCapacity = 50
     _ParsecGridSlop = 1
 
     def __init__(
@@ -79,6 +80,9 @@ class RenderContext(object):
         self._worldCache = maprenderer.WorldCache(
             graphics=self._graphics,
             imageCache=self._imageCache)
+        self._gridCache = maprenderer.GridCache(
+            graphics=self._graphics,
+            capacity=RenderContext._GridCacheCapacity)
         self._starfieldCache = maprenderer.StarfieldCache(
             graphics=self._graphics)
         self._selector = maprenderer.RectSelector(
@@ -111,7 +115,7 @@ class RenderContext(object):
         self._galaxyImageRect = self._graphics.createRectangle(-18257, -26234, 36551, 32462)
         self._riftImageRect = self._graphics.createRectangle(-1374, -827, 2769, 1754)
 
-        self._parsecGrid = None
+        self._parsecGrid: typing.Optional[maprenderer.AbstractPointList] = None
 
         self._createLayers()
         self._updateView()
@@ -264,7 +268,9 @@ class RenderContext(object):
 
         if self._styleSheet.parsecGrid.visible:
             if viewAreaChanged or not self._parsecGrid:
-                self._parsecGrid = self._generateParsecGrid()
+                self._parsecGrid = self._gridCache.grid(
+                    parsecWidth=int(math.ceil(self._absoluteViewRect.width())),
+                    parsecHeight=int(math.ceil(self._absoluteViewRect.height())))
         else:
             self._parsecGrid = None
 
@@ -1889,40 +1895,6 @@ class RenderContext(object):
                 font=font,
                 brush=brush,
                 x=0, y=0)
-
-    def _generateParsecGrid(self) -> maprenderer.AbstractPointList:
-        parsecWidth = int(math.ceil(self._absoluteViewRect.width())) + \
-            RenderContext._ParsecGridSlop
-        parsecHeight = int(math.ceil(self._absoluteViewRect.height())) + \
-            RenderContext._ParsecGridSlop
-
-        points = []
-        for px in range(-RenderContext._ParsecGridSlop, parsecWidth):
-            yOffset = 0 if ((px % 2) != 0) else 0.5
-            for py in range(-RenderContext._ParsecGridSlop, parsecHeight):
-                point1 = maprenderer.AbstractPointF(
-                    x=px + -travellermap.HexWidthOffset,
-                    y=py + 0.5 + yOffset)
-                point2 = maprenderer.AbstractPointF(
-                    x=px + travellermap.HexWidthOffset,
-                    y=py + 1.0 + yOffset)
-                point3 = maprenderer.AbstractPointF(
-                    x=px + 1.0 - travellermap.HexWidthOffset,
-                    y=py + 1.0 + yOffset)
-                point4 = maprenderer.AbstractPointF(
-                    x=px + 1.0 + travellermap.HexWidthOffset,
-                    y=py + 0.5 + yOffset)
-
-                points.append(point1)
-                points.append(point2)
-
-                points.append(point2)
-                points.append(point3)
-
-                points.append(point3)
-                points.append(point4)
-
-        return self._graphics.createPointList(points=points)
 
     def _zoneStyle(
             self,

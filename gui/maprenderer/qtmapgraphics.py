@@ -728,11 +728,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         # to lower it to get fonts rendering the correct size.
         return QtMapFont(family=family, emSize=emSize * 1.1, style=style)
 
-    # NOTE: Smoothing is disabled as it has a huge performance hit and doesn't seem to
-    # give a noticeable improvement
     # TODO: Need to check this on other OS
     def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
-        """
         antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \
             mode == maprenderer.AbstractGraphics.SmoothingMode.AntiAlias
 
@@ -745,8 +742,6 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setRenderHint(
             QtGui.QPainter.RenderHint.SmoothPixmapTransform,
             antialias)
-        """
-        pass
 
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         if scaleX == 1.0 and scaleY == 1.0:
@@ -890,9 +885,6 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             ) -> typing.Tuple[float, float]: # (width, height)
         qtFont = font.qtFont()
         scale = font.emSize() / qtFont.pointSizeF()
-
-        # TODO: Not sure if this should use bounds or tight bounds. It needs to
-        # be correct for what will actually be rendered for different alignments
         contextX, contentY = font.qtMeasureText(text)
         return (contextX * scale, contentY * scale)
 

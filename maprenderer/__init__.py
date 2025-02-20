@@ -12,6 +12,7 @@ from .defaultstylecache import *
 from .clippathcache import *
 from .sectorcache import *
 from .worldcache import *
+from .gridcache import *
 from .starfieldcache import *
 from .worldhelper import *
 from .stylesheet import *

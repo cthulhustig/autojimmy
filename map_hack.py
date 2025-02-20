@@ -29,6 +29,7 @@ class MapHackView(QtWidgets.QWidget):
     _ZoomInScale = 1.25
     _ZoomOutScale = 0.8
 
+    _TileRendering = False
     _DelayedRendering = False
     _TileSize = 256 # Pixels
     _TileTimerMsecs = 20
@@ -219,14 +220,28 @@ class MapHackView(QtWidgets.QWidget):
 
         # TODO: Remove debug timer
         with common.DebugTimer('Draw Time'):
-            tiles = self._currentDrawTiles()
+            if MapHackView._TileRendering:
+                tiles = self._currentDrawTiles()
 
-            painter = QtGui.QPainter(self)
-            try:
-                for x, y, image in tiles:
-                    painter.drawImage(QtCore.QPointF(x, y), image)
-            finally:
-                painter.end()
+                painter = QtGui.QPainter(self)
+                try:
+                    for x, y, image in tiles:
+                        painter.drawImage(QtCore.QPointF(x, y), image)
+                finally:
+                    painter.end()
+            else:
+                painter = QtGui.QPainter(self)
+                try:
+                    self._graphics.setPainter(painter=painter)
+                    self._renderer.setView(
+                        absoluteCenterX=self._absoluteCenterPos.x(),
+                        absoluteCenterY=self._absoluteCenterPos.y(),
+                        scale=self._viewScale.linear,
+                        outputPixelX=self.width(),
+                        outputPixelY=self.height())
+                    self._renderer.render()
+                finally:
+                    painter.end()
 
     def _pixelSpaceToWorldSpace(
             self,
