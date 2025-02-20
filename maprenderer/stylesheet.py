@@ -46,7 +46,6 @@ class StyleSheet(object):
     class StyleElement(object):
         def __init__(self) -> None:
             self.visible = False
-            # TODO: This should probably be an AbstractBrush to avoid having to create it all the time
             self.content = ''
             self.linePen: typing.Optional[maprenderer.AbstractPen] = None
             self.fillBrush: typing.Optional[maprenderer.AbstractBrush] = None
@@ -123,7 +122,6 @@ class StyleSheet(object):
     def _handleConfigUpdate(self) -> None:
         # Options
 
-        # TODO: This should be changed to backgroundBrush
         self.backgroundBrush = self._graphics.createBrush(
             color=travellermap.MapColours.Black)
 
@@ -429,9 +427,6 @@ class StyleSheet(object):
 
         self.microBorders.font = self._createFont(
             families=StyleSheet._DefaultFont,
-            # TODO: This was == rather tan <= but in my implementation scale isn't
-            # usually going to be an integer value so <= seems more appropriate.
-            # Just need to check it shouldn't be >=
             emSize=0.6 if self.scale <= StyleSheet._MicroNameMinScale else 0.25,
             style=maprenderer.FontStyle.Bold)
         self.microBorders.smallFont = self._createFont(
@@ -560,19 +555,6 @@ class StyleSheet(object):
         self.highlightWorlds.fillBrush = self._graphics.createBrush(
             color='#80FF0000')
 
-        self.populationOverlay.linePen = self._graphics.createPen(
-            color='#00FF00', # TODO: Color.Empty,
-            width=0.03 * penScale,
-            style=maprenderer.LineStyle.Dash)
-        self.importanceOverlay.linePen = self._graphics.createPen(
-            color='#00FF00', # TODO: Color.Empty,
-            width=0.03 * penScale,
-            style=maprenderer.LineStyle.Dot)
-        self.highlightWorlds.linePen =self._graphics.createPen(
-            color='#00FF00', # TODO: Color.Empty,
-            width=0.03 * penScale,
-            style=maprenderer.LineStyle.DashDot)
-
         self.capitalOverlay.fillBrush = self._graphics.createBrush(
             color=maprenderer.makeAlphaColor(
                 alpha=0x80,
@@ -691,17 +673,26 @@ class StyleSheet(object):
             self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=highlightColor))
-            self.populationOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.populationOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dash)
 
             self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=highlightColor))
-            self.importanceOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.importanceOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dot)
 
             self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=highlightColor))
-            self.highlightWorlds.linePen.setColor(travellermap.MapColours.Gray)
+            self.highlightWorlds.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Fasa:
             self.showGalaxyBackground = False
             self.deepBackgroundOpacity = 0
@@ -712,8 +703,7 @@ class StyleSheet(object):
             foregroundColor = inkColor
             self.backgroundBrush.setColor(travellermap.MapColours.White)
 
-            # NOTE: This TODO came in from the Traveller Map code
-            self.grayscale = True # TODO: Tweak to be "monochrome"
+            self.grayscale = True
             self.lightBackground = True
 
             self.capitals.fillBrush.setColor(inkColor)
@@ -780,17 +770,26 @@ class StyleSheet(object):
             self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=highlightColor))
-            self.populationOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.populationOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dash)
 
             self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=highlightColor))
-            self.importanceOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.importanceOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dot)
 
             self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=highlightColor))
-            self.highlightWorlds.linePen.setColor(travellermap.MapColours.Gray)
+            self.highlightWorlds.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Print:
             self.lightBackground = True
 
@@ -814,19 +813,27 @@ class StyleSheet(object):
             self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=self.populationOverlay.fillBrush.color()))
-            self.populationOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.populationOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dash)
 
             self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=self.importanceOverlay.fillBrush.color()))
-            self.importanceOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.importanceOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dot)
 
             self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=self.highlightWorlds.fillBrush.color()))
-            self.highlightWorlds.linePen.setColor(travellermap.MapColours.Gray)
+            self.highlightWorlds.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Draft:
-            # TODO: For some reason all text is getting underlining set
             inkOpacity = 0xB0
 
             self.showGalaxyBackground = False
@@ -834,7 +841,6 @@ class StyleSheet(object):
 
             self.deepBackgroundOpacity = 0
 
-            # TODO: I Need to handle alpha here
             self.backgroundBrush.setColor(travellermap.MapColours.AntiqueWhite)
             foregroundColor = maprenderer.makeAlphaColor(
                 alpha=inkOpacity,
@@ -877,9 +883,6 @@ class StyleSheet(object):
                     emSize=self.worlds.font.emSize() * 0.8,
                     style=self.worlds.font.style())
                 self.worlds.textStyle.uppercase = True
-                # NOTE: This TODO came in from Traveller Map
-                # TODO: Decide on this. It's nice to not overwrite the parsec grid, but
-                # it looks very cluttered, especially amber/red zones.
                 self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
 
                 self.starport.font = self._createFont(
@@ -887,7 +890,6 @@ class StyleSheet(object):
                     emSize=self.starport.font.emSize(),
                     style=self.starport.font.style())
 
-            # TODO: Why is syntax highlighting unhappy here
             self.macroNames.font = self._createFont(
                 families=fontName,
                 emSize=self.macroNames.font.emSize(),
@@ -914,7 +916,6 @@ class StyleSheet(object):
                 emSize=self.megaNames.smallFont.emSize(),
                 style=self.megaNames.smallFont.style())
 
-            # TODO: Why is syntax highlighting unhappy here
             self.microBorders.smallFont = self._createFont(
                 families=fontName,
                 emSize=self.microBorders.smallFont.emSize(),
@@ -937,8 +938,6 @@ class StyleSheet(object):
                 emSize=self.subsectorNames.font.emSize(),
                 style=self.subsectorNames.font.style())
             self.subsectorNames.textStyle.uppercase = True
-            # NOTE: This TODO came in from Traveller Map
-            # TODO: Render small, around edges
             self.subsectorNames.visible = False
 
             self.sectorName.font = self._createFont(
@@ -973,17 +972,26 @@ class StyleSheet(object):
             self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x40,
                 color=self.populationOverlay.fillBrush.color()))
-            self.populationOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.populationOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dash)
 
             self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x20,
                 color=self.importanceOverlay.fillBrush.color()))
-            self.importanceOverlay.linePen.setColor(travellermap.MapColours.Gray)
+            self.importanceOverlay.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.Dot)
 
             self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
                 alpha=0x30,
                 color=self.highlightWorlds.fillBrush.color()))
-            self.highlightWorlds.linePen.setColor(travellermap.MapColours.Gray)
+            self.highlightWorlds.linePen = self._graphics.createPen(
+                color=travellermap.MapColours.Gray,
+                width=0.03 * penScale,
+                style=maprenderer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Candy:
             self.useWorldImages = True
             self.pseudoRandomStars.visible = False
@@ -1350,8 +1358,6 @@ class StyleSheet(object):
             self.baseBottomPosition = maprenderer.AbstractPointF(0.22, -0.21)
             self.discPosition = maprenderer.AbstractPointF(-self.discRadius, 0.16)
 
-        # NOTE: This TODO came in with traveller map
-        # TODO: Do this with opacity.
         if fadeSectorSubsectorNames and \
             (not self.sectorName.textBrush or not self.subsectorNames.textBrush):
             if self.scale < 16:
