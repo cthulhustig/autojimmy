@@ -524,5 +524,6 @@ if __name__ == "__main__":
     gui.configureAppStyle(application)
 
     window = MyWidget()
+    window.setFixedSize(800, 600)
     window.show()
     application.exec_()
