@@ -950,6 +950,11 @@ class RenderContext(object):
         renderSubsector = self._styleSheet.hexContentScale is maprenderer.HexCoordinateStyle.Subsector
         renderType = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0
 
+        # Check for early out
+        if not self._styleSheet.useWorldImages:
+            if (not renderZone) and (self._styleSheet.numberAllHexes or not renderHex):
+                return
+
         rect = self._graphics.createRectangle()
         for world in self._selector.worlds():
             worldInfo = self._worldCache.getWorldInfo(world=world)
@@ -1046,6 +1051,9 @@ class RenderContext(object):
                             self._graphics.drawImage(
                                 image=worldInfo.worldImage,
                                 rect=rect)
+                    # TODO: If I can move this else to the foreground drawing then
+                    # I can have an early out at the start of this function in the
+                    # same way as with non-candy styles
                     elif not worldInfo.isAnomaly:
                         # Dotmap
                         rect.setRect(
