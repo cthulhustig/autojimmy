@@ -516,7 +516,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+            maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
         if self._parsecGrid:
             with self._graphics.save():
