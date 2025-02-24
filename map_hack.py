@@ -29,10 +29,10 @@ class MapHackView(QtWidgets.QWidget):
     _ZoomInScale = 1.25
     _ZoomOutScale = 0.8
 
-    _TileRendering = False
-    _DelayedRendering = False
+    _TileRendering = True
+    _DelayedRendering = True
     _TileSize = 256 # Pixels
-    _TileTimerMsecs = 20
+    _TileTimerMsecs = 1
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -341,30 +341,94 @@ class MapHackView(QtWidgets.QWidget):
         offsetX = (absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX
         offsetY = (absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY
 
+        cursorPos = self.mapFromGlobal(QtGui.QCursor.pos())
+        isCursorOverWindow = cursorPos.x() >= 0 and cursorPos.x() < self.width() and \
+            cursorPos.y() >= 0 and cursorPos.y() < self.height()
+        if isCursorOverWindow:
+            # If the cursor is over the window, fan out from the cursor
+            # position when generating tiles
+            absoluteOriginX, absoluteOriginY = self._pixelSpaceToWorldSpace(
+                pixelX=cursorPos.x(),
+                pixelY=cursorPos.y())
+        else:
+            # If the cursor is not over the window, fan out from the
+            # center of the view when generating tiles
+            absoluteOriginX = self._absoluteCenterPos.x()
+            absoluteOriginY = self._absoluteCenterPos.y()
+        centerTileX = math.floor(absoluteOriginX / absoluteTileWidth)
+        centerTileY = math.floor(absoluteOriginY / absoluteTileHeight)
+
         self._tileTimer.stop()
         self._tileQueue.clear()
 
         tiles = []
-        for x in range(leftTile, rightTile + 1):
-            for y in range(topTile, bottomTile + 1):
-                key = (x, y)
-                image = self._tileCache.get(key)
-                if not image:
-                    if MapHackView._DelayedRendering:
-                        self._tileQueue.append(key)
-                        continue
-                    image = self._renderTile(x, y)
-                    self._tileCache[key] = image
+        image = self._lookupTile(x=centerTileX, y=centerTileY)
+        if image:
+            tiles.append((
+                ((centerTileX - leftTile)  * MapHackView._TileSize) - offsetX,
+                ((centerTileY - topTile) * MapHackView._TileSize) - offsetY,
+                image))
 
-                tiles.append((
-                    ((x - leftTile)  * MapHackView._TileSize) - offsetX,
-                    ((y - topTile) * MapHackView._TileSize) - offsetY,
-                    image))
+        minTileX = centerTileX - 1
+        maxTileX = centerTileX + 1
+        minTileY = centerTileY - 1
+        maxTileY = centerTileY + 1
+        while minTileX >= leftTile or maxTileX <= rightTile or minTileY >= topTile or maxTileY <= bottomTile:
+            if minTileY >= topTile:
+                for x in range(minTileX, maxTileX):
+                    image = self._lookupTile(x=x, y=minTileY)
+                    if image:
+                        tiles.append((
+                            ((x - leftTile)  * MapHackView._TileSize) - offsetX,
+                            ((minTileY - topTile) * MapHackView._TileSize) - offsetY,
+                            image))
+                minTileY -= 1
+
+            if maxTileX <= rightTile:
+                for y in range(minTileY, maxTileY):
+                    image = self._lookupTile(x=maxTileX, y=y)
+                    if image:
+                        tiles.append((
+                            ((maxTileX - leftTile)  * MapHackView._TileSize) - offsetX,
+                            ((y - topTile) * MapHackView._TileSize) - offsetY,
+                            image))
+                maxTileX += 1
+
+            if maxTileY <= bottomTile:
+                for x in range(maxTileX, minTileX, -1):
+                    image = self._lookupTile(x=x, y=maxTileY)
+                    if image:
+                        tiles.append((
+                            ((x - leftTile)  * MapHackView._TileSize) - offsetX,
+                            ((maxTileY - topTile) * MapHackView._TileSize) - offsetY,
+                            image))
+                maxTileY += 1
+
+            if minTileX >= leftTile:
+                for y in range(maxTileY, minTileY, -1):
+                    image = self._lookupTile(x=minTileX, y=y)
+                    if image:
+                        tiles.append((
+                            ((minTileX - leftTile)  * MapHackView._TileSize) - offsetX,
+                            ((y - topTile) * MapHackView._TileSize) - offsetY,
+                            image))
+                minTileX -= 1
 
         if self._tileQueue:
             self._tileTimer.start()
 
         return tiles
+
+    def _lookupTile(self, x: int, y: int) -> typing.Optional[QtGui.QImage]:
+        key = (x, y)
+        image = self._tileCache.get(key)
+        if not image:
+            if MapHackView._DelayedRendering:
+                self._tileQueue.append(key)
+            else:
+                image = self._renderTile(x, y)
+                self._tileCache[key] = image
+        return image
 
     def _clearTileCache(self) -> None:
         self._tileCache.clear()
@@ -400,12 +464,7 @@ class MapHackView(QtWidgets.QWidget):
         return image
 
     def _handleTileTimer(self) -> None:
-        """
-        for tileX, tileY in self._tileQueue:
-            self._tileCache[(tileX, tileY)] = self._renderTile(tileX, tileY)
-        self._tileQueue.clear()
-        """
-        tileX, tileY = self._tileQueue.pop()
+        tileX, tileY = self._tileQueue.pop(0)
         with common.DebugTimer('Tile Render'):
             self._tileCache[(tileX, tileY)] = self._renderTile(tileX, tileY)
         if self._tileQueue:
@@ -437,13 +496,13 @@ class MapHackView(QtWidgets.QWidget):
 
         try:
             # Render once before profiling to pre-load caches.
-            #tempRenderer.render()
+            tempRenderer.render()
 
             print('Profiling')
             pr = cProfile.Profile()
             pr.enable()
 
-            for _ in range(20):
+            for _ in range(1):
                 tempRenderer.setView(
                     absoluteCenterX=self._absoluteCenterPos.x(),
                     absoluteCenterY=self._absoluteCenterPos.y(),
