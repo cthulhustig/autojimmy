@@ -104,7 +104,7 @@ def sectorBoundingRect(
         sector: typing.Tuple[int, int],
         ) -> typing.Tuple[float, float, float, float]:
     left = (sector[0] * SectorWidth) - ReferenceHexX
-    bottom = (sector[1] * SectorHeight) - ReferenceHexY
+    top = (sector[1] * SectorHeight) - ReferenceHexY
     width = SectorWidth
     height = SectorHeight
 
@@ -122,7 +122,7 @@ def sectorBoundingRect(
     left -= HexWidthOffset
     width += HexWidthOffset * 2
 
-    return (left, bottom, width, height)
+    return (left, top, width, height)
 
 def subsectorBoundingRect(
         subsector: typing.Tuple[
@@ -131,7 +131,7 @@ def subsectorBoundingRect(
         ) -> typing.Tuple[float, float, float, float]:
     left = ((subsector[0] * SectorWidth) - ReferenceHexX) + \
         (subsector[2] * SubsectorWidth)
-    bottom = ((subsector[1] * SectorHeight) - ReferenceHexY) + \
+    top = ((subsector[1] * SectorHeight) - ReferenceHexY) + \
         (subsector[3] * SubsectorHeight)
     width = SubsectorWidth
     height = SubsectorHeight
@@ -141,7 +141,7 @@ def subsectorBoundingRect(
     left -= HexWidthOffset
     width += HexWidthOffset * 2
 
-    return (left, bottom, width, height)
+    return (left, top, width, height)
 
 def hexBoundingRect(
         absolute: typing.Tuple[int, int]

@@ -45,21 +45,20 @@ class WorldInfo(object):
 
         self.isAnomaly = world.isAnomaly()
 
-        self.isAsteroids = False
+        self.isAsteroids = not self.isAnomaly and \
+            uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0
         self.asteroidRectangles = None
-        if not self.isAnomaly:
-            self.isAsteroids = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0
-            if self.isAsteroids:
-                # Random generator is seeded with world location so it is always the same
-                rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
-                self.asteroidRectangles = []
-                for i in range(len(WorldInfo._AsteroidXPositions)):
-                    if rand.random() < WorldInfo._AsteroidRadii[i]:
-                        self.asteroidRectangles.append(graphics.createRectangle(
-                            x=WorldInfo._AsteroidXPositions[i] * 0.035,
-                            y=WorldInfo._AsteroidYPositions[i] * 0.035,
-                            width=0.04 + rand.random() * 0.03,
-                            height=0.04 + rand.random() * 0.03))
+        if self.isAsteroids:
+            # Random generator is seeded with world location so it is always the same
+            rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
+            self.asteroidRectangles = []
+            for i in range(len(WorldInfo._AsteroidXPositions)):
+                if rand.random() < WorldInfo._AsteroidRadii[i]:
+                    self.asteroidRectangles.append(graphics.createRectangle(
+                        x=WorldInfo._AsteroidXPositions[i] * 0.035,
+                        y=WorldInfo._AsteroidYPositions[i] * 0.035,
+                        width=0.04 + rand.random() * 0.03,
+                        height=0.04 + rand.random() * 0.03))
 
         # Split zone into separate bools for faster checks
         self.isAmberZone = world.zone() is traveller.ZoneType.AmberZone
