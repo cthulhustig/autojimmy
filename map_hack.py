@@ -32,7 +32,17 @@ class MapHackView(QtWidgets.QWidget):
     _TileRendering = True
     _DelayedRendering = True
     _TileSize = 256 # Pixels
-    _TileTimerMsecs = 1
+    # In theory setting the tile timer to something like 1ms would give the best
+    # rendering performance however it can actually draw to quickly. If it's set
+    # to something like 1ms then when the placeholder tile is used you get a
+    # very quick flash of the checkerboard pattern before the tile draws in. This
+    # brief flash is really ugly and a bit disorientating. I found it's actually
+    # better to have a bit of a forced delay to prevent this very quick flash
+    _TileTimerMsecs = 20
+
+    _CheckerboardColourA ='#000000'
+    _CheckerboardColourB ='#404040'
+    _CheckerboardRectSize = 16
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -78,6 +88,8 @@ class MapHackView(QtWidgets.QWidget):
         self._tileTimer.setSingleShot(True)
         self._tileTimer.timeout.connect(self._handleTileTimer)
         self._tileQueue = []
+
+        self._placeholderTile = MapHackView._createPlaceholderTile()
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -224,6 +236,7 @@ class MapHackView(QtWidgets.QWidget):
                 tiles = self._currentDrawTiles()
 
                 painter = QtGui.QPainter(self)
+
                 try:
                     for x, y, image in tiles:
                         painter.drawImage(QtCore.QPointF(x, y), image)
@@ -363,11 +376,10 @@ class MapHackView(QtWidgets.QWidget):
 
         tiles = []
         image = self._lookupTile(x=centerTileX, y=centerTileY)
-        if image:
-            tiles.append((
-                ((centerTileX - leftTile)  * MapHackView._TileSize) - offsetX,
-                ((centerTileY - topTile) * MapHackView._TileSize) - offsetY,
-                image))
+        tiles.append((
+            ((centerTileX - leftTile)  * MapHackView._TileSize) - offsetX,
+            ((centerTileY - topTile) * MapHackView._TileSize) - offsetY,
+            image if image else self._placeholderTile))
 
         minTileX = centerTileX - 1
         maxTileX = centerTileX + 1
@@ -377,41 +389,37 @@ class MapHackView(QtWidgets.QWidget):
             if minTileY >= topTile:
                 for x in range(minTileX, maxTileX):
                     image = self._lookupTile(x=x, y=minTileY)
-                    if image:
-                        tiles.append((
-                            ((x - leftTile)  * MapHackView._TileSize) - offsetX,
-                            ((minTileY - topTile) * MapHackView._TileSize) - offsetY,
-                            image))
+                    tiles.append((
+                        ((x - leftTile)  * MapHackView._TileSize) - offsetX,
+                        ((minTileY - topTile) * MapHackView._TileSize) - offsetY,
+                        image if image else self._placeholderTile))
                 minTileY -= 1
 
             if maxTileX <= rightTile:
                 for y in range(minTileY, maxTileY):
                     image = self._lookupTile(x=maxTileX, y=y)
-                    if image:
-                        tiles.append((
-                            ((maxTileX - leftTile)  * MapHackView._TileSize) - offsetX,
-                            ((y - topTile) * MapHackView._TileSize) - offsetY,
-                            image))
+                    tiles.append((
+                        ((maxTileX - leftTile)  * MapHackView._TileSize) - offsetX,
+                        ((y - topTile) * MapHackView._TileSize) - offsetY,
+                        image if image else self._placeholderTile))
                 maxTileX += 1
 
             if maxTileY <= bottomTile:
                 for x in range(maxTileX, minTileX, -1):
                     image = self._lookupTile(x=x, y=maxTileY)
-                    if image:
-                        tiles.append((
-                            ((x - leftTile)  * MapHackView._TileSize) - offsetX,
-                            ((maxTileY - topTile) * MapHackView._TileSize) - offsetY,
-                            image))
+                    tiles.append((
+                        ((x - leftTile)  * MapHackView._TileSize) - offsetX,
+                        ((maxTileY - topTile) * MapHackView._TileSize) - offsetY,
+                        image if image else self._placeholderTile))
                 maxTileY += 1
 
             if minTileX >= leftTile:
                 for y in range(maxTileY, minTileY, -1):
                     image = self._lookupTile(x=minTileX, y=y)
-                    if image:
-                        tiles.append((
-                            ((minTileX - leftTile)  * MapHackView._TileSize) - offsetX,
-                            ((y - topTile) * MapHackView._TileSize) - offsetY,
-                            image))
+                    tiles.append((
+                        ((minTileX - leftTile)  * MapHackView._TileSize) - offsetX,
+                        ((y - topTile) * MapHackView._TileSize) - offsetY,
+                        image if image else self._placeholderTile))
                 minTileX -= 1
 
         if self._tileQueue:
@@ -470,6 +478,33 @@ class MapHackView(QtWidgets.QWidget):
         if self._tileQueue:
             self._tileTimer.start()
         self.update()
+
+    @staticmethod
+    def _createPlaceholderTile() -> QtGui.QImage:
+        image = QtGui.QImage(
+            MapHackView._TileSize,
+            MapHackView._TileSize,
+            QtGui.QImage.Format.Format_ARGB32)
+        rectsPerSize = math.ceil(MapHackView._TileSize / MapHackView._CheckerboardRectSize)
+
+        painter = QtGui.QPainter()
+        painter.begin(image)
+        try:
+            painter.setBrush(QtGui.QColor(MapHackView._CheckerboardColourA))
+            painter.drawRect(0, 0, MapHackView._TileSize, MapHackView._TileSize)
+
+            painter.setBrush(QtGui.QColor(MapHackView._CheckerboardColourB))
+            for x in range(rectsPerSize):
+                for y in range(1 if x % 2 else 0, rectsPerSize, 2):
+                    painter.drawRect(
+                        x * MapHackView._CheckerboardRectSize,
+                        y * MapHackView._CheckerboardRectSize,
+                        MapHackView._CheckerboardRectSize,
+                        MapHackView._CheckerboardRectSize)
+        finally:
+            painter.end()
+
+        return image
 
     def _debugHack(self):
         tempGraphics = gui.QtMapGraphics()
