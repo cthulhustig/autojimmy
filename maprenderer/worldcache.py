@@ -1,3 +1,4 @@
+import common
 import maprenderer
 import math
 import random
@@ -96,6 +97,7 @@ class WorldInfo(object):
             0
 
 class WorldCache(object):
+    _DefaultCapacity = 500
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
@@ -103,9 +105,12 @@ class WorldCache(object):
             ) -> None:
         self._graphics = graphics
         self._imageCache = imageCache
-        self._infoCache: typing.Dict[
+        self._infoCache = common.LRUCache[
             traveller.World,
-            WorldInfo] = {}
+            WorldInfo](capacity=WorldCache._DefaultCapacity)
+
+    def ensureCapacity(self, capacity) -> None:
+        self._infoCache.ensureCapacity(capacity=capacity)
 
     def getWorldInfo(
             self,

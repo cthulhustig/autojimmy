@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 import app
 import common
+import gc
 import gui
 import io
 import locale
@@ -13,6 +14,14 @@ import travellermap
 import typing
 import cProfile, pstats, io
 from pstats import SortKey
+
+# TODO: I think a lot of the places I've referred to as absolute space
+# is actually map space, or at least my equivalent of it (i.e. without the
+# inverted y axis like in Traveller Map). I think anything the problem
+# might be around things that are using ParsecScaleX/ParsecScaleY
+# TODO: Not sure if me not inverting the y axis in my map space might
+# be an issue when it comes to rendering mains (or other things that
+# would be done with client side map space in Traveller Map)
 
 class MapHackView(QtWidgets.QWidget):
     _MinScale = -7
@@ -32,6 +41,7 @@ class MapHackView(QtWidgets.QWidget):
     _TileRendering = True
     _DelayedRendering = True
     _TileSize = 256 # Pixels
+    _TileCacheSize = 1000 # In tiles
     # In theory setting the tile timer to something like 1ms would give the best
     # rendering performance however it can actually draw to quickly. If it's set
     # to something like 1ms then when the placeholder tile is used you get a
@@ -79,15 +89,26 @@ class MapHackView(QtWidgets.QWidget):
 
         self._worldDragStart: typing.Optional[QtCore.QPointF] = None
 
-        self._tileCache: typing.Dict[
-            typing.Tuple[int, int], # Tile space coordinates
-            QtGui.QImage] = {}
+        self._tileCache = common.LRUCache[
+            typing.Tuple[
+                int, # Tile X
+                int, # Tile Y
+                # TODO: Having a float as part of the key for this kind of cache is really
+                # bad but should work for now. By he end of what I'm working on this should
+                # be an int (or at least a float clamped to some step size) with scaling of
+                # tiles when needed
+                float], # Tile Scale (linear)
+            QtGui.QImage](capacity=MapHackView._TileCacheSize)
 
         self._tileTimer = QtCore.QTimer()
         self._tileTimer.setInterval(MapHackView._TileTimerMsecs)
         self._tileTimer.setSingleShot(True)
         self._tileTimer.timeout.connect(self._handleTileTimer)
-        self._tileQueue = []
+        self._tileQueue: typing.List[typing.Tuple[
+            int, # Tile X
+            int, # Tile Y
+            float # Tile Scale (linear)
+            ]] = []
 
         self._placeholderTile = MapHackView._createPlaceholderTile()
 
@@ -193,6 +214,12 @@ class MapHackView(QtWidgets.QWidget):
                 if self._renderer:
                     self._renderer.setStyle(self._style)
                 self._clearTileCache()
+            elif event.key() == QtCore.Qt.Key.Key_F5:
+                print('Forcing garbage collection')
+                count = gc.collect()
+                print(f'{count}')
+                count = gc.collect()
+                print(f'{count}')
             elif event.key() == QtCore.Qt.Key.Key_F7:
                 self.update()
 
@@ -211,9 +238,6 @@ class MapHackView(QtWidgets.QWidget):
             logViewScale = common.clamp(logViewScale, MapHackView._MinScale, MapHackView._MaxScale)
             self._viewScale.log = logViewScale
 
-            # Clear tile cache so it repopulates for the new scale
-            self._tileCache.clear()
-
             newWorldCursorX, newWorldCursorY = self._pixelSpaceToWorldSpace(
                 pixelX=cursorScreenPos.x(),
                 pixelY=cursorScreenPos.y(),
@@ -229,6 +253,8 @@ class MapHackView(QtWidgets.QWidget):
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
+
+        #print(f'Scale: Linear={self._viewScale.linear} Log={self._viewScale.log}')
 
         # TODO: Remove debug timer
         with common.DebugTimer('Draw Time'):
@@ -374,8 +400,10 @@ class MapHackView(QtWidgets.QWidget):
         self._tileTimer.stop()
         self._tileQueue.clear()
 
+        tileScale = self._viewScale.linear
+
         tiles = []
-        image = self._lookupTile(x=centerTileX, y=centerTileY)
+        image = self._lookupTile(tileX=centerTileX, tileY=centerTileY, linearScale=tileScale)
         tiles.append((
             ((centerTileX - leftTile)  * MapHackView._TileSize) - offsetX,
             ((centerTileY - topTile) * MapHackView._TileSize) - offsetY,
@@ -388,7 +416,7 @@ class MapHackView(QtWidgets.QWidget):
         while minTileX >= leftTile or maxTileX <= rightTile or minTileY >= topTile or maxTileY <= bottomTile:
             if minTileY >= topTile:
                 for x in range(minTileX, maxTileX):
-                    image = self._lookupTile(x=x, y=minTileY)
+                    image = self._lookupTile(tileX=x, tileY=minTileY, linearScale=tileScale)
                     tiles.append((
                         ((x - leftTile)  * MapHackView._TileSize) - offsetX,
                         ((minTileY - topTile) * MapHackView._TileSize) - offsetY,
@@ -397,7 +425,7 @@ class MapHackView(QtWidgets.QWidget):
 
             if maxTileX <= rightTile:
                 for y in range(minTileY, maxTileY):
-                    image = self._lookupTile(x=maxTileX, y=y)
+                    image = self._lookupTile(tileX=maxTileX, tileY=y, linearScale=tileScale)
                     tiles.append((
                         ((maxTileX - leftTile)  * MapHackView._TileSize) - offsetX,
                         ((y - topTile) * MapHackView._TileSize) - offsetY,
@@ -406,7 +434,7 @@ class MapHackView(QtWidgets.QWidget):
 
             if maxTileY <= bottomTile:
                 for x in range(maxTileX, minTileX, -1):
-                    image = self._lookupTile(x=x, y=maxTileY)
+                    image = self._lookupTile(tileX=x, tileY=maxTileY, linearScale=tileScale)
                     tiles.append((
                         ((x - leftTile)  * MapHackView._TileSize) - offsetX,
                         ((maxTileY - topTile) * MapHackView._TileSize) - offsetY,
@@ -415,7 +443,7 @@ class MapHackView(QtWidgets.QWidget):
 
             if minTileX >= leftTile:
                 for y in range(maxTileY, minTileY, -1):
-                    image = self._lookupTile(x=minTileX, y=y)
+                    image = self._lookupTile(tileX=minTileX, tileY=y, linearScale=tileScale)
                     tiles.append((
                         ((minTileX - leftTile)  * MapHackView._TileSize) - offsetX,
                         ((y - topTile) * MapHackView._TileSize) - offsetY,
@@ -427,34 +455,49 @@ class MapHackView(QtWidgets.QWidget):
 
         return tiles
 
-    def _lookupTile(self, x: int, y: int) -> typing.Optional[QtGui.QImage]:
-        key = (x, y)
+    def _lookupTile(
+            self,
+            tileX: int,
+            tileY: int,
+            linearScale: float
+            ) -> typing.Optional[QtGui.QImage]:
+        key = (tileX, tileY, linearScale)
         image = self._tileCache.get(key)
         if not image:
             if MapHackView._DelayedRendering:
                 self._tileQueue.append(key)
             else:
-                image = self._renderTile(x, y)
+                image = None
+                if self._tileCache.isFull():
+                    _, image = self._tileCache.pop()
+                image = self._renderTile(tileX, tileY, linearScale, image)
                 self._tileCache[key] = image
         return image
 
     def _clearTileCache(self) -> None:
         self._tileCache.clear()
-        self.update()
+        self.update() # Force redraw
 
-    def _renderTile(self, x: int, y: int) -> QtGui.QImage:
-        scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
-        scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+    def _renderTile(
+            self,
+            x: int,
+            y: int,
+            linearScale: float,
+            image: typing.Optional[QtGui.QImage]
+            ) -> QtGui.QImage:
+        scaleX = (linearScale * travellermap.ParsecScaleX)
+        scaleY = (linearScale * travellermap.ParsecScaleY)
         absoluteWidth = MapHackView._TileSize / (scaleX * travellermap.ParsecScaleX)
         absoluteHeight = MapHackView._TileSize / (scaleY * travellermap.ParsecScaleY)
 
         absoluteTileCenterX = ((x * MapHackView._TileSize) / scaleX) + (absoluteWidth / 2)
         absoluteTileCenterY = ((y * MapHackView._TileSize) / scaleY) + (absoluteHeight / 2)
 
-        image = QtGui.QImage(
-            MapHackView._TileSize,
-            MapHackView._TileSize,
-            QtGui.QImage.Format.Format_ARGB32)
+        if not image:
+            image = QtGui.QImage(
+                MapHackView._TileSize,
+                MapHackView._TileSize,
+                QtGui.QImage.Format.Format_ARGB32)
         painter = QtGui.QPainter()
         painter.begin(image)
         try:
@@ -462,19 +505,32 @@ class MapHackView(QtWidgets.QWidget):
             self._renderer.setView(
                 absoluteCenterX=absoluteTileCenterX,
                 absoluteCenterY=absoluteTileCenterY,
-                scale=self._viewScale.linear,
+                scale=linearScale,
                 outputPixelX=MapHackView._TileSize,
                 outputPixelY=MapHackView._TileSize)
             self._renderer.render()
+
+            """
+            painter.setPen(QtGui.QColor('#FF0000'))
+            painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+            painter.drawRect(0, 0, MapHackView._TileSize, MapHackView._TileSize)
+            """
         finally:
             painter.end()
 
         return image
 
     def _handleTileTimer(self) -> None:
-        tileX, tileY = self._tileQueue.pop(0)
+        tileX, tileY, tileScale = self._tileQueue.pop(0)
         with common.DebugTimer('Tile Render'):
-            self._tileCache[(tileX, tileY)] = self._renderTile(tileX, tileY)
+            image = None
+            if self._tileCache.isFull():
+                _, image = self._tileCache.pop()
+            self._tileCache[(tileX, tileY, tileScale)] = self._renderTile(
+                x=tileX,
+                y=tileY,
+                linearScale=tileScale,
+                image=image)
         if self._tileQueue:
             self._tileTimer.start()
         self.update()

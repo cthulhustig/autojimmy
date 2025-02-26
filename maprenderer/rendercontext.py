@@ -964,6 +964,9 @@ class RenderContext(object):
             if not renderType:
                 return
 
+        worlds = self._selector.worlds()
+        self._worldCache.ensureCapacity(len(worlds))
+
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
@@ -975,7 +978,7 @@ class RenderContext(object):
                 scaleY=scaleY)
 
             rect = self._graphics.createRectangle()
-            for world in self._selector.worlds():
+            for world in worlds:
                 worldInfo = self._worldCache.getWorldInfo(world=world)
 
                 renderName = False
@@ -1108,6 +1111,9 @@ class RenderContext(object):
 
             return # Nothing more to do
 
+        worlds = self._selector.worlds()
+        self._worldCache.ensureCapacity(len(worlds))
+
         renderAllNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0
         renderKeyNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0
         renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
@@ -1135,7 +1141,7 @@ class RenderContext(object):
             scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
             self._graphics.scaleTransform(scaleX=scaleX, scaleY=scaleY)
 
-            for world in self._selector.worlds():
+            for world in worlds:
                 worldInfo = self._worldCache.getWorldInfo(world=world)
                 renderName = False
                 if renderAllNames or renderKeyNames:

@@ -1,3 +1,4 @@
+import common
 import maprenderer
 import math
 import traveller
@@ -43,6 +44,8 @@ class StyleSheet(object):
 
     _T5AllegianceCodeMinScale = 64
 
+    _FontCacheSize = 100
+
     class StyleElement(object):
         def __init__(self) -> None:
             self.visible = False
@@ -71,13 +74,13 @@ class StyleSheet(object):
         self._options = options
         self._style = style
         self._graphics = graphics
-        self._fontCache: typing.Dict[
+        self._fontCache = common.LRUCache[
             typing.Tuple[
                 str, # Family
                 int, # emSize
                 maprenderer.FontStyle
                 ],
-            maprenderer.AbstractFont] = {}
+            maprenderer.AbstractFont](capacity=StyleSheet._FontCacheSize)
         self._handleConfigUpdate()
 
     @property

@@ -1,3 +1,4 @@
+import common
 import maprenderer
 import typing
 from PyQt5 import QtCore, QtGui
@@ -585,7 +586,7 @@ class QtMapFont(maprenderer.AbstractFont):
         self._fontMetrics = QtGui.QFontMetricsF(self._font)
         self._lineSpacing = self._fontMetrics.lineSpacing()
 
-        self._sizeCache: typing.Dict[str, QtCore.QRectF] = {}
+        self._sizeCache = common.LRUCache[str, QtCore.QRectF](1000)
 
     def family(self) -> str:
         return self._family
