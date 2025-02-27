@@ -25,11 +25,11 @@ from pstats import SortKey
 
 class MapHackView(QtWidgets.QWidget):
     _MinScale = -7
-    _MaxScale = 9
+    _MaxScale = 10
     _DefaultCenterX = 0
     _DefaultCenterY = 0
     _DefaultScale = 64
-    _DefaultScale = travellermap.logScaleToLinearScale(5.5)
+    _DefaultScale = travellermap.logScaleToLinearScale(6)
     #_DefaultCenterX, _DefaultCenterY  = (-175,46)
 
     _WheelScaleMultiplier = 1.5
@@ -222,6 +222,11 @@ class MapHackView(QtWidgets.QWidget):
                 print(f'{count}')
             elif event.key() == QtCore.Qt.Key.Key_F7:
                 self.update()
+            elif event.key() == QtCore.Qt.Key.Key_F12:
+                MapHackView._TileRendering = not MapHackView._TileRendering
+                print(f'TileRendering={MapHackView._TileRendering}')
+                self.update()
+
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
@@ -236,6 +241,8 @@ class MapHackView(QtWidgets.QWidget):
             logViewScale = self._viewScale.log
             logViewScale += MapHackView._WheelLogScaleDelta if event.angleDelta().y() > 0 else -MapHackView._WheelLogScaleDelta
             logViewScale = common.clamp(logViewScale, MapHackView._MinScale, MapHackView._MaxScale)
+            if logViewScale == self._viewScale.log:
+                return # Reached min/max zoom
             self._viewScale.log = logViewScale
 
             newWorldCursorX, newWorldCursorY = self._pixelSpaceToWorldSpace(
@@ -254,7 +261,7 @@ class MapHackView(QtWidgets.QWidget):
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
 
-        #print(f'Scale: Linear={self._viewScale.linear} Log={self._viewScale.log}')
+        print(f'Scale: Linear={self._viewScale.linear} Log={self._viewScale.log}')
 
         # TODO: Remove debug timer
         with common.DebugTimer('Draw Time'):
@@ -262,10 +269,31 @@ class MapHackView(QtWidgets.QWidget):
                 tiles = self._currentDrawTiles()
 
                 painter = QtGui.QPainter(self)
+                painter.setRenderHint(
+                    QtGui.QPainter.RenderHint.Antialiasing,
+                    True)
+                painter.setRenderHint(
+                    QtGui.QPainter.RenderHint.SmoothPixmapTransform,
+                    True)
 
                 try:
-                    for x, y, image in tiles:
-                        painter.drawImage(QtCore.QPointF(x, y), image)
+                    for renderRect, clipRect, image in tiles:
+                        painter.save()
+                        try:
+                            if clipRect:
+                                clipPath = painter.clipPath()
+                                clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
+                                clipPath.addRect(clipRect)
+
+                            # Manually scale the image if needed as drawImage does a piss poor job
+                            if image.width() != renderRect.width() or image.height() != renderRect.height():
+                                image = image.smoothScaled(
+                                    math.floor(renderRect.width() + 0.5),
+                                    math.floor(renderRect.height() + 0.5))
+
+                            painter.drawImage(renderRect, image)
+                        finally:
+                            painter.restore()
                 finally:
                     painter.end()
             else:
@@ -357,10 +385,14 @@ class MapHackView(QtWidgets.QWidget):
         self.repaint()
 
     def _currentDrawTiles(self) -> typing.Iterable[typing.Tuple[
-            int, # x pixel position
-            int, # y pixel position
+            QtCore.QRectF, # Render rect
+            typing.Optional[QtCore.QRectF], # Clip rect
             QtGui.QImage
             ]]:
+        tileScale = int(math.floor(self._viewScale.log + 0.5))
+        tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
+        tileSize = MapHackView._TileSize * tileMultiplier
+
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
         absoluteViewWidth = self.width() / scaleX
@@ -370,8 +402,8 @@ class MapHackView(QtWidgets.QWidget):
         absoluteViewTop = self._absoluteCenterPos.y() - (absoluteViewHeight / 2)
         absoluteViewBottom = absoluteViewTop + absoluteViewHeight
 
-        absoluteTileWidth = MapHackView._TileSize / scaleX
-        absoluteTileHeight = MapHackView._TileSize / scaleY
+        absoluteTileWidth = tileSize / scaleX
+        absoluteTileHeight = tileSize / scaleY
         leftTile = math.floor(absoluteViewLeft / absoluteTileWidth)
         rightTile = math.floor(absoluteViewRight / absoluteTileWidth)
         topTile = math.floor(absoluteViewTop / absoluteTileHeight)
@@ -400,13 +432,17 @@ class MapHackView(QtWidgets.QWidget):
         self._tileTimer.stop()
         self._tileQueue.clear()
 
-        tileScale = self._viewScale.linear
-
         tiles = []
-        image = self._lookupTile(tileX=centerTileX, tileY=centerTileY, linearScale=tileScale)
+        image = self._lookupTile(tileX=centerTileX, tileY=centerTileY, tileScale=tileScale)
+        clipRect = QtCore.QRectF(
+            ((centerTileX - leftTile) * tileSize) - offsetX,
+            ((centerTileY - topTile) * tileSize) - offsetY,
+            tileSize,
+            tileSize)
+        renderRect = QtCore.QRectF(clipRect)
         tiles.append((
-            ((centerTileX - leftTile)  * MapHackView._TileSize) - offsetX,
-            ((centerTileY - topTile) * MapHackView._TileSize) - offsetY,
+            renderRect,
+            clipRect,
             image if image else self._placeholderTile))
 
         minTileX = centerTileX - 1
@@ -416,37 +452,61 @@ class MapHackView(QtWidgets.QWidget):
         while minTileX >= leftTile or maxTileX <= rightTile or minTileY >= topTile or maxTileY <= bottomTile:
             if minTileY >= topTile:
                 for x in range(minTileX, maxTileX):
-                    image = self._lookupTile(tileX=x, tileY=minTileY, linearScale=tileScale)
+                    image = self._lookupTile(tileX=x, tileY=minTileY, tileScale=tileScale)
+                    clipRect = QtCore.QRectF(
+                        ((x - leftTile) * tileSize) - offsetX,
+                        ((minTileY - topTile) * tileSize) - offsetY,
+                        tileSize,
+                        tileSize)
+                    renderRect = QtCore.QRectF(clipRect)
                     tiles.append((
-                        ((x - leftTile)  * MapHackView._TileSize) - offsetX,
-                        ((minTileY - topTile) * MapHackView._TileSize) - offsetY,
+                        renderRect,
+                        clipRect,
                         image if image else self._placeholderTile))
                 minTileY -= 1
 
             if maxTileX <= rightTile:
                 for y in range(minTileY, maxTileY):
-                    image = self._lookupTile(tileX=maxTileX, tileY=y, linearScale=tileScale)
+                    image = self._lookupTile(tileX=maxTileX, tileY=y, tileScale=tileScale)
+                    clipRect = QtCore.QRectF(
+                        ((maxTileX - leftTile) * tileSize) - offsetX,
+                        ((y - topTile) * tileSize) - offsetY,
+                        tileSize,
+                        tileSize)
+                    renderRect = QtCore.QRectF(clipRect)
                     tiles.append((
-                        ((maxTileX - leftTile)  * MapHackView._TileSize) - offsetX,
-                        ((y - topTile) * MapHackView._TileSize) - offsetY,
+                        renderRect,
+                        clipRect,
                         image if image else self._placeholderTile))
                 maxTileX += 1
 
             if maxTileY <= bottomTile:
                 for x in range(maxTileX, minTileX, -1):
-                    image = self._lookupTile(tileX=x, tileY=maxTileY, linearScale=tileScale)
+                    image = self._lookupTile(tileX=x, tileY=maxTileY, tileScale=tileScale)
+                    clipRect = QtCore.QRectF(
+                        ((x - leftTile) * tileSize) - offsetX,
+                        ((maxTileY - topTile) * tileSize) - offsetY,
+                        tileSize,
+                        tileSize)
+                    renderRect = QtCore.QRectF(clipRect)
                     tiles.append((
-                        ((x - leftTile)  * MapHackView._TileSize) - offsetX,
-                        ((maxTileY - topTile) * MapHackView._TileSize) - offsetY,
+                        renderRect,
+                        clipRect,
                         image if image else self._placeholderTile))
                 maxTileY += 1
 
             if minTileX >= leftTile:
                 for y in range(maxTileY, minTileY, -1):
-                    image = self._lookupTile(tileX=minTileX, tileY=y, linearScale=tileScale)
+                    image = self._lookupTile(tileX=minTileX, tileY=y, tileScale=tileScale)
+                    clipRect = QtCore.QRectF(
+                        ((minTileX - leftTile) * tileSize) - offsetX,
+                        ((y - topTile) * tileSize) - offsetY,
+                        tileSize,
+                        tileSize)
+                    renderRect = QtCore.QRectF(clipRect)
                     tiles.append((
-                        ((minTileX - leftTile)  * MapHackView._TileSize) - offsetX,
-                        ((y - topTile) * MapHackView._TileSize) - offsetY,
+                        renderRect,
+                        clipRect,
                         image if image else self._placeholderTile))
                 minTileX -= 1
 
@@ -459,9 +519,9 @@ class MapHackView(QtWidgets.QWidget):
             self,
             tileX: int,
             tileY: int,
-            linearScale: float
+            tileScale: int # Log scale rounded down
             ) -> typing.Optional[QtGui.QImage]:
-        key = (tileX, tileY, linearScale)
+        key = (tileX, tileY, tileScale)
         image = self._tileCache.get(key)
         if not image:
             if MapHackView._DelayedRendering:
@@ -469,8 +529,9 @@ class MapHackView(QtWidgets.QWidget):
             else:
                 image = None
                 if self._tileCache.isFull():
+                    # Reuse oldest cached tile
                     _, image = self._tileCache.pop()
-                image = self._renderTile(tileX, tileY, linearScale, image)
+                image = self._renderTile(tileX, tileY, tileScale, image)
                 self._tileCache[key] = image
         return image
 
@@ -480,18 +541,19 @@ class MapHackView(QtWidgets.QWidget):
 
     def _renderTile(
             self,
-            x: int,
-            y: int,
-            linearScale: float,
+            tileX: int,
+            tileY: int,
+            tileScale: int, # Log scale rounded down
             image: typing.Optional[QtGui.QImage]
             ) -> QtGui.QImage:
-        scaleX = (linearScale * travellermap.ParsecScaleX)
-        scaleY = (linearScale * travellermap.ParsecScaleY)
-        absoluteWidth = MapHackView._TileSize / (scaleX * travellermap.ParsecScaleX)
-        absoluteHeight = MapHackView._TileSize / (scaleY * travellermap.ParsecScaleY)
+        tileScale = travellermap.logScaleToLinearScale(tileScale)
+        scaleX = (tileScale * travellermap.ParsecScaleX)
+        scaleY = (tileScale * travellermap.ParsecScaleY)
+        absoluteTileWidth = MapHackView._TileSize / scaleX
+        absoluteTileHeight = MapHackView._TileSize / scaleY
 
-        absoluteTileCenterX = ((x * MapHackView._TileSize) / scaleX) + (absoluteWidth / 2)
-        absoluteTileCenterY = ((y * MapHackView._TileSize) / scaleY) + (absoluteHeight / 2)
+        absoluteTileCenterX = ((tileX * MapHackView._TileSize) / scaleX) + (absoluteTileWidth / 2)
+        absoluteTileCenterY = ((tileY * MapHackView._TileSize) / scaleY) + (absoluteTileHeight / 2)
 
         if not image:
             image = QtGui.QImage(
@@ -505,16 +567,14 @@ class MapHackView(QtWidgets.QWidget):
             self._renderer.setView(
                 absoluteCenterX=absoluteTileCenterX,
                 absoluteCenterY=absoluteTileCenterY,
-                scale=linearScale,
+                scale=tileScale,
                 outputPixelX=MapHackView._TileSize,
                 outputPixelY=MapHackView._TileSize)
             self._renderer.render()
 
-            """
             painter.setPen(QtGui.QColor('#FF0000'))
             painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
             painter.drawRect(0, 0, MapHackView._TileSize, MapHackView._TileSize)
-            """
         finally:
             painter.end()
 
@@ -522,14 +582,16 @@ class MapHackView(QtWidgets.QWidget):
 
     def _handleTileTimer(self) -> None:
         tileX, tileY, tileScale = self._tileQueue.pop(0)
-        with common.DebugTimer('Tile Render'):
+        #with common.DebugTimer('Tile Render'):
+        if True:
             image = None
             if self._tileCache.isFull():
+                # Reuse oldest cached tile
                 _, image = self._tileCache.pop()
             self._tileCache[(tileX, tileY, tileScale)] = self._renderTile(
-                x=tileX,
-                y=tileY,
-                linearScale=tileScale,
+                tileX=tileX,
+                tileY=tileY,
+                tileScale=tileScale,
                 image=image)
         if self._tileQueue:
             self._tileTimer.start()

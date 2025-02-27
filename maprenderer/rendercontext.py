@@ -31,7 +31,7 @@ class RenderContext(object):
         Overlay = 2
 
     _MinScale = 0.0078125; # Math.Pow(2, -7)
-    _MaxScale = 512; # Math.Pow(2, 9)
+    _MaxScale = 1024; # Math.Pow(2, 10)
 
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 400
@@ -63,7 +63,7 @@ class RenderContext(object):
         self._outputPixelY = outputPixelY
         self._options = options
         self._styleSheet = maprenderer.StyleSheet(
-            scale=self._styleSheetScale(),
+            scale=self._scale,
             options=self._options,
             style=style,
             graphics=self._graphics)
@@ -136,7 +136,7 @@ class RenderContext(object):
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
 
-        self._styleSheet.scale = self._styleSheetScale()
+        self._styleSheet.scale = self._scale
 
         self._updateView()
 
@@ -232,12 +232,6 @@ class RenderContext(object):
         """
 
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder[l.id])
-
-    # The style sheet scale is different from the actual scale to simulate
-    # the way Traveller Map fonts and
-    def _styleSheetScale(self) -> float:
-        logScale = round(travellermap.linearScaleToLogScale(self._scale))
-        return travellermap.logScaleToLinearScale(logScale)
 
     def _updateView(self):
         absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
