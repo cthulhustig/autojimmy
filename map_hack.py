@@ -270,9 +270,6 @@ class MapHackView(QtWidgets.QWidget):
 
                 painter = QtGui.QPainter(self)
                 painter.setRenderHint(
-                    QtGui.QPainter.RenderHint.Antialiasing,
-                    True)
-                painter.setRenderHint(
                     QtGui.QPainter.RenderHint.SmoothPixmapTransform,
                     True)
 
@@ -572,9 +569,11 @@ class MapHackView(QtWidgets.QWidget):
                 outputPixelY=MapHackView._TileSize)
             self._renderer.render()
 
+            """
             painter.setPen(QtGui.QColor('#FF0000'))
             painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
             painter.drawRect(0, 0, MapHackView._TileSize, MapHackView._TileSize)
+            """
         finally:
             painter.end()
 
