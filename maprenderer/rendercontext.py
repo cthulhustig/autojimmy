@@ -1151,7 +1151,7 @@ class RenderContext(object):
                         element = self._zoneStyle(worldInfo)
                         worldTextBackgroundStyle = \
                             maprenderer.TextBackgroundStyle.NoStyle \
-                            if (not element or not element.fillBrush) else \
+                            if element and element.fillBrush else \
                             self._styleSheet.worlds.textBackgroundStyle
 
                         if not worldInfo.isPlaceholder:
