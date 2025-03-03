@@ -291,24 +291,28 @@ class MapHackView(QtWidgets.QWidget):
                     True)
 
                 try:
-                    for image, renderRect, clipRect in tiles:
-                        painter.save()
-                        try:
-                            if clipRect:
-                                clipPath = painter.clipPath()
-                                clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
-                                clipPath.addRect(clipRect)
-                                painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
+                    with common.DebugTimer('Blit Time'):
+                        for image, renderRect, clipRect in tiles:
+                            painter.save()
+                            try:
+                                if clipRect:
+                                    clipPath = painter.clipPath()
+                                    clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
+                                    clipPath.addRect(clipRect)
+                                    painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
+                                else:
+                                    # Manually scale the image if needed as drawImage does a piss poor job.
+                                    # This is only done when there is no clip rect. A clip rect means it's
+                                    # a placeholder tile so won't be drawn for very long so quality doesn't
+                                    # mater as much so best to avoid the expensive scaling
+                                    if image.width() != renderRect.width() or image.height() != renderRect.height():
+                                        image = image.smoothScaled(
+                                            math.floor(renderRect.width() + 0.5),
+                                            math.floor(renderRect.height() + 0.5))
 
-                            # Manually scale the image if needed as drawImage does a piss poor job
-                            if image.width() != renderRect.width() or image.height() != renderRect.height():
-                                image = image.smoothScaled(
-                                    math.floor(renderRect.width() + 0.5),
-                                    math.floor(renderRect.height() + 0.5))
-
-                            painter.drawImage(renderRect, image)
-                        finally:
-                            painter.restore()
+                                painter.drawImage(renderRect, image)
+                            finally:
+                                painter.restore()
                 finally:
                     painter.end()
             else:
@@ -648,6 +652,8 @@ class MapHackView(QtWidgets.QWidget):
                 if image:
                     placeholders.append((image, placeholderRenderRect, placeholderClipRect))
                 else:
+                    # TODO: Try and get this working, it's currently incredibly slow (at the
+                    # point it's doing drawImage) when there is significant scaling of the tile
                     """
                     if lookLower:
                         lowerPlaceholders = self._findPlaceholderTiles(
