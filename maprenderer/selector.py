@@ -54,10 +54,10 @@ class RectSelector(object):
         self._sloppySubsectors = None
 
     def worldSlop(self) -> float:
-        return self._sectorSlop
+        return self._worldSlop
 
     def setWorldSlop(self, slop: float) -> None:
-        self._sectorSlop = slop
+        self._worldSlop = slop
         self._sloppyWorlds = None
 
     def sectors(self, tight: bool = False) -> typing.Iterable[traveller.Sector]:

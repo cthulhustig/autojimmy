@@ -1441,7 +1441,7 @@ class RenderContext(object):
                 self._drawStars(world)
         elif self._styleSheet.hasWorldOverlays:
             oldSlop = self._selector.worldSlop()
-            self._selector.setWorldSlop(max(oldSlop, math.log2(self._scale) - 4))
+            self._selector.setWorldSlop(max(oldSlop, math.log2(self._scale) - 2))
             try:
                 for world in self._selector.worlds():
                     worldInfo = self._worldCache.getWorldInfo(world=world)
@@ -1666,7 +1666,9 @@ class RenderContext(object):
 
             pen = self._graphics.createPen()
             pen.setStyle(maprenderer.LineStyle.Solid)
-            pen.setWidth(self._styleSheet.worlds.linePen.width())
+            # TODO: Not sure what this should be set to, Traveller Map uses it but never
+            # explicitly sets it so must be picking up a default
+            pen.setWidth(0)
             brush = self._graphics.createBrush()
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
                 brush.setColor(fillColour)
