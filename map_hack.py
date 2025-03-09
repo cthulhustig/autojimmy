@@ -9,6 +9,7 @@ import logging
 import maprenderer
 import math
 import os
+import pathlib
 import traveller
 import travellermap
 import typing
