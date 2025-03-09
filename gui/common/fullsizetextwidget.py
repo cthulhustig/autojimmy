@@ -27,11 +27,11 @@ class FullSizeTextWidget(QtWidgets.QWidget):
     def setAlignment(self, align: QtCore.Qt.AlignmentFlag) -> None:
         self._alignment = align
 
-    def resizeEvent(self, a0: QtGui.QResizeEvent | None) -> None:
+    def resizeEvent(self, a0: typing.Optional[QtGui.QResizeEvent]) -> None:
         super().resizeEvent(a0)
         self._configureFont()
 
-    def paintEvent(self, a0: QtGui.QPaintEvent | None) -> None:
+    def paintEvent(self, a0: typing.Optional[QtGui.QPaintEvent]) -> None:
         painter = QtGui.QPainter(self)
         painter.drawText(
             self.rect(),
