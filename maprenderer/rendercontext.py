@@ -12,12 +12,10 @@ class RenderContext(object):
         def __init__(
                 self,
                 id: maprenderer.LayerId,
-                action: typing.Callable[[], typing.NoReturn],
-                clip: bool
+                action: typing.Callable[[], typing.NoReturn]
                 ) -> None:
             self.id = id
             self.action = action
-            self.clip = clip
 
     class BorderLayer(enum.Enum):
         Fill = 0
@@ -87,7 +85,6 @@ class RenderContext(object):
             graphics=self._graphics)
         self._selector = maprenderer.RectSelector(
             graphics=self._graphics)
-        self._clipOutsectorBorders = True # TODO: Rename this to clipSectorBorders
         self._absoluteViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
@@ -152,9 +149,6 @@ class RenderContext(object):
             ) -> None:
         self._styleSheet.options = options
 
-    def setClipOutsectorBorders(self, enable: bool) -> None:
-        self._clipOutsectorBorders = enable
-
     def render(self) -> None:
         #mapX, mapY = travellermap.absoluteSpaceToMapSpace((self._absoluteCenterX, self._absoluteCenterY))
         #logScale = travellermap.linearScaleToLogScale(self._scale)
@@ -173,63 +167,50 @@ class RenderContext(object):
                     layer.action()
 
     def _createLayers(self) -> None:
-        # TODO: This list probably only needs created once
         self._layers: typing.List[RenderContext.LayerAction] = [
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Solid, self._drawBackground, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Background_Solid, self._drawBackground),
 
-            # NOTE: Since alpha texture brushes aren't supported without
-            # creating a new image (slow!) we render the local background
-            # first, then overlay the deep background over it, for
-            # basically the same effect since the alphas sum to 1.
-            RenderContext.LayerAction(maprenderer.LayerId.Background_NebulaTexture, self._drawNebulaBackground, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Galaxy, self._drawGalaxyBackground, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Background_NebulaTexture, self._drawNebulaBackground),
+            RenderContext.LayerAction(maprenderer.LayerId.Background_Galaxy, self._drawGalaxyBackground),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Rifts, self._drawRifts, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars),
+            RenderContext.LayerAction(maprenderer.LayerId.Background_Rifts, self._drawRifts),
 
             #------------------------------------------------------------
             # Foreground
             #------------------------------------------------------------
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_Borders, self._drawMacroBorders, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_Routes, self._drawMacroRoutes, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Macro_Borders, self._drawMacroBorders),
+            RenderContext.LayerAction(maprenderer.LayerId.Macro_Routes, self._drawMacroRoutes),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Grid_Sector, self._drawSectorGrid, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Grid_Subsector, self._drawSubsectorGrid, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Grid_Parsec, self._drawParsecGrid, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Grid_Sector, self._drawSectorGrid),
+            RenderContext.LayerAction(maprenderer.LayerId.Grid_Subsector, self._drawSubsectorGrid),
+            RenderContext.LayerAction(maprenderer.LayerId.Grid_Parsec, self._drawParsecGrid),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Names_Subsector, self._drawSubsectorNames, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Names_Subsector, self._drawSubsectorNames),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersStroke, self._drawMicroBorders, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_Routes, self._drawMicroRoutes, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersStroke, self._drawMicroBorders),
+            RenderContext.LayerAction(maprenderer.LayerId.Micro_Routes, self._drawMicroRoutes),
+            RenderContext.LayerAction(maprenderer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Names_Sector, self._drawSectorNames, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_GovernmentRiftRouteNames, self._drawMacroNames, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_CapitalsAndHomeWorlds, self._drawCapitalsAndHomeWorlds, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Names_Sector, self._drawSectorNames),
+            RenderContext.LayerAction(maprenderer.LayerId.Macro_GovernmentRiftRouteNames, self._drawMacroNames),
+            RenderContext.LayerAction(maprenderer.LayerId.Macro_CapitalsAndHomeWorlds, self._drawCapitalsAndHomeWorlds),
+            RenderContext.LayerAction(maprenderer.LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Background, self._drawWorldsBackground, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Background, self._drawWorldsBackground),
 
-            # Not clipped, so names are not clipped in jumpmaps.
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Foreground, self._drawWorldsForeground, clip=False),
+            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Foreground, self._drawWorldsForeground),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Overlays, self._drawWorldsOverlay, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Overlays, self._drawWorldsOverlay),
 
             #------------------------------------------------------------
             # Overlays
             #------------------------------------------------------------
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_DroyneChirperWorlds, self._drawDroyneOverlay, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_MinorHomeworlds, self._drawMinorHomeworldOverlay, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay, clip=True),
+            RenderContext.LayerAction(maprenderer.LayerId.Overlay_DroyneChirperWorlds, self._drawDroyneOverlay),
+            RenderContext.LayerAction(maprenderer.LayerId.Overlay_MinorHomeworlds, self._drawMinorHomeworldOverlay),
+            RenderContext.LayerAction(maprenderer.LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay),
+            RenderContext.LayerAction(maprenderer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay),
         ]
-
-        """
-        self._layers: typing.List[RenderContext.LayerAction] = [
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Solid, self._drawBackground, clip=True),
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Foreground, self._drawWorldsForeground, clip=False),
-        ]
-        """
 
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder[l.id])
 
@@ -1043,6 +1024,8 @@ class RenderContext(object):
                         # TODO: This needs work
                         # - World images aren't being drawn at quite the right location which
                         #   means red/amber zone markers don't line up
+                        # - World images aren't being drawn for some worlds at some zoom levels
+                        #   an example would be the Breda subsector
                         # - At high zooms (just before it turns to the dot map) as you pan
                         #   about the red/amber zone marker sometimes aren't shown. To replicate
                         #   center on Reference then pan left a bit
@@ -1919,9 +1902,7 @@ class RenderContext(object):
             return self._styleSheet.amberZone
         if worldInfo.isRedZone:
             return self._styleSheet.redZone
-        # TODO: Handle placeholders, this should be
-        # if (styles.greenZone.visible && !world.IsPlaceholder)
-        if self._styleSheet.greenZone.visible:
+        if self._styleSheet.greenZone.visible and not worldInfo.isPlaceholder:
             return self._styleSheet.greenZone
         return None
 

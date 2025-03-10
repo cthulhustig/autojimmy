@@ -21,8 +21,6 @@ class LRUCache(typing.Generic[K, V]):
             self._mapping.popitem(False)
         self._mapping[key] = value
 
-    # TODO: Multiple typevars in the return type might require Python 3.9.
-    # If so this will need an update to the main md file
     def get(self, key: K, default: T = None) -> typing.Union[V, T]:
         if key not in self._mapping:
             return default

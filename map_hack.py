@@ -30,13 +30,10 @@ class MapHackView(QtWidgets.QWidget):
     _DefaultCenterX = 0
     _DefaultCenterY = 0
     _DefaultScale = 64
-    _DefaultScale = travellermap.logScaleToLinearScale(6.45)
-    _DefaultCenterX, _DefaultCenterY  = (13.971588572221023, -28.221357863973523)
+    _DefaultScale = travellermap.logScaleToLinearScale(7)
+    #_DefaultCenterX, _DefaultCenterY  = (13.971588572221023, -28.221357863973523)
 
     _WheelLogScaleDelta = 0.15
-
-    _ZoomInScale = 1.25
-    _ZoomOutScale = 0.8
 
     _TileRendering = True
     _DelayedRendering = True
@@ -295,9 +292,13 @@ class MapHackView(QtWidgets.QWidget):
                 if MapHackView._TileRendering:
                     tiles = self._currentDrawTiles()
 
+                    # This is disabled as I think it actually makes scaled tiles
+                    # look worse (a bit to blurry)
+                    """
                     painter.setRenderHint(
                         QtGui.QPainter.RenderHint.SmoothPixmapTransform,
                         True)
+                    """
 
                     with common.DebugTimer('Blit Time'):
                         for image, renderRect, clipRect in tiles:
@@ -411,7 +412,11 @@ class MapHackView(QtWidgets.QWidget):
             QtCore.QRectF, # Render rect
             typing.Optional[QtCore.QRectF], # Clip rect
             ]]:
+        # This method of rounding the scale is intended to match how it would
+        # be rounded by the Traveller Map Javascript code which uses Math.round
+        # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round
         tileScale = int(math.floor(self._viewScale.log + 0.5))
+
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
         tileSize = MapHackView._TileSize * tileMultiplier
 
@@ -657,7 +662,10 @@ class MapHackView(QtWidgets.QWidget):
                     placeholders.append((image, placeholderRenderRect, placeholderClipRect))
                 else:
                     # TODO: Try and get this working, it's currently incredibly slow (at the
-                    # point it's doing drawImage) when there is significant scaling of the tile
+                    # point it's doing drawImage) when there is significant scaling of the tile.
+                    # This can be best seen by zooming as far in as it will go then panning
+                    # in one direction until it starts rendering much higher level tiles as
+                    # placeholders for the zoomed in tiles
                     """
                     if lookLower:
                         lowerPlaceholders = self._findPlaceholderTiles(
