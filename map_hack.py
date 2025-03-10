@@ -40,9 +40,9 @@ class MapHackView(QtWidgets.QWidget):
 
     _TileRendering = True
     _DelayedRendering = True
-    _TileSize = 256 # Pixels
-    _TileCacheSize = 1000 # In tiles
-    _TileTimerMsecs = 5
+    _TileSize = 512 # Pixels
+    _TileCacheSize = 500 # Number of tiles
+    _TileTimerMsecs = 1
     #_TileTimerMsecs = 1000
 
     _CheckerboardColourA ='#000000'
@@ -84,15 +84,17 @@ class MapHackView(QtWidgets.QWidget):
 
         self._worldDragStart: typing.Optional[QtCore.QPointF] = None
 
+        # Off screen buffer used when not using tile rendering to prevent
+        # Windows font scaling messing up the size of rendered text on a
+        # 4K+ screen
+        self._isWindows = common.isWindows()
+        self._offscreenRenderImage: typing.Optional[QtGui.QImage] = None
+
         self._tileCache = common.LRUCache[
             typing.Tuple[
                 int, # Tile X
                 int, # Tile Y
-                # TODO: Having a float as part of the key for this kind of cache is really
-                # bad but should work for now. By he end of what I'm working on this should
-                # be an int (or at least a float clamped to some step size) with scaling of
-                # tiles when needed
-                float], # Tile Scale (linear)
+                int], # Tile Scale (linear)
             QtGui.QImage](capacity=MapHackView._TileCacheSize)
 
         self._tileTimer = QtCore.QTimer()
@@ -102,7 +104,7 @@ class MapHackView(QtWidgets.QWidget):
         self._tileQueue: typing.List[typing.Tuple[
             int, # Tile X
             int, # Tile Y
-            float # Tile Scale (linear)
+            int # Tile Scale (linear)
             ]] = []
 
         self._placeholderTile = MapHackView._createPlaceholderTile()
@@ -136,8 +138,6 @@ class MapHackView(QtWidgets.QWidget):
                 (worldClampedX, worldClampedY))
             print(f'RAW: {worldRawX} {worldRawY} ABS: {worldClampedX} {worldClampedY} SECTOR: {sectorX} {sectorY} HEX:{offsetX} {offsetY}')
 
-    # TODO: There is an issue with the drag move where the point you start the
-    # drag on isn't staying under the cursor
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
         if self._renderer and self._worldDragStart:
@@ -196,9 +196,7 @@ class MapHackView(QtWidgets.QWidget):
 
             if event.key() == QtCore.Qt.Key.Key_Z:
                 scale = self._viewScale.log
-                # TODO: Restore correct zoom in step
-                #scale += MapHackView._WheelLogScaleDelta if not gui.isShiftKeyDown() else -MapHackView._WheelLogScaleDelta
-                scale += 1 if not gui.isShiftKeyDown() else -1
+                scale += MapHackView._WheelLogScaleDelta if not gui.isShiftKeyDown() else -MapHackView._WheelLogScaleDelta
                 scale = common.clamp(scale, MapHackView._MinScale, MapHackView._MaxScale)
                 self._viewScale.log = scale
                 self._updateRendererView()
@@ -276,22 +274,31 @@ class MapHackView(QtWidgets.QWidget):
 
         # TODO: Remove debug timer
         with common.DebugTimer('Draw Time'):
-            painter = QtGui.QPainter(self)
+            if not MapHackView._TileRendering and self._isWindows:
+                needsNewImage = self._offscreenRenderImage is None or \
+                    self._offscreenRenderImage.width() != self.width() or \
+                    self._offscreenRenderImage.height() != self.height()
+                if needsNewImage:
+                    self._offscreenRenderImage = QtGui.QImage(
+                        self.width(),
+                        self.height(),
+                        QtGui.QImage.Format.Format_ARGB32)
+            else:
+                self._offscreenRenderImage = None
 
-            # TODO: Put back to black background or possibly base the
-            # colour on the current style (light/dark)
-            #painter.setBrush(QtCore.Qt.GlobalColor.black)
-            painter.setBrush(QtCore.Qt.GlobalColor.red)
-            painter.drawRect(0, 0, self.width(), self.height())
+            painter = QtGui.QPainter()
+            painter.begin(self._offscreenRenderImage if self._offscreenRenderImage is not None else self)
+            try:
+                painter.setBrush(QtCore.Qt.GlobalColor.black)
+                painter.drawRect(0, 0, self.width(), self.height())
 
-            if MapHackView._TileRendering:
-                tiles = self._currentDrawTiles()
+                if MapHackView._TileRendering:
+                    tiles = self._currentDrawTiles()
 
-                painter.setRenderHint(
-                    QtGui.QPainter.RenderHint.SmoothPixmapTransform,
-                    True)
+                    painter.setRenderHint(
+                        QtGui.QPainter.RenderHint.SmoothPixmapTransform,
+                        True)
 
-                try:
                     with common.DebugTimer('Blit Time'):
                         for image, renderRect, clipRect in tiles:
                             painter.save()
@@ -314,10 +321,7 @@ class MapHackView(QtWidgets.QWidget):
                                 painter.drawImage(renderRect, image)
                             finally:
                                 painter.restore()
-                finally:
-                    painter.end()
-            else:
-                try:
+                else:
                     self._graphics.setPainter(painter=painter)
                     self._renderer.setView(
                         absoluteCenterX=self._absoluteCenterPos.x(),
@@ -326,6 +330,15 @@ class MapHackView(QtWidgets.QWidget):
                         outputPixelX=self.width(),
                         outputPixelY=self.height())
                     self._renderer.render()
+            finally:
+                painter.end()
+
+            if self._offscreenRenderImage is not None:
+                painter = QtGui.QPainter()
+                painter.begin(self)
+                try:
+                    renderRect = QtCore.QRect(0, 0, self.width(), self.height())
+                    painter.drawImage(renderRect, self._offscreenRenderImage)
                 finally:
                     painter.end()
 
@@ -391,16 +404,6 @@ class MapHackView(QtWidgets.QWidget):
     def _updateRendererView(self) -> None:
         if not self._renderer:
             self._renderer = self._createRenderer()
-            return
-        # This shouldn't be needed when using tile rendering
-        """
-        self._renderer.setView(
-            absoluteCenterX=self._absoluteCenterPos.x(),
-            absoluteCenterY=self._absoluteCenterPos.y(),
-            scale=self._viewScale.linear,
-            outputPixelX=self.width(),
-            outputPixelY=self.height())
-        """
         self.repaint()
 
     def _currentDrawTiles(self) -> typing.Iterable[typing.Tuple[
@@ -631,8 +634,8 @@ class MapHackView(QtWidgets.QWidget):
         topTile = math.floor((((clipRect.top() / scaleY) + absoluteViewTop) / absoluteTileHeight))
         bottomTile = math.floor((((clipRect.bottom() / scaleY) + absoluteViewTop) / absoluteTileHeight))
 
-        offsetX = ((absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX)
-        offsetY = ((absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY)
+        offsetX = (absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX
+        offsetY = (absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY
 
         placeholders = []
         missing = []
