@@ -1,7 +1,13 @@
 import html
 import logging
+import packaging.version
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
+
+def minPyQtVersionCheck(minVersion: str) -> bool:
+    minVersion = packaging.version.Version(minVersion)
+    currentVersion = packaging.version.Version(QtCore.PYQT_VERSION_STR)
+    return currentVersion >= minVersion
 
 def createLabelledWidgetLayout(
         text: str,

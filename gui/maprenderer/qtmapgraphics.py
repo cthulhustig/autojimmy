@@ -1,4 +1,5 @@
 import common
+import gui
 import maprenderer
 import typing
 from PyQt5 import QtCore, QtGui
@@ -619,6 +620,13 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter = None
         self._supportsWingdings = None
 
+        self._hasLosslessImageRendering = gui.minPyQtVersionCheck('5.13')
+
+        # There was a fix made in PyQt 5.15.7 that means it's possible to pass
+        # a QPolygon to QPainter.drawLines where it will be interpreted as a
+        # list of point pairs.
+        self._hasDrawLinesPolygonFix = gui.minPyQtVersionCheck('5.15.7')
+
     def setPainter(self, painter: QtGui.QPainter) -> None:
         self._painter = painter
 
@@ -631,9 +639,10 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setRenderHint(
             QtGui.QPainter.RenderHint.SmoothPixmapTransform,
             False)
-        self._painter.setRenderHint(
-            QtGui.QPainter.RenderHint.LosslessImageRendering,
-            True)
+        if self._hasLosslessImageRendering:
+            self._painter.setRenderHint(
+                QtGui.QPainter.RenderHint.LosslessImageRendering,
+                True)
 
     def supportsWingdings(self) -> bool:
         if self._supportsWingdings is not None:
@@ -802,7 +811,16 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             pen: QtMapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
-        self._painter.drawLines(points.qtPolygon())
+        if self._hasDrawLinesPolygonFix:
+            self._painter.drawLines(points.qtPolygon())
+        else:
+            actualPoints = points.points()
+            for i in range(0, len(actualPoints), 2):
+                point1 = actualPoints[i]
+                point2 = actualPoints[i + 1]
+                self._painter.drawLine(
+                    QtCore.QPointF(point1.x(), point1.y()),
+                    QtCore.QPointF(point2.x(), point2.y()))
 
     def drawPath(
             self,
