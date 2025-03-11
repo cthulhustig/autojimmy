@@ -36,6 +36,13 @@ class WorldHelper(object):
         "--", # Placeholder - show as blank
     ])
 
+    # TODO: This file should be pulled from the data store
+    # TODO: I think this is actually the same data that AllegianceManager loads
+    # from allegiance.json. This file was taken directly from the Traveller Map
+    # source code where as I __think__ the other one was exported using the API.
+    # I should update AllegianceManager to use this copy as it will be easier
+    # to maintain as I'm already going to have to pull snapshots of other files
+    # from the traveller map source code periodically
     _T5OfficialAllegiancesPath = 'res/t5ss/allegiance_codes.tab'
     _T5UnofficialAllegiances = {
             # -----------------------

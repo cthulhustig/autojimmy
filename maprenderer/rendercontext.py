@@ -1168,13 +1168,6 @@ class RenderContext(object):
                             # NOTE: This todo came in with the traveller map code
                             # TODO: Mask off background for glyphs
                             if renderBases:
-                                # TODO: Handle base allegiances
-                                """
-                                # Special case: Show Zho Naval+Military as diamond
-                                if (world.BaseAllegiance == "Zh" && bases == "KM")
-                                    bases = "Z";
-                                """
-
                                 # Base 1
                                 bottomUsed = False
                                 if worldInfo.baseGlyph and worldInfo.baseGlyph.isPrintable:

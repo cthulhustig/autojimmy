@@ -74,9 +74,18 @@ class WorldInfo(object):
         bases = world.bases()
         self.baseGlyph = None
         if bases.count():
+            # NOTE: Using the first base in the list is consistent with
+            # what Traveller Map does
+            baseCode = traveller.Bases.code(bases[0])
+
+            # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
+            # Special case: Show Zho Naval+Military as diamond
+            if world.allegiance() == 'Zh' and bases.string() == 'KM':
+                baseCode = 'Z'
+
             self.baseGlyph = maprenderer.GlyphDefs.fromBaseCode(
                 allegiance=world.allegiance(),
-                code=traveller.Bases.code(bases[0]))
+                code=baseCode)
 
         self.worldSize = world.physicalSize()
         self.worldImage = maprenderer.WorldHelper.worldImage(
