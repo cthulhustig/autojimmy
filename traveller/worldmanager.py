@@ -705,9 +705,9 @@ class WorldManager(object):
         # Setup default subsector names. Some sectors just use the code A-P but we need
         # something unique
         subsectorCodes = list(map(chr, range(ord('A'), ord('P') + 1)))
-        for code in subsectorCodes:
-            subsectorNameMap[code] = (f'{sectorName} Subsector {code}', True)
-            subsectorWorldsMap[code] = []
+        for subsectorCode in subsectorCodes:
+            subsectorNameMap[subsectorCode] = (f'{sectorName} Subsector {subsectorCode}', True)
+            subsectorWorldsMap[subsectorCode] = []
 
         rawMetadata = travellermap.readMetadata(
             content=metadataContent,
@@ -716,13 +716,13 @@ class WorldManager(object):
 
         subsectorNames = rawMetadata.subsectorNames()
         if subsectorNames:
-            for code, name in subsectorNames.items():
-                if not code or not name:
+            for subsectorCode, subsectorName in subsectorNames.items():
+                if not subsectorCode or not subsectorName:
                     continue
 
                 # NOTE: Unlike most other places, it's intentional that this is upper
-                code = code.upper()
-                subsectorNameMap[code] = (name, False)
+                subsectorCode = subsectorCode.upper()
+                subsectorNameMap[subsectorCode] = (subsectorName, False)
 
         allegiances = rawMetadata.allegiances()
         if allegiances:
@@ -776,7 +776,7 @@ class WorldManager(object):
                     systemWorlds=rawWorld.attribute(travellermap.WorldAttribute.SystemWorlds),
                     bases=rawWorld.attribute(travellermap.WorldAttribute.Bases))
 
-                subsectorWorlds = subsectorWorldsMap[code]
+                subsectorWorlds = subsectorWorldsMap[subsectorCode]
                 subsectorWorlds.append(world)
             except Exception as ex:
                 logging.warning(
@@ -784,14 +784,16 @@ class WorldManager(object):
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
+        # TODO: I've broken something when adding support for generated names.
+        # I'm now only seeing the last name being rendered in my renderer
         subsectors = []
-        for code in subsectorCodes:
-            subsectorName, isSubsectorNameGenerated = subsectorNameMap[code]
-            subsectorWorlds = subsectorWorldsMap[code]
+        for subsectorCode in subsectorCodes:
+            subsectorName, isSubsectorNameGenerated = subsectorNameMap[subsectorCode]
+            subsectorWorlds = subsectorWorldsMap[subsectorCode]
             subsectors.append(traveller.Subsector(
                 sectorX=sectorX,
                 sectorY=sectorY,
-                code=code,
+                code=subsectorCode,
                 subsectorName=subsectorName,
                 isSubsectorNameGenerated=isSubsectorNameGenerated,
                 sectorName=sectorName,
