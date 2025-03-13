@@ -687,22 +687,31 @@ class WorldManager(object):
         sectorX = sectorInfo.x()
         sectorY = sectorInfo.y()
 
-        subsectorMap = {}
-        allegianceMap = {}
+        subsectorNameMap: typing.Dict[
+            str, # Subsector code (A-P)
+            typing.Tuple[
+                str, # Subsector name
+                bool # True if the name was generated
+        ]] = {}
+        subsectorWorldsMap: typing.Dict[
+            str, # Subsector code (A-P)
+            typing.List[traveller.World]
+        ] = {}
+        allegianceNameMap: typing.Dict[
+            str, # Allegiance code
+            str # Allegiance name
+        ] = {}
 
         # Setup default subsector names. Some sectors just use the code A-P but we need
         # something unique
-        for code in list(map(chr, range(ord('A'), ord('P') + 1))):
-            subsectorMap[code] = f'{sectorName} Subsector {code}'
+        subsectorCodes = list(map(chr, range(ord('A'), ord('P') + 1)))
+        for code in subsectorCodes:
+            subsectorNameMap[code] = (f'{sectorName} Subsector {code}', True)
+            subsectorWorldsMap[code] = []
 
         rawMetadata = travellermap.readMetadata(
             content=metadataContent,
             format=sectorInfo.metadataFormat(),
-            identifier=sectorName)
-
-        rawWorlds = travellermap.readSector(
-            content=sectorContent,
-            format=sectorInfo.sectorFormat(),
             identifier=sectorName)
 
         subsectorNames = rawMetadata.subsectorNames()
@@ -713,8 +722,7 @@ class WorldManager(object):
 
                 # NOTE: Unlike most other places, it's intentional that this is upper
                 code = code.upper()
-                assert(code in subsectorMap)
-                subsectorMap[code] = name
+                subsectorNameMap[code] = (name, False)
 
         allegiances = rawMetadata.allegiances()
         if allegiances:
@@ -724,31 +732,38 @@ class WorldManager(object):
 
                 # NOTE: The code here is intentionally left with the case as it appears int metadata as
                 # there are some sectors where allegiances vary only by case (see AllegianceManager)
-                allegianceMap[allegiance.code()] = allegiance.name()
+                allegianceNameMap[allegiance.code()] = allegiance.name()
 
-        worlds = []
+        rawWorlds = travellermap.readSector(
+            content=sectorContent,
+            format=sectorInfo.sectorFormat(),
+            identifier=sectorName)
+
         for rawWorld in rawWorlds:
             try:
                 hex = rawWorld.attribute(travellermap.WorldAttribute.Hex)
                 worldName = rawWorld.attribute(travellermap.WorldAttribute.Name)
+                isWorldNameGenerated = False
                 if not worldName:
                     # If the world doesn't have a name the sector combined with the hex. This format
                     # is important as it's the same format as Traveller Map meaning searches will
                     # work
                     worldName = f'{sectorName} {hex}'
+                    isWorldNameGenerated = True
 
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
-                subsectorName = subsectorMap[subsectorCode]
+                subsectorName, _ = subsectorNameMap[subsectorCode]
 
                 world = traveller.World(
-                    name=worldName,
-                    sectorName=sectorName,
-                    subsectorName=subsectorName,
                     hex=travellermap.HexPosition(
                         sectorX=sectorX,
                         sectorY=sectorY,
                         offsetX=int(hex[:2]),
                         offsetY=int(hex[-2:])),
+                    worldName=worldName,
+                    isWorldNameGenerated=isWorldNameGenerated,
+                    sectorName=sectorName,
+                    subsectorName=subsectorName,
                     allegiance=rawWorld.attribute(travellermap.WorldAttribute.Allegiance),
                     uwp=rawWorld.attribute(travellermap.WorldAttribute.UWP),
                     economics=rawWorld.attribute(travellermap.WorldAttribute.Economics),
@@ -760,17 +775,32 @@ class WorldManager(object):
                     pbg=rawWorld.attribute(travellermap.WorldAttribute.PBG),
                     systemWorlds=rawWorld.attribute(travellermap.WorldAttribute.SystemWorlds),
                     bases=rawWorld.attribute(travellermap.WorldAttribute.Bases))
-                worlds.append(world)
+
+                subsectorWorlds = subsectorWorldsMap[code]
+                subsectorWorlds.append(world)
             except Exception as ex:
                 logging.warning(
                     f'Failed to process world entry on line {rawWorld.lineNumber()} in data for sector {sectorName}',
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
+        subsectors = []
+        for code in subsectorCodes:
+            subsectorName, isSubsectorNameGenerated = subsectorNameMap[code]
+            subsectorWorlds = subsectorWorldsMap[code]
+            subsectors.append(traveller.Subsector(
+                sectorX=sectorX,
+                sectorY=sectorY,
+                code=code,
+                subsectorName=subsectorName,
+                isSubsectorNameGenerated=isSubsectorNameGenerated,
+                sectorName=sectorName,
+                worlds=subsectorWorlds))
+
         # Add the allegiances for this sector to the allegiance manager
         traveller.AllegianceManager.instance().addSectorAllegiances(
             sectorName=sectorName,
-            allegiances=allegianceMap)
+            allegiances=allegianceNameMap)
 
         styleSheet = rawMetadata.styleSheet()
         borderStyleMap: typing.Dict[
@@ -1021,14 +1051,13 @@ class WorldManager(object):
             abbreviation=rawMetadata.abbreviation(),
             x=sectorX,
             y=sectorY,
-            worlds=worlds,
+            subsectors=subsectors,
             routes=routes,
             borders=borders,
             regions=regions,
             labels=labels,
             selected=rawMetadata.selected() if rawMetadata.selected() else False,
-            tags=tags,
-            subsectorNames=subsectorMap.values())
+            tags=tags)
 
     _RouteStyleMap = {
         'solid': traveller.Route.Style.Solid,

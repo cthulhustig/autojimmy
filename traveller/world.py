@@ -6,10 +6,11 @@ import typing
 class World(object):
     def __init__(
             self,
-            name: str,
+            hex: travellermap.HexPosition,
+            worldName: str,
+            isWorldNameGenerated: bool,
             sectorName: str,
             subsectorName: str,
-            hex: travellermap.HexPosition,
             allegiance: str,
             uwp: str,
             economics: str,
@@ -22,10 +23,11 @@ class World(object):
             systemWorlds: str,
             bases: str
             ) -> None:
-        self._name = name
+        self._hex = hex
+        self._name = worldName
+        self._isNameGenerated = isWorldNameGenerated
         self._sectorName = sectorName
         self._subsectorName = subsectorName
-        self._hex = hex
         self._allegiance = allegiance
         self._uwp = traveller.UWP(uwp)
         self._economics = traveller.Economics(economics)
@@ -47,19 +49,25 @@ class World(object):
         # Importance is calculated on demand
         self._importance = None
 
-    def name(self, includeSubsector: bool = False) -> str:
+    def hex(self) -> travellermap.HexPosition:
+        return self._hex
+
+    def name(
+            self,
+            includeSubsector: bool = False
+            ) -> str:
         if includeSubsector:
             return f'{self._name} ({self._subsectorName})'
         return self._name
+
+    def isNameGenerated(self) -> bool:
+        return self._isNameGenerated
 
     def sectorName(self) -> str:
         return self._sectorName
 
     def subsectorName(self) -> str:
         return self._subsectorName
-
-    def hex(self) -> travellermap.HexPosition:
-        return self._hex
 
     def sectorHex(self) -> str:
         _, _, offsetX, offsetY = self._hex.relative()

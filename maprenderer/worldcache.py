@@ -21,7 +21,7 @@ class WorldInfo(object):
             graphics: maprenderer.AbstractGraphics,
             imageCache: maprenderer.ImageCache
             ) -> None:
-        self.name = world.name()
+        self.name = world.name() if not world.isNameGenerated() else ''
         self.upperName = self.name.upper()
 
         worldHex = world.hex()

@@ -541,6 +541,9 @@ class RenderContext(object):
              maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for subsector in self._selector.subsectors():
+            if subsector.isNameGenerated():
+                continue
+
             ulHex, brHex = subsector.extent()
             left = ulHex.absoluteX() - 1
             top = ulHex.absoluteY() - 1
@@ -1260,7 +1263,7 @@ class RenderContext(object):
                                 font=element.font,
                                 text=element.content)
 
-                        if renderName:
+                        if renderName and worldInfo.name:
                             name = worldInfo.name
                             if (worldInfo.isHiPop and renderHighlight) or \
                                 self._styleSheet.worlds.textStyle.uppercase:
@@ -1360,10 +1363,10 @@ class RenderContext(object):
                                 y=self._styleSheet.uwp.position.y(),
                                 format=maprenderer.TextAlignment.MiddleLeft)
 
-                        if renderName:
+                        if renderName and worldInfo.name:
                             name = worldInfo.name
                             if worldInfo.isHiPop or self._styleSheet.worlds.textStyle.uppercase:
-                                worldInfo.upperName
+                                name = worldInfo.upperName
 
                             with self._graphics.save():
                                 textBrush = \

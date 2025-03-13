@@ -5,32 +5,44 @@ import typing
 class Subsector(object):
     def __init__(
             self,
-            indexX: int,
-            indexY: int,
-            name: str,
-            sectorName: str,
             sectorX: int,
             sectorY: int,
-            extent: typing.Tuple[
-                travellermap.HexPosition,
-                travellermap.HexPosition],
+            code: str,
+            subsectorName: str,
+            isSubsectorNameGenerated: bool,
+            sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
-        self._indexX = indexX
-        self._indexY = indexY
-        self._code = chr(ord('A') + ((indexY * 4) + indexX))
-        self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
+        self._code = code
+        self._name = subsectorName
+        self._isNameGenerated = isSubsectorNameGenerated
         self._sectorName = sectorName
-        self._extent = extent
-        self._worlds = worlds
+        self._worlds = list(worlds)
 
-    def indexX(self) -> int:
-        return self._indexX
+        index = ord(code) - ord('A')
+        self._indexX = index % 4
+        self._indexY = index // 4
 
-    def indexY(self) -> int:
-        return self._indexY
+        ulHex = travellermap.HexPosition(
+            sectorX=self._sectorX,
+            sectorY=self._sectorY,
+            offsetX=(self._indexX * travellermap.SubsectorWidth) + 1,
+            offsetY=(self._indexY * travellermap.SubsectorHeight) + 1)
+        brHex = travellermap.HexPosition(
+            sectorX=self._sectorX,
+            sectorY=self._sectorY,
+            # TODO: Is -1 here correct?
+            offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
+            offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
+        self._extent = (ulHex, brHex)
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
 
     def code(self) -> str:
         return self._code
@@ -41,11 +53,14 @@ class Subsector(object):
     def sectorName(self) -> str:
         return self._sectorName
 
-    def sectorX(self) -> int:
-        return self._sectorX
+    def isNameGenerated(self) -> bool:
+        return self._isNameGenerated
 
-    def sectorY(self) -> int:
-        return self._sectorY
+    def indexX(self) -> int:
+        return self._indexX
+
+    def indexY(self) -> int:
+        return self._indexY
 
     def worldCount(self) -> int:
         return len(self._worlds)
@@ -78,28 +93,38 @@ class Sector(object):
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            worlds: typing.Iterable[traveller.World],
+            # Subsectors should be ordered in subsector order (i.e. A-P)
+            subsectors: typing.Iterable[Subsector],
             routes: typing.Iterable[traveller.Route],
             borders: typing.Iterable[traveller.Border],
             regions: typing.Iterable[traveller.Region],
             labels: typing.Iterable[traveller.Label],
             selected: bool,
-            tags: typing.Iterable[str],
-            subsectorNames: typing.Iterable[str] # Subsector names should be ordered in subsector order (i.e. A-P)
+            tags: typing.Iterable[str]
             ) -> None:
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
         self._x = x
         self._y = y
-        self._worlds = list(worlds)
         self._routes = list(routes)
         self._borders = list(borders)
         self._regions = list(regions)
         self._labels = list(labels)
         self._selected = selected
         self._tags = set(tags)
-        self._subsectorMap: typing.Dict[str, Subsector] = {}
+
+        self._subsectorNameMap: typing.Dict[str, Subsector] = {}
+        self._subsectorIndexMap: typing.Dict[
+            typing.Tuple[int, int],
+            Subsector] = {}
+        self._worlds: typing.List[traveller.World] = []
+        for subsector in subsectors:
+            self._subsectorNameMap[subsector.name()] = subsector
+            self._subsectorIndexMap[(subsector.indexX(), subsector.indexY())] = subsector
+            for world in subsector.worlds():
+                self._worlds.append(world)
+
         self._extent = (
             travellermap.HexPosition(
                 sectorX=x,
@@ -111,43 +136,6 @@ class Sector(object):
                 sectorY=y,
                 offsetX=travellermap.SectorWidth,
                 offsetY=travellermap.SectorHeight))
-
-        subsectorWorldsMap: typing.Dict[str, typing.List[traveller.World]] = {}
-        for subsectorName in subsectorNames:
-            subsectorWorldsMap[subsectorName] = []
-
-        for world in self._worlds:
-            assert(world.subsectorName() in subsectorWorldsMap)
-            subsectorWorlds = subsectorWorldsMap[world.subsectorName()]
-            subsectorWorlds.append(world)
-
-        self._subsectorIndexMap: typing.Dict[
-            typing.Tuple[int, int],
-            Subsector] = {}
-        for index, (subsectorName, subsectorWorlds) in enumerate(subsectorWorldsMap.items()):
-            indexX = index % 4
-            indexY = index // 4
-            ulHex = travellermap.HexPosition(
-                sectorX=x,
-                sectorY=y,
-                offsetX=(indexX * travellermap.SubsectorWidth) + 1,
-                offsetY=(indexY * travellermap.SubsectorHeight) + 1)
-            brHex = travellermap.HexPosition(
-                sectorX=x,
-                sectorY=y,
-                offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
-                offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
-            subsector = Subsector(
-                indexX=indexX,
-                indexY=indexY,
-                name=subsectorName,
-                sectorName=self._name,
-                sectorX=self._x,
-                sectorY=self._y,
-                extent=(ulHex, brHex),
-                worlds=subsectorWorlds)
-            self._subsectorMap[subsectorName] = subsector
-            self._subsectorIndexMap[(indexX, indexY)] = subsector
 
     def name(self) -> str:
         return self._name
@@ -198,16 +186,16 @@ class Sector(object):
         return tag in self._tags
 
     def subsectorNames(self) -> typing.Sequence[str]:
-        return list(self._subsectorMap.keys())
+        return list(self._subsectorNameMap.keys())
 
     def subsectorByName(self, name: str) -> typing.Optional[Subsector]:
-        return self._subsectorMap.get(name)
+        return self._subsectorNameMap.get(name)
 
     def subsectorByIndex(self, indexX: int, indexY: int) -> typing.Optional[Subsector]:
         return self._subsectorIndexMap.get((indexX, indexY))
 
     def subsectors(self) -> typing.Sequence[Subsector]:
-        return list(self._subsectorMap.values())
+        return list(self._subsectorNameMap.values())
 
     def extent(self) -> typing.Tuple[travellermap.HexPosition, travellermap.HexPosition]:
         return self._extent
