@@ -784,8 +784,6 @@ class WorldManager(object):
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
-        # TODO: I've broken something when adding support for generated names.
-        # I'm now only seeing the last name being rendered in my renderer
         subsectors = []
         for subsectorCode in subsectorCodes:
             subsectorName, isSubsectorNameGenerated = subsectorNameMap[subsectorCode]
