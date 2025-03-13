@@ -8,13 +8,18 @@ class Remarks(object):
     # with the exception of Colony which I found here https://wiki.travellerrpg.com/Trade_classification
     _TradeCodePattern = re.compile(r'^([A-Za-z]{2})$') # Argument gives trade code
     _MilitaryRulePattern = re.compile(r'^Mr\(\S{4}\)$') # Argument gives the controlling
-    _ResearchStationPattern = re.compile(r'^Rs([A-Za-z])$') # Argument gives grade of research station
+    _ResearchStationPattern = re.compile(r'^Rs([ABGDEZHIO]?)$') # Argument gives grade of research station
     _OwnershipPattern = re.compile(r'^O:(?:(\S{4})-)?(\d{4})$') # Argument gives the owning world
     _ColonyPattern = re.compile(r'^C:(?:(\S{4})-)?(\d{4})$') # Argument gives the colony world
     _SophontMajorRacePattern = re.compile(r'^\[(.*)\]$') # Argument gives major sophont
     _SophontMinorRacePattern = re.compile(r'^\((.*)\)([0-9W]?)$') # Argument gives minor sophont with optional percentage
     _SophontDiebackWorldPattern = re.compile(r'^Di\((.+)\)$') # Argument gives previously inhabiting sophont
     _SophontShortCodePattern = re.compile(r'^(\S{4})([0-9W])$') # Argument gives sophont short code with optional percentage
+
+    # Default to Gamma as per Traveller Map FromResearchCode. This is
+    # used when the world just has the trade code 'Rs' with no level
+    # character
+    _DefaultResearchStation = 'G'
 
     def __init__(
             self,
@@ -32,6 +37,7 @@ class Remarks(object):
         self._sophontPercentages: typing.Dict[str, int] = dict()
         self._owningWorld = None
         self._colonyWorlds = []
+        self._researchStation = None
 
         self._parseRemarks()
 
@@ -99,6 +105,20 @@ class Remarks(object):
     def colonySectorHexes(self) -> typing.Iterable[str]:
         return self._colonyWorlds
 
+    """
+    'A' == Alpha
+    'B' == Beta
+    'G' == Gamma
+    'D' == Delta
+    'E' == Epsilon
+    'Z' == Zeta
+    'H' == Eta
+    'T' == Theta
+    'O' == Omicron
+    """
+    def researchStation(self) -> typing.Optional[str]:
+        return self._researchStation
+
     def _parseRemarks(self) -> None:
         if not self._string:
             return
@@ -116,6 +136,9 @@ class Remarks(object):
                     logging.debug(f'Ignoring unknown Trade Code glyph "{tradeCodeGlyph}"')
                     continue
                 self._tradeCodes.add(tradeCode)
+
+                if tradeCode == traveller.TradeCode.ResearchStation:
+                    self._researchStation = Remarks._DefaultResearchStation
                 continue
 
             result = self._MilitaryRulePattern.match(remark)
@@ -126,7 +149,10 @@ class Remarks(object):
 
             result = self._ResearchStationPattern.match(remark)
             if result:
-                # TODO: Handle research station grade
+                self._researchStation = result.group(1)
+                if not self._researchStation:
+                    self._researchStation = Remarks._DefaultResearchStation
+
                 self._tradeCodes.add(traveller.TradeCode.ResearchStation)
                 continue
 

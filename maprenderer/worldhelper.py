@@ -17,23 +17,23 @@ class WorldHelper(object):
     _RichPopulations = set([6, 7, 8])
 
     _DefaultAllegiances = set([
-        "Im", # Classic Imperium
-        "ImAp", # Third Imperium, Amec Protectorate (Dagu)
-        "ImDa", # Third Imperium, Domain of Antares (Anta/Empt/Lish)
-        "ImDc", # Third Imperium, Domain of Sylea (Core/Delp/Forn/Mass)
-        "ImDd", # Third Imperium, Domain of Deneb (Dene/Reft/Spin/Troj)
-        "ImDg", # Third Imperium, Domain of Gateway (Glim/Hint/Ley)
-        "ImDi", # Third Imperium, Domain of Ilelish (Daib/Ilel/Reav/Verg/Zaru)
-        "ImDs", # Third Imperium, Domain of Sol (Alph/Dias/Magy/Olde/Solo)
-        "ImDv", # Third Imperium, Domain of Vland (Corr/Dagu/Gush/Reft/Vlan)
-        "ImLa", # Third Imperium, League of Antares (Anta)
-        "ImLc", # Third Imperium, Lancian Cultural Region (Corr/Dagu/Gush)
-        "ImLu", # Third Imperium, Luriani Cultural Association (Ley/Forn)
-        "ImSy", # Third Imperium, Sylean Worlds (Core)
-        "ImVd", # Third Imperium, Vegan Autonomous District (Solo)
-        "XXXX", # Unknown
-        "??", # Placeholder - show as blank
-        "--", # Placeholder - show as blank
+        'Im', # Classic Imperium
+        'ImAp', # Third Imperium, Amec Protectorate (Dagu)
+        'ImDa', # Third Imperium, Domain of Antares (Anta/Empt/Lish)
+        'ImDc', # Third Imperium, Domain of Sylea (Core/Delp/Forn/Mass)
+        'ImDd', # Third Imperium, Domain of Deneb (Dene/Reft/Spin/Troj)
+        'ImDg', # Third Imperium, Domain of Gateway (Glim/Hint/Ley)
+        'ImDi', # Third Imperium, Domain of Ilelish (Daib/Ilel/Reav/Verg/Zaru)
+        'ImDs', # Third Imperium, Domain of Sol (Alph/Dias/Magy/Olde/Solo)
+        'ImDv', # Third Imperium, Domain of Vland (Corr/Dagu/Gush/Reft/Vlan)
+        'ImLa', # Third Imperium, League of Antares (Anta)
+        'ImLc', # Third Imperium, Lancian Cultural Region (Corr/Dagu/Gush)
+        'ImLu', # Third Imperium, Luriani Cultural Association (Ley/Forn)
+        'ImSy', # Third Imperium, Sylean Worlds (Core)
+        'ImVd', # Third Imperium, Vegan Autonomous District (Solo)
+        'XXXX', # Unknown
+        '??', # Placeholder - show as blank
+        '--', # Placeholder - show as blank
     ])
 
     # TODO: This file should be pulled from the data store
@@ -155,7 +155,7 @@ class WorldHelper(object):
             world.hasRemark('Capital')
 
     @staticmethod
-    def allegianceCode(world: traveller.World, ignoreDefault: bool, useLegacy: bool) -> str:
+    def allegianceCode(world: traveller.World, useLegacy: bool, ignoreDefault: bool = False) -> str:
         allegiance = world.allegiance()
         if ignoreDefault and (allegiance in WorldHelper._DefaultAllegiances):
             return None

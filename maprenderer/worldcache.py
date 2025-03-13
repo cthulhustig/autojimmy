@@ -72,10 +72,16 @@ class WorldInfo(object):
         self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
 
         bases = world.bases()
-        self.baseGlyph = None
-        if bases.count():
-            # NOTE: Using the first base in the list is consistent with
-            # what Traveller Map does
+        self.primaryBaseGlyph = self.secondaryBaseGlyph = self.tertiaryBaseGlyph = self.specialFeatureGlyph = None
+
+        # NOTE: When determining the primary base glyph the standard allegiance
+        # is used but the legacy allegiance is used for the secondary and tertiary
+        # base glyphs. This is consistent with Traveller Map (although I've no idea
+        # why it's done like this)
+        if bases.count() >= 1:
+            allegiance = maprenderer.WorldHelper.allegianceCode(
+                world=world,
+                useLegacy=False)
             baseCode = traveller.Bases.code(bases[0])
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
@@ -83,9 +89,36 @@ class WorldInfo(object):
             if world.allegiance() == 'Zh' and bases.string() == 'KM':
                 baseCode = 'Z'
 
-            self.baseGlyph = maprenderer.GlyphDefs.fromBaseCode(
-                allegiance=world.allegiance(),
+            self.primaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+                allegiance=allegiance,
                 code=baseCode)
+
+        if bases.count() >= 2:
+            legacyAllegiance = maprenderer.WorldHelper.allegianceCode(
+                world=world,
+                useLegacy=True)
+            self.secondaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+                allegiance=legacyAllegiance,
+                code=traveller.Bases.code(bases[1]))
+
+        if bases.count() >= 3:
+            legacyAllegiance = maprenderer.WorldHelper.allegianceCode(
+                world=world,
+                useLegacy=True)
+            self.tertiaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+                allegiance=legacyAllegiance,
+                code=traveller.Bases.code(bases[2]))
+
+        if world.hasTradeCode(traveller.TradeCode.ResearchStation):
+            remarks = world.remarks()
+            self.specialFeatureGlyph = maprenderer.GlyphDefs.fromResearchStation(
+                remarks.researchStation())
+        elif world.hasTradeCode(traveller.TradeCode.Reserve):
+            self.specialFeatureGlyph = maprenderer.GlyphDefs.Reserve
+        elif world.hasTradeCode(traveller.TradeCode.PenalColony):
+            self.specialFeatureGlyph = maprenderer.GlyphDefs.Prison
+        elif world.hasTradeCode(traveller.TradeCode.PrisonCamp):
+            self.specialFeatureGlyph = maprenderer.GlyphDefs.ExileCamp
 
         self.worldSize = world.physicalSize()
         self.worldImage = maprenderer.WorldHelper.worldImage(

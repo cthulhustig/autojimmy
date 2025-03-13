@@ -85,10 +85,10 @@ class GlyphDefs(object):
         'O': Omicron}
 
     @staticmethod
-    def fromResearchCode(rs: str) -> Glyph:
+    def fromResearchStation(researchStation: str) -> Glyph:
         glyph = GlyphDefs.Gamma
-        if len(rs) == 3:
-            glyph = GlyphDefs._ResearchCodeMap.get(rs[2], glyph)
+        if researchStation:
+            glyph = GlyphDefs._ResearchCodeMap.get(researchStation, glyph)
         return glyph
 
     # TODO: Using regexes for this is horrible AND slow

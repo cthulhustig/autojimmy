@@ -1170,76 +1170,61 @@ class RenderContext(object):
                             if renderBases:
                                 # Base 1
                                 bottomUsed = False
-                                if worldInfo.baseGlyph and worldInfo.baseGlyph.isPrintable:
+                                if worldInfo.primaryBaseGlyph and worldInfo.primaryBaseGlyph.isPrintable:
                                     pt = self._styleSheet.baseTopPosition
-                                    if worldInfo.baseGlyph.bias is maprenderer.Glyph.GlyphBias.Bottom and \
+                                    if worldInfo.primaryBaseGlyph.bias is maprenderer.Glyph.GlyphBias.Bottom and \
                                         not self._styleSheet.ignoreBaseBias:
                                         pt = self._styleSheet.baseBottomPosition
                                         bottomUsed = True
 
                                     brush = \
                                         self._styleSheet.worlds.textHighlightBrush \
-                                        if worldInfo.baseGlyph.highlight else \
+                                        if worldInfo.primaryBaseGlyph.highlight else \
                                         self._styleSheet.worlds.textBrush
                                     self._drawWorldGlyph(
-                                        glyph=worldInfo.baseGlyph,
+                                        glyph=worldInfo.primaryBaseGlyph,
                                         brush=brush,
                                         position=pt)
 
                                 # Base 2
-                                # TODO: Add support for legacyAllegiance
-                                """
-                                if baseCount > 1:
-                                    glyph = maprenderer.GlyphDefs.fromBaseCode(
-                                        allegiance=world.legacyAllegiance, bases[1])
-                                    if glyph.isPrintable:
-                                        pt = self._styles.baseTopPosition if bottomUsed else self._styles.baseBottomPosition
-                                        brush.color = \
-                                            self._styles.worlds.textHighlightColor \
-                                            if glyph.isHighlighted else \
-                                            self._styles.worlds.textColor
-                                        self._drawWorldGlyph(
-                                            glyph=glyph,
-                                            brush=brush,
-                                            position=pt)
+                                if worldInfo.secondaryBaseGlyph and worldInfo.secondaryBaseGlyph.isPrintable:
+                                    pt = \
+                                        self._styleSheet.baseTopPosition \
+                                        if bottomUsed else \
+                                        self._styleSheet.baseBottomPosition
+                                    brush = \
+                                        self._styleSheet.worlds.textHighlightBrush \
+                                        if worldInfo.secondaryBaseGlyph.highlight else \
+                                        self._styleSheet.worlds.textBrush
+                                    self._drawWorldGlyph(
+                                        glyph=worldInfo.secondaryBaseGlyph,
+                                        brush=brush,
+                                        position=pt)
 
                                 # Base 3 (!)
-                                if baseCount > 2:
-                                    glyph = maprenderer.GlyphDefs.fromBaseCode(world.legacyAllegiance, bases[2])
-                                    if glyph.isPrintable:
-                                        brush.color = \
-                                            self._styles.worlds.textHighlightColor \
-                                            if glyph.isHighlighted else \
-                                            self._styles.worlds.textColor
-                                        self._drawWorldGlyph(
-                                            glyph=glyph,
-                                            brush=brush,
-                                            position=self._styles.baseMiddlePosition)
-                                """
+                                if worldInfo.tertiaryBaseGlyph and worldInfo.tertiaryBaseGlyph.isPrintable:
+                                    brush = \
+                                        self._styleSheet.worlds.textHighlightBrush \
+                                        if worldInfo.tertiaryBaseGlyph.highlight else \
+                                        self._styleSheet.worlds.textBrush
+                                    self._drawWorldGlyph(
+                                        glyph=worldInfo.tertiaryBaseGlyph,
+                                        brush=brush,
+                                        position=self._styleSheet.baseMiddlePosition)
 
                                 # Research Stations
-                                # TODO: Handle research stations/penal colony etc
-                                """
-                                rs = world.researchStation()
-                                glyph = None
-                                if rs:
-                                    glyph = maprenderer.GlyphDefs.fromResearchCode(rs)
-                                elif world.isReserve:
-                                    glyph = maprenderer.GlyphDefs.Reserve
-                                elif world.isPenalColony:
-                                    glyph = maprenderer.GlyphDefs.Prison
-                                elif world.isPrisonExileCamp:
-                                    glyph = maprenderer.GlyphDefs.ExileCamp
-                                if glyph:
-                                    brush.color = \
-                                        self._styles.worlds.textHighlightColor \
-                                        if glyph.isHighlighted else \
-                                        self._styles.worlds.textColor
+                                if worldInfo.specialFeatureGlyph and worldInfo.specialFeatureGlyph.isPrintable:
+                                    brush = \
+                                        self._styleSheet.worlds.textHighlightBrush \
+                                        if worldInfo.specialFeatureGlyph.highlight else \
+                                        self._styleSheet.worlds.textBrush
                                     self._drawWorldGlyph(
-                                        glyph=glyph,
+                                        glyph=worldInfo.specialFeatureGlyph,
                                         brush=brush,
-                                        position=self._styles.baseMiddlePosition)
-                                """
+                                        # NOTE: If there is a 3rd base and a special feature they
+                                        # will be drawn at the same location. This is consistent with
+                                        # what Traveller Map does
+                                        position=self._styleSheet.baseMiddlePosition)
 
                             if worldInfo.asteroidRectangles:
                                 if renderAsteroids:
@@ -1302,8 +1287,8 @@ class RenderContext(object):
                         if renderAllegiances:
                             alleg = maprenderer.WorldHelper.allegianceCode(
                                 world=world,
-                                ignoreDefault=True,
-                                useLegacy=not self._styleSheet.t5AllegianceCodes)
+                                useLegacy=not self._styleSheet.t5AllegianceCodes,
+                                ignoreDefault=True)
                             if alleg:
                                 if self._styleSheet.lowerCaseAllegiance:
                                     alleg = alleg.lower()
