@@ -316,9 +316,10 @@ class MapHackView(QtWidgets.QWidget):
                                     # mater as much so best to avoid the expensive scaling
                                     if image.width() != renderRect.width() or image.height() != renderRect.height():
                                         image = image.smoothScaled(
-                                            math.floor(renderRect.width() + 0.5),
-                                            math.floor(renderRect.height() + 0.5))
+                                            round(renderRect.width()),
+                                            round(renderRect.height()))
 
+                                #print(f'{image} {renderRect} {clipRect}')
                                 painter.drawImage(renderRect, image)
                             finally:
                                 painter.restore()
@@ -654,6 +655,8 @@ class MapHackView(QtWidgets.QWidget):
                     tileSize,
                     tileSize)
                 placeholderClipRect = placeholderRenderRect.intersected(clipRect)
+                if not placeholderClipRect.isValid():
+                    continue
 
                 # NOTE: Don't use _lookupTile as we don't want to create
                 # this tile if it doesn't exist
@@ -666,7 +669,6 @@ class MapHackView(QtWidgets.QWidget):
                     # This can be best seen by zooming as far in as it will go then panning
                     # in one direction until it starts rendering much higher level tiles as
                     # placeholders for the zoomed in tiles
-                    """
                     if lookLower:
                         lowerPlaceholders = self._findPlaceholderTiles(
                             currentScale=placeholderScale,
@@ -676,7 +678,6 @@ class MapHackView(QtWidgets.QWidget):
                         if lowerPlaceholders:
                             placeholders.extend(lowerPlaceholders)
                             continue
-                    """
 
                     missing.append(placeholderClipRect)
 
