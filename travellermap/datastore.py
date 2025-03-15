@@ -1239,10 +1239,11 @@ class DataStore(object):
 
                 # TODO: Remove hacky code to skip sectors, DO NOT COMMIT
                 #if canonicalName.find('Solomani Rim') < 0:
-                #if canonicalName.find('Core') < 0:
+                #if canonicalName != 'Core':
+                #if canonicalName.find('Fornast') < 0:
                 #if canonicalName.find('Zarushagar') < 0:
                 #if canonicalName.find('Daibei') < 0:
-                #    continue
+                #   continue
 
                 abbreviation = sectorElement.get('Abbreviation')
                 if abbreviation != None:

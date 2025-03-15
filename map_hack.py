@@ -38,7 +38,7 @@ class MapHackView(QtWidgets.QWidget):
     _TileRendering = True
     _DelayedRendering = True
     _TileSize = 512 # Pixels
-    _TileCacheSize = 500 # Number of tiles
+    _TileCacheSize = 250 # Number of tiles
     _TileTimerMsecs = 1
     #_TileTimerMsecs = 1000
 
@@ -223,9 +223,14 @@ class MapHackView(QtWidgets.QWidget):
                 print(f'{count}')
             elif event.key() == QtCore.Qt.Key.Key_F7:
                 self.update()
+            elif event.key() == QtCore.Qt.Key.Key_F10:
+                gc.collect()
             elif event.key() == QtCore.Qt.Key.Key_F11:
-                self._tileQueue.clear()
                 self._tileCache.clear()
+                self._tileQueue.clear()
+                self._tileTimer.stop()
+                self._renderer = self._createRenderer()
+                gc.collect()
                 self.update()
             elif event.key() == QtCore.Qt.Key.Key_F12:
                 MapHackView._TileRendering = not MapHackView._TileRendering
@@ -325,13 +330,16 @@ class MapHackView(QtWidgets.QWidget):
                                 painter.restore()
                 else:
                     self._graphics.setPainter(painter=painter)
-                    self._renderer.setView(
-                        absoluteCenterX=self._absoluteCenterPos.x(),
-                        absoluteCenterY=self._absoluteCenterPos.y(),
-                        scale=self._viewScale.linear,
-                        outputPixelX=self.width(),
-                        outputPixelY=self.height())
-                    self._renderer.render()
+                    try:
+                        self._renderer.setView(
+                            absoluteCenterX=self._absoluteCenterPos.x(),
+                            absoluteCenterY=self._absoluteCenterPos.y(),
+                            scale=self._viewScale.linear,
+                            outputPixelX=self.width(),
+                            outputPixelY=self.height())
+                        self._renderer.render()
+                    finally:
+                        self._graphics.setPainter(painter=None)
             finally:
                 painter.end()
 
@@ -715,7 +723,7 @@ class MapHackView(QtWidgets.QWidget):
         painter = QtGui.QPainter()
         painter.begin(image)
         try:
-            self._graphics.setPainter(painter)
+            self._graphics.setPainter(painter=painter)
             self._renderer.setView(
                 absoluteCenterX=absoluteTileCenterX,
                 absoluteCenterY=absoluteTileCenterY,
@@ -730,6 +738,7 @@ class MapHackView(QtWidgets.QWidget):
             painter.drawRect(0, 0, MapHackView._TileSize, MapHackView._TileSize)
             """
         finally:
+            self._graphics.setPainter(painter=None)
             painter.end()
 
         return image
@@ -799,10 +808,9 @@ class MapHackView(QtWidgets.QWidget):
         painter = QtGui.QPainter()
         painter.begin(image)
 
-        tempGraphics.setPainter(painter)
-
         try:
             # Render once before profiling to pre-load caches.
+            tempGraphics.setPainter(painter=painter)
             tempRenderer.render()
 
             print('Profiling')
@@ -826,6 +834,7 @@ class MapHackView(QtWidgets.QWidget):
             ps.print_stats()
             print(s.getvalue())
         finally:
+            tempGraphics.setPainter(painter=None)
             painter.end()
 
         #image.save("output.png")

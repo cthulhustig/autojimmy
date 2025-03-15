@@ -627,22 +627,22 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         # list of point pairs.
         self._hasDrawLinesPolygonFix = gui.minPyQtVersionCheck('5.15.7')
 
-    def setPainter(self, painter: QtGui.QPainter) -> None:
+    def setPainter(self, painter: typing.Optional[QtGui.QPainter]) -> None:
         self._painter = painter
-
-        self._painter.setRenderHint(
-            QtGui.QPainter.RenderHint.Antialiasing,
-            False)
-        self._painter.setRenderHint(
-            QtGui.QPainter.RenderHint.TextAntialiasing,
-            False)
-        self._painter.setRenderHint(
-            QtGui.QPainter.RenderHint.SmoothPixmapTransform,
-            False)
-        if self._hasLosslessImageRendering:
+        if self._painter:
             self._painter.setRenderHint(
-                QtGui.QPainter.RenderHint.LosslessImageRendering,
-                True)
+                QtGui.QPainter.RenderHint.Antialiasing,
+                False)
+            self._painter.setRenderHint(
+                QtGui.QPainter.RenderHint.TextAntialiasing,
+                False)
+            self._painter.setRenderHint(
+                QtGui.QPainter.RenderHint.SmoothPixmapTransform,
+                False)
+            if self._hasLosslessImageRendering:
+                self._painter.setRenderHint(
+                    QtGui.QPainter.RenderHint.LosslessImageRendering,
+                    True)
 
     def supportsWingdings(self) -> bool:
         if self._supportsWingdings is not None:
