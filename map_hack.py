@@ -37,6 +37,7 @@ class MapHackView(QtWidgets.QWidget):
 
     _TileRendering = True
     _DelayedRendering = True
+    _LookaheadTiles = True
     _TileSize = 512 # Pixels
     _TileCacheSize = 250 # Number of tiles
     _TileTimerMsecs = 1
@@ -328,6 +329,13 @@ class MapHackView(QtWidgets.QWidget):
                                 painter.drawImage(renderRect, image)
                             finally:
                                 painter.restore()
+
+                    if MapHackView._LookaheadTiles and not self._tileQueue:
+                        # Pre-load tiles just outside the current view area
+                        self._loadLookaheadTiles()
+
+                    if self._tileQueue:
+                        self._tileTimer.start()
                 else:
                     self._graphics.setPainter(painter=painter)
                     try:
@@ -562,10 +570,41 @@ class MapHackView(QtWidgets.QWidget):
             minTileY -= 1
             maxTileY += 1
 
-        if self._tileQueue:
-            self._tileTimer.start()
-
         return tiles
+
+    def _loadLookaheadTiles(self) -> None:
+        # This method of rounding the scale is intended to match how it would
+        # be rounded by the Traveller Map Javascript code which uses Math.round
+        # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round
+        tileScale = int(math.floor(self._viewScale.log + 0.5))
+
+        tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
+        tileSize = MapHackView._TileSize * tileMultiplier
+
+        scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
+        scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
+        absoluteViewWidth = self.width() / scaleX
+        absoluteViewHeight = self.height() / scaleY
+        absoluteViewLeft = self._absoluteCenterPos.x() - (absoluteViewWidth / 2)
+        absoluteViewRight = absoluteViewLeft + absoluteViewWidth
+        absoluteViewTop = self._absoluteCenterPos.y() - (absoluteViewHeight / 2)
+        absoluteViewBottom = absoluteViewTop + absoluteViewHeight
+
+        absoluteTileWidth = tileSize / scaleX
+        absoluteTileHeight = tileSize / scaleY
+        leftTile = math.floor(absoluteViewLeft / absoluteTileWidth) - 1
+        rightTile = math.floor(absoluteViewRight / absoluteTileWidth) + 1
+        topTile = math.floor(absoluteViewTop / absoluteTileHeight) - 1
+        bottomTile = math.floor(absoluteViewBottom / absoluteTileHeight) + 1
+
+        for x in range(leftTile, rightTile):
+            self._lookupTile(tileX=x, tileY=topTile, tileScale=tileScale)
+        for y in range(topTile, bottomTile):
+            self._lookupTile(tileX=rightTile, tileY=y, tileScale=tileScale)
+        for x in range(rightTile, leftTile, -1):
+            self._lookupTile(tileX=x, tileY=bottomTile, tileScale=tileScale)
+        for y in range(bottomTile, topTile, -1):
+            self._lookupTile(tileX=leftTile, tileY=y, tileScale=tileScale)
 
     def _lookupTile(
             self,
@@ -577,7 +616,8 @@ class MapHackView(QtWidgets.QWidget):
         image = self._tileCache.get(key)
         if not image:
             if MapHackView._DelayedRendering:
-                self._tileQueue.append(key)
+                if key not in self._tileQueue:
+                    self._tileQueue.append(key)
             else:
                 image = None
                 if self._tileCache.isFull():
