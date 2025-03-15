@@ -331,10 +331,12 @@ class MapHackView(QtWidgets.QWidget):
                                 painter.restore()
 
                     if MapHackView._LookaheadTiles and not self._tileQueue:
-                        # Pre-load tiles just outside the current view area
+                        # If there are no tiles needing loaded, pre-load tiles just
+                        # outside the current view area
                         self._loadLookaheadTiles()
 
                     if self._tileQueue:
+                        # Start the timer to trigger loading of missing tiles
                         self._tileTimer.start()
                 else:
                     self._graphics.setPainter(painter=painter)
