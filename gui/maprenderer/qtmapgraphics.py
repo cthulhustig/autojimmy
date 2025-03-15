@@ -36,7 +36,7 @@ class QtMapRectangleF(maprenderer.AbstractRectangleF):
     def setX(self, x: float) -> None:
         self._x = x
         if self._qtRect:
-            self._qtRect.setX(self._x)
+            self._qtRect.moveLeft(self._x)
 
     def y(self) -> float:
         return self._y
@@ -44,7 +44,7 @@ class QtMapRectangleF(maprenderer.AbstractRectangleF):
     def setY(self, y: float) -> None:
         self._y = y
         if self._qtRect:
-            self._qtRect.setY(self._y)
+            self._qtRect.moveTop(self._y)
 
     def width(self) -> float:
         return self._width
