@@ -34,6 +34,11 @@ class RenderContext(object):
     _PseudoRandomStarsChunkSize = 256
     _PseudoRandomStarsMaxPerChunk = 400
 
+    # The nebula image is only 1024x1024 but, as with Traveller Map, it
+    # gets rendered at double that
+    _NebulaRenderWidth = 2048 # Pixels
+    _NebulaRenderHeight = 2048 # Pixels
+
     _GridCacheCapacity = 50
     _ParsecGridSlop = 1
 
@@ -262,54 +267,80 @@ class RenderContext(object):
             rect=rect,
             brush=self._styleSheet.backgroundBrush)
 
-    # TODO: When zooming in and out the background doesn't stay in a consistent
-    # place between zoom levels. I think traveller map technically has the same
-    # issue but it's nowhere near as noticeable as it only actually renders
-    # tiles at a few zoom levels then uses digital zoom in the browser to scale
-    # between those levels. The result being it doesn't jump around every zoom
-    # step, it still does it at some zoom levels but it's far less noticeable.
-    # I suspect I could do something in this function that effectively mimics
-    # this behaviour
+
+    # Nebula drawing is clunky as hell and doesn't really look right if you
+    # look to closely as you zoom in and out. In the Traveller Map code the
+    # nebula rendering is done in pixel space and the nebula tiles are
+    # always drawn at the same pixel dimensions no mater what the current
+    # scale. This is different to how things like the galaxy image which are
+    # rendered in world coordinates as so the image scales as you zoom in
+    # and out. I expect the reason this is done is so that the nebula is
+    # rendered at a high resolution so it always looks nice (which it does
+    # if you're just panning around at a single scale). The downside of
+    # rendering like this is, as you zoom in/out, the nebula shifts in the
+    # view window. In Traveller Map how bad this looks is lessened by tile
+    # based rendering as you only see the nebula shift at the point you
+    # transition between tile scales, not every time you zoom in/out.
+    # My tile based rendering also has the same effect to lessen how bad it
+    # looks. Where it's an issue is when not using tile based rendering as
+    # it has the effect of making the nebula look like it's scrolling
+    # sideways as you zoom. To help mitigate the issue I've updated the
+    # nebula drawing code so that it always scales tiles in the same way as
+    # they would scale on Traveller Map tiles
     def _drawNebulaBackground(self) -> None:
         if not self._styleSheet.showNebulaBackground:
             return
 
+        renderLogScale = math.log2(self._scale)
+        nebulaLogScale = int(math.floor(renderLogScale + 0.5))
+        nebulaScale = math.pow(2, nebulaLogScale)
+
+        nebulaWidth = RenderContext._NebulaRenderWidth / nebulaScale
+        nebulaHeight = RenderContext._NebulaRenderHeight / nebulaScale
+
+        nebulaLeft = (self._absoluteViewRect.left() * self._scale * travellermap.ParsecScaleX) / nebulaScale
+        nebulaOffsetX = -nebulaLeft % nebulaWidth
+
+        nebulaTop = (self._absoluteViewRect.top() * self._scale * travellermap.ParsecScaleY) / nebulaScale
+        nebulaOffsetY = -nebulaTop % nebulaHeight
+
+        pixelMultiplier = math.pow(2, renderLogScale - nebulaLogScale)
+        pixelImageWidth = RenderContext._NebulaRenderWidth * pixelMultiplier
+        pixelImageHeight = RenderContext._NebulaRenderHeight * pixelMultiplier
+
+        # Offset of the background, relative to the canvas
+        ox = nebulaOffsetX * nebulaScale
+        oy = nebulaOffsetY * nebulaScale
+        if (ox > 0):
+            ox -= pixelImageWidth
+        if (oy > 0):
+            oy -= pixelImageHeight
+
+        # Number of copies needed to cover the canvas
+        nx = 1 + int(math.floor(self._outputPixelX / pixelImageWidth))
+        ny = 1 + int(math.floor(self._outputPixelY / pixelImageHeight))
+        if (ox + nx * pixelImageWidth < self._outputPixelX):
+            nx += 1
+        if (oy + ny * pixelImageHeight < self._outputPixelY):
+            ny += 1
+
+        imageRect = self._graphics.createRectangle(
+            x=ox,
+            y=oy,
+            width=pixelImageWidth,
+            height=pixelImageHeight)
+
         # Render in image-space so it scales/tiles nicely
         with self._graphics.save():
             self._graphics.multiplyTransform(self._worldSpaceToImageSpace)
-
-            backgroundImageScale = 2.0
-            nebulaImageWidth = 1024
-            nebulaImageHeight = 1024
-            # Scaled size of the background
-            w = nebulaImageWidth * backgroundImageScale
-            h = nebulaImageHeight * backgroundImageScale
-
-            # Offset of the background, relative to the canvas
-            ox = (-self._absoluteViewRect.left() * self._scale * travellermap.ParsecScaleX) % w
-            oy = (-self._absoluteViewRect.top() * self._scale * travellermap.ParsecScaleY) % h
-            if (ox > 0):
-                ox -= w
-            if (oy > 0):
-                oy -= h
-
-            # Number of copies needed to cover the canvas
-            nx = 1 + int(math.floor(self._outputPixelX / w))
-            ny = 1 + int(math.floor(self._outputPixelY / h))
-            if (ox + nx * w < self._outputPixelX):
-                nx += 1
-            if (oy + ny * h < self._outputPixelY):
-                ny += 1
-
-            imageRect = self._graphics.createRectangle(x=ox, y=oy, width=w + 1, height=h + 1)
             for _ in range(nx):
                 imageRect.setY(oy)
                 for _ in range(ny):
                     self._graphics.drawImage(
                         self._imageCache.nebulaImage,
                         imageRect)
-                    imageRect.setY(imageRect.y() + h)
-                imageRect.setX(imageRect.x() + w)
+                    imageRect.setY(imageRect.y() + imageRect.width())
+                imageRect.setX(imageRect.x() + imageRect.height())
 
     def _drawGalaxyBackground(self) -> None:
         if not self._styleSheet.showGalaxyBackground:
