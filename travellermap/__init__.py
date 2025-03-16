@@ -1,6 +1,6 @@
 from .milieu import *
 from .options import *
-from .colour import *
+from .color import *
 from .style import *
 from .astrometrics import *
 from .scale import *

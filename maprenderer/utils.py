@@ -1,3 +1,4 @@
+import math
 import travellermap
 import typing
 
@@ -26,7 +27,7 @@ def makeAlphaColor(
         alpha: typing.Union[float, int],
         color: str
         ) -> str:
-    red, green, blue, _ = travellermap.stringToColourChannels(colour=color)
+    red, green, blue, _ = travellermap.parseHtmlColor(htmlColor=color)
 
     alpha = int(alpha)
     if alpha < 0:

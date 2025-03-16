@@ -377,9 +377,9 @@ class RenderContext(object):
         finishX = math.ceil(self._absoluteViewRect.right() / chunkParsecs)
         finishY = math.ceil(self._absoluteViewRect.bottom() / chunkParsecs)
 
-        r, g, b, _ = travellermap.stringToColourChannels(
+        r, g, b, _ = travellermap.parseHtmlColor(
             self._styleSheet.pseudoRandomStars.fillBrush.color())
-        color = travellermap.colourChannelsToString(
+        color = travellermap.formatHtmlColor(
             r, g, b,
             alpha=int(255 / self._starfieldCache.intensitySteps()))
         pen = self._graphics.createPen(
@@ -698,9 +698,8 @@ class RenderContext(object):
                         routeStyle = maprenderer.LineStyle.Solid
 
                     # Ensure color is visible
-                    # TODO: Handle making colour visible, should be
-                    # styles.grayscale || !ColorUtil.NoticeableDifference(routeColor.Value, styles.backgroundColor)
-                    if self._styleSheet.grayscale:
+                    if self._styleSheet.grayscale or \
+                        not travellermap.noticeableColorDifference(routeColor, self._styleSheet.backgroundBrush.color()):
                         routeColor = self._styleSheet.microRoutes.linePen.color() # default
 
                     pen.setColor(routeColor)
@@ -711,7 +710,7 @@ class RenderContext(object):
                         points=route.points(),
                         pen=pen)
 
-    _LabelDefaultColor = travellermap.MapColours.TravellerAmber
+    _LabelDefaultColor = travellermap.HtmlColors.TravellerAmber
     def _drawMicroLabels(self) -> None:
         if not self._styleSheet.showMicroNames:
             return
@@ -787,12 +786,11 @@ class RenderContext(object):
                     else:
                         font = self._styleSheet.microBorders.font
 
-                    # TODO: Handle similar colours, should have this in it somewhere
-                    # ColorUtil.NoticeableDifference(label.Color.Value, styles.backgroundColor) &&
                     useLabelColor = \
                         not self._styleSheet.grayscale and \
                         label.colour() and \
-                        (label.colour() != RenderContext._LabelDefaultColor)
+                        (label.colour() != RenderContext._LabelDefaultColor) and \
+                        travellermap.noticeableColorDifference(label.colour(), self._styleSheet.backgroundBrush.color())
                     if useLabelColor:
                         brush.setColor(label.colour())
 
@@ -1549,23 +1547,23 @@ class RenderContext(object):
                 if sector.hasTag('Official'):
                     brush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.TravellerRed))
+                        color=travellermap.HtmlColors.TravellerRed))
                 elif sector.hasTag('InReview'):
                     brush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.Orange))
+                        color=travellermap.HtmlColors.Orange))
                 elif sector.hasTag('Unreviewed'):
                     brush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.TravellerAmber))
+                        color=travellermap.HtmlColors.TravellerAmber))
                 elif sector.hasTag('Apocryphal'):
                     brush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.Magenta))
+                        color=travellermap.HtmlColors.Magenta))
                 elif sector.hasTag('Preserve'):
                     brush.setColor(maprenderer.makeAlphaColor(
                         alpha=128,
-                        color=travellermap.MapColours.TravellerGreen))
+                        color=travellermap.HtmlColors.TravellerGreen))
                 else:
                     continue
 
@@ -1769,10 +1767,9 @@ class RenderContext(object):
         if not style:
             style = maprenderer.LineStyle.Solid
 
-        # TODO: Handle noticable colours, this should be
-        # styles.grayscale || !ColorUtil.NoticeableDifference(borderColor.Value, styles.backgroundColor
-        if self._styleSheet.grayscale:
-            color = self._styleSheet.microBorders.linePen.color() # default
+        if self._styleSheet.grayscale or \
+            not travellermap.noticeableColorDifference(color, self._styleSheet.backgroundBrush.color()):
+            color = self._styleSheet.microBorders.linePen.color()
 
         if brush:
             try:
@@ -1968,13 +1965,13 @@ class RenderContext(object):
         for star in stellar.yieldStars():
             classification = star.string()
             if classification == 'D':
-                props.append((travellermap.MapColours.White, travellermap.MapColours.Black, 0.3))
+                props.append((travellermap.HtmlColors.White, travellermap.HtmlColors.Black, 0.3))
             # NOTE: This todo came in with traveller map code
             # TODO: Distinct rendering for black holes, neutron stars, pulsars
             elif classification == 'NS' or classification == 'PSR' or classification == 'BH':
-                props.append((travellermap.MapColours.Black, travellermap.MapColours.White, 0.8))
+                props.append((travellermap.HtmlColors.Black, travellermap.HtmlColors.White, 0.8))
             elif classification == 'BD':
-                props.append((travellermap.MapColours.Brown, travellermap.MapColours.Black, 0.3))
+                props.append((travellermap.HtmlColors.Brown, travellermap.HtmlColors.Black, 0.3))
             else:
                 color, radius = RenderContext._StarPropsMap.get(
                     star.code(element=traveller.Star.Element.SpectralClass),
@@ -1982,7 +1979,7 @@ class RenderContext(object):
                 if color:
                     luminance = star.code(element=traveller.Star.Element.LuminosityClass)
                     luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
-                    props.append((color, travellermap.MapColours.Black, radius + luminance))
+                    props.append((color, travellermap.HtmlColors.Black, radius + luminance))
 
         props.sort(key=lambda p: p[2], reverse=True)
         return props

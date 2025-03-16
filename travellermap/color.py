@@ -1,7 +1,8 @@
 import common
+import math
 import typing
 
-class MapColours(object):
+class HtmlColors(object):
     TravellerRed = '#E32736'
     TravellerAmber = '#FFCC00'
     TravellerGreen = '#048104'
@@ -148,46 +149,92 @@ class MapColours(object):
     YellowGreen = '#9ACD32'
 
 #[k for k, v in vars(CONSTANT).items() if not callable(v) and not k.startswith("__")]
-_NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(MapColours).items()}
+_NameToColorMap = {name.lower(): color for name, color in common.getClassVariables(HtmlColors).items()}
 
-def stringToColourChannels(
-        colour: str
+def parseHtmlColor(
+        htmlColor: str
         ) -> typing.Tuple[
             int, # Red
             int, # Green
             int, # Blue
             int, # Alpha
         ]:
-    length = len(colour)
+    length = len(htmlColor)
     if not length:
-        raise ValueError(f'Invalid color "{colour}"')
-    if colour[0] != '#':
-        namedColour = _NameToColourMap.get(colour.lower())
-        if not namedColour:
-            raise ValueError(f'Invalid color "{colour}"')
-        colour = namedColour
-        length = len(namedColour)
+        raise ValueError(f'Invalid color "{htmlColor}"')
+    if htmlColor[0] != '#':
+        namedColor = _NameToColorMap.get(htmlColor.lower())
+        if not namedColor:
+            raise ValueError(f'Invalid color "{htmlColor}"')
+        htmlColor = namedColor
+        length = len(namedColor)
 
     if length == 7:
         try:
             alpha = 255
-            red = int(colour[1:3], 16)
-            green = int(colour[3:5], 16)
-            blue = int(colour[5:7], 16)
+            red = int(htmlColor[1:3], 16)
+            green = int(htmlColor[3:5], 16)
+            blue = int(htmlColor[5:7], 16)
         except:
-            raise ValueError(f'Invalid color "{colour}"')
+            raise ValueError(f'Invalid color "{htmlColor}"')
     elif length == 9:
         try:
-            alpha = int(colour[1:3], 16)
-            red = int(colour[3:5], 16)
-            green = int(colour[5:7], 16)
-            blue = int(colour[7:9], 16)
+            alpha = int(htmlColor[1:3], 16)
+            red = int(htmlColor[3:5], 16)
+            green = int(htmlColor[5:7], 16)
+            blue = int(htmlColor[7:9], 16)
         except:
-            raise ValueError(f'Invalid color "{colour}"')
+            raise ValueError(f'Invalid color "{htmlColor}"')
     else:
-        raise ValueError(f'Invalid color "{colour}"')
+        raise ValueError(f'Invalid color "{htmlColor}"')
 
     return (red, green, blue, alpha)
 
-def colourChannelsToString(red: int, green: int, blue: int, alpha: int = 255) -> str:
+def formatHtmlColor(red: int, green: int, blue: int, alpha: int = 255) -> str:
     return f'#{alpha:02X}{red:02X}{green:02X}{blue:02X}'
+
+def _convertRGBtoXYZ(r: int, g: int, b: int) -> typing.Tuple[float, float, float]:
+    rl = r / 255.0
+    gl = g / 255.0
+    bl = b / 255.0
+
+    sr = math.pow((rl + 0.055) / (1 + 0.055), 2.2) if rl > 0.04045 else (rl / 12.92)
+    sg = math.pow((gl + 0.055) / (1 + 0.055), 2.2) if gl > 0.04045 else (gl / 12.92)
+    sb = math.pow((bl + 0.055) / (1 + 0.055), 2.2) if bl > 0.04045 else (bl / 12.92)
+
+    return (
+        sr * 0.4124 + sg * 0.3576 + sb * 0.1805, # x
+        sr * 0.2126 + sg * 0.7152 + sb * 0.0722, # y
+        sr * 0.0193 + sg * 0.1192 + sb * 0.9505) # z
+
+def _calculateFxyz(t: float) -> float:
+    return math.pow(t, (1.0 / 3.0)) if t > 0.008856 else (7.787 * t + 16.0 / 116.0)
+
+def _convertXYZtoLab(x: float, y: float, z: float) -> typing.Tuple[float, float, float]:
+    D65X = 0.9505
+    D65Y = 1.0
+    D65Z = 1.0890
+    return (
+        116.0 * _calculateFxyz(y / D65Y) - 16, # l
+        500.0 * (_calculateFxyz(x / D65X) - _calculateFxyz(y / D65Y)), # a
+        200.0 * (_calculateFxyz(y / D65Y) - _calculateFxyz(z / D65Z))) # b
+
+def _deltaE76(l1: float, a1: float, b1: float, l2: float, a2: float, b2: float) -> float:
+    c1 = l1 - l2
+    c2 = a1 - a2
+    c3 = b1 - b2
+    return math.sqrt(c1 * c1 + c2 * c2 + c3 * c3)
+
+def noticeableColorDifference(a: str, b: str) -> bool:
+    JND = 13 # 2.3
+
+    aRed, aGreen, aBlue, _ = parseHtmlColor(a)
+    bRed, bGreen, bBlue, _ = parseHtmlColor(b)
+
+    ax, ay, az = _convertRGBtoXYZ(aRed, aGreen, aBlue)
+    bx, by, bz = _convertRGBtoXYZ(bRed, bGreen, bBlue)
+
+    al, aa, ab = _convertXYZtoLab(ax, ay, az)
+    bl, ba, bb = _convertXYZtoLab(bx, by, bz)
+
+    return _deltaE76(al, aa, ab, bl, ba, bb) > JND
