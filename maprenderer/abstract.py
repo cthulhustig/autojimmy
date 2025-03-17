@@ -272,7 +272,6 @@ class AbstractGraphics(object):
     def setSmoothingMode(self, mode: SmoothingMode) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement setSmoothingMode')
 
-    # TODO: This was an overloaded version of scaleTransform in the traveller map code
     def scaleTransformUniform(self, scaleXY: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement scaleTransformUniform')
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
@@ -284,20 +283,16 @@ class AbstractGraphics(object):
     def multiplyTransform(self, matrix: AbstractMatrix) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement multiplyTransform')
 
-    # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipPath(self, clip: AbstractPath) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
-    # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipRect(self, rect: AbstractRectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
 
-    # TODO: Hopefully I can get rid of the singular version at some point
     def drawPoint(self, point: maprenderer.AbstractPointF, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
     def drawPoints(self, points: AbstractPointList, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoints')
 
-    # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(
             self,
             pt1: maprenderer.AbstractPointF,
@@ -328,7 +323,6 @@ class AbstractGraphics(object):
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawRectangle')
 
-    # TODO: This has changed quite a bit from the traveller map interface
     def drawEllipse(
             self,
             rect: AbstractRectangleF,

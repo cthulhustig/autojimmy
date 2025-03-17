@@ -23,6 +23,9 @@ from pstats import SortKey
 # TODO: Not sure if me not inverting the y axis in my map space might
 # be an issue when it comes to rendering mains (or other things that
 # would be done with client side map space in Traveller Map)
+# TODO: Jump routes
+# TODO: Other overlays
+# TODO: Ability to switch between this and the existing TravellerMapWidget
 
 class MapHackView(QtWidgets.QWidget):
     _MinScale = -7
@@ -714,11 +717,6 @@ class MapHackView(QtWidgets.QWidget):
                 if image:
                     placeholders.append((image, placeholderRenderRect, placeholderClipRect))
                 else:
-                    # TODO: Try and get this working, it's currently incredibly slow (at the
-                    # point it's doing drawImage) when there is significant scaling of the tile.
-                    # This can be best seen by zooming as far in as it will go then panning
-                    # in one direction until it starts rendering much higher level tiles as
-                    # placeholders for the zoomed in tiles
                     if lookLower:
                         lowerPlaceholders = self._findPlaceholderTiles(
                             currentScale=placeholderScale,

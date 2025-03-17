@@ -719,7 +719,6 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
-                # TODO: I suspect I'm not drawing text for regions
                 for border in sector.borders():
                     if not border.showLabel():
                         continue
@@ -768,8 +767,6 @@ class RenderContext(object):
                     text = label.text()
 
                     labelPos = RenderContext._hexToCenter(label.hex())
-                    # NOTE: This todo came in with the traveller map code
-                    # TODO: Adopt some of the tweaks from .MSEC
                     if label.offsetX():
                         labelPos.setX(labelPos.x() + (label.offsetX() * 0.7))
                     if label.offsetY():
@@ -1192,8 +1189,6 @@ class RenderContext(object):
                                     font=self._styleSheet.hexNumber.font,
                                     text=worldInfo.uwpString)
 
-                            # NOTE: This todo came in with the traveller map code
-                            # TODO: Mask off background for glyphs
                             if renderBases:
                                 # Base 1
                                 bottomUsed = False
@@ -1377,8 +1372,6 @@ class RenderContext(object):
                             decorationRadius += 0.1
 
                         if renderUWP:
-                            # NOTE: This todo came in with the traveller map code
-                            # TODO: Scale, like the name text.
                             self._graphics.drawString(
                                 text=worldInfo.uwpString,
                                 font=self._styleSheet.hexNumber.font,
@@ -1584,8 +1577,6 @@ class RenderContext(object):
 
         if bkStyle is maprenderer.TextBackgroundStyle.Rectangle:
             if not self._styleSheet.fillMicroBorders:
-                # NOTE: This todo came over from traveller map
-                # TODO: Implement this with a clipping region instead
                 self._graphics.drawRectangle(
                     rect=self._graphics.createRectangle(
                         x=position.x() - width / 2,
@@ -1603,8 +1594,6 @@ class RenderContext(object):
                 brush=bkBrush)
         elif bkStyle is maprenderer.TextBackgroundStyle.Outline or \
             bkStyle is maprenderer.TextBackgroundStyle.Shadow:
-            # NOTE: This todo came over from traveller map
-            # TODO: These scaling factors are constant for a render; compute once
 
             # Invert the current scaling transforms
             sx = 1.0 / self._styleSheet.hexContentScale
@@ -1961,8 +1950,6 @@ class RenderContext(object):
             classification = star.string()
             if classification == 'D':
                 props.append((travellermap.HtmlColors.White, travellermap.HtmlColors.Black, 0.3))
-            # NOTE: This todo came in with traveller map code
-            # TODO: Distinct rendering for black holes, neutron stars, pulsars
             elif classification == 'NS' or classification == 'PSR' or classification == 'BH':
                 props.append((travellermap.HtmlColors.Black, travellermap.HtmlColors.White, 0.8))
             elif classification == 'BD':

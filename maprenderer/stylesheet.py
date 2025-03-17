@@ -134,13 +134,13 @@ class StyleSheet(object):
         self.dimUnofficialSectors = False
         self.colorCodeSectorStatus = False
 
-        self.deepBackgroundOpacity = 0.0 # TODO: Not sure about this
+        self.deepBackgroundOpacity = 0.0
 
         self.grayscale = False
         self.lightBackground = False
 
         self.showRiftOverlay = False
-        self.riftOpacity = 0.0 # TODO: Not sure about this
+        self.riftOpacity = 0.0
 
         self.hexContentScale = 1.0
 
@@ -866,7 +866,6 @@ class StyleSheet(object):
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.Firebrick))
 
-            # TODO: This causes a lot of fonts to be thrown away and new ones created
             fontName = 'Comic Sans MS'
 
             # The large font needs to be updated before the standard font as the large
@@ -1096,7 +1095,6 @@ class StyleSheet(object):
 
             self.subsectorGrid.linePen.setColor(travellermap.HtmlColors.Cyan)
 
-            # TODO: This causes a lot of fonts to be thrown away and new ones created
             fontName = 'Courier New'
 
             # The large font needs to be updated before the standard font as the large

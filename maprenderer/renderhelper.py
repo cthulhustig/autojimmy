@@ -1,5 +1,4 @@
 import maprenderer
-from PyQt5 import QtGui # TODO: Get rid of the need for this include
 
 # TODO: Ideally I want to refactor things so this file isn't needed. All rendering
 # should live in the render context
@@ -28,15 +27,8 @@ def drawStringHelper(
 
     widths = [graphics.measureString(line, font)[0] for line in lines]
 
-    # TODO: Not sure how to calculate this
-    #fontUnitsToWorldUnits = qtFont.pointSize() / font.FontFamily.GetEmHeight(font.Style)
     fontUnitsToWorldUnits = font.emSize() / font.pointSize()
     lineSpacing = font.lineSpacing() * fontUnitsToWorldUnits
-    # TODO: I've commented this line out, it's uncommented in the traveller map code but
-    # the value is never used
-    #ascent = qtFontMetrics.ascent() * fontUnitsToWorldUnits
-    # NOTE: This was commented out in the Traveller Map source code
-    #float descent = font.FontFamily.GetCellDescent(font.Style) * fontUnitsToWorldUnits;
 
     totalHeight = lineSpacing * len(widths)
 

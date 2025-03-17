@@ -1,4 +1,3 @@
-from PyQt5 import QtGui # TODO: Get rid of the need for this include
 import enum
 import typing
 
@@ -35,14 +34,14 @@ class FontStyle(enum.IntFlag):
     Strikeout = 0x8
 
 class TextBackgroundStyle(enum.Enum):
-    NoStyle = 0 # TODO: Was non in traveller map code
+    NoStyle = 0
     Rectangle = 1
     Shadow = 2
     Outline = 3
     Filled = 4
 
 class HexStyle(enum.Enum):
-    NoHex = 0 # TODO: Was None in traveller map code
+    NoHex = 0
     Hex = 1
     Square = 2
 
@@ -145,7 +144,7 @@ class LayerId(enum.Enum):
     Overlay_ReviewStatus = 26
 
 class WorldDetails(enum.IntFlag):
-    NoDetails = 0 # TODO: Was None in traveller map code
+    NoDetails = 0
 
     Type = 1 << 0 # Show world type (water/no water/asteroid/unknown)
     KeyNames = 1 << 1 # Show HiPop/Capital names

@@ -158,7 +158,7 @@ class QtMapPointList(maprenderer.AbstractPath):
     def copyFrom(self, other: 'QtMapPath') -> None:
         self._points = list(other.points())
         self._bounds = None # Calculate on demand
-        self._qtPolygon = None # TODO: is it possible to update an existing polygon?
+        self._qtPolygon = None
 
     def qtPolygon(self) -> QtGui.QPolygonF:
         if not self._qtPolygon:
@@ -245,11 +245,8 @@ class QtMapPath(maprenderer.AbstractPath):
         self._types = list(other.types())
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
-        self._qtPolygon = None # TODO: is it possible to update an existing polygon?
+        self._qtPolygon = None
 
-    # TODO: Need to check if I need to make sure that when
-    # the polygon is closed, the first and last point are
-    # the same
     def qtPolygon(self) -> QtGui.QPolygonF:
         if not self._qtPolygon:
             self._qtPolygon = QtGui.QPolygonF(
@@ -377,8 +374,6 @@ class QtMapBrush(maprenderer.AbstractBrush):
     def setColor(self, color: str) -> None:
         self._color = color
         if self._qtBrush:
-            # TODO: Could create my own AbstractColour to wrap a QColor to
-            # avoid repeatedly converting from a string
             self._qtBrush.setColor(QtGui.QColor(self._color))
 
     def copyFrom(self, other: 'QtMapBrush') -> None:
@@ -734,7 +729,6 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         # to lower it to get fonts rendering the correct size.
         return QtMapFont(family=family, emSize=emSize * 1.1, style=style)
 
-    # TODO: Need to check this on other OS
     def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
         antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \
             mode == maprenderer.AbstractGraphics.SmoothingMode.AntiAlias
@@ -774,13 +768,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setTransform(
             matrix.qtTransform() * self._painter.transform())
 
-    # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipPath(self, path: QtMapPath) -> None:
         clipPath = self._painter.clipPath()
         clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
         clipPath.addPolygon(path.qtPolygon())
         self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
-    # TODO: This was an overload of intersectClip in traveller map code
     def intersectClipRect(self, rect: QtMapRectangleF) -> None:
         clipPath = self._painter.clipPath()
         clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
@@ -794,7 +786,6 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoints(points.qtPolygon())
 
-    # TODO: There was also an overload that takes 4 individual floats in the traveller map code
     def drawLine(
             self,
             pt1: maprenderer.AbstractPointF,
@@ -845,7 +836,6 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
         self._painter.drawRect(rect.qtRect())
 
-    # TODO: This has changed quite a bit from the traveller map interface
     def drawEllipse(
             self,
             rect: QtMapRectangleF,

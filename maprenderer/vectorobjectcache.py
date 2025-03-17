@@ -40,7 +40,6 @@ class VectorObject(object):
         self.closed = closed
         self.mapOptions = mapOptions
         self._pathDataPoints = [maprenderer.AbstractPointF(p) for p in points]
-        # TODO: This uses byte instead of PathPointType
         self._pathDataTypes = list(types) if types else None
         self._minScale = None
         self._maxScale = None

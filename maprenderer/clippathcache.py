@@ -7,14 +7,7 @@ import typing
 class ClipPathCache(object):
     class PathType(enum.Enum):
         Hex = 0
-        # TODO: I don't currently support Square but I'm thinking of deleting
-        # support for square hexes all together as I don't think they ever get
-        # rendered in standard traveller map
         Square = 1
-        # TODO: I don't think TypeCount is needed as it looks like it's only
-        # used to initialise cache arrays with a size equal to the number of
-        # entries in this enum
-        #TypeCount = 2
 
     # NOTE: These offsets assume a clockwise winding
     _TopOffsets = [

@@ -5,7 +5,7 @@ import typing
 
 class Glyph(object):
     class GlyphBias(enum.Enum):
-        NoBias = 0 # TODO: This was None in Traveller Map code
+        NoBias = 0
         Top = 1
         Bottom = 2
 
@@ -42,7 +42,7 @@ class Glyph(object):
         return len(self.characters) > 0
 
 class GlyphDefs(object):
-    NoGlyph = Glyph('') # TODO: This was Glyph.None in Traveller Map code
+    NoGlyph = Glyph('')
     Diamond = Glyph('\u2666') # U+2666 (BLACK DIAMOND SUIT)
     DiamondX = Glyph('\u2756') # U+2756 (BLACK DIAMOND MINUS WHITE X)
     Circle = Glyph('\u2022') # U+2022 (BULLET); alternate:  U+25CF (BLACK CIRCLE)
