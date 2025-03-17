@@ -1049,6 +1049,7 @@ class WorldManager(object):
             name=sectorName,
             alternateNames=rawMetadata.alternateNames(),
             abbreviation=rawMetadata.abbreviation(),
+            sectorLabel=rawMetadata.sectorLabel(),
             x=sectorX,
             y=sectorY,
             subsectors=subsectors,

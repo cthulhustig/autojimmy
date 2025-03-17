@@ -313,6 +313,7 @@ class RawMetadata(object):
             alternateNames: typing.Optional[typing.Iterable[str]],
             nameLanguages: typing.Optional[typing.Mapping[str, str]],
             abbreviation: typing.Optional[str],
+            sectorLabel: typing.Optional[str],
             subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
             x: int,
             y: int,
@@ -329,6 +330,7 @@ class RawMetadata(object):
         self._alternateNames = alternateNames
         self._nameLanguages = nameLanguages
         self._abbreviation = abbreviation
+        self._sectorLabel = sectorLabel
         self._subsectorNames = subsectorNames
         self._x = x
         self._y = y
@@ -363,6 +365,9 @@ class RawMetadata(object):
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
+
+    def sectorLabel(self) -> typing.Optional[str]:
+        return self._sectorLabel
 
     def subsectorNames(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._subsectorNames
@@ -756,6 +761,9 @@ def readXMLMetadata(
         if lang != None:
             nameLanguages[name] = lang
 
+    sectorLabelElement = sectorElement.find('./Label')
+    sectorLabel = sectorLabelElement.text if sectorLabelElement != None else None
+
     xElement = sectorElement.find('./X')
     if xElement == None:
         raise RuntimeError(f'Failed to find X element in {identifier} metadata')
@@ -918,6 +926,7 @@ def readXMLMetadata(
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
         abbreviation=sectorElement.get('Abbreviation'),
+        sectorLabel=sectorLabel,
         subsectorNames=subsectorNames,
         x=x,
         y=y,
@@ -1134,6 +1143,7 @@ def readJSONMetadata(
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
         abbreviation=sectorElement.get('Abbreviation'),
+        sectorLabel=sectorElement.get('Label'),
         subsectorNames=subsectorNames,
         x=x,
         y=y,

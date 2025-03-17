@@ -802,13 +802,11 @@ class RenderContext(object):
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for sector in self._selector.sectors():
-            if not self._styleSheet.showAllSectorNames and not sector.selected():
-                continue
+            sectorLabel = sector.sectorLabel()
 
-            # TODO: Traveller Map would use the sector label first and only
-            # fall back to the name if if there was no label. I need to work out
-            # where that label is being loaded from
-            name = sector.name()
+            if not self._styleSheet.showAllSectorNames and not sector.selected() \
+                and not sectorLabel:
+                continue
 
             centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
                 sector.x(),
@@ -817,7 +815,7 @@ class RenderContext(object):
                 int(travellermap.SectorHeight // 2)))
 
             self._drawLabel(
-                text=name,
+                text=sectorLabel if sectorLabel else sector.name(),
                 center=maprenderer.AbstractPointF(x=centerX, y=centerY),
                 font=self._styleSheet.sectorName.font,
                 brush=self._styleSheet.sectorName.textBrush,

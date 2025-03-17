@@ -91,6 +91,7 @@ class Sector(object):
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]],
             abbreviation: typing.Optional[str],
+            sectorLabel: typing.Optional[str],
             x: int,
             y: int,
             # Subsectors should be ordered in subsector order (i.e. A-P)
@@ -105,6 +106,7 @@ class Sector(object):
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
+        self._sectorLabel = sectorLabel
         self._x = x
         self._y = y
         self._routes = list(routes)
@@ -145,6 +147,9 @@ class Sector(object):
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
+
+    def sectorLabel(self) -> typing.Optional[str]:
+        return self._sectorLabel
 
     def x(self) -> int:
         return self._x
