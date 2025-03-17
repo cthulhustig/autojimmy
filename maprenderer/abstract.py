@@ -142,7 +142,7 @@ class AbstractPen(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement width')
     def setWidth(self, width: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setWidth')
-    def style(self) -> float:
+    def style(self) -> maprenderer.LineStyle:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement style')
     def setStyle(self, style: maprenderer.LineStyle, pattern: typing.Optional[typing.List[float]] = None) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setStyle')

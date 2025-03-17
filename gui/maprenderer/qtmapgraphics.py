@@ -463,7 +463,7 @@ class QtMapPen(maprenderer.AbstractPen):
         if self._qtPen:
             self._qtPen.setWidthF(self._width)
 
-    def style(self) -> float:
+    def style(self) -> maprenderer.LineStyle:
         return self._style
 
     def setStyle(

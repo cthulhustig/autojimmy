@@ -444,36 +444,33 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        h = ((math.floor((self._absoluteViewRect.left()) / travellermap.SectorWidth) - 1) - travellermap.ReferenceSectorX) * \
-            travellermap.SectorWidth - travellermap.ReferenceHexX
-        gridSlop = 10
-        while h <= (self._absoluteViewRect.right() + travellermap.SectorWidth):
-            with self._graphics.save():
-                self._graphics.translateTransform(dx=h, dy=0)
-                self._graphics.scaleTransform(
-                    scaleX=1 / travellermap.ParsecScaleX,
-                    scaleY=1 / travellermap.ParsecScaleY)
-                self._graphics.drawLine(
-                    pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
-                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop),
-                    pen=self._styleSheet.sectorGrid.linePen)
-            h += travellermap.SectorWidth
+        # Quantizes the left & top values so grid lines are always drawn from a
+        # sector boundary that is off to the left/top of the view area. This is
+        # done as a hack so that when the pattern drawn for non-solid lines is
+        # always started from a 'constant' point
+        left = ((self._absoluteViewRect.left() // travellermap.SectorWidth) * \
+                  travellermap.SectorWidth) - travellermap.ReferenceHexX
+        right = self._absoluteViewRect.right()
+        top = ((self._absoluteViewRect.top() // travellermap.SectorHeight) * \
+                  travellermap.SectorHeight) - travellermap.ReferenceHexY
+        bottom = self._absoluteViewRect.bottom()
 
-        v = ((math.floor((self._absoluteViewRect.top()) / travellermap.SectorHeight) - 1) - travellermap.ReferenceSectorY) * \
-            travellermap.SectorHeight - travellermap.ReferenceHexY
-        while v <= (self._absoluteViewRect.bottom() + travellermap.SectorHeight):
+        x = left + travellermap.SectorWidth
+        while x <= self._absoluteViewRect.right():
             self._graphics.drawLine(
-                pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
-                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v),
+                pt1=maprenderer.AbstractPointF(x, top),
+                pt2=maprenderer.AbstractPointF(x, bottom),
                 pen=self._styleSheet.sectorGrid.linePen)
-            v += travellermap.SectorHeight
+            x += travellermap.SectorWidth
 
-    # TODO: This looks horrible when you pan about if the lines aren't solid
-    # (i.e. with Candy) as the dashes/dots don't stay in the same relative
-    # place. I __think__ a fix might be to overdraw and always have the start
-    # of the line aligned with a subsector boundary. The same issue applies
-    # to the sector grid. I'm not seeing the same issue with dashed/dotted
-    # region outlines so there might be worth looking at why
+        y = top + travellermap.SectorHeight
+        while y <= self._absoluteViewRect.bottom():
+            self._graphics.drawLine(
+                pt1=maprenderer.AbstractPointF(left, y),
+                pt2=maprenderer.AbstractPointF(right, y),
+                pen=self._styleSheet.sectorGrid.linePen)
+            y += travellermap.SectorHeight
+
     def _drawSubsectorGrid(self) -> None:
         if not self._styleSheet.subsectorGrid.visible:
             return
@@ -481,41 +478,38 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
 
-        hmin = int(math.floor(self._absoluteViewRect.left() / travellermap.SubsectorWidth) - 1 -
-                   travellermap.ReferenceSectorX)
-        hmax = int(math.ceil((self._absoluteViewRect.right() + travellermap.SubsectorWidth +
-                              travellermap.ReferenceHexX) / travellermap.SubsectorWidth))
-        gridSlop = 10
-        for hi in range(hmin, hmax + 1):
-            if (hi % 4) == 0:
-                continue
-            h = hi * travellermap.SubsectorWidth - travellermap.ReferenceHexX
-            self._graphics.drawLine(
-                pt1=maprenderer.AbstractPointF(h, self._absoluteViewRect.top() - gridSlop),
-                pt2=maprenderer.AbstractPointF(h, self._absoluteViewRect.bottom() + gridSlop),
-                pen=self._styleSheet.subsectorGrid.linePen)
-            with self._graphics.save():
-                self._graphics.translateTransform(dx=h, dy=0)
-                self._graphics.scaleTransform(
-                    scaleX=1 / travellermap.ParsecScaleX,
-                    scaleY=1 / travellermap.ParsecScaleY)
-                self._graphics.drawLine(
-                    pt1=maprenderer.AbstractPointF(0, self._absoluteViewRect.top() - gridSlop),
-                    pt2=maprenderer.AbstractPointF(0, self._absoluteViewRect.bottom() + gridSlop),
-                    pen=self._styleSheet.subsectorGrid.linePen)
+        # Quantizes the left & top values so grid lines are always drawn from a
+        # subsector boundary that is off to the left/top of the view area. This is
+        # done as a hack so that when the pattern drawn for non-solid lines is
+        # always started from a 'constant' point
+        left = ((self._absoluteViewRect.left() // travellermap.SubsectorWidth) * \
+                  travellermap.SubsectorWidth) - travellermap.ReferenceHexX
+        right = self._absoluteViewRect.right()
+        top = ((self._absoluteViewRect.top() // travellermap.SubsectorHeight) * \
+                  travellermap.SubsectorHeight) - travellermap.ReferenceHexY
+        bottom = self._absoluteViewRect.bottom()
 
-        vmin = int(math.floor(self._absoluteViewRect.top() / travellermap.SubsectorHeight) - 1 -
-                   travellermap.ReferenceSectorY)
-        vmax = int(math.ceil((self._absoluteViewRect.bottom() + travellermap.SubsectorHeight +
-                              travellermap.ReferenceHexY) / travellermap.SubsectorHeight))
-        for vi in range(vmin, vmax + 1):
-            if (vi % 4) == 0:
-                continue
-            v = vi * travellermap.SubsectorHeight - travellermap.ReferenceHexY
-            self._graphics.drawLine(
-                pt1=maprenderer.AbstractPointF(self._absoluteViewRect.left() - gridSlop, v),
-                pt2=maprenderer.AbstractPointF(self._absoluteViewRect.right() + gridSlop, v),
-                pen=self._styleSheet.subsectorGrid.linePen)
+        x = left + travellermap.SubsectorWidth
+        lineIndex = int(round(x / travellermap.SubsectorWidth))
+        while x <= self._absoluteViewRect.right():
+            if lineIndex % 4:
+                self._graphics.drawLine(
+                    pt1=maprenderer.AbstractPointF(x, top),
+                    pt2=maprenderer.AbstractPointF(x, bottom),
+                    pen=self._styleSheet.sectorGrid.linePen)
+            x += travellermap.SubsectorWidth
+            lineIndex += 1
+
+        y = top + travellermap.SubsectorHeight
+        lineIndex = int(round(y / travellermap.SubsectorHeight))
+        while y <= self._absoluteViewRect.bottom():
+            if lineIndex % 4:
+                self._graphics.drawLine(
+                    pt1=maprenderer.AbstractPointF(left, y),
+                    pt2=maprenderer.AbstractPointF(right, y),
+                    pen=self._styleSheet.sectorGrid.linePen)
+            y += travellermap.SubsectorHeight
+            lineIndex += 1
 
     def _drawParsecGrid(self) -> None:
         if not self._styleSheet.parsecGrid.visible:

@@ -105,10 +105,10 @@ class StyleSheet(object):
         self._handleConfigUpdate()
 
     @property
-    def style(self) -> float:
+    def style(self) -> travellermap.Style:
         return self._style
     @scale.setter
-    def style(self, style: float) -> None:
+    def style(self, style: travellermap.Style) -> None:
         if style == self._style:
             return # Nothing to do
         self._style = style
