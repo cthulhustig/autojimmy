@@ -536,13 +536,15 @@ class RenderContext(object):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - RenderContext._ParsecGridSlop, hy + hh + RenderContext._ParsecGridSlop):
 
+                    relativePos = travellermap.absoluteSpaceToRelativeSpace((px + 1, py + 1))
                     if self._styleSheet.hexCoordinateStyle == maprenderer.HexCoordinateStyle.Subsector:
-                        # TODO: Need to implement Subsector hex number. Not sure what this
-                        # actually is
-                        hex = 'TODO'
+                        hex = '{hexX:02d}{hexY:02d}'.format(
+                            hexX=int((relativePos[2] - 1) % travellermap.SubsectorWidth) + 1,
+                            hexY=int((relativePos[3] - 1) % travellermap.SubsectorHeight) + 1)
                     else:
-                        relativePos = travellermap.absoluteSpaceToRelativeSpace((px + 1, py + 1))
-                        hex = f'{relativePos[2]:02d}{relativePos[3]:02d}'
+                        hex = '{hexX:02d}{hexY:02d}'.format(
+                            hexX=relativePos[2],
+                            hexY=relativePos[3])
 
                     with self._graphics.save():
                         scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
@@ -954,7 +956,7 @@ class RenderContext(object):
         renderKeyNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0
         renderZone = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0
         renderHex = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0
-        renderSubsector = self._styleSheet.hexContentScale is maprenderer.HexCoordinateStyle.Subsector
+        renderSubsector = self._styleSheet.hexCoordinateStyle is maprenderer.HexCoordinateStyle.Subsector
         renderType = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0
 
         # Check for early out when style means nothing will be rendered
@@ -1032,9 +1034,8 @@ class RenderContext(object):
                                                 pen=element.linePen)
 
                         if not self._styleSheet.numberAllHexes and renderHex:
-                            # TODO: Handle subsector hex whatever that is
                             hex = \
-                                'TODO' \
+                                worldInfo.ssHexString \
                                 if renderSubsector else \
                                 worldInfo.hexString
 

@@ -26,6 +26,9 @@ class WorldInfo(object):
 
         worldHex = world.hex()
         self.hexString = f'{worldHex.offsetX():02d}{worldHex.offsetY():02d}'
+        self.ssHexString = '{hexX:02d}{hexY:02d}'.format(
+            hexX=int((worldHex.offsetX() - 1) % travellermap.SubsectorWidth) + 1,
+            hexY=int((worldHex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
 
         hexCenterX, hexCenterY = worldHex.absoluteCenter()
         self.hexCenter = maprenderer.AbstractPointF(x=hexCenterX, y=hexCenterY)
