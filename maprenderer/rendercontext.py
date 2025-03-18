@@ -1043,14 +1043,6 @@ class RenderContext(object):
                                 format=maprenderer.TextAlignment.TopCenter)
                     else: # styles.useWorldImages
                         # "Eye-Candy" style
-                        # TODO: This needs work
-                        # - World images aren't being drawn at quite the right location which
-                        #   means red/amber zone markers don't line up
-                        # - World images aren't being drawn for some worlds at some zoom levels
-                        #   an example would be the Breda subsector
-                        # - At high zooms (just before it turns to the dot map) as you pan
-                        #   about the red/amber zone marker sometimes aren't shown. To replicate
-                        #   center on Reference then pan left a bit
                         if worldInfo.isPlaceholder:
                             element = self._styleSheet.anomaly if worldInfo.isAnomaly else self._styleSheet.placeholder
                             self._drawWorldLabel(
@@ -1061,13 +1053,13 @@ class RenderContext(object):
                                 font=element.font,
                                 text=element.content)
                         else:
-                            scaleX = 1.5 if worldInfo.worldSize <= 0 else 1
-                            scaleY = 1.0 if worldInfo.worldSize <= 0 else 1
+                            imageScaleX = 1.5 if worldInfo.worldSize <= 0 else 1
+                            imageScaleY = 1.0 if worldInfo.worldSize <= 0 else 1
                             rect.setRect(
-                                x=-worldInfo.imageRadius * scaleX,
-                                y=-worldInfo.imageRadius * scaleY,
-                                width=worldInfo.imageRadius * 2 * scaleX,
-                                height=worldInfo.imageRadius * 2 * scaleY)
+                                x=-worldInfo.imageRadius * imageScaleX,
+                                y=-worldInfo.imageRadius * imageScaleY,
+                                width=worldInfo.imageRadius * 2 * imageScaleX,
+                                height=worldInfo.imageRadius * 2 * imageScaleY)
                             self._graphics.drawImage(
                                 image=worldInfo.worldImage,
                                 rect=rect)
