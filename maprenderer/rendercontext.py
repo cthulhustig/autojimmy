@@ -496,7 +496,7 @@ class RenderContext(object):
                 self._graphics.drawLine(
                     pt1=maprenderer.AbstractPointF(x, top),
                     pt2=maprenderer.AbstractPointF(x, bottom),
-                    pen=self._styleSheet.sectorGrid.linePen)
+                    pen=self._styleSheet.subsectorGrid.linePen)
             x += travellermap.SubsectorWidth
             lineIndex += 1
 
@@ -507,7 +507,7 @@ class RenderContext(object):
                 self._graphics.drawLine(
                     pt1=maprenderer.AbstractPointF(left, y),
                     pt2=maprenderer.AbstractPointF(right, y),
-                    pen=self._styleSheet.sectorGrid.linePen)
+                    pen=self._styleSheet.subsectorGrid.linePen)
             y += travellermap.SubsectorHeight
             lineIndex += 1
 
