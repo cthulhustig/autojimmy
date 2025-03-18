@@ -1641,8 +1641,10 @@ class RenderContext(object):
 
             pen = self._graphics.createPen()
             pen.setStyle(maprenderer.LineStyle.Solid)
-            # TODO: Not sure what this should be set to, Traveller Map uses it but never
-            # explicitly sets it so must be picking up a default
+            # The traveller map code doesn't initialise the width and it wasn't
+            # immediately obvious what the default with. Based on a visual
+            # comparison it looks like it's defaulting to always have a width of
+            # 1 pixel which in Qt is a value of 0 and is called a 'cosmetic pen'
             pen.setWidth(0)
             brush = self._graphics.createBrush()
             for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
