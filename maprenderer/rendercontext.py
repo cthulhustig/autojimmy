@@ -1958,8 +1958,14 @@ class RenderContext(object):
                     (None, None))
                 if color:
                     luminance = star.code(element=traveller.Star.Element.LuminosityClass)
-                    luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
-                    props.append((color, travellermap.HtmlColors.Black, radius + luminance))
+                    if luminance == 'VII':
+                        # The second survey format spec says that some data uses VII to indicate
+                        # a white dwarf (i.e. classification D).
+                        # https://travellermap.com/doc/secondsurvey
+                        props.append((travellermap.HtmlColors.White, travellermap.HtmlColors.Black, 0.3))
+                    else:
+                        luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
+                        props.append((color, travellermap.HtmlColors.Black, radius + luminance))
 
         props.sort(key=lambda p: p[2], reverse=True)
         return props
