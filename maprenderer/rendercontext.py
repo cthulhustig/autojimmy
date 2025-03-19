@@ -599,15 +599,10 @@ class RenderContext(object):
             maprenderer.ClipPathCache.PathType.Hex
 
         penWidth = self._styleSheet.microBorders.linePen.width()
-        # HACK: Due to the fact clipping to the outline being drawn
-        # doesn't work with Qt (see HACK below), it means outlines
-        # appear twice as thick as they do in Traveller Map. This
-        # scales the width to account for this
-        penWidth *= 0.5
+        # NOTE: Create pens rather than using them directly from the
+        # style sheet as they will be modified in _drawMicroBorder
         pen = self._graphics.createPen(width=penWidth)
-        brush = None
-        if self._styleSheet.fillMicroBorders:
-            brush = self._graphics.createBrush()
+        brush = self._graphics.createBrush()
 
         shadePen = None
         if self._styleSheet.shadeMicroBorders:
@@ -643,7 +638,7 @@ class RenderContext(object):
                             continue # Outline isn't on screen
                         self._drawMicroBorder(
                             outline=outline,
-                            brush=brush,
+                            brush=brush if self._styleSheet.fillMicroBorders else None,
                             pen=pen,
                             shadePen=shadePen)
 
@@ -1711,30 +1706,6 @@ class RenderContext(object):
             pen: typing.Optional[maprenderer.AbstractPen] = None,
             shadePen: typing.Optional[maprenderer.AbstractPen] = None
             ) -> None:
-        # Clip to the path itself - this means adjacent borders don't clash
-        # HACK: I've disabled this as it doesn't do what it is
-        # intended when rendering with Qt so there is no point
-        # wasting the time setting the new clip path. This also
-        # means there is no point in saving the state
-        # The intention is this should prevent anything being
-        # drawn outside the exact bounds of the outline. This is
-        # done due to the fact the line has a width which would
-        # mean what was drawn would normally extend half the pen
-        # width outside the the boundary. In Traveller Map the
-        # result is when two regions are touching, you can see
-        # both border colours along the edges where they touch.
-        # Unfortunately it doesn't look like Qt applies the clip
-        # path to the pen width so the effect doesn't work.
-        # It should be noted that this clipping not working also
-        # has the side effect that (if it wasn't accounted for)
-        # borders would be drawn twice as wide as they are in
-        # Traveller Map
-        # NOTE: If I ever do figure out how to make this work
-        # I think it would only need to be set if drawing the
-        # outline (i.e. not when just filling)
-        #with self._graphics.save():
-        #    self._graphics.intersectClipPath(path=outline.path())
-
         color = outline.color()
         if not color:
             color = self._styleSheet.microRoutes.linePen.color()
@@ -1759,9 +1730,9 @@ class RenderContext(object):
         if pen:
             pen.setColor(color)
             pen.setStyle(
-                style
-                if self._styleSheet.microBorders.linePen.style() is maprenderer.LineStyle.Solid else
-                self._styleSheet.microBorders.linePen.style())
+                self._styleSheet.microBorders.linePen.style()
+                if self._styleSheet.microBorders.linePen.style() is not maprenderer.LineStyle.Solid else
+                style)
 
         if shadePen:
             try:
@@ -1772,17 +1743,21 @@ class RenderContext(object):
                 logging.warning('Failed to parse region colour', exc_info=ex)
                 return
             shadePen.setColor(color)
-            pen.setStyle(maprenderer.LineStyle.Solid)
+            shadePen.setStyle(maprenderer.LineStyle.Solid)
 
-        self._graphics.drawPath(
-            path=outline.path(),
-            pen=shadePen if shadePen else pen,
-            brush=brush)
-
-        if pen and shadePen:
+        with self._graphics.save():
+            if shadePen or pen:
+                # Clip to the path itself - this means adjacent borders don't clash
+                self._graphics.intersectClipPath(path=outline.path())
             self._graphics.drawPath(
                 path=outline.path(),
-                pen=pen)
+                pen=shadePen if shadePen else pen,
+                brush=brush)
+
+            if pen and shadePen:
+                self._graphics.drawPath(
+                    path=outline.path(),
+                    pen=pen)
 
     _WorldDingMap = {
         '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)

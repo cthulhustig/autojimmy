@@ -391,12 +391,11 @@ class QtMapBrush(maprenderer.AbstractBrush):
 
 class QtMapPen(maprenderer.AbstractPen):
     _LineStyleMap = {
-        maprenderer.LineStyle.Solid: QtCore.Qt.PenStyle.SolidLine,
-        maprenderer.LineStyle.Dot: QtCore.Qt.PenStyle.DotLine,
-        maprenderer.LineStyle.Dash: QtCore.Qt.PenStyle.DashLine,
-        maprenderer.LineStyle.DashDot: QtCore.Qt.PenStyle.DashDotLine,
-        maprenderer.LineStyle.DashDotDot: QtCore.Qt.PenStyle.DashDotDotLine,
-        maprenderer.LineStyle.Custom: QtCore.Qt.PenStyle.CustomDashLine}
+        maprenderer.LineStyle.Solid: (QtCore.Qt.PenStyle.SolidLine, None),
+        maprenderer.LineStyle.Dot: (QtCore.Qt.PenStyle.CustomDashLine, [1, 1]),
+        maprenderer.LineStyle.Dash: (QtCore.Qt.PenStyle.CustomDashLine, [3, 1]),
+        maprenderer.LineStyle.DashDot: (QtCore.Qt.PenStyle.CustomDashLine,  [3, 1, 1, 1]),
+        maprenderer.LineStyle.DashDotDot: (QtCore.Qt.PenStyle.CustomDashLine, [3, 1, 1, 1, 1, 1])}
 
     _PenTipMap = {
         maprenderer.PenTip.Flat: QtCore.Qt.PenCapStyle.FlatCap,
@@ -467,16 +466,17 @@ class QtMapPen(maprenderer.AbstractPen):
             pattern: typing.Optional[typing.List[float]] = None
             ) -> None:
         self._style = style
-        if self._qtPen:
-            self._qtPen.setStyle(QtMapPen._LineStyleMap[self._style])
+        self._pattern = list(pattern) if self._style is maprenderer.LineStyle.Custom else None
 
-        if (self._style is maprenderer.LineStyle.Custom):
-            if  pattern is not None:
-                self._pattern = list(pattern)
-                if self._qtPen:
-                    self._qtPen.setDashPattern(pattern)
-        else:
-            self._pattern = None
+        if self._qtPen:
+            if self._style is maprenderer.LineStyle.Custom:
+                self._qtPen.setStyle(QtCore.Qt.PenStyle.CustomDashLine)
+                self._qtPen.setDashPattern(self._pattern)
+            else:
+                qtStyle, qtPattern = QtMapPen._LineStyleMap[self._style]
+                self._qtPen.setStyle(qtStyle)
+                if qtPattern:
+                    self._qtPen.setDashPattern(qtPattern)
 
     def pattern(self) -> typing.Optional[typing.Sequence[float]]:
         return self._pattern
@@ -511,19 +511,31 @@ class QtMapPen(maprenderer.AbstractPen):
         if self._qtPen:
             self._qtPen.setColor(QtGui.QColor(self._color))
             self._qtPen.setWidthF(self._width)
-            self._qtPen.setStyle(QtMapPen._LineStyleMap[self._style])
-            if self._style is maprenderer.LineStyle.Custom:
-                self._qtPen.setDashPattern(self._pattern)
             self._qtPen.setCapStyle(QtMapPen._PenTipMap[self._tip])
+
+            if self._style is maprenderer.LineStyle.Custom:
+                self._qtPen.setStyle(QtCore.Qt.PenStyle.CustomDashLine)
+                self._qtPen.setDashPattern(self._pattern)
+            else:
+                qtStyle, qtPattern = QtMapPen._LineStyleMap[self._style]
+                self._qtPen.setStyle(qtStyle)
+                if qtPattern:
+                    self._qtPen.setDashPattern(qtPattern)
 
     def qtPen(self) -> QtGui.QPen:
         if not self._qtPen:
+            if self._style is maprenderer.LineStyle.Custom:
+                qtStyle = QtCore.Qt.PenStyle.CustomDashLine
+                qtPattern = self._pattern
+            else:
+                qtStyle, qtPattern = QtMapPen._LineStyleMap[self._style]
+
             self._qtPen = QtGui.QPen(
                 QtGui.QColor(self._color),
                 self._width,
-                QtMapPen._LineStyleMap[self._style])
-            if self._style is maprenderer.LineStyle.Custom:
-                self._qtPen.setDashPattern(self._pattern)
+                qtStyle)
+            if qtPattern:
+                self._qtPen.setDashPattern(qtPattern)
             self._qtPen.setCapStyle(QtMapPen._PenTipMap[self._tip])
         return self._qtPen
 
@@ -769,15 +781,21 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             matrix.qtTransform() * self._painter.transform())
 
     def intersectClipPath(self, path: QtMapPath) -> None:
-        clipPath = self._painter.clipPath()
-        clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
-        clipPath.addPolygon(path.qtPolygon())
-        self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
+        newClip = QtGui.QPainterPath()
+        newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
+        newClip.addPolygon(path.qtPolygon())
+        currentClip = self._painter.clipPath()
+        if not currentClip.isEmpty():
+            newClip = currentClip.intersected(newClip)
+        self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
     def intersectClipRect(self, rect: QtMapRectangleF) -> None:
-        clipPath = self._painter.clipPath()
-        clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
-        clipPath.addRect(rect.qtRect())
-        self._painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
+        newClip = QtGui.QPainterPath()
+        newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
+        newClip.addRect(rect.qtRect())
+        currentClip = self._painter.clipPath()
+        if not currentClip.isEmpty():
+            newClip = currentClip.intersected(newClip)
+        self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     def drawPoint(self, point: maprenderer.AbstractPointF, pen: QtMapPen) -> None:
         self._painter.setPen(pen.qtPen())
