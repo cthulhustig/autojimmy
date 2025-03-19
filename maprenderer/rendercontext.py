@@ -287,6 +287,10 @@ class RenderContext(object):
     # sideways as you zoom. To help mitigate the issue I've updated the
     # nebula drawing code so that it always scales tiles in the same way as
     # they would scale on Traveller Map tiles
+    # TODO: This is still not working right when drawing the full frame (tiles
+    # seem ok). Sometimes it seems to be working but then in other places it
+    # doesn't even draw the background. It seems worse when the window is
+    # maximised
     def _drawNebulaBackground(self) -> None:
         if not self._styleSheet.showNebulaBackground:
             return
