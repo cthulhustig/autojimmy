@@ -452,6 +452,7 @@ class DataStore(object):
     _UniverseFileName = 'universe.json'
     _SophontsFileName = 'sophonts.json'
     _AllegiancesFileName = 'allegiances.json'
+    _AllegianceStyleFileName = 'res/styles/otu.css'
     _TimestampFileName = 'timestamp.txt'
     _DataFormatFileName = 'dataformat.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
@@ -640,6 +641,30 @@ class DataStore(object):
     def allegiancesData(self) -> str:
         return self._bytesToString(bytes=self._readStockFile(
             relativeFilePath=self._AllegiancesFileName))
+
+    # TODO: I need to be sure about the directory structure under the res
+    # directory (e.g. upper/lower case, naming contention). It's currently
+    # a direct copy of the Traveller Map structure but it's not that
+    # consistent. It's important because changing it after initial release
+    # is awkward due to the fact it will be in the update zip so will need
+    # to be backwards compatible
+    # - Having it match the Traveller Map structure identically will make
+    # it easier to update
+    # - Having it match could be awkward if I want to do anything on top of
+    # what Traveller Map is doing in the future.
+    # TODO: The content of the res dir needs to be in map updates as loading
+    # won't use the install dir if the overlay dir exists. I suspect the
+    # easiest thing to do is to add a copy of the res directory to the data
+    # repo.
+    # - IMPORTANT: Doing this will need an update format version uptick but
+    # it's only adding files so should only need a minor version uptick
+    def loadBinaryResource(self, filePath: str) -> bytes:
+        return self._readStockFile(
+            relativeFilePath=filePath)
+
+    def loadTextResource(self, filePath: str) -> bytes:
+        return self._bytesToString(bytes=self._readStockFile(
+            relativeFilePath=filePath))
 
     def universeTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
@@ -1159,7 +1184,10 @@ class DataStore(object):
             relativeFilePath: str
             ) -> bytes:
         # If the overlay directory exists load files from there, if not load from the
-        # install directory
+        # install directory. This approach allows for files to be deleted (or renamed
+        # in an overlay (compared to checking if the file exists in the overlay
+        # directory and loading it from the install dir if it doesn't). This is important
+        # as sectors can be renamed/deleted
         filePath = os.path.join(
             self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
             relativeFilePath)
@@ -1240,6 +1268,8 @@ class DataStore(object):
                 # TODO: Remove hacky code to skip sectors, DO NOT COMMIT
                 #if canonicalName.find('Solomani Rim') < 0:
                 #if canonicalName != 'Core':
+                #if canonicalName != 'Mavuzog':
+                #if canonicalName != 'Porlock':
                 #if canonicalName.find('Fornast') < 0:
                 #if canonicalName.find('Zarushagar') < 0:
                 #if canonicalName.find('Daibei') < 0:

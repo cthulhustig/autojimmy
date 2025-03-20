@@ -1,6 +1,7 @@
 import common
 import maprenderer
 import os
+import travellermap
 import typing
 
 # TODO: This should probably live elsewhere
@@ -16,19 +17,19 @@ class MapLabel(object):
         self.minor = minor
 
 class MapLabelCache(object):
-    # TODO: These files should be pulled from DataStore to get caching and
-    # filesystem layering
     _MinorLabelsPath = 'res/labels/minor_labels.tab'
     _MajorLabelsPath = 'res/labels/mega_labels.tab'
 
-    def __init__(self, basePath: str):
-        self.minorLabels = self._loadFile(
-            os.path.join(basePath, MapLabelCache._MinorLabelsPath))
-        self.megaLabels = self._loadFile(
-            os.path.join(basePath, MapLabelCache._MajorLabelsPath))
+    def __init__(self):
+        self.minorLabels = self._parseContent(
+            travellermap.DataStore.instance().loadTextResource(
+                filePath=MapLabelCache._MinorLabelsPath))
+        self.megaLabels = self._parseContent(
+            travellermap.DataStore.instance().loadTextResource(
+                filePath=MapLabelCache._MajorLabelsPath))
 
-    def _loadFile(self, path: str) -> typing.List[MapLabel]:
-        _, rows = maprenderer.loadTabFile(path=path)
+    def _parseContent(self, content: str) -> typing.List[MapLabel]:
+        _, rows = maprenderer.parseTabContent(content=content)
         labels = []
         for data in rows:
             labels.append(MapLabel(

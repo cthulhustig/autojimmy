@@ -7,8 +7,7 @@ import typing
 class DefaultStyleCache(object):
     _BorderPattern = re.compile(r'border\.(\w+)')
     _RoutePattern = re.compile(r'route\.(\w+)')
-    # TODO: This file should be pulled from DataStore to get caching and
-    # filesystem layering
+
     _DefaultStylePath = 'res/styles/otu.css'
 
     _StyleMap = {
@@ -16,12 +15,13 @@ class DefaultStyleCache(object):
         'dashed': maprenderer.LineStyle.Dash,
         'dotted': maprenderer.LineStyle.Dot}
 
-    def __init__(self, basePath: str):
+    def __init__(self):
         self._borderStyles = {}
         self._routeStyles = {}
 
-        content = travellermap.readCssFile(
-            os.path.join(basePath, DefaultStyleCache._DefaultStylePath))
+        content = travellermap.readCssContent(
+            travellermap.DataStore.instance().loadTextResource(
+                filePath=DefaultStyleCache._DefaultStylePath))
         for group, properties in content.items():
             match = DefaultStyleCache._BorderPattern.match(group)
             if match:

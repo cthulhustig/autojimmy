@@ -1,6 +1,6 @@
 import maprenderer
-import os
 import traveller
+import travellermap
 import typing
 
 class WorldHelper(object):
@@ -36,7 +36,6 @@ class WorldHelper(object):
         '--', # Placeholder - show as blank
     ])
 
-    # TODO: This file should be pulled from the data store
     # TODO: I think this is actually the same data that AllegianceManager loads
     # from allegiance.json. This file was taken directly from the Traveller Map
     # source code where as I __think__ the other one was exported using the API.
@@ -87,12 +86,14 @@ class WorldHelper(object):
     _HydrographicsDefaultImage = 'Hyd0'
 
     @staticmethod
-    def loadData(basePath: str) -> None:
+    def loadData() -> None:
         if WorldHelper._T5AllegiancesMap is not None:
             return # Already loaded
         WorldHelper._T5AllegiancesMap = {}
 
-        _, rows = maprenderer.loadTabFile(path=os.path.join(basePath, WorldHelper._T5OfficialAllegiancesPath))
+        _, rows = maprenderer.parseTabContent(
+            content=travellermap.DataStore.instance().loadTextResource(
+                filePath=WorldHelper._T5OfficialAllegiancesPath))
         for data in rows:
             code = data.get('Code')
             legacy = data.get('Legacy')

@@ -540,12 +540,10 @@ class QtMapPen(maprenderer.AbstractPen):
         return self._qtPen
 
 class QtMapImage(maprenderer.AbstractImage):
-    def __init__(self, path: str):
-        self._path = path
-
-        self._qtImage = QtGui.QImage(self._path, None)
+    def __init__(self, data: bytes):
+        self._qtImage = QtGui.QImage.fromData(data, None)
         if not self._qtImage:
-            raise RuntimeError(f'Failed to load {self._path}')
+            raise RuntimeError(f'Failed to load image')
 
     def width(self) -> int:
         return self._qtImage.width()
@@ -727,9 +725,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def createImage(
             self,
-            path: str
+            data: bytes
             ) -> QtMapImage:
-        return QtMapImage(path=path)
+        return QtMapImage(data=data)
 
     def createFont(
             self,

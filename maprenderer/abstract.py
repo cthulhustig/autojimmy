@@ -258,7 +258,7 @@ class AbstractGraphics(object):
     def copyPen(self, other: AbstractPen) -> AbstractPen:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyPen')
 
-    def createImage(self, path: str) -> AbstractImage:
+    def createImage(self, data: bytes) -> AbstractImage:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createImage')
 
     def createFont(

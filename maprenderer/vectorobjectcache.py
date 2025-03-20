@@ -182,8 +182,6 @@ class VectorObject(object):
 # rendering more complex/inefficient. My implementation splits sub paths into
 # multiple VectorObject to avoid repeated processing at render time
 class VectorObjectCache(object):
-    # TODO: These files should be pulled from DataStore to get caching and
-    # filesystem layering
     _BorderFiles = [
         'res/Vectors/Imperium.xml',
         'res/Vectors/Aslan.xml',
@@ -210,33 +208,29 @@ class VectorObjectCache(object):
 
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics,
-            basePath: str
+            graphics: maprenderer.AbstractGraphics
             ) -> None:
         self._graphics = graphics
-        self.borders = self._loadFiles(basePath, VectorObjectCache._BorderFiles)
-        self.rifts = self._loadFiles(basePath, VectorObjectCache._RiftFiles)
-        self.routes = self._loadFiles(basePath, VectorObjectCache._RouteFiles)
+        self.borders = self._loadFiles(VectorObjectCache._BorderFiles)
+        self.rifts = self._loadFiles(VectorObjectCache._RiftFiles)
+        self.routes = self._loadFiles(VectorObjectCache._RouteFiles)
 
     def _loadFiles(
             self,
-            basePath: str,
             paths: typing.Iterable[str]
             ) -> typing.List[VectorObject]:
         vectors = []
         for path in paths:
             try:
-                vectors.extend(self._loadFile(path=os.path.join(basePath, path)))
+                vectors.extend(self._parseFile(
+                    content=travellermap.DataStore.instance().loadTextResource(
+                        filePath=path)))
             except Exception as ex:
                 # TODO: Do something better
                 print(ex)
         return vectors
 
-
-    def _loadFile(self, path: str) -> typing.Iterable[VectorObject]:
-        with open(path, 'r', encoding='utf-8-sig') as file:
-            content = file.read()
-
+    def _parseFile(self, content: str) -> typing.Iterable[VectorObject]:
         rootElement = xml.etree.ElementTree.fromstring(content)
 
         name = ''

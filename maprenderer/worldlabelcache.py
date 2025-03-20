@@ -88,16 +88,12 @@ class WorldLabel(object):
 
 # TODO: Should possibly combine this with map label cache
 class WorldLabelCache(object):
-    # TODO: This file should be pulled from DataStore to get caching and
-    # filesystem layering
     _WorldLabelPath = 'res/labels/Worlds.xml'
 
-    def __init__(self, basePath: str):
-        filePath = os.path.join(basePath, WorldLabelCache._WorldLabelPath)
-        with open(filePath, 'r', encoding='utf-8-sig') as file:
-            content = file.read()
-
-        rootElement = xml.etree.ElementTree.fromstring(content)
+    def __init__(self):
+        rootElement = xml.etree.ElementTree.fromstring(
+            travellermap.DataStore.instance().loadTextResource(
+                filePath=WorldLabelCache._WorldLabelPath))
 
         self.labels: typing.List[WorldLabel] = []
         for index, worldElement in enumerate(rootElement.findall('./World')):

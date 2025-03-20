@@ -2,25 +2,24 @@ import math
 import travellermap
 import typing
 
-def loadTabFile(path: str) -> typing.Tuple[
+def parseTabContent(content: str) -> typing.Tuple[
         typing.List[str], # Headers
         typing.List[typing.Dict[
             str, # Header
             str]]]: # Value
-    with open(path, 'r', encoding='utf-8-sig') as file:
-        header = None
-        rows = []
-        for line in file.readlines():
-            if not line:
-                continue
-            if line.startswith('#'):
-                continue
-            tokens = [t.strip() for t in line.split('\t')]
-            if not header:
-                header = tokens
-                continue
+    header = None
+    rows = []
+    for line in content.splitlines():
+        if not line:
+            continue
+        if line.startswith('#'):
+            continue
+        tokens = [t.strip() for t in line.split('\t')]
+        if not header:
+            header = tokens
+            continue
 
-            rows.append({header[i]:t for i, t in enumerate(tokens)})
+        rows.append({header[i]:t for i, t in enumerate(tokens)})
     return (header, rows)
 
 def makeAlphaColor(

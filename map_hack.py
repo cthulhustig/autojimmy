@@ -72,15 +72,13 @@ class MapHackView(QtWidgets.QWidget):
         #self._style = travellermap.Style.Candy
         self._graphics = gui.QtMapGraphics()
         self._imageCache = maprenderer.ImageCache(
-            graphics=self._graphics,
-            basePath='./data/map/')
+            graphics=self._graphics)
         self._vectorCache = maprenderer.VectorObjectCache(
-            graphics=self._graphics,
-            basePath='./data/map/')
-        self._mapLabelCache = maprenderer.MapLabelCache(basePath='./data/map/')
-        self._worldLabelCache = maprenderer.WorldLabelCache(basePath='./data/map/')
-        self._styleCache = maprenderer.DefaultStyleCache(basePath='./data/map/')
-        maprenderer.WorldHelper.loadData(basePath='./data/map/') # TODO: Not sure where this should live
+            graphics=self._graphics)
+        self._mapLabelCache = maprenderer.MapLabelCache()
+        self._worldLabelCache = maprenderer.WorldLabelCache()
+        self._styleCache = maprenderer.DefaultStyleCache()
+        maprenderer.WorldHelper.loadData() # TODO: Not sure where this should live
         self._renderer = self._createRenderer()
 
         self._worldDragStart: typing.Optional[QtCore.QPointF] = None
