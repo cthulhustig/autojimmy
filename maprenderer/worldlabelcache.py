@@ -142,4 +142,6 @@ class WorldLabelCache(object):
                     labelBiasX=biasX,
                     labelBiasY=biasY))
             except Exception as ex:
-                logging.warning(f'Failed to read world label {index} from "{filePath}"', exc_info=ex)
+                logging.warning(
+                    f'Failed to read world label {index} from "{WorldLabelCache._WorldLabelPath}"',
+                    exc_info=ex)
