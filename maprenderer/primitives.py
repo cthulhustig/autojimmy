@@ -203,11 +203,11 @@ class SizeF(object):
         self._height = height
 
 # TODO: The F in this name is probably redundant as there is no non-F version
-class AbstractPointF(object):
+class PointF(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'AbstractPointF') -> None: ...
+    def __init__(self, other: 'PointF') -> None: ...
     @typing.overload
     def __init__(self, x: float, y: float) -> None: ...
 
@@ -216,7 +216,7 @@ class AbstractPointF(object):
             self._x = self._y = 0
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, AbstractPointF):
+            if not isinstance(other, PointF):
                 raise TypeError('The other parameter must be a PointF')
             self._x = other._x
             self._y = other._y
@@ -225,7 +225,7 @@ class AbstractPointF(object):
             self._y = args[1] if len(args) > 1 else kwargs['y']
 
     def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, AbstractPointF):
+        if isinstance(other, PointF):
             return self._x == other._y and self.y == other.y
         return super().__eq__(other)
 
@@ -244,6 +244,113 @@ class AbstractPointF(object):
     def translate(self, dx: float, dy: float) -> None:
         self._x += dx
         self._y += dy
+
+# TODO: This (and PointF) could do with an offsetX, offsetY functions as there
+# are quite a few places that are having to do get x/y then set x/y with modifier
+class RectangleF(object):
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'RectangleF') -> None: ...
+    @typing.overload
+    def __init__(self, x: float, y: float, width: float, height: float) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if not args and not kwargs:
+            self._x = self._y = self._width = self._height = 0
+        elif len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, RectangleF):
+                raise TypeError('The other parameter must be a RectangleF')
+            self._x = other._x
+            self._y = other._y
+            self._width = other._width
+            self._height = other._height
+        else:
+            self._x = args[0] if len(args) > 0 else kwargs['x']
+            self._y = args[1] if len(args) > 1 else kwargs['y']
+            self._width = args[0] if len(args) > 0 else kwargs['width']
+            self._height = args[1] if len(args) > 1 else kwargs['height']
+
+    def x(self) -> float:
+        return self._x
+
+    def setX(self, x: float) -> None:
+        self._x = x
+
+    def y(self) -> float:
+        return self._y
+
+    def setY(self, y: float) -> None:
+        self._y = y
+
+    def width(self) -> float:
+        return self._width
+
+    def setWidth(self, width: float) -> None:
+        self._width = width
+
+    def height(self) -> float:
+        return self._height
+
+    def setHeight(self, height: float) -> None:
+        self._height = height
+
+    def rect(self) -> typing.Tuple[float, float, float, float]: # (x, y, width, height)
+        return (self._x, self._y, self._width, self._height)
+
+    def setRect(self, x: float, y: float, width: float, height: float) -> None:
+        self._x = x
+        self._y = y
+        self._width = width
+        self._height = height
+
+    def translate(self, dx: float, dy: float) -> None:
+        self._x += dx
+        self._y += dy
+
+    def copyFrom(self, other: 'RectangleF') -> None:
+        self._x, self._y, self._width, self._height = other.rect()
+
+    def left(self) -> float:
+        return self.x()
+
+    def right(self) -> float:
+        return self.x() + self.width()
+
+    def top(self) -> float:
+        return self.y()
+
+    def bottom(self) -> float:
+        return self.y() + self.height()
+
+    def centre(self) -> PointF:
+        x, y, width, height = self.rect()
+        return PointF(x + (width / 2), y + (height / 2))
+
+    def inflate(self, x: float, y: float) -> None:
+        currentX, currentY, currentWidth, currentHeight = self.rect()
+        self.setRect(
+            x=currentX - x,
+            y=currentY - y,
+            width=currentWidth + (x * 2),
+            height=currentHeight + (y * 2))
+
+    def intersectsWith(self, other: 'RectangleF') -> bool:
+        selfX, selfY, selfWidth, selfHeight = self.rect()
+        otherX, otherY, otherWidth, otherHeight = other.rect()
+        return (otherX < selfX + selfWidth) and \
+            (selfX < otherX + otherWidth) and \
+            (otherY < selfY + selfHeight) and \
+            (selfY < otherY + otherHeight)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if isinstance(other, RectangleF):
+            selfX, selfY, selfWidth, selfHeight = self.rect()
+            otherX, otherY, otherWidth, otherHeight = other.rect()
+            return selfX == otherX and selfY == otherY and\
+                selfHeight == otherHeight and selfWidth == otherWidth
+        return super().__eq__(other)
 
 class HighlightWorldPattern(object):
     class Field(enum.Enum):
@@ -314,7 +421,7 @@ class LabelStyle(object):
             self,
             rotation: float = 0,
             scale: typing.Optional[SizeF] = None,
-            translation: typing.Optional[AbstractPointF] = None,
+            translation: typing.Optional[PointF] = None,
             uppercase: bool = False,
             wrap: bool = False
             ) -> None: ...
@@ -323,19 +430,19 @@ class LabelStyle(object):
             self,
             rotation: float = 0,
             scale: typing.Optional[SizeF] = None,
-            translation: typing.Optional[AbstractPointF] = None,
+            translation: typing.Optional[PointF] = None,
             uppercase: bool = False,
             wrap: bool = False
             ) -> None:
         self.rotation = rotation
         self.scale = SizeF(scale) if scale else SizeF(width=1, height=1)
-        self.translation = AbstractPointF(translation) if translation else AbstractPointF()
+        self.translation = PointF(translation) if translation else PointF()
         self.uppercase = uppercase
         self.wrap = wrap
 
     def copyFrom(self, other: 'LabelStyle') -> None:
         self.rotation = other.rotation
         self.scale = SizeF(other.scale)
-        self.translation = AbstractPointF(other.translation)
+        self.translation = PointF(other.translation)
         self.uppercase = other.uppercase
         self.wrap = other.wrap

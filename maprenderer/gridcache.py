@@ -26,16 +26,16 @@ class GridCache(object):
         for px in range(-GridCache._Slop, parsecWidth + GridCache._Slop):
             yOffset = 0 if ((px % 2) != 0) else 0.5
             for py in range(-GridCache._Slop, parsecHeight + GridCache._Slop):
-                point1 = maprenderer.AbstractPointF(
+                point1 = maprenderer.PointF(
                     x=px + -travellermap.HexWidthOffset,
                     y=py + 0.5 + yOffset)
-                point2 = maprenderer.AbstractPointF(
+                point2 = maprenderer.PointF(
                     x=px + travellermap.HexWidthOffset,
                     y=py + 1.0 + yOffset)
-                point3 = maprenderer.AbstractPointF(
+                point3 = maprenderer.PointF(
                     x=px + 1.0 - travellermap.HexWidthOffset,
                     y=py + 1.0 + yOffset)
-                point4 = maprenderer.AbstractPointF(
+                point4 = maprenderer.PointF(
                     x=px + 1.0 + travellermap.HexWidthOffset,
                     y=py + 0.5 + yOffset)
 

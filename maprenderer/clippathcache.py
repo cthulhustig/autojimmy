@@ -73,7 +73,7 @@ class ClipPathCache(object):
         for x in range(0, travellermap.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._TopOffsets[i]
-                points.append(maprenderer.AbstractPointF(
+                points.append(maprenderer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 
@@ -85,7 +85,7 @@ class ClipPathCache(object):
                 count -= 1
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._RightOffsets[i]
-                points.append(maprenderer.AbstractPointF(
+                points.append(maprenderer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=(originY + y) + offsetY))
 
@@ -94,7 +94,7 @@ class ClipPathCache(object):
         for x in range(travellermap.SectorWidth - 1, -1, -2):
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._BottomOffsets[i]
-                points.append(maprenderer.AbstractPointF(
+                points.append(maprenderer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=(originY + y) + offsetY))
 
@@ -106,7 +106,7 @@ class ClipPathCache(object):
                 count -= 1
             for i in range(count):
                 offsetX, offsetY = ClipPathCache._LeftOffsets[i]
-                points.append(maprenderer.AbstractPointF(
+                points.append(maprenderer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 

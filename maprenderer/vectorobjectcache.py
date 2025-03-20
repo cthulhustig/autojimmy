@@ -18,9 +18,9 @@ class VectorObject(object):
             scaleY: float,
             nameX: float,
             nameY: float,
-            points: typing.Sequence[maprenderer.AbstractPointF],
+            points: typing.Sequence[maprenderer.PointF],
             types: typing.Optional[typing.Sequence[maprenderer.PathPointType]] = None,
-            bounds: typing.Optional[maprenderer.AbstractRectangleF] = None,
+            bounds: typing.Optional[maprenderer.RectangleF] = None,
             closed: bool = False,
             mapOptions: maprenderer.MapOptions = 0
             ) -> None:
@@ -39,19 +39,19 @@ class VectorObject(object):
         self.nameY = nameY
         self.closed = closed
         self.mapOptions = mapOptions
-        self._pathDataPoints = [maprenderer.AbstractPointF(p) for p in points]
+        self._pathDataPoints = [maprenderer.PointF(p) for p in points]
         self._pathDataTypes = list(types) if types else None
         self._minScale = None
         self._maxScale = None
-        self._cachedBounds = self._graphics.copyRectangle(bounds) if bounds else None
+        self._cachedBounds = maprenderer.RectangleF(bounds) if bounds else None
         self._cachedPath: typing.Optional[maprenderer.AbstractPath] = None
 
     @property
-    def pathDataPoints(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+    def pathDataPoints(self) -> typing.Sequence[maprenderer.PointF]:
         return self._pathDataPoints
 
     @property
-    def bounds(self) -> maprenderer.AbstractRectangleF:
+    def bounds(self) -> maprenderer.RectangleF:
         # Compute bounds if not already set
         if (not self._cachedBounds) and self.pathDataPoints:
             left = right = top = bottom = None
@@ -64,13 +64,13 @@ class VectorObject(object):
                     top = point.y()
                 if (not bottom) or (point.y() > bottom):
                     bottom = point.y()
-            self._cachedBounds = self._graphics.createRectangle(
+            self._cachedBounds = maprenderer.RectangleF(
                 x=left,
                 y=top,
                 width=right - left,
                 height=bottom - top)
         # TODO: Returning a copy is wasteful, is it needed?
-        return self._graphics.copyRectangle(self._cachedBounds) # Don't return internal copy
+        return maprenderer.RectangleF(self._cachedBounds) # Don't return internal copy
 
     @property
     def pathDataTypes(self) -> typing.List[int]:
@@ -99,7 +99,7 @@ class VectorObject(object):
     def draw(
             self,
             graphics: maprenderer.AbstractGraphics,
-            rect: maprenderer.AbstractRectangleF,
+            rect: maprenderer.RectangleF,
             pen: maprenderer.AbstractPen
             ) -> None:
         transformedBounds = self._transformedBounds()
@@ -112,7 +112,7 @@ class VectorObject(object):
     def drawName(
             self,
             graphics: maprenderer.AbstractGraphics,
-            rect: maprenderer.AbstractRectangleF,
+            rect: maprenderer.RectangleF,
             font: maprenderer.AbstractFont,
             textBrush: maprenderer.AbstractBrush,
             labelStyle: maprenderer.LabelStyle
@@ -139,7 +139,7 @@ class VectorObject(object):
                     brush=textBrush,
                     x=0, y=0)
 
-    def _transformedBounds(self) -> maprenderer.AbstractRectangleF:
+    def _transformedBounds(self) -> maprenderer.RectangleF:
         bounds = self.bounds
 
         # TODO: I think subtraction and multiply could be combined in
@@ -160,7 +160,7 @@ class VectorObject(object):
 
         return bounds
 
-    def _namePosition(self) -> maprenderer.AbstractPointF:
+    def _namePosition(self) -> maprenderer.PointF:
         bounds = self.bounds
         transformedBounds = self._transformedBounds()
         center = transformedBounds.centre()
@@ -293,7 +293,7 @@ class VectorObjectCache(object):
         bounds = None
         if xElement is not None and yElement is not None \
             and widthElement is not None and heightElement is not None:
-            bounds = self._graphics.createRectangle(
+            bounds = maprenderer.RectangleF(
                 x=float(xElement.text),
                 y=float(yElement.text),
                 width=float(widthElement.text),
@@ -311,7 +311,7 @@ class VectorObjectCache(object):
             if element is not None:
                 y = float(element.text)
 
-            points.append(maprenderer.AbstractPointF(x=x, y=y))
+            points.append(maprenderer.PointF(x=x, y=y))
 
         element = rootElement.find('./PathDataTypes')
         types = None

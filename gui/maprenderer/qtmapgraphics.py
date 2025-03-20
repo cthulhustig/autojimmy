@@ -4,104 +4,13 @@ import maprenderer
 import typing
 from PyQt5 import QtCore, QtGui
 
-# TODO: This (and PointF) could do with an offsetX, offsetY functions as there
-# are quite a few places that are having to do get x/y then set x/y with modifier
-class QtMapRectangleF(maprenderer.AbstractRectangleF):
-    @typing.overload
-    def __init__(self) -> None: ...
-    @typing.overload
-    def __init__(self, other: 'QtMapRectangleF') -> None: ...
-    @typing.overload
-    def __init__(self, x: float, y: float, width: float, height: float) -> None: ...
-
-    def __init__(self, *args, **kwargs) -> None:
-        if not args and not kwargs:
-            self._x = self._y = self._width = self._height = 0
-        elif len(args) + len(kwargs) == 1:
-            other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, QtMapRectangleF):
-                raise TypeError('The other parameter must be a QtMapRectangleF')
-            self._x, self._y, self._width, self._height = other.rect()
-        else:
-            self._x = float(args[0] if len(args) > 0 else kwargs['x'])
-            self._y = float(args[1] if len(args) > 1 else kwargs['y'])
-            self._width = float(args[2] if len(args) > 2 else kwargs['width'])
-            self._height = float(args[3] if len(args) > 3 else kwargs['height'])
-
-        self._qtRect: typing.Optional[QtCore.QRectF] = None
-
-    def x(self) -> float:
-        return self._x
-
-    def setX(self, x: float) -> None:
-        self._x = x
-        if self._qtRect:
-            self._qtRect.moveLeft(self._x)
-
-    def y(self) -> float:
-        return self._y
-
-    def setY(self, y: float) -> None:
-        self._y = y
-        if self._qtRect:
-            self._qtRect.moveTop(self._y)
-
-    def width(self) -> float:
-        return self._width
-
-    def setWidth(self, width: float) -> None:
-        self._width = width
-        if self._qtRect:
-            self._qtRect.setWidth(self._width)
-
-    def height(self) -> float:
-        return self._height
-
-    def setHeight(self, height: float) -> None:
-        self._height = height
-        if self._qtRect:
-            self._qtRect.setHeight(self._height)
-
-    def rect(self) -> typing.Tuple[int, int, int, int]: # (x, y, width, height)
-        return (self._x, self._y, self._width, self._height)
-
-    def setRect(self, x: float, y: float, width: float, height: float) -> None:
-        self._x = x
-        self._y = y
-        self._width = width
-        self._height = height
-        if self._qtRect:
-            self._qtRect.setCoords(
-                self._x,
-                self._y,
-                self._x + self._width,
-                self._y + self._height)
-
-    def translate(self, dx: float, dy: float) -> None:
-        self._x += dx
-        self._y += dy
-
-    def copyFrom(self, other: 'QtMapRectangleF') -> None:
-        self._x, self._y, self._width, self._height = other.rect()
-        if self._qtRect:
-            self._qtRect.setCoords(
-                self._x,
-                self._y,
-                self._x + self._width,
-                self._y + self._height)
-
-    def qtRect(self) -> QtCore.QRectF:
-        if not self._qtRect:
-            self._qtRect = QtCore.QRectF(self._x, self._y, self._width, self._height)
-        return self._qtRect
-
 class QtMapPointList(maprenderer.AbstractPath):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, other: 'QtMapPath') -> None: ...
     @typing.overload
-    def __init__(self, points: typing.Sequence[maprenderer.AbstractPointF]) -> None: ...
+    def __init__(self, points: typing.Sequence[maprenderer.PointF]) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if len(args) == 1:
@@ -119,13 +28,13 @@ class QtMapPointList(maprenderer.AbstractPath):
             self._points = list(kwargs['points'])
 
         # These are created on demand
-        self._bounds: typing.Optional[maprenderer.AbstractRectangleF] = None
+        self._bounds: typing.Optional[maprenderer.RectangleF] = None
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
-    def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+    def points(self) -> typing.Sequence[maprenderer.PointF]:
         return self._points
 
-    def bounds(self) -> maprenderer.AbstractRectangleF:
+    def bounds(self) -> maprenderer.RectangleF:
         if self._bounds is not None:
             return self._bounds
 
@@ -140,7 +49,7 @@ class QtMapPointList(maprenderer.AbstractPath):
             if maxY is None or point.y() > maxY:
                 maxY = point.y()
 
-        self._bounds = QtMapRectangleF(
+        self._bounds = maprenderer.RectangleF(
             x=minX,
             y=minY,
             width=maxX - minX,
@@ -174,13 +83,13 @@ class QtMapPath(maprenderer.AbstractPath):
     @typing.overload
     def __init__(
         self,
-        points: typing.Sequence[maprenderer.AbstractPointF],
+        points: typing.Sequence[maprenderer.PointF],
         types: typing.Sequence[maprenderer.PathPointType],
         closed: bool) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self._points: typing.List[maprenderer.AbstractPointF] = []
+            self._points: typing.List[maprenderer.PointF] = []
             self._types: typing.List[maprenderer.PathPointType] = []
             self._closed = False
         elif len(args) + len(kwargs) == 1:
@@ -198,10 +107,10 @@ class QtMapPath(maprenderer.AbstractPath):
                 raise ValueError('Point and type vectors have different lengths')
 
         # These are created on demand
-        self._bounds: typing.Optional[maprenderer.AbstractRectangleF] = None
+        self._bounds: typing.Optional[maprenderer.RectangleF] = None
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
-    def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+    def points(self) -> typing.Sequence[maprenderer.PointF]:
         return self._points
 
     def types(self) -> typing.Sequence[maprenderer.PathPointType]:
@@ -210,7 +119,7 @@ class QtMapPath(maprenderer.AbstractPath):
     def closed(self) -> bool:
         return self._closed
 
-    def bounds(self) -> maprenderer.AbstractRectangleF:
+    def bounds(self) -> maprenderer.RectangleF:
         if self._bounds is not None:
             return self._bounds
 
@@ -225,7 +134,7 @@ class QtMapPath(maprenderer.AbstractPath):
             if maxY is None or point.y() > maxY:
                 maxY = point.y()
 
-        self._bounds = QtMapRectangleF(
+        self._bounds = maprenderer.RectangleF(
             x=minX,
             y=minY,
             width=maxX - minX,
@@ -305,7 +214,7 @@ class QtMapMatrix(maprenderer.AbstractMatrix):
     def invert(self) -> None:
         self._qtMatrix, _ = self._qtMatrix.inverted()
 
-    def rotatePrepend(self, degrees: float, center: maprenderer.AbstractPointF) -> None:
+    def rotatePrepend(self, degrees: float, center: maprenderer.PointF) -> None:
         if degrees == 0.0:
             return # Nothing to do
         self.translatePrepend(dx=-center.x(), dy=-center.y())
@@ -334,9 +243,9 @@ class QtMapMatrix(maprenderer.AbstractMatrix):
     def prepend(self, matrix: 'QtMapMatrix') -> None:
         self._qtMatrix = matrix.qtTransform() * self._qtMatrix
 
-    def transform(self, point: maprenderer.AbstractPointF) -> maprenderer.AbstractPointF:
+    def transform(self, point: maprenderer.PointF) -> maprenderer.PointF:
         qtPoint = self._qtMatrix.map(QtCore.QPointF(point.x(), point.y()))
-        return maprenderer.AbstractPointF(qtPoint.x(), qtPoint.y())
+        return maprenderer.PointF(qtPoint.x(), qtPoint.y())
 
     def qtTransform(self) -> QtGui.QTransform:
         return self._qtMatrix
@@ -662,20 +571,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
         return self._supportsWingdings
 
-    def createRectangle(
-            self,
-            x: float = 0,
-            y: float = 0,
-            width: float = 0,
-            height: float = 0
-            ) -> QtMapRectangleF:
-        return QtMapRectangleF(x=x, y=y, width=width, height=height)
-    def copyRectangle(self, other: maprenderer.AbstractRectangleF) -> QtMapRectangleF:
-        return QtMapRectangleF(other=other)
-
     def createPointList(
             self,
-            points: typing.Sequence[maprenderer.AbstractPointF]
+            points: typing.Sequence[maprenderer.PointF]
             ) -> QtMapPointList:
         return QtMapPointList(points=points)
     def copyPointList(self, other: maprenderer.AbstractPath) -> QtMapPointList:
@@ -683,7 +581,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def createPath(
             self,
-            points: typing.Sequence[maprenderer.AbstractPointF],
+            points: typing.Sequence[maprenderer.PointF],
             types: typing.Sequence[maprenderer.PathPointType],
             closed: bool
             ) -> QtMapPath:
@@ -786,16 +684,16 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         if not currentClip.isEmpty():
             newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
-    def intersectClipRect(self, rect: QtMapRectangleF) -> None:
+    def intersectClipRect(self, rect: maprenderer.RectangleF) -> None:
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
-        newClip.addRect(rect.qtRect())
+        newClip.addRect(QtCore.QRectF(*rect.rect()))
         currentClip = self._painter.clipPath()
         if not currentClip.isEmpty():
             newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
-    def drawPoint(self, point: maprenderer.AbstractPointF, pen: QtMapPen) -> None:
+    def drawPoint(self, point: maprenderer.PointF, pen: QtMapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
     def drawPoints(self, points: QtMapPointList, pen: QtMapPen) -> None:
@@ -804,8 +702,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def drawLine(
             self,
-            pt1: maprenderer.AbstractPointF,
-            pt2: maprenderer.AbstractPointF,
+            pt1: maprenderer.PointF,
+            pt2: maprenderer.PointF,
             pen: QtMapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
@@ -844,27 +742,27 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def drawRectangle(
             self,
-            rect: QtMapRectangleF,
+            rect: maprenderer.RectangleF,
             pen: typing.Optional[QtMapPen] = None,
             brush: typing.Optional[QtMapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
-        self._painter.drawRect(rect.qtRect())
+        self._painter.drawRect(QtCore.QRectF(*rect.rect()))
 
     def drawEllipse(
             self,
-            rect: QtMapRectangleF,
+            rect: maprenderer.RectangleF,
             pen: typing.Optional[QtMapPen] = None,
             brush: typing.Optional[QtMapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
-        self._painter.drawEllipse(rect.qtRect())
+        self._painter.drawEllipse(QtCore.QRectF(*rect.rect()))
 
     def drawArc(
             self,
-            rect: QtMapRectangleF,
+            rect: maprenderer.RectangleF,
             startDegrees: float,
             sweepDegrees: float,
             pen: QtMapPen
@@ -872,29 +770,29 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         self._painter.setPen(pen.qtPen())
         # NOTE: Angles are in 1/16th of a degree
         self._painter.drawArc(
-            rect.qtRect(),
+            QtCore.QRectF(*rect.rect()),
             int((startDegrees * 16) + 0.5),
             int((sweepDegrees * 16) + 0.5))
 
     def drawImage(
             self,
             image: QtMapImage,
-            rect: QtMapRectangleF
+            rect: maprenderer.RectangleF
             ) -> None:
         self._painter.drawImage(
-            rect.qtRect(),
+            QtCore.QRectF(*rect.rect()),
             image.qtImage())
     def drawImageAlpha(
             self,
             alpha: float,
             image: QtMapImage,
-            rect: QtMapRectangleF
+            rect: maprenderer.RectangleF
             ) -> None:
         oldAlpha = self._painter.opacity()
         self._painter.setOpacity(alpha)
         try:
             self._painter.drawImage(
-                rect.qtRect(),
+                QtCore.QRectF(*rect.rect()),
                 image.qtImage())
         finally:
             self._painter.setOpacity(oldAlpha)
@@ -987,11 +885,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def restore(self) -> None:
         self._painter.restore()
 
-    def _convertPoint(self, point: maprenderer.AbstractPointF) -> QtCore.QPointF:
+    def _convertPoint(self, point: maprenderer.PointF) -> QtCore.QPointF:
         return QtCore.QPointF(point.x(), point.y())
 
     def _convertPoints(
             self,
-            points: typing.Sequence[maprenderer.AbstractPointF]
+            points: typing.Sequence[maprenderer.PointF]
             ) -> typing.Sequence[QtCore.QPointF]:
         return [QtCore.QPointF(p.x(), p.y()) for p in points]

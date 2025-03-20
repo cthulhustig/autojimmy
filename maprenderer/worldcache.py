@@ -31,7 +31,7 @@ class WorldInfo(object):
             hexY=int((worldHex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
 
         hexCenterX, hexCenterY = worldHex.absoluteCenter()
-        self.hexCenter = maprenderer.AbstractPointF(x=hexCenterX, y=hexCenterY)
+        self.hexCenter = maprenderer.PointF(x=hexCenterX, y=hexCenterY)
 
         uwp = world.uwp()
         self.uwpString = uwp.string()
@@ -58,7 +58,7 @@ class WorldInfo(object):
             self.asteroidRectangles = []
             for i in range(len(WorldInfo._AsteroidXPositions)):
                 if rand.random() < WorldInfo._AsteroidRadii[i]:
-                    self.asteroidRectangles.append(graphics.createRectangle(
+                    self.asteroidRectangles.append(maprenderer.RectangleF(
                         x=WorldInfo._AsteroidXPositions[i] * 0.035,
                         y=WorldInfo._AsteroidYPositions[i] * 0.035,
                         width=0.04 + rand.random() * 0.03,

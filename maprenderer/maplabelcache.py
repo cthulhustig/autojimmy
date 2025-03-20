@@ -9,11 +9,11 @@ class MapLabel(object):
     def __init__(
             self,
             text: str,
-            position: maprenderer.AbstractPointF,
+            position: maprenderer.PointF,
             minor: bool = False
             ) -> None:
         self.text = text
-        self.position = maprenderer.AbstractPointF(position)
+        self.position = maprenderer.PointF(position)
         self.minor = minor
 
 class MapLabelCache(object):
@@ -34,6 +34,6 @@ class MapLabelCache(object):
         for data in rows:
             labels.append(MapLabel(
                 text=data['Text'].replace('\\n', '\n'),
-                position=maprenderer.AbstractPointF(x=float(data['X']), y=float(data['Y'])),
+                position=maprenderer.PointF(x=float(data['X']), y=float(data['Y'])),
                 minor=common.stringToBool(data['Minor'], strict=False)))
         return labels

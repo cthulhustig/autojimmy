@@ -2,81 +2,10 @@ import enum
 import maprenderer
 import typing
 
-# TODO: I'm in two minds if this should be an abstract object. I don't think
-# it has the same perf advantages as when dealing with more complex structures
-# (it might even be slower due to all the if checks in the implementation)
-# TODO: This (and PointF) could do with an offsetX, offsetY functions as there
-# are quite a few places that are having to do get x/y then set x/y with modifier
-class AbstractRectangleF(object):
-    def x(self) -> float:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement x')
-    def setX(self, x: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement setX')
-    def y(self) -> float:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement y')
-    def setY(self, y: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement setY')
-    def width(self) -> float:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement width')
-    def setWidth(self, width: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement setWidth')
-    def height(self) -> float:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement height')
-    def setHeight(self, height: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement setHeight')
-    def rect(self) -> typing.Tuple[int, int, int, int]: # (x, y, width, height)
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement rect')
-    def setRect(self, x: float, y: float, width: float, height: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement setRect')
-    def translate(self, dx: float, dy: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement translate')
-    def copyFrom(self, other: 'AbstractRectangleF') -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractRectangleF so must implement copyFrom')
-
-    def left(self) -> float:
-        return self.x()
-
-    def right(self) -> float:
-        return self.x() + self.width()
-
-    def top(self) -> float:
-        return self.y()
-
-    def bottom(self) -> float:
-        return self.y() + self.height()
-
-    def centre(self) -> maprenderer.AbstractPointF:
-        x, y, width, height = self.rect()
-        return maprenderer.AbstractPointF(x + (width / 2), y + (height / 2))
-
-    def inflate(self, x: float, y: float) -> None:
-        currentX, currentY, currentWidth, currentHeight = self.rect()
-        self.setRect(
-            x=currentX - x,
-            y=currentY - y,
-            width=currentWidth + (x * 2),
-            height=currentHeight + (y * 2))
-
-    def intersectsWith(self, other: 'AbstractRectangleF') -> bool:
-        selfX, selfY, selfWidth, selfHeight = self.rect()
-        otherX, otherY, otherWidth, otherHeight = other.rect()
-        return (otherX < selfX + selfWidth) and \
-            (selfX < otherX + otherWidth) and \
-            (otherY < selfY + selfHeight) and \
-            (selfY < otherY + otherHeight)
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, AbstractRectangleF):
-            selfX, selfY, selfWidth, selfHeight = self.rect()
-            otherX, otherY, otherWidth, otherHeight = other.rect()
-            return selfX == otherX and selfY == otherY and\
-                selfHeight == otherHeight and selfWidth == otherWidth
-        return super().__eq__(other)
-
 class AbstractPointList(object):
-    def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+    def points(self) -> typing.Sequence[maprenderer.PointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement points')
-    def bounds(self) -> AbstractRectangleF:
+    def bounds(self) -> maprenderer.RectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement bounds')
     def translate(self, dx: float, dy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement translate')
@@ -84,13 +13,13 @@ class AbstractPointList(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement copyFrom')
 
 class AbstractPath(object):
-    def points(self) -> typing.Sequence[maprenderer.AbstractPointF]:
+    def points(self) -> typing.Sequence[maprenderer.PointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
     def types(self) -> typing.Sequence[maprenderer.PathPointType]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement types')
     def closed(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
-    def bounds(self) -> AbstractRectangleF:
+    def bounds(self) -> maprenderer.RectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement bounds')
     def translate(self, dx: float, dy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement translate')
@@ -114,7 +43,7 @@ class AbstractMatrix(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement isIdentity')
     def invert(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement invert')
-    def rotatePrepend(self, degrees: float, center: maprenderer.AbstractPointF) -> None:
+    def rotatePrepend(self, degrees: float, center: maprenderer.PointF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement rotatePrepend')
     def scalePrepend(self, sx: float, sy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement scalePrepend')
@@ -122,7 +51,7 @@ class AbstractMatrix(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement translatePrepend')
     def prepend(self, matrix: 'AbstractMatrix') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
-    def transform(self, point: maprenderer.AbstractPointF) -> maprenderer.AbstractPointF:
+    def transform(self, point: maprenderer.PointF) -> maprenderer.PointF:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
 
 class AbstractBrush(object):
@@ -203,14 +132,9 @@ class AbstractGraphics(object):
     def supportsWingdings(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement supportsWingdings')
 
-    def createRectangle(self, x: float = 0, y: float = 0, width: float = 0, height: float = 0) -> AbstractRectangleF:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createRectangle')
-    def copyRectangle(self, other: AbstractRectangleF) -> AbstractRectangleF:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyRectangle')
-
     def createPointList(
             self,
-            points: typing.Sequence[maprenderer.AbstractPointF]
+            points: typing.Sequence[maprenderer.PointF]
             ) -> AbstractPointList:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPointList')
     def copyPointList(self, other: AbstractPointList) -> AbstractPointList:
@@ -218,7 +142,7 @@ class AbstractGraphics(object):
 
     def createPath(
             self,
-            points: typing.Sequence[maprenderer.AbstractPointF],
+            points: typing.Sequence[maprenderer.PointF],
             types: typing.Sequence[maprenderer.PathPointType],
             closed: bool
             ) -> AbstractPath:
@@ -285,18 +209,18 @@ class AbstractGraphics(object):
 
     def intersectClipPath(self, clip: AbstractPath) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
-    def intersectClipRect(self, rect: AbstractRectangleF) -> None:
+    def intersectClipRect(self, rect: maprenderer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
 
-    def drawPoint(self, point: maprenderer.AbstractPointF, pen: AbstractPen) -> None:
+    def drawPoint(self, point: maprenderer.PointF, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
     def drawPoints(self, points: AbstractPointList, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoints')
 
     def drawLine(
             self,
-            pt1: maprenderer.AbstractPointF,
-            pt2: maprenderer.AbstractPointF,
+            pt1: maprenderer.PointF,
+            pt2: maprenderer.PointF,
             pen: AbstractPen
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLine')
@@ -317,7 +241,7 @@ class AbstractGraphics(object):
 
     def drawRectangle(
             self,
-            rect: AbstractRectangleF,
+            rect: maprenderer.RectangleF,
             pen: typing.Optional[AbstractPen] = None,
             brush: typing.Optional[AbstractBrush] = None
             ) -> None:
@@ -325,7 +249,7 @@ class AbstractGraphics(object):
 
     def drawEllipse(
             self,
-            rect: AbstractRectangleF,
+            rect: maprenderer.RectangleF,
             pen: typing.Optional[AbstractPen] = None,
             brush: typing.Optional[AbstractBrush] = None
             ) -> None:
@@ -333,16 +257,16 @@ class AbstractGraphics(object):
 
     def drawArc(
             self,
-            rect: AbstractRectangleF,
+            rect: maprenderer.RectangleF,
             startDegrees: float,
             sweepDegrees: float,
             pen: AbstractPen
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
 
-    def drawImage(self, image: AbstractImage, rect: AbstractRectangleF) -> None:
+    def drawImage(self, image: AbstractImage, rect: maprenderer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImage')
-    def drawImageAlpha(self, alpha: float, image: AbstractImage, rect: AbstractRectangleF) -> None:
+    def drawImageAlpha(self, alpha: float, image: AbstractImage, rect: maprenderer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImageAlpha')
 
     def measureString(self, text: str, font: AbstractFont) -> typing.Tuple[float, float]: # (width, height)

@@ -12,13 +12,13 @@ class WorldLabel(object):
             self,
             name: str,
             mapOptions: maprenderer.MapOptions,
-            location: maprenderer.AbstractPointF,
+            location: maprenderer.PointF,
             labelBiasX: int = 0,
             labelBiasY: int = 0,
             ) -> None:
         self.name = name
         self.mapOptions = mapOptions
-        self.location = maprenderer.AbstractPointF(location)
+        self.location = maprenderer.PointF(location)
         self.labelBiasX = labelBiasX
         self.labelBiasY = labelBiasY
 
@@ -31,7 +31,7 @@ class WorldLabel(object):
             labelBrush: maprenderer.AbstractBrush,
             labelFont: maprenderer.AbstractFont
             ) -> None:
-        pt = maprenderer.AbstractPointF(self.location)
+        pt = maprenderer.PointF(self.location)
 
         with graphics.save():
             graphics.translateTransform(dx=pt.x(), dy=pt.y())
@@ -45,7 +45,7 @@ class WorldLabel(object):
             graphics.drawEllipse(
                 # TODO: This radius is static so rect could be created
                 # once rather than every frame
-                rect=graphics.createRectangle(
+                rect=maprenderer.RectangleF(
                     x=-radius / 2,
                     y=-radius / 2,
                     width=radius,
@@ -124,7 +124,7 @@ class WorldLabelCache(object):
                     raise RuntimeError('Location element has no Hex attribute')
                 location = traveller.WorldManager.instance().sectorHexToPosition(f'{sector} {hex}')
                 centerX, centerY = location.absoluteCenter()
-                location = maprenderer.AbstractPointF(x=centerX, y=centerY)
+                location = maprenderer.PointF(x=centerX, y=centerY)
 
                 biasXElement = worldElement.find('./LabelBiasX')
                 biasX = 1 # Default comes from traveller map default

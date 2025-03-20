@@ -24,7 +24,7 @@ class SectorPath(object):
     def style(self) -> typing.Optional[maprenderer.LineStyle]:
         return self._style
 
-    def bounds(self) -> maprenderer.AbstractRectangleF:
+    def bounds(self) -> maprenderer.RectangleF:
         return self._path.bounds()
 
 class SectorLines(object):
@@ -112,7 +112,7 @@ class SectorCache(object):
         for world in sector.worlds():
             hex = world.hex()
             centerX, centerY = hex.absoluteCenter()
-            points.append(maprenderer.AbstractPointF(
+            points.append(maprenderer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
                 x=centerX * travellermap.ParsecScaleX,
                 y=centerY * travellermap.ParsecScaleY))
@@ -188,7 +188,7 @@ class SectorCache(object):
                 typing.Optional[maprenderer.LineStyle], # Line style
                 typing.Optional[str], # Type
                 typing.Optional[str]], # Allegiance
-            typing.List[maprenderer.AbstractPointF]] = {}
+            typing.List[maprenderer.PointF]] = {}
         for route in sector.routes():
             # Compute source/target sectors (may be offset)
             startPoint = route.startHex()
@@ -203,10 +203,10 @@ class SectorCache(object):
                 (startPoint, endPoint) = (endPoint, startPoint)
 
             centerX, centerY = startPoint.absoluteCenter()
-            startPoint = maprenderer.AbstractPointF(x=centerX, y=centerY)
+            startPoint = maprenderer.PointF(x=centerX, y=centerY)
 
             centerX, centerY = endPoint.absoluteCenter()
-            endPoint = maprenderer.AbstractPointF(x=centerX, y=centerY)
+            endPoint = maprenderer.PointF(x=centerX, y=centerY)
 
             # Shorten line to leave room for world glyph
             SectorCache._offsetRouteSegment(
@@ -261,7 +261,7 @@ class SectorCache(object):
         outline = source.absoluteOutline()
         drawPath = []
         for x, y in outline:
-            drawPath.append(maprenderer.AbstractPointF(x=x, y=y))
+            drawPath.append(maprenderer.PointF(x=x, y=y))
         types = [maprenderer.PathPointType.Start]
         for _ in range(len(outline) - 1):
             types.append(maprenderer.PathPointType.Line)
@@ -272,8 +272,8 @@ class SectorCache(object):
 
     @staticmethod
     def _offsetRouteSegment(
-            startPoint: maprenderer.AbstractPointF,
-            endPoint: maprenderer.AbstractPointF,
+            startPoint: maprenderer.PointF,
+            endPoint: maprenderer.PointF,
             offset: float
             ) -> None:
         dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX

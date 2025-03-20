@@ -19,7 +19,7 @@ class RectSelector(object):
         self._sectorSlop = sectorSlop
         self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
-        self._rect = self._graphics.createRectangle()
+        self._rect = maprenderer.RectangleF()
 
         self._tightSectors: typing.Optional[typing.List[traveller.Sector]] = None
         self._sloppySectors: typing.Optional[typing.List[traveller.Sector]] = None
@@ -30,11 +30,11 @@ class RectSelector(object):
         self._tightWorlds: typing.Optional[typing.List[traveller.World]] = None
         self._sloppyWorlds: typing.Optional[typing.List[traveller.World]] = None
 
-    def rect(self) -> maprenderer.AbstractRectangleF:
-        return self._graphics.copyRectangle(self._rect)
+    def rect(self) -> maprenderer.RectangleF:
+        return maprenderer.RectangleF(self._rect)
 
-    def setRect(self, rect: maprenderer.AbstractRectangleF) -> None:
-        self._rect = self._graphics.copyRectangle(rect)
+    def setRect(self, rect: maprenderer.RectangleF) -> None:
+        self._rect = maprenderer.RectangleF(rect)
         self._tightSectors = self._sloppySectors = None
         self._tightSubsectors = self._sloppySubsectors = None
         self._tightWorlds = self._sloppyWorlds = None
@@ -65,7 +65,7 @@ class RectSelector(object):
         if sectors is not None:
             return sectors
 
-        sloppyRect = self._graphics.copyRectangle(self._rect)
+        sloppyRect = maprenderer.RectangleF(self._rect)
         if self._sectorSlop:
             sloppyRect.inflate(
                 x=self._sectorSlop * travellermap.SectorWidth,
@@ -92,7 +92,7 @@ class RectSelector(object):
             self._tightSectors = self._sloppySectors
 
         if tight and self._tightSectors is None:
-            rect = self._graphics.createRectangle()
+            rect = maprenderer.RectangleF()
             self._tightSectors = []
             for sector in self._sloppySectors:
                 left, top, width, height = travellermap.sectorBoundingRect(
@@ -112,7 +112,7 @@ class RectSelector(object):
         if subsectors is not None:
             return subsectors
 
-        sloppyRect = self._graphics.copyRectangle(self._rect)
+        sloppyRect = maprenderer.RectangleF(self._rect)
         if self._subsectorSlop:
             sloppyRect.inflate(
                 x=self._subsectorSlop * travellermap.SubsectorWidth,
@@ -132,7 +132,7 @@ class RectSelector(object):
             self._tightSubsectors = self._sloppySubsectors
 
         if tight and self._tightSubsectors is None:
-            rect = self._graphics.createRectangle()
+            rect = maprenderer.RectangleF()
             self._tightSubsectors = []
             for subsector in self._sloppySubsectors:
                 left, top, width, height = travellermap.subsectorBoundingRect(
@@ -154,7 +154,7 @@ class RectSelector(object):
         if worlds is not None:
             return worlds
 
-        rect = self._graphics.copyRectangle(self._rect)
+        rect = maprenderer.RectangleF(self._rect)
         if self._worldSlop:
             rect.inflate(x=self._worldSlop, y=self._worldSlop)
 
@@ -172,7 +172,7 @@ class RectSelector(object):
             self._tightWorlds = self._sloppyWorlds
 
         if tight and self._tightWorlds is None:
-            rect = self._graphics.createRectangle()
+            rect = maprenderer.RectangleF()
             self._tightWorlds = []
             for world in self._sloppyWorlds:
                 left, top, width, height = travellermap.hexBoundingRect(

@@ -50,7 +50,7 @@ class StarfieldCache(object):
         count = rand.randrange(StarfieldCache._MinStarsPerChunk, StarfieldCache._MaxStarsPerChunk)
         points = []
         for _ in range(count):
-            point = maprenderer.AbstractPointF(
+            point = maprenderer.PointF(
                 x=rand.random() * StarfieldCache._ChunkParsecSize,
                 y=rand.random() * StarfieldCache._ChunkParsecSize)
             intensity = rand.randrange(1, StarfieldCache._IntensitySteps)
