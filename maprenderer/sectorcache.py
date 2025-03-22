@@ -29,6 +29,8 @@ class SectorPath(object):
     def style(self) -> typing.Optional[maprenderer.LineStyle]:
         return self._style
 
+    # TODO: This shouldn't be hear now as it's ambiguous if it's for
+    # the path or the spline.
     def bounds(self) -> maprenderer.RectangleF:
         return self._path.bounds()
 
@@ -72,6 +74,9 @@ class SectorLines(object):
 class SectorCache(object):
     # This was moved from the style sheet as it never actually changes
     _RouteEndAdjust = 0.25
+
+    # This comes from the Traveller Map DrawMicroBorders code
+    _SplineTension = 0.6
 
     def __init__(
             self,
@@ -272,8 +277,14 @@ class SectorCache(object):
         for _ in range(len(outline) - 1):
             types.append(maprenderer.PathPointType.Line)
         types[-1] |= maprenderer.PathPointType.CloseSubpath
-        path = self._graphics.createPath(points=drawPath, types=types, closed=True)
-        spline = self._graphics.createSpline(points=drawPath, tension=0.6, closed=True)
+        path = self._graphics.createPath(
+            points=drawPath,
+            types=types,
+            closed=True)
+        spline = self._graphics.createSpline(
+            points=drawPath,
+            tension=SectorCache._SplineTension,
+            closed=True)
 
         return SectorPath(path=path, spline=spline, color=color, style=style)
 
