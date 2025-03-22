@@ -272,8 +272,8 @@ class RectangleF(object):
         else:
             self._x = args[0] if len(args) > 0 else kwargs['x']
             self._y = args[1] if len(args) > 1 else kwargs['y']
-            self._width = args[0] if len(args) > 0 else kwargs['width']
-            self._height = args[1] if len(args) > 1 else kwargs['height']
+            self._width = args[2] if len(args) > 2 else kwargs['width']
+            self._height = args[3] if len(args) > 3 else kwargs['height']
 
     def x(self) -> float:
         return self._x
