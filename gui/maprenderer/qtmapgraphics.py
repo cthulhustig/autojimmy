@@ -1,5 +1,6 @@
 import common
 import gui
+import math
 import maprenderer
 import typing
 from PyQt5 import QtCore, QtGui
@@ -16,7 +17,9 @@ class QtMapPointList(maprenderer.AbstractPath):
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, QtMapPointList):
-                self._points = list(arg.points())
+                # NOTE: This assumes the points method return a copy of
+                # the list held by other not the list itself
+                self._points = arg.points()
             else:
                 self._points = list(arg)
         elif 'other' in kwargs:
@@ -32,29 +35,27 @@ class QtMapPointList(maprenderer.AbstractPath):
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[maprenderer.PointF]:
-        return self._points
+        return list(self._points)
 
     def bounds(self) -> maprenderer.RectangleF:
-        if self._bounds is not None:
-            return self._bounds
+        if self._bounds is None:
+            minX = maxX = minY = maxY = None
+            for point in self._points:
+                if minX is None or point.x() < minX:
+                    minX = point.x()
+                if maxX is None or point.x() > maxX:
+                    maxX = point.x()
+                if minY is None or point.y() < minY:
+                    minY = point.y()
+                if maxY is None or point.y() > maxY:
+                    maxY = point.y()
+            self._bounds = maprenderer.RectangleF(
+                x=minX,
+                y=minY,
+                width=maxX - minX,
+                height=maxY - minY)
 
-        minX = maxX = minY = maxY = None
-        for point in self._points:
-            if minX is None or point.x() < minX:
-                minX = point.x()
-            if maxX is None or point.x() > maxX:
-                maxX = point.x()
-            if minY is None or point.y() < minY:
-                minY = point.y()
-            if maxY is None or point.y() > maxY:
-                maxY = point.y()
-
-        self._bounds = maprenderer.RectangleF(
-            x=minX,
-            y=minY,
-            width=maxX - minX,
-            height=maxY - minY)
-        return self._bounds
+        return maprenderer.RectangleF(self._bounds)
 
     def translate(self, dx: float, dy: float) -> None:
         for point in self._points:
@@ -64,8 +65,10 @@ class QtMapPointList(maprenderer.AbstractPath):
         if self._qtPolygon:
             self._qtPolygon.translate(dx, dy)
 
-    def copyFrom(self, other: 'QtMapPath') -> None:
-        self._points = list(other.points())
+    def copyFrom(self, other: 'QtMapPointList') -> None:
+        # NOTE: This assumes the points method return a copy of
+        # the list held by other not the list itself
+        self._points = other.points()
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
 
@@ -96,8 +99,10 @@ class QtMapPath(maprenderer.AbstractPath):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, QtMapPath):
                 raise TypeError('The other parameter must be a QtMapPath')
-            self._points = list(other.points())
-            self._types = list(other.types())
+            # NOTE: This assumes the points and types methods return copies of
+            # the lists held by other not the lists themselves
+            self._points = other.points()
+            self._types = other.types()
             self._closed = other.closed()
         else:
             self._points = list(args[0] if len(args) > 0 else kwargs['points'])
@@ -111,35 +116,33 @@ class QtMapPath(maprenderer.AbstractPath):
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
     def points(self) -> typing.Sequence[maprenderer.PointF]:
-        return self._points
+        return list(self._points)
 
     def types(self) -> typing.Sequence[maprenderer.PathPointType]:
-        return self._types
+        return list(self._types)
 
     def closed(self) -> bool:
         return self._closed
 
     def bounds(self) -> maprenderer.RectangleF:
-        if self._bounds is not None:
-            return self._bounds
+        if self._bounds is None:
+            minX = maxX = minY = maxY = None
+            for point in self._points:
+                if minX is None or point.x() < minX:
+                    minX = point.x()
+                if maxX is None or point.x() > maxX:
+                    maxX = point.x()
+                if minY is None or point.y() < minY:
+                    minY = point.y()
+                if maxY is None or point.y() > maxY:
+                    maxY = point.y()
+            self._bounds = maprenderer.RectangleF(
+                x=minX,
+                y=minY,
+                width=maxX - minX,
+                height=maxY - minY)
 
-        minX = maxX = minY = maxY = None
-        for point in self._points:
-            if minX is None or point.x() < minX:
-                minX = point.x()
-            if maxX is None or point.x() > maxX:
-                maxX = point.x()
-            if minY is None or point.y() < minY:
-                minY = point.y()
-            if maxY is None or point.y() > maxY:
-                maxY = point.y()
-
-        self._bounds = maprenderer.RectangleF(
-            x=minX,
-            y=minY,
-            width=maxX - minX,
-            height=maxY - minY)
-        return self._bounds
+        return maprenderer.RectangleF(self._bounds)
 
     def translate(self, dx: float, dy: float) -> None:
         for point in self._points:
@@ -150,8 +153,10 @@ class QtMapPath(maprenderer.AbstractPath):
             self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'QtMapPath') -> None:
-        self._points = list(other.points())
-        self._types = list(other.types())
+        # NOTE: This assumes the points and types methods return copies of
+        # the lists held by other not the lists themselves
+        self._points = other.points()
+        self._types = other.types()
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
@@ -161,6 +166,162 @@ class QtMapPath(maprenderer.AbstractPath):
             self._qtPolygon = QtGui.QPolygonF(
                 [QtCore.QPointF(p.x(), p.y()) for p in self._points])
         return self._qtPolygon
+
+class QtMapSpline(object):
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'QtMapSpline') -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        points: typing.Sequence[maprenderer.PointF],
+        tension: float,
+        closed: bool) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if not args and not kwargs:
+            self._points: typing.List[maprenderer.PointF] = []
+            self._tension = 0
+            self._closed = False
+        elif len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, QtMapSpline):
+                raise TypeError('The other parameter must be a QtMapSpline')
+            # NOTE: This assumes the points methods return copies of
+            # the list held by other not the list themselves
+            self._points = other.points()
+            self._tension = other.tension()
+            self._closed = other.closed()
+        else:
+            self._points = list(args[0] if len(args) > 0 else kwargs['points'])
+            self._tension = float(args[1] if len(args) > 1 else kwargs['tension'])
+            self._closed = bool(args[2] if len(args) > 2 else kwargs['closed'])
+
+        # These are created on demand
+        self._bounds: typing.Optional[maprenderer.RectangleF] = None
+        self._qtPainterPath: typing.Optional[QtGui.QPainterPath] = None
+
+    def points(self) -> typing.Sequence[maprenderer.PointF]:
+        return list(self._points)
+
+    def tension(self) -> float:
+        return self._tension
+
+    def closed(self) -> bool:
+        return self._closed
+
+    def bounds(self) -> maprenderer.RectangleF:
+        if self._bounds is None:
+            # Calculating the bounds of a spline is way to hard for my feeble brain
+            # so just get Qt to do it
+            qtPainterPath = self.qtPainterPath()
+            qtRect = qtPainterPath.boundingRect()
+            self._bounds = maprenderer.RectangleF(
+                x=qtRect.left(),
+                y=qtRect.right(),
+                width=qtRect.width(),
+                height=qtRect.height())
+
+        return maprenderer.RectangleF(self._bounds)
+
+    def translate(self, dx: float, dy: float) -> None:
+        for point in self._points:
+            point.translate(dx, dy)
+        if self._bounds:
+            self._bounds.translate(dx, dy)
+        if self._qtPainterPath:
+            self._qtPainterPath.translate(dx, dy)
+
+    def copyFrom(self, other: 'QtMapPath') -> None:
+        # NOTE: This assumes the points methods return copies of
+        # the list held by other not the list themselves
+        self._points = other.points()
+        self._closed = other.closed()
+        self._bounds = None # Calculate on demand
+        self._qtPainterPath = None
+
+    # Conversion of the Traveller Map Cardinal Spline to cubicTo calls
+    # is based on this post
+    # https://stackoverflow.com/questions/56528436/whats-the-best-way-to-implement-interactive-spline-like-curve-on-qgraphicsview
+    def qtPainterPath(self) -> QtGui.QPainterPath:
+        if not self._qtPainterPath:
+            self._createSpline()
+        return self._qtPainterPath
+
+    def _createSpline(self) -> None:
+        self._qtPainterPath = QtGui.QPainterPath()
+        if len(self._points) < 3:
+            return
+
+        # NOTE: This fudge factor is needed to convert the tension from the
+        # values used by Traveller Map to the values used by the algorithm
+        # I'm using to convert the spline to cubicTo calls. This value was
+        # derived at by trial and error and seems to give an good approximation
+        qtTension = self._tension * 2/3
+
+        controlPoints = QtMapSpline._calcControlPoints(
+            self._points[-1],
+            self._points[0],
+            self._points[1],
+            qtTension)
+        prevPoint = controlPoints[1]
+        self._qtPainterPath.moveTo(QtCore.QPointF(*self._points[0].point()))
+        for i in range(1, len(self._points) - 1, 1):
+            controlPoints = QtMapSpline._calcControlPoints(
+                self._points[i - 1],
+                self._points[i],
+                self._points[i + 1],
+                qtTension)
+            self._qtPainterPath.cubicTo(
+                QtCore.QPointF(*prevPoint.point()),
+                QtCore.QPointF(*controlPoints[0].point()),
+                QtCore.QPointF(*self._points[i].point()))
+            prevPoint = controlPoints[1]
+        controlPoints = QtMapSpline._calcControlPoints(
+            self._points[-2],
+            self._points[-1],
+            self._points[0],
+            qtTension)
+        self._qtPainterPath.cubicTo(
+            QtCore.QPointF(*prevPoint.point()),
+            QtCore.QPointF(*controlPoints[0].point()),
+            QtCore.QPointF(*self._points[-1].point()))
+        prevPoint = controlPoints[1]
+
+        if self._closed:
+            controlPoints = QtMapSpline._calcControlPoints(
+                self._points[-1],
+                self._points[0],
+                self._points[1],
+                qtTension)
+            self._qtPainterPath.cubicTo(
+                QtCore.QPointF(*prevPoint.point()),
+                QtCore.QPointF(*controlPoints[0].point()),
+                QtCore.QPointF(*self._points[0].point()))
+
+        self._qtPainterPath.closeSubpath()
+
+    @staticmethod
+    def _calcControlPoints(
+            p0: maprenderer.PointF,
+            p1: maprenderer.PointF,
+            p2: maprenderer.PointF,
+            tension: float = 0.25
+            ) -> typing.Tuple[maprenderer.PointF, maprenderer.PointF]:
+        d01 = math.sqrt((p1.x() - p0.x()) * (p1.x() - p0.x()) + (p1.y() - p0.y()) * (p1.y() - p0.y()))
+        d12 = math.sqrt((p2.x() - p1.x()) * (p2.x() - p1.x()) + (p2.y() - p1.y()) * (p2.y() - p1.y()))
+
+        fa = tension * d01 / (d01 + d12)
+        fb = tension * d12 / (d01 + d12)
+
+        c1x = p1.x() - fa * (p2.x() - p0.x())
+        c1y = p1.y() - fa * (p2.y() - p0.y())
+        c2x = p1.x() + fb * (p2.x() - p0.x())
+        c2y = p1.y() + fb * (p2.y() - p0.y())
+
+        return (maprenderer.PointF(c1x, c1y),
+                maprenderer.PointF(c2x, c2y))
 
 class QtMapMatrix(maprenderer.AbstractMatrix):
     @typing.overload
@@ -576,7 +737,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             points: typing.Sequence[maprenderer.PointF]
             ) -> QtMapPointList:
         return QtMapPointList(points=points)
-    def copyPointList(self, other: maprenderer.AbstractPath) -> QtMapPointList:
+    def copyPointList(self, other: QtMapPointList) -> QtMapPointList:
         return QtMapPointList(other=other)
 
     def createPath(
@@ -586,8 +747,18 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             closed: bool
             ) -> QtMapPath:
         return QtMapPath(points=points, types=types, closed=closed)
-    def copyPath(self, other: maprenderer.AbstractPath) -> QtMapPath:
+    def copyPath(self, other: QtMapPath) -> QtMapPath:
         return QtMapPath(other=other)
+
+    def createSpline(
+            self,
+            points: typing.Sequence[maprenderer.PointF],
+            tension: float,
+            closed: bool
+            ) -> QtMapSpline:
+        return QtMapSpline(points=points, tension=tension, closed=closed)
+    def copySpline(self, other: QtMapSpline) -> QtMapSpline:
+        return QtMapSpline(other=other)
 
     def createIdentityMatrix(self) -> QtMapMatrix:
         return QtMapMatrix()
@@ -606,7 +777,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def createBrush(self, color: str = '') -> QtMapBrush:
         return QtMapBrush(color=color)
-    def copyBrush(self, other: maprenderer.AbstractBrush) -> QtMapPath:
+    def copyBrush(self, other: QtMapBrush) -> QtMapBrush:
         return QtMapPath(other=other)
 
     def createPen(
@@ -618,7 +789,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             tip: maprenderer.PenTip = maprenderer.PenTip.Flat
             ) -> QtMapPen:
         return QtMapPen(color=color, width=width, style=style, pattern=pattern, tip=tip)
-    def copyPen(self, other: maprenderer.AbstractPen) -> QtMapPen:
+    def copyPen(self, other: QtMapPen) -> QtMapPen:
         return QtMapPen(other=other)
 
     def createImage(
@@ -796,6 +967,16 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
                 image.qtImage())
         finally:
             self._painter.setOpacity(oldAlpha)
+
+    def drawCurve(
+            self,
+            spline: QtMapSpline,
+            pen: typing.Optional[QtMapPen] = None,
+            brush: typing.Optional[QtMapBrush] = None
+            ) -> None:
+        self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
+        self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
+        self._painter.drawPath(spline.qtPainterPath())
 
     def measureString(
             self,

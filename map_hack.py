@@ -66,7 +66,7 @@ class MapHackView(QtWidgets.QWidget):
             maprenderer.MapOptions.BordersMajor | maprenderer.MapOptions.BordersMinor | \
             maprenderer.MapOptions.NamesMajor | maprenderer.MapOptions.NamesMinor | \
             maprenderer.MapOptions.WorldsCapitals | maprenderer.MapOptions.WorldsHomeworlds | \
-            maprenderer.MapOptions.ForceHexes | maprenderer.MapOptions.WorldColors
+            maprenderer.MapOptions.WorldColors
 
         self._style = travellermap.Style.Poster
         #self._style = travellermap.Style.Candy

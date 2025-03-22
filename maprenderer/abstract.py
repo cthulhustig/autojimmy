@@ -26,6 +26,18 @@ class AbstractPath(object):
     def copyFrom(self, other: 'AbstractPath') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement copyFrom')
 
+class AbstractSpline(object):
+    def points(self) -> typing.Sequence[maprenderer.PointF]:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
+    def closed(self) -> bool:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
+    def bounds(self) -> maprenderer.RectangleF:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement bounds')
+    def translate(self, dx: float, dy: float) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement translate')
+    def copyFrom(self, other: 'AbstractSpline') -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement copyFrom')
+
 class AbstractMatrix(object):
     def m11(self) -> float:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement m11')
@@ -150,6 +162,16 @@ class AbstractGraphics(object):
     def copyPath(self, other: AbstractPath) -> AbstractPath:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyPath')
 
+    def createSpline(
+            self,
+            points: typing.Sequence[maprenderer.PointF],
+            tension: float,
+            closed: bool
+            ) -> AbstractSpline:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createSpline')
+    def copySpline(self, other: AbstractSpline) -> AbstractSpline:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copySpline')
+
     def createIdentityMatrix(self) -> AbstractMatrix:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createIdentityMatrix')
     def createMatrix(
@@ -263,6 +285,14 @@ class AbstractGraphics(object):
             pen: AbstractPen
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawArc')
+
+    def drawCurve(
+            self,
+            spline: AbstractSpline,
+            pen: typing.Optional[AbstractPen] = None,
+            brush: typing.Optional[AbstractBrush] = None
+            ) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawCurve')
 
     def drawImage(self, image: AbstractImage, rect: maprenderer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImage')

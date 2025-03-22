@@ -5,10 +5,6 @@ import typing
 
 # TODO: Should probably move this into SectorCache
 class ClipPathCache(object):
-    class PathType(enum.Enum):
-        Hex = 0
-        Square = 1
-
     # NOTE: These offsets assume a clockwise winding
     _TopOffsets = [
         (-0.5 - travellermap.HexWidthOffset, 0), # Center left
@@ -46,8 +42,7 @@ class ClipPathCache(object):
         self._sectorClipPaths: typing.Mapping[
             typing.Tuple[
                 int, # Sector X position
-                int, # Sector Y position
-                ClipPathCache.PathType
+                int # Sector Y position
             ],
             maprenderer.AbstractPath
         ] = {}
@@ -55,10 +50,9 @@ class ClipPathCache(object):
     def sectorClipPath(
             self,
             sectorX: int,
-            sectorY: int,
-            pathType: PathType
+            sectorY: int
             ) -> maprenderer.AbstractPath:
-        key = (sectorX, sectorY, pathType)
+        key = (sectorX, sectorY)
         clipPath = self._sectorClipPaths.get(key)
         if clipPath:
             return clipPath

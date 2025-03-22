@@ -1,9 +1,21 @@
 import common
 import maprenderer
 import math
-import traveller
 import travellermap
 import typing
+
+class LayerList(list):
+    def __init__(self, other: typing.Optional[typing.Sequence[maprenderer.LayerId]]):
+        if other:
+            self.extend(other)
+
+    def copy(self) -> 'LayerList':
+        return LayerList(self)
+
+    def moveAfter(self, target: maprenderer.LayerId, item: maprenderer.LayerId) -> None:
+        self.remove(item)
+        index = self.index(target)
+        self.insert(index + 1 if index >= 0 else len(self), item)
 
 class StyleSheet(object):
     _DefaultFont = 'Arial'
@@ -45,6 +57,40 @@ class StyleSheet(object):
     _T5AllegianceCodeMinScale = 64
 
     _FontCacheSize = 100
+
+    _DefaultLayerOrder = LayerList([
+        # Background
+        maprenderer.LayerId.Background_Solid,
+        maprenderer.LayerId.Background_NebulaTexture,
+        maprenderer.LayerId.Background_Galaxy,
+        maprenderer.LayerId.Background_PseudoRandomStars,
+        maprenderer.LayerId.Background_Rifts,
+
+        # Foreground
+        maprenderer.LayerId.Macro_Borders,
+        maprenderer.LayerId.Macro_Routes,
+        maprenderer.LayerId.Grid_Sector,
+        maprenderer.LayerId.Grid_Subsector,
+        maprenderer.LayerId.Grid_Parsec,
+        maprenderer.LayerId.Names_Subsector,
+        maprenderer.LayerId.Micro_BordersFill,
+        maprenderer.LayerId.Micro_BordersShade,
+        maprenderer.LayerId.Micro_BordersStroke,
+        maprenderer.LayerId.Micro_Routes,
+        maprenderer.LayerId.Micro_BorderExplicitLabels,
+        maprenderer.LayerId.Names_Sector,
+        maprenderer.LayerId.Macro_GovernmentRiftRouteNames,
+        maprenderer.LayerId.Macro_CapitalsAndHomeWorlds,
+        maprenderer.LayerId.Mega_GalaxyScaleLabels,
+        maprenderer.LayerId.Worlds_Background,
+        maprenderer.LayerId.Worlds_Foreground,
+        maprenderer.LayerId.Worlds_Overlays,
+
+        # Overlays
+        maprenderer.LayerId.Overlay_DroyneChirperWorlds,
+        maprenderer.LayerId.Overlay_MinorHomeworlds,
+        maprenderer.LayerId.Overlay_AncientsWorlds,
+        maprenderer.LayerId.Overlay_ReviewStatus])
 
     class StyleElement(object):
         def __init__(self) -> None:
@@ -230,10 +276,9 @@ class StyleSheet(object):
         self.shadeMicroBorders = False
         self.showMicroNames = False
         self.microBorderStyle = maprenderer.MicroBorderStyle.Hex
-        self.hexStyle = maprenderer.HexStyle.Hex
         self.overrideLineStyle: typing.Optional[maprenderer.LineStyle] = None
 
-        self.layerOrder: typing.Dict[maprenderer.LayerId, int] = {}
+        self.layerOrder = StyleSheet._DefaultLayerOrder.copy()
 
         onePixel = 1.0 / self.scale
 
@@ -285,15 +330,7 @@ class StyleSheet(object):
         self.capitals.visible = (self.scale >= StyleSheet._MacroWorldsMinScale) and \
             (self.scale <= StyleSheet._MacroWorldsMaxScale)
 
-        self.hexStyle = \
-            maprenderer.HexStyle.Square \
-            if ((self.options & maprenderer.MapOptions.ForceHexes) == 0) and \
-                (self.scale < StyleSheet._ParsecHexMinScale) else \
-            maprenderer.HexStyle.Hex
-        self.microBorderStyle = \
-            maprenderer.MicroBorderStyle.Square \
-            if self.hexStyle == maprenderer.HexStyle.Square else \
-            maprenderer.MicroBorderStyle.Hex
+        self.microBorderStyle = maprenderer.MicroBorderStyle.Hex
 
         self.macroBorders.visible = (self.scale >= StyleSheet._MacroBorderMinScale) and \
             (self.scale < StyleSheet._MicroBorderMinScale) and \
@@ -352,9 +389,7 @@ class StyleSheet(object):
             self.gasGiant.position =  maprenderer.PointF(x, -y)
             self.allegiancePosition = maprenderer.PointF(x, y)
 
-            self.baseMiddlePosition = maprenderer.PointF(
-                -0.35 if ((self.options & maprenderer.MapOptions.ForceHexes) != 0) else -0.2,
-                0)
+            self.baseMiddlePosition = maprenderer.PointF(-0.2, 0)
             self.starport.position = maprenderer.PointF(0, -0.24)
             self.uwp.position = maprenderer.PointF(0, 0.24)
             self.worlds.position = maprenderer.PointF(0, 0.4)
@@ -592,55 +627,6 @@ class StyleSheet(object):
         dimColor = travellermap.HtmlColors.DimGray
         highlightColor = travellermap.HtmlColors.TravellerRed
 
-        layers: typing.List[maprenderer.LayerId] = [
-            #------------------------------------------------------------
-            # Background
-            #------------------------------------------------------------
-
-            maprenderer.LayerId.Background_Solid,
-            maprenderer.LayerId.Background_NebulaTexture,
-            maprenderer.LayerId.Background_Galaxy,
-            maprenderer.LayerId.Background_PseudoRandomStars,
-            maprenderer.LayerId.Background_Rifts,
-
-            #------------------------------------------------------------
-            # Foreground
-            #------------------------------------------------------------
-
-            maprenderer.LayerId.Macro_Borders,
-            maprenderer.LayerId.Macro_Routes,
-
-            maprenderer.LayerId.Grid_Sector,
-            maprenderer.LayerId.Grid_Subsector,
-            maprenderer.LayerId.Grid_Parsec,
-
-            maprenderer.LayerId.Names_Subsector,
-
-            maprenderer.LayerId.Micro_BordersFill,
-            maprenderer.LayerId.Micro_BordersShade,
-            maprenderer.LayerId.Micro_BordersStroke,
-            maprenderer.LayerId.Micro_Routes,
-            maprenderer.LayerId.Micro_BorderExplicitLabels,
-
-            maprenderer.LayerId.Names_Sector,
-
-            maprenderer.LayerId.Macro_GovernmentRiftRouteNames,
-            maprenderer.LayerId.Macro_CapitalsAndHomeWorlds,
-            maprenderer.LayerId.Mega_GalaxyScaleLabels,
-
-            maprenderer.LayerId.Worlds_Background,
-            maprenderer.LayerId.Worlds_Foreground,
-            maprenderer.LayerId.Worlds_Overlays,
-
-            #------------------------------------------------------------
-            # Overlays
-            #------------------------------------------------------------
-
-            maprenderer.LayerId.Overlay_DroyneChirperWorlds,
-            maprenderer.LayerId.Overlay_MinorHomeworlds,
-            maprenderer.LayerId.Overlay_AncientsWorlds,
-            maprenderer.LayerId.Overlay_ReviewStatus]
-
         if self._style is travellermap.Style.Poster:
             pass
         elif self._style is travellermap.Style.Atlas:
@@ -738,7 +724,6 @@ class StyleSheet(object):
             dimColor = inkColor
             highlightColor = inkColor
             self.microBorders.textBrush.setColor(inkColor)
-            self.hexStyle = maprenderer.HexStyle.Hex
             self.microBorderStyle = maprenderer.MicroBorderStyle.Curve
 
             self.parsecGrid.linePen.setColor(lightColor)
@@ -1001,7 +986,6 @@ class StyleSheet(object):
 
             self.showNebulaBackground = self.deepBackgroundOpacity < 0.5
 
-            self.hexStyle = maprenderer.HexStyle.NoHex
             self.microBorderStyle = maprenderer.MicroBorderStyle.Curve
 
             self.sectorGrid.visible = self.sectorGrid.visible and (self.scale >= 4)
@@ -1212,10 +1196,20 @@ class StyleSheet(object):
             self.ignoreBaseBias = True
             self.shadeMicroBorders = True
 
-            # TODO: Need to handle moving layers
-            # Re-order these elements
-            #layers.MoveAfter(LayerId.Worlds_Background, LayerId.Micro_BordersStroke);
-            #layers.MoveAfter(LayerId.Worlds_Foreground, LayerId.Micro_Routes);
+            # TODO: This is currently borked because I've flattened drawing the
+            # 3 border layers into a single draw function. I need to be able to
+            # move border stroke so that drawing world backgrounds is between
+            # it and the other border layers.
+            # If I don't move the layer then world backgrounds exclude the dashes
+            # for worlds in Mongoose style
+            """
+            self.layerOrder.moveAfter(
+                target=maprenderer.LayerId.Worlds_Background,
+                item=maprenderer.LayerId.Micro_BordersStroke)
+            self.layerOrder.moveAfter(
+                target=maprenderer.LayerId.Worlds_Foreground,
+                item=maprenderer.LayerId.Micro_Routes)"
+            """
 
             self.deepBackgroundOpacity = 0
 
@@ -1455,11 +1449,6 @@ class StyleSheet(object):
                 width=self.worldWater.linePen.width() if self.worldWater.linePen else onePixel,
                 style=self.worldWater.linePen.style() if self.worldWater.linePen else maprenderer.LineStyle.Solid,
                 pattern=self.worldWater.linePen.pattern()if self.worldWater.linePen else None)
-
-        # Convert list into a id -> index mapping.
-        self.layerOrder.clear()
-        for i, layer in enumerate(layers):
-            self.layerOrder[layer] = i
 
     def _createFont(
             self,

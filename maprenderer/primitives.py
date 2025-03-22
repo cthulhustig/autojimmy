@@ -40,15 +40,11 @@ class TextBackgroundStyle(enum.Enum):
     Outline = 3
     Filled = 4
 
-class HexStyle(enum.Enum):
-    NoHex = 0
-    Hex = 1
-    Square = 2
-
+# TODO: Have another go at implementing curves. Remove this type if I can't
+# get them looking correct
 class MicroBorderStyle(enum.Enum):
     Hex = 0
-    Square = 1
-    Curve = 2
+    Curve = 1
 
 class HexCoordinateStyle(enum.Enum):
     Sector = 0
@@ -239,6 +235,13 @@ class PointF(object):
         return self._y
 
     def setY(self, y: float) -> None:
+        self._y = y
+
+    def point(self) -> typing.Tuple[float, float]:
+        return (self._x, self._y)
+
+    def setPoint(self, x: float, y: float) -> None:
+        self._x = x
         self._y = y
 
     def translate(self, dx: float, dy: float) -> None:

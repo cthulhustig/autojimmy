@@ -8,15 +8,20 @@ class SectorPath(object):
     def __init__(
             self,
             path: maprenderer.AbstractPath,
+            spline: maprenderer.AbstractSpline,
             color: typing.Optional[str],
             style: typing.Optional[maprenderer.LineStyle]
             ) -> None:
         self._path = path
+        self._spline = spline
         self._color = color
         self._style = style
 
     def path(self) -> maprenderer.AbstractPath:
         return self._path
+
+    def spline(self) -> maprenderer.AbstractSpline:
+        return self._spline
 
     def color(self) -> typing.Optional[str]:
         return self._color
@@ -262,13 +267,15 @@ class SectorCache(object):
         drawPath = []
         for x, y in outline:
             drawPath.append(maprenderer.PointF(x=x, y=y))
+
         types = [maprenderer.PathPointType.Start]
         for _ in range(len(outline) - 1):
             types.append(maprenderer.PathPointType.Line)
         types[-1] |= maprenderer.PathPointType.CloseSubpath
-        outline = self._graphics.createPath(points=drawPath, types=types, closed=True)
+        path = self._graphics.createPath(points=drawPath, types=types, closed=True)
+        spline = self._graphics.createSpline(points=drawPath, tension=0.6, closed=True)
 
-        return SectorPath(path=outline, color=color, style=style)
+        return SectorPath(path=path, spline=spline, color=color, style=style)
 
     @staticmethod
     def _offsetRouteSegment(
