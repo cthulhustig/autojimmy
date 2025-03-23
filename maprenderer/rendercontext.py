@@ -52,8 +52,7 @@ class RenderContext(object):
             options: maprenderer.MapOptions,
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
-            mapLabelCache: maprenderer.MapLabelCache,
-            worldLabelCache: maprenderer.WorldLabelCache,
+            labelCache: maprenderer.LabelCache,
             styleCache: maprenderer.DefaultStyleCache
             ) -> None:
         self._graphics = graphics
@@ -70,8 +69,7 @@ class RenderContext(object):
             graphics=self._graphics)
         self._imageCache = imageCache
         self._vectorCache = vectorCache
-        self._mapLabelCache = mapLabelCache
-        self._worldLabelCache = worldLabelCache
+        self._labelCache = labelCache
         self._styleCache = styleCache
         self._sectorCache = maprenderer.SectorCache(
             graphics=self._graphics,
@@ -850,7 +848,7 @@ class RenderContext(object):
                     labelStyle=labelStyle)
 
         if (self._options & maprenderer.MapOptions.NamesMinor) != 0:
-            for label in self._mapLabelCache.minorLabels:
+            for label in self._labelCache.minorLabels:
                 font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
                     self._styleSheet.macroRoutes.textBrush \
@@ -887,13 +885,14 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-            for worldLabel in self._worldLabelCache.labels:
-                if (worldLabel.options() & self._options) == 0:
+            for worldLabel in self._labelCache.worldLabels:
+                if (worldLabel.options & self._options) == 0:
                     continue
 
                 with self._graphics.save():
-                    location = worldLabel.location()
-                    self._graphics.translateTransform(dx=location.x(), dy=location.y())
+                    self._graphics.translateTransform(
+                        dx=worldLabel.position.x(),
+                        dy=worldLabel.position.y())
                     self._graphics.scaleTransform(
                         scaleX=1.0 / travellermap.ParsecScaleX,
                         scaleY=1.0 / travellermap.ParsecScaleY)
@@ -903,37 +902,35 @@ class RenderContext(object):
                         pen=dotPen,
                         brush=dotBrush)
 
-                    biasX = worldLabel.biasX()
-                    biasY = worldLabel.biasY()
-                    if biasX > 0:
-                        if biasY < 0:
+                    if worldLabel.biasX > 0:
+                        if worldLabel.biasY < 0:
                             format = maprenderer.TextAlignment.BottomLeft
-                        elif biasY > 0:
+                        elif worldLabel.biasY > 0:
                             format = maprenderer.TextAlignment.TopLeft
                         else:
                             format = maprenderer.TextAlignment.MiddleLeft
-                    elif biasX < 0:
-                        if biasY < 0:
+                    elif worldLabel.biasX < 0:
+                        if worldLabel.biasY < 0:
                             format = maprenderer.TextAlignment.BottomRight
-                        elif biasY > 0:
+                        elif worldLabel.biasY > 0:
                             format = maprenderer.TextAlignment.TopRight
                         else:
                             format = maprenderer.TextAlignment.MiddleRight
                     else:
-                        if biasY < 0:
+                        if worldLabel.biasY < 0:
                             format = maprenderer.TextAlignment.BottomCenter
-                        elif biasY > 0:
+                        elif worldLabel.biasY > 0:
                             format = maprenderer.TextAlignment.TopCenter
                         else:
                             format = maprenderer.TextAlignment.Centered
 
                     maprenderer.drawStringHelper(
                         graphics=self._graphics,
-                        text=worldLabel.name(),
+                        text=worldLabel.name,
                         font=self._styleSheet.macroNames.smallFont,
                         brush=self._styleSheet.capitals.textBrush,
-                        x=biasX * dotRadius / 2,
-                        y=biasY * dotRadius / 2,
+                        x=worldLabel.biasX * dotRadius / 2,
+                        y=worldLabel.biasY * dotRadius / 2,
                         format=format)
 
     def _drawMegaLabels(self) -> None:
@@ -942,7 +939,7 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-        for label in self._mapLabelCache.megaLabels:
+        for label in self._labelCache.megaLabels:
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.scaleTransform(

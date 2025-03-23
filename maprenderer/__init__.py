@@ -5,8 +5,7 @@ from .abstract import *
 from .renderhelper import *
 from .selector import *
 from .imagecache import *
-from .maplabelcache import *
-from .worldlabelcache import *
+from .labelcache import *
 from .vectorobjectcache import *
 from .defaultstylecache import *
 from .sectorcache import *

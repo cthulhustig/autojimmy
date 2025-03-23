@@ -75,8 +75,7 @@ class MapHackView(QtWidgets.QWidget):
             graphics=self._graphics)
         self._vectorCache = maprenderer.VectorObjectCache(
             graphics=self._graphics)
-        self._mapLabelCache = maprenderer.MapLabelCache()
-        self._worldLabelCache = maprenderer.WorldLabelCache()
+        self._labelCache = maprenderer.LabelCache()
         self._styleCache = maprenderer.DefaultStyleCache()
         maprenderer.WorldHelper.loadData() # TODO: Not sure where this should live
         self._renderer = self._createRenderer()
@@ -417,8 +416,7 @@ class MapHackView(QtWidgets.QWidget):
             style=self._style,
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
-            mapLabelCache=self._mapLabelCache,
-            worldLabelCache=self._worldLabelCache,
+            labelCache=self._labelCache,
             styleCache=self._styleCache,
             options=self._options)
 
@@ -837,8 +835,7 @@ class MapHackView(QtWidgets.QWidget):
                     style=self._style,
                     imageCache=self._imageCache,
                     vectorCache=self._vectorCache,
-                    mapLabelCache=self._mapLabelCache,
-                    worldLabelCache=self._worldLabelCache,
+                    labelCache=self._labelCache,
                     styleCache=self._styleCache,
                     options=self._options)
 

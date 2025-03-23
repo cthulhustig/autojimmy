@@ -1,52 +1,68 @@
+import common
 import logging
 import maprenderer
-import os
 import traveller
 import travellermap
 import typing
 import xml.etree.ElementTree
 
 # TODO: This should probably live elsewhere
+class MapLabel(object):
+    def __init__(
+            self,
+            text: str,
+            position: maprenderer.PointF,
+            minor: bool = False
+            ) -> None:
+        self.text = text
+        self.position = maprenderer.PointF(position)
+        self.minor = minor
+
 class WorldLabel(object):
     def __init__(
             self,
             name: str,
             options: maprenderer.MapOptions,
-            location: maprenderer.PointF,
+            position: maprenderer.PointF,
             biasX: int = 0,
             biasY: int = 0,
             ) -> None:
-        self._name = name
-        self._options = options
-        self._location = maprenderer.PointF(location)
-        self._biasX = biasX
-        self._biasY = biasY
+        self.name = name
+        self.options = options
+        self.position = maprenderer.PointF(position)
+        self.biasX = biasX
+        self.biasY = biasY
 
-    def name(self) -> str:
-        return self._name
-
-    def options(self) -> maprenderer.MapOptions:
-        return self._options
-
-    def location(self) -> maprenderer.PointF:
-        return self._location
-
-    def biasX(self) -> int:
-        return self._biasX
-
-    def biasY(self) -> int:
-        return self._biasY
-
-# TODO: Should possibly combine this with map label cache
-class WorldLabelCache(object):
+class LabelCache(object):
+    _MinorLabelsPath = 'res/labels/minor_labels.tab'
+    _MajorLabelsPath = 'res/labels/mega_labels.tab'
     _WorldLabelPath = 'res/labels/Worlds.xml'
 
     def __init__(self):
-        rootElement = xml.etree.ElementTree.fromstring(
+        self.minorLabels = self._parseMapLabels(
             travellermap.DataStore.instance().loadTextResource(
-                filePath=WorldLabelCache._WorldLabelPath))
+                filePath=LabelCache._MinorLabelsPath))
+        self.megaLabels = self._parseMapLabels(
+            travellermap.DataStore.instance().loadTextResource(
+                filePath=LabelCache._MajorLabelsPath))
+        self.worldLabels = self._parseWorldLabels(
+            travellermap.DataStore.instance().loadTextResource(
+                filePath=LabelCache._WorldLabelPath))
 
-        self.labels: typing.List[WorldLabel] = []
+    def _parseMapLabels(self, content: str) -> typing.List[MapLabel]:
+        _, rows = maprenderer.parseTabContent(content=content)
+        labels = []
+        for data in rows:
+            labels.append(MapLabel(
+                text=data['Text'].replace('\\n', '\n'),
+                position=maprenderer.PointF(x=float(data['X']), y=float(data['Y'])),
+                minor=common.stringToBool(data['Minor'], strict=False)))
+        return labels
+
+    def _parseWorldLabels(self, content) -> typing.List[WorldLabel]:
+        rootElement = xml.etree.ElementTree.fromstring(content)
+
+        labels: typing.List[WorldLabel] = []
         for index, worldElement in enumerate(rootElement.findall('./World')):
             try:
                 nameElement = worldElement.find('./Name')
@@ -86,13 +102,15 @@ class WorldLabelCache(object):
                 if biasYElement is not None:
                     biasY = int(biasYElement.text)
 
-                self.labels.append(WorldLabel(
+                labels.append(WorldLabel(
                     name=name,
                     options=options,
-                    location=location,
+                    position=location,
                     biasX=biasX,
                     biasY=biasY))
             except Exception as ex:
                 logging.warning(
-                    f'Failed to read world label {index} from "{WorldLabelCache._WorldLabelPath}"',
+                    f'Failed to read world label {index}',
                     exc_info=ex)
+
+        return labels
