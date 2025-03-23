@@ -6,7 +6,6 @@ import travellermap
 import typing
 import xml.etree.ElementTree
 
-# TODO: This should probably live elsewhere
 class MapLabel(object):
     def __init__(
             self,
@@ -21,13 +20,13 @@ class MapLabel(object):
 class WorldLabel(object):
     def __init__(
             self,
-            name: str,
+            text: str,
             options: maprenderer.MapOptions,
             position: maprenderer.PointF,
             biasX: int = 0,
             biasY: int = 0,
             ) -> None:
-        self.name = name
+        self.text = text
         self.options = options
         self.position = maprenderer.PointF(position)
         self.biasX = biasX
@@ -103,7 +102,7 @@ class LabelCache(object):
                     biasY = int(biasYElement.text)
 
                 labels.append(WorldLabel(
-                    name=name,
+                    text=name,
                     options=options,
                     position=location,
                     biasX=biasX,

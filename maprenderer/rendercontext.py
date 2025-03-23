@@ -858,8 +858,7 @@ class RenderContext(object):
                     self._graphics.scaleTransform(
                         scaleX=1.0 / travellermap.ParsecScaleX,
                         scaleY=1.0 / travellermap.ParsecScaleY)
-                    maprenderer.drawStringHelper(
-                        graphics=self._graphics,
+                    self._drawMultiLineString(
                         text=label.text,
                         font=font,
                         brush=brush,
@@ -924,9 +923,8 @@ class RenderContext(object):
                         else:
                             format = maprenderer.TextAlignment.Centered
 
-                    maprenderer.drawStringHelper(
-                        graphics=self._graphics,
-                        text=worldLabel.name,
+                    self._drawMultiLineString(
+                        text=worldLabel.text,
                         font=self._styleSheet.macroNames.smallFont,
                         brush=self._styleSheet.capitals.textBrush,
                         x=worldLabel.biasX * dotRadius / 2,
@@ -945,8 +943,7 @@ class RenderContext(object):
                 self._graphics.scaleTransform(
                     scaleX=1.0 / travellermap.ParsecScaleX,
                     scaleY=1.0 / travellermap.ParsecScaleY)
-                maprenderer.drawStringHelper(
-                    graphics=self._graphics,
+                self._drawMultiLineString(
                     text=label.text,
                     font=font,
                     brush=self._styleSheet.megaNames.textBrush,
@@ -2008,12 +2005,72 @@ class RenderContext(object):
                 self._graphics.setSmoothingMode(
                     maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            maprenderer.drawStringHelper(
-                graphics=self._graphics,
+            self._drawMultiLineString(
                 text=text,
                 font=font,
                 brush=brush,
                 x=0, y=0)
+
+    def _drawMultiLineString(
+            self,
+            text: str,
+            font: maprenderer.AbstractFont,
+            brush: maprenderer.AbstractBrush,
+            x: float,
+            y: float,
+            format: maprenderer.TextAlignment = maprenderer.TextAlignment.Centered
+            ) -> None:
+        if not text:
+            return
+
+        lines = text.split('\n')
+        if len(lines) <= 1:
+            self._graphics.drawString(
+                text=text,
+                font=font,
+                brush=brush,
+                x=x, y=y,
+                format=format)
+            return
+
+        widths = [self._graphics.measureString(line, font)[0] for line in lines]
+
+        fontUnitsToWorldUnits = font.emSize() / font.pointSize()
+        lineSpacing = font.lineSpacing() * fontUnitsToWorldUnits
+
+        totalHeight = lineSpacing * len(widths)
+
+        # Offset from baseline to top-left.
+        y += lineSpacing / 2
+
+        widthFactor = 0
+        if format == maprenderer.TextAlignment.MiddleLeft or \
+            format == maprenderer.TextAlignment.Centered or \
+            format == maprenderer.TextAlignment.MiddleRight:
+            y -= totalHeight / 2
+        elif format == maprenderer.TextAlignment.BottomLeft or \
+            format == maprenderer.TextAlignment.BottomCenter or \
+            format == maprenderer.TextAlignment.BottomRight:
+            y -= totalHeight
+
+        if format == maprenderer.TextAlignment.TopCenter or \
+            format == maprenderer.TextAlignment.Centered or \
+            format == maprenderer.TextAlignment.BottomCenter:
+                widthFactor = -0.5
+        elif format == maprenderer.TextAlignment.TopRight or \
+            format == maprenderer.TextAlignment.MiddleRight or \
+            format == maprenderer.TextAlignment.BottomRight:
+                widthFactor = -1
+
+        for line, width in zip(lines, widths):
+            self._graphics.drawString(
+                text=line,
+                font=font,
+                brush=brush,
+                x=x + widthFactor * width + width / 2,
+                y=y,
+                format=maprenderer.TextAlignment.Centered)
+            y += lineSpacing
 
     def _zoneStyle(
             self,

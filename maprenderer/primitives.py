@@ -64,7 +64,6 @@ class MapOptions(enum.IntFlag):
     NamesMinor = 0x0080
     NamesMask = NamesMajor | NamesMinor
 
-    # TODO: Do I need these if they're deprecated?
     WorldsCapitals = 0x0100
     WorldsHomeworlds = 0x0200
     WorldsMask = WorldsCapitals | WorldsHomeworlds
@@ -159,7 +158,6 @@ class WorldDetails(enum.IntFlag):
     Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight
     Poster = Atlas | Hex | AllNames | Asteroids
 
-# TODO: This is only created by StyleSheet now so should probably be moved there
 class SizeF(object):
     @typing.overload
     def __init__(self) -> None: ...
@@ -198,7 +196,6 @@ class SizeF(object):
     def setHeight(self, height: float) -> None:
         self._height = height
 
-# TODO: The F in this name is probably redundant as there is no non-F version
 class PointF(object):
     @typing.overload
     def __init__(self) -> None: ...
@@ -248,8 +245,6 @@ class PointF(object):
         self._x += dx
         self._y += dy
 
-# TODO: This (and PointF) could do with an offsetX, offsetY functions as there
-# are quite a few places that are having to do get x/y then set x/y with modifier
 class RectangleF(object):
     @typing.overload
     def __init__(self) -> None: ...
