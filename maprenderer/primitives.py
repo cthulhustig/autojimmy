@@ -114,30 +114,29 @@ class LayerId(enum.Enum):
 
     Names_Subsector = 10
 
-    Micro_BordersFill = 11
-    Micro_BordersShade = 12
-    Micro_BordersStroke = 13
-    Micro_Routes = 14
-    Micro_BorderExplicitLabels = 15
+    Micro_BordersBackground = 11
+    Micro_BordersForeground = 12
+    Micro_Routes = 13
+    Micro_BorderExplicitLabels = 14
 
-    Names_Sector = 16
+    Names_Sector = 15
 
-    Macro_GovernmentRiftRouteNames = 17
-    Macro_CapitalsAndHomeWorlds = 18
-    Mega_GalaxyScaleLabels = 19
+    Macro_GovernmentRiftRouteNames = 16
+    Macro_CapitalsAndHomeWorlds = 17
+    Mega_GalaxyScaleLabels = 18
 
-    Worlds_Background = 20
-    Worlds_Foreground = 21
-    Worlds_Overlays = 22
+    Worlds_Background = 19
+    Worlds_Foreground = 20
+    Worlds_Overlays = 21
 
     #------------------------------------------------------------
     # Overlays
     #------------------------------------------------------------
 
-    Overlay_DroyneChirperWorlds = 23
-    Overlay_MinorHomeworlds = 24
-    Overlay_AncientsWorlds = 25
-    Overlay_ReviewStatus = 26
+    Overlay_DroyneChirperWorlds = 22
+    Overlay_MinorHomeworlds = 23
+    Overlay_AncientsWorlds = 24
+    Overlay_ReviewStatus = 25
 
 class WorldDetails(enum.IntFlag):
     NoDetails = 0

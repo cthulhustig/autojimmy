@@ -17,16 +17,14 @@ class RenderContext(object):
             self.id = id
             self.action = action
 
-    class BorderLayer(enum.Enum):
-        Fill = 0
-        Shade = 1
-        Stroke = 2
-        Regions = 3
-
     class WorldLayer(enum.Enum):
         Background = 0
         Foreground = 1
         Overlay = 2
+
+    class MicroBorderLayer(enum.Enum):
+        Background = 0
+        Foreground = 1
 
     _MinScale = 0.0078125; # Math.Pow(2, -7)
     _MaxScale = 1024; # Math.Pow(2, 10)
@@ -201,7 +199,8 @@ class RenderContext(object):
 
             RenderContext.LayerAction(maprenderer.LayerId.Names_Subsector, self._drawSubsectorNames),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersStroke, self._drawMicroBorders),
+            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersBackground, self._drawMicroBordersBackground),
+            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersForeground, self._drawMicroBordersForeground),
             RenderContext.LayerAction(maprenderer.LayerId.Micro_Routes, self._drawMicroRoutes),
             RenderContext.LayerAction(maprenderer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels),
 
@@ -601,105 +600,17 @@ class RenderContext(object):
                 brush=self._styleSheet.subsectorNames.textBrush,
                 labelStyle=self._styleSheet.subsectorNames.textStyle)
 
-    def _drawMicroBorders(self) -> None:
+    def _drawMicroBordersBackground(self) -> None:
         if not self._styleSheet.microBorders.visible:
             return
 
-        self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+        self._drawMicroBorders(layer=RenderContext.MicroBorderLayer.Background)
 
-        penWidth = self._styleSheet.microBorders.linePen.width()
-        # NOTE: Create pens rather than using them directly from the
-        # style sheet as they will be modified in _drawMicroBorder
-        pen = self._graphics.createPen(width=penWidth)
-        brush = self._graphics.createBrush()
+    def _drawMicroBordersForeground(self) -> None:
+        if not self._styleSheet.microBorders.visible:
+            return
 
-        shadePen = None
-        if self._styleSheet.shadeMicroBorders:
-            # Shade is a wide/solid outline under the main outline.
-            shadePen = self._graphics.createPen(
-                width=penWidth * 2.5,
-                style=maprenderer.LineStyle.Solid)
-
-        useCurvedBorders = self._styleSheet.microBorderStyle is maprenderer.MicroBorderStyle.Curve
-
-        for sector in self._selector.sectors():
-            sectorClip = self._clipCache.sectorClipPath(
-                sectorX=sector.x(),
-                sectorY=sector.y())
-            sectorClipBounds = sectorClip.bounds()
-            if useCurvedBorders:
-                # Inflate the sector clip bounds slightly when drawing curved borders to
-                # account for the fact the borders can extend out slightly past the
-                # hexes they enclose
-                sectorClipBounds.inflate(
-                    travellermap.ParsecScaleX * 0.05,
-                    travellermap.ParsecScaleY * 0.05)
-            if not self._absoluteViewRect.intersectsWith(sectorClipBounds):
-                continue
-
-            sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
-            regionOutlines = []
-            if sectorRegions:
-                for outline in sectorRegions:
-                    outlineBounds = outline.bounds()
-                    if useCurvedBorders:
-                        # Inflate the outline border slightly when drawing curved borders to
-                        # account for the fact the borders can extend out slightly past the
-                        # hexes they enclose
-                        outlineBounds.inflate(
-                            travellermap.ParsecScaleX * 0.05,
-                            travellermap.ParsecScaleY * 0.05)
-
-                    if self._absoluteViewRect.intersectsWith(outlineBounds):
-                        regionOutlines.append(outline)
-
-            sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
-            borderOutlines = []
-            if sectorBorders:
-                for outline in sectorBorders:
-                    outlineBounds = outline.bounds()
-                    if useCurvedBorders:
-                        # Inflate the outline border slightly when drawing curved borders to
-                        # account for the fact the borders can extend out slightly past the
-                        # hexes they enclose
-                        outlineBounds.inflate(
-                            travellermap.ParsecScaleX * 0.05,
-                            travellermap.ParsecScaleY * 0.05)
-
-                    if self._absoluteViewRect.intersectsWith(outlineBounds):
-                        borderOutlines.append(outline)
-
-            with self._graphics.save():
-                if not useCurvedBorders:
-                    # Don't apply sector clip path when drawing curved borders as the
-                    # borders can extend out past the edges of the hexes they cover.
-                    # We've already done some corse grained clipping with the bounding
-                    # box above so that will need to be good enough
-                    self._graphics.intersectClipPath(path=sectorClip)
-                else:
-                    self._graphics.intersectClipRect(rect=sectorClipBounds)
-
-                for outline in regionOutlines:
-                    self._drawMicroBorder(
-                        outline=outline,
-                        brush=brush)
-
-                for outline in borderOutlines:
-                    self._drawMicroBorder(
-                        outline=outline,
-                        brush=brush if self._styleSheet.fillMicroBorders and not useCurvedBorders else None,
-                        pen=pen,
-                        shadePen=shadePen)
-
-            if self._styleSheet.fillMicroBorders and useCurvedBorders:
-                with self._graphics.save():
-                    self._graphics.intersectClipPath(path=sectorClip)
-
-                    for outline in borderOutlines:
-                        self._drawMicroBorder(
-                            outline=outline,
-                            brush=brush)
+        self._drawMicroBorders(layer=RenderContext.MicroBorderLayer.Foreground)
 
     def _drawMicroRoutes(self) -> None:
         if not self._styleSheet.microRoutes.visible:
@@ -1757,75 +1668,204 @@ class RenderContext(object):
 
     _MicroBorderFillAlpha = 64
     _MicroBorderShadeAlpha = 128
-    def _drawMicroBorder(
+    def _drawMicroBorders(
             self,
-            outline: maprenderer.SectorPath,
-            brush: typing.Optional[maprenderer.AbstractBrush] = None,
-            pen: typing.Optional[maprenderer.AbstractPen] = None,
-            shadePen: typing.Optional[maprenderer.AbstractPen] = None
+            layer: MicroBorderLayer
             ) -> None:
-        color = outline.color()
+        self._graphics.setSmoothingMode(
+            maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+
+        brush = pen = None
+        if layer is RenderContext.MicroBorderLayer.Background:
+            brush = self._graphics.createBrush()
+
+            if self._styleSheet.shadeMicroBorders:
+                pen = self._graphics.createPen(
+                    width=self._styleSheet.microBorders.linePen.width() * 2.5,
+                    style=maprenderer.LineStyle.Solid)
+        else:
+            pen = self._graphics.createPen(
+                width=self._styleSheet.microBorders.linePen.width())
+
+        useCurvedBorders = self._styleSheet.microBorderStyle is maprenderer.MicroBorderStyle.Curve
+        drawRegions = drawBorders = False
+        if layer is RenderContext.MicroBorderLayer.Background:
+            drawRegions = True
+            drawBorders = self._styleSheet.fillMicroBorders or self._styleSheet.shadeMicroBorders
+        else:
+            drawRegions = False
+            drawBorders = True
+
+        for sector in self._selector.sectors():
+            sectorClip = self._clipCache.sectorClipPath(
+                sectorX=sector.x(),
+                sectorY=sector.y())
+            sectorClipBounds = sectorClip.bounds()
+            if useCurvedBorders:
+                # Inflate the sector clip bounds slightly when drawing curved borders to
+                # account for the fact the borders can extend out slightly past the
+                # hexes they enclose
+                sectorClipBounds.inflate(
+                    travellermap.ParsecScaleX * 0.05,
+                    travellermap.ParsecScaleY * 0.05)
+            if not self._absoluteViewRect.intersectsWith(sectorClipBounds):
+                continue
+
+            sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
+            regionOutlines: typing.List[maprenderer.SectorPath] = []
+            if sectorRegions and drawRegions:
+                for outline in sectorRegions:
+                    outlineBounds = outline.bounds()
+                    if useCurvedBorders:
+                        # Inflate the outline border slightly when drawing curved borders to
+                        # account for the fact the borders can extend out slightly past the
+                        # hexes they enclose
+                        outlineBounds.inflate(
+                            travellermap.ParsecScaleX * 0.05,
+                            travellermap.ParsecScaleY * 0.05)
+
+                    if self._absoluteViewRect.intersectsWith(outlineBounds):
+                        regionOutlines.append(outline)
+
+            sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
+            borderOutlines: typing.List[maprenderer.SectorPath] = []
+            if sectorBorders and drawBorders:
+                for outline in sectorBorders:
+                    outlineBounds = outline.bounds()
+                    if useCurvedBorders:
+                        # Inflate the outline border slightly when drawing curved borders to
+                        # account for the fact the borders can extend out slightly past the
+                        # hexes they enclose
+                        outlineBounds.inflate(
+                            travellermap.ParsecScaleX * 0.05,
+                            travellermap.ParsecScaleY * 0.05)
+
+                    if self._absoluteViewRect.intersectsWith(outlineBounds):
+                        borderOutlines.append(outline)
+
+            if not regionOutlines and not borderOutlines:
+                continue
+
+            if  layer is RenderContext.MicroBorderLayer.Background and \
+                borderOutlines and self._styleSheet.fillMicroBorders and useCurvedBorders:
+                # When drawing filled curved borders the clipping of the fill
+                # needs to be handled separately from border pen/shade and
+                # regions. This is required due to the kind of hacky way
+                # drawing filled borders are handled in Traveller Map. Rather
+                # than there being a single polygon covering multiple sectors,
+                # each sector has polygons for their portion of the area covered
+                # by the border. The problem is that in some cases (e.g. Core)
+                # the polygon for that sector extends outside area of that
+                # sector. This is problematic if you have to draw two sectors
+                # like this next to each other as the regions where the borders
+                # overlap are drawn darker. To work around this we clip border
+                # fills to the sector outline, this is the same way Traveller
+                # Map works around the issue. My code is slightly different as
+                # rather than having regions, border fills, border shades
+                # and border strokes as 4 render passes, I combine them into
+                # just 2 to reduce the number of times the sector clip path is
+                # applied to the graphics as it's a relatively costly operation
+                with self._graphics.save():
+                    self._graphics.intersectClipPath(path=sectorClip)
+
+                    for outline in borderOutlines:
+                        color = self._calculateBorderColor(outline)
+                        brush.setColor(maprenderer.makeAlphaColor(
+                            alpha=RenderContext._MicroBorderFillAlpha,
+                            color=color))
+                        self._drawMicroBorder(
+                            outline=outline,
+                            brush=brush)
+
+            with self._graphics.save():
+                # Clip the drawing to the sector. When drawing curved borders
+                # a slightly expanded clip rect is used rather than the
+                # exact sector hex outline as curved borders draw slightly
+                # outside the sectors true area
+                if not useCurvedBorders:
+                    self._graphics.intersectClipPath(path=sectorClip)
+                else:
+                    self._graphics.intersectClipRect(rect=sectorClipBounds)
+
+                for outline in regionOutlines:
+                    color = self._calculateBorderColor(outline)
+                    brush.setColor(maprenderer.makeAlphaColor(
+                        alpha=RenderContext._MicroBorderFillAlpha,
+                        color=color))
+
+                    self._drawMicroBorder(
+                        outline=outline,
+                        brush=brush)
+
+                useBrush = layer is RenderContext.MicroBorderLayer.Background and \
+                    self._styleSheet.fillMicroBorders and not useCurvedBorders
+                for outline in borderOutlines:
+                    color = self._calculateBorderColor(outline)
+
+                    if useBrush:
+                        brush.setColor(maprenderer.makeAlphaColor(
+                            alpha=RenderContext._MicroBorderFillAlpha,
+                            color=color))
+
+                    if pen:
+                        if layer is RenderContext.MicroBorderLayer.Background:
+                            pen.setColor(maprenderer.makeAlphaColor(
+                                alpha=RenderContext._MicroBorderShadeAlpha,
+                                color=color))
+                        else:
+                            pen.setColor(color)
+
+                            style = outline.style()
+                            if not style:
+                                style = maprenderer.LineStyle.Solid
+                            pen.setStyle(
+                                self._styleSheet.microBorders.linePen.style()
+                                if self._styleSheet.microBorders.linePen.style() is not maprenderer.LineStyle.Solid else
+                                style)
+
+                    self._drawMicroBorder(
+                        outline=outline,
+                        brush=brush if useBrush else None,
+                        pen=pen)
+
+    def _calculateBorderColor(self, outline: maprenderer.SectorPath) -> str:
+        try:
+            color = outline.color()
+            # TODO: Validation that the outline color is valid should be done at read in
+            # rather than each time it's drawn
+            travellermap.parseHtmlColor(htmlColor=color)
+        except Exception as ex:
+            logging.warning('Failed to parse region colour', exc_info=ex)
+            color = None
+
         if not color:
             color = self._styleSheet.microRoutes.linePen.color()
-
-        style = outline.style()
-        if not style:
-            style = maprenderer.LineStyle.Solid
 
         if self._styleSheet.grayscale or \
             not travellermap.noticeableColorDifference(color, self._styleSheet.backgroundBrush.color()):
             color = self._styleSheet.microBorders.linePen.color()
 
-        if brush:
-            try:
-                brush.setColor(maprenderer.makeAlphaColor(
-                    alpha=RenderContext._MicroBorderFillAlpha,
-                    color=color))
-            except Exception as ex:
-                logging.warning('Failed to parse region colour', exc_info=ex)
-                return
+        return color
 
-        if pen:
-            pen.setColor(color)
-            pen.setStyle(
-                self._styleSheet.microBorders.linePen.style()
-                if self._styleSheet.microBorders.linePen.style() is not maprenderer.LineStyle.Solid else
-                style)
-
-        if shadePen:
-            try:
-                color = maprenderer.makeAlphaColor(
-                    alpha=RenderContext._MicroBorderShadeAlpha,
-                    color=color)
-            except Exception as ex:
-                logging.warning('Failed to parse region colour', exc_info=ex)
-                return
-            shadePen.setColor(color)
-            shadePen.setStyle(maprenderer.LineStyle.Solid)
-
+    def _drawMicroBorder(
+            self,
+            outline: maprenderer.SectorPath,
+            brush: typing.Optional[maprenderer.AbstractBrush] = None,
+            pen: typing.Optional[maprenderer.AbstractPen] = None
+            ) -> None:
         if self._styleSheet.microBorderStyle is maprenderer.MicroBorderStyle.Curve:
             self._graphics.drawCurve(
                 spline=outline.spline(),
-                pen=shadePen if shadePen else pen,
+                pen=pen,
                 brush=brush)
-
-            if pen and shadePen:
-                self._graphics.drawCurve(
-                    spline=outline.spline(),
-                    pen=pen)
-        elif shadePen or pen:
+        elif pen:
             with self._graphics.save():
                 # Clip to the path itself - this means adjacent borders don't clash
                 self._graphics.intersectClipPath(path=outline.path())
                 self._graphics.drawPath(
                     path=outline.path(),
-                    pen=shadePen if shadePen else pen,
+                    pen=pen,
                     brush=brush)
-
-                if pen and shadePen:
-                    self._graphics.drawPath(
-                        path=outline.path(),
-                        pen=pen)
         else:
             self._graphics.drawPath(
                 path=outline.path(),

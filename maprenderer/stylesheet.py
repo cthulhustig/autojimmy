@@ -73,9 +73,8 @@ class StyleSheet(object):
         maprenderer.LayerId.Grid_Subsector,
         maprenderer.LayerId.Grid_Parsec,
         maprenderer.LayerId.Names_Subsector,
-        maprenderer.LayerId.Micro_BordersFill,
-        maprenderer.LayerId.Micro_BordersShade,
-        maprenderer.LayerId.Micro_BordersStroke,
+        maprenderer.LayerId.Micro_BordersBackground,
+        maprenderer.LayerId.Micro_BordersForeground,
         maprenderer.LayerId.Micro_Routes,
         maprenderer.LayerId.Micro_BorderExplicitLabels,
         maprenderer.LayerId.Names_Sector,
@@ -1202,14 +1201,12 @@ class StyleSheet(object):
             # it and the other border layers.
             # If I don't move the layer then world backgrounds exclude the dashes
             # for worlds in Mongoose style
-            """
             self.layerOrder.moveAfter(
                 target=maprenderer.LayerId.Worlds_Background,
-                item=maprenderer.LayerId.Micro_BordersStroke)
+                item=maprenderer.LayerId.Micro_BordersForeground)
             self.layerOrder.moveAfter(
                 target=maprenderer.LayerId.Worlds_Foreground,
-                item=maprenderer.LayerId.Micro_Routes)"
-            """
+                item=maprenderer.LayerId.Micro_Routes)
 
             self.deepBackgroundOpacity = 0
 
