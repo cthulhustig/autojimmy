@@ -219,7 +219,7 @@ class QtMapSpline(object):
             qtRect = qtPainterPath.boundingRect()
             self._bounds = maprenderer.RectangleF(
                 x=qtRect.left(),
-                y=qtRect.right(),
+                y=qtRect.top(),
                 width=qtRect.width(),
                 height=qtRect.height())
 

@@ -40,8 +40,6 @@ class TextBackgroundStyle(enum.Enum):
     Outline = 3
     Filled = 4
 
-# TODO: Have another go at implementing curves. Remove this type if I can't
-# get them looking correct
 class MicroBorderStyle(enum.Enum):
     Hex = 0
     Curve = 1

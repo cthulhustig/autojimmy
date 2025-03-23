@@ -29,11 +29,6 @@ class SectorPath(object):
     def style(self) -> typing.Optional[maprenderer.LineStyle]:
         return self._style
 
-    # TODO: This shouldn't be hear now as it's ambiguous if it's for
-    # the path or the spline.
-    def bounds(self) -> maprenderer.RectangleF:
-        return self._path.bounds()
-
 class SectorLines(object):
     def __init__(
             self,

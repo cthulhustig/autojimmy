@@ -1715,15 +1715,10 @@ class RenderContext(object):
             regionOutlines: typing.List[maprenderer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
-                    outlineBounds = outline.bounds()
-                    if useCurvedBorders:
-                        # Inflate the outline border slightly when drawing curved borders to
-                        # account for the fact the borders can extend out slightly past the
-                        # hexes they enclose
-                        outlineBounds.inflate(
-                            travellermap.ParsecScaleX * 0.05,
-                            travellermap.ParsecScaleY * 0.05)
-
+                    outlineBounds = \
+                        outline.spline().bounds() \
+                        if useCurvedBorders else \
+                        outline.path().bounds()
                     if self._absoluteViewRect.intersectsWith(outlineBounds):
                         regionOutlines.append(outline)
 
@@ -1731,15 +1726,10 @@ class RenderContext(object):
             borderOutlines: typing.List[maprenderer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:
-                    outlineBounds = outline.bounds()
-                    if useCurvedBorders:
-                        # Inflate the outline border slightly when drawing curved borders to
-                        # account for the fact the borders can extend out slightly past the
-                        # hexes they enclose
-                        outlineBounds.inflate(
-                            travellermap.ParsecScaleX * 0.05,
-                            travellermap.ParsecScaleY * 0.05)
-
+                    outlineBounds = \
+                        outline.spline().bounds() \
+                        if useCurvedBorders else \
+                        outline.path().bounds()
                     if self._absoluteViewRect.intersectsWith(outlineBounds):
                         borderOutlines.append(outline)
 
@@ -1747,7 +1737,8 @@ class RenderContext(object):
                 continue
 
             if  layer is RenderContext.MicroBorderLayer.Background and \
-                borderOutlines and self._styleSheet.fillMicroBorders and useCurvedBorders:
+                borderOutlines and self._styleSheet.fillMicroBorders and \
+                useCurvedBorders:
                 # When drawing filled curved borders the clipping of the fill
                 # needs to be handled separately from border pen/shade and
                 # regions. This is required due to the kind of hacky way
@@ -1799,34 +1790,34 @@ class RenderContext(object):
 
                 useBrush = layer is RenderContext.MicroBorderLayer.Background and \
                     self._styleSheet.fillMicroBorders and not useCurvedBorders
-                for outline in borderOutlines:
-                    color = self._calculateBorderColor(outline)
+                if useBrush or pen:
+                    for outline in borderOutlines:
+                        color = self._calculateBorderColor(outline)
 
-                    if useBrush:
-                        brush.setColor(maprenderer.makeAlphaColor(
-                            alpha=RenderContext._MicroBorderFillAlpha,
-                            color=color))
-
-                    if pen:
-                        if layer is RenderContext.MicroBorderLayer.Background:
-                            pen.setColor(maprenderer.makeAlphaColor(
-                                alpha=RenderContext._MicroBorderShadeAlpha,
+                        if useBrush:
+                            brush.setColor(maprenderer.makeAlphaColor(
+                                alpha=RenderContext._MicroBorderFillAlpha,
                                 color=color))
-                        else:
-                            pen.setColor(color)
 
-                            style = outline.style()
-                            if not style:
-                                style = maprenderer.LineStyle.Solid
-                            pen.setStyle(
-                                self._styleSheet.microBorders.linePen.style()
-                                if self._styleSheet.microBorders.linePen.style() is not maprenderer.LineStyle.Solid else
-                                style)
+                        if pen:
+                            if layer is RenderContext.MicroBorderLayer.Background:
+                                pen.setColor(maprenderer.makeAlphaColor(
+                                    alpha=RenderContext._MicroBorderShadeAlpha,
+                                    color=color))
+                            else:
+                                pen.setColor(color)
 
-                    self._drawMicroBorder(
-                        outline=outline,
-                        brush=brush if useBrush else None,
-                        pen=pen)
+                                style = self._styleSheet.microBorders.linePen.style()
+                                if style is maprenderer.LineStyle.Solid:
+                                    style = outline.style()
+                                    if not style:
+                                        style = maprenderer.LineStyle.Solid
+                                pen.setStyle(style)
+
+                        self._drawMicroBorder(
+                            outline=outline,
+                            brush=brush if useBrush else None,
+                            pen=pen)
 
     def _calculateBorderColor(self, outline: maprenderer.SectorPath) -> str:
         try:
