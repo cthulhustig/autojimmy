@@ -1142,6 +1142,18 @@ class RenderContext(object):
                                     font=self._styleSheet.hexNumber.font,
                                     text=worldInfo.uwpString)
 
+                            # TODO: There is something not right with how I'm doing base allegiances
+                            # (and possibly world allegiances in general). On Traveller Map
+                            # Depot (Massilia 0301) has a white square drawn in the bottom space but
+                            # I'm drawing it with a red square in the upper space.
+                            # - I'm not sure where the colour difference is coming from
+                            # - The position difference is because the wrong glyph is being used, Traveller
+                            #   Map is using the one for "Im.D" where as I'm using the one that matches
+                            #   "*.D". One problem is I'm not generating an "<Allegiance>.<Base>" string for
+                            #   it to match against. However, even if I was the bigger problem is the allegiance
+                            #   code I'm passing is "ImDa" not "Im" that traveller map uses. This looks like I'm
+                            #   missing the allegiance mapping stuff World.BaseAllegiance in the Traveller Map
+                            #   code
                             if renderBases:
                                 # Base 1
                                 bottomUsed = False

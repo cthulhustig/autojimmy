@@ -91,9 +91,10 @@ class GlyphDefs(object):
             glyph = GlyphDefs._ResearchCodeMap.get(researchStation, glyph)
         return glyph
 
-    # TODO: Using regexes for this is horrible AND slow
+    @staticmethod
     def _compileGlyphRegex(wildcard: str) -> re.Pattern:
         return re.compile(fnmatch.translate(wildcard))
+
     _BaseGlyphs: typing.List[typing.Tuple[re.Pattern, Glyph]] = [
         (_compileGlyphRegex(r'*.C'), Glyph(StarStar, bias=Glyph.GlyphBias.Bottom)), # Vargr Corsair Base
         (_compileGlyphRegex(r'Im.D'), Glyph(Square, bias=Glyph.GlyphBias.Bottom)), # Imperial Depot
