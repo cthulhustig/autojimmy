@@ -804,7 +804,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             emSize: float,
             style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
             ) -> QtMapFont:
-        # TODO: Traveller Map has this as 1.4 (in makeFont) but I found I needed
+        # NOTE: Traveller Map has this as 1.4 (in makeFont) but I found I needed
         # to lower it to get fonts rendering the correct size.
         return QtMapFont(family=family, emSize=emSize * 1.0, style=style)
 
