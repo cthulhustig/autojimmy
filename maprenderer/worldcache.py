@@ -18,7 +18,6 @@ class WorldInfo(object):
     def __init__(
             self,
             world: traveller.World,
-            graphics: maprenderer.AbstractGraphics,
             imageCache: maprenderer.ImageCache
             ) -> None:
         self.name = world.name() if not world.isNameGenerated() else ''
@@ -145,10 +144,8 @@ class WorldCache(object):
     _DefaultCapacity = 500
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics,
             imageCache: maprenderer.ImageCache
             ) -> None:
-        self._graphics = graphics
         self._imageCache = imageCache
         self._infoCache = common.LRUCache[
             traveller.World,
@@ -165,7 +162,6 @@ class WorldCache(object):
         if not worldInfo:
             worldInfo = WorldInfo(
                 world=world,
-                graphics=self._graphics,
                 imageCache=self._imageCache)
             self._infoCache[world] = worldInfo
         return worldInfo

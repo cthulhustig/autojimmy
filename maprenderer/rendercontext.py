@@ -77,7 +77,6 @@ class RenderContext(object):
             graphics=self._graphics,
             styleCache=self._styleCache)
         self._worldCache = maprenderer.WorldCache(
-            graphics=self._graphics,
             imageCache=self._imageCache)
         self._gridCache = maprenderer.GridCache(
             graphics=self._graphics,
@@ -874,16 +873,68 @@ class RenderContext(object):
             ((self._options & maprenderer.MapOptions.WorldsMask) == 0):
             return
 
+        dotPen = self._graphics.createPen(
+            color=self._styleSheet.capitals.fillBrush.color(),
+            width=1)
+        dotBrush = self._styleSheet.capitals.fillBrush
+        dotRadius = 3
+        dotRect = maprenderer.RectangleF(
+            x=-dotRadius / 2,
+            y=-dotRadius / 2,
+            width=dotRadius,
+            height=dotRadius)
+
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
             for worldLabel in self._worldLabelCache.labels:
-                if (worldLabel.mapOptions & self._options) != 0:
-                    worldLabel.paint(
+                if (worldLabel.options() & self._options) == 0:
+                    continue
+
+                with self._graphics.save():
+                    location = worldLabel.location()
+                    self._graphics.translateTransform(dx=location.x(), dy=location.y())
+                    self._graphics.scaleTransform(
+                        scaleX=1.0 / travellermap.ParsecScaleX,
+                        scaleY=1.0 / travellermap.ParsecScaleY)
+
+                    self._graphics.drawEllipse(
+                        rect=dotRect,
+                        pen=dotPen,
+                        brush=dotBrush)
+
+                    biasX = worldLabel.biasX()
+                    biasY = worldLabel.biasY()
+                    if biasX > 0:
+                        if biasY < 0:
+                            format = maprenderer.TextAlignment.BottomLeft
+                        elif biasY > 0:
+                            format = maprenderer.TextAlignment.TopLeft
+                        else:
+                            format = maprenderer.TextAlignment.MiddleLeft
+                    elif biasX < 0:
+                        if biasY < 0:
+                            format = maprenderer.TextAlignment.BottomRight
+                        elif biasY > 0:
+                            format = maprenderer.TextAlignment.TopRight
+                        else:
+                            format = maprenderer.TextAlignment.MiddleRight
+                    else:
+                        if biasY < 0:
+                            format = maprenderer.TextAlignment.BottomCenter
+                        elif biasY > 0:
+                            format = maprenderer.TextAlignment.TopCenter
+                        else:
+                            format = maprenderer.TextAlignment.Centered
+
+                    maprenderer.drawStringHelper(
                         graphics=self._graphics,
-                        dotBrush=self._styleSheet.capitals.fillBrush,
-                        labelBrush=self._styleSheet.capitals.textBrush,
-                        labelFont=self._styleSheet.macroNames.smallFont)
+                        text=worldLabel.name(),
+                        font=self._styleSheet.macroNames.smallFont,
+                        brush=self._styleSheet.capitals.textBrush,
+                        x=biasX * dotRadius / 2,
+                        y=biasY * dotRadius / 2,
+                        format=format)
 
     def _drawMegaLabels(self) -> None:
         if not self._styleSheet.megaNames.visible:

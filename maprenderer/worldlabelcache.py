@@ -11,80 +11,31 @@ class WorldLabel(object):
     def __init__(
             self,
             name: str,
-            mapOptions: maprenderer.MapOptions,
+            options: maprenderer.MapOptions,
             location: maprenderer.PointF,
-            labelBiasX: int = 0,
-            labelBiasY: int = 0,
+            biasX: int = 0,
+            biasY: int = 0,
             ) -> None:
-        self.name = name
-        self.mapOptions = mapOptions
-        self.location = maprenderer.PointF(location)
-        self.labelBiasX = labelBiasX
-        self.labelBiasY = labelBiasY
+        self._name = name
+        self._options = options
+        self._location = maprenderer.PointF(location)
+        self._biasX = biasX
+        self._biasY = biasY
 
-    # TODO: I don't like the fact this lives here. All rendering should
-    # be in the render context
-    def paint(
-            self,
-            graphics: maprenderer.AbstractGraphics,
-            dotBrush: maprenderer.AbstractBrush,
-            labelBrush: maprenderer.AbstractBrush,
-            labelFont: maprenderer.AbstractFont
-            ) -> None:
-        pt = maprenderer.PointF(self.location)
+    def name(self) -> str:
+        return self._name
 
-        with graphics.save():
-            graphics.translateTransform(dx=pt.x(), dy=pt.y())
-            graphics.scaleTransform(
-                scaleX=1.0 / travellermap.ParsecScaleX,
-                scaleY=1.0 / travellermap.ParsecScaleY)
+    def options(self) -> maprenderer.MapOptions:
+        return self._options
 
-            radius = 3
-            graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
-            graphics.drawEllipse(
-                # TODO: This radius is static so rect could be created
-                # once rather than every frame
-                rect=maprenderer.RectangleF(
-                    x=-radius / 2,
-                    y=-radius / 2,
-                    width=radius,
-                    height=radius),
-                # TODO: Creating a pen every time isn't good
-                # TODO: Need to double check this pen width is correct
-                pen=graphics.createPen(color=dotBrush.color(), width=1),
-                brush=dotBrush)
+    def location(self) -> maprenderer.PointF:
+        return self._location
 
-            if self.labelBiasX > 0:
-                if self.labelBiasY < 0:
-                    format = maprenderer.TextAlignment.BottomLeft
-                elif self.labelBiasY > 0:
-                    format = maprenderer.TextAlignment.TopLeft
-                else:
-                    format = maprenderer.TextAlignment.MiddleLeft
-            elif self.labelBiasX < 0:
-                if self.labelBiasY < 0:
-                    format = maprenderer.TextAlignment.BottomRight
-                elif self.labelBiasY > 0:
-                    format = maprenderer.TextAlignment.TopRight
-                else:
-                    format = maprenderer.TextAlignment.MiddleRight
-            else:
-                if self.labelBiasY < 0:
-                    format = maprenderer.TextAlignment.BottomCenter
-                elif self.labelBiasY > 0:
-                    format = maprenderer.TextAlignment.TopCenter
-                else:
-                    format = maprenderer.TextAlignment.Centered
+    def biasX(self) -> int:
+        return self._biasX
 
-            maprenderer.drawStringHelper(
-                graphics=graphics,
-                text=self.name,
-                font=labelFont,
-                brush=labelBrush,
-                x=self.labelBiasX * radius / 2,
-                y=self.labelBiasY * radius / 2,
-                format=format)
+    def biasY(self) -> int:
+        return self._biasY
 
 # TODO: Should possibly combine this with map label cache
 class WorldLabelCache(object):
@@ -137,10 +88,10 @@ class WorldLabelCache(object):
 
                 self.labels.append(WorldLabel(
                     name=name,
-                    mapOptions=options,
+                    options=options,
                     location=location,
-                    labelBiasX=biasX,
-                    labelBiasY=biasY))
+                    biasX=biasX,
+                    biasY=biasY))
             except Exception as ex:
                 logging.warning(
                     f'Failed to read world label {index} from "{WorldLabelCache._WorldLabelPath}"',
