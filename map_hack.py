@@ -26,9 +26,12 @@ from pstats import SortKey
 # TODO: Jump routes
 # TODO: Other overlays
 # TODO: Ability to switch between this and the existing TravellerMapWidget
+# TODO: Animated move to new location
+# TODO: Spinwards/corewards etc labels
+# TODO: Current scale line in bottom right
 
 class MapHackView(QtWidgets.QWidget):
-    _MinScale = -7
+    _MinScale = -5
     _MaxScale = 10
     _DefaultCenterX = 0
     _DefaultCenterY = 0
