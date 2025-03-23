@@ -377,6 +377,9 @@ class StyleSheet(object):
         self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Sector
         self.numberAllHexes = False
 
+        self.dimUnofficialSectors = (self.options & maprenderer.MapOptions.DimUnofficial) != 0
+        self.colorCodeSectorStatus = (self.options & maprenderer.MapOptions.ColorCodeSectorStatus) != 0
+
         if self.scale < StyleSheet._WorldFullMinScale:
             # Atlas-style
 

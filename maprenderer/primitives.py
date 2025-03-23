@@ -87,6 +87,9 @@ class MapOptions(enum.IntFlag):
     DroyneWorlds = 0x200000
     MinorHomeWorlds = 0x400000
 
+    DimUnofficial = 0x1000000
+    ColorCodeSectorStatus = 0x2000000
+
 class LayerId(enum.Enum):
     #------------------------------------------------------------
     # Background
