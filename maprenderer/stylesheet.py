@@ -429,7 +429,7 @@ class StyleSheet(object):
                 style=maprenderer.FontStyle.Bold)
 
             if self._graphics.supportsWingdings():
-                self.wingdingsFont = self._createFont(
+                self.wingdingFont = self._createFont(
                     families='Wingdings',
                     emSize=0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.175 * fontScale))
                 self.glyphCharMap = None
