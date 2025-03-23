@@ -9,7 +9,6 @@ from .maplabelcache import *
 from .worldlabelcache import *
 from .vectorobjectcache import *
 from .defaultstylecache import *
-from .clippathcache import *
 from .sectorcache import *
 from .worldcache import *
 from .gridcache import *

@@ -73,6 +73,35 @@ class SectorCache(object):
     # This comes from the Traveller Map DrawMicroBorders code
     _SplineTension = 0.6
 
+    # NOTE: These offsets assume a clockwise winding
+    _TopClipOffsets = [
+        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
+        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
+        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + travellermap.HexWidthOffset, 0) # Center right
+    ]
+
+    _RightClipOffsets = [
+        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
+        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
+        (+0.5 + travellermap.HexWidthOffset, 1) # Center right of next hex
+    ]
+
+    _BottomClipOffsets = [
+        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
+        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
+        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - travellermap.HexWidthOffset, 0) # Center left
+    ]
+
+    _LeftClipOffsets = [
+        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
+        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
+        (-0.5 - travellermap.HexWidthOffset, -1) # Center left of next hex
+    ]
+
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
@@ -95,6 +124,10 @@ class SectorCache(object):
         self._routeCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
             typing.List[SectorLines]
+        ] = {}
+        self._clipCache: typing.Mapping[
+            typing.Tuple[int, int], # Sector x/y
+            maprenderer.AbstractPath
         ] = {}
 
     def isotropicWorldPoints(
@@ -240,6 +273,71 @@ class SectorCache(object):
         self._routeCache[key] = routes
 
         return routes
+
+    def clipPath(
+            self,
+            sectorX: int,
+            sectorY: int
+            ) -> maprenderer.AbstractPath:
+        key = (sectorX, sectorY)
+        clipPath = self._clipCache.get(key)
+        if clipPath:
+            return clipPath
+
+        originX, originY = travellermap.relativeSpaceToAbsoluteSpace(
+            (sectorX, sectorY, 1, 1))
+
+        points = []
+
+        count = len(SectorCache._TopClipOffsets)
+        y=0
+        for x in range(0, travellermap.SectorWidth, 2):
+            for i in range(count):
+                offsetX, offsetY = SectorCache._TopClipOffsets[i]
+                points.append(maprenderer.PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=((originY + y) - 0.5) + offsetY))
+
+        last = travellermap.SectorHeight - 2
+        count = len(SectorCache._RightClipOffsets)
+        x = travellermap.SectorWidth - 1
+        for y in range(0, travellermap.SectorHeight, 2):
+            if y == last:
+                count -= 1
+            for i in range(count):
+                offsetX, offsetY = SectorCache._RightClipOffsets[i]
+                points.append(maprenderer.PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=(originY + y) + offsetY))
+
+        count = len(SectorCache._BottomClipOffsets)
+        y = travellermap.SectorHeight - 1
+        for x in range(travellermap.SectorWidth - 1, -1, -2):
+            for i in range(count):
+                offsetX, offsetY = SectorCache._BottomClipOffsets[i]
+                points.append(maprenderer.PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=(originY + y) + offsetY))
+
+        last = travellermap.SectorHeight - 2
+        count = len(SectorCache._LeftClipOffsets)
+        x = 0
+        for y in range(travellermap.SectorHeight - 1, -1, -2):
+            if y == last:
+                count -= 1
+            for i in range(count):
+                offsetX, offsetY = SectorCache._LeftClipOffsets[i]
+                points.append(maprenderer.PointF(
+                    x=((originX + x) - 0.5) + offsetX,
+                    y=((originY + y) - 0.5) + offsetY))
+
+        types = [maprenderer.PathPointType.Start]
+        types.extend([maprenderer.PathPointType.Line] * (len(points) - 2))
+        types.append([maprenderer.PathPointType.Line | maprenderer.PathPointType.CloseSubpath])
+
+        path = self._graphics.createPath(points=points, types=types, closed=True)
+        self._clipCache[key] = path
+        return path
 
     def _createOutline(
             self,

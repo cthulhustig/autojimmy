@@ -73,8 +73,6 @@ class RenderContext(object):
         self._mapLabelCache = mapLabelCache
         self._worldLabelCache = worldLabelCache
         self._styleCache = styleCache
-        self._clipCache = maprenderer.ClipPathCache(
-            graphics=self._graphics)
         self._sectorCache = maprenderer.SectorCache(
             graphics=self._graphics,
             styleCache=self._styleCache)
@@ -1476,7 +1474,7 @@ class RenderContext(object):
                 color=self._styleSheet.backgroundBrush.color()))
             for sector in self._selector.sectors(tight=True):
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
-                    clipPath = self._clipCache.sectorClipPath(
+                    clipPath = self._sectorCache.clipPath(
                         sectorX=sector.x(),
                         sectorY=sector.y())
 
@@ -1509,7 +1507,7 @@ class RenderContext(object):
                 else:
                     continue
 
-                clipPath = self._clipCache.sectorClipPath(
+                clipPath = self._sectorCache.clipPath(
                     sectorX=sector.x(),
                     sectorY=sector.y())
 
@@ -1697,7 +1695,7 @@ class RenderContext(object):
             drawBorders = True
 
         for sector in self._selector.sectors():
-            sectorClip = self._clipCache.sectorClipPath(
+            sectorClip = self._sectorCache.clipPath(
                 sectorX=sector.x(),
                 sectorY=sector.y())
             sectorClipBounds = sectorClip.bounds()
