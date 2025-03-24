@@ -79,7 +79,7 @@ class MapHackView(QtWidgets.QWidget):
         self._vectorCache = maprenderer.VectorObjectCache(
             graphics=self._graphics)
         self._labelCache = maprenderer.LabelCache()
-        self._styleCache = maprenderer.DefaultStyleCache()
+        self._styleCache = maprenderer.StyleCache()
         maprenderer.WorldHelper.loadData() # TODO: Not sure where this should live
         self._renderer = self._createRenderer()
 

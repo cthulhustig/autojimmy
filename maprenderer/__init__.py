@@ -6,7 +6,7 @@ from .selector import *
 from .imagecache import *
 from .labelcache import *
 from .vectorobjectcache import *
-from .defaultstylecache import *
+from .stylecache import *
 from .sectorcache import *
 from .worldcache import *
 from .gridcache import *

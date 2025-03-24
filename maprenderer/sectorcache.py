@@ -64,8 +64,6 @@ class SectorLines(object):
     def allegiance(self) -> typing.Optional[str]:
         return self._allegiance
 
-# TODO: Should probably flatten style cache into this code as I think it's
-# the only thing that actually uses it
 class SectorCache(object):
     # This was moved from the style sheet as it never actually changes
     _RouteEndAdjust = 0.25
@@ -105,7 +103,7 @@ class SectorCache(object):
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
-            styleCache: maprenderer.DefaultStyleCache
+            styleCache: maprenderer.StyleCache
             ) -> None:
         self._graphics = graphics
         self._styleCache = styleCache
@@ -355,7 +353,7 @@ class SectorCache(object):
                 style = maprenderer.LineStyle.Dot
 
             if not color or not style:
-                defaultColor, defaultStyle = self._styleCache.defaultBorderStyle(source.allegiance())
+                defaultColor, defaultStyle = self._styleCache.borderStyle(source.allegiance())
                 if not color:
                     color = defaultColor
                 if not style:

@@ -53,7 +53,7 @@ class RenderContext(object):
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
             labelCache: maprenderer.LabelCache,
-            styleCache: maprenderer.DefaultStyleCache
+            styleCache: maprenderer.StyleCache
             ) -> None:
         self._graphics = graphics
         self._absoluteCenterX = absoluteCenterX
@@ -632,7 +632,7 @@ class RenderContext(object):
                     if not routeWidth or not routeColor or not routeStyle:
                         precedence = [route.allegiance(), route.type(), 'Im']
                         for key in precedence:
-                            defaultColor, defaultStyle, defaultWidth = self._styleCache.defaultRouteStyle(key)
+                            defaultColor, defaultStyle, defaultWidth = self._styleCache.routeStyle(key)
                             if not routeColor:
                                 routeColor = defaultColor
                             if not routeStyle:
