@@ -1,35 +1,26 @@
 import base64
+import logging
 import maprenderer
-import os
 import travellermap
 import typing
 import xml.etree.ElementTree
 
-# TODO: Revisit this class, I suspect it could be more efficient
-# TODO: This should probably live elsewhere
 class VectorObject(object):
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics,
-            name: str,
+            name: typing.Optional[str],
             originX: float,
             originY: float,
             scaleX: float,
             scaleY: float,
             nameX: float,
             nameY: float,
-            points: typing.Sequence[maprenderer.PointF],
-            types: typing.Optional[typing.Sequence[maprenderer.PathPointType]] = None,
-            bounds: typing.Optional[maprenderer.RectangleF] = None,
-            closed: bool = False,
+            bounds: maprenderer.RectangleF,
+            path: typing.Optional[maprenderer.AbstractPath],
             mapOptions: maprenderer.MapOptions = 0
             ) -> None:
         super().__init__()
 
-        if types and (len(points) != len(types)):
-            raise ValueError('VectorObject path point and type vectors have different lengths')
-
-        self._graphics = graphics
         self.name = name
         self.originX = originX
         self.originY = originY
@@ -37,137 +28,36 @@ class VectorObject(object):
         self.scaleY = scaleY
         self.nameX = nameX
         self.nameY = nameY
-        self.closed = closed
         self.mapOptions = mapOptions
-        self._pathDataPoints = [maprenderer.PointF(p) for p in points]
-        self._pathDataTypes = list(types) if types else None
-        self._minScale = None
-        self._maxScale = None
-        self._cachedBounds = maprenderer.RectangleF(bounds) if bounds else None
-        self._cachedPath: typing.Optional[maprenderer.AbstractPath] = None
+        self.path = path
 
-    @property
-    def pathDataPoints(self) -> typing.Sequence[maprenderer.PointF]:
-        return self._pathDataPoints
+        self._bounds = maprenderer.RectangleF(bounds)
+        self._bounds.setX(self._bounds.x() - self.originX)
+        self._bounds.setY(self._bounds.y() - self.originY)
+        self._bounds.setX(self._bounds.x() * self.scaleX)
+        self._bounds.setY(self._bounds.y() * self.scaleY)
+        self._bounds.setWidth(self._bounds.width() * self.scaleX)
+        self._bounds.setHeight(self._bounds.height() * self.scaleY)
+        if self._bounds.width() < 0:
+            self._bounds.setX(self._bounds.x() + self._bounds.width())
+            self._bounds.setWidth(-self._bounds.width())
+        if self._bounds.height() < 0:
+            self._bounds.setY(self._bounds.y() + self._bounds.height())
+            self._bounds.setHeight(-self._bounds.height())
+
+        self._namePosition = self._bounds.centre()
+        self._namePosition.setX(
+            self._namePosition.x() + (self._bounds.width() * (self.nameX / bounds.width())))
+        self._namePosition.setY(
+            self._namePosition.y() + (self._bounds.height() * (self.nameY / bounds.height())))
 
     @property
     def bounds(self) -> maprenderer.RectangleF:
-        # Compute bounds if not already set
-        if (not self._cachedBounds) and self.pathDataPoints:
-            left = right = top = bottom = None
-            for point in self._pathDataPoints:
-                if (not left) or (point.x() < left):
-                    left = point.x()
-                if (not right) or (point.x() > right):
-                    right = point.x()
-                if (not top) or (point.y() < top):
-                    top = point.y()
-                if (not bottom) or (point.y() > bottom):
-                    bottom = point.y()
-            self._cachedBounds = maprenderer.RectangleF(
-                x=left,
-                y=top,
-                width=right - left,
-                height=bottom - top)
-        # TODO: Returning a copy is wasteful, is it needed?
-        return maprenderer.RectangleF(self._cachedBounds) # Don't return internal copy
+        return maprenderer.RectangleF(self._bounds)
 
     @property
-    def pathDataTypes(self) -> typing.List[int]:
-        if not self._pathDataPoints:
-            raise RuntimeError('Invalid VectorObject - PathDataPoints required')
-
-        if not self._pathDataTypes:
-            self._pathDataTypes = [maprenderer.PathPointType.Start]
-            for _ in range(1, len(self._pathDataPoints)):
-                self._pathDataTypes.append(maprenderer.PathPointType.Line)
-
-        return self._pathDataTypes
-
-    @property
-    def path(self) -> maprenderer.AbstractPath:
-        if not self.pathDataPoints:
-            raise RuntimeError('Invalid VectorObject - PathDataPoints required')
-        if not self._cachedPath:
-            self._cachedPath = self._graphics.createPath(
-                points=self.pathDataPoints,
-                types=self.pathDataTypes,
-                closed=self.closed)
-        return self._cachedPath
-
-    # TODO: I don't like the fact this is here, all rendering should be in the render context
-    def draw(
-            self,
-            graphics: maprenderer.AbstractGraphics,
-            rect: maprenderer.RectangleF,
-            pen: maprenderer.AbstractPen
-            ) -> None:
-        transformedBounds = self._transformedBounds()
-        if transformedBounds.intersectsWith(rect):
-            with graphics.save():
-                graphics.scaleTransform(scaleX=self.scaleX, scaleY=self.scaleY)
-                graphics.translateTransform(dx=-self.originX, dy=-self.originY)
-                graphics.drawPath(path=self.path, pen=pen)
-
-    def drawName(
-            self,
-            graphics: maprenderer.AbstractGraphics,
-            rect: maprenderer.RectangleF,
-            font: maprenderer.AbstractFont,
-            textBrush: maprenderer.AbstractBrush,
-            labelStyle: maprenderer.LabelStyle
-            ) -> None:
-        transformedBounds = self._transformedBounds()
-        if self.name and transformedBounds.intersectsWith(rect):
-            str = self.name
-            if labelStyle.uppercase:
-                str = str.upper()
-            pos = self._namePosition()
-
-            with graphics.save():
-                # TODO: Need to check rotation works here, GREAT RIFT text should be rotated (when I add support for it)
-                graphics.translateTransform(dx=pos.x(), dy=pos.y())
-                graphics.scaleTransform(
-                    scaleX=1.0 / travellermap.ParsecScaleX,
-                    scaleY=1.0 / travellermap.ParsecScaleY)
-                graphics.rotateTransform(-labelStyle.rotation)
-
-                maprenderer.drawStringHelper(
-                    graphics=graphics,
-                    text=str,
-                    font=font,
-                    brush=textBrush,
-                    x=0, y=0)
-
-    def _transformedBounds(self) -> maprenderer.RectangleF:
-        bounds = self.bounds
-
-        # TODO: I think subtraction and multiply could be combined in
-        # single update
-        bounds.setX(bounds.x() - self.originX)
-        bounds.setY(bounds.y() - self.originY)
-
-        bounds.setX(bounds.x() * self.scaleX)
-        bounds.setY(bounds.y() * self.scaleY)
-        bounds.setWidth(bounds.width() * self.scaleX)
-        bounds.setHeight(bounds.height() * self.scaleY)
-        if bounds.width() < 0:
-            bounds.setX(bounds.x() + bounds.width())
-            bounds.setWidth(-bounds.width())
-        if bounds.height() < 0:
-            bounds.setY(bounds.y() + bounds.height())
-            bounds.setHeight(-bounds.height())
-
-        return bounds
-
-    def _namePosition(self) -> maprenderer.PointF:
-        bounds = self.bounds
-        transformedBounds = self._transformedBounds()
-        center = transformedBounds.centre()
-        center.setX(center.x() + (transformedBounds.width() * (self.nameX / bounds.width())))
-        center.setY(center.y() + (transformedBounds.height() * (self.nameY / bounds.height())))
-
-        return center
+    def namePosition(self) -> maprenderer.PointF:
+        return maprenderer.PointF(self._namePosition)
 
 # NOTE: My implementation of vectors is slightly different from the Traveller
 # Map one. The vector format supports point types which specify a set of flags
@@ -226,14 +116,13 @@ class VectorObjectCache(object):
                     content=travellermap.DataStore.instance().loadTextResource(
                         filePath=path)))
             except Exception as ex:
-                # TODO: Do something better
-                print(ex)
+                logging.warning(f'Failed to parse vector object file "{path}"', exc_info=ex)
         return vectors
 
     def _parseFile(self, content: str) -> typing.Iterable[VectorObject]:
         rootElement = xml.etree.ElementTree.fromstring(content)
 
-        name = ''
+        name = None
         element = rootElement.find('./Name')
         if element is not None:
             name = element.text
@@ -242,11 +131,7 @@ class VectorObjectCache(object):
         element = rootElement.find('./MapOptions')
         if element is not None:
             for option in element.text.split():
-                try:
-                    mapOptions |= maprenderer.MapOptions[option]
-                except Exception as ex:
-                    # TODO: Do something better
-                    print(ex)
+                mapOptions |= maprenderer.MapOptions[option]
 
         originX = 0
         element = rootElement.find('./OriginX')
@@ -258,12 +143,12 @@ class VectorObjectCache(object):
         if element is not None:
             originY= float(element.text)
 
-        scaleX = 1 # TODO: Not sure about this default
+        scaleX = 1
         element = rootElement.find('./ScaleX')
         if element is not None:
             scaleX = float(element.text)
 
-        scaleY = 1 # TODO: Not sure about this default
+        scaleY = 1
         element = rootElement.find('./ScaleY')
         if element is not None:
             scaleY = float(element.text)
@@ -278,7 +163,8 @@ class VectorObjectCache(object):
         if element is not None:
             nameY = float(element.text)
 
-        # TODO: Is this used?
+        # NOTE: Only routes have a type and it doesn't seem to be used so
+        # don't bother loading it
         #element = rootElement.find('./Type')
 
         # NOTE: Loading the bounds from the file when it's present rather than
@@ -290,14 +176,14 @@ class VectorObjectCache(object):
         yElement = rootElement.find('./Bounds/Y')
         widthElement = rootElement.find('./Bounds/Width')
         heightElement = rootElement.find('./Bounds/Height')
-        bounds = None
-        if xElement is not None and yElement is not None \
-            and widthElement is not None and heightElement is not None:
-            bounds = maprenderer.RectangleF(
-                x=float(xElement.text),
-                y=float(yElement.text),
-                width=float(widthElement.text),
-                height=float(heightElement.text))
+        if xElement is None or yElement is None or widthElement is None or heightElement is None:
+            raise RuntimeError('Invalid bounds')
+
+        bounds = maprenderer.RectangleF(
+            x=float(xElement.text),
+            y=float(yElement.text),
+            width=float(widthElement.text),
+            height=float(heightElement.text))
 
         points = []
         for pointElement in rootElement.findall('./PathDataPoints/PointF'):
@@ -315,13 +201,14 @@ class VectorObjectCache(object):
 
         element = rootElement.find('./PathDataTypes')
         types = None
-        if element is not None:
+        if points and element is not None:
             types = base64.b64decode(element.text)
             startIndex = 0
             finishIndex = len(points) - 1
-            vectorPoints = []
-            vectors = []
+            sectionPoints = []
+            vectorObjects = []
 
+            # TODO: I'm not handling the different curve types here
             for currentIndex, (point, type) in enumerate(zip(points, types)):
                 isStartPoint = (type & maprenderer.PathPointType.PathTypeMask) == \
                     maprenderer.PathPointType.Start
@@ -330,13 +217,12 @@ class VectorObjectCache(object):
                     maprenderer.PathPointType.CloseSubpath
 
                 if isClosed or isLastPoint:
-                    vectorPoints.append(point)
+                    sectionPoints.append(point)
 
-                if (isStartPoint and vectorPoints) or isClosed or isLastPoint:
-                    isFirstVector = not vectors
+                if (isStartPoint and sectionPoints) or isClosed or isLastPoint:
+                    isFirstVector = not vectorObjects
                     nextIndex = currentIndex + (0 if isStartPoint else 1)
-                    vectors.append(VectorObject(
-                        graphics=self._graphics,
+                    vectorObjects.append(VectorObject(
                         name=name if isFirstVector else '', # Only set name on first to avoid multiple rendering
                         originX=originX,
                         originY=originY,
@@ -344,21 +230,18 @@ class VectorObjectCache(object):
                         scaleY=scaleY,
                         nameX=nameX,
                         nameY=nameY,
-                        points=vectorPoints,
-                        types=types[startIndex:nextIndex],
                         bounds=bounds,
-                        closed=isClosed,
+                        path=self._createPath(points=sectionPoints, types=types[startIndex:nextIndex], closed=isClosed),
                         mapOptions=mapOptions))
-                    vectorPoints.clear()
+                    sectionPoints.clear()
                     startIndex = nextIndex
 
-                vectorPoints.append(point)
+                sectionPoints.append(point)
 
-            return vectors
+            return vectorObjects
         else:
             # No path data types so this is just a single path
             return [VectorObject(
-                graphics=self._graphics,
                 name=name,
                 originX=originX,
                 originY=originY,
@@ -366,7 +249,19 @@ class VectorObjectCache(object):
                 scaleY=scaleY,
                 nameX=nameX,
                 nameY=nameY,
-                points=points,
-                types=types,
                 bounds=bounds,
+                path=self._createPath(points=points, types=None, closed=False) if points else None,
                 mapOptions=mapOptions)]
+
+    def _createPath(
+            self,
+            points: typing.Sequence[maprenderer.PointF],
+            types: typing.Optional[typing.Sequence[maprenderer.PathPointType]],
+            closed: bool
+            ) -> maprenderer.AbstractPath:
+        if not types:
+            types = [maprenderer.PathPointType.Start]
+            for _ in range(1, len(points)):
+                types.append(maprenderer.PathPointType.Line)
+        return self._graphics.createPath(points=points, types=types, closed=closed)
+

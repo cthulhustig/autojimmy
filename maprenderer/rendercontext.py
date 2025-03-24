@@ -426,11 +426,10 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
-        for vector in self._vectorCache.borders:
-            if (vector.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
-                vector.draw(
-                    graphics=self._graphics,
-                    rect=self._absoluteViewRect,
+        for vectorObject in self._vectorCache.borders:
+            if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
+                self._drawVectorObjectOutline(
+                    vectorObject=vectorObject,
                     pen=self._styleSheet.macroBorders.linePen)
 
     def _drawMacroRoutes(self) -> None:
@@ -439,11 +438,10 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
-        for vector in self._vectorCache.routes:
-            if (vector.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
-                vector.draw(
-                    graphics=self._graphics,
-                    rect=self._absoluteViewRect,
+        for vectorObject in self._vectorCache.routes:
+            if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
+                self._drawVectorObjectOutline(
+                    vectorObject=vectorObject,
                     pen=self._styleSheet.macroRoutes.linePen)
 
     def _drawSectorGrid(self) -> None:
@@ -788,10 +786,10 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        for vec in self._vectorCache.borders:
-            if (vec.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
+        for vectorObject in self._vectorCache.borders:
+            if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
                 continue
-            major = (vec.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
+            major = (vectorObject.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
             labelStyle = maprenderer.LabelStyle(uppercase=major)
             font = \
                 self._styleSheet.macroNames.font \
@@ -801,15 +799,14 @@ class RenderContext(object):
                 self._styleSheet.macroNames.textBrush \
                 if major else \
                 self._styleSheet.macroNames.textHighlightBrush
-            vec.drawName(
-                graphics=self._graphics,
-                rect=self._absoluteViewRect,
+            self._drawVectorObjectName(
+                vectorObject=vectorObject,
                 font=font,
                 textBrush=brush,
                 labelStyle=labelStyle)
 
-        for vec in self._vectorCache.rifts:
-            major = (vec.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
+        for vectorObject in self._vectorCache.rifts:
+            major = (vectorObject.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
             labelStyle = maprenderer.LabelStyle(rotation=35, uppercase=major)
             font = \
                 self._styleSheet.macroNames.font \
@@ -819,18 +816,17 @@ class RenderContext(object):
                 self._styleSheet.macroNames.textBrush \
                 if major else \
                 self._styleSheet.macroNames.textHighlightBrush
-            vec.drawName(
-                graphics=self._graphics,
-                rect=self._absoluteViewRect,
+            self._drawVectorObjectName(
+                vectorObject=vectorObject,
                 font=font,
                 textBrush=brush,
                 labelStyle=labelStyle)
 
         if self._styleSheet.macroRoutes.visible:
-            for vec in self._vectorCache.routes:
-                if (vec.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
+            for vectorObject in self._vectorCache.routes:
+                if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
                     continue
-                major = (vec.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
+                major = (vectorObject.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
                 labelStyle = maprenderer.LabelStyle(uppercase=major)
                 font = \
                     self._styleSheet.macroNames.font \
@@ -840,9 +836,8 @@ class RenderContext(object):
                     self._styleSheet.macroRoutes.textBrush \
                     if major else \
                     self._styleSheet.macroRoutes.textHighlightBrush
-                vec.drawName(
-                    graphics=self._graphics,
-                    rect=self._absoluteViewRect,
+                self._drawVectorObjectName(
+                    vectorObject=vectorObject,
                     font=font,
                     textBrush=brush,
                     labelStyle=labelStyle)
@@ -1916,6 +1911,44 @@ class RenderContext(object):
             self._graphics.drawPath(
                 path=outline.path(),
                 brush=brush)
+
+    def _drawVectorObjectOutline(
+            self,
+            vectorObject: maprenderer.VectorObject,
+            pen: maprenderer.AbstractPen
+            ) -> None:
+        if vectorObject.path and vectorObject.bounds.intersectsWith(self._absoluteViewRect):
+            with self._graphics.save():
+                self._graphics.scaleTransform(scaleX=vectorObject.scaleX, scaleY=vectorObject.scaleY)
+                self._graphics.translateTransform(dx=-vectorObject.originX, dy=-vectorObject.originY)
+                self._graphics.drawPath(path=vectorObject.path, pen=pen)
+
+    def _drawVectorObjectName(
+            self,
+            vectorObject: maprenderer.VectorObject,
+            font: maprenderer.AbstractFont,
+            textBrush: maprenderer.AbstractBrush,
+            labelStyle: maprenderer.LabelStyle
+            ) -> None:
+        if vectorObject.name and vectorObject.bounds.intersectsWith(self._absoluteViewRect):
+            text = vectorObject.name
+            if labelStyle.uppercase:
+                text = text.upper()
+
+            with self._graphics.save():
+                self._graphics.translateTransform(
+                    dx=vectorObject.namePosition.x(),
+                    dy=vectorObject.namePosition.y())
+                self._graphics.scaleTransform(
+                    scaleX=1.0 / travellermap.ParsecScaleX,
+                    scaleY=1.0 / travellermap.ParsecScaleY)
+                self._graphics.rotateTransform(-labelStyle.rotation)
+
+                self._drawMultiLineString(
+                    text=text,
+                    font=font,
+                    brush=textBrush,
+                    x=0, y=0)
 
     _WorldDingMap = {
         '\u2666': '\x74', # U+2666 (BLACK DIAMOND SUIT)
