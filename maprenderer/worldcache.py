@@ -7,6 +7,32 @@ import travellermap
 import typing
 
 class WorldInfo(object):
+    # Traveller Map doesn't use trade codes for things you might expect it
+    # would. Instead it has it's own logic based on UWP. Best guess is this is
+    # to support older sector data that might not have trade codes
+    _HighPopulation = 9
+    _AgriculturalAtmospheres = set([4, 5, 6, 7, 8, 9])
+    _AgriculturalHydrographics = set([4, 5, 6, 7, 8])
+    _AgriculturalPopulations = set([5, 6, 7])
+    _IndustrialAtmospheres = set([0, 1, 2, 4, 7, 9, 10, 11, 12])
+    _IndustrialMinPopulation = 9
+    _RichAtmospheres = set([6, 8])
+    _RichPopulations = set([6, 7, 8])
+
+    _HydrographicsImageMap = {
+        0x1: 'Hyd1',
+        0x2: 'Hyd2',
+        0x3: 'Hyd3',
+        0x4: 'Hyd4',
+        0x5: 'Hyd5',
+        0x6: 'Hyd6',
+        0x7: 'Hyd7',
+        0x8: 'Hyd8',
+        0x9: 'Hyd9',
+        0xA: 'HydA',
+    }
+    _HydrographicsDefaultImage = 'Hyd0'
+
     # Basic asteroid pattern, with probability varying per position:
     #   o o o
     #  o o o o
@@ -18,6 +44,7 @@ class WorldInfo(object):
     def __init__(
             self,
             world: traveller.World,
+            allegianceCache: maprenderer.AllegianceCache,
             imageCache: maprenderer.ImageCache
             ) -> None:
         self.name = world.name() if not world.isNameGenerated() else ''
@@ -37,13 +64,13 @@ class WorldInfo(object):
 
         self.isPlaceholder = self.uwpString == "XXXXXXX-X" or self.uwpString == "???????-?"
 
-        self.isCapital = maprenderer.WorldHelper.isCapital(world)
-        self.isHiPop = maprenderer.WorldHelper.isHighPopulation(world)
-        self.isAgricultural = maprenderer.WorldHelper.isAgricultural(world)
-        self.isRich = maprenderer.WorldHelper.isRich(world)
-        self.isIndustrial = maprenderer.WorldHelper.isIndustrial(world)
+        self.isCapital = WorldInfo._calcIsCapital(world)
+        self.isHiPop = WorldInfo._calcIsHighPopulation(world)
+        self.isAgricultural = WorldInfo._calcIsAgricultural(world)
+        self.isRich = WorldInfo._calcIsRich(world)
+        self.isIndustrial = WorldInfo._calcIsIndustrial(world)
 
-        self.isVacuum = maprenderer.WorldHelper.isVacuum(world)
+        self.isVacuum = WorldInfo._calcIsVacuum(world)
         self.isHarshAtmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10
 
         self.isAnomaly = world.isAnomaly()
@@ -67,8 +94,8 @@ class WorldInfo(object):
         self.isAmberZone = world.zone() is traveller.ZoneType.AmberZone
         self.isRedZone = world.zone() is traveller.ZoneType.RedZone
 
-        self.hasWater = maprenderer.WorldHelper.hasWater(world)
-        self.hasGasGiant = maprenderer.WorldHelper.hasGasGiants(world)
+        self.hasWater = WorldInfo._calcHasWater(world)
+        self.hasGasGiant = WorldInfo._calcHasGasGiants(world)
 
         self.starport = uwp.code(traveller.UWP.Element.StarPort)
         self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
@@ -81,7 +108,7 @@ class WorldInfo(object):
         # base glyphs. This is consistent with Traveller Map (although I've no idea
         # why it's done like this)
         if bases.count() >= 1:
-            allegiance = maprenderer.WorldHelper.allegianceCode(
+            allegiance = allegianceCache.allegianceCode(
                 world=world,
                 useLegacy=False)
             baseCode = traveller.Bases.code(bases[0])
@@ -96,7 +123,7 @@ class WorldInfo(object):
                 code=baseCode)
 
         if bases.count() >= 2:
-            legacyAllegiance = maprenderer.WorldHelper.allegianceCode(
+            legacyAllegiance = allegianceCache.allegianceCode(
                 world=world,
                 useLegacy=True)
             self.secondaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
@@ -104,7 +131,7 @@ class WorldInfo(object):
                 code=traveller.Bases.code(bases[1]))
 
         if bases.count() >= 3:
-            legacyAllegiance = maprenderer.WorldHelper.allegianceCode(
+            legacyAllegiance = allegianceCache.allegianceCode(
                 world=world,
                 useLegacy=True)
             self.tertiaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
@@ -123,7 +150,7 @@ class WorldInfo(object):
             self.specialFeatureGlyph = maprenderer.GlyphDefs.ExileCamp
 
         self.worldSize = world.physicalSize()
-        self.worldImage = maprenderer.WorldHelper.worldImage(
+        self.worldImage = WorldInfo._calcWorldImage(
                                 world=world,
                                 images=imageCache)
         self.imageRadius = (0.6 if self.worldSize <= 0 else (0.3 * (self.worldSize / 5.0 + 0.2))) / 2
@@ -140,16 +167,86 @@ class WorldInfo(object):
             if self.importance > 0 else \
             0
 
+    @staticmethod
+    def _calcHasWater(world: traveller.World) -> bool:
+        return world.hasWaterRefuelling()
+
+    @staticmethod
+    def _calcHasGasGiants(world: traveller.World) -> bool:
+        return world.hasGasGiantRefuelling()
+
+    @staticmethod
+    def _calcIsHighPopulation(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return population >= WorldInfo._HighPopulation
+
+    @staticmethod
+    def _calcIsAgricultural(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return atmosphere in WorldInfo._AgriculturalAtmospheres and \
+            hydrographics in WorldInfo._AgriculturalHydrographics and \
+            population in WorldInfo._AgriculturalPopulations
+
+    @staticmethod
+    def _calcIsIndustrial(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return atmosphere in WorldInfo._IndustrialAtmospheres and \
+            population >= WorldInfo._IndustrialMinPopulation
+
+    @staticmethod
+    def _calcIsRich(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        return atmosphere in WorldInfo._RichAtmospheres and \
+            population in WorldInfo._RichPopulations
+
+    @staticmethod
+    def _calcIsVacuum(world: traveller.World) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        return atmosphere == 0
+
+    @staticmethod
+    def _calcIsCapital(world: traveller.World) -> bool:
+        # TODO: Need to check "Capital" support is working
+        return world.hasTradeCode(traveller.TradeCode.SectorCapital) or \
+            world.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
+            world.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
+            world.hasRemark('Capital')
+
+    @staticmethod
+    def _calcWorldImage(
+            world: traveller.World,
+            images: maprenderer.ImageCache
+            ) -> maprenderer.AbstractImage:
+        uwp = world.uwp()
+        size = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
+        if size <= 0:
+            return images.worldImages['Belt']
+
+        hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
+        return images.worldImages[
+            WorldInfo._HydrographicsImageMap.get(hydrographics, WorldInfo._HydrographicsDefaultImage)]
+
 class WorldCache(object):
-    _DefaultCapacity = 500
     def __init__(
             self,
-            imageCache: maprenderer.ImageCache
+            allegianceCache: maprenderer.AllegianceCache,
+            imageCache: maprenderer.ImageCache,
+            capacity: int
             ) -> None:
+        self._allegianceCache = allegianceCache
         self._imageCache = imageCache
         self._infoCache = common.LRUCache[
             traveller.World,
-            WorldInfo](capacity=WorldCache._DefaultCapacity)
+            WorldInfo](capacity=capacity)
 
     def ensureCapacity(self, capacity) -> None:
         self._infoCache.ensureCapacity(capacity=capacity)
@@ -162,6 +259,7 @@ class WorldCache(object):
         if not worldInfo:
             worldInfo = WorldInfo(
                 world=world,
+                allegianceCache=self._allegianceCache,
                 imageCache=self._imageCache)
             self._infoCache[world] = worldInfo
         return worldInfo

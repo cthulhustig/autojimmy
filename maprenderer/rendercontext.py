@@ -38,6 +38,7 @@ class RenderContext(object):
     _NebulaRenderHeight = 2048 # Pixels
 
     _GridCacheCapacity = 50
+    _WorldCacheCapacity = 500
     _ParsecGridSlop = 1
 
     def __init__(
@@ -53,7 +54,8 @@ class RenderContext(object):
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
             labelCache: maprenderer.LabelCache,
-            styleCache: maprenderer.StyleCache
+            styleCache: maprenderer.StyleCache,
+            allegianceCache: maprenderer.AllegianceCache
             ) -> None:
         self._graphics = graphics
         self._absoluteCenterX = absoluteCenterX
@@ -71,11 +73,14 @@ class RenderContext(object):
         self._vectorCache = vectorCache
         self._labelCache = labelCache
         self._styleCache = styleCache
+        self._allegianceCache = allegianceCache
         self._sectorCache = maprenderer.SectorCache(
             graphics=self._graphics,
             styleCache=self._styleCache)
         self._worldCache = maprenderer.WorldCache(
-            imageCache=self._imageCache)
+            allegianceCache=self._allegianceCache,
+            imageCache=self._imageCache,
+            capacity=RenderContext._WorldCacheCapacity)
         self._gridCache = maprenderer.GridCache(
             graphics=self._graphics,
             capacity=RenderContext._GridCacheCapacity)
@@ -1312,7 +1317,7 @@ class RenderContext(object):
                                 text=name)
 
                         if renderAllegiances:
-                            alleg = maprenderer.WorldHelper.allegianceCode(
+                            alleg = self._allegianceCache.allegianceCode(
                                 world=world,
                                 useLegacy=not self._styleSheet.t5AllegianceCodes,
                                 ignoreDefault=True)

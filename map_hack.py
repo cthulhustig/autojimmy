@@ -80,7 +80,7 @@ class MapHackView(QtWidgets.QWidget):
             graphics=self._graphics)
         self._labelCache = maprenderer.LabelCache()
         self._styleCache = maprenderer.StyleCache()
-        maprenderer.WorldHelper.loadData() # TODO: Not sure where this should live
+        self._allegianceCache = maprenderer.AllegianceCache()
         self._renderer = self._createRenderer()
 
         self._worldDragStart: typing.Optional[QtCore.QPointF] = None
@@ -421,6 +421,7 @@ class MapHackView(QtWidgets.QWidget):
             vectorCache=self._vectorCache,
             labelCache=self._labelCache,
             styleCache=self._styleCache,
+            allegianceCache=self._allegianceCache,
             options=self._options)
 
     def _updateRendererView(self) -> None:
@@ -840,6 +841,7 @@ class MapHackView(QtWidgets.QWidget):
                     vectorCache=self._vectorCache,
                     labelCache=self._labelCache,
                     styleCache=self._styleCache,
+                    allegianceCache=self._allegianceCache,
                     options=self._options)
 
         image = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format.Format_ARGB32)

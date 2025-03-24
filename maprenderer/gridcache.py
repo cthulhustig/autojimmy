@@ -8,7 +8,8 @@ class GridCache(object):
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
-            capacity: int):
+            capacity: int
+            ) -> None:
         self._graphics = graphics
         self._cache = common.LRUCache(capacity=capacity)
 
