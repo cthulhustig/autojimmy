@@ -44,7 +44,6 @@ class WorldInfo(object):
     def __init__(
             self,
             world: traveller.World,
-            allegianceCache: maprenderer.AllegianceCache,
             imageCache: maprenderer.ImageCache
             ) -> None:
         self.name = world.name() if not world.isNameGenerated() else ''
@@ -100,6 +99,14 @@ class WorldInfo(object):
         self.starport = uwp.code(traveller.UWP.Element.StarPort)
         self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
 
+        self.t5Allegiance = world.allegiance()
+        self.legacyAllegiance = traveller.AllegianceManager.instance().legacyCode(self.t5Allegiance)
+        if not self.legacyAllegiance:
+            # Using the T5 allegiance if there is no legacy one seems odd
+            # but it's consistent with the Traveller Map implementation of
+            # T5AllegianceCodeToLegacyCode
+            self.legacyAllegiance = self.t5Allegiance
+
         bases = world.bases()
         self.primaryBaseGlyph = self.secondaryBaseGlyph = self.tertiaryBaseGlyph = self.specialFeatureGlyph = None
 
@@ -108,34 +115,25 @@ class WorldInfo(object):
         # base glyphs. This is consistent with Traveller Map (although I've no idea
         # why it's done like this)
         if bases.count() >= 1:
-            allegiance = allegianceCache.allegianceCode(
-                world=world,
-                useLegacy=False)
             baseCode = traveller.Bases.code(bases[0])
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
             # Special case: Show Zho Naval+Military as diamond
-            if world.allegiance() == 'Zh' and bases.string() == 'KM':
+            if self.t5Allegiance == 'Zh' and bases.string() == 'KM':
                 baseCode = 'Z'
 
             self.primaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
-                allegiance=allegiance,
+                allegiance=self.t5Allegiance,
                 code=baseCode)
 
         if bases.count() >= 2:
-            legacyAllegiance = allegianceCache.allegianceCode(
-                world=world,
-                useLegacy=True)
             self.secondaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
-                allegiance=legacyAllegiance,
+                allegiance=self.legacyAllegiance,
                 code=traveller.Bases.code(bases[1]))
 
         if bases.count() >= 3:
-            legacyAllegiance = allegianceCache.allegianceCode(
-                world=world,
-                useLegacy=True)
             self.tertiaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
-                allegiance=legacyAllegiance,
+                allegiance=self.legacyAllegiance,
                 code=traveller.Bases.code(bases[2]))
 
         if world.hasTradeCode(traveller.TradeCode.ResearchStation):
@@ -238,11 +236,9 @@ class WorldInfo(object):
 class WorldCache(object):
     def __init__(
             self,
-            allegianceCache: maprenderer.AllegianceCache,
             imageCache: maprenderer.ImageCache,
             capacity: int
             ) -> None:
-        self._allegianceCache = allegianceCache
         self._imageCache = imageCache
         self._infoCache = common.LRUCache[
             traveller.World,
@@ -251,7 +247,7 @@ class WorldCache(object):
     def ensureCapacity(self, capacity) -> None:
         self._infoCache.ensureCapacity(capacity=capacity)
 
-    def getWorldInfo(
+    def worldInfo(
             self,
             world: traveller.World
             ) -> WorldInfo:
@@ -259,7 +255,6 @@ class WorldCache(object):
         if not worldInfo:
             worldInfo = WorldInfo(
                 world=world,
-                allegianceCache=self._allegianceCache,
                 imageCache=self._imageCache)
             self._infoCache[world] = worldInfo
         return worldInfo

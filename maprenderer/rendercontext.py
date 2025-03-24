@@ -41,6 +41,26 @@ class RenderContext(object):
     _WorldCacheCapacity = 500
     _ParsecGridSlop = 1
 
+    _DefaultAllegiances = set([
+        'Im', # Classic Imperium
+        'ImAp', # Third Imperium, Amec Protectorate (Dagu)
+        'ImDa', # Third Imperium, Domain of Antares (Anta/Empt/Lish)
+        'ImDc', # Third Imperium, Domain of Sylea (Core/Delp/Forn/Mass)
+        'ImDd', # Third Imperium, Domain of Deneb (Dene/Reft/Spin/Troj)
+        'ImDg', # Third Imperium, Domain of Gateway (Glim/Hint/Ley)
+        'ImDi', # Third Imperium, Domain of Ilelish (Daib/Ilel/Reav/Verg/Zaru)
+        'ImDs', # Third Imperium, Domain of Sol (Alph/Dias/Magy/Olde/Solo)
+        'ImDv', # Third Imperium, Domain of Vland (Corr/Dagu/Gush/Reft/Vlan)
+        'ImLa', # Third Imperium, League of Antares (Anta)
+        'ImLc', # Third Imperium, Lancian Cultural Region (Corr/Dagu/Gush)
+        'ImLu', # Third Imperium, Luriani Cultural Association (Ley/Forn)
+        'ImSy', # Third Imperium, Sylean Worlds (Core)
+        'ImVd', # Third Imperium, Vegan Autonomous District (Solo)
+        'XXXX', # Unknown
+        '??', # Placeholder - show as blank
+        '--', # Placeholder - show as blank
+    ])
+
     def __init__(
             self,
             graphics: maprenderer.AbstractGraphics,
@@ -54,8 +74,7 @@ class RenderContext(object):
             imageCache: maprenderer.ImageCache,
             vectorCache: maprenderer.VectorObjectCache,
             labelCache: maprenderer.LabelCache,
-            styleCache: maprenderer.StyleCache,
-            allegianceCache: maprenderer.AllegianceCache
+            styleCache: maprenderer.StyleCache
             ) -> None:
         self._graphics = graphics
         self._absoluteCenterX = absoluteCenterX
@@ -73,12 +92,10 @@ class RenderContext(object):
         self._vectorCache = vectorCache
         self._labelCache = labelCache
         self._styleCache = styleCache
-        self._allegianceCache = allegianceCache
         self._sectorCache = maprenderer.SectorCache(
             graphics=self._graphics,
             styleCache=self._styleCache)
         self._worldCache = maprenderer.WorldCache(
-            allegianceCache=self._allegianceCache,
             imageCache=self._imageCache,
             capacity=RenderContext._WorldCacheCapacity)
         self._gridCache = maprenderer.GridCache(
@@ -985,7 +1002,7 @@ class RenderContext(object):
 
             rect = maprenderer.RectangleF()
             for world in worlds:
-                worldInfo = self._worldCache.getWorldInfo(world=world)
+                worldInfo = self._worldCache.worldInfo(world=world)
 
                 renderName = False
                 if renderAllNames or renderKeyNames:
@@ -1141,7 +1158,7 @@ class RenderContext(object):
             self._graphics.scaleTransform(scaleX=scaleX, scaleY=scaleY)
 
             for world in worlds:
-                worldInfo = self._worldCache.getWorldInfo(world=world)
+                worldInfo = self._worldCache.worldInfo(world=world)
                 renderName = False
                 if renderAllNames or renderKeyNames:
                     renderName = renderAllNames or worldInfo.isCapital or worldInfo.isHiPop
@@ -1316,17 +1333,18 @@ class RenderContext(object):
                                 font=font,
                                 text=name)
 
-                        if renderAllegiances:
-                            alleg = self._allegianceCache.allegianceCode(
-                                world=world,
-                                useLegacy=not self._styleSheet.t5AllegianceCodes,
-                                ignoreDefault=True)
-                            if alleg:
+                        if renderAllegiances and worldInfo.t5Allegiance not in RenderContext._DefaultAllegiances:
+                            allegiance = \
+                                worldInfo.t5Allegiance \
+                                if self._styleSheet.t5AllegianceCodes else \
+                                worldInfo.legacyAllegiance
+
+                            if allegiance:
                                 if self._styleSheet.lowerCaseAllegiance:
-                                    alleg = alleg.lower()
+                                    allegiance = allegiance.lower()
 
                                 self._graphics.drawString(
-                                    text=alleg,
+                                    text=allegiance,
                                     font=self._styleSheet.worlds.smallFont,
                                     brush=self._styleSheet.worlds.textBrush,
                                     x=self._styleSheet.allegiancePosition.x(),
@@ -1435,7 +1453,7 @@ class RenderContext(object):
             self._selector.setWorldSlop(max(oldSlop, math.log2(self._scale) - 2))
             try:
                 for world in self._selector.worlds():
-                    worldInfo = self._worldCache.getWorldInfo(world=world)
+                    worldInfo = self._worldCache.worldInfo(world=world)
 
                     with self._graphics.save():
                         self._graphics.setSmoothingMode(

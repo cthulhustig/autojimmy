@@ -49,7 +49,7 @@ class LabelCache(object):
                 filePath=LabelCache._WorldLabelPath))
 
     def _parseMapLabels(self, content: str) -> typing.List[MapLabel]:
-        _, rows = maprenderer.parseTabContent(content=content)
+        _, rows = travellermap.parseTabContent(content=content)
         labels = []
         for data in rows:
             labels.append(MapLabel(

@@ -451,8 +451,6 @@ class DataStore(object):
     _MilieuBaseDir = 'milieu'
     _UniverseFileName = 'universe.json'
     _SophontsFileName = 'sophonts.json'
-    _AllegiancesFileName = 'allegiances.json'
-    _AllegianceStyleFileName = 'res/styles/otu.css'
     _TimestampFileName = 'timestamp.txt'
     _DataFormatFileName = 'dataformat.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
@@ -637,10 +635,6 @@ class DataStore(object):
     def sophontsData(self) -> str:
         return self._bytesToString(bytes=self._readStockFile(
             relativeFilePath=self._SophontsFileName))
-
-    def allegiancesData(self) -> str:
-        return self._bytesToString(bytes=self._readStockFile(
-            relativeFilePath=self._AllegiancesFileName))
 
     # TODO: I need to be sure about the directory structure under the res
     # directory (e.g. upper/lower case, naming contention). It's currently

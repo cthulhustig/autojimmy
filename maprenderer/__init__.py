@@ -7,7 +7,6 @@ from .imagecache import *
 from .labelcache import *
 from .vectorobjectcache import *
 from .stylecache import *
-from .allegiancecache import *
 from .sectorcache import *
 from .worldcache import *
 from .gridcache import *

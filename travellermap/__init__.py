@@ -2,6 +2,7 @@ from .milieu import *
 from .options import *
 from .color import *
 from .style import *
+from .utils import *
 from .astrometrics import *
 from .scale import *
 from .url import *
