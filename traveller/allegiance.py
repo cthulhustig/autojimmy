@@ -183,6 +183,19 @@ class AllegianceManager(object):
 
         return codeInfo.legacyCode()
 
+    def basesCode(
+            self,
+            allegianceCode: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
+            return None
+
+        codeInfo = self._allegianceMap.get(allegianceCode)
+        if not codeInfo:
+            return None
+
+        return codeInfo.basesCode()
+
     def uniqueAllegianceCode(
             self,
             allegianceCode: str,
