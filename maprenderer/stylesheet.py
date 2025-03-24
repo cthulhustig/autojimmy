@@ -1198,12 +1198,6 @@ class StyleSheet(object):
             self.ignoreBaseBias = True
             self.shadeMicroBorders = True
 
-            # TODO: This is currently borked because I've flattened drawing the
-            # 3 border layers into a single draw function. I need to be able to
-            # move border stroke so that drawing world backgrounds is between
-            # it and the other border layers.
-            # If I don't move the layer then world backgrounds exclude the dashes
-            # for worlds in Mongoose style
             self.layerOrder.moveAfter(
                 target=maprenderer.LayerId.Worlds_Background,
                 item=maprenderer.LayerId.Micro_BordersForeground)

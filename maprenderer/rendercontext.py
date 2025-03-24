@@ -103,8 +103,7 @@ class RenderContext(object):
             capacity=RenderContext._GridCacheCapacity)
         self._starfieldCache = maprenderer.StarfieldCache(
             graphics=self._graphics)
-        self._selector = maprenderer.RectSelector(
-            graphics=self._graphics)
+        self._selector = maprenderer.RectSelector()
         self._absoluteViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
@@ -1419,8 +1418,6 @@ class RenderContext(object):
                                     if worldInfo.isCapital and renderHighlight else \
                                     self._styleSheet.worlds.textBrush
 
-                                # TODO: Could these translations be combined by manually scaling
-                                # the decoration radius
                                 self._graphics.translateTransform(
                                     dx=decorationRadius,
                                     dy=0.0)

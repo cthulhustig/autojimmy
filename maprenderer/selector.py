@@ -7,15 +7,10 @@ import typing
 class RectSelector(object):
     def __init__(
             self,
-            # TODO: Having this use graphics doesn't really make sense as it's only so
-            # it can create a single rect. Might be nicer if it had it's own rect class
-            # or something
-            graphics: maprenderer.AbstractGraphics,
             sectorSlop: int = 1, # Numbers of sectors
             subsectorSlop: int = 1, # Number of subsectors
             worldSlop: int = 1 # Number of parsecs
             ) -> None:
-        self._graphics = graphics
         self._sectorSlop = sectorSlop
         self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
