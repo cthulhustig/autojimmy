@@ -1,4 +1,5 @@
 import common
+import logging
 import maprenderer
 import math
 import travellermap
@@ -359,10 +360,9 @@ class StyleSheet(object):
         self.droyneWorlds.visible = (self.options & maprenderer.MapOptions.DroyneWorlds) != 0
         self.minorHomeWorlds.visible = (self.options & maprenderer.MapOptions.MinorHomeWorlds) != 0
 
-        # Force ancient worlds, droyne worlds & minor home world overlays off
-        # when zoomed out as it kills performance to the point it effectively
-        # locks up the app
-        # TODO: Look into why this is happening
+        # NOTE: Force ancient worlds, droyne worlds & minor home world overlays
+        # off when zoomed out as the further you zoom out the longer it takes
+        # to draw up to the point it locks everything up
         if self.scale < 2:
             self.ancientsWorlds.visible = self.droyneWorlds.visible = \
                 self.minorHomeWorlds.visible = False
@@ -1462,14 +1462,13 @@ class StyleSheet(object):
                     emSize=emSize,
                     style=style)
             except:
-                # TODO: Log something at debug level
                 continue
 
             if font:
                 self._fontCache[key] = font
                 return font
 
-        raise RuntimeError(f'No font found out of families list "{families}"')
+        raise RuntimeError(f'Failed to create {emSize} point font with style {int(style)} from families {families}')
 
     @staticmethod
     def _floatScaleInterpolate(
