@@ -1880,9 +1880,10 @@ class RenderContext(object):
     def _calculateBorderColor(self, outline: maprenderer.SectorPath) -> str:
         try:
             color = outline.color()
-            # TODO: Validation that the outline color is valid should be done at read in
-            # rather than each time it's drawn
-            travellermap.parseHtmlColor(htmlColor=color)
+            if color:
+                # TODO: Validation that the outline color is valid should be done at read in
+                # rather than each time it's drawn
+                travellermap.parseHtmlColor(htmlColor=color)
         except Exception as ex:
             logging.warning('Failed to parse region colour', exc_info=ex)
             color = None
