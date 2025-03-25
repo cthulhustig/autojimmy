@@ -24,6 +24,9 @@ from pstats import SortKey
 # be an issue when it comes to rendering mains (or other things that
 # would be done with client side map space in Traveller Map)
 # TODO: Jump routes
+# TODO: mains
+# - I could render these onto the tiles but it might be better to have them
+#   rendered on top of the final frame
 # TODO: Other overlays
 # TODO: Ability to switch between this and the existing TravellerMapWidget
 # TODO: Animated move to new location
@@ -278,7 +281,8 @@ class MapHackView(QtWidgets.QWidget):
         #print(f'Scale: Linear={self._viewScale.linear} Log={self._viewScale.log}')
 
         # TODO: Remove debug timer
-        with common.DebugTimer('Draw Time'):
+        #with common.DebugTimer('Draw Time'):
+        if True:
             if not MapHackView._TileRendering and self._isWindows:
                 needsNewImage = self._offscreenRenderImage is None or \
                     self._offscreenRenderImage.width() != self.width() or \
@@ -308,7 +312,8 @@ class MapHackView(QtWidgets.QWidget):
                         True)
                     """
 
-                    with common.DebugTimer('Blit Time'):
+                    #with common.DebugTimer('Blit Time'):
+                    if True:
                         for image, renderRect, clipRect in tiles:
                             painter.save()
                             try:
