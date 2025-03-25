@@ -117,14 +117,6 @@ class RenderContext(object):
                 maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, 0.5),
                 maprenderer.PointF(-0.5 - travellermap.HexWidthOffset, 0),
                 maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
-            types=[
-                maprenderer.PathPointType.Start,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Line,
-                maprenderer.PathPointType.Line | maprenderer.PathPointType.CloseSubpath],
             closed=True)
 
         # Chosen to match T5 pp.416

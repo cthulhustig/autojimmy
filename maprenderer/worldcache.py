@@ -219,7 +219,6 @@ class WorldInfo(object):
 
     @staticmethod
     def _calcIsCapital(world: traveller.World) -> bool:
-        # TODO: Need to check "Capital" support is working
         return world.hasTradeCode(traveller.TradeCode.SectorCapital) or \
             world.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
             world.hasTradeCode(traveller.TradeCode.ImperialCapital) or \

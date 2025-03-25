@@ -87,13 +87,11 @@ class QtMapPath(maprenderer.AbstractPath):
     def __init__(
         self,
         points: typing.Sequence[maprenderer.PointF],
-        types: typing.Sequence[maprenderer.PathPointType],
         closed: bool) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
             self._points: typing.List[maprenderer.PointF] = []
-            self._types: typing.List[maprenderer.PathPointType] = []
             self._closed = False
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
@@ -102,14 +100,10 @@ class QtMapPath(maprenderer.AbstractPath):
             # NOTE: This assumes the points and types methods return copies of
             # the lists held by other not the lists themselves
             self._points = other.points()
-            self._types = other.types()
             self._closed = other.closed()
         else:
             self._points = list(args[0] if len(args) > 0 else kwargs['points'])
-            self._types = list(args[1] if len(args) > 1 else kwargs['types'])
-            self._closed = bool(args[2] if len(args) > 2 else kwargs['closed'])
-            if len(self._points) != len(self._types):
-                raise ValueError('Point and type vectors have different lengths')
+            self._closed = bool(args[1] if len(args) > 1 else kwargs['closed'])
 
         # These are created on demand
         self._bounds: typing.Optional[maprenderer.RectangleF] = None
@@ -117,9 +111,6 @@ class QtMapPath(maprenderer.AbstractPath):
 
     def points(self) -> typing.Sequence[maprenderer.PointF]:
         return list(self._points)
-
-    def types(self) -> typing.Sequence[maprenderer.PathPointType]:
-        return list(self._types)
 
     def closed(self) -> bool:
         return self._closed
@@ -153,10 +144,9 @@ class QtMapPath(maprenderer.AbstractPath):
             self._qtPolygon.translate(dx, dy)
 
     def copyFrom(self, other: 'QtMapPath') -> None:
-        # NOTE: This assumes the points and types methods return copies of
-        # the lists held by other not the lists themselves
+        # NOTE: This assumes the points methods return a copy of
+        # the list held by other not the list itself
         self._points = other.points()
-        self._types = other.types()
         self._closed = other.closed()
         self._bounds = None # Calculate on demand
         self._qtPolygon = None
@@ -745,10 +735,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def createPath(
             self,
             points: typing.Sequence[maprenderer.PointF],
-            types: typing.Sequence[maprenderer.PathPointType],
             closed: bool
             ) -> QtMapPath:
-        return QtMapPath(points=points, types=types, closed=closed)
+        return QtMapPath(points=points, closed=closed)
     def copyPath(self, other: QtMapPath) -> QtMapPath:
         return QtMapPath(other=other)
 

@@ -375,42 +375,6 @@ class HighlightWorldPattern(object):
         self.max = max
         self.matches = list(matches)
 
-# TODO: I think this type is pointless as my rendering engine doesn't support
-# gaps on paths or curves
-class PathPointType(enum.IntFlag):
-    #
-    # Summary:
-    #     The starting point of a System.Drawing.Drawing2D.GraphicsPath object.
-    Start = 0
-    #
-    # Summary:
-    #     A line segment.
-    Line = 1
-    #
-    # Summary:
-    #     A default Bézier curve.
-    Bezier = 3
-    #
-    # Summary:
-    #     A mask point.
-    PathTypeMask = 7
-    #
-    # Summary:
-    #     The corresponding segment is dashed.
-    DashMode = 0x10
-    #
-    # Summary:
-    #     A path marker.
-    PathMarker = 0x20
-    #
-    # Summary:
-    #     The endpoint of a subpath.
-    CloseSubpath = 0x80
-    #
-    # Summary:
-    #     A cubic Bézier curve.
-    Bezier3 = 3
-
 class LabelStyle(object):
     @typing.overload
     def __init__(self) -> None: ...

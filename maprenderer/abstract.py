@@ -15,8 +15,6 @@ class AbstractPointList(object):
 class AbstractPath(object):
     def points(self) -> typing.Sequence[maprenderer.PointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
-    def types(self) -> typing.Sequence[maprenderer.PathPointType]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement types')
     def closed(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
     def bounds(self) -> maprenderer.RectangleF:
@@ -155,7 +153,6 @@ class AbstractGraphics(object):
     def createPath(
             self,
             points: typing.Sequence[maprenderer.PointF],
-            types: typing.Sequence[maprenderer.PathPointType],
             closed: bool
             ) -> AbstractPath:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPath')

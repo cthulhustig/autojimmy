@@ -59,18 +59,21 @@ class VectorObject(object):
     def namePosition(self) -> maprenderer.PointF:
         return maprenderer.PointF(self._namePosition)
 
-# NOTE: My implementation of vectors is slightly different from the Traveller
-# Map one. The vector format supports point types which specify a set of flags
-# for each point that determine how the point should be interpreted. A full
-# list of the flags can be found here
+# NOTE: My implementation of vector objects is slightly different from the
+# Traveller Map one. The vector format allows specifying the type of each point.
+# This allows for curves to be specified and/or multiple unconnected polygons
+# to be specified in a single vector object. A full list of what the point types
+# support can be found here
 # https://learn.microsoft.com/en-us/windows/win32/api/gdiplusenums/ne-gdiplusenums-pathpointtype
-# When vector definitions use the CloseSubpath flag the Traveller Map
-# implementation keeps these keeps the sub paths as a single VectorObject (i.e.
-# one VectorObject per file). The intention is that the rendering engine should
-# interpret the flags and render separate sub paths. This is great if the
-# rendering engine supports it, but if it doesn't (e.g. Qt) then it can make
-# rendering more complex/inefficient. My implementation splits sub paths into
-# multiple VectorObject to avoid repeated processing at render time
+# Although the format allows for curves, none of the Traveller Map vectors
+# actually use them. I suspect support for it is just something that came for
+# free because the GDI point types are being used. As nothing uses them, I'm
+# not supporting them and this code assumes straight lines should be used to
+# connect each point.
+# There are multiple instances of vector objects containing multiple
+# unconnected polygons. To simplify rendering I split these so a single file
+# can result in multiple vector objects, each of which represents a single
+# polygon.
 class VectorObjectCache(object):
     _BorderFiles = [
         'res/Vectors/Imperium.xml',
@@ -95,6 +98,11 @@ class VectorObjectCache(object):
         'res/Vectors/J5Route.xml',
         'res/Vectors/J4Route.xml',
         'res/Vectors/CoreRoute.xml']
+
+    _PointTypeStart = 0x00
+    _PointTypeLine = 0x01
+    _PointTypeMask = 0x07
+    _PointTypeCloseSubpath = 0x80
 
     def __init__(
             self,
@@ -203,18 +211,16 @@ class VectorObjectCache(object):
         types = None
         if points and element is not None:
             types = base64.b64decode(element.text)
-            startIndex = 0
             finishIndex = len(points) - 1
             sectionPoints = []
             vectorObjects = []
 
-            # TODO: I'm not handling the different curve types here
             for currentIndex, (point, type) in enumerate(zip(points, types)):
-                isStartPoint = (type & maprenderer.PathPointType.PathTypeMask) == \
-                    maprenderer.PathPointType.Start
+                isStartPoint = (type & VectorObjectCache._PointTypeMask) == \
+                    VectorObjectCache._PointTypeStart
                 isLastPoint = currentIndex == finishIndex
-                isClosed = (type & maprenderer.PathPointType.CloseSubpath) == \
-                    maprenderer.PathPointType.CloseSubpath
+                isClosed = (type & VectorObjectCache._PointTypeCloseSubpath) == \
+                    VectorObjectCache._PointTypeCloseSubpath
 
                 if isClosed or isLastPoint:
                     sectionPoints.append(point)
@@ -231,10 +237,9 @@ class VectorObjectCache(object):
                         nameX=nameX,
                         nameY=nameY,
                         bounds=bounds,
-                        path=self._createPath(points=sectionPoints, types=types[startIndex:nextIndex], closed=isClosed),
+                        path=self._graphics.createPath(points=sectionPoints, closed=isClosed),
                         mapOptions=mapOptions))
                     sectionPoints.clear()
-                    startIndex = nextIndex
 
                 sectionPoints.append(point)
 
@@ -250,18 +255,5 @@ class VectorObjectCache(object):
                 nameX=nameX,
                 nameY=nameY,
                 bounds=bounds,
-                path=self._createPath(points=points, types=None, closed=False) if points else None,
+                path=self._graphics.createPath(points=points, closed=False) if points else None,
                 mapOptions=mapOptions)]
-
-    def _createPath(
-            self,
-            points: typing.Sequence[maprenderer.PointF],
-            types: typing.Optional[typing.Sequence[maprenderer.PathPointType]],
-            closed: bool
-            ) -> maprenderer.AbstractPath:
-        if not types:
-            types = [maprenderer.PathPointType.Start]
-            for _ in range(1, len(points)):
-                types.append(maprenderer.PathPointType.Line)
-        return self._graphics.createPath(points=points, types=types, closed=closed)
-

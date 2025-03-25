@@ -329,11 +329,7 @@ class SectorCache(object):
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 
-        types = [maprenderer.PathPointType.Start]
-        types.extend([maprenderer.PathPointType.Line] * (len(points) - 2))
-        types.append([maprenderer.PathPointType.Line | maprenderer.PathPointType.CloseSubpath])
-
-        path = self._graphics.createPath(points=points, types=types, closed=True)
+        path = self._graphics.createPath(points=points, closed=True)
         self._clipCache[key] = path
         return path
 
@@ -364,13 +360,8 @@ class SectorCache(object):
         for x, y in outline:
             drawPath.append(maprenderer.PointF(x=x, y=y))
 
-        types = [maprenderer.PathPointType.Start]
-        for _ in range(len(outline) - 1):
-            types.append(maprenderer.PathPointType.Line)
-        types[-1] |= maprenderer.PathPointType.CloseSubpath
         path = self._graphics.createPath(
             points=drawPath,
-            types=types,
             closed=True)
         spline = self._graphics.createSpline(
             points=drawPath,
