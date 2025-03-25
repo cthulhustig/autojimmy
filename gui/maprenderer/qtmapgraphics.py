@@ -682,7 +682,9 @@ class QtMapFont(maprenderer.AbstractFont):
     def qtMeasureText(self, text: str) -> QtCore.QRectF:
         rect = self._sizeCache.get(text)
         if not rect:
-            rect = self._fontMetrics.boundingRect(text)
+            # NOTE: Use of tight bounds is required to have glyph symbols
+            # centred correctly
+            rect = self._fontMetrics.tightBoundingRect(text)
             self._sizeCache[text] = rect
         return rect
 
@@ -806,7 +808,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             ) -> QtMapFont:
         # NOTE: Traveller Map has this as 1.4 (in makeFont) but I found I needed
         # to lower it to get fonts rendering the correct size.
-        return QtMapFont(family=family, emSize=emSize * 1.0, style=style)
+        return QtMapFont(family=family, emSize=emSize * 1.05, style=style)
 
     def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
         antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \

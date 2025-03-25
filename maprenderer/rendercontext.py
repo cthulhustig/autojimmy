@@ -1586,6 +1586,11 @@ class RenderContext(object):
             ) -> None:
         width, height = self._graphics.measureString(text=text, font=font)
 
+        # NOTE: This increase is needed as I use a tight bounds for the text
+        # and Traveller Map uses a bounds with margins
+        width += 0.05
+        height += 0.05
+
         if bkStyle is maprenderer.TextBackgroundStyle.Rectangle:
             if not self._styleSheet.fillMicroBorders:
                 self._graphics.drawRectangle(
