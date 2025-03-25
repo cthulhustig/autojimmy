@@ -35,7 +35,7 @@ class Label(object):
     def size(self) -> typing.Optional[Size]:
         return self._size
 
-    # TODO: Make it clear what units these are in
+    # Offset in absolute coordinates
     def offsetX(self) -> typing.Optional[float]:
         return self._offsetX
 

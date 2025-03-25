@@ -75,12 +75,12 @@ class RectSelector(object):
             upperLeft=travellermap.HexPosition(
                 sectorX=left,
                 sectorY=top,
-                offsetX=travellermap.SectorWidth - 1, # TODO: Not sure about -1 here and below
+                offsetX=travellermap.SectorWidth - 1,
                 offsetY=travellermap.SectorHeight - 1),
             lowerRight=travellermap.HexPosition(
                 sectorX=right,
                 sectorY=bottom,
-                offsetX=0, # TODO: Should this be 0 or 1 (same for below)
+                offsetX=0,
                 offsetY=0))
 
         if not self._sectorSlop:

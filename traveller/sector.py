@@ -33,7 +33,6 @@ class Subsector(object):
         brHex = travellermap.HexPosition(
             sectorX=self._sectorX,
             sectorY=self._sectorY,
-            # TODO: Is -1 here correct?
             offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
             offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
         self._extent = (ulHex, brHex)
@@ -163,8 +162,6 @@ class Sector(object):
     def worlds(self) -> typing.Collection[traveller.World]:
         return list(self._worlds)
 
-    # TODO: Returning copies of the list of routes/borders probably
-    # isn't great when it's done every frame
     def routes(self) -> typing.Collection[traveller.Route]:
         return list(self._routes)
 

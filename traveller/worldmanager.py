@@ -1077,8 +1077,6 @@ class WorldManager(object):
             raise ValueError(f'Invalid route style "{style}"')
         return mappedStyle
 
-    # TODO: This is effectively a duplicate of the route stuff above
-    # just with different types
     _BorderStyleMap = {
         'solid': traveller.Border.Style.Solid,
         'dashed': traveller.Border.Style.Dashed,

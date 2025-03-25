@@ -1,4 +1,3 @@
-import enum
 import travellermap
 import typing
 
@@ -56,7 +55,7 @@ class Region(object):
     def labelHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._labelHex
 
-    # TODO: Make it clear what units these are in
+    # Offset in absolute coordinates
     def labelOffsetX(self) -> typing.Optional[float]:
         return self._labelOffsetX
 
