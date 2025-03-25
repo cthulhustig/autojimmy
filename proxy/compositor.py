@@ -195,7 +195,7 @@ class _CustomSector(object):
         self._mapPosters = list(mapPosters) if mapPosters else []
         self._mapPosters.sort() # Sorting is important for map selection algorithm
 
-        absoluteRect = travellermap.sectorBoundingRect(
+        absoluteRect = _CustomSector._calcExteriorBoundingRect(
             sector=position)
         mapSpaceUL = travellermap.absoluteSpaceToMapSpace((
             absoluteRect[0],
@@ -209,7 +209,7 @@ class _CustomSector(object):
             mapSpaceBR[0], # Right
             mapSpaceBR[1]) # Bottom
 
-        absoluteRect = travellermap.sectorInteriorRect(
+        absoluteRect = _CustomSector._calcInteriorBoundingRect(
             sector=position)
         mapSpaceUL = travellermap.absoluteSpaceToMapSpace((
             absoluteRect[0],
@@ -258,6 +258,45 @@ class _CustomSector(object):
             bestPoster = poster
 
         return bestPoster
+
+    # These functions are similar to sectorBoundingRect & sectorInteriorRect in the astrometrics
+    # code but the implementation is slightly different. When I was adding my rendering code I
+    # found that the implementation in astrometrics was wrong but when I fixed it, it broke
+    # the Compositor. As this the whole proxy should be going away when I can replace it with my
+    # renderer, rather than work out why the proxy needs this specific implementation, I've
+    # just made a copy of what it needs here rather than have it use astrometrics.
+    @staticmethod
+    def _calcExteriorBoundingRect(
+            sector: typing.Tuple[int, int],
+            ) -> typing.Tuple[float, float, float, float]:
+        left = (sector[0] * travellermap.SectorWidth) - travellermap.ReferenceHexX
+        bottom = (sector[1] * travellermap.SectorHeight) - travellermap.ReferenceHexY
+        width = travellermap.SectorWidth
+        height = travellermap.SectorHeight
+
+        # Adjust to completely contain all hexes in the sector
+        height += 0.5
+        left += 0.5 - travellermap.HexWidthOffset
+        width += travellermap.HexWidthOffset * 2
+
+        return (left, bottom, width, height)
+
+    @staticmethod
+    def _calcInteriorBoundingRect(
+            sector: typing.Tuple[int, int],
+            ) -> typing.Tuple[float, float, float, float]:
+        left = (sector[0] * travellermap.SectorWidth) - travellermap.ReferenceHexX
+        bottom = (sector[1] * travellermap.SectorHeight) - travellermap.ReferenceHexY
+        width = travellermap.SectorWidth
+        height = travellermap.SectorHeight
+
+        # Shrink to fit within the hexes of this sector
+        bottom += 0.5
+        height -= 1
+        left += 0.5 + travellermap.HexWidthOffset
+        width -= (travellermap.HexWidthOffset * 2)
+
+        return (left, bottom, width, height)
 
 class Compositor(object):
     class OverlapType(enum.Enum):
@@ -388,6 +427,7 @@ class Compositor(object):
             # Cancel any futures that have been created
             for future in futureList:
                 future.cancel()
+            raise
         finally:
             await connection.close()
 

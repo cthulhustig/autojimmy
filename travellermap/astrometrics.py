@@ -110,15 +110,6 @@ def sectorBoundingRect(
 
     # Adjust to completely contain all hexes in the sector
     height += 0.5
-    # TODO: This was previously using the commented out line but
-    # this looks like it was a bug, either that or the Map Proxy
-    # compositor is doing something odd that meant it was actually
-    # correct. If I draw the bounds in my map renderer with the
-    # old version it's drawn in the wrong place. Need to do some
-    # testing with map proxy and custom sectors to make sure I've
-    # not broken it (it looks like this function was only called
-    # from custom sector code)
-    #left += 0.5 - HexWidthOffset
     left -= HexWidthOffset
     width += HexWidthOffset * 2
 
@@ -166,10 +157,7 @@ def sectorInteriorRect(
 
     # Shrink to fit within the hexes of this sector
     bottom += 0.5
-    height -= 1
-    # TODO: Need to do testing with map proxy and custom sectors to see
-    # if this change hasn't broken anything (See TODO in sectorBoundingRect)
-    #left += 0.5 + HexWidthOffset
+    height -= 0.5
     left += HexWidthOffset
     width -= (HexWidthOffset * 2)
 
