@@ -305,10 +305,6 @@ class RenderContext(object):
     # sideways as you zoom. To help mitigate the issue I've updated the
     # nebula drawing code so that it always scales tiles in the same way as
     # they would scale on Traveller Map tiles
-    # TODO: This is still not working right when drawing the full frame (tiles
-    # seem ok). Sometimes it seems to be working but then in other places it
-    # doesn't even draw the background. It seems worse when the window is
-    # maximised
     def _drawNebulaBackground(self) -> None:
         if not self._styleSheet.showNebulaBackground:
             return
@@ -317,52 +313,27 @@ class RenderContext(object):
         nebulaLogScale = int(math.floor(renderLogScale + 0.5))
         nebulaScale = math.pow(2, nebulaLogScale)
 
-        nebulaWidth = RenderContext._NebulaRenderWidth / nebulaScale
-        nebulaHeight = RenderContext._NebulaRenderHeight / nebulaScale
+        nebulaWidth = RenderContext._NebulaRenderWidth / (nebulaScale * travellermap.ParsecScaleX)
+        nebulaHeight = RenderContext._NebulaRenderHeight / (nebulaScale * travellermap.ParsecScaleY)
 
-        nebulaLeft = (self._absoluteViewRect.left() * self._scale * travellermap.ParsecScaleX) / nebulaScale
-        nebulaOffsetX = -nebulaLeft % nebulaWidth
+        nebulaLeft = (self._absoluteViewRect.left() // nebulaWidth) * nebulaWidth
+        nebulaTop = (self._absoluteViewRect.top() // nebulaHeight) * nebulaHeight
+        nebulaRight = ((self._absoluteViewRect.right() // nebulaWidth) + 1) * nebulaWidth
+        nebulaBottom = ((self._absoluteViewRect.bottom() // nebulaHeight) + 1) * nebulaHeight
 
-        nebulaTop = (self._absoluteViewRect.top() * self._scale * travellermap.ParsecScaleY) / nebulaScale
-        nebulaOffsetY = -nebulaTop % nebulaHeight
+        hCount = math.ceil((nebulaRight - nebulaLeft) / nebulaWidth)
+        vCount = math.ceil((nebulaBottom - nebulaTop) / nebulaHeight)
 
-        pixelMultiplier = math.pow(2, renderLogScale - nebulaLogScale)
-        pixelImageWidth = RenderContext._NebulaRenderWidth * pixelMultiplier
-        pixelImageHeight = RenderContext._NebulaRenderHeight * pixelMultiplier
-
-        # Offset of the background, relative to the canvas
-        ox = nebulaOffsetX * nebulaScale
-        oy = nebulaOffsetY * nebulaScale
-        if (ox > 0):
-            ox -= pixelImageWidth
-        if (oy > 0):
-            oy -= pixelImageHeight
-
-        # Number of copies needed to cover the canvas
-        nx = 1 + int(math.floor(self._outputPixelX / pixelImageWidth))
-        ny = 1 + int(math.floor(self._outputPixelY / pixelImageHeight))
-        if (ox + nx * pixelImageWidth < self._outputPixelX):
-            nx += 1
-        if (oy + ny * pixelImageHeight < self._outputPixelY):
-            ny += 1
-
-        imageRect = maprenderer.RectangleF(
-            x=ox,
-            y=oy,
-            width=pixelImageWidth,
-            height=pixelImageHeight)
-
-        # Render in image-space so it scales/tiles nicely
-        with self._graphics.save():
-            self._graphics.multiplyTransform(self._worldSpaceToImageSpace)
-            for _ in range(nx):
-                imageRect.setY(oy)
-                for _ in range(ny):
-                    self._graphics.drawImage(
-                        self._imageCache.nebulaImage,
-                        imageRect)
-                    imageRect.setY(imageRect.y() + imageRect.width())
-                imageRect.setX(imageRect.x() + imageRect.height())
+        for x in range(hCount):
+            for y in range(vCount):
+                rect = maprenderer.RectangleF(
+                    x=nebulaLeft + (x * nebulaWidth),
+                    y=nebulaTop + (y * nebulaHeight),
+                    width=nebulaWidth,
+                    height=nebulaHeight)
+                self._graphics.drawImage(
+                    image=self._imageCache.nebulaImage,
+                    rect=rect)
 
     def _drawGalaxyBackground(self) -> None:
         if not self._styleSheet.showGalaxyBackground:
