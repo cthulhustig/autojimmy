@@ -1846,16 +1846,7 @@ class RenderContext(object):
                             pen=pen)
 
     def _calculateBorderColor(self, outline: maprenderer.SectorPath) -> str:
-        try:
-            color = outline.color()
-            if color:
-                # TODO: Validation that the outline color is valid should be done at read in
-                # rather than each time it's drawn
-                travellermap.parseHtmlColor(htmlColor=color)
-        except Exception as ex:
-            logging.warning('Failed to parse region colour', exc_info=ex)
-            color = None
-
+        color = outline.color()
         if not color:
             color = self._styleSheet.microRoutes.linePen.color()
 

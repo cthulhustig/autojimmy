@@ -889,6 +889,10 @@ class WorldManager(object):
                                     width = defaultWidth
                                 break
 
+                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                        logging.debug(f'Ignoring invalid colour for border {rawRoute.fileIndex()} in sector {sectorName}')
+                        colour = None
+
                     routes.append(traveller.Route(
                         startHex=startHex,
                         endHex=endHex,
@@ -942,6 +946,10 @@ class WorldManager(object):
                                 if not style:
                                     style = defaultStyle
                                 break
+
+                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                        logging.debug(f'Ignoring invalid colour for border {rawBorder.fileIndex()} in sector {sectorName}')
+                        colour = None
 
                     # Default label to allegiance and word wrap now so it doesn't need
                     # to be done every time the border is rendered
@@ -997,6 +1005,11 @@ class WorldManager(object):
                     if label and rawRegion.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
+                    colour = rawRegion.colour()
+                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                        logging.debug(f'Ignoring invalid colour for region {rawRegion.fileIndex()} in sector {sectorName}')
+                        colour = None
+
                     regions.append(traveller.Region(
                         hexList=hexes,
                         # Show label use the same defaults as the Traveller Map Border class
@@ -1005,7 +1018,7 @@ class WorldManager(object):
                         labelHex=labelHex,
                         labelOffsetX=rawRegion.labelOffsetX(),
                         labelOffsetY=rawRegion.labelOffsetY(),
-                        colour=rawRegion.colour()))
+                        colour=colour))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process region {rawRegion.fileIndex()} in metadata for sector {sectorName}',
@@ -1028,10 +1041,15 @@ class WorldManager(object):
                     if rawLabel.wrap():
                         text = WorldManager._LineWrapPattern.sub('\n', text)
 
+                    colour = rawLabel.colour()
+                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                        logging.debug(f'Ignoring invalid colour for label {rawLabel.fileIndex()} in sector {sectorName}')
+                        colour = None
+
                     labels.append(traveller.Label(
                         text=text,
                         hex=hex,
-                        colour=rawLabel.colour(),
+                        colour=colour,
                         size=WorldManager._mapLabelSize(rawLabel.size()),
                         offsetX=rawLabel.offsetX(),
                         offsetY=rawLabel.offsetY()))

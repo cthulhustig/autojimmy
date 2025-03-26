@@ -51,6 +51,7 @@ from pstats import SortKey
 # TODO: Animated move to new location
 # TODO: Spinwards/corewards etc labels
 # TODO: Current scale line in bottom right
+# TODO: Fix colour vs color
 
 class MapHackView(QtWidgets.QWidget):
     _MinScale = -5

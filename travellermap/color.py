@@ -151,6 +151,20 @@ class HtmlColors(object):
 #[k for k, v in vars(CONSTANT).items() if not callable(v) and not k.startswith("__")]
 _NameToColorMap = {name.lower(): color for name, color in common.getClassVariables(HtmlColors).items()}
 
+_ValidDigits = set('0123456789AaBbCcDdEeFf')
+def validateHtmlColor(htmlColor: str) -> bool:
+    length = len(htmlColor)
+    if not length:
+        return False
+
+    if htmlColor[0] != '#':
+        return htmlColor in _NameToColorMap
+
+    if length != 7 and length != 9:
+        return False
+
+    return set(htmlColor[1:]).issubset(_ValidDigits)
+
 def parseHtmlColor(
         htmlColor: str
         ) -> typing.Tuple[
