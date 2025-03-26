@@ -19,7 +19,26 @@ from pstats import SortKey
 # TODO: I think a lot of the places I've referred to as absolute space
 # is actually map space, or at least my equivalent of it (i.e. without the
 # inverted y axis like in Traveller Map). I think anything the problem
-# might be around things that are using ParsecScaleX/ParsecScaleY
+# might be around things that are using ParsecScaleX/ParsecScaleY.
+# Update: I think the coordinate system naming are a complete mess
+# - I think the render is working in its own coordinate system. I think
+#   traveller map might refer to it as world coordinates but this term
+#   seems a littler overloaded as the traveller map coordinate system
+#   documentation seems to use the term world space for the integer pair
+#   coordinate system that defines a hex relative to reference (i.e.
+#   what I've historically referred to as absolute coordinates)
+# - The coordinate system used by the renderer is in parsecs with a hex
+#   being 1 parsec high and slightly over 1 parsec wide when rendered.
+# - I have what I call relative space but in traveller map it refers to
+#   it sector hex. The traveller map terminology is a little ambiguous
+#   as there is also the string based sector hex format but that is
+#   effectively equivalent just with the sector coordinate replaced with
+#   the name
+# - I'm overloading the term absolute space. I'm using it as the term
+#   for what the renderer is working in and using it for the integer
+#   pair that represents a hex elsewhere in the code. I think this is
+#   basically the same overloading as traveller map where it uses
+#   world coordinates
 # TODO: Not sure if me not inverting the y axis in my map space might
 # be an issue when it comes to rendering mains (or other things that
 # would be done with client side map space in Traveller Map)
@@ -40,7 +59,10 @@ class MapHackView(QtWidgets.QWidget):
     _DefaultCenterY = 0
     _DefaultScale = 64
     _DefaultScale = travellermap.logScaleToLinearScale(7)
-    #_DefaultCenterX, _DefaultCenterY  = (13.971588572221023, -28.221357863973523)
+    #_DefaultCenterX, _DefaultCenterY = (13.971588572221023, -28.221357863973523)
+    #_DefaultCenterX, _DefaultCenterY = (-95.914 / travellermap.ParsecScaleX, 70.5 / -travellermap.ParsecScaleY)
+    #_DefaultCenterX, _DefaultCenterY = (-110.50311757412467, -70.5033270610736)
+    #_DefaultCenterX, _DefaultCenterY = travellermap.mapSpaceToAbsoluteSpace((-95.914, 70.5))
 
     _WheelLogScaleDelta = 0.15
 
@@ -137,9 +159,13 @@ class MapHackView(QtWidgets.QWidget):
                 pixelX=event.x(),
                 pixelY=event.y(),
                 clamp=True)
+            worldClampedX = int(round(worldRawX + 0.5))
+            worldClampedY = int(round(worldRawY + (0.5 if (worldClampedX % 2 == 0) else 0)))
+
             sectorX, sectorY, offsetX, offsetY = travellermap.absoluteSpaceToRelativeSpace(
                 (worldClampedX, worldClampedY))
             print(f'RAW: {worldRawX} {worldRawY} ABS: {worldClampedX} {worldClampedY} SECTOR: {sectorX} {sectorY} HEX:{offsetX} {offsetY}')
+            print(f'{worldRawX * travellermap.ParsecScaleX} {worldRawY * -travellermap.ParsecScaleY}')
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
