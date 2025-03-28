@@ -72,7 +72,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     _TileRendering = True
     _DelayedRendering = True
-    _LookaheadTiles = True
+    _LookaheadBorderTiles = 2
     _TileSize = 512 # Pixels
     _TileCacheSize = 250 # Number of tiles
     _TileTimerMsecs = 1
@@ -466,9 +466,11 @@ class LocalMapWidget(QtWidgets.QWidget):
                             finally:
                                 painter.restore()
 
-                    if LocalMapWidget._LookaheadTiles and not self._tileQueue:
+                    if LocalMapWidget._DelayedRendering and \
+                        LocalMapWidget._LookaheadBorderTiles and \
+                        not self._tileQueue:
                         # If there are no tiles needing loaded, pre-load tiles just
-                        # outside the current view area
+                        # outside the current view area.
                         self._loadLookaheadTiles()
 
                     if self._tileQueue:
@@ -818,19 +820,25 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         absoluteTileWidth = tileSize / scaleX
         absoluteTileHeight = tileSize / scaleY
-        leftTile = math.floor(absoluteViewLeft / absoluteTileWidth) - 1
-        rightTile = math.floor(absoluteViewRight / absoluteTileWidth) + 1
-        topTile = math.floor(absoluteViewTop / absoluteTileHeight) - 1
-        bottomTile = math.floor(absoluteViewBottom / absoluteTileHeight) + 1
+        leftTile = math.floor(absoluteViewLeft / absoluteTileWidth)
+        rightTile = math.floor(absoluteViewRight / absoluteTileWidth)
+        topTile = math.floor(absoluteViewTop / absoluteTileHeight)
+        bottomTile = math.floor(absoluteViewBottom / absoluteTileHeight)
 
-        for x in range(leftTile, rightTile):
-            self._lookupTile(tileX=x, tileY=topTile, tileScale=tileScale)
-        for y in range(topTile, bottomTile):
-            self._lookupTile(tileX=rightTile, tileY=y, tileScale=tileScale)
-        for x in range(rightTile, leftTile, -1):
-            self._lookupTile(tileX=x, tileY=bottomTile, tileScale=tileScale)
-        for y in range(bottomTile, topTile, -1):
-            self._lookupTile(tileX=leftTile, tileY=y, tileScale=tileScale)
+        for _ in range(LocalMapWidget._LookaheadBorderTiles):
+            leftTile -= 1
+            rightTile += 1
+            topTile -= 1
+            bottomTile += 1
+
+            for x in range(leftTile, rightTile):
+                self._lookupTile(tileX=x, tileY=topTile, tileScale=tileScale)
+            for y in range(topTile, bottomTile):
+                self._lookupTile(tileX=rightTile, tileY=y, tileScale=tileScale)
+            for x in range(rightTile, leftTile, -1):
+                self._lookupTile(tileX=x, tileY=bottomTile, tileScale=tileScale)
+            for y in range(bottomTile, topTile, -1):
+                self._lookupTile(tileX=leftTile, tileY=y, tileScale=tileScale)
 
     def _lookupTile(
             self,
