@@ -32,7 +32,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         # Instance of dialogs are created on demand then maintained. This is
         # done to prevent the web widget being recreated
-        self._locationSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
+        self._locationSelectDialog: typing.Optional[gui.HexSelectDialog] = None
         self._radiusSelectDialog: typing.Optional[gui.HexRadiusSelectDialog] = None
 
         self._displayModeTabs = displayModeTabs
@@ -374,7 +374,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         currentHexes = self.hexes()
 
         if not self._locationSelectDialog:
-            self._locationSelectDialog = gui.TravellerMapSelectDialog(parent=self)
+            self._locationSelectDialog = gui.HexSelectDialog(parent=self)
             self._locationSelectDialog.configureSelection(
                 singleSelect=self._isOrderedList,
                 includeDeadSpace=self._enableDeadSpace)

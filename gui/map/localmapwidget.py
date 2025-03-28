@@ -163,6 +163,12 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._absoluteCenterPos.setY(center[1])
         self.update() # Force redraw
 
+    def centerOnHexes(
+            self,
+            hexes: typing.Collection[travellermap.HexPosition]
+            ) -> None:
+        pass # TODO: Implement me
+
     def hasJumpRoute(self) -> bool:
         return False # TODO: Implement me
 

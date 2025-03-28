@@ -4,14 +4,14 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-class TravellerMapSelectDialog(gui.DialogEx):
+class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='Traveller Map Select',
-            configSection='TravellerMapSelectDialog',
+            title='Hex Select',
+            configSection='HexSelectDialog',
             parent=parent)
 
         self._mapWidget = gui.TravellerMapWidget()

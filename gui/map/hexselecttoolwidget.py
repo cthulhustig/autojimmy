@@ -30,7 +30,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableMapSelectButton = False
         self._enableShowHexButton = False
         self._enableShowInfoButton = False
-        self._mapSelectDialog = None
+        self._hexSelectDialog = None
 
         self._searchComboBox = gui.HexSelectComboBox()
         self._searchComboBox.enableAutoComplete(True)
@@ -124,8 +124,8 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._searchComboBox.enableDeadSpaceSelection(enable=enable)
-        if self._mapSelectDialog:
-            self._mapSelectDialog.configureSelection(
+        if self._hexSelectDialog:
+            self._hexSelectDialog.configureSelection(
                 singleSelect=True,
                 includeDeadSpace=enable)
 
@@ -183,20 +183,20 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
-        if not self._mapSelectDialog:
-            self._mapSelectDialog = gui.TravellerMapSelectDialog(parent=self)
-            self._mapSelectDialog.configureSelection(
+        if not self._hexSelectDialog:
+            self._hexSelectDialog = gui.HexSelectDialog(parent=self)
+            self._hexSelectDialog.configureSelection(
                 singleSelect=True,
                 includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
 
         hex = self.selectedHex()
         if hex:
-            self._mapSelectDialog.selectHex(hex=hex)
+            self._hexSelectDialog.selectHex(hex=hex)
         else:
-            self._mapSelectDialog.clearSelectedHexes()
-        if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            self._hexSelectDialog.clearSelectedHexes()
+        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        newSelection = self._mapSelectDialog.selectedHexes()
+        newSelection = self._hexSelectDialog.selectedHexes()
         if len(newSelection) != 1:
             return
 
