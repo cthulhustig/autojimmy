@@ -158,7 +158,7 @@ def validateHtmlColor(htmlColor: str) -> bool:
         return False
 
     if htmlColor[0] != '#':
-        return htmlColor in _NameToColorMap
+        return htmlColor.lower() in _NameToColorMap
 
     if length != 7 and length != 9:
         return False
