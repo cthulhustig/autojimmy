@@ -769,7 +769,7 @@ class _ConfigWidget(QtWidgets.QWidget):
         self._optionsWidget.adjustSize()
         self.adjustSize()
 
-class TravellerMapWidget(gui.TravellerMapWidgetBase):
+class TravellerMapWidget(gui.LocalMapWidget):
     class SelectionMode(enum.Enum):
         NoSelect = 0
         SingleSelect = 1

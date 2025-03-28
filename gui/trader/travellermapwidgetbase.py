@@ -744,6 +744,9 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         script = """
             var mapPos = map.pixelToMap({x}, {y});
             var worldPos = Traveller.Astrometrics.mapToWorld(mapPos.x, mapPos.y);
+            var wx = (mapPos.x / Traveller.Astrometrics.ParsecScaleX) + 0.5;
+            var wy = (-mapPos.y / Traveller.Astrometrics.ParsecScaleY) + ((wx % 2 === 0) ? 0.5 : 0);
+            console.log(`${{worldPos.x}} ${{worldPos.y}} ${{wx}} ${{wy}} ${{mapPos.x}} ${{mapPos.y}}`);
             var sectorHex = Traveller.Astrometrics.worldToSectorHex(worldPos.x, worldPos.y);
             `${{sectorHex.sx}} ${{sectorHex.sy}} ${{sectorHex.hx}} ${{sectorHex.hy}}`;
             """.format(x=point.x(), y=point.y())
