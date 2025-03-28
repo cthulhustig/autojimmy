@@ -135,7 +135,7 @@ class _Overlay(object):
     def addItem(self, overlay: typing.Union[_HexHighlight, _Polygon]) -> None:
         self._overlays.append(overlay)
 
-class TravellerMapWidgetBase(QtWidgets.QWidget):
+class WebMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
 
@@ -183,25 +183,25 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._toolTipQueuePos = None
         self._toolTipScriptRunning = False
 
-        if not TravellerMapWidgetBase._sharedProfile:
+        if not WebMapWidget._sharedProfile:
             # Create a shared profile for use by all instances of the widget. It's important to use
             # the application as the parent to prevent the error "Release of profile requested but
             # WebEnginePage still not deleted. Expect troubles !" being written out on application
             # shutdown.
             # https://stackoverflow.com/questions/64719361/closing-qwebengineview-warns-release-of-profile-requested-but-webenginepage-sti
-            TravellerMapWidgetBase._sharedProfile = QtWebEngineWidgets.QWebEngineProfile(
+            WebMapWidget._sharedProfile = QtWebEngineWidgets.QWebEngineProfile(
                 'TravellerMapWidget',
                 QtWidgets.QApplication.instance())
-            TravellerMapWidgetBase._sharedProfile.setHttpCacheType(
+            WebMapWidget._sharedProfile.setHttpCacheType(
                 QtWebEngineWidgets.QWebEngineProfile.HttpCacheType.DiskHttpCache)
-            TravellerMapWidgetBase._sharedProfile.setCachePath(
+            WebMapWidget._sharedProfile.setCachePath(
                 os.path.join(app.Config.instance().appDir(), 'webwidget', 'cache'))
-            TravellerMapWidgetBase._sharedProfile.setPersistentCookiesPolicy(
+            WebMapWidget._sharedProfile.setPersistentCookiesPolicy(
                 QtWebEngineWidgets.QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
-            TravellerMapWidgetBase._sharedProfile.setPersistentStoragePath(
+            WebMapWidget._sharedProfile.setPersistentStoragePath(
                 os.path.join(app.Config.instance().appDir(), 'webwidget', 'persist'))
 
-        page = _CustomWebEnginePage(TravellerMapWidgetBase._sharedProfile, self)
+        page = _CustomWebEnginePage(WebMapWidget._sharedProfile, self)
         self._mapWidget = QtWebEngineWidgets.QWebEngineView()
         self._mapWidget.setPage(page)
         self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
@@ -305,7 +305,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         if refuellingPlan:
             self._refuellingPlanOverlayHandle = self.createHexOverlay(
                 hexes=[pitStop.world().hex() for pitStop in refuellingPlan],
-                primitive=TravellerMapWidgetBase.PrimitiveType.Circle,
+                primitive=WebMapWidget.PrimitiveType.Circle,
                 radius=pitStopRadius,
                 fillColour=pitStopColour)
         elif self._refuellingPlanOverlayHandle != None:
@@ -408,7 +408,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         overlay = _Overlay()
         for hex in hexes:
             itemFillColour = fillMap.get(hex, fillColour) if fillMap else fillColour
-            if primitive == TravellerMapWidgetBase.PrimitiveType.Hex:
+            if primitive == WebMapWidget.PrimitiveType.Hex:
                 item = _HexHighlight(
                     hex=hex,
                     colour=itemFillColour)
@@ -615,7 +615,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def _loadMap(self) -> None:
         url = self._generateUrl()
-        logging.debug(f'TravellerMapWidget loading {url.toString()}')
+        logging.debug(f'WebMapWidget loading {url.toString()}')
 
         if proxy.MapProxy.instance().isRunning():
             self._injectImageHostRoundRobin()
@@ -760,11 +760,11 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             returnValue: str
             ) -> typing.Optional[travellermap.HexPosition]:
         if not returnValue or type(returnValue) != str:
-            logging.error(f'Failed to parse TravellerMapWidget click result (Incorrect result type)')
+            logging.error(f'Failed to parse WebMapWidget click result (Incorrect result type)')
             return None
         result = re.match(r'^([+-]?\d+) ([+-]?\d+) ([+-]?\d+) ([+-]?\d+)$', returnValue)
         if not result:
-            logging.error(f'Failed to parse TravellerMapWidget click result (Incorrect format "{returnValue}")')
+            logging.error(f'Failed to parse WebMapWidget click result (Incorrect format "{returnValue}")')
             return None
 
         try:
@@ -774,7 +774,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 offsetX=int(result.group(3)),
                 offsetY=int(result.group(4)))
         except Exception as ex:
-            logging.error(f'Failed to parse TravellerMapWidget click result (Unexpected exception)', exc_info=ex)
+            logging.error(f'Failed to parse WebMapWidget click result (Unexpected exception)', exc_info=ex)
             return None
 
     def _updateToolTip(
@@ -933,8 +933,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self._scriptQueue.append((script, resultsCallback))
             return
 
-        scriptId = TravellerMapWidgetBase._nextScriptId
-        TravellerMapWidgetBase._nextScriptId += 1
+        scriptId = WebMapWidget._nextScriptId
+        WebMapWidget._nextScriptId += 1
 
         logging.debug(f'Running script {scriptId}\n{script}')
 

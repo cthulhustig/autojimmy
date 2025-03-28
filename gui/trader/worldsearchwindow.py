@@ -523,7 +523,7 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget = QtWidgets.QTabWidget()
         tableLayoutWidget.setLayout(tableLayout)
 
-        self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget = gui.MapWidgetEx()
         self._travellerMapWidget.enableDeadSpaceSelection(enable=True)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()

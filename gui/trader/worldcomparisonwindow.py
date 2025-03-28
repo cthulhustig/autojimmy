@@ -175,9 +175,9 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
         self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
 
-        self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget = gui.MapWidgetEx()
         self._travellerMapWidget.setSelectionMode(
-            mode=gui.TravellerMapWidget.SelectionMode.MultiSelect)
+            mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
         self._travellerMapWidget.selectionChanged.connect(self._mapSelectionChanged)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()

@@ -36,9 +36,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
         selectionRadiusLayout.addWidget(self._includeDeadSpaceCheckBox)
         selectionRadiusLayout.addStretch()
 
-        self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget = gui.MapWidgetEx()
         self._travellerMapWidget.setSelectionMode(
-            mode=gui.TravellerMapWidget.SelectionMode.SingleSelect)
+            mode=gui.MapWidgetEx.SelectionMode.SingleSelect)
         # Always enable dead space selection on the map as, even if dead space selection
         # is disabled at the dialog level, the user should be able to select a dead space
         # hex and have the worlds around it selected
@@ -164,9 +164,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
         centerHex = self.centerHex()
         if centerHex:
             searchRadius = self.searchRadius()
-            selectionColour = gui.TravellerMapWidget.selectionFillColour()
-            radiusColour = gui.TravellerMapWidget.selectionOutlineColour()
-            radiusWidth = gui.TravellerMapWidget.selectionOutlineWidth()
+            selectionColour = gui.MapWidgetEx.selectionFillColour()
+            radiusColour = gui.MapWidgetEx.selectionOutlineColour()
+            radiusWidth = gui.MapWidgetEx.selectionOutlineWidth()
 
             includeDeadSpace = not self._includeDeadSpaceCheckBox.isHidden() and \
                 self._includeDeadSpaceCheckBox.isChecked()
@@ -198,7 +198,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 if self._selectedHexes:
                     handle = self._travellerMapWidget.createHexOverlay(
                         hexes=self._selectedHexes,
-                        primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
+                        primitive=gui.MapWidgetEx.PrimitiveType.Hex,
                         fillColour=selectionColour)
                     self._overlays.append(handle)
 

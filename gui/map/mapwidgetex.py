@@ -769,7 +769,7 @@ class _ConfigWidget(QtWidgets.QWidget):
         self._optionsWidget.adjustSize()
         self.adjustSize()
 
-class TravellerMapWidget(gui.LocalMapWidget):
+class MapWidgetEx(gui.LocalMapWidget):
     class SelectionMode(enum.Enum):
         NoSelect = 0
         SingleSelect = 1
@@ -778,7 +778,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
     selectionChanged = QtCore.pyqtSignal()
     displayOptionsChanged = QtCore.pyqtSignal()
 
-    _StateVersion = 'TravellerMapWidget_v1'
+    _StateVersion = 'MapWidgetEx_v1'
 
     _ControlWidgetInset = 20
     _ControlWidgetSpacing = 5
@@ -803,7 +803,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
 
         self._initOptionActions()
 
-        self._selectionMode = TravellerMapWidget.SelectionMode.NoSelect
+        self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.Dict[
             travellermap.HexPosition,
@@ -889,20 +889,20 @@ class TravellerMapWidget(gui.LocalMapWidget):
         self._configureOverlayControls()
 
     def __del__(self) -> None:
-        if TravellerMapWidget._sharedStyleGroup:
-            for action in TravellerMapWidget._sharedStyleGroup.actions():
+        if MapWidgetEx._sharedStyleGroup:
+            for action in MapWidgetEx._sharedStyleGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
-        if TravellerMapWidget._sharedFeatureGroup:
-            for action in TravellerMapWidget._sharedFeatureGroup.actions():
+        if MapWidgetEx._sharedFeatureGroup:
+            for action in MapWidgetEx._sharedFeatureGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
-        if TravellerMapWidget._sharedAppearanceGroup:
-            for action in TravellerMapWidget._sharedAppearanceGroup.actions():
+        if MapWidgetEx._sharedAppearanceGroup:
+            for action in MapWidgetEx._sharedAppearanceGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
-        if TravellerMapWidget._sharedOverlayGroup:
-            for action in TravellerMapWidget._sharedOverlayGroup.actions():
+        if MapWidgetEx._sharedOverlayGroup:
+            for action in MapWidgetEx._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
     def hasSelection(self) -> bool:
@@ -921,11 +921,11 @@ class TravellerMapWidget(gui.LocalMapWidget):
         if not world and not self._enableDeadSpaceSelection:
             return
 
-        if self._selectionMode == TravellerMapWidget.SelectionMode.NoSelect or \
+        if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect or \
                 hex in self._selectedHexes:
             return
 
-        if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect and \
+        if self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect and \
                 self._selectedHexes:
             with gui.SignalBlocker(widget=self):
                 self.clearSelectedHexes()
@@ -948,7 +948,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        if self._selectionMode == TravellerMapWidget.SelectionMode.NoSelect:
+        if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
             return
 
         if not self._enableDeadSpaceSelection:
@@ -961,7 +961,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
         if not hexes:
             return
 
-        if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
+        if self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect:
             # In single select mode just select the first item
             self.selectHex(
                 hex=hexes[0],
@@ -990,7 +990,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
             return # Hex wasn't selected
         self._updateSelectionOutline()
 
-        if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
+        if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
             self.selectionChanged.emit()
 
     def clearSelectedHexes(self) -> None:
@@ -1004,16 +1004,16 @@ class TravellerMapWidget(gui.LocalMapWidget):
 
         self.selectionChanged.emit()
 
-    def selectionMode(self) -> 'TravellerMapWidget.SelectionMode':
+    def selectionMode(self) -> 'MapWidgetEx.SelectionMode':
         return self._selectionMode
 
     def setSelectionMode(
             self,
-            mode: 'TravellerMapWidget.SelectionMode'
+            mode: 'MapWidgetEx.SelectionMode'
             ) -> None:
         self._selectionMode = mode
 
-        if self._selectionMode == TravellerMapWidget.SelectionMode.NoSelect:
+        if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
             if self._selectedHexes:
                 for overlayHandle in self._selectedHexes.values():
                     self.removeOverlay(handle=overlayHandle)
@@ -1021,7 +1021,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
                 self._updateSelectionOutline()
                 # NOTE: The selection changed signal is intentionally not generated
                 # as we're now in no select mode
-        elif self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
+        elif self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect:
             # When single selection is enabled make sure there's one world at most selected
             selectionChanged = False
             while len(self._selectedHexes) > 1:
@@ -1111,15 +1111,15 @@ class TravellerMapWidget(gui.LocalMapWidget):
         configWidgetMinSize = self._configWidget.minimumSize()
 
         toolbarWidth = searchWidgetSize.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             searchButtonSize.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             infoButtonSize.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             reloadButtonSize.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             keyButtonSize.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             configButtonSize.width()
         toolbarHeight = max(
             searchWidgetSize.height(),
@@ -1130,7 +1130,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
             configButtonSize.height())
 
         paneWidth = infoWidgetMinSize.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             max(legendWidgetMinSize.width(), configWidgetMinSize.width())
         paneHeight = max(
             infoWidgetMinSize.height(),
@@ -1138,11 +1138,11 @@ class TravellerMapWidget(gui.LocalMapWidget):
             configWidgetMinSize.height())
 
         minWidth = max(toolbarWidth, paneWidth) + \
-            (TravellerMapWidget._ControlWidgetInset * 2)
+            (MapWidgetEx._ControlWidgetInset * 2)
         minHeight = toolbarHeight + \
-            TravellerMapWidget._ControlWidgetSpacing + \
+            MapWidgetEx._ControlWidgetSpacing + \
             paneHeight + \
-            (TravellerMapWidget._ControlWidgetInset * 2)
+            (MapWidgetEx._ControlWidgetInset * 2)
 
         return QtCore.QSize(minWidth, minHeight)
 
@@ -1164,7 +1164,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
         version = stream.readQString()
         if version != self._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug('Failed to restore TravellerMapWidget state (Incorrect version)')
+            logging.debug('Failed to restore MapWidgetEx state (Incorrect version)')
             return False
 
         self._infoButton.setChecked(stream.readBool())
@@ -1176,120 +1176,120 @@ class TravellerMapWidget(gui.LocalMapWidget):
     def selectionFillColour() -> None:
         isDarkStyle = travellermap.isDarkStyle(
             style=app.Config.instance().mapStyle())
-        return TravellerMapWidget._SelectionFillDarkStyleColour \
+        return MapWidgetEx._SelectionFillDarkStyleColour \
             if isDarkStyle else \
-            TravellerMapWidget._SelectionFillLightStyleColour
+            MapWidgetEx._SelectionFillLightStyleColour
 
     @staticmethod
     def selectionOutlineColour() -> None:
         isDarkStyle = travellermap.isDarkStyle(
             style=app.Config.instance().mapStyle())
-        return TravellerMapWidget._SelectionOutlineDarkStyleColour \
+        return MapWidgetEx._SelectionOutlineDarkStyleColour \
             if isDarkStyle else \
-            TravellerMapWidget._SelectionOutlineLightStyleColour
+            MapWidgetEx._SelectionOutlineLightStyleColour
 
     @staticmethod
     def selectionOutlineWidth() -> int:
-        return TravellerMapWidget._SelectionOutlineWidth
+        return MapWidgetEx._SelectionOutlineWidth
 
     def _initOptionActions(self) -> None:
-        if not TravellerMapWidget._sharedStyleGroup:
-            TravellerMapWidget._sharedStyleGroup = \
+        if not MapWidgetEx._sharedStyleGroup:
+            MapWidgetEx._sharedStyleGroup = \
                 QtWidgets.QActionGroup(None)
-            TravellerMapWidget._sharedStyleGroup.setExclusive(True)
+            MapWidgetEx._sharedStyleGroup.setExclusive(True)
 
             for style in travellermap.Style:
                 action = _MapStyleToggleAction(style=style)
-                TravellerMapWidget._sharedStyleGroup.addAction(action)
+                MapWidgetEx._sharedStyleGroup.addAction(action)
 
-        if not TravellerMapWidget._sharedFeatureGroup:
-            TravellerMapWidget._sharedFeatureGroup = \
+        if not MapWidgetEx._sharedFeatureGroup:
+            MapWidgetEx._sharedFeatureGroup = \
                 QtWidgets.QActionGroup(None)
-            TravellerMapWidget._sharedFeatureGroup.setExclusive(False)
+            MapWidgetEx._sharedFeatureGroup.setExclusive(False)
 
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.GalacticDirections))
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.SectorGrid))
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.SectorNames))
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.Borders))
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.Routes))
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.RegionNames))
-            TravellerMapWidget._sharedFeatureGroup.addAction(
+            MapWidgetEx._sharedFeatureGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.ImportantWorlds))
 
-        if not TravellerMapWidget._sharedAppearanceGroup:
-            TravellerMapWidget._sharedAppearanceGroup = \
+        if not MapWidgetEx._sharedAppearanceGroup:
+            MapWidgetEx._sharedAppearanceGroup = \
                 QtWidgets.QActionGroup(None)
-            TravellerMapWidget._sharedAppearanceGroup.setExclusive(False)
+            MapWidgetEx._sharedAppearanceGroup.setExclusive(False)
 
-            TravellerMapWidget._sharedAppearanceGroup.addAction(
+            MapWidgetEx._sharedAppearanceGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.WorldColours))
-            TravellerMapWidget._sharedAppearanceGroup.addAction(
+            MapWidgetEx._sharedAppearanceGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.FilledBorders))
-            TravellerMapWidget._sharedAppearanceGroup.addAction(
+            MapWidgetEx._sharedAppearanceGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.DimUnofficial))
 
-        if not TravellerMapWidget._sharedOverlayGroup:
-            TravellerMapWidget._sharedOverlayGroup = \
+        if not MapWidgetEx._sharedOverlayGroup:
+            MapWidgetEx._sharedOverlayGroup = \
                 QtWidgets.QActionGroup(None)
-            TravellerMapWidget._sharedOverlayGroup.setExclusive(False)
+            MapWidgetEx._sharedOverlayGroup.setExclusive(False)
 
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.ImportanceOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.PopulationOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.CapitalsOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.MinorRaceOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.DroyneWorldOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.AncientSitesOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.StellarOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.EmpressWaveOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.QrekrshaZoneOverlay))
-            TravellerMapWidget._sharedOverlayGroup.addAction(
+            MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.MainsOverlay))
 
-        for action in TravellerMapWidget._sharedStyleGroup.actions():
+        for action in MapWidgetEx._sharedStyleGroup.actions():
             action.triggered.connect(self._displayOptionChanged)
 
-        for action in TravellerMapWidget._sharedFeatureGroup.actions():
+        for action in MapWidgetEx._sharedFeatureGroup.actions():
             action.triggered.connect(self._displayOptionChanged)
 
-        for action in TravellerMapWidget._sharedAppearanceGroup.actions():
+        for action in MapWidgetEx._sharedAppearanceGroup.actions():
             action.triggered.connect(self._displayOptionChanged)
 
-        for action in TravellerMapWidget._sharedOverlayGroup.actions():
+        for action in MapWidgetEx._sharedOverlayGroup.actions():
             action.triggered.connect(self._displayOptionChanged)
 
     def _handleLeftClickEvent(
@@ -1309,8 +1309,8 @@ class TravellerMapWidget(gui.LocalMapWidget):
                 self.setInfoHex(hex=hex)
 
             # Update selection if enabled
-            if self._selectionMode != TravellerMapWidget.SelectionMode.NoSelect:
-                if self._selectionMode == TravellerMapWidget.SelectionMode.MultiSelect and \
+            if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
+                if self._selectionMode == MapWidgetEx.SelectionMode.MultiSelect and \
                         gui.isShiftKeyDown():
                     worlds = traveller.WorldManager.instance().worldsInFlood(hex=hex)
                     self.selectHexes(hexes=[world.hex() for world in worlds])
@@ -1339,19 +1339,19 @@ class TravellerMapWidget(gui.LocalMapWidget):
 
     def _resizeOverlayWidgets(self) -> None:
         usedHeight = self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
-            (TravellerMapWidget._ControlWidgetInset * 2)
+            MapWidgetEx._ControlWidgetSpacing + \
+            (MapWidgetEx._ControlWidgetInset * 2)
         remainingHeight = self.height() - usedHeight
         remainingHeight = max(remainingHeight, 0)
 
-        usedWidth = TravellerMapWidget._ControlWidgetInset * 2
+        usedWidth = MapWidgetEx._ControlWidgetInset * 2
         if self._legendButton.isChecked() or self._configButton.isChecked():
             if self._legendButton.isChecked():
                 usedWidth += self._legendWidget.width()
             else:
                 usedWidth += self._configWidget.width()
 
-            usedWidth += TravellerMapWidget._ControlWidgetSpacing
+            usedWidth += MapWidgetEx._ControlWidgetSpacing
         remainingWidth = self.width() - usedWidth
         remainingWidth = max(remainingWidth, 0)
 
@@ -1367,62 +1367,62 @@ class TravellerMapWidget(gui.LocalMapWidget):
 
     def _positionOverlayWidgets(self) -> None:
         self._searchWidget.move(
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset)
+            MapWidgetEx._ControlWidgetInset,
+            MapWidgetEx._ControlWidgetInset)
 
         self._searchButton.move(
-            TravellerMapWidget._ControlWidgetInset + \
+            MapWidgetEx._ControlWidgetInset + \
             self._searchWidget.width(),
-            TravellerMapWidget._ControlWidgetInset)
+            MapWidgetEx._ControlWidgetInset)
 
         self._infoButton.move(
-            TravellerMapWidget._ControlWidgetInset + \
+            MapWidgetEx._ControlWidgetInset + \
             self._searchWidget.width() + \
             self._searchButton.width() + \
-            TravellerMapWidget._ControlWidgetSpacing,
-            TravellerMapWidget._ControlWidgetInset)
+            MapWidgetEx._ControlWidgetSpacing,
+            MapWidgetEx._ControlWidgetInset)
 
         self._reloadButton.move(
             self.width() - \
             (self._reloadButton.width() + \
-             TravellerMapWidget._ControlWidgetSpacing + \
+             MapWidgetEx._ControlWidgetSpacing + \
              self._legendButton.width() + \
-             TravellerMapWidget._ControlWidgetSpacing + \
+             MapWidgetEx._ControlWidgetSpacing + \
              self._configButton.width() + \
-             TravellerMapWidget._ControlWidgetInset),
-            TravellerMapWidget._ControlWidgetInset)
+             MapWidgetEx._ControlWidgetInset),
+            MapWidgetEx._ControlWidgetInset)
 
         self._legendButton.move(
             self.width() - \
             (self._legendButton.width() + \
-             TravellerMapWidget._ControlWidgetSpacing + \
+             MapWidgetEx._ControlWidgetSpacing + \
              self._configButton.width() + \
-             TravellerMapWidget._ControlWidgetInset),
-            TravellerMapWidget._ControlWidgetInset)
+             MapWidgetEx._ControlWidgetInset),
+            MapWidgetEx._ControlWidgetInset)
 
         self._configButton.move(
             self.width() - \
             (self._configButton.width() +
-             TravellerMapWidget._ControlWidgetInset),
-            TravellerMapWidget._ControlWidgetInset)
+             MapWidgetEx._ControlWidgetInset),
+            MapWidgetEx._ControlWidgetInset)
 
-        vertOffset = TravellerMapWidget._ControlWidgetInset + \
+        vertOffset = MapWidgetEx._ControlWidgetInset + \
             self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing
+            MapWidgetEx._ControlWidgetSpacing
 
         self._infoWidget.move(
-            TravellerMapWidget._ControlWidgetInset,
+            MapWidgetEx._ControlWidgetInset,
             vertOffset)
 
         legendSize = self._legendWidget.size()
         self._legendWidget.move(
-            self.width() - (TravellerMapWidget._ControlWidgetInset +
+            self.width() - (MapWidgetEx._ControlWidgetInset +
                             legendSize.width()),
             vertOffset)
 
         configSize = self._configWidget.size()
         self._configWidget.move(
-            self.width() - (TravellerMapWidget._ControlWidgetInset +
+            self.width() - (MapWidgetEx._ControlWidgetInset +
                             configSize.width()),
             vertOffset)
 
@@ -1432,8 +1432,8 @@ class TravellerMapWidget(gui.LocalMapWidget):
             ) -> None:
         self._selectedHexes[hex] = self.createHexOverlay(
             hexes=[hex],
-            primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
-            fillColour=TravellerMapWidget.selectionFillColour())
+            primitive=gui.MapWidgetEx.PrimitiveType.Hex,
+            fillColour=MapWidgetEx.selectionFillColour())
 
     def _removeSelectionHexOverlay(
             self,
@@ -1483,7 +1483,7 @@ class TravellerMapWidget(gui.LocalMapWidget):
             # Add the selected world to the recently used list
             app.HexHistory.instance().addHex(hex=hex)
 
-            if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
+            if self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect:
                 self.selectHex(
                     hex=hex,
                     centerOnHex=False, # Centring on the world has already been handled

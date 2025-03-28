@@ -46,9 +46,9 @@ from .map.qtmapgraphics import *
 from .map.tooltips import *
 from .map.hexselectcombobox import *
 from .map.localmapwidget import *
-from .map.travellermapwidgetbase import *
-from .map.travellermapwidget import *
-from .map.travellermapwindow import *
+from .map.webmapwidget import *
+from .map.mapwidgetex import *
+from .map.mapwindow import *
 from .map.hexradiusselectdialog import *
 from .map.hexselectdialog import *
 from .map.hexselecttoolwidget import *

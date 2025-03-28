@@ -5,12 +5,12 @@ import travellermap
 import typing
 from PyQt5 import QtCore, QtWidgets
 
-class TravellerMapWindow(gui.WindowWidget):
+class MapWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
             title='Traveller Map',
-            configSection='TravellerMapWindow')
-        self._mapWidget = gui.TravellerMapWidget()
+            configSection='MapWindow')
+        self._mapWidget = gui.MapWidgetEx()
 
         self._importJumpRouteButton = QtWidgets.QPushButton('Import Jump Route...')
         self._importJumpRouteButton.clicked.connect(self._importJumpRoute)

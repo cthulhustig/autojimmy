@@ -14,9 +14,9 @@ class HexSelectDialog(gui.DialogEx):
             configSection='HexSelectDialog',
             parent=parent)
 
-        self._mapWidget = gui.TravellerMapWidget()
+        self._mapWidget = gui.MapWidgetEx()
         self._mapWidget.setInfoEnabled(False) # Disable by default
-        self._mapWidget.setSelectionMode(gui.TravellerMapWidget.SelectionMode.MultiSelect)
+        self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.MultiSelect)
 
         self._label = QtWidgets.QLabel()
 
@@ -71,9 +71,9 @@ class HexSelectDialog(gui.DialogEx):
             includeDeadSpace: bool = False
             ) -> None:
         self._mapWidget.setSelectionMode(
-            gui.TravellerMapWidget.SelectionMode.SingleSelect \
+            gui.MapWidgetEx.SelectionMode.SingleSelect \
             if singleSelect else \
-            gui.TravellerMapWidget.SelectionMode.MultiSelect)
+            gui.MapWidgetEx.SelectionMode.MultiSelect)
         self._mapWidget.enableDeadSpaceSelection(enable=includeDeadSpace)
         self._updateLabel()
 
@@ -100,7 +100,7 @@ class HexSelectDialog(gui.DialogEx):
 
     def _updateLabel(self) -> None:
         isWorld = not self._mapWidget.isDeadSpaceSelectionEnabled()
-        isSingular = self._mapWidget.selectionMode() == gui.TravellerMapWidget.SelectionMode.SingleSelect
+        isSingular = self._mapWidget.selectionMode() == gui.MapWidgetEx.SelectionMode.SingleSelect
         if isWorld:
             wording = 'world' if isSingular else 'worlds'
         else:

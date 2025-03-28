@@ -798,7 +798,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
 
-        self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget = gui.MapWidgetEx()
         self._travellerMapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._travellerMapWidget.setToolTipCallback(self._formatMapToolTip)
         self._travellerMapWidget.enableDeadSpaceSelection(
@@ -1562,7 +1562,7 @@ class JumpRouteWindow(gui.WindowWidget):
             if taggedHexes:
                 handle = self._travellerMapWidget.createHexOverlay(
                     hexes=taggedHexes,
-                    primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
+                    primitive=gui.MapWidgetEx.PrimitiveType.Hex,
                     fillMap=colourMap)
                 self._jumpOverlayHandles.add(handle)
 
