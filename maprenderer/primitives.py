@@ -89,6 +89,11 @@ class MapOptions(enum.IntFlag):
     DimUnofficial = 0x1000000
     ColorCodeSectorStatus = 0x2000000
 
+    RoutesMajor = 0x10000000
+    RoutesMinor = 0x20000000
+    RoutesMask = RoutesMajor | RoutesMinor
+
+
 class LayerId(enum.Enum):
     #------------------------------------------------------------
     # Background

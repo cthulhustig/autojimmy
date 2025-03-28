@@ -319,8 +319,6 @@ class StyleSheet(object):
             minScale=1 / 8,
             maxScale=2)
 
-        self.macroRoutes.visible = (self.scale >= StyleSheet._MacroRouteMinScale) and \
-            (self.scale <= StyleSheet._MacroRouteMaxScale)
         self.macroNames.visible = (self.scale >= StyleSheet._MacroLabelMinScale) and \
             (self.scale <= StyleSheet._MacroLabelMaxScale)
         self.megaNames.visible = self.scale <= StyleSheet._MegaLabelMaxScale and \
@@ -339,7 +337,11 @@ class StyleSheet(object):
             ((self.options & maprenderer.MapOptions.BordersMask) != 0)
         self.fillMicroBorders = self.microBorders.visible and \
             ((self.options & maprenderer.MapOptions.FilledBorders) != 0)
-        self.microRoutes.visible = (self.scale >= StyleSheet._RouteMinScale)
+        self.microRoutes.visible = (self.scale >= StyleSheet._RouteMinScale) and \
+            ((self.options & maprenderer.MapOptions.RoutesMask) != 0)
+        self.macroRoutes.visible = (self.scale >= StyleSheet._MacroRouteMinScale) and \
+            (self.scale <= StyleSheet._MacroRouteMaxScale) and \
+            ((self.options & maprenderer.MapOptions.RoutesMask) != 0)
 
         if self.scale < StyleSheet._WorldBasicMinScale:
             self.worldDetails = maprenderer.WorldDetails.Dotmap

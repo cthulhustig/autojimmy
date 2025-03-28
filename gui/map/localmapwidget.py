@@ -1,3 +1,4 @@
+import app
 import common
 import enum
 import gc
@@ -49,6 +50,8 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Update tooltips to use renderer
 # TODO: Saving/restoring last view position and zoom
 # TODO: Share tile cache (and possibly others) between instances of local map widget
+# TODO: When the info/config controls are drawn over the local map, if you use the scroll wheel when it's over one
+# of the controls, the scrolls the control and the map (it just scrolls the control with the web map)
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -100,16 +103,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             LocalMapWidget._DefaultCenterX,
             LocalMapWidget._DefaultCenterY)
         self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultScale, linear=True)
-        self._options = \
-            maprenderer.MapOptions.SectorGrid | maprenderer.MapOptions.SubsectorGrid | \
-            maprenderer.MapOptions.SectorsSelected | \
-            maprenderer.MapOptions.BordersMajor | maprenderer.MapOptions.BordersMinor | \
-            maprenderer.MapOptions.NamesMajor | maprenderer.MapOptions.NamesMinor | \
-            maprenderer.MapOptions.WorldsCapitals | maprenderer.MapOptions.WorldsHomeworlds | \
-            maprenderer.MapOptions.WorldColors
 
-        self._style = travellermap.Style.Poster
-        #self._style = travellermap.Style.Candy
         self._graphics = gui.MapGraphics()
         self._imageCache = maprenderer.ImageCache(
             graphics=self._graphics)
@@ -151,7 +145,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         self.setMouseTracking(True)
 
     def reload(self) -> None:
+        self._renderer = self._createRenderer()
         self._clearTileCache()
+        self._preloadCurrentDrawTiles()
         self.update() # Force a redraw
 
     def centerOnHex(
@@ -358,19 +354,9 @@ class LocalMapWidget(QtWidgets.QWidget):
             if event.key() == QtCore.Qt.Key.Key_F1:
                 pass
             elif event.key() == QtCore.Qt.Key.Key_F2:
-                self._style = common.incrementEnum(
-                    value=self._style,
-                    count=1)
-                if self._renderer:
-                    self._renderer.setStyle(self._style)
-                self._clearTileCache()
+                pass
             elif event.key() == QtCore.Qt.Key.Key_F3:
-                self._style = common.decrementEnum(
-                    value=self._style,
-                    count=1)
-                if self._renderer:
-                    self._renderer.setStyle(self._style)
-                self._clearTileCache()
+                pass
             elif event.key() == QtCore.Qt.Key.Key_F5:
                 print('Forcing garbage collection')
                 count = gc.collect()
@@ -585,23 +571,68 @@ class LocalMapWidget(QtWidgets.QWidget):
             scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height(),
-            style=self._style,
+            style=app.Config.instance().mapStyle(),
+            options=self._calculateMapOptions(),
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
             labelCache=self._labelCache,
-            styleCache=self._styleCache,
-            options=self._options)
+            styleCache=self._styleCache)
+
+    # TODO: Handle other option mappings
+    _MapOptionsMap: typing.Dict[
+        travellermap.Option,
+        maprenderer.MapOptions
+        ] = {
+            #travellermap.Option.GalacticDirections
+            travellermap.Option.SectorGrid: maprenderer.MapOptions.SectorGrid,
+            travellermap.Option.SectorNames: maprenderer.MapOptions.SectorsAll,
+            travellermap.Option.Borders: maprenderer.MapOptions.BordersMask,
+            travellermap.Option.Routes: maprenderer.MapOptions.RoutesMask,
+            travellermap.Option.RegionNames: maprenderer.MapOptions.NamesMask,
+            travellermap.Option.ImportantWorlds: maprenderer.MapOptions.WorldsMask,
+            travellermap.Option.WorldColours: maprenderer.MapOptions.WorldColors,
+            travellermap.Option.FilledBorders: maprenderer.MapOptions.FilledBorders,
+            travellermap.Option.DimUnofficial: maprenderer.MapOptions.DimUnofficial,
+            travellermap.Option.ImportanceOverlay: maprenderer.MapOptions.ImportanceOverlay,
+            travellermap.Option.PopulationOverlay: maprenderer.MapOptions.PopulationOverlay,
+            travellermap.Option.CapitalsOverlay: maprenderer.MapOptions.CapitalOverlay,
+            travellermap.Option.MinorRaceOverlay: maprenderer.MapOptions.MinorHomeWorlds,
+            travellermap.Option.DroyneWorldOverlay: maprenderer.MapOptions.DroyneWorlds,
+            travellermap.Option.AncientSitesOverlay: maprenderer.MapOptions.AncientWorlds,
+            travellermap.Option.StellarOverlay: maprenderer.MapOptions.StellarOverlay,
+            #travellermap.Option.EmpressWaveOverlay
+            #travellermap.Option.QrekrshaZoneOverlay
+            #travellermap.Option.MainsOverlay
+        }
+    def _calculateMapOptions(self) -> maprenderer.MapOptions:
+        mapOptions = 0
+        for option in app.Config.instance().mapOptions():
+            flag = LocalMapWidget._MapOptionsMap.get(option)
+            if flag is not None:
+                mapOptions |= flag
+        return mapOptions
 
     def _updateRendererView(self) -> None:
         if not self._renderer:
             self._renderer = self._createRenderer()
+
+        # Clear the tile queue as the render view/style map have
+        # changed so previous queue map be invalid. The redraw
+        # that is triggered will refill the queue if needed
+        self._tileQueue.clear()
+        self._tileTimer.stop()
+
+        # TODO: Should this be update rather than repaint? Feels inconsistent with other places
         self.repaint()
 
-    def _currentDrawTiles(self) -> typing.Iterable[typing.Tuple[
-            QtGui.QImage,
-            QtCore.QRectF, # Render rect
-            typing.Optional[QtCore.QRectF], # Clip rect
-            ]]:
+    def _currentDrawTiles(
+            self,
+            forceCreate: bool = False
+            ) -> typing.Iterable[typing.Tuple[
+                QtGui.QImage,
+                QtCore.QRectF, # Render rect
+                typing.Optional[QtCore.QRectF], # Clip rect
+                ]]:
         # This method of rounding the scale is intended to match how it would
         # be rounded by the Traveller Map Javascript code which uses Math.round
         # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round
@@ -647,7 +678,11 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._tileQueue.clear()
 
         tiles = []
-        image = self._lookupTile(tileX=centerTileX, tileY=centerTileY, tileScale=tileScale)
+        image = self._lookupTile(
+            tileX=centerTileX,
+            tileY=centerTileY,
+            tileScale=tileScale,
+            forceCreate=forceCreate)
         renderRect = QtCore.QRectF(
             ((centerTileX - leftTile) * tileSize) - offsetX,
             ((centerTileY - topTile) * tileSize) - offsetY,
@@ -669,7 +704,11 @@ class LocalMapWidget(QtWidgets.QWidget):
         while minTileX >= leftTile or maxTileX <= rightTile or minTileY >= topTile or maxTileY <= bottomTile:
             if minTileY >= topTile:
                 for x in range(max(minTileX, leftTile), min(maxTileX, rightTile + 1)):
-                    image = self._lookupTile(tileX=x, tileY=minTileY, tileScale=tileScale)
+                    image = self._lookupTile(
+                        tileX=x,
+                        tileY=minTileY,
+                        tileScale=tileScale,
+                        forceCreate=forceCreate)
                     renderRect = QtCore.QRectF(
                         ((x - leftTile) * tileSize) - offsetX,
                         ((minTileY - topTile) * tileSize) - offsetY,
@@ -686,7 +725,11 @@ class LocalMapWidget(QtWidgets.QWidget):
 
             if maxTileX <= rightTile:
                 for y in range(max(minTileY, topTile), min(maxTileY, bottomTile + 1)):
-                    image = self._lookupTile(tileX=maxTileX, tileY=y, tileScale=tileScale)
+                    image = self._lookupTile(
+                        tileX=maxTileX,
+                        tileY=y,
+                        tileScale=tileScale,
+                        forceCreate=forceCreate)
                     renderRect = QtCore.QRectF(
                         ((maxTileX - leftTile) * tileSize) - offsetX,
                         ((y - topTile) * tileSize) - offsetY,
@@ -703,7 +746,11 @@ class LocalMapWidget(QtWidgets.QWidget):
 
             if maxTileY <= bottomTile:
                 for x in range(min(maxTileX, rightTile), max(minTileX, leftTile - 1), -1):
-                    image = self._lookupTile(tileX=x, tileY=maxTileY, tileScale=tileScale)
+                    image = self._lookupTile(
+                        tileX=x,
+                        tileY=maxTileY,
+                        tileScale=tileScale,
+                        forceCreate=forceCreate)
                     renderRect = QtCore.QRectF(
                         ((x - leftTile) * tileSize) - offsetX,
                         ((maxTileY - topTile) * tileSize) - offsetY,
@@ -720,7 +767,11 @@ class LocalMapWidget(QtWidgets.QWidget):
 
             if minTileX >= leftTile:
                 for y in range(min(maxTileY, bottomTile), max(minTileY, topTile - 1), -1):
-                    image = self._lookupTile(tileX=minTileX, tileY=y, tileScale=tileScale)
+                    image = self._lookupTile(
+                        tileX=minTileX,
+                        tileY=y,
+                        tileScale=tileScale,
+                        forceCreate=forceCreate)
                     renderRect = QtCore.QRectF(
                         ((minTileX - leftTile) * tileSize) - offsetX,
                         ((y - topTile) * tileSize) - offsetY,
@@ -741,6 +792,11 @@ class LocalMapWidget(QtWidgets.QWidget):
             maxTileY += 1
 
         return tiles
+
+    def _preloadCurrentDrawTiles(self) -> None:
+        self._currentDrawTiles(forceCreate=True)
+        self._tileQueue.clear()
+        self._tileTimer.stop()
 
     def _loadLookaheadTiles(self) -> None:
         # This method of rounding the scale is intended to match how it would
@@ -780,12 +836,13 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             tileX: int,
             tileY: int,
-            tileScale: int # Log scale rounded down
+            tileScale: int, # Log scale rounded down,
+            forceCreate: bool = False
             ) -> typing.Optional[QtGui.QImage]:
         key = (tileX, tileY, tileScale)
         image = self._tileCache.get(key)
         if not image:
-            if LocalMapWidget._DelayedRendering:
+            if LocalMapWidget._DelayedRendering and not forceCreate:
                 if key not in self._tileQueue:
                     self._tileQueue.append(key)
             else:
@@ -902,6 +959,8 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def _clearTileCache(self) -> None:
         self._tileCache.clear()
+        self._tileQueue.clear()
+        self._tileTimer.stop()
         self.update() # Force redraw
 
     def _renderTile(
@@ -937,6 +996,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 outputPixelY=LocalMapWidget._TileSize)
             self._renderer.render()
 
+            # TODO: Remove debug code
             """
             painter.setPen(QtGui.QColor('#FF0000'))
             painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
