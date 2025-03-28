@@ -586,7 +586,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         maprenderer.MapOptions
         ] = {
             #travellermap.Option.GalacticDirections
-            travellermap.Option.SectorGrid: maprenderer.MapOptions.SectorGrid,
+            travellermap.Option.SectorGrid: maprenderer.MapOptions.GridMask,
             travellermap.Option.SectorNames: maprenderer.MapOptions.SectorsAll,
             travellermap.Option.Borders: maprenderer.MapOptions.BordersMask,
             travellermap.Option.Routes: maprenderer.MapOptions.RoutesMask,

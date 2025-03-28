@@ -51,6 +51,7 @@ class HexCoordinateStyle(enum.Enum):
 class MapOptions(enum.IntFlag):
     SectorGrid = 0x0001
     SubsectorGrid = 0x0002
+    GridMask = SectorGrid | SubsectorGrid
 
     SectorsSelected = 0x0004
     SectorsAll = 0x0008
