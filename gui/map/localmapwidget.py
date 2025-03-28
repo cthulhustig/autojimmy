@@ -41,13 +41,14 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # - I could render these onto the tiles but it might be better to have them
 #   rendered on top of the final frame
 # TODO: Other overlays
-# TODO: Ability to switch between this and the existing TravellerMapWidget
+# TODO: Ability to switch between local and web rendering
 # TODO: Animated move to new location
 # TODO: Spinwards/corewards etc labels
 # TODO: Current scale line in bottom right
 # TODO: Fix colour vs color
 # TODO: Update tooltips to use renderer
 # TODO: Saving/restoring last view position and zoom
+# TODO: Share tile cache (and possibly others) between instances of local map widget
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -109,7 +110,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._style = travellermap.Style.Poster
         #self._style = travellermap.Style.Candy
-        self._graphics = gui.QtMapGraphics()
+        self._graphics = gui.MapGraphics()
         self._imageCache = maprenderer.ImageCache(
             graphics=self._graphics)
         self._vectorCache = maprenderer.VectorObjectCache(

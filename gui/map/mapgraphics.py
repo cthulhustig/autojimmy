@@ -5,18 +5,18 @@ import maprenderer
 import typing
 from PyQt5 import QtCore, QtGui
 
-class QtMapPointList(maprenderer.AbstractPath):
+class MapPointList(maprenderer.AbstractPath):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'QtMapPath') -> None: ...
+    def __init__(self, other: 'MapPath') -> None: ...
     @typing.overload
     def __init__(self, points: typing.Sequence[maprenderer.PointF]) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if len(args) == 1:
             arg = args[0]
-            if isinstance(arg, QtMapPointList):
+            if isinstance(arg, MapPointList):
                 # NOTE: This assumes the points method return a copy of
                 # the list held by other not the list itself
                 self._points = arg.points()
@@ -24,7 +24,7 @@ class QtMapPointList(maprenderer.AbstractPath):
                 self._points = list(arg)
         elif 'other' in kwargs:
             other = kwargs['other']
-            if not isinstance(other, QtMapPointList):
+            if not isinstance(other, MapPointList):
                 raise TypeError('The other parameter must be a QtMapPointList')
             self._points = list(other.points())
         else:
@@ -65,7 +65,7 @@ class QtMapPointList(maprenderer.AbstractPath):
         if self._qtPolygon:
             self._qtPolygon.translate(dx, dy)
 
-    def copyFrom(self, other: 'QtMapPointList') -> None:
+    def copyFrom(self, other: 'MapPointList') -> None:
         # NOTE: This assumes the points method return a copy of
         # the list held by other not the list itself
         self._points = other.points()
@@ -78,11 +78,11 @@ class QtMapPointList(maprenderer.AbstractPath):
                 [QtCore.QPointF(p.x(), p.y()) for p in self._points])
         return self._qtPolygon
 
-class QtMapPath(maprenderer.AbstractPath):
+class MapPath(maprenderer.AbstractPath):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'QtMapPath') -> None: ...
+    def __init__(self, other: 'MapPath') -> None: ...
     @typing.overload
     def __init__(
         self,
@@ -95,7 +95,7 @@ class QtMapPath(maprenderer.AbstractPath):
             self._closed = False
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, QtMapPath):
+            if not isinstance(other, MapPath):
                 raise TypeError('The other parameter must be a QtMapPath')
             # NOTE: This assumes the points and types methods return copies of
             # the lists held by other not the lists themselves
@@ -143,7 +143,7 @@ class QtMapPath(maprenderer.AbstractPath):
         if self._qtPolygon:
             self._qtPolygon.translate(dx, dy)
 
-    def copyFrom(self, other: 'QtMapPath') -> None:
+    def copyFrom(self, other: 'MapPath') -> None:
         # NOTE: This assumes the points methods return a copy of
         # the list held by other not the list itself
         self._points = other.points()
@@ -157,11 +157,11 @@ class QtMapPath(maprenderer.AbstractPath):
                 [QtCore.QPointF(p.x(), p.y()) for p in self._points])
         return self._qtPolygon
 
-class QtMapSpline(object):
+class MapSpline(object):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'QtMapSpline') -> None: ...
+    def __init__(self, other: 'MapSpline') -> None: ...
     @typing.overload
     def __init__(
         self,
@@ -176,7 +176,7 @@ class QtMapSpline(object):
             self._closed = False
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, QtMapSpline):
+            if not isinstance(other, MapSpline):
                 raise TypeError('The other parameter must be a QtMapSpline')
             # NOTE: This assumes the points methods return copies of
             # the list held by other not the list themselves
@@ -223,7 +223,7 @@ class QtMapSpline(object):
         if self._qtPainterPath:
             self._qtPainterPath.translate(dx, dy)
 
-    def copyFrom(self, other: 'QtMapPath') -> None:
+    def copyFrom(self, other: 'MapPath') -> None:
         # NOTE: This assumes the points methods return copies of
         # the list held by other not the list themselves
         self._points = other.points()
@@ -250,7 +250,7 @@ class QtMapSpline(object):
         # derived at by trial and error and seems to give an good approximation
         qtTension = self._tension * 2/3
 
-        controlPoints = QtMapSpline._calcControlPoints(
+        controlPoints = MapSpline._calcControlPoints(
             self._points[-1],
             self._points[0],
             self._points[1],
@@ -258,7 +258,7 @@ class QtMapSpline(object):
         prevPoint = controlPoints[1]
         self._qtPainterPath.moveTo(QtCore.QPointF(*self._points[0].point()))
         for i in range(1, len(self._points) - 1, 1):
-            controlPoints = QtMapSpline._calcControlPoints(
+            controlPoints = MapSpline._calcControlPoints(
                 self._points[i - 1],
                 self._points[i],
                 self._points[i + 1],
@@ -268,7 +268,7 @@ class QtMapSpline(object):
                 QtCore.QPointF(*controlPoints[0].point()),
                 QtCore.QPointF(*self._points[i].point()))
             prevPoint = controlPoints[1]
-        controlPoints = QtMapSpline._calcControlPoints(
+        controlPoints = MapSpline._calcControlPoints(
             self._points[-2],
             self._points[-1],
             self._points[0],
@@ -280,7 +280,7 @@ class QtMapSpline(object):
         prevPoint = controlPoints[1]
 
         if self._closed:
-            controlPoints = QtMapSpline._calcControlPoints(
+            controlPoints = MapSpline._calcControlPoints(
                 self._points[-1],
                 self._points[0],
                 self._points[1],
@@ -313,11 +313,11 @@ class QtMapSpline(object):
         return (maprenderer.PointF(c1x, c1y),
                 maprenderer.PointF(c2x, c2y))
 
-class QtMapMatrix(maprenderer.AbstractMatrix):
+class MapMatrix(maprenderer.AbstractMatrix):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'QtMapMatrix') -> None: ...
+    def __init__(self, other: 'MapMatrix') -> None: ...
     @typing.overload
     def __init__(self, m11: float, m12: float, m21: float, m22: float, dx: float, dy: float) -> None: ...
 
@@ -326,7 +326,7 @@ class QtMapMatrix(maprenderer.AbstractMatrix):
             self._qtMatrix = QtGui.QTransform()
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, QtMapMatrix):
+            if not isinstance(other, MapMatrix):
                 raise TypeError('The other parameter must be an QtMapMatrix')
             self._qtMatrix = QtGui.QTransform(other._qtMatrix)
         else:
@@ -391,7 +391,7 @@ class QtMapMatrix(maprenderer.AbstractMatrix):
         transform *= self._qtMatrix
         self._qtMatrix = transform
 
-    def prepend(self, matrix: 'QtMapMatrix') -> None:
+    def prepend(self, matrix: 'MapMatrix') -> None:
         self._qtMatrix = matrix.qtTransform() * self._qtMatrix
 
     def transform(self, point: maprenderer.PointF) -> maprenderer.PointF:
@@ -401,11 +401,11 @@ class QtMapMatrix(maprenderer.AbstractMatrix):
     def qtTransform(self) -> QtGui.QTransform:
         return self._qtMatrix
 
-class QtMapBrush(maprenderer.AbstractBrush):
+class MapBrush(maprenderer.AbstractBrush):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'QtMapBrush') -> None: ...
+    def __init__(self, other: 'MapBrush') -> None: ...
     @typing.overload
     def __init__(self, color: str) -> None: ...
 
@@ -414,13 +414,13 @@ class QtMapBrush(maprenderer.AbstractBrush):
             self._color = ''
         elif len(args) == 1:
             arg = args[0]
-            if isinstance(arg, QtMapBrush):
+            if isinstance(arg, MapBrush):
                 self._color = arg.color()
             else:
                 self._color = arg
         elif 'other' in kwargs:
             other = kwargs['other']
-            if not isinstance(other, QtMapBrush):
+            if not isinstance(other, MapBrush):
                 raise TypeError('The other parameter must be a QtMapBrush')
             self._color = other.color()
         else:
@@ -436,7 +436,7 @@ class QtMapBrush(maprenderer.AbstractBrush):
         if self._qtBrush:
             self._qtBrush.setColor(QtGui.QColor(self._color))
 
-    def copyFrom(self, other: 'QtMapBrush') -> None:
+    def copyFrom(self, other: 'MapBrush') -> None:
         self._color = other._color
         if self._qtBrush:
             self._qtBrush.setColor(
@@ -449,7 +449,7 @@ class QtMapBrush(maprenderer.AbstractBrush):
             self._qtBrush = QtGui.QBrush(QtGui.QColor(self._color))
         return self._qtBrush
 
-class QtMapPen(maprenderer.AbstractPen):
+class MapPen(maprenderer.AbstractPen):
     _LineStyleMap = {
         maprenderer.LineStyle.Solid: (QtCore.Qt.PenStyle.SolidLine, None),
         maprenderer.LineStyle.Dot: (QtCore.Qt.PenStyle.CustomDashLine, [1, 1]),
@@ -465,7 +465,7 @@ class QtMapPen(maprenderer.AbstractPen):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, other: 'QtMapPen') -> None: ...
+    def __init__(self, other: 'MapPen') -> None: ...
     @typing.overload
     def __init__(
         self,
@@ -485,7 +485,7 @@ class QtMapPen(maprenderer.AbstractPen):
             self._tip = maprenderer.PenTip.Flat
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
-            if not isinstance(other, QtMapPen):
+            if not isinstance(other, MapPen):
                 raise TypeError('The other parameter must be a QtMapPen')
             self._color = other.color()
             self._width = other.width()
@@ -533,7 +533,7 @@ class QtMapPen(maprenderer.AbstractPen):
                 self._qtPen.setStyle(QtCore.Qt.PenStyle.CustomDashLine)
                 self._qtPen.setDashPattern(self._pattern)
             else:
-                qtStyle, qtPattern = QtMapPen._LineStyleMap[self._style]
+                qtStyle, qtPattern = MapPen._LineStyleMap[self._style]
                 self._qtPen.setStyle(qtStyle)
                 if qtPattern:
                     self._qtPen.setDashPattern(qtPattern)
@@ -558,11 +558,11 @@ class QtMapPen(maprenderer.AbstractPen):
             return tip
         self._tip = tip
         if self._qtPen:
-            self._qtPen.setCapStyle(QtMapPen._PenTipMap[tip])
+            self._qtPen.setCapStyle(MapPen._PenTipMap[tip])
 
     def copyFrom(
             self,
-            other: 'QtMapPen'
+            other: 'MapPen'
             ) -> None:
         self._color = other._color
         self._width = other._width
@@ -571,13 +571,13 @@ class QtMapPen(maprenderer.AbstractPen):
         if self._qtPen:
             self._qtPen.setColor(QtGui.QColor(self._color))
             self._qtPen.setWidthF(self._width)
-            self._qtPen.setCapStyle(QtMapPen._PenTipMap[self._tip])
+            self._qtPen.setCapStyle(MapPen._PenTipMap[self._tip])
 
             if self._style is maprenderer.LineStyle.Custom:
                 self._qtPen.setStyle(QtCore.Qt.PenStyle.CustomDashLine)
                 self._qtPen.setDashPattern(self._pattern)
             else:
-                qtStyle, qtPattern = QtMapPen._LineStyleMap[self._style]
+                qtStyle, qtPattern = MapPen._LineStyleMap[self._style]
                 self._qtPen.setStyle(qtStyle)
                 if qtPattern:
                     self._qtPen.setDashPattern(qtPattern)
@@ -588,7 +588,7 @@ class QtMapPen(maprenderer.AbstractPen):
                 qtStyle = QtCore.Qt.PenStyle.CustomDashLine
                 qtPattern = self._pattern
             else:
-                qtStyle, qtPattern = QtMapPen._LineStyleMap[self._style]
+                qtStyle, qtPattern = MapPen._LineStyleMap[self._style]
 
             self._qtPen = QtGui.QPen(
                 QtGui.QColor(self._color),
@@ -596,10 +596,10 @@ class QtMapPen(maprenderer.AbstractPen):
                 qtStyle)
             if qtPattern:
                 self._qtPen.setDashPattern(qtPattern)
-            self._qtPen.setCapStyle(QtMapPen._PenTipMap[self._tip])
+            self._qtPen.setCapStyle(MapPen._PenTipMap[self._tip])
         return self._qtPen
 
-class QtMapImage(maprenderer.AbstractImage):
+class MapImage(maprenderer.AbstractImage):
     def __init__(self, data: bytes):
         self._qtImage = QtGui.QImage.fromData(data, None)
         if not self._qtImage:
@@ -613,7 +613,7 @@ class QtMapImage(maprenderer.AbstractImage):
     def qtImage(self) -> QtGui.QImage:
         return self._qtImage
 
-class QtMapFont(maprenderer.AbstractFont):
+class MapFont(maprenderer.AbstractFont):
     # Qt doesn't seem to have great support for fonts with float
     # point sizes which the Traveller Map rendering expects.
     # Instead I have all fonts set to the same size and when
@@ -639,7 +639,7 @@ class QtMapFont(maprenderer.AbstractFont):
         self._font = QtGui.QFont(family)
         if not self._font:
             raise ValueError(f'Unknown font "{family}"')
-        self._font.setPointSizeF(QtMapFont._TextPointSize)
+        self._font.setPointSizeF(MapFont._TextPointSize)
         if self._style & maprenderer.FontStyle.Bold:
             self._font.setBold(True)
         if self._style & maprenderer.FontStyle.Italic:
@@ -681,7 +681,7 @@ class QtMapFont(maprenderer.AbstractFont):
     def qtFont(self) -> QtGui.QFont:
         return self._font
 
-class QtMapGraphics(maprenderer.AbstractGraphics):
+class MapGraphics(maprenderer.AbstractGraphics):
     def __init__(self):
         super().__init__()
         self._painter = None
@@ -727,32 +727,32 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def createPointList(
             self,
             points: typing.Sequence[maprenderer.PointF]
-            ) -> QtMapPointList:
-        return QtMapPointList(points=points)
-    def copyPointList(self, other: QtMapPointList) -> QtMapPointList:
-        return QtMapPointList(other=other)
+            ) -> MapPointList:
+        return MapPointList(points=points)
+    def copyPointList(self, other: MapPointList) -> MapPointList:
+        return MapPointList(other=other)
 
     def createPath(
             self,
             points: typing.Sequence[maprenderer.PointF],
             closed: bool
-            ) -> QtMapPath:
-        return QtMapPath(points=points, closed=closed)
-    def copyPath(self, other: QtMapPath) -> QtMapPath:
-        return QtMapPath(other=other)
+            ) -> MapPath:
+        return MapPath(points=points, closed=closed)
+    def copyPath(self, other: MapPath) -> MapPath:
+        return MapPath(other=other)
 
     def createSpline(
             self,
             points: typing.Sequence[maprenderer.PointF],
             tension: float,
             closed: bool
-            ) -> QtMapSpline:
-        return QtMapSpline(points=points, tension=tension, closed=closed)
-    def copySpline(self, other: QtMapSpline) -> QtMapSpline:
-        return QtMapSpline(other=other)
+            ) -> MapSpline:
+        return MapSpline(points=points, tension=tension, closed=closed)
+    def copySpline(self, other: MapSpline) -> MapSpline:
+        return MapSpline(other=other)
 
-    def createIdentityMatrix(self) -> QtMapMatrix:
-        return QtMapMatrix()
+    def createIdentityMatrix(self) -> MapMatrix:
+        return MapMatrix()
     def createMatrix(
             self,
             m11: float,
@@ -761,15 +761,15 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             m22: float,
             dx: float,
             dy: float
-            ) -> QtMapMatrix:
-        return QtMapMatrix(m11=m11, m12=m12, m21=m21, m22=m22, dx=dx, dy=dy)
-    def copyMatrix(self, other: QtMapMatrix) -> QtMapMatrix:
-        return QtMapMatrix(other=other)
+            ) -> MapMatrix:
+        return MapMatrix(m11=m11, m12=m12, m21=m21, m22=m22, dx=dx, dy=dy)
+    def copyMatrix(self, other: MapMatrix) -> MapMatrix:
+        return MapMatrix(other=other)
 
-    def createBrush(self, color: str = '') -> QtMapBrush:
-        return QtMapBrush(color=color)
-    def copyBrush(self, other: QtMapBrush) -> QtMapBrush:
-        return QtMapPath(other=other)
+    def createBrush(self, color: str = '') -> MapBrush:
+        return MapBrush(color=color)
+    def copyBrush(self, other: MapBrush) -> MapBrush:
+        return MapPath(other=other)
 
     def createPen(
             self,
@@ -778,26 +778,26 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
             pattern: typing.Optional[typing.Sequence[float]] = None,
             tip: maprenderer.PenTip = maprenderer.PenTip.Flat
-            ) -> QtMapPen:
-        return QtMapPen(color=color, width=width, style=style, pattern=pattern, tip=tip)
-    def copyPen(self, other: QtMapPen) -> QtMapPen:
-        return QtMapPen(other=other)
+            ) -> MapPen:
+        return MapPen(color=color, width=width, style=style, pattern=pattern, tip=tip)
+    def copyPen(self, other: MapPen) -> MapPen:
+        return MapPen(other=other)
 
     def createImage(
             self,
             data: bytes
-            ) -> QtMapImage:
-        return QtMapImage(data=data)
+            ) -> MapImage:
+        return MapImage(data=data)
 
     def createFont(
             self,
             family: str,
             emSize: float,
             style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
-            ) -> QtMapFont:
+            ) -> MapFont:
         # NOTE: Traveller Map has this as 1.4 (in makeFont) but I found I needed
         # to lower it to get fonts rendering the correct size.
-        return QtMapFont(family=family, emSize=emSize * 1.05, style=style)
+        return MapFont(family=family, emSize=emSize * 1.05, style=style)
 
     def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
         antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \
@@ -834,11 +834,11 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
         transform.rotate(degrees, QtCore.Qt.Axis.ZAxis)
         self._painter.setTransform(
             transform * self._painter.transform())
-    def multiplyTransform(self, matrix: QtMapMatrix) -> None:
+    def multiplyTransform(self, matrix: MapMatrix) -> None:
         self._painter.setTransform(
             matrix.qtTransform() * self._painter.transform())
 
-    def intersectClipPath(self, path: QtMapPath) -> None:
+    def intersectClipPath(self, path: MapPath) -> None:
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
         newClip.addPolygon(path.qtPolygon())
@@ -855,10 +855,10 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
-    def drawPoint(self, point: maprenderer.PointF, pen: QtMapPen) -> None:
+    def drawPoint(self, point: maprenderer.PointF, pen: MapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
-    def drawPoints(self, points: QtMapPointList, pen: QtMapPen) -> None:
+    def drawPoints(self, points: MapPointList, pen: MapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoints(points.qtPolygon())
 
@@ -866,7 +866,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             self,
             pt1: maprenderer.PointF,
             pt2: maprenderer.PointF,
-            pen: QtMapPen
+            pen: MapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawLine(
@@ -874,8 +874,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             self._convertPoint(pt2))
     def drawLines(
             self,
-            points: QtMapPointList,
-            pen: QtMapPen
+            points: MapPointList,
+            pen: MapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
         if self._hasDrawLinesPolygonFix:
@@ -891,9 +891,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def drawPath(
             self,
-            path: QtMapPath,
-            pen: typing.Optional[QtMapPen] = None,
-            brush: typing.Optional[QtMapBrush] = None
+            path: MapPath,
+            pen: typing.Optional[MapPen] = None,
+            brush: typing.Optional[MapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
@@ -905,8 +905,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawRectangle(
             self,
             rect: maprenderer.RectangleF,
-            pen: typing.Optional[QtMapPen] = None,
-            brush: typing.Optional[QtMapBrush] = None
+            pen: typing.Optional[MapPen] = None,
+            brush: typing.Optional[MapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
@@ -915,8 +915,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawEllipse(
             self,
             rect: maprenderer.RectangleF,
-            pen: typing.Optional[QtMapPen] = None,
-            brush: typing.Optional[QtMapBrush] = None
+            pen: typing.Optional[MapPen] = None,
+            brush: typing.Optional[MapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
@@ -927,7 +927,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
             rect: maprenderer.RectangleF,
             startDegrees: float,
             sweepDegrees: float,
-            pen: QtMapPen
+            pen: MapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
         # NOTE: Angles are in 1/16th of a degree
@@ -938,7 +938,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def drawImage(
             self,
-            image: QtMapImage,
+            image: MapImage,
             rect: maprenderer.RectangleF
             ) -> None:
         self._painter.drawImage(
@@ -947,7 +947,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawImageAlpha(
             self,
             alpha: float,
-            image: QtMapImage,
+            image: MapImage,
             rect: maprenderer.RectangleF
             ) -> None:
         oldAlpha = self._painter.opacity()
@@ -961,9 +961,9 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
 
     def drawCurve(
             self,
-            spline: QtMapSpline,
-            pen: typing.Optional[QtMapPen] = None,
-            brush: typing.Optional[QtMapBrush] = None
+            spline: MapSpline,
+            pen: typing.Optional[MapPen] = None,
+            brush: typing.Optional[MapBrush] = None
             ) -> None:
         self._painter.setPen(pen.qtPen() if pen else QtCore.Qt.PenStyle.NoPen)
         self._painter.setBrush(brush.qtBrush() if brush else QtCore.Qt.BrushStyle.NoBrush)
@@ -972,7 +972,7 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def measureString(
             self,
             text: str,
-            font: QtMapFont
+            font: MapFont
             ) -> typing.Tuple[float, float]: # (width, height)
         qtFont = font.qtFont()
         scale = font.emSize() / qtFont.pointSizeF()
@@ -982,8 +982,8 @@ class QtMapGraphics(maprenderer.AbstractGraphics):
     def drawString(
             self,
             text: str,
-            font: QtMapFont,
-            brush: QtMapBrush,
+            font: MapFont,
+            brush: MapBrush,
             x: float, y: float,
             format: maprenderer.TextAlignment
             ) -> None:
