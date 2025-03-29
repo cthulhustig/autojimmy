@@ -47,7 +47,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Animated move to new location
 # TODO: Current scale line in bottom right
 # TODO: Fix colour vs color
-# TODO: Saving/restoring last view position and zoom
 
 
 class LocalMapWidget(QtWidgets.QWidget):
@@ -84,6 +83,12 @@ class LocalMapWidget(QtWidgets.QWidget):
     _DirectionTextFontFamily = 'Arial'
     _DirectionTextFontSize = 12
     _DirectionTextIndent = 10
+
+    _ScaleTextFontFamily = 'Arial'
+    _ScaleTextFontSize = 10
+    _ScaleLineIndent = 10
+    _ScaleLineTickHeight = 10
+    _ScaleLineWidth = 2
 
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
@@ -149,6 +154,9 @@ class LocalMapWidget(QtWidgets.QWidget):
             style=cartographer.FontStyle.Bold)
         self._directionTextBrush = self._graphics.createBrush(
             color=travellermap.HtmlColors.TravellerRed)
+
+        self._scaleFont = QtGui.QFont(LocalMapWidget._ScaleTextFontFamily)
+        self._scaleFont.setPointSize(LocalMapWidget._ScaleTextFontSize)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -452,6 +460,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 painter.drawRect(0, 0, self.width(), self.height())
 
                 self._drawMap(painter)
+                self._drawScale(painter)
                 self._drawDirections(painter)
             finally:
                 painter.end()
@@ -524,6 +533,55 @@ class LocalMapWidget(QtWidgets.QWidget):
             finally:
                 self._graphics.setPainter(painter=None)
 
+    def _drawScale(
+            self,
+            painter: QtGui.QPainter
+            ) -> None:
+        distance = (self.width() / self._viewScale.linear) / 10
+
+        factor = math.pow(10, math.floor(math.log(distance) / math.log(10)))
+        distance = math.floor(distance / factor) * factor
+        label = common.formatNumber(number=distance, decimalPlaces=1, suffix=' pc')
+        distance *= self._viewScale.linear
+
+        scaleRight = self.width() - LocalMapWidget._ScaleLineIndent
+        scaleLeft = scaleRight - int(distance)
+        scaleY = self.height() - LocalMapWidget._ScaleLineIndent
+
+        fontMetrics = QtGui.QFontMetricsF(self._scaleFont)
+        labelRect = fontMetrics.tightBoundingRect(label)
+
+        brush = QtGui.QBrush(QtGui.QColor(
+            travellermap.HtmlColors.White
+            if travellermap.isDarkStyle(self._renderer.style()) else
+            travellermap.HtmlColors.Black))
+        painter.setBrush(brush)
+        painter.setFont(self._scaleFont)
+        painter.drawText(
+            QtCore.QPointF(
+                scaleLeft + ((distance / 2) - (labelRect.width() / 2)),
+                scaleY - LocalMapWidget._ScaleLineIndent),
+            label)
+
+        pen = QtGui.QPen(
+            brush,
+            LocalMapWidget._ScaleLineWidth,
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.FlatCap)
+        painter.setPen(pen)
+        painter.drawLine(
+            QtCore.QPointF(scaleLeft - (LocalMapWidget._ScaleLineWidth / 2), scaleY),
+            QtCore.QPointF(scaleRight + (LocalMapWidget._ScaleLineWidth / 2), scaleY))
+        painter.drawLine(
+            QtCore.QPointF(scaleLeft, scaleY),
+            QtCore.QPointF(scaleLeft, scaleY - LocalMapWidget._ScaleLineTickHeight))
+        painter.drawLine(
+            QtCore.QPointF(scaleRight, scaleY),
+            QtCore.QPointF(scaleRight, scaleY - LocalMapWidget._ScaleLineTickHeight))
+
+    # TODO: I don't like the fact this uses the graphics object rather
+    # than using painter directly. The main reason it's done at the
+    # moment is it means I can use the code there for resolving the font
     def _drawDirections(
             self,
             painter: QtGui.QPainter
