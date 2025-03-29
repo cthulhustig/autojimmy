@@ -82,6 +82,11 @@ class LocalMapWidget(QtWidgets.QWidget):
     _CheckerboardColourB ='#404040'
     _CheckerboardRectSize = 16
 
+    # TODO: Need to check this and the font size look ok in 4K
+    _DirectionTextFontFamily = 'Arial'
+    _DirectionTextFontSize = 12
+    _DirectionTextIndent = 10
+
     # TODO: This should be shared with web map widget
     class PrimitiveType(enum.Enum):
         Hex = 0
@@ -140,6 +145,13 @@ class LocalMapWidget(QtWidgets.QWidget):
             ]] = []
 
         self._placeholderTile = LocalMapWidget._createPlaceholderTile()
+
+        self._directionTextFont = self._graphics.createFont(
+            family=LocalMapWidget._DirectionTextFontFamily,
+            emSize=LocalMapWidget._DirectionTextFontSize,
+            style=maprenderer.FontStyle.Bold)
+        self._directionTextBrush = self._graphics.createBrush(
+            color=travellermap.HtmlColors.TravellerRed)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -435,11 +447,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
                     # This is disabled as I think it actually makes scaled tiles
                     # look worse (a bit to blurry)
-                    """
-                    painter.setRenderHint(
-                        QtGui.QPainter.RenderHint.SmoothPixmapTransform,
-                        True)
-                    """
+                    #painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
 
                     #with common.DebugTimer('Blit Time'):
                     if True:
@@ -461,21 +469,9 @@ class LocalMapWidget(QtWidgets.QWidget):
                                             round(renderRect.width()),
                                             round(renderRect.height()))
 
-                                #print(f'{image} {renderRect} {clipRect}')
                                 painter.drawImage(renderRect, image)
                             finally:
                                 painter.restore()
-
-                    if LocalMapWidget._DelayedRendering and \
-                        LocalMapWidget._LookaheadBorderTiles and \
-                        not self._tileQueue:
-                        # If there are no tiles needing loaded, pre-load tiles just
-                        # outside the current view area.
-                        self._loadLookaheadTiles()
-
-                    if self._tileQueue:
-                        # Start the timer to trigger loading of missing tiles
-                        self._tileTimer.start()
                 else:
                     self._graphics.setPainter(painter=painter)
                     try:
@@ -488,8 +484,89 @@ class LocalMapWidget(QtWidgets.QWidget):
                         self._renderer.render()
                     finally:
                         self._graphics.setPainter(painter=None)
+
+                if app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
+                    viewWidth = self.width()
+                    viewHeight = self.height()
+
+                    self._graphics.setPainter(painter=painter)
+                    try:
+                        text = 'COREWARD'
+                        _, textHeight = self._graphics.measureString(
+                            text=text,
+                            font=self._directionTextFont)
+                        self._graphics.drawString(
+                            text=text,
+                            font=self._directionTextFont,
+                            brush=self._directionTextBrush,
+                            x=viewWidth / 2,
+                            y=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
+                            format=maprenderer.TextAlignment.Centered)
+
+                        text = 'RIMWARD'
+                        _, textHeight = self._graphics.measureString(
+                            text=text,
+                            font=self._directionTextFont)
+                        self._graphics.drawString(
+                            text=text,
+                            font=self._directionTextFont,
+                            brush=self._directionTextBrush,
+                            x=viewWidth / 2,
+                            y=viewHeight - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
+                            format=maprenderer.TextAlignment.Centered)
+
+                        with self._graphics.save():
+                            self._graphics.translateTransform(
+                                dx=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
+                                dy=viewHeight / 2)
+                            self._graphics.rotateTransform(degrees=270)
+
+                            text = 'SPINWARD'
+                            _, textHeight = self._graphics.measureString(
+                                text=text,
+                                font=self._directionTextFont)
+                            self._graphics.drawString(
+                                text=text,
+                                font=self._directionTextFont,
+                                brush=self._directionTextBrush,
+                                x=0, y=0,
+                                format=maprenderer.TextAlignment.Centered)
+
+                        with self._graphics.save():
+                            self._graphics.translateTransform(
+                                dx=viewWidth - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
+                                dy=viewHeight / 2)
+                            self._graphics.rotateTransform(degrees=270)
+
+                            text = 'TRAILING'
+                            _, textHeight = self._graphics.measureString(
+                                text=text,
+                                font=self._directionTextFont)
+                            self._graphics.drawString(
+                                text=text,
+                                font=self._directionTextFont,
+                                brush=self._directionTextBrush,
+                                x=0, y=0,
+                                format=maprenderer.TextAlignment.Centered)
+                    finally:
+                        self._graphics.setPainter(painter=None)
             finally:
                 painter.end()
+
+            if LocalMapWidget._DelayedRendering:
+                if self._tileQueue:
+                    # Start the timer to trigger loading of missing tiles
+                    self._tileTimer.start()
+                elif LocalMapWidget._LookaheadBorderTiles:
+                    # If there are no tiles needing loaded, pre-load tiles just
+                    # outside the current view area.
+                    self._loadLookaheadTiles()
+
+                # Start the timer to trigger loading of missing tiles. It's
+                # important to re-check the tile queue as it may have had
+                # lookahead tiles added
+                if self._tileQueue:
+                    self._tileTimer.start()
 
             if self._offscreenRenderImage is not None:
                 painter = QtGui.QPainter()
