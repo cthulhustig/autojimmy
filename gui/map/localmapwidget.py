@@ -664,7 +664,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         ] = {
             #travellermap.Option.GalacticDirections
             travellermap.Option.SectorGrid: maprenderer.MapOptions.GridMask,
-            travellermap.Option.SectorNames: maprenderer.MapOptions.SectorsAll,
+            # TODO: There is currently no way to show all sector names as I don't have the
+            # tri-state controls that Traveller Map has
+            travellermap.Option.SectorNames: maprenderer.MapOptions.SectorsSelected,
             travellermap.Option.Borders: maprenderer.MapOptions.BordersMask,
             travellermap.Option.Routes: maprenderer.MapOptions.RoutesMask,
             travellermap.Option.RegionNames: maprenderer.MapOptions.NamesMask,
