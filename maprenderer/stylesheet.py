@@ -153,7 +153,7 @@ class StyleSheet(object):
     @property
     def style(self) -> travellermap.Style:
         return self._style
-    @scale.setter
+    @style.setter
     def style(self, style: travellermap.Style) -> None:
         if style == self._style:
             return # Nothing to do

@@ -48,6 +48,7 @@ class HexCoordinateStyle(enum.Enum):
     Sector = 0
     Subsector = 1
 
+# TODO: Need to consolidate this and travellermap.Option
 class MapOptions(enum.IntFlag):
     SectorGrid = 0x0001
     SubsectorGrid = 0x0002

@@ -154,12 +154,18 @@ class RenderContext(object):
         if scaleUpdated:
             self._updateLayerOrder()
 
+    def style(self) -> travellermap.Style:
+        return self._styleSheet.style
+
     def setStyle(
             self,
             style: travellermap.Style
             ) -> None:
         self._styleSheet.style = style
         self._updateLayerOrder()
+
+    def options(self) -> maprenderer.MapOptions:
+        return self._styleSheet.options
 
     def setOptions(
             self,

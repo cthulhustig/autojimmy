@@ -93,6 +93,15 @@ class LocalMapWidget(QtWidgets.QWidget):
     # TODO: This should be shared with web map widget
     _LeftClickMoveThreshold = 3
 
+    _sharedTileCache = common.LRUCache[
+        typing.Tuple[
+            int, # Tile X
+            int, # Tile Y
+            int,
+            travellermap.Style,
+            int], # MapOptions as an int
+        QtGui.QImage](capacity=_TileCacheSize)
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -121,13 +130,6 @@ class LocalMapWidget(QtWidgets.QWidget):
         # 4K+ screen
         self._isWindows = common.isWindows()
         self._offscreenRenderImage: typing.Optional[QtGui.QImage] = None
-
-        self._tileCache = common.LRUCache[
-            typing.Tuple[
-                int, # Tile X
-                int, # Tile Y
-                int], # Tile Scale (linear)
-            QtGui.QImage](capacity=LocalMapWidget._TileCacheSize)
 
         self._tileTimer = QtCore.QTimer()
         self._tileTimer.setInterval(LocalMapWidget._TileTimerMsecs)
@@ -375,7 +377,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             elif event.key() == QtCore.Qt.Key.Key_F10:
                 gc.collect()
             elif event.key() == QtCore.Qt.Key.Key_F11:
-                self._tileCache.clear()
+                self._sharedTileCache.clear()
                 self._tileQueue.clear()
                 self._tileTimer.stop()
                 self._renderer = self._createRenderer()
@@ -942,19 +944,24 @@ class LocalMapWidget(QtWidgets.QWidget):
             tileScale: int, # Log scale rounded down,
             forceCreate: bool = False
             ) -> typing.Optional[QtGui.QImage]:
-        key = (tileX, tileY, tileScale)
-        image = self._tileCache.get(key)
+        key = (
+            tileX,
+            tileY,
+            tileScale,
+            self._renderer.style(),
+            int(self._renderer.options()))
+        image = self._sharedTileCache.get(key)
         if not image:
             if LocalMapWidget._DelayedRendering and not forceCreate:
                 if key not in self._tileQueue:
                     self._tileQueue.append(key)
             else:
                 image = None
-                if self._tileCache.isFull():
+                if self._sharedTileCache.isFull():
                     # Reuse oldest cached tile
-                    _, image = self._tileCache.pop()
+                    _, image = self._sharedTileCache.pop()
                 image = self._renderTile(tileX, tileY, tileScale, image)
-                self._tileCache[key] = image
+                self._sharedTileCache[key] = image
         return image
 
     def _gatherPlaceholderTiles(
@@ -1025,7 +1032,12 @@ class LocalMapWidget(QtWidgets.QWidget):
         missing = []
         for x in range(leftTile, rightTile + 1):
             for y in range(topTile, bottomTile + 1):
-                key = (x, y, placeholderScale)
+                key = (
+                    x,
+                    y,
+                    placeholderScale,
+                    self._renderer.style(),
+                    int(self._renderer.options()))
 
                 placeholderRenderRect = QtCore.QRectF(
                     ((x - leftTile) * tileSize) - offsetX,
@@ -1038,7 +1050,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
                 # NOTE: Don't use _lookupTile as we don't want to create
                 # this tile if it doesn't exist
-                image = self._tileCache.get(key)
+                image = self._sharedTileCache.get(key)
                 if image:
                     placeholders.append((image, placeholderRenderRect, placeholderClipRect))
                 else:
@@ -1061,7 +1073,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         return placeholders
 
     def _clearTileCache(self) -> None:
-        self._tileCache.clear()
+        self._sharedTileCache.clear()
         self._tileQueue.clear()
         self._tileTimer.stop()
         self.update() # Force redraw
@@ -1112,14 +1124,20 @@ class LocalMapWidget(QtWidgets.QWidget):
         return image
 
     def _handleTileTimer(self) -> None:
-        tileX, tileY, tileScale = self._tileQueue.pop(0)
+        tileX, tileY, tileScale, _, _ = self._tileQueue.pop(0)
         #with common.DebugTimer('Tile Render'):
         if True:
             image = None
-            if self._tileCache.isFull():
+            if self._sharedTileCache.isFull():
                 # Reuse oldest cached tile
-                _, image = self._tileCache.pop()
-            self._tileCache[(tileX, tileY, tileScale)] = self._renderTile(
+                _, image = self._sharedTileCache.pop()
+            key = (
+                tileX,
+                tileY,
+                tileScale,
+                self._renderer.style(),
+                int(self._renderer.options()))
+            self._sharedTileCache[key] = self._renderTile(
                 tileX=tileX,
                 tileY=tileY,
                 tileScale=tileScale,
