@@ -156,10 +156,6 @@ class WebMapWidget(QtWidgets.QWidget):
     # Next script id (used for debugging)
     _nextScriptId = 1
 
-    class PrimitiveType(enum.Enum):
-        Hex = 0
-        Circle = 1
-
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -305,7 +301,7 @@ class WebMapWidget(QtWidgets.QWidget):
         if refuellingPlan:
             self._refuellingPlanOverlayHandle = self.createHexOverlay(
                 hexes=[pitStop.world().hex() for pitStop in refuellingPlan],
-                primitive=WebMapWidget.PrimitiveType.Circle,
+                primitive=gui.PrimitiveType.Circle,
                 radius=pitStopRadius,
                 fillColour=pitStopColour)
         elif self._refuellingPlanOverlayHandle != None:
@@ -397,7 +393,7 @@ class WebMapWidget(QtWidgets.QWidget):
     def createHexOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            primitive: PrimitiveType,
+            primitive: gui.PrimitiveType,
             fillColour: typing.Optional[str] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
@@ -408,7 +404,7 @@ class WebMapWidget(QtWidgets.QWidget):
         overlay = _Overlay()
         for hex in hexes:
             itemFillColour = fillMap.get(hex, fillColour) if fillMap else fillColour
-            if primitive == WebMapWidget.PrimitiveType.Hex:
+            if primitive == gui.PrimitiveType.Hex:
                 item = _HexHighlight(
                     hex=hex,
                     colour=itemFillColour)

@@ -87,11 +87,6 @@ class LocalMapWidget(QtWidgets.QWidget):
     _DirectionTextFontSize = 12
     _DirectionTextIndent = 10
 
-    # TODO: This should be shared with web map widget
-    class PrimitiveType(enum.Enum):
-        Hex = 0
-        Circle = 1
-
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
     # missed
@@ -225,7 +220,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def createHexOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            primitive: PrimitiveType,
+            primitive: gui.PrimitiveType,
             fillColour: typing.Optional[str] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,

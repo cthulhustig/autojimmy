@@ -3,6 +3,7 @@ import base64
 import enum
 import functools
 import gui
+import logic
 import logging
 import os
 import traveller
@@ -173,20 +174,6 @@ class _CustomScrollArea(QtWidgets.QScrollArea):
 
     def verticalScrollBarWidth(self) -> int:
         return self.verticalScrollBar().sizeHint().width()
-
-    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
-        super().wheelEvent(event)
-        # NOTE: This is a bit of a hack to stop the scroll event being passed
-        # on to other widgets. With the local map I was seeing that, if the
-        # cursor was over the info/config widgets and the scroll wheel was
-        # used but the info/config widget was already scrolled as far as it
-        # could go in that direction, then the scroll event would be passed
-        # on to the map widget causing it to scroll when you wouldn't expect
-        # it. This was only with the local map, it doesn't happen with the web
-        # map but I'm not sure why.
-        # TODO: Check this is till needed after I move to having the map widget
-        # as a child rather than inherited
-        event.accept()
 
 class _GripperWidget(QtWidgets.QWidget):
     _GripperWidth = 4
@@ -783,7 +770,10 @@ class _ConfigWidget(QtWidgets.QWidget):
         self._optionsWidget.adjustSize()
         self.adjustSize()
 
-class MapWidgetEx(gui.LocalMapWidget):
+class MapWidgetEx(QtWidgets.QWidget):
+    leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
+    rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
+
     class SelectionMode(enum.Enum):
         NoSelect = 0
         SingleSelect = 1
@@ -831,6 +821,10 @@ class MapWidgetEx(gui.LocalMapWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
+        self._mapWidget = gui.LocalMapWidget(parent=self)
+        self._mapWidget.leftClicked.connect(self._handleLeftClick)
+        self._mapWidget.rightClicked.connect(self._handleRightClick)
+
         # For reasons I don't understand this needs to be done after load has been called on the map.
         # If it's not then the search control is drawn under the map widget. Using stackUnder doesn't
         # seem to work either.
@@ -839,6 +833,7 @@ class MapWidgetEx(gui.LocalMapWidget):
         self._searchWidget.installEventFilter(self)
         self._searchWidget.editTextChanged.connect(self._searchHexTextEdited)
         self._searchWidget.hexChanged.connect(self._searchHexSelected)
+        self._mapWidget.stackUnder(self._searchWidget)
 
         self._searchButton = _CustomIconButton(
             icon=gui.loadIcon(id=gui.Icon.Search),
@@ -918,6 +913,139 @@ class MapWidgetEx(gui.LocalMapWidget):
         if MapWidgetEx._sharedOverlayGroup:
             for action in MapWidgetEx._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
+
+    def reload(self) -> None:
+        self._mapWidget.reload()
+
+    def centerOnHex(
+            self,
+            hex: travellermap.HexPosition,
+            linearScale: typing.Optional[float] = 64 # None keeps current scale
+            ) -> None:
+        self._mapWidget.centerOnHex(hex=hex, linearScale=linearScale)
+
+    def centerOnHexes(
+            self,
+            hexes: typing.Collection[travellermap.HexPosition]
+            ) -> None:
+        self._mapWidget.centerOnHexes(hexes=hexes)
+
+    def hasJumpRoute(self) -> bool:
+        return self._mapWidget.hasJumpRoute()
+
+    def setJumpRoute(
+            self,
+            jumpRoute: typing.Optional[logic.JumpRoute],
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
+            pitStopRadius: float = 0.4, # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
+            pitStopColour: str = '#8080FF'
+            ) -> None:
+        self._mapWidget.setJumpRoute(
+            jumpRoute=jumpRoute,
+            refuellingPlan=refuellingPlan,
+            pitStopRadius=pitStopRadius,
+            pitStopColour=pitStopColour)
+
+    def clearJumpRoute(self) -> None:
+        self._mapWidget.clearJumpRoute()
+
+    def centerOnJumpRoute(self) -> None:
+        self._mapWidget.centerOnJumpRoute()
+
+    def highlightHex(
+            self,
+            hex: travellermap.HexPosition,
+            radius: float = 0.5,
+            colour: str = '#8080FF'
+            ) -> None:
+        self._mapWidget.highlightHex(
+            hex=hex,
+            radius=radius,
+            colour=colour)
+
+    def highlightHexes(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition],
+            radius: float = 0.5,
+            colour: str = '#8080FF'
+            ) -> None:
+        self._mapWidget.highlightHex(
+            hexes=hexes,
+            radius=radius,
+            colour=colour)
+
+    def clearHexHighlight(
+            self,
+            hex: travellermap.HexPosition
+            ) -> None:
+        self._mapWidget.clearHexHighlight(hex=hex)
+
+    def clearHexHighlights(self) -> None:
+        self._mapWidget.clearHexHighlights()
+
+    # Create an overlay with a primitive at each hex
+    def createHexOverlay(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition],
+            primitive: gui.PrimitiveType,
+            fillColour: typing.Optional[str] = None,
+            fillMap: typing.Optional[typing.Mapping[
+                travellermap.HexPosition,
+                str # Colour string
+            ]] = None,
+            radius: float = 0.5 # Only used for circle primitive
+            ) -> str:
+        return self._mapWidget.createHexOverlay(
+            hexes=hexes,
+            primitive=primitive,
+            fillColour=fillColour,
+            fillMap=fillMap,
+            radius=radius)
+
+    def createHexGroupsOverlay(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition],
+            fillColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None,
+            outerOutlinesOnly: bool = False
+            ) -> str:
+        return self._mapWidget.createHexGroupsOverlay(
+            hexes=hexes,
+            fillColour=fillColour,
+            lineColour=lineColour,
+            lineWidth=lineWidth,
+            outerOutlinesOnly=outerOutlinesOnly)
+
+    def createRadiusOverlay(
+            self,
+            center: travellermap.HexPosition,
+            radius: int,
+            fillColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None
+            ) -> str:
+        return self._mapWidget.createRadiusOverlay(
+            center=center,
+            radius=radius,
+            fillColour=fillColour,
+            lineColour=lineColour,
+            lineWidth=lineWidth)
+
+    def removeOverlay(
+            self,
+            handle: str
+            ) -> None:
+        self._mapWidget.removeOverlay(handle=handle)
+
+    def setToolTipCallback(
+            self,
+            callback: typing.Optional[typing.Callable[[typing.Optional[travellermap.HexPosition]], typing.Optional[str]]],
+            ) -> None:
+        self._mapWidget.setToolTipCallback(callback=callback)
+
+    def createSnapshot(self) -> QtGui.QPixmap:
+        return self._mapWidget.createSnapshot()
 
     def hasSelection(self) -> bool:
         return len(self._selectedHexes) > 0
@@ -1110,6 +1238,7 @@ class MapWidgetEx(gui.LocalMapWidget):
         super().keyPressEvent(event)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        self._mapWidget.resize(event.size())
         self._configureOverlayControls()
         return super().resizeEvent(event)
 
@@ -1306,7 +1435,7 @@ class MapWidgetEx(gui.LocalMapWidget):
         for action in MapWidgetEx._sharedOverlayGroup.actions():
             action.triggered.connect(self._displayOptionChanged)
 
-    def _handleLeftClickEvent(
+    def _handleLeftClick(
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
@@ -1337,8 +1466,13 @@ class MapWidgetEx(gui.LocalMapWidget):
                     # Clicking a selected worlds deselects it
                     self.deselectHex(hex=hex)
 
-        # Call base implementation to generate left click event
-        super()._handleLeftClickEvent(hex=hex)
+        self.leftClicked.emit(hex)
+
+    def _handleRightClick(
+            self,
+            hex: typing.Optional[travellermap.HexPosition]
+            ) -> None:
+        self.rightClicked.emit(hex)
 
     def _displayOptionChanged(self) -> None:
         self._legendWidget.syncContent()
@@ -1383,6 +1517,7 @@ class MapWidgetEx(gui.LocalMapWidget):
         self._searchWidget.move(
             MapWidgetEx._ControlWidgetInset,
             MapWidgetEx._ControlWidgetInset)
+        self._mapWidget.stackUnder(self._searchWidget)
 
         self._searchButton.move(
             MapWidgetEx._ControlWidgetInset + \
