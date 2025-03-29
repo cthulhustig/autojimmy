@@ -174,6 +174,20 @@ class _CustomScrollArea(QtWidgets.QScrollArea):
     def verticalScrollBarWidth(self) -> int:
         return self.verticalScrollBar().sizeHint().width()
 
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        super().wheelEvent(event)
+        # NOTE: This is a bit of a hack to stop the scroll event being passed
+        # on to other widgets. With the local map I was seeing that, if the
+        # cursor was over the info/config widgets and the scroll wheel was
+        # used but the info/config widget was already scrolled as far as it
+        # could go in that direction, then the scroll event would be passed
+        # on to the map widget causing it to scroll when you wouldn't expect
+        # it. This was only with the local map, it doesn't happen with the web
+        # map but I'm not sure why.
+        # TODO: Check this is till needed after I move to having the map widget
+        # as a child rather than inherited
+        event.accept()
+
 class _GripperWidget(QtWidgets.QWidget):
     _GripperWidth = 4
 
