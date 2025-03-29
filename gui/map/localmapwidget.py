@@ -3,6 +3,7 @@ import common
 import gc
 import gui
 import logic
+import logging
 import cartographer
 import math
 import travellermap
@@ -46,7 +47,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Animated move to new location
 # TODO: Current scale line in bottom right
 # TODO: Fix colour vs color
-# TODO: Update tooltips to use renderer
 # TODO: Saving/restoring last view position and zoom
 
 
@@ -90,6 +90,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     # missed
     # TODO: This should be shared with web map widget
     _LeftClickMoveThreshold = 3
+
+    _StateVersion = 'LocalMapWidget_v1'
 
     _sharedTileCache = common.LRUCache[
         typing.Tuple[
@@ -220,7 +222,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def createHexOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            primitive: gui.PrimitiveType,
+            primitive: gui.MapPrimitiveType,
             fillColour: typing.Optional[str] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
@@ -264,6 +266,32 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def createSnapshot(self) -> QtGui.QPixmap:
         pass # TODO: Implement me
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(LocalMapWidget._StateVersion)
+        stream.writeFloat(self._absoluteCenterPos.x())
+        stream.writeFloat(self._absoluteCenterPos.y())
+        stream.writeFloat(self._viewScale.log)
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != LocalMapWidget._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore LocalMapWidget state (Incorrect version)')
+            return False
+
+        self._absoluteCenterPos.setX(stream.readFloat())
+        self._absoluteCenterPos.setY(stream.readFloat())
+        self._viewScale.log = stream.readFloat()
+        self._updateRendererView()
+        return True
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super().mousePressEvent(event)

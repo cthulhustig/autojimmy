@@ -987,7 +987,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     def createHexOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            primitive: gui.PrimitiveType,
+            primitive: gui.MapPrimitiveType,
             fillColour: typing.Optional[str] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
@@ -1294,6 +1294,11 @@ class MapWidgetEx(QtWidgets.QWidget):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(self._StateVersion)
 
+        childState = self._mapWidget.saveState()
+        stream.writeUInt32(childState.count() if childState else 0)
+        if childState:
+            stream.writeRawData(childState.data())
+
         stream.writeBool(self._infoButton.isChecked())
         stream.writeUInt32(self._infoWidget.width())
 
@@ -1309,6 +1314,11 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Wrong version so unable to restore state safely
             logging.debug('Failed to restore MapWidgetEx state (Incorrect version)')
             return False
+
+        count = stream.readUInt32()
+        if count:
+            self._mapWidget.restoreState(
+                QtCore.QByteArray(stream.readRawData(count)))
 
         self._infoButton.setChecked(stream.readBool())
         self._infoWidget.setFixedWidth(stream.readUInt32())
@@ -1581,7 +1591,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._selectedHexes[hex] = self.createHexOverlay(
             hexes=[hex],
-            primitive=gui.MapWidgetEx.PrimitiveType.Hex,
+            primitive=gui.MapPrimitiveType.Hex,
             fillColour=MapWidgetEx.selectionFillColour())
 
     def _removeSelectionHexOverlay(

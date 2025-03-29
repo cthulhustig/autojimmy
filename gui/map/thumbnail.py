@@ -6,11 +6,11 @@ import typing
 from PyQt5 import QtCore, QtGui
 
 _thumbnailRenderInitialised = False
-_thumbnailGraphics = None
-_thumbnailImageCache = None
-_thumbnailVectorCache = None
-_thumbnailLabelCache = None
-_thumbnailStyleCache = None
+_thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
+_thumbnailImageCache: typing.Optional[cartographer.ImageCache] = None
+_thumbnailVectorCache: typing.Optional[cartographer.VectorObjectCache] = None
+_thumbnailLabelCache: typing.Optional[cartographer.LabelCache] = None
+_thumbnailStyleCache: typing.Optional[cartographer.StyleCache] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised

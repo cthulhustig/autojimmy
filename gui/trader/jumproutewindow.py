@@ -1562,7 +1562,7 @@ class JumpRouteWindow(gui.WindowWidget):
             if taggedHexes:
                 handle = self._travellerMapWidget.createHexOverlay(
                     hexes=taggedHexes,
-                    primitive=gui.MapWidgetEx.PrimitiveType.Hex,
+                    primitive=gui.MapPrimitiveType.Hex,
                     fillMap=colourMap)
                 self._jumpOverlayHandles.add(handle)
 

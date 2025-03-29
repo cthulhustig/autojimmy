@@ -301,7 +301,7 @@ class WebMapWidget(QtWidgets.QWidget):
         if refuellingPlan:
             self._refuellingPlanOverlayHandle = self.createHexOverlay(
                 hexes=[pitStop.world().hex() for pitStop in refuellingPlan],
-                primitive=gui.PrimitiveType.Circle,
+                primitive=gui.MapPrimitiveType.Circle,
                 radius=pitStopRadius,
                 fillColour=pitStopColour)
         elif self._refuellingPlanOverlayHandle != None:
@@ -393,7 +393,7 @@ class WebMapWidget(QtWidgets.QWidget):
     def createHexOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            primitive: gui.PrimitiveType,
+            primitive: gui.MapPrimitiveType,
             fillColour: typing.Optional[str] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
@@ -404,7 +404,7 @@ class WebMapWidget(QtWidgets.QWidget):
         overlay = _Overlay()
         for hex in hexes:
             itemFillColour = fillMap.get(hex, fillColour) if fillMap else fillColour
-            if primitive == gui.PrimitiveType.Hex:
+            if primitive == gui.MapPrimitiveType.Hex:
                 item = _HexHighlight(
                     hex=hex,
                     colour=itemFillColour)
@@ -501,6 +501,27 @@ class WebMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
+    def createSnapshot(self) -> QtGui.QPixmap:
+        view = self._mapWidget.page().view()
+        size = view.size()
+
+        image = QtGui.QPixmap(size.width(), size.height())
+        painter = QtGui.QPainter(image)
+        self._mapWidget.page().view().render(
+            painter,
+            QtCore.QPoint(),
+            QtGui.QRegion(0, 0, size.width(), size.height()))
+        painter.end()
+        return image
+
+    # There is no state to save/restore but the methods are part of the
+    # interface shared by local & web maps
+    def saveState(self) -> QtCore.QByteArray:
+        pass
+
+    def restoreState(self, state: QtCore.QByteArray) -> bool:
+        pass
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._mapWidget.focusProxy():
             if event.type() == QtCore.QEvent.Type.MouseButtonPress:
@@ -527,19 +548,6 @@ class WebMapWidget(QtWidgets.QWidget):
                     self._updateToolTip(event.pos())
 
         return super().eventFilter(object, event)
-
-    def createSnapshot(self) -> QtGui.QPixmap:
-        view = self._mapWidget.page().view()
-        size = view.size()
-
-        image = QtGui.QPixmap(size.width(), size.height())
-        painter = QtGui.QPainter(image)
-        self._mapWidget.page().view().render(
-            painter,
-            QtCore.QPoint(),
-            QtGui.QRegion(0, 0, size.width(), size.height()))
-        painter.end()
-        return image
 
     # Replace the standard Util.fetchImage function with one that does a round robin
     # of of hosts for loopback requests in order to work around the hard coded limit

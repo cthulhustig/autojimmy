@@ -1,5 +1,5 @@
 import enum
 
-class PrimitiveType(enum.Enum):
+class MapPrimitiveType(enum.Enum):
     Hex = 0
     Circle = 1
