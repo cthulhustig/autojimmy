@@ -44,7 +44,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Other overlays
 # TODO: Ability to switch between local and web rendering
 # TODO: Animated move to new location
-# TODO: Spinwards/corewards etc labels
 # TODO: Current scale line in bottom right
 # TODO: Fix colour vs color
 # TODO: Update tooltips to use renderer
@@ -68,7 +67,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     #_DefaultCenterX, _DefaultCenterY = (-110.50311757412467, -70.5033270610736)
     #_DefaultCenterX, _DefaultCenterY = travellermap.mapSpaceToAbsoluteSpace((-95.914, 70.5))
 
-    _WheelLogScaleDelta = 0.15
+    _KeyZoomDelta = 0.5
+    _WheelZoomDelta = 0.15
 
     _TileRendering = True
     _DelayedRendering = True
@@ -356,12 +356,12 @@ class LocalMapWidget(QtWidgets.QWidget):
                 return
 
             if event.key() == QtCore.Qt.Key.Key_Z:
-                scale = self._viewScale.log
-                scale += LocalMapWidget._WheelLogScaleDelta if not gui.isShiftKeyDown() else -LocalMapWidget._WheelLogScaleDelta
-                scale = common.clamp(scale, LocalMapWidget._MinScale, LocalMapWidget._MaxScale)
-                self._viewScale.log = scale
-                self._updateRendererView()
-                return
+                self._zoomView(
+                    step=LocalMapWidget._KeyZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyZoomDelta)
+            elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
+                self._zoomView(step=LocalMapWidget._KeyZoomDelta)
+            elif event.key() == QtCore.Qt.Key.Key_Minus:
+                self._zoomView(step=-LocalMapWidget._KeyZoomDelta)
 
             if event.key() == QtCore.Qt.Key.Key_F1:
                 pass
@@ -394,24 +394,10 @@ class LocalMapWidget(QtWidgets.QWidget):
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
 
-        if self._renderer:
-            oldWorldCursor = self._pixelSpaceToWorldSpace(event.pos())
-
-            logViewScale = self._viewScale.log
-            logViewScale += LocalMapWidget._WheelLogScaleDelta if event.angleDelta().y() > 0 else -LocalMapWidget._WheelLogScaleDelta
-            logViewScale = common.clamp(logViewScale, LocalMapWidget._MinScale, LocalMapWidget._MaxScale)
-            if logViewScale == self._viewScale.log:
-                return # Reached min/max zoom
-            self._viewScale.log = logViewScale
-
-            newWorldCursor = self._pixelSpaceToWorldSpace(event.pos())
-
-            self._absoluteCenterPos.setX(
-                self._absoluteCenterPos.x() + (oldWorldCursor.x() - newWorldCursor.x()))
-            self._absoluteCenterPos.setY(
-                self._absoluteCenterPos.y() + (oldWorldCursor.y() - newWorldCursor.y()))
-
-            self._updateRendererView()
+        if self.isEnabled():
+            self._zoomView(
+                step=LocalMapWidget._WheelZoomDelta if event.angleDelta().y() > 0 else -LocalMapWidget._WheelZoomDelta,
+                cursor=event.pos())
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         if not self._graphics or not self._renderer:
@@ -705,6 +691,31 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         # TODO: Should this be update rather than repaint? Feels inconsistent with other places
         self.repaint()
+
+    def _zoomView(
+            self,
+            step: float,
+            cursor: typing.Optional[QtCore.QPoint] = None
+            ) -> None:
+        if cursor:
+            oldWorldCursor = self._pixelSpaceToWorldSpace(cursor)
+
+        logViewScale = self._viewScale.log
+        logViewScale += step
+        logViewScale = common.clamp(logViewScale, LocalMapWidget._MinScale, LocalMapWidget._MaxScale)
+        if logViewScale == self._viewScale.log:
+            return # Reached min/max zoom
+        self._viewScale.log = logViewScale
+
+        if cursor:
+            newWorldCursor = self._pixelSpaceToWorldSpace(cursor)
+
+            self._absoluteCenterPos.setX(
+                self._absoluteCenterPos.x() + (oldWorldCursor.x() - newWorldCursor.x()))
+            self._absoluteCenterPos.setY(
+                self._absoluteCenterPos.y() + (oldWorldCursor.y() - newWorldCursor.y()))
+
+        self._updateRendererView()
 
     def _currentDrawTiles(
             self,
