@@ -423,122 +423,13 @@ class LocalMapWidget(QtWidgets.QWidget):
                 painter.setBrush(QtCore.Qt.GlobalColor.black)
                 painter.drawRect(0, 0, self.width(), self.height())
 
-                if LocalMapWidget._TileRendering:
-                    tiles = self._currentDrawTiles()
-
-                    # This is disabled as I think it actually makes scaled tiles
-                    # look worse (a bit to blurry)
-                    #painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
-
-                    #with common.DebugTimer('Blit Time'):
-                    if True:
-                        for image, renderRect, clipRect in tiles:
-                            painter.save()
-                            try:
-                                if clipRect:
-                                    clipPath = painter.clipPath()
-                                    clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
-                                    clipPath.addRect(clipRect)
-                                    painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
-                                else:
-                                    # Manually scale the image if needed as drawImage does a piss poor job.
-                                    # This is only done when there is no clip rect. A clip rect means it's
-                                    # a placeholder tile so won't be drawn for very long so quality doesn't
-                                    # mater as much so best to avoid the expensive scaling
-                                    if image.width() != renderRect.width() or image.height() != renderRect.height():
-                                        image = image.smoothScaled(
-                                            round(renderRect.width()),
-                                            round(renderRect.height()))
-
-                                painter.drawImage(renderRect, image)
-                            finally:
-                                painter.restore()
-                else:
-                    self._graphics.setPainter(painter=painter)
-                    try:
-                        self._renderer.setView(
-                            absoluteCenterX=self._absoluteCenterPos.x(),
-                            absoluteCenterY=self._absoluteCenterPos.y(),
-                            scale=self._viewScale.linear,
-                            outputPixelX=self.width(),
-                            outputPixelY=self.height())
-                        self._renderer.render()
-                    finally:
-                        self._graphics.setPainter(painter=None)
-
-                if app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
-                    viewWidth = self.width()
-                    viewHeight = self.height()
-
-                    self._graphics.setPainter(painter=painter)
-                    try:
-                        text = 'COREWARD'
-                        _, textHeight = self._graphics.measureString(
-                            text=text,
-                            font=self._directionTextFont)
-                        self._graphics.drawString(
-                            text=text,
-                            font=self._directionTextFont,
-                            brush=self._directionTextBrush,
-                            x=viewWidth / 2,
-                            y=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
-                            format=maprenderer.TextAlignment.Centered)
-
-                        text = 'RIMWARD'
-                        _, textHeight = self._graphics.measureString(
-                            text=text,
-                            font=self._directionTextFont)
-                        self._graphics.drawString(
-                            text=text,
-                            font=self._directionTextFont,
-                            brush=self._directionTextBrush,
-                            x=viewWidth / 2,
-                            y=viewHeight - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
-                            format=maprenderer.TextAlignment.Centered)
-
-                        with self._graphics.save():
-                            self._graphics.translateTransform(
-                                dx=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
-                                dy=viewHeight / 2)
-                            self._graphics.rotateTransform(degrees=270)
-
-                            text = 'SPINWARD'
-                            _, textHeight = self._graphics.measureString(
-                                text=text,
-                                font=self._directionTextFont)
-                            self._graphics.drawString(
-                                text=text,
-                                font=self._directionTextFont,
-                                brush=self._directionTextBrush,
-                                x=0, y=0,
-                                format=maprenderer.TextAlignment.Centered)
-
-                        with self._graphics.save():
-                            self._graphics.translateTransform(
-                                dx=viewWidth - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
-                                dy=viewHeight / 2)
-                            self._graphics.rotateTransform(degrees=270)
-
-                            text = 'TRAILING'
-                            _, textHeight = self._graphics.measureString(
-                                text=text,
-                                font=self._directionTextFont)
-                            self._graphics.drawString(
-                                text=text,
-                                font=self._directionTextFont,
-                                brush=self._directionTextBrush,
-                                x=0, y=0,
-                                format=maprenderer.TextAlignment.Centered)
-                    finally:
-                        self._graphics.setPainter(painter=None)
+                self._drawMap(painter)
+                self._drawDirections(painter)
             finally:
                 painter.end()
 
             if LocalMapWidget._DelayedRendering:
-                if self._tileQueue:
-                    # Start the timer to trigger loading of missing tiles
-                    self._tileTimer.start()
-                elif LocalMapWidget._LookaheadBorderTiles:
+                if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
                     # If there are no tiles needing loaded, pre-load tiles just
                     # outside the current view area.
                     self._loadLookaheadTiles()
@@ -557,6 +448,125 @@ class LocalMapWidget(QtWidgets.QWidget):
                     painter.drawImage(renderRect, self._offscreenRenderImage)
                 finally:
                     painter.end()
+
+    def _drawMap(
+            self,
+            painter: QtGui.QPainter
+            ) -> None:
+        if LocalMapWidget._TileRendering:
+            tiles = self._currentDrawTiles()
+
+            # This is disabled as I think it actually makes scaled tiles
+            # look worse (a bit to blurry)
+            #painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
+
+            #with common.DebugTimer('Blit Time'):
+            if True:
+                for image, renderRect, clipRect in tiles:
+                    painter.save()
+                    try:
+                        if clipRect:
+                            clipPath = painter.clipPath()
+                            clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
+                            clipPath.addRect(clipRect)
+                            painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
+                        else:
+                            # Manually scale the image if needed as drawImage does a piss poor job.
+                            # This is only done when there is no clip rect. A clip rect means it's
+                            # a placeholder tile so won't be drawn for very long so quality doesn't
+                            # mater as much so best to avoid the expensive scaling
+                            if image.width() != renderRect.width() or image.height() != renderRect.height():
+                                image = image.smoothScaled(
+                                    round(renderRect.width()),
+                                    round(renderRect.height()))
+
+                        painter.drawImage(renderRect, image)
+                    finally:
+                        painter.restore()
+        else:
+            self._graphics.setPainter(painter=painter)
+            try:
+                self._renderer.setView(
+                    absoluteCenterX=self._absoluteCenterPos.x(),
+                    absoluteCenterY=self._absoluteCenterPos.y(),
+                    scale=self._viewScale.linear,
+                    outputPixelX=self.width(),
+                    outputPixelY=self.height())
+                self._renderer.render()
+            finally:
+                self._graphics.setPainter(painter=None)
+
+    def _drawDirections(
+            self,
+            painter: QtGui.QPainter
+            ) -> None:
+        if not app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
+            return
+
+        viewWidth = self.width()
+        viewHeight = self.height()
+
+        self._graphics.setPainter(painter=painter)
+        try:
+            text = 'COREWARD'
+            _, textHeight = self._graphics.measureString(
+                text=text,
+                font=self._directionTextFont)
+            self._graphics.drawString(
+                text=text,
+                font=self._directionTextFont,
+                brush=self._directionTextBrush,
+                x=viewWidth / 2,
+                y=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
+                format=maprenderer.TextAlignment.Centered)
+
+            text = 'RIMWARD'
+            _, textHeight = self._graphics.measureString(
+                text=text,
+                font=self._directionTextFont)
+            self._graphics.drawString(
+                text=text,
+                font=self._directionTextFont,
+                brush=self._directionTextBrush,
+                x=viewWidth / 2,
+                y=viewHeight - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
+                format=maprenderer.TextAlignment.Centered)
+
+            with self._graphics.save():
+                self._graphics.translateTransform(
+                    dx=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
+                    dy=viewHeight / 2)
+                self._graphics.rotateTransform(degrees=270)
+
+                text = 'SPINWARD'
+                _, textHeight = self._graphics.measureString(
+                    text=text,
+                    font=self._directionTextFont)
+                self._graphics.drawString(
+                    text=text,
+                    font=self._directionTextFont,
+                    brush=self._directionTextBrush,
+                    x=0, y=0,
+                    format=maprenderer.TextAlignment.Centered)
+
+            with self._graphics.save():
+                self._graphics.translateTransform(
+                    dx=viewWidth - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
+                    dy=viewHeight / 2)
+                self._graphics.rotateTransform(degrees=270)
+
+                text = 'TRAILING'
+                _, textHeight = self._graphics.measureString(
+                    text=text,
+                    font=self._directionTextFont)
+                self._graphics.drawString(
+                    text=text,
+                    font=self._directionTextFont,
+                    brush=self._directionTextBrush,
+                    x=0, y=0,
+                    format=maprenderer.TextAlignment.Centered)
+        finally:
+            self._graphics.setPainter(painter=None)
 
     def _handleLeftClickEvent(
             self,
