@@ -1,11 +1,11 @@
 import enum
-import maprenderer
+import cartographer
 import typing
 
 class AbstractPointList(object):
-    def points(self) -> typing.Sequence[maprenderer.PointF]:
+    def points(self) -> typing.Sequence[cartographer.PointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement points')
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> cartographer.RectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement bounds')
     def translate(self, dx: float, dy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement translate')
@@ -13,11 +13,11 @@ class AbstractPointList(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPointList so must implement copyFrom')
 
 class AbstractPath(object):
-    def points(self) -> typing.Sequence[maprenderer.PointF]:
+    def points(self) -> typing.Sequence[cartographer.PointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
     def closed(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> cartographer.RectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement bounds')
     def translate(self, dx: float, dy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement translate')
@@ -25,11 +25,11 @@ class AbstractPath(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement copyFrom')
 
 class AbstractSpline(object):
-    def points(self) -> typing.Sequence[maprenderer.PointF]:
+    def points(self) -> typing.Sequence[cartographer.PointF]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
     def closed(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> cartographer.RectangleF:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement bounds')
     def translate(self, dx: float, dy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement translate')
@@ -53,7 +53,7 @@ class AbstractMatrix(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement isIdentity')
     def invert(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement invert')
-    def rotatePrepend(self, degrees: float, center: maprenderer.PointF) -> None:
+    def rotatePrepend(self, degrees: float, center: cartographer.PointF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement rotatePrepend')
     def scalePrepend(self, sx: float, sy: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement scalePrepend')
@@ -61,7 +61,7 @@ class AbstractMatrix(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement translatePrepend')
     def prepend(self, matrix: 'AbstractMatrix') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
-    def transform(self, point: maprenderer.PointF) -> maprenderer.PointF:
+    def transform(self, point: cartographer.PointF) -> cartographer.PointF:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
 
 class AbstractBrush(object):
@@ -81,17 +81,17 @@ class AbstractPen(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement width')
     def setWidth(self, width: float) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setWidth')
-    def style(self) -> maprenderer.LineStyle:
+    def style(self) -> cartographer.LineStyle:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement style')
-    def setStyle(self, style: maprenderer.LineStyle, pattern: typing.Optional[typing.List[float]] = None) -> None:
+    def setStyle(self, style: cartographer.LineStyle, pattern: typing.Optional[typing.List[float]] = None) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setStyle')
     def pattern(self) -> typing.Optional[typing.Sequence[float]]:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement pattern')
     def setPattern(self, pattern: typing.Sequence[float]) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setPattern')
-    def tip(self) -> maprenderer.PenTip:
+    def tip(self) -> cartographer.PenTip:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement tip')
-    def setTip(self, tip: maprenderer.PenTip) -> None:
+    def setTip(self, tip: cartographer.PenTip) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setTip')
     def copyFrom(self, other: 'AbstractPen') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement copyFrom')
@@ -107,7 +107,7 @@ class AbstractFont(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement family')
     def emSize(self) -> float:
         raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement emSize')
-    def style(self) -> maprenderer.FontStyle:
+    def style(self) -> cartographer.FontStyle:
         raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement style')
     def pointSize(self) -> float:
         raise RuntimeError(f'{type(self)} is derived from AbstractFont so must implement pointSize')
@@ -144,7 +144,7 @@ class AbstractGraphics(object):
 
     def createPointList(
             self,
-            points: typing.Sequence[maprenderer.PointF]
+            points: typing.Sequence[cartographer.PointF]
             ) -> AbstractPointList:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPointList')
     def copyPointList(self, other: AbstractPointList) -> AbstractPointList:
@@ -152,7 +152,7 @@ class AbstractGraphics(object):
 
     def createPath(
             self,
-            points: typing.Sequence[maprenderer.PointF],
+            points: typing.Sequence[cartographer.PointF],
             closed: bool
             ) -> AbstractPath:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPath')
@@ -161,7 +161,7 @@ class AbstractGraphics(object):
 
     def createSpline(
             self,
-            points: typing.Sequence[maprenderer.PointF],
+            points: typing.Sequence[cartographer.PointF],
             tension: float,
             closed: bool
             ) -> AbstractSpline:
@@ -193,9 +193,9 @@ class AbstractGraphics(object):
             self,
             color: str = '',
             width: float = 1,
-            style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
+            style: cartographer.LineStyle = cartographer.LineStyle.Solid,
             pattern: typing.Optional[typing.Sequence[float]] = None,
-            tip: maprenderer.PenTip = maprenderer.PenTip.Flat
+            tip: cartographer.PenTip = cartographer.PenTip.Flat
             ) -> AbstractPen:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createPen')
     def copyPen(self, other: AbstractPen) -> AbstractPen:
@@ -208,7 +208,7 @@ class AbstractGraphics(object):
             self,
             family: str,
             emSize: float,
-            style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
+            style: cartographer.FontStyle = cartographer.FontStyle.Regular
             ) -> AbstractFont:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createFont')
 
@@ -228,18 +228,18 @@ class AbstractGraphics(object):
 
     def intersectClipPath(self, clip: AbstractPath) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
-    def intersectClipRect(self, rect: maprenderer.RectangleF) -> None:
+    def intersectClipRect(self, rect: cartographer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
 
-    def drawPoint(self, point: maprenderer.PointF, pen: AbstractPen) -> None:
+    def drawPoint(self, point: cartographer.PointF, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
     def drawPoints(self, points: AbstractPointList, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoints')
 
     def drawLine(
             self,
-            pt1: maprenderer.PointF,
-            pt2: maprenderer.PointF,
+            pt1: cartographer.PointF,
+            pt2: cartographer.PointF,
             pen: AbstractPen
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawLine')
@@ -260,7 +260,7 @@ class AbstractGraphics(object):
 
     def drawRectangle(
             self,
-            rect: maprenderer.RectangleF,
+            rect: cartographer.RectangleF,
             pen: typing.Optional[AbstractPen] = None,
             brush: typing.Optional[AbstractBrush] = None
             ) -> None:
@@ -268,7 +268,7 @@ class AbstractGraphics(object):
 
     def drawEllipse(
             self,
-            rect: maprenderer.RectangleF,
+            rect: cartographer.RectangleF,
             pen: typing.Optional[AbstractPen] = None,
             brush: typing.Optional[AbstractBrush] = None
             ) -> None:
@@ -276,7 +276,7 @@ class AbstractGraphics(object):
 
     def drawArc(
             self,
-            rect: maprenderer.RectangleF,
+            rect: cartographer.RectangleF,
             startDegrees: float,
             sweepDegrees: float,
             pen: AbstractPen
@@ -291,14 +291,14 @@ class AbstractGraphics(object):
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawCurve')
 
-    def drawImage(self, image: AbstractImage, rect: maprenderer.RectangleF) -> None:
+    def drawImage(self, image: AbstractImage, rect: cartographer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImage')
-    def drawImageAlpha(self, alpha: float, image: AbstractImage, rect: maprenderer.RectangleF) -> None:
+    def drawImageAlpha(self, alpha: float, image: AbstractImage, rect: cartographer.RectangleF) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawImageAlpha')
 
     def measureString(self, text: str, font: AbstractFont) -> typing.Tuple[float, float]: # (width, height)
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement measureString')
-    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: maprenderer.TextAlignment) -> None:
+    def drawString(self, text: str, font: AbstractFont, brush: AbstractBrush, x: float, y: float, format: cartographer.TextAlignment) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawString')
 
     def save(self) -> AbstractGraphicsState:

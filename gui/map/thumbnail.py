@@ -1,6 +1,6 @@
 import app
 import gui
-import maprenderer
+import cartographer
 import travellermap
 import typing
 from PyQt5 import QtCore, QtGui
@@ -23,10 +23,10 @@ def _initThumbnailRenderer():
     if _thumbnailRenderInitialised:
         return
     _thumbnailGraphics = gui.MapGraphics()
-    _thumbnailImageCache = maprenderer.ImageCache(graphics=_thumbnailGraphics)
-    _thumbnailVectorCache = maprenderer.VectorObjectCache(graphics=_thumbnailGraphics)
-    _thumbnailLabelCache = maprenderer.LabelCache()
-    _thumbnailStyleCache = maprenderer.StyleCache()
+    _thumbnailImageCache = cartographer.ImageCache(graphics=_thumbnailGraphics)
+    _thumbnailVectorCache = cartographer.VectorObjectCache(graphics=_thumbnailGraphics)
+    _thumbnailLabelCache = cartographer.LabelCache()
+    _thumbnailStyleCache = cartographer.StyleCache()
     _thumbnailRenderInitialised = True
 
 # TODO: Need to make this user configurable
@@ -44,7 +44,7 @@ def generateThumbnail(
         _initThumbnailRenderer()
 
         centerX, centerY = hex.absoluteCenter()
-        renderer = maprenderer.RenderContext(
+        renderer = cartographer.RenderContext(
             graphics=_thumbnailGraphics,
             absoluteCenterX=centerX,
             absoluteCenterY=centerY,
@@ -52,7 +52,7 @@ def generateThumbnail(
             outputPixelX=width,
             outputPixelY=height,
             style=app.Config.instance().mapStyle(),
-            options=maprenderer.mapOptionsToRenderOptions(
+            options=cartographer.mapOptionsToRenderOptions(
                 app.Config.instance().mapOptions()),
             imageCache=_thumbnailImageCache,
             vectorCache=_thumbnailVectorCache,

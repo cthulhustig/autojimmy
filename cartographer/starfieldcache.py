@@ -1,4 +1,4 @@
-import maprenderer
+import cartographer
 import random
 import travellermap
 import typing
@@ -13,12 +13,12 @@ class StarfieldCache(object):
 
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics
+            graphics: cartographer.AbstractGraphics
             ) -> None:
         self._graphics = graphics
         self._starfieldCache: typing.Dict[
             typing.Tuple[int, int], # Sector x/y
-            maprenderer.AbstractPointList
+            cartographer.AbstractPointList
         ] = {}
 
     def chunkParsecs(self) -> int:
@@ -31,7 +31,7 @@ class StarfieldCache(object):
             self,
             chunkX: int,
             chunkY: int
-            ) -> maprenderer.AbstractPointList:
+            ) -> cartographer.AbstractPointList:
         indexX = chunkX % StarfieldCache._RepeatAfter
         indexY = chunkY % StarfieldCache._RepeatAfter
         key = (indexX, indexY)
@@ -45,12 +45,12 @@ class StarfieldCache(object):
             self,
             indexX: int,
             indexY: int
-            ) -> maprenderer.AbstractPointList:
+            ) -> cartographer.AbstractPointList:
         rand = random.Random((indexX << 16) ^ indexY)
         count = rand.randrange(StarfieldCache._MinStarsPerChunk, StarfieldCache._MaxStarsPerChunk)
         points = []
         for _ in range(count):
-            point = maprenderer.PointF(
+            point = cartographer.PointF(
                 x=rand.random() * StarfieldCache._ChunkParsecSize,
                 y=rand.random() * StarfieldCache._ChunkParsecSize)
             intensity = rand.randrange(1, StarfieldCache._IntensitySteps)

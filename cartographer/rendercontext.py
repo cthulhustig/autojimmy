@@ -1,7 +1,7 @@
 import common
 import enum
 import logging
-import maprenderer
+import cartographer
 import math
 import traveller
 import travellermap
@@ -11,7 +11,7 @@ class RenderContext(object):
     class LayerAction(object):
         def __init__(
                 self,
-                id: maprenderer.LayerId,
+                id: cartographer.LayerId,
                 action: typing.Callable[[], typing.NoReturn]
                 ) -> None:
             self.id = id
@@ -63,18 +63,18 @@ class RenderContext(object):
 
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics,
+            graphics: cartographer.AbstractGraphics,
             absoluteCenterX: float,
             absoluteCenterY: float,
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
             style: travellermap.Style,
-            options: maprenderer.MapOptions,
-            imageCache: maprenderer.ImageCache,
-            vectorCache: maprenderer.VectorObjectCache,
-            labelCache: maprenderer.LabelCache,
-            styleCache: maprenderer.StyleCache
+            options: cartographer.MapOptions,
+            imageCache: cartographer.ImageCache,
+            vectorCache: cartographer.VectorObjectCache,
+            labelCache: cartographer.LabelCache,
+            styleCache: cartographer.StyleCache
             ) -> None:
         self._graphics = graphics
         self._absoluteCenterX = absoluteCenterX
@@ -83,7 +83,7 @@ class RenderContext(object):
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
         self._options = options
-        self._styleSheet = maprenderer.StyleSheet(
+        self._styleSheet = cartographer.StyleSheet(
             scale=self._scale,
             options=self._options,
             style=style,
@@ -92,38 +92,38 @@ class RenderContext(object):
         self._vectorCache = vectorCache
         self._labelCache = labelCache
         self._styleCache = styleCache
-        self._sectorCache = maprenderer.SectorCache(
+        self._sectorCache = cartographer.SectorCache(
             graphics=self._graphics,
             styleCache=self._styleCache)
-        self._worldCache = maprenderer.WorldCache(
+        self._worldCache = cartographer.WorldCache(
             imageCache=self._imageCache,
             capacity=RenderContext._WorldCacheCapacity)
-        self._gridCache = maprenderer.GridCache(
+        self._gridCache = cartographer.GridCache(
             graphics=self._graphics,
             capacity=RenderContext._GridCacheCapacity)
-        self._starfieldCache = maprenderer.StarfieldCache(
+        self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
-        self._selector = maprenderer.RectSelector()
+        self._selector = cartographer.RectSelector()
         self._absoluteViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
 
         self._hexOutlinePath = self._graphics.createPath(
             points=[
-                maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5),
-                maprenderer.PointF( 0.5 - travellermap.HexWidthOffset, -0.5),
-                maprenderer.PointF( 0.5 + travellermap.HexWidthOffset, 0),
-                maprenderer.PointF( 0.5 - travellermap.HexWidthOffset, 0.5),
-                maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, 0.5),
-                maprenderer.PointF(-0.5 - travellermap.HexWidthOffset, 0),
-                maprenderer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
+                cartographer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5),
+                cartographer.PointF( 0.5 - travellermap.HexWidthOffset, -0.5),
+                cartographer.PointF( 0.5 + travellermap.HexWidthOffset, 0),
+                cartographer.PointF( 0.5 - travellermap.HexWidthOffset, 0.5),
+                cartographer.PointF(-0.5 + travellermap.HexWidthOffset, 0.5),
+                cartographer.PointF(-0.5 - travellermap.HexWidthOffset, 0),
+                cartographer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
             closed=True)
 
         # Chosen to match T5 pp.416
-        self._galaxyImageRect = maprenderer.RectangleF(-18257, -26234, 36551, 32462)
-        self._riftImageRect = maprenderer.RectangleF(-1374, -827, 2769, 1754)
+        self._galaxyImageRect = cartographer.RectangleF(-18257, -26234, 36551, 32462)
+        self._riftImageRect = cartographer.RectangleF(-1374, -827, 2769, 1754)
 
-        self._parsecGrid: typing.Optional[maprenderer.AbstractPointList] = None
+        self._parsecGrid: typing.Optional[cartographer.AbstractPointList] = None
 
         self._createLayers()
         self._updateView()
@@ -164,12 +164,12 @@ class RenderContext(object):
         self._styleSheet.style = style
         self._updateLayerOrder()
 
-    def options(self) -> maprenderer.MapOptions:
+    def options(self) -> cartographer.MapOptions:
         return self._styleSheet.options
 
     def setOptions(
             self,
-            options: maprenderer.MapOptions
+            options: cartographer.MapOptions
             ) -> None:
         self._styleSheet.options = options
         self._updateLayerOrder()
@@ -193,49 +193,49 @@ class RenderContext(object):
 
     def _createLayers(self) -> None:
         self._layers: typing.List[RenderContext.LayerAction] = [
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Solid, self._drawBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Background_Solid, self._drawBackground),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Background_NebulaTexture, self._drawNebulaBackground),
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Galaxy, self._drawGalaxyBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Background_NebulaTexture, self._drawNebulaBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Background_Galaxy, self._drawGalaxyBackground),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars),
-            RenderContext.LayerAction(maprenderer.LayerId.Background_Rifts, self._drawRifts),
+            RenderContext.LayerAction(cartographer.LayerId.Background_PseudoRandomStars, self._drawPseudoRandomStars),
+            RenderContext.LayerAction(cartographer.LayerId.Background_Rifts, self._drawRifts),
 
             #------------------------------------------------------------
             # Foreground
             #------------------------------------------------------------
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_Borders, self._drawMacroBorders),
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_Routes, self._drawMacroRoutes),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_Borders, self._drawMacroBorders),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_Routes, self._drawMacroRoutes),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Grid_Sector, self._drawSectorGrid),
-            RenderContext.LayerAction(maprenderer.LayerId.Grid_Subsector, self._drawSubsectorGrid),
-            RenderContext.LayerAction(maprenderer.LayerId.Grid_Parsec, self._drawParsecGrid),
+            RenderContext.LayerAction(cartographer.LayerId.Grid_Sector, self._drawSectorGrid),
+            RenderContext.LayerAction(cartographer.LayerId.Grid_Subsector, self._drawSubsectorGrid),
+            RenderContext.LayerAction(cartographer.LayerId.Grid_Parsec, self._drawParsecGrid),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Names_Subsector, self._drawSubsectorNames),
+            RenderContext.LayerAction(cartographer.LayerId.Names_Subsector, self._drawSubsectorNames),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersBackground, self._drawMicroBordersBackground),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BordersForeground, self._drawMicroBordersForeground),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_Routes, self._drawMicroRoutes),
-            RenderContext.LayerAction(maprenderer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_BordersBackground, self._drawMicroBordersBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_BordersForeground, self._drawMicroBordersForeground),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_Routes, self._drawMicroRoutes),
+            RenderContext.LayerAction(cartographer.LayerId.Micro_BorderExplicitLabels, self._drawMicroLabels),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Names_Sector, self._drawSectorNames),
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_GovernmentRiftRouteNames, self._drawMacroNames),
-            RenderContext.LayerAction(maprenderer.LayerId.Macro_CapitalsAndHomeWorlds, self._drawCapitalsAndHomeWorlds),
-            RenderContext.LayerAction(maprenderer.LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels),
+            RenderContext.LayerAction(cartographer.LayerId.Names_Sector, self._drawSectorNames),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_GovernmentRiftRouteNames, self._drawMacroNames),
+            RenderContext.LayerAction(cartographer.LayerId.Macro_CapitalsAndHomeWorlds, self._drawCapitalsAndHomeWorlds),
+            RenderContext.LayerAction(cartographer.LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Background, self._drawWorldsBackground),
+            RenderContext.LayerAction(cartographer.LayerId.Worlds_Background, self._drawWorldsBackground),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Foreground, self._drawWorldsForeground),
+            RenderContext.LayerAction(cartographer.LayerId.Worlds_Foreground, self._drawWorldsForeground),
 
-            RenderContext.LayerAction(maprenderer.LayerId.Worlds_Overlays, self._drawWorldsOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Worlds_Overlays, self._drawWorldsOverlay),
 
             #------------------------------------------------------------
             # Overlays
             #------------------------------------------------------------
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_DroyneChirperWorlds, self._drawDroyneOverlay),
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_MinorHomeworlds, self._drawMinorHomeworldOverlay),
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay),
-            RenderContext.LayerAction(maprenderer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_DroyneChirperWorlds, self._drawDroyneOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_MinorHomeworlds, self._drawMinorHomeworldOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_AncientsWorlds, self._drawAncientWorldsOverlay),
+            RenderContext.LayerAction(cartographer.LayerId.Overlay_ReviewStatus, self._drawSectorReviewStatusOverlay),
         ]
 
         self._updateLayerOrder()
@@ -250,7 +250,7 @@ class RenderContext(object):
             (absoluteWidth != self._absoluteViewRect.width()) or \
             (absoluteHeight != self._absoluteViewRect.height())
 
-        self._absoluteViewRect = maprenderer.RectangleF(
+        self._absoluteViewRect = cartographer.RectangleF(
             x=self._absoluteCenterX - (absoluteWidth / 2),
             y=self._absoluteCenterY - (absoluteHeight / 2),
             width=absoluteWidth,
@@ -280,12 +280,12 @@ class RenderContext(object):
 
     def _drawBackground(self) -> None:
         self._graphics.setSmoothingMode(
-            maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
+            cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
 
         # NOTE: This is a comment from the original Traveller Map source code
         # HACK: Due to limited precisions of floats, tileRect can end up not covering
         # the full bitmap when far from the origin.
-        rect = maprenderer.RectangleF(self._absoluteViewRect)
+        rect = cartographer.RectangleF(self._absoluteViewRect)
         rect.inflate(rect.width() * 0.1, rect.height() * 0.1)
         self._graphics.drawRectangle(
             rect=rect,
@@ -332,7 +332,7 @@ class RenderContext(object):
 
         for x in range(hCount):
             for y in range(vCount):
-                rect = maprenderer.RectangleF(
+                rect = cartographer.RectangleF(
                     x=nebulaLeft + (x * nebulaWidth),
                     y=nebulaTop + (y * nebulaHeight),
                     width=nebulaWidth,
@@ -386,7 +386,7 @@ class RenderContext(object):
             width=1 / self._scale) # One pixel
 
         self._graphics.setSmoothingMode(
-            maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for x in range(startX, finishX + 1):
             for y in range(startY, finishY + 1):
@@ -415,9 +415,9 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
         for vectorObject in self._vectorCache.borders:
-            if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
+            if (vectorObject.mapOptions & self._options & cartographer.MapOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
                     vectorObject=vectorObject,
                     pen=self._styleSheet.macroBorders.linePen)
@@ -427,9 +427,9 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
         for vectorObject in self._vectorCache.routes:
-            if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.BordersMask) != 0:
+            if (vectorObject.mapOptions & self._options & cartographer.MapOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
                     vectorObject=vectorObject,
                     pen=self._styleSheet.macroRoutes.linePen)
@@ -439,7 +439,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
+                cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
 
         # Quantizes the left & top values so grid lines are always drawn from a
         # sector boundary that is off to the left/top of the view area. This is
@@ -455,16 +455,16 @@ class RenderContext(object):
         x = left + travellermap.SectorWidth
         while x <= self._absoluteViewRect.right():
             self._graphics.drawLine(
-                pt1=maprenderer.PointF(x, top),
-                pt2=maprenderer.PointF(x, bottom),
+                pt1=cartographer.PointF(x, top),
+                pt2=cartographer.PointF(x, bottom),
                 pen=self._styleSheet.sectorGrid.linePen)
             x += travellermap.SectorWidth
 
         y = top + travellermap.SectorHeight
         while y <= self._absoluteViewRect.bottom():
             self._graphics.drawLine(
-                pt1=maprenderer.PointF(left, y),
-                pt2=maprenderer.PointF(right, y),
+                pt1=cartographer.PointF(left, y),
+                pt2=cartographer.PointF(right, y),
                 pen=self._styleSheet.sectorGrid.linePen)
             y += travellermap.SectorHeight
 
@@ -473,7 +473,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighSpeed)
+                cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
 
         # Quantizes the left & top values so grid lines are always drawn from a
         # subsector boundary that is off to the left/top of the view area. This is
@@ -491,8 +491,8 @@ class RenderContext(object):
         while x <= self._absoluteViewRect.right():
             if lineIndex % 4:
                 self._graphics.drawLine(
-                    pt1=maprenderer.PointF(x, top),
-                    pt2=maprenderer.PointF(x, bottom),
+                    pt1=cartographer.PointF(x, top),
+                    pt2=cartographer.PointF(x, bottom),
                     pen=self._styleSheet.subsectorGrid.linePen)
             x += travellermap.SubsectorWidth
             lineIndex += 1
@@ -502,8 +502,8 @@ class RenderContext(object):
         while y <= self._absoluteViewRect.bottom():
             if lineIndex % 4:
                 self._graphics.drawLine(
-                    pt1=maprenderer.PointF(left, y),
-                    pt2=maprenderer.PointF(right, y),
+                    pt1=cartographer.PointF(left, y),
+                    pt2=cartographer.PointF(right, y),
                     pen=self._styleSheet.subsectorGrid.linePen)
             y += travellermap.SubsectorHeight
             lineIndex += 1
@@ -513,7 +513,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-            maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         if self._parsecGrid:
             with self._graphics.save():
@@ -524,7 +524,7 @@ class RenderContext(object):
                     points=self._parsecGrid,
                     pen=self._styleSheet.parsecGrid.linePen)
 
-        if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0:
+        if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & cartographer.WorldDetails.Hex) != 0:
             hx = int(math.floor(self._absoluteViewRect.x()))
             hw = int(math.ceil(self._absoluteViewRect.width()))
             hy = int(math.floor(self._absoluteViewRect.y()))
@@ -534,7 +534,7 @@ class RenderContext(object):
                 for py in range(hy - RenderContext._ParsecGridSlop, hy + hh + RenderContext._ParsecGridSlop):
 
                     relativePos = travellermap.absoluteSpaceToRelativeSpace((px + 1, py + 1))
-                    if self._styleSheet.hexCoordinateStyle == maprenderer.HexCoordinateStyle.Subsector:
+                    if self._styleSheet.hexCoordinateStyle == cartographer.HexCoordinateStyle.Subsector:
                         hex = '{hexX:02d}{hexY:02d}'.format(
                             hexX=int((relativePos[2] - 1) % travellermap.SubsectorWidth) + 1,
                             hexY=int((relativePos[3] - 1) % travellermap.SubsectorHeight) + 1)
@@ -555,14 +555,14 @@ class RenderContext(object):
                             brush=self._styleSheet.hexNumber.textBrush,
                             x=(px + 0.5) / scaleX,
                             y=(py + yOffset) / scaleY,
-                            format=maprenderer.TextAlignment.TopCenter)
+                            format=cartographer.TextAlignment.TopCenter)
 
     def _drawSubsectorNames(self) -> None:
         if not self._styleSheet.subsectorNames.visible:
             return
 
         self._graphics.setSmoothingMode(
-             maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for subsector in self._selector.subsectors():
             if subsector.isNameGenerated():
@@ -576,7 +576,7 @@ class RenderContext(object):
 
             self._drawLabel(
                 text=subsector.name(),
-                center=maprenderer.PointF(
+                center=cartographer.PointF(
                     x=(left + right) / 2,
                     y=(top + bottom) / 2),
                 font=self._styleSheet.subsectorNames.font,
@@ -601,7 +601,7 @@ class RenderContext(object):
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             pen = self._graphics.createPen()
             baseWidth = self._styleSheet.microRoutes.linePen.width()
@@ -613,11 +613,11 @@ class RenderContext(object):
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
                         if route.style() is traveller.Route.Style.Solid:
-                            routeStyle = maprenderer.LineStyle.Solid
+                            routeStyle = cartographer.LineStyle.Solid
                         elif route.style() is traveller.Route.Style.Dashed:
-                            routeStyle = maprenderer.LineStyle.Dash
+                            routeStyle = cartographer.LineStyle.Dash
                         elif route.style() is traveller.Route.Style.Dotted:
-                            routeStyle = maprenderer.LineStyle.Dot
+                            routeStyle = cartographer.LineStyle.Dot
 
                     if not routeWidth or not routeColor or not routeStyle:
                         precedence = [route.allegiance(), route.type(), 'Im']
@@ -632,14 +632,14 @@ class RenderContext(object):
 
                     # In grayscale, convert default color and style to non-default style
                     if self._styleSheet.grayscale and (not routeColor) and (not routeStyle):
-                        routeStyle = maprenderer.LineStyle.Dash
+                        routeStyle = cartographer.LineStyle.Dash
 
                     if not routeWidth:
                         routeWidth = 1.0
                     if not routeColor:
                         routeColor = self._styleSheet.microRoutes.linePen.color()
                     if not routeStyle:
-                        routeStyle = maprenderer.LineStyle.Solid
+                        routeStyle = cartographer.LineStyle.Solid
 
                     # Ensure color is visible
                     if self._styleSheet.grayscale or \
@@ -661,7 +661,7 @@ class RenderContext(object):
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             brush = self._graphics.createBrush()
             for sector in self._selector.sectors():
@@ -747,7 +747,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for sector in self._selector.sectors():
             sectorLabel = sector.sectorLabel()
@@ -764,7 +764,7 @@ class RenderContext(object):
 
             self._drawLabel(
                 text=sectorLabel if sectorLabel else sector.name(),
-                center=maprenderer.PointF(x=centerX, y=centerY),
+                center=cartographer.PointF(x=centerX, y=centerY),
                 font=self._styleSheet.sectorName.font,
                 brush=self._styleSheet.sectorName.textBrush,
                 labelStyle=self._styleSheet.sectorName.textStyle)
@@ -774,13 +774,13 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for vectorObject in self._vectorCache.borders:
-            if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
+            if (vectorObject.mapOptions & self._options & cartographer.MapOptions.NamesMask) == 0:
                 continue
-            major = (vectorObject.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
-            labelStyle = maprenderer.LabelStyle(uppercase=major)
+            major = (vectorObject.mapOptions & cartographer.MapOptions.NamesMajor) != 0
+            labelStyle = cartographer.LabelStyle(uppercase=major)
             font = \
                 self._styleSheet.macroNames.font \
                 if major else \
@@ -796,8 +796,8 @@ class RenderContext(object):
                 labelStyle=labelStyle)
 
         for vectorObject in self._vectorCache.rifts:
-            major = (vectorObject.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
-            labelStyle = maprenderer.LabelStyle(rotation=35, uppercase=major)
+            major = (vectorObject.mapOptions & cartographer.MapOptions.NamesMajor) != 0
+            labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
             font = \
                 self._styleSheet.macroNames.font \
                 if major else \
@@ -814,10 +814,10 @@ class RenderContext(object):
 
         if self._styleSheet.macroRoutes.visible:
             for vectorObject in self._vectorCache.routes:
-                if (vectorObject.mapOptions & self._options & maprenderer.MapOptions.NamesMask) == 0:
+                if (vectorObject.mapOptions & self._options & cartographer.MapOptions.NamesMask) == 0:
                     continue
-                major = (vectorObject.mapOptions & maprenderer.MapOptions.NamesMajor) != 0
-                labelStyle = maprenderer.LabelStyle(uppercase=major)
+                major = (vectorObject.mapOptions & cartographer.MapOptions.NamesMajor) != 0
+                labelStyle = cartographer.LabelStyle(uppercase=major)
                 font = \
                     self._styleSheet.macroNames.font \
                     if major else \
@@ -832,7 +832,7 @@ class RenderContext(object):
                     textBrush=brush,
                     labelStyle=labelStyle)
 
-        if (self._options & maprenderer.MapOptions.NamesMinor) != 0:
+        if (self._options & cartographer.MapOptions.NamesMinor) != 0:
             for label in self._labelCache.minorLabels:
                 font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
@@ -852,7 +852,7 @@ class RenderContext(object):
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if (not self._styleSheet.capitals.visible) or \
-            ((self._options & maprenderer.MapOptions.WorldsMask) == 0):
+            ((self._options & cartographer.MapOptions.WorldsMask) == 0):
             return
 
         dotPen = self._graphics.createPen(
@@ -860,7 +860,7 @@ class RenderContext(object):
             width=1)
         dotBrush = self._styleSheet.capitals.fillBrush
         dotRadius = 3
-        dotRect = maprenderer.RectangleF(
+        dotRect = cartographer.RectangleF(
             x=-dotRadius / 2,
             y=-dotRadius / 2,
             width=dotRadius,
@@ -868,7 +868,7 @@ class RenderContext(object):
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
             for worldLabel in self._labelCache.worldLabels:
                 if (worldLabel.options & self._options) == 0:
                     continue
@@ -888,25 +888,25 @@ class RenderContext(object):
 
                     if worldLabel.biasX > 0:
                         if worldLabel.biasY < 0:
-                            format = maprenderer.TextAlignment.BottomLeft
+                            format = cartographer.TextAlignment.BottomLeft
                         elif worldLabel.biasY > 0:
-                            format = maprenderer.TextAlignment.TopLeft
+                            format = cartographer.TextAlignment.TopLeft
                         else:
-                            format = maprenderer.TextAlignment.MiddleLeft
+                            format = cartographer.TextAlignment.MiddleLeft
                     elif worldLabel.biasX < 0:
                         if worldLabel.biasY < 0:
-                            format = maprenderer.TextAlignment.BottomRight
+                            format = cartographer.TextAlignment.BottomRight
                         elif worldLabel.biasY > 0:
-                            format = maprenderer.TextAlignment.TopRight
+                            format = cartographer.TextAlignment.TopRight
                         else:
-                            format = maprenderer.TextAlignment.MiddleRight
+                            format = cartographer.TextAlignment.MiddleRight
                     else:
                         if worldLabel.biasY < 0:
-                            format = maprenderer.TextAlignment.BottomCenter
+                            format = cartographer.TextAlignment.BottomCenter
                         elif worldLabel.biasY > 0:
-                            format = maprenderer.TextAlignment.TopCenter
+                            format = cartographer.TextAlignment.TopCenter
                         else:
-                            format = maprenderer.TextAlignment.Centered
+                            format = cartographer.TextAlignment.Centered
 
                     self._drawMultiLineString(
                         text=worldLabel.text,
@@ -921,7 +921,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for label in self._labelCache.megaLabels:
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
@@ -937,15 +937,15 @@ class RenderContext(object):
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
-            or not self._styleSheet.worldDetails or self._styleSheet.worldDetails is maprenderer.WorldDetails.NoDetails:
+            or not self._styleSheet.worldDetails or self._styleSheet.worldDetails is cartographer.WorldDetails.NoDetails:
             return
 
-        renderAllNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0
-        renderKeyNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0
-        renderZone = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0
-        renderHex = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Hex) != 0
-        renderSubsector = self._styleSheet.hexCoordinateStyle is maprenderer.HexCoordinateStyle.Subsector
-        renderType = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Type) != 0
+        renderAllNames = (self._styleSheet.worldDetails & cartographer.WorldDetails.AllNames) != 0
+        renderKeyNames = (self._styleSheet.worldDetails & cartographer.WorldDetails.KeyNames) != 0
+        renderZone = (self._styleSheet.worldDetails & cartographer.WorldDetails.Zone) != 0
+        renderHex = (self._styleSheet.worldDetails & cartographer.WorldDetails.Hex) != 0
+        renderSubsector = self._styleSheet.hexCoordinateStyle is cartographer.HexCoordinateStyle.Subsector
+        renderType = (self._styleSheet.worldDetails & cartographer.WorldDetails.Type) != 0
 
         # Check for early out when style means nothing will be rendered
         if not self._styleSheet.useWorldImages:
@@ -960,7 +960,7 @@ class RenderContext(object):
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
             scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
@@ -968,14 +968,14 @@ class RenderContext(object):
                 scaleX=scaleX,
                 scaleY=scaleY)
 
-            rect = maprenderer.RectangleF()
+            rect = cartographer.RectangleF()
             for world in worlds:
                 worldInfo = self._worldCache.worldInfo(world=world)
 
                 renderName = False
                 if renderAllNames or renderKeyNames:
                     renderName = renderAllNames or worldInfo.isCapital or worldInfo.isHiPop
-                renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
+                renderUWP = (self._styleSheet.worldDetails & cartographer.WorldDetails.Uwp) != 0
 
                 with self._graphics.save():
                     self._graphics.translateTransform(
@@ -1033,7 +1033,7 @@ class RenderContext(object):
                                 brush=self._styleSheet.hexNumber.textBrush,
                                 x=self._styleSheet.hexNumber.position.x(),
                                 y=self._styleSheet.hexNumber.position.y(),
-                                format=maprenderer.TextAlignment.TopCenter)
+                                format=cartographer.TextAlignment.TopCenter)
                     else: # styles.useWorldImages
                         # "Eye-Candy" style
                         if worldInfo.isPlaceholder:
@@ -1061,11 +1061,11 @@ class RenderContext(object):
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay:
             return
 
-        if not self._styleSheet.worldDetails or self._styleSheet.worldDetails is maprenderer.WorldDetails.NoDetails:
+        if not self._styleSheet.worldDetails or self._styleSheet.worldDetails is cartographer.WorldDetails.NoDetails:
             # Render dot map
             with self._graphics.save():
                 self._graphics.setSmoothingMode(
-                    maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                    cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
                 # Scale by the parsec scale so we are rendering in a coordinate
                 # space that has the same scaling on the x & y axis (I think the
@@ -1083,8 +1083,8 @@ class RenderContext(object):
                 pen = self._graphics.createPen(
                     color=self._styleSheet.worlds.textBrush.color(),
                     width=self._styleSheet.discRadius * self._styleSheet.hexContentScale * 2,
-                    style=maprenderer.LineStyle.Solid,
-                    tip=maprenderer.PenTip.Round) # Rounded end cap so a circle is drawn
+                    style=cartographer.LineStyle.Solid,
+                    tip=cartographer.PenTip.Round) # Rounded end cap so a circle is drawn
 
                 for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
@@ -1098,20 +1098,20 @@ class RenderContext(object):
         worlds = self._selector.worlds()
         self._worldCache.ensureCapacity(len(worlds))
 
-        renderAllNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.AllNames) != 0
-        renderKeyNames = (self._styleSheet.worldDetails & maprenderer.WorldDetails.KeyNames) != 0
-        renderUWP = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Uwp) != 0
-        renderGasGiants = (self._styleSheet.worldDetails & maprenderer.WorldDetails.GasGiant) != 0
-        renderStarport = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Starport) != 0
-        renderBases = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Bases) != 0
-        renderAsteroids = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Asteroids) != 0
-        renderHighlight = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Highlight) != 0
-        renderAllegiances = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Allegiance) != 0
-        renderZone = (self._styleSheet.worldDetails & maprenderer.WorldDetails.Zone) != 0
+        renderAllNames = (self._styleSheet.worldDetails & cartographer.WorldDetails.AllNames) != 0
+        renderKeyNames = (self._styleSheet.worldDetails & cartographer.WorldDetails.KeyNames) != 0
+        renderUWP = (self._styleSheet.worldDetails & cartographer.WorldDetails.Uwp) != 0
+        renderGasGiants = (self._styleSheet.worldDetails & cartographer.WorldDetails.GasGiant) != 0
+        renderStarport = (self._styleSheet.worldDetails & cartographer.WorldDetails.Starport) != 0
+        renderBases = (self._styleSheet.worldDetails & cartographer.WorldDetails.Bases) != 0
+        renderAsteroids = (self._styleSheet.worldDetails & cartographer.WorldDetails.Asteroids) != 0
+        renderHighlight = (self._styleSheet.worldDetails & cartographer.WorldDetails.Highlight) != 0
+        renderAllegiances = (self._styleSheet.worldDetails & cartographer.WorldDetails.Allegiance) != 0
+        renderZone = (self._styleSheet.worldDetails & cartographer.WorldDetails.Zone) != 0
         # NOTE: WorldDetails.Type isn't checked for as (with the current implementation) it is
         # always set when the dot map isn't being rendered so it must be set now
 
-        worldDiscRect = maprenderer.RectangleF(
+        worldDiscRect = cartographer.RectangleF(
             x=self._styleSheet.discPosition.x() - self._styleSheet.discRadius,
             y=self._styleSheet.discPosition.y() - self._styleSheet.discRadius,
             width=self._styleSheet.discRadius * 2,
@@ -1119,7 +1119,7 @@ class RenderContext(object):
 
         with self._graphics.save():
             self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
             scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
@@ -1140,7 +1140,7 @@ class RenderContext(object):
                         # Normal (non-"Eye Candy") styles
                         element = self._zoneStyle(worldInfo)
                         worldTextBackgroundStyle = \
-                            maprenderer.TextBackgroundStyle.NoStyle \
+                            cartographer.TextBackgroundStyle.NoStyle \
                             if element and element.fillBrush else \
                             self._styleSheet.worlds.textBackgroundStyle
 
@@ -1177,7 +1177,7 @@ class RenderContext(object):
                                 bottomUsed = False
                                 if worldInfo.primaryBaseGlyph and worldInfo.primaryBaseGlyph.isPrintable:
                                     pt = self._styleSheet.baseTopPosition
-                                    if worldInfo.primaryBaseGlyph.bias is maprenderer.Glyph.GlyphBias.Bottom and \
+                                    if worldInfo.primaryBaseGlyph.bias is cartographer.Glyph.GlyphBias.Bottom and \
                                         not self._styleSheet.ignoreBaseBias:
                                         pt = self._styleSheet.baseBottomPosition
                                         bottomUsed = True
@@ -1243,9 +1243,9 @@ class RenderContext(object):
                                                 brush=self._styleSheet.worlds.textBrush)
                                 else:
                                     self._drawWorldGlyph(
-                                        glyph=maprenderer.GlyphDefs.DiamondX,
+                                        glyph=cartographer.GlyphDefs.DiamondX,
                                         brush=self._styleSheet.worlds.textBrush,
-                                        position=maprenderer.PointF(
+                                        position=cartographer.PointF(
                                             self._styleSheet.discPosition.x(),
                                             self._styleSheet.discPosition.y()))
                             else:
@@ -1305,7 +1305,7 @@ class RenderContext(object):
                                     brush=self._styleSheet.worlds.textBrush,
                                     x=self._styleSheet.allegiancePosition.x(),
                                     y=self._styleSheet.allegiancePosition.y(),
-                                    format=maprenderer.TextAlignment.Centered)
+                                    format=cartographer.TextAlignment.Centered)
                     else: # styles.useWorldImages
                         # "Eye-Candy" style
                         if worldInfo.isPlaceholder:
@@ -1319,7 +1319,7 @@ class RenderContext(object):
                                     self._styleSheet.amberZone.linePen \
                                     if worldInfo.isAmberZone else \
                                     self._styleSheet.redZone.linePen
-                                rect = maprenderer.RectangleF(
+                                rect = cartographer.RectangleF(
                                     x=-decorationRadius,
                                     y=-decorationRadius,
                                     width=decorationRadius * 2,
@@ -1362,7 +1362,7 @@ class RenderContext(object):
                                 brush=self._styleSheet.worlds.textBrush,
                                 x=decorationRadius,
                                 y=self._styleSheet.uwp.position.y(),
-                                format=maprenderer.TextAlignment.MiddleLeft)
+                                format=cartographer.TextAlignment.MiddleLeft)
 
                         if renderName and worldInfo.name:
                             name = worldInfo.name
@@ -1411,7 +1411,7 @@ class RenderContext(object):
 
                     with self._graphics.save():
                         self._graphics.setSmoothingMode(
-                            maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                            cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
                         self._graphics.translateTransform(
                             dx=worldInfo.hexCenter.x(),
@@ -1451,7 +1451,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             allegiance = world.allegiance()
 
@@ -1471,7 +1471,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             if world.isMinorHomeworld():
                 self._drawOverlayGlyph(
@@ -1485,7 +1485,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
@@ -1498,7 +1498,7 @@ class RenderContext(object):
         brush = self._graphics.createBrush()
 
         if self._styleSheet.dimUnofficialSectors and self._styleSheet.worlds.visible:
-            brush.setColor(maprenderer.makeAlphaColor(
+            brush.setColor(cartographer.makeAlphaColor(
                 alpha=128,
                 color=self._styleSheet.backgroundBrush.color()))
             for sector in self._selector.sectors(tight=True):
@@ -1514,23 +1514,23 @@ class RenderContext(object):
         if self._styleSheet.colorCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
                 if sector.hasTag('Official'):
-                    brush.setColor(maprenderer.makeAlphaColor(
+                    brush.setColor(cartographer.makeAlphaColor(
                         alpha=128,
                         color=travellermap.HtmlColors.TravellerRed))
                 elif sector.hasTag('InReview'):
-                    brush.setColor(maprenderer.makeAlphaColor(
+                    brush.setColor(cartographer.makeAlphaColor(
                         alpha=128,
                         color=travellermap.HtmlColors.Orange))
                 elif sector.hasTag('Unreviewed'):
-                    brush.setColor(maprenderer.makeAlphaColor(
+                    brush.setColor(cartographer.makeAlphaColor(
                         alpha=128,
                         color=travellermap.HtmlColors.TravellerAmber))
                 elif sector.hasTag('Apocryphal'):
-                    brush.setColor(maprenderer.makeAlphaColor(
+                    brush.setColor(cartographer.makeAlphaColor(
                         alpha=128,
                         color=travellermap.HtmlColors.Magenta))
                 elif sector.hasTag('Preserve'):
-                    brush.setColor(maprenderer.makeAlphaColor(
+                    brush.setColor(cartographer.makeAlphaColor(
                         alpha=128,
                         color=travellermap.HtmlColors.TravellerGreen))
                 else:
@@ -1546,11 +1546,11 @@ class RenderContext(object):
 
     def _drawWorldLabel(
             self,
-            bkStyle: maprenderer.TextBackgroundStyle,
-            bkBrush: maprenderer.AbstractBrush,
+            bkStyle: cartographer.TextBackgroundStyle,
+            bkBrush: cartographer.AbstractBrush,
             textBrush: str,
-            position: maprenderer.PointF,
-            font: maprenderer.AbstractFont,
+            position: cartographer.PointF,
+            font: cartographer.AbstractFont,
             text: str
             ) -> None:
         width, height = self._graphics.measureString(text=text, font=font)
@@ -1560,25 +1560,25 @@ class RenderContext(object):
         width += 0.05
         height += 0.05
 
-        if bkStyle is maprenderer.TextBackgroundStyle.Rectangle:
+        if bkStyle is cartographer.TextBackgroundStyle.Rectangle:
             if not self._styleSheet.fillMicroBorders:
                 self._graphics.drawRectangle(
-                    rect=maprenderer.RectangleF(
+                    rect=cartographer.RectangleF(
                         x=position.x() - width / 2,
                         y=position.y() - height / 2,
                         width=width,
                         height=height),
                     brush=self._styleSheet.backgroundBrush)
-        elif bkStyle is maprenderer.TextBackgroundStyle.Filled:
+        elif bkStyle is cartographer.TextBackgroundStyle.Filled:
             self._graphics.drawRectangle(
-                rect=maprenderer.RectangleF(
+                rect=cartographer.RectangleF(
                     x=position.x() - width / 2,
                     y=position.y() - height / 2,
                     width=width,
                     height=height),
                 brush=bkBrush)
-        elif bkStyle is maprenderer.TextBackgroundStyle.Outline or \
-            bkStyle is maprenderer.TextBackgroundStyle.Shadow:
+        elif bkStyle is cartographer.TextBackgroundStyle.Outline or \
+            bkStyle is cartographer.TextBackgroundStyle.Shadow:
 
             # Invert the current scaling transforms
             sx = 1.0 / self._styleSheet.hexContentScale
@@ -1591,7 +1591,7 @@ class RenderContext(object):
             outlineSize = 2
             outlineSkip = 1
 
-            outlineStart = -outlineSize if bkStyle is maprenderer.TextBackgroundStyle.Outline else 0
+            outlineStart = -outlineSize if bkStyle is cartographer.TextBackgroundStyle.Outline else 0
 
             dx = outlineStart
             while dx <= outlineSize:
@@ -1603,7 +1603,7 @@ class RenderContext(object):
                         brush=self._styleSheet.backgroundBrush,
                         x=position.x() + sx * dx,
                         y=position.y() + sy * dy,
-                        format=maprenderer.TextAlignment.Centered)
+                        format=cartographer.TextAlignment.Centered)
                     dy += outlineSkip
                 dx += outlineSkip
 
@@ -1613,12 +1613,12 @@ class RenderContext(object):
             brush=textBrush,
             x=position.x(),
             y=position.y(),
-            format=maprenderer.TextAlignment.Centered)
+            format=cartographer.TextAlignment.Centered)
 
     def _drawStars(self, world: traveller.World) -> None:
         with self._graphics.save():
             self._graphics.setSmoothingMode(
-                maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
             center = self._hexToCenter(world.hex())
 
             self._graphics.translateTransform(dx=center.x(), dy=center.y())
@@ -1627,7 +1627,7 @@ class RenderContext(object):
                 scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
 
             pen = self._graphics.createPen()
-            pen.setStyle(maprenderer.LineStyle.Solid)
+            pen.setStyle(cartographer.LineStyle.Solid)
             # The traveller map code doesn't initialise the width and it wasn't
             # immediately obvious what the default with. Based on a visual
             # comparison it looks like it's defaulting to always have a width of
@@ -1641,7 +1641,7 @@ class RenderContext(object):
                 offsetScale = 0.3
                 radius *= 0.15
                 self._graphics.drawEllipse(
-                    rect=maprenderer.RectangleF(
+                    rect=cartographer.RectangleF(
                         x=offset.x() * offsetScale - radius,
                         y=offset.y() * offsetScale - radius,
                         width=radius * 2,
@@ -1656,7 +1656,7 @@ class RenderContext(object):
             ) -> None:
         width = self._styleSheet.gasGiantRadius * 2
 
-        rect = maprenderer.RectangleF(
+        rect = cartographer.RectangleF(
             x=x - self._styleSheet.gasGiantRadius,
             y=y - self._styleSheet.gasGiantRadius,
             width=width,
@@ -1682,7 +1682,7 @@ class RenderContext(object):
 
     def _drawOverlay(
             self,
-            element: maprenderer.StyleSheet.StyleElement,
+            element: cartographer.StyleSheet.StyleElement,
             radius: float
             ) -> None:
         # Prevent "Out of memory" exception when rendering to GDI+.
@@ -1690,7 +1690,7 @@ class RenderContext(object):
             return
 
         self._graphics.drawEllipse(
-            rect=maprenderer.RectangleF(
+            rect=cartographer.RectangleF(
                 x=-radius,
                 y=-radius,
                 width=radius * 2,
@@ -1705,7 +1705,7 @@ class RenderContext(object):
             layer: MicroBorderLayer
             ) -> None:
         self._graphics.setSmoothingMode(
-            maprenderer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         brush = pen = None
         if layer is RenderContext.MicroBorderLayer.Background:
@@ -1714,12 +1714,12 @@ class RenderContext(object):
             if self._styleSheet.shadeMicroBorders:
                 pen = self._graphics.createPen(
                     width=self._styleSheet.microBorders.linePen.width() * 2.5,
-                    style=maprenderer.LineStyle.Solid)
+                    style=cartographer.LineStyle.Solid)
         else:
             pen = self._graphics.createPen(
                 width=self._styleSheet.microBorders.linePen.width())
 
-        useCurvedBorders = self._styleSheet.microBorderStyle is maprenderer.MicroBorderStyle.Curve
+        useCurvedBorders = self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve
         drawRegions = drawBorders = False
         if layer is RenderContext.MicroBorderLayer.Background:
             drawRegions = True
@@ -1744,7 +1744,7 @@ class RenderContext(object):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
-            regionOutlines: typing.List[maprenderer.SectorPath] = []
+            regionOutlines: typing.List[cartographer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
                     outlineBounds = \
@@ -1755,7 +1755,7 @@ class RenderContext(object):
                         regionOutlines.append(outline)
 
             sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
-            borderOutlines: typing.List[maprenderer.SectorPath] = []
+            borderOutlines: typing.List[cartographer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:
                     outlineBounds = \
@@ -1793,7 +1793,7 @@ class RenderContext(object):
 
                     for outline in borderOutlines:
                         color = self._calculateBorderColor(outline)
-                        brush.setColor(maprenderer.makeAlphaColor(
+                        brush.setColor(cartographer.makeAlphaColor(
                             alpha=RenderContext._MicroBorderFillAlpha,
                             color=color))
                         self._drawMicroBorder(
@@ -1812,7 +1812,7 @@ class RenderContext(object):
 
                 for outline in regionOutlines:
                     color = self._calculateBorderColor(outline)
-                    brush.setColor(maprenderer.makeAlphaColor(
+                    brush.setColor(cartographer.makeAlphaColor(
                         alpha=RenderContext._MicroBorderFillAlpha,
                         color=color))
 
@@ -1827,23 +1827,23 @@ class RenderContext(object):
                         color = self._calculateBorderColor(outline)
 
                         if useBrush:
-                            brush.setColor(maprenderer.makeAlphaColor(
+                            brush.setColor(cartographer.makeAlphaColor(
                                 alpha=RenderContext._MicroBorderFillAlpha,
                                 color=color))
 
                         if pen:
                             if layer is RenderContext.MicroBorderLayer.Background:
-                                pen.setColor(maprenderer.makeAlphaColor(
+                                pen.setColor(cartographer.makeAlphaColor(
                                     alpha=RenderContext._MicroBorderShadeAlpha,
                                     color=color))
                             else:
                                 pen.setColor(color)
 
                                 style = self._styleSheet.microBorders.linePen.style()
-                                if style is maprenderer.LineStyle.Solid:
+                                if style is cartographer.LineStyle.Solid:
                                     style = outline.style()
                                     if not style:
-                                        style = maprenderer.LineStyle.Solid
+                                        style = cartographer.LineStyle.Solid
                                 pen.setStyle(style)
 
                         self._drawMicroBorder(
@@ -1851,7 +1851,7 @@ class RenderContext(object):
                             brush=brush if useBrush else None,
                             pen=pen)
 
-    def _calculateBorderColor(self, outline: maprenderer.SectorPath) -> str:
+    def _calculateBorderColor(self, outline: cartographer.SectorPath) -> str:
         color = outline.color()
         if not color:
             color = self._styleSheet.microRoutes.linePen.color()
@@ -1864,11 +1864,11 @@ class RenderContext(object):
 
     def _drawMicroBorder(
             self,
-            outline: maprenderer.SectorPath,
-            brush: typing.Optional[maprenderer.AbstractBrush] = None,
-            pen: typing.Optional[maprenderer.AbstractPen] = None
+            outline: cartographer.SectorPath,
+            brush: typing.Optional[cartographer.AbstractBrush] = None,
+            pen: typing.Optional[cartographer.AbstractPen] = None
             ) -> None:
-        if self._styleSheet.microBorderStyle is maprenderer.MicroBorderStyle.Curve:
+        if self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve:
             self._graphics.drawCurve(
                 spline=outline.spline(),
                 pen=pen,
@@ -1888,8 +1888,8 @@ class RenderContext(object):
 
     def _drawVectorObjectOutline(
             self,
-            vectorObject: maprenderer.VectorObject,
-            pen: maprenderer.AbstractPen
+            vectorObject: cartographer.VectorObject,
+            pen: cartographer.AbstractPen
             ) -> None:
         if vectorObject.path and vectorObject.bounds.intersectsWith(self._absoluteViewRect):
             with self._graphics.save():
@@ -1899,10 +1899,10 @@ class RenderContext(object):
 
     def _drawVectorObjectName(
             self,
-            vectorObject: maprenderer.VectorObject,
-            font: maprenderer.AbstractFont,
-            textBrush: maprenderer.AbstractBrush,
-            labelStyle: maprenderer.LabelStyle
+            vectorObject: cartographer.VectorObject,
+            font: cartographer.AbstractFont,
+            textBrush: cartographer.AbstractBrush,
+            labelStyle: cartographer.LabelStyle
             ) -> None:
         if vectorObject.name and vectorObject.bounds.intersectsWith(self._absoluteViewRect):
             text = vectorObject.name
@@ -1932,9 +1932,9 @@ class RenderContext(object):
         '\u2736': '\xAC'} # U+2736 (BLACK SIX POINTED STAR)
     def _drawWorldGlyph(
             self,
-            glyph: maprenderer.Glyph,
-            brush: maprenderer.AbstractBrush,
-            position: maprenderer.PointF
+            glyph: cartographer.Glyph,
+            brush: cartographer.AbstractBrush,
+            position: cartographer.PointF
             ) -> None:
         font = self._styleSheet.glyphFont
         s = glyph.characters
@@ -1956,13 +1956,13 @@ class RenderContext(object):
             brush=brush,
             x=position.x(),
             y=position.y(),
-            format=maprenderer.TextAlignment.Centered)
+            format=cartographer.TextAlignment.Centered)
 
     def _drawOverlayGlyph(
             self,
             glyph: str,
-            font: maprenderer.AbstractFont,
-            brush: maprenderer.AbstractBrush,
+            font: cartographer.AbstractFont,
+            brush: cartographer.AbstractBrush,
             position: travellermap.HexPosition
             ) -> None:
         centerX, centerY = position.absoluteCenter()
@@ -1976,15 +1976,15 @@ class RenderContext(object):
                 brush=brush,
                 x=centerX * travellermap.ParsecScaleX,
                 y=centerY * travellermap.ParsecScaleY,
-                format=maprenderer.TextAlignment.Centered)
+                format=cartographer.TextAlignment.Centered)
 
     def _drawLabel(
             self,
             text: str,
-            center: maprenderer.PointF,
-            font: maprenderer.AbstractFont,
-            brush: maprenderer.AbstractBrush,
-            labelStyle: maprenderer.LabelStyle
+            center: cartographer.PointF,
+            font: cartographer.AbstractFont,
+            brush: cartographer.AbstractBrush,
+            labelStyle: cartographer.LabelStyle
             ) -> None:
         with self._graphics.save():
             if labelStyle.uppercase:
@@ -2010,7 +2010,7 @@ class RenderContext(object):
 
             if labelStyle.rotation != 0:
                 self._graphics.setSmoothingMode(
-                    maprenderer.AbstractGraphics.SmoothingMode.AntiAlias)
+                    cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
             self._drawMultiLineString(
                 text=text,
@@ -2021,11 +2021,11 @@ class RenderContext(object):
     def _drawMultiLineString(
             self,
             text: str,
-            font: maprenderer.AbstractFont,
-            brush: maprenderer.AbstractBrush,
+            font: cartographer.AbstractFont,
+            brush: cartographer.AbstractBrush,
             x: float,
             y: float,
-            format: maprenderer.TextAlignment = maprenderer.TextAlignment.Centered
+            format: cartographer.TextAlignment = cartographer.TextAlignment.Centered
             ) -> None:
         if not text:
             return
@@ -2051,22 +2051,22 @@ class RenderContext(object):
         y += lineSpacing / 2
 
         widthFactor = 0
-        if format == maprenderer.TextAlignment.MiddleLeft or \
-            format == maprenderer.TextAlignment.Centered or \
-            format == maprenderer.TextAlignment.MiddleRight:
+        if format == cartographer.TextAlignment.MiddleLeft or \
+            format == cartographer.TextAlignment.Centered or \
+            format == cartographer.TextAlignment.MiddleRight:
             y -= totalHeight / 2
-        elif format == maprenderer.TextAlignment.BottomLeft or \
-            format == maprenderer.TextAlignment.BottomCenter or \
-            format == maprenderer.TextAlignment.BottomRight:
+        elif format == cartographer.TextAlignment.BottomLeft or \
+            format == cartographer.TextAlignment.BottomCenter or \
+            format == cartographer.TextAlignment.BottomRight:
             y -= totalHeight
 
-        if format == maprenderer.TextAlignment.TopCenter or \
-            format == maprenderer.TextAlignment.Centered or \
-            format == maprenderer.TextAlignment.BottomCenter:
+        if format == cartographer.TextAlignment.TopCenter or \
+            format == cartographer.TextAlignment.Centered or \
+            format == cartographer.TextAlignment.BottomCenter:
                 widthFactor = -0.5
-        elif format == maprenderer.TextAlignment.TopRight or \
-            format == maprenderer.TextAlignment.MiddleRight or \
-            format == maprenderer.TextAlignment.BottomRight:
+        elif format == cartographer.TextAlignment.TopRight or \
+            format == cartographer.TextAlignment.MiddleRight or \
+            format == cartographer.TextAlignment.BottomRight:
                 widthFactor = -1
 
         for line, width in zip(lines, widths):
@@ -2076,13 +2076,13 @@ class RenderContext(object):
                 brush=brush,
                 x=x + widthFactor * width + width / 2,
                 y=y,
-                format=maprenderer.TextAlignment.Centered)
+                format=cartographer.TextAlignment.Centered)
             y += lineSpacing
 
     def _zoneStyle(
             self,
-            worldInfo: maprenderer.WorldInfo
-            ) -> typing.Optional[maprenderer.StyleSheet.StyleElement]:
+            worldInfo: cartographer.WorldInfo
+            ) -> typing.Optional[cartographer.StyleSheet.StyleElement]:
         if worldInfo.isAmberZone:
             return self._styleSheet.amberZone
         if worldInfo.isRedZone:
@@ -2093,8 +2093,8 @@ class RenderContext(object):
 
     def _worldStyle(
             self,
-            worldInfo: maprenderer.WorldInfo
-            ) -> maprenderer.StyleSheet.StyleElement:
+            worldInfo: cartographer.WorldInfo
+            ) -> cartographer.StyleSheet.StyleElement:
         if self._styleSheet.showWorldDetailColors:
             if worldInfo.isAgricultural and worldInfo.isRich:
                 return self._styleSheet.worldRichAgricultural
@@ -2173,13 +2173,13 @@ class RenderContext(object):
         math.sin(math.pi * 1 / 3), math.sin(math.pi * 2 / 3), math.sin(math.pi * 3 / 3),
         math.sin(math.pi * 4 / 3), math.sin(math.pi * 5 / 3), math.sin(math.pi * 6 / 3)]
     @staticmethod
-    def _starOffset(index: int) -> maprenderer.PointF:
+    def _starOffset(index: int) -> cartographer.PointF:
         if index >= len(RenderContext._StarOffsetX):
             index = (index % (len(RenderContext._StarOffsetX) - 1)) + 1
-        return maprenderer.PointF(RenderContext._StarOffsetX[index], RenderContext._StarOffsetY[index])
+        return cartographer.PointF(RenderContext._StarOffsetX[index], RenderContext._StarOffsetY[index])
 
     @staticmethod
-    def _offsetRouteSegment(startPoint: maprenderer.PointF, endPoint: maprenderer.PointF, offset: float) -> None:
+    def _offsetRouteSegment(startPoint: cartographer.PointF, endPoint: cartographer.PointF, offset: float) -> None:
         dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX
         dy = (endPoint.y() - startPoint.y()) * travellermap.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
@@ -2193,6 +2193,6 @@ class RenderContext(object):
         endPoint.setY(endPoint.y() - ddy)
 
     @staticmethod
-    def _hexToCenter(hex: travellermap.HexPosition) -> maprenderer.PointF:
+    def _hexToCenter(hex: travellermap.HexPosition) -> cartographer.PointF:
         centerX, centerY = hex.absoluteCenter()
-        return maprenderer.PointF(x=centerX, y=centerY)
+        return cartographer.PointF(x=centerX, y=centerY)

@@ -1,6 +1,6 @@
 import base64
 import logging
-import maprenderer
+import cartographer
 import travellermap
 import typing
 import xml.etree.ElementTree
@@ -15,9 +15,9 @@ class VectorObject(object):
             scaleY: float,
             nameX: float,
             nameY: float,
-            bounds: maprenderer.RectangleF,
-            path: typing.Optional[maprenderer.AbstractPath],
-            mapOptions: maprenderer.MapOptions = 0
+            bounds: cartographer.RectangleF,
+            path: typing.Optional[cartographer.AbstractPath],
+            mapOptions: cartographer.MapOptions = 0
             ) -> None:
         super().__init__()
 
@@ -31,7 +31,7 @@ class VectorObject(object):
         self.mapOptions = mapOptions
         self.path = path
 
-        self._bounds = maprenderer.RectangleF(bounds)
+        self._bounds = cartographer.RectangleF(bounds)
         self._bounds.setX(self._bounds.x() - self.originX)
         self._bounds.setY(self._bounds.y() - self.originY)
         self._bounds.setX(self._bounds.x() * self.scaleX)
@@ -52,12 +52,12 @@ class VectorObject(object):
             self._namePosition.y() + (self._bounds.height() * (self.nameY / bounds.height())))
 
     @property
-    def bounds(self) -> maprenderer.RectangleF:
-        return maprenderer.RectangleF(self._bounds)
+    def bounds(self) -> cartographer.RectangleF:
+        return cartographer.RectangleF(self._bounds)
 
     @property
-    def namePosition(self) -> maprenderer.PointF:
-        return maprenderer.PointF(self._namePosition)
+    def namePosition(self) -> cartographer.PointF:
+        return cartographer.PointF(self._namePosition)
 
 # NOTE: My implementation of vector objects is slightly different from the
 # Traveller Map one. The vector format allows specifying the type of each point.
@@ -106,7 +106,7 @@ class VectorObjectCache(object):
 
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics
+            graphics: cartographer.AbstractGraphics
             ) -> None:
         self._graphics = graphics
         self.borders = self._loadFiles(VectorObjectCache._BorderFiles)
@@ -139,7 +139,7 @@ class VectorObjectCache(object):
         element = rootElement.find('./MapOptions')
         if element is not None:
             for option in element.text.split():
-                mapOptions |= maprenderer.MapOptions[option]
+                mapOptions |= cartographer.MapOptions[option]
 
         originX = 0
         element = rootElement.find('./OriginX')
@@ -187,7 +187,7 @@ class VectorObjectCache(object):
         if xElement is None or yElement is None or widthElement is None or heightElement is None:
             raise RuntimeError('Invalid bounds')
 
-        bounds = maprenderer.RectangleF(
+        bounds = cartographer.RectangleF(
             x=float(xElement.text),
             y=float(yElement.text),
             width=float(widthElement.text),
@@ -205,7 +205,7 @@ class VectorObjectCache(object):
             if element is not None:
                 y = float(element.text)
 
-            points.append(maprenderer.PointF(x=x, y=y))
+            points.append(cartographer.PointF(x=x, y=y))
 
         element = rootElement.find('./PathDataTypes')
         types = None

@@ -1,4 +1,4 @@
-import maprenderer
+import cartographer
 import math
 import traveller
 import travellermap
@@ -7,35 +7,35 @@ import typing
 class SectorPath(object):
     def __init__(
             self,
-            path: maprenderer.AbstractPath,
-            spline: maprenderer.AbstractSpline,
+            path: cartographer.AbstractPath,
+            spline: cartographer.AbstractSpline,
             color: typing.Optional[str],
-            style: typing.Optional[maprenderer.LineStyle]
+            style: typing.Optional[cartographer.LineStyle]
             ) -> None:
         self._path = path
         self._spline = spline
         self._color = color
         self._style = style
 
-    def path(self) -> maprenderer.AbstractPath:
+    def path(self) -> cartographer.AbstractPath:
         return self._path
 
-    def spline(self) -> maprenderer.AbstractSpline:
+    def spline(self) -> cartographer.AbstractSpline:
         return self._spline
 
     def color(self) -> typing.Optional[str]:
         return self._color
 
-    def style(self) -> typing.Optional[maprenderer.LineStyle]:
+    def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
 
 class SectorLines(object):
     def __init__(
             self,
-            points: typing.Iterable[maprenderer.AbstractPointList],
+            points: typing.Iterable[cartographer.AbstractPointList],
             color: typing.Optional[str],
             width: typing.Optional[float],
-            style: typing.Optional[maprenderer.LineStyle],
+            style: typing.Optional[cartographer.LineStyle],
             type: typing.Optional[str],
             allegiance: typing.Optional[str]
             ) -> None:
@@ -46,7 +46,7 @@ class SectorLines(object):
         self._type = type
         self._allegiance = allegiance
 
-    def points(self) -> maprenderer.AbstractPointList:
+    def points(self) -> cartographer.AbstractPointList:
         return self._points
 
     def color(self) -> typing.Optional[str]:
@@ -55,7 +55,7 @@ class SectorLines(object):
     def width(self) -> typing.Optional[float]:
         return self._width
 
-    def style(self) -> typing.Optional[maprenderer.LineStyle]:
+    def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
 
     def type(self) -> typing.Optional[str]:
@@ -102,14 +102,14 @@ class SectorCache(object):
 
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics,
-            styleCache: maprenderer.StyleCache
+            graphics: cartographer.AbstractGraphics,
+            styleCache: cartographer.StyleCache
             ) -> None:
         self._graphics = graphics
         self._styleCache = styleCache
         self._worldsCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
-            maprenderer.AbstractPointList
+            cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
@@ -125,14 +125,14 @@ class SectorCache(object):
         ] = {}
         self._clipCache: typing.Mapping[
             typing.Tuple[int, int], # Sector x/y
-            maprenderer.AbstractPath
+            cartographer.AbstractPath
         ] = {}
 
     def isotropicWorldPoints(
             self,
             x: int,
             y: int
-            ) -> typing.Optional[maprenderer.AbstractPointList]:
+            ) -> typing.Optional[cartographer.AbstractPointList]:
         key = (x, y)
         worlds = self._worldsCache.get(key)
         if worlds is not None:
@@ -148,7 +148,7 @@ class SectorCache(object):
         for world in sector.worlds():
             hex = world.hex()
             centerX, centerY = hex.absoluteCenter()
-            points.append(maprenderer.PointF(
+            points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
                 x=centerX * travellermap.ParsecScaleX,
                 y=centerY * travellermap.ParsecScaleY))
@@ -221,10 +221,10 @@ class SectorCache(object):
             typing.Tuple[
                 typing.Optional[str], # Color
                 typing.Optional[float], # Width
-                typing.Optional[maprenderer.LineStyle], # Line style
+                typing.Optional[cartographer.LineStyle], # Line style
                 typing.Optional[str], # Type
                 typing.Optional[str]], # Allegiance
-            typing.List[maprenderer.PointF]] = {}
+            typing.List[cartographer.PointF]] = {}
         for route in sector.routes():
             # Compute source/target sectors (may be offset)
             startPoint = route.startHex()
@@ -239,10 +239,10 @@ class SectorCache(object):
                 (startPoint, endPoint) = (endPoint, startPoint)
 
             centerX, centerY = startPoint.absoluteCenter()
-            startPoint = maprenderer.PointF(x=centerX, y=centerY)
+            startPoint = cartographer.PointF(x=centerX, y=centerY)
 
             centerX, centerY = endPoint.absoluteCenter()
-            endPoint = maprenderer.PointF(x=centerX, y=centerY)
+            endPoint = cartographer.PointF(x=centerX, y=centerY)
 
             # Shorten line to leave room for world glyph
             SectorCache._offsetRouteSegment(
@@ -276,7 +276,7 @@ class SectorCache(object):
             self,
             sectorX: int,
             sectorY: int
-            ) -> maprenderer.AbstractPath:
+            ) -> cartographer.AbstractPath:
         key = (sectorX, sectorY)
         clipPath = self._clipCache.get(key)
         if clipPath:
@@ -292,7 +292,7 @@ class SectorCache(object):
         for x in range(0, travellermap.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._TopClipOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(cartographer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 
@@ -304,7 +304,7 @@ class SectorCache(object):
                 count -= 1
             for i in range(count):
                 offsetX, offsetY = SectorCache._RightClipOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(cartographer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=(originY + y) + offsetY))
 
@@ -313,7 +313,7 @@ class SectorCache(object):
         for x in range(travellermap.SectorWidth - 1, -1, -2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._BottomClipOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(cartographer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=(originY + y) + offsetY))
 
@@ -325,7 +325,7 @@ class SectorCache(object):
                 count -= 1
             for i in range(count):
                 offsetX, offsetY = SectorCache._LeftClipOffsets[i]
-                points.append(maprenderer.PointF(
+                points.append(cartographer.PointF(
                     x=((originX + x) - 0.5) + offsetX,
                     y=((originY + y) - 0.5) + offsetY))
 
@@ -342,11 +342,11 @@ class SectorCache(object):
 
         if isinstance(source, traveller.Border):
             if source.style() is traveller.Border.Style.Solid:
-                style = maprenderer.LineStyle.Solid
+                style = cartographer.LineStyle.Solid
             elif source.style() is traveller.Border.Style.Dashed:
-                style = maprenderer.LineStyle.Dash
+                style = cartographer.LineStyle.Dash
             elif source.style() is traveller.Border.Style.Dotted:
-                style = maprenderer.LineStyle.Dot
+                style = cartographer.LineStyle.Dot
 
             if not color or not style:
                 defaultColor, defaultStyle = self._styleCache.borderStyle(source.allegiance())
@@ -358,7 +358,7 @@ class SectorCache(object):
         outline = source.absoluteOutline()
         drawPath = []
         for x, y in outline:
-            drawPath.append(maprenderer.PointF(x=x, y=y))
+            drawPath.append(cartographer.PointF(x=x, y=y))
 
         path = self._graphics.createPath(
             points=drawPath,
@@ -372,8 +372,8 @@ class SectorCache(object):
 
     @staticmethod
     def _offsetRouteSegment(
-            startPoint: maprenderer.PointF,
-            endPoint: maprenderer.PointF,
+            startPoint: cartographer.PointF,
+            endPoint: cartographer.PointF,
             offset: float
             ) -> None:
         dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX

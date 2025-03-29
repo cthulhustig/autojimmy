@@ -1,4 +1,4 @@
-import maprenderer
+import cartographer
 import re
 import travellermap
 import typing
@@ -10,9 +10,9 @@ class StyleCache(object):
     _DefaultStylePath = 'res/styles/otu.css'
 
     _StyleMap = {
-        'solid': maprenderer.LineStyle.Solid,
-        'dashed': maprenderer.LineStyle.Dash,
-        'dotted': maprenderer.LineStyle.Dot}
+        'solid': cartographer.LineStyle.Solid,
+        'dashed': cartographer.LineStyle.Dash,
+        'dotted': cartographer.LineStyle.Dot}
 
     def __init__(self):
         self._borderStyles = {}
@@ -45,11 +45,11 @@ class StyleCache(object):
 
     def borderStyle(self, key: str) -> typing.Tuple[
             typing.Optional[str], # Colour
-            typing.Optional[maprenderer.LineStyle]]:
+            typing.Optional[cartographer.LineStyle]]:
         return self._borderStyles.get(key, (None, None))
 
     def routeStyle(self, key: str) -> typing.Tuple[
             typing.Optional[str], # Colour
-            typing.Optional[maprenderer.LineStyle],
+            typing.Optional[cartographer.LineStyle],
             typing.Optional[float]]: # Width
         return self._routeStyles.get(key, (None, None, None))

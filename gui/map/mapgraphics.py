@@ -1,17 +1,17 @@
 import common
 import gui
 import math
-import maprenderer
+import cartographer
 import typing
 from PyQt5 import QtCore, QtGui
 
-class MapPointList(maprenderer.AbstractPath):
+class MapPointList(cartographer.AbstractPath):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, other: 'MapPath') -> None: ...
     @typing.overload
-    def __init__(self, points: typing.Sequence[maprenderer.PointF]) -> None: ...
+    def __init__(self, points: typing.Sequence[cartographer.PointF]) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if len(args) == 1:
@@ -31,13 +31,13 @@ class MapPointList(maprenderer.AbstractPath):
             self._points = list(kwargs['points'])
 
         # These are created on demand
-        self._bounds: typing.Optional[maprenderer.RectangleF] = None
+        self._bounds: typing.Optional[cartographer.RectangleF] = None
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
-    def points(self) -> typing.Sequence[maprenderer.PointF]:
+    def points(self) -> typing.Sequence[cartographer.PointF]:
         return list(self._points)
 
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> cartographer.RectangleF:
         if self._bounds is None:
             minX = maxX = minY = maxY = None
             for point in self._points:
@@ -49,13 +49,13 @@ class MapPointList(maprenderer.AbstractPath):
                     minY = point.y()
                 if maxY is None or point.y() > maxY:
                     maxY = point.y()
-            self._bounds = maprenderer.RectangleF(
+            self._bounds = cartographer.RectangleF(
                 x=minX,
                 y=minY,
                 width=maxX - minX,
                 height=maxY - minY)
 
-        return maprenderer.RectangleF(self._bounds)
+        return cartographer.RectangleF(self._bounds)
 
     def translate(self, dx: float, dy: float) -> None:
         for point in self._points:
@@ -78,7 +78,7 @@ class MapPointList(maprenderer.AbstractPath):
                 [QtCore.QPointF(p.x(), p.y()) for p in self._points])
         return self._qtPolygon
 
-class MapPath(maprenderer.AbstractPath):
+class MapPath(cartographer.AbstractPath):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
@@ -86,12 +86,12 @@ class MapPath(maprenderer.AbstractPath):
     @typing.overload
     def __init__(
         self,
-        points: typing.Sequence[maprenderer.PointF],
+        points: typing.Sequence[cartographer.PointF],
         closed: bool) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self._points: typing.List[maprenderer.PointF] = []
+            self._points: typing.List[cartographer.PointF] = []
             self._closed = False
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
@@ -106,16 +106,16 @@ class MapPath(maprenderer.AbstractPath):
             self._closed = bool(args[1] if len(args) > 1 else kwargs['closed'])
 
         # These are created on demand
-        self._bounds: typing.Optional[maprenderer.RectangleF] = None
+        self._bounds: typing.Optional[cartographer.RectangleF] = None
         self._qtPolygon: typing.Optional[QtGui.QPolygonF] = None
 
-    def points(self) -> typing.Sequence[maprenderer.PointF]:
+    def points(self) -> typing.Sequence[cartographer.PointF]:
         return list(self._points)
 
     def closed(self) -> bool:
         return self._closed
 
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> cartographer.RectangleF:
         if self._bounds is None:
             minX = maxX = minY = maxY = None
             for point in self._points:
@@ -127,13 +127,13 @@ class MapPath(maprenderer.AbstractPath):
                     minY = point.y()
                 if maxY is None or point.y() > maxY:
                     maxY = point.y()
-            self._bounds = maprenderer.RectangleF(
+            self._bounds = cartographer.RectangleF(
                 x=minX,
                 y=minY,
                 width=maxX - minX,
                 height=maxY - minY)
 
-        return maprenderer.RectangleF(self._bounds)
+        return cartographer.RectangleF(self._bounds)
 
     def translate(self, dx: float, dy: float) -> None:
         for point in self._points:
@@ -165,13 +165,13 @@ class MapSpline(object):
     @typing.overload
     def __init__(
         self,
-        points: typing.Sequence[maprenderer.PointF],
+        points: typing.Sequence[cartographer.PointF],
         tension: float,
         closed: bool) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self._points: typing.List[maprenderer.PointF] = []
+            self._points: typing.List[cartographer.PointF] = []
             self._tension = 0
             self._closed = False
         elif len(args) + len(kwargs) == 1:
@@ -189,10 +189,10 @@ class MapSpline(object):
             self._closed = bool(args[2] if len(args) > 2 else kwargs['closed'])
 
         # These are created on demand
-        self._bounds: typing.Optional[maprenderer.RectangleF] = None
+        self._bounds: typing.Optional[cartographer.RectangleF] = None
         self._qtPainterPath: typing.Optional[QtGui.QPainterPath] = None
 
-    def points(self) -> typing.Sequence[maprenderer.PointF]:
+    def points(self) -> typing.Sequence[cartographer.PointF]:
         return list(self._points)
 
     def tension(self) -> float:
@@ -201,19 +201,19 @@ class MapSpline(object):
     def closed(self) -> bool:
         return self._closed
 
-    def bounds(self) -> maprenderer.RectangleF:
+    def bounds(self) -> cartographer.RectangleF:
         if self._bounds is None:
             # Calculating the bounds of a spline is way to hard for my feeble brain
             # so just get Qt to do it
             qtPainterPath = self.qtPainterPath()
             qtRect = qtPainterPath.boundingRect()
-            self._bounds = maprenderer.RectangleF(
+            self._bounds = cartographer.RectangleF(
                 x=qtRect.left(),
                 y=qtRect.top(),
                 width=qtRect.width(),
                 height=qtRect.height())
 
-        return maprenderer.RectangleF(self._bounds)
+        return cartographer.RectangleF(self._bounds)
 
     def translate(self, dx: float, dy: float) -> None:
         for point in self._points:
@@ -294,11 +294,11 @@ class MapSpline(object):
 
     @staticmethod
     def _calcControlPoints(
-            p0: maprenderer.PointF,
-            p1: maprenderer.PointF,
-            p2: maprenderer.PointF,
+            p0: cartographer.PointF,
+            p1: cartographer.PointF,
+            p2: cartographer.PointF,
             tension: float = 0.25
-            ) -> typing.Tuple[maprenderer.PointF, maprenderer.PointF]:
+            ) -> typing.Tuple[cartographer.PointF, cartographer.PointF]:
         d01 = math.sqrt((p1.x() - p0.x()) * (p1.x() - p0.x()) + (p1.y() - p0.y()) * (p1.y() - p0.y()))
         d12 = math.sqrt((p2.x() - p1.x()) * (p2.x() - p1.x()) + (p2.y() - p1.y()) * (p2.y() - p1.y()))
 
@@ -310,10 +310,10 @@ class MapSpline(object):
         c2x = p1.x() + fb * (p2.x() - p0.x())
         c2y = p1.y() + fb * (p2.y() - p0.y())
 
-        return (maprenderer.PointF(c1x, c1y),
-                maprenderer.PointF(c2x, c2y))
+        return (cartographer.PointF(c1x, c1y),
+                cartographer.PointF(c2x, c2y))
 
-class MapMatrix(maprenderer.AbstractMatrix):
+class MapMatrix(cartographer.AbstractMatrix):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
@@ -365,7 +365,7 @@ class MapMatrix(maprenderer.AbstractMatrix):
     def invert(self) -> None:
         self._qtMatrix, _ = self._qtMatrix.inverted()
 
-    def rotatePrepend(self, degrees: float, center: maprenderer.PointF) -> None:
+    def rotatePrepend(self, degrees: float, center: cartographer.PointF) -> None:
         if degrees == 0.0:
             return # Nothing to do
         self.translatePrepend(dx=-center.x(), dy=-center.y())
@@ -394,14 +394,14 @@ class MapMatrix(maprenderer.AbstractMatrix):
     def prepend(self, matrix: 'MapMatrix') -> None:
         self._qtMatrix = matrix.qtTransform() * self._qtMatrix
 
-    def transform(self, point: maprenderer.PointF) -> maprenderer.PointF:
+    def transform(self, point: cartographer.PointF) -> cartographer.PointF:
         qtPoint = self._qtMatrix.map(QtCore.QPointF(point.x(), point.y()))
-        return maprenderer.PointF(qtPoint.x(), qtPoint.y())
+        return cartographer.PointF(qtPoint.x(), qtPoint.y())
 
     def qtTransform(self) -> QtGui.QTransform:
         return self._qtMatrix
 
-class MapBrush(maprenderer.AbstractBrush):
+class MapBrush(cartographer.AbstractBrush):
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
@@ -449,18 +449,18 @@ class MapBrush(maprenderer.AbstractBrush):
             self._qtBrush = QtGui.QBrush(QtGui.QColor(self._color))
         return self._qtBrush
 
-class MapPen(maprenderer.AbstractPen):
+class MapPen(cartographer.AbstractPen):
     _LineStyleMap = {
-        maprenderer.LineStyle.Solid: (QtCore.Qt.PenStyle.SolidLine, None),
-        maprenderer.LineStyle.Dot: (QtCore.Qt.PenStyle.CustomDashLine, [1, 1]),
-        maprenderer.LineStyle.Dash: (QtCore.Qt.PenStyle.CustomDashLine, [3, 1]),
-        maprenderer.LineStyle.DashDot: (QtCore.Qt.PenStyle.CustomDashLine,  [3, 1, 1, 1]),
-        maprenderer.LineStyle.DashDotDot: (QtCore.Qt.PenStyle.CustomDashLine, [3, 1, 1, 1, 1, 1])}
+        cartographer.LineStyle.Solid: (QtCore.Qt.PenStyle.SolidLine, None),
+        cartographer.LineStyle.Dot: (QtCore.Qt.PenStyle.CustomDashLine, [1, 1]),
+        cartographer.LineStyle.Dash: (QtCore.Qt.PenStyle.CustomDashLine, [3, 1]),
+        cartographer.LineStyle.DashDot: (QtCore.Qt.PenStyle.CustomDashLine,  [3, 1, 1, 1]),
+        cartographer.LineStyle.DashDotDot: (QtCore.Qt.PenStyle.CustomDashLine, [3, 1, 1, 1, 1, 1])}
 
     _PenTipMap = {
-        maprenderer.PenTip.Flat: QtCore.Qt.PenCapStyle.FlatCap,
-        maprenderer.PenTip.Square: QtCore.Qt.PenCapStyle.SquareCap,
-        maprenderer.PenTip.Round: QtCore.Qt.PenCapStyle.RoundCap}
+        cartographer.PenTip.Flat: QtCore.Qt.PenCapStyle.FlatCap,
+        cartographer.PenTip.Square: QtCore.Qt.PenCapStyle.SquareCap,
+        cartographer.PenTip.Round: QtCore.Qt.PenCapStyle.RoundCap}
 
     @typing.overload
     def __init__(self) -> None: ...
@@ -471,18 +471,18 @@ class MapPen(maprenderer.AbstractPen):
         self,
         color: str,
         width: float,
-        style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
+        style: cartographer.LineStyle = cartographer.LineStyle.Solid,
         pattern: typing.Optional[typing.Sequence[float]] = None,
-        tip: maprenderer.PenTip = maprenderer.PenTip.Flat
+        tip: cartographer.PenTip = cartographer.PenTip.Flat
         ) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
             self._color = ''
             self._width = 0
-            self._style = maprenderer.LineStyle.Solid
+            self._style = cartographer.LineStyle.Solid
             self._pattern = None
-            self._tip = maprenderer.PenTip.Flat
+            self._tip = cartographer.PenTip.Flat
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapPen):
@@ -517,19 +517,19 @@ class MapPen(maprenderer.AbstractPen):
         if self._qtPen:
             self._qtPen.setWidthF(self._width)
 
-    def style(self) -> maprenderer.LineStyle:
+    def style(self) -> cartographer.LineStyle:
         return self._style
 
     def setStyle(
             self,
-            style: maprenderer.LineStyle,
+            style: cartographer.LineStyle,
             pattern: typing.Optional[typing.List[float]] = None
             ) -> None:
         self._style = style
-        self._pattern = list(pattern) if self._style is maprenderer.LineStyle.Custom else None
+        self._pattern = list(pattern) if self._style is cartographer.LineStyle.Custom else None
 
         if self._qtPen:
-            if self._style is maprenderer.LineStyle.Custom:
+            if self._style is cartographer.LineStyle.Custom:
                 self._qtPen.setStyle(QtCore.Qt.PenStyle.CustomDashLine)
                 self._qtPen.setDashPattern(self._pattern)
             else:
@@ -545,15 +545,15 @@ class MapPen(maprenderer.AbstractPen):
             self,
             pattern: typing.Sequence[float]
             ) -> None:
-        self._style = maprenderer.LineStyle.Custom
+        self._style = cartographer.LineStyle.Custom
         self._pattern = list(pattern)
         if self._qtPen:
             self._qtPen.setDashPattern(pattern)
 
-    def tip(self) -> maprenderer.PenTip:
+    def tip(self) -> cartographer.PenTip:
         return self._tip
 
-    def setTip(self, tip: maprenderer.PenTip):
+    def setTip(self, tip: cartographer.PenTip):
         if tip == self._tip:
             return tip
         self._tip = tip
@@ -573,7 +573,7 @@ class MapPen(maprenderer.AbstractPen):
             self._qtPen.setWidthF(self._width)
             self._qtPen.setCapStyle(MapPen._PenTipMap[self._tip])
 
-            if self._style is maprenderer.LineStyle.Custom:
+            if self._style is cartographer.LineStyle.Custom:
                 self._qtPen.setStyle(QtCore.Qt.PenStyle.CustomDashLine)
                 self._qtPen.setDashPattern(self._pattern)
             else:
@@ -584,7 +584,7 @@ class MapPen(maprenderer.AbstractPen):
 
     def qtPen(self) -> QtGui.QPen:
         if not self._qtPen:
-            if self._style is maprenderer.LineStyle.Custom:
+            if self._style is cartographer.LineStyle.Custom:
                 qtStyle = QtCore.Qt.PenStyle.CustomDashLine
                 qtPattern = self._pattern
             else:
@@ -599,7 +599,7 @@ class MapPen(maprenderer.AbstractPen):
             self._qtPen.setCapStyle(MapPen._PenTipMap[self._tip])
         return self._qtPen
 
-class MapImage(maprenderer.AbstractImage):
+class MapImage(cartographer.AbstractImage):
     def __init__(self, data: bytes):
         self._qtImage = QtGui.QImage.fromData(data, None)
         if not self._qtImage:
@@ -613,7 +613,7 @@ class MapImage(maprenderer.AbstractImage):
     def qtImage(self) -> QtGui.QImage:
         return self._qtImage
 
-class MapFont(maprenderer.AbstractFont):
+class MapFont(cartographer.AbstractFont):
     # Qt doesn't seem to have great support for fonts with float
     # point sizes which the Traveller Map rendering expects.
     # Instead I have all fonts set to the same size and when
@@ -630,7 +630,7 @@ class MapFont(maprenderer.AbstractFont):
             self,
             family: str,
             emSize: float,
-            style: maprenderer.FontStyle
+            style: cartographer.FontStyle
             ) -> None:
         self._family = family
         self._emSize = emSize
@@ -640,13 +640,13 @@ class MapFont(maprenderer.AbstractFont):
         if not self._font:
             raise ValueError(f'Unknown font "{family}"')
         self._font.setPointSizeF(MapFont._TextPointSize)
-        if self._style & maprenderer.FontStyle.Bold:
+        if self._style & cartographer.FontStyle.Bold:
             self._font.setBold(True)
-        if self._style & maprenderer.FontStyle.Italic:
+        if self._style & cartographer.FontStyle.Italic:
             self._font.setItalic(True)
-        if self._style & maprenderer.FontStyle.Underline:
+        if self._style & cartographer.FontStyle.Underline:
             self._font.setUnderline(True)
-        if self._style & maprenderer.FontStyle.Strikeout:
+        if self._style & cartographer.FontStyle.Strikeout:
             self._font.setStrikeOut(True)
 
         self._fontMetrics = QtGui.QFontMetricsF(self._font)
@@ -660,7 +660,7 @@ class MapFont(maprenderer.AbstractFont):
     def emSize(self) -> float:
         return self._emSize
 
-    def style(self) -> maprenderer.FontStyle:
+    def style(self) -> cartographer.FontStyle:
         return self._style
 
     def pointSize(self) -> float:
@@ -681,7 +681,7 @@ class MapFont(maprenderer.AbstractFont):
     def qtFont(self) -> QtGui.QFont:
         return self._font
 
-class MapGraphics(maprenderer.AbstractGraphics):
+class MapGraphics(cartographer.AbstractGraphics):
     def __init__(self):
         super().__init__()
         self._painter = None
@@ -726,7 +726,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def createPointList(
             self,
-            points: typing.Sequence[maprenderer.PointF]
+            points: typing.Sequence[cartographer.PointF]
             ) -> MapPointList:
         return MapPointList(points=points)
     def copyPointList(self, other: MapPointList) -> MapPointList:
@@ -734,7 +734,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def createPath(
             self,
-            points: typing.Sequence[maprenderer.PointF],
+            points: typing.Sequence[cartographer.PointF],
             closed: bool
             ) -> MapPath:
         return MapPath(points=points, closed=closed)
@@ -743,7 +743,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def createSpline(
             self,
-            points: typing.Sequence[maprenderer.PointF],
+            points: typing.Sequence[cartographer.PointF],
             tension: float,
             closed: bool
             ) -> MapSpline:
@@ -775,9 +775,9 @@ class MapGraphics(maprenderer.AbstractGraphics):
             self,
             color: str = '',
             width: float = 1,
-            style: maprenderer.LineStyle = maprenderer.LineStyle.Solid,
+            style: cartographer.LineStyle = cartographer.LineStyle.Solid,
             pattern: typing.Optional[typing.Sequence[float]] = None,
-            tip: maprenderer.PenTip = maprenderer.PenTip.Flat
+            tip: cartographer.PenTip = cartographer.PenTip.Flat
             ) -> MapPen:
         return MapPen(color=color, width=width, style=style, pattern=pattern, tip=tip)
     def copyPen(self, other: MapPen) -> MapPen:
@@ -793,15 +793,15 @@ class MapGraphics(maprenderer.AbstractGraphics):
             self,
             family: str,
             emSize: float,
-            style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
+            style: cartographer.FontStyle = cartographer.FontStyle.Regular
             ) -> MapFont:
         # NOTE: Traveller Map has this as 1.4 (in makeFont) but I found I needed
         # to lower it to get fonts rendering the correct size.
         return MapFont(family=family, emSize=emSize * 1.05, style=style)
 
-    def setSmoothingMode(self, mode: maprenderer.AbstractGraphics.SmoothingMode):
-        antialias = mode == maprenderer.AbstractGraphics.SmoothingMode.HighQuality or \
-            mode == maprenderer.AbstractGraphics.SmoothingMode.AntiAlias
+    def setSmoothingMode(self, mode: cartographer.AbstractGraphics.SmoothingMode):
+        antialias = mode == cartographer.AbstractGraphics.SmoothingMode.HighQuality or \
+            mode == cartographer.AbstractGraphics.SmoothingMode.AntiAlias
 
         self._painter.setRenderHint(
             QtGui.QPainter.RenderHint.Antialiasing,
@@ -846,7 +846,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
         if not currentClip.isEmpty():
             newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
-    def intersectClipRect(self, rect: maprenderer.RectangleF) -> None:
+    def intersectClipRect(self, rect: cartographer.RectangleF) -> None:
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
         newClip.addRect(QtCore.QRectF(*rect.rect()))
@@ -855,7 +855,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
             newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
-    def drawPoint(self, point: maprenderer.PointF, pen: MapPen) -> None:
+    def drawPoint(self, point: cartographer.PointF, pen: MapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
     def drawPoints(self, points: MapPointList, pen: MapPen) -> None:
@@ -864,8 +864,8 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def drawLine(
             self,
-            pt1: maprenderer.PointF,
-            pt2: maprenderer.PointF,
+            pt1: cartographer.PointF,
+            pt2: cartographer.PointF,
             pen: MapPen
             ) -> None:
         self._painter.setPen(pen.qtPen())
@@ -904,7 +904,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def drawRectangle(
             self,
-            rect: maprenderer.RectangleF,
+            rect: cartographer.RectangleF,
             pen: typing.Optional[MapPen] = None,
             brush: typing.Optional[MapBrush] = None
             ) -> None:
@@ -914,7 +914,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def drawEllipse(
             self,
-            rect: maprenderer.RectangleF,
+            rect: cartographer.RectangleF,
             pen: typing.Optional[MapPen] = None,
             brush: typing.Optional[MapBrush] = None
             ) -> None:
@@ -924,7 +924,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
 
     def drawArc(
             self,
-            rect: maprenderer.RectangleF,
+            rect: cartographer.RectangleF,
             startDegrees: float,
             sweepDegrees: float,
             pen: MapPen
@@ -939,7 +939,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
     def drawImage(
             self,
             image: MapImage,
-            rect: maprenderer.RectangleF
+            rect: cartographer.RectangleF
             ) -> None:
         self._painter.drawImage(
             QtCore.QRectF(*rect.rect()),
@@ -948,7 +948,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
             self,
             alpha: float,
             image: MapImage,
-            rect: maprenderer.RectangleF
+            rect: cartographer.RectangleF
             ) -> None:
         oldAlpha = self._painter.opacity()
         self._painter.setOpacity(alpha)
@@ -985,7 +985,7 @@ class MapGraphics(maprenderer.AbstractGraphics):
             font: MapFont,
             brush: MapBrush,
             x: float, y: float,
-            format: maprenderer.TextAlignment
+            format: cartographer.TextAlignment
             ) -> None:
         qtFont = font.qtFont()
         textRect = font.qtMeasureText(text)
@@ -1008,41 +1008,41 @@ class MapGraphics(maprenderer.AbstractGraphics):
             qtBrush = brush.qtBrush()
             self._painter.setPen(qtBrush.color())
 
-            if format == maprenderer.TextAlignment.Baseline:
+            if format == cartographer.TextAlignment.Baseline:
                 textOrigin = QtCore.QPointF(0, 0)
-            elif format == maprenderer.TextAlignment.Centered:
+            elif format == cartographer.TextAlignment.Centered:
                 textOrigin = QtCore.QPointF(
                     -textRect.x() - (textRect.width() / 2),
                     -textRect.y() - (textRect.height() / 2))
-            elif format == maprenderer.TextAlignment.TopLeft:
+            elif format == cartographer.TextAlignment.TopLeft:
                 textOrigin = QtCore.QPointF(
                     -textRect.x(),
                     -textRect.y())
-            elif format == maprenderer.TextAlignment.TopCenter:
+            elif format == cartographer.TextAlignment.TopCenter:
                 textOrigin = QtCore.QPointF(
                     -textRect.x() - (textRect.width() / 2),
                     -textRect.y())
-            elif format == maprenderer.TextAlignment.TopRight:
+            elif format == cartographer.TextAlignment.TopRight:
                 textOrigin = QtCore.QPointF(
                     -textRect.x() - textRect.width(),
                     -textRect.y())
-            elif format == maprenderer.TextAlignment.MiddleLeft:
+            elif format == cartographer.TextAlignment.MiddleLeft:
                 textOrigin = QtCore.QPointF(
                     -textRect.x(),
                     -textRect.y() - (textRect.height() / 2))
-            elif format == maprenderer.TextAlignment.MiddleRight:
+            elif format == cartographer.TextAlignment.MiddleRight:
                 textOrigin = QtCore.QPointF(
                     -textRect.x() - textRect.width(),
                     -textRect.y() - (textRect.height() / 2))
-            elif format == maprenderer.TextAlignment.BottomLeft:
+            elif format == cartographer.TextAlignment.BottomLeft:
                 textOrigin = QtCore.QPointF(
                     -textRect.x(),
                     -textRect.y() - textRect.height())
-            elif format == maprenderer.TextAlignment.BottomCenter:
+            elif format == cartographer.TextAlignment.BottomCenter:
                 textOrigin = QtCore.QPointF(
                     -textRect.x() - (textRect.width() / 2),
                     -textRect.y() - textRect.height())
-            elif format == maprenderer.TextAlignment.BottomRight:
+            elif format == cartographer.TextAlignment.BottomRight:
                 textOrigin = QtCore.QPointF(
                     -textRect.x() - textRect.width(),
                     -textRect.y() - textRect.height())
@@ -1051,17 +1051,17 @@ class MapGraphics(maprenderer.AbstractGraphics):
         finally:
             self._painter.restore()
 
-    def save(self) -> maprenderer.AbstractGraphicsState:
+    def save(self) -> cartographer.AbstractGraphicsState:
         self._painter.save()
-        return maprenderer.AbstractGraphicsState(graphics=self)
+        return cartographer.AbstractGraphicsState(graphics=self)
     def restore(self) -> None:
         self._painter.restore()
 
-    def _convertPoint(self, point: maprenderer.PointF) -> QtCore.QPointF:
+    def _convertPoint(self, point: cartographer.PointF) -> QtCore.QPointF:
         return QtCore.QPointF(point.x(), point.y())
 
     def _convertPoints(
             self,
-            points: typing.Sequence[maprenderer.PointF]
+            points: typing.Sequence[cartographer.PointF]
             ) -> typing.Sequence[QtCore.QPointF]:
         return [QtCore.QPointF(p.x(), p.y()) for p in points]

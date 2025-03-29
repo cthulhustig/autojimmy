@@ -1,6 +1,6 @@
 import common
 import logging
-import maprenderer
+import cartographer
 import traveller
 import travellermap
 import typing
@@ -10,25 +10,25 @@ class MapLabel(object):
     def __init__(
             self,
             text: str,
-            position: maprenderer.PointF,
+            position: cartographer.PointF,
             minor: bool = False
             ) -> None:
         self.text = text
-        self.position = maprenderer.PointF(position)
+        self.position = cartographer.PointF(position)
         self.minor = minor
 
 class WorldLabel(object):
     def __init__(
             self,
             text: str,
-            options: maprenderer.MapOptions,
-            position: maprenderer.PointF,
+            options: cartographer.MapOptions,
+            position: cartographer.PointF,
             biasX: int = 0,
             biasY: int = 0,
             ) -> None:
         self.text = text
         self.options = options
-        self.position = maprenderer.PointF(position)
+        self.position = cartographer.PointF(position)
         self.biasX = biasX
         self.biasY = biasY
 
@@ -54,7 +54,7 @@ class LabelCache(object):
         for data in rows:
             labels.append(MapLabel(
                 text=data['Text'].replace('\\n', '\n'),
-                position=maprenderer.PointF(x=float(data['X']), y=float(data['Y'])),
+                position=cartographer.PointF(x=float(data['X']), y=float(data['Y'])),
                 minor=common.stringToBool(data['Minor'], strict=False)))
         return labels
 
@@ -75,9 +75,9 @@ class LabelCache(object):
                 options = 0
                 for token in optionsElement.text.split():
                     if token == 'WorldsHomeworlds':
-                        options |= maprenderer.MapOptions.WorldsHomeworlds
+                        options |= cartographer.MapOptions.WorldsHomeworlds
                     elif token == 'WorldsCapitals':
-                        options |= maprenderer.MapOptions.WorldsCapitals
+                        options |= cartographer.MapOptions.WorldsCapitals
 
                 locationElement = worldElement.find('./Location')
                 if locationElement is None:
@@ -90,7 +90,7 @@ class LabelCache(object):
                     raise RuntimeError('Location element has no Hex attribute')
                 location = traveller.WorldManager.instance().sectorHexToPosition(f'{sector} {hex}')
                 centerX, centerY = location.absoluteCenter()
-                location = maprenderer.PointF(x=centerX, y=centerY)
+                location = cartographer.PointF(x=centerX, y=centerY)
 
                 biasXElement = worldElement.find('./LabelBiasX')
                 biasX = 1 # Default comes from traveller map default

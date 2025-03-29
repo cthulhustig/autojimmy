@@ -1,11 +1,11 @@
-import maprenderer
+import cartographer
 import travellermap
 import typing
 
 class ImageCache(object):
     def __init__(
             self,
-            graphics: maprenderer.AbstractGraphics
+            graphics: cartographer.AbstractGraphics
             ) -> None:
         self._graphics = graphics
         self.nebulaImage = self._graphics.createImage(
@@ -20,7 +20,7 @@ class ImageCache(object):
         self.galaxyImageGray = self._graphics.createImage(
             data=travellermap.DataStore.instance().loadBinaryResource(
                 filePath='res/Candy/Galaxy_Gray.png'))
-        self.worldImages: typing.Dict[str, maprenderer.AbstractImage] = {
+        self.worldImages: typing.Dict[str, cartographer.AbstractImage] = {
             'Hyd0': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
                     filePath='res/Candy/Hyd0.png')),

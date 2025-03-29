@@ -1,19 +1,19 @@
 import common
 import logging
-import maprenderer
+import cartographer
 import math
 import travellermap
 import typing
 
 class LayerList(list):
-    def __init__(self, other: typing.Optional[typing.Sequence[maprenderer.LayerId]]):
+    def __init__(self, other: typing.Optional[typing.Sequence[cartographer.LayerId]]):
         if other:
             self.extend(other)
 
     def copy(self) -> 'LayerList':
         return LayerList(self)
 
-    def moveAfter(self, target: maprenderer.LayerId, item: maprenderer.LayerId) -> None:
+    def moveAfter(self, target: cartographer.LayerId, item: cartographer.LayerId) -> None:
         self.remove(item)
         index = self.index(target)
         self.insert(index + 1 if index >= 0 else len(self), item)
@@ -61,60 +61,60 @@ class StyleSheet(object):
 
     _DefaultLayerOrder = LayerList([
         # Background
-        maprenderer.LayerId.Background_Solid,
-        maprenderer.LayerId.Background_NebulaTexture,
-        maprenderer.LayerId.Background_Galaxy,
-        maprenderer.LayerId.Background_PseudoRandomStars,
-        maprenderer.LayerId.Background_Rifts,
+        cartographer.LayerId.Background_Solid,
+        cartographer.LayerId.Background_NebulaTexture,
+        cartographer.LayerId.Background_Galaxy,
+        cartographer.LayerId.Background_PseudoRandomStars,
+        cartographer.LayerId.Background_Rifts,
 
         # Foreground
-        maprenderer.LayerId.Macro_Borders,
-        maprenderer.LayerId.Macro_Routes,
-        maprenderer.LayerId.Grid_Sector,
-        maprenderer.LayerId.Grid_Subsector,
-        maprenderer.LayerId.Grid_Parsec,
-        maprenderer.LayerId.Names_Subsector,
-        maprenderer.LayerId.Micro_BordersBackground,
-        maprenderer.LayerId.Micro_BordersForeground,
-        maprenderer.LayerId.Micro_Routes,
-        maprenderer.LayerId.Micro_BorderExplicitLabels,
-        maprenderer.LayerId.Names_Sector,
-        maprenderer.LayerId.Macro_GovernmentRiftRouteNames,
-        maprenderer.LayerId.Macro_CapitalsAndHomeWorlds,
-        maprenderer.LayerId.Mega_GalaxyScaleLabels,
-        maprenderer.LayerId.Worlds_Background,
-        maprenderer.LayerId.Worlds_Foreground,
-        maprenderer.LayerId.Worlds_Overlays,
+        cartographer.LayerId.Macro_Borders,
+        cartographer.LayerId.Macro_Routes,
+        cartographer.LayerId.Grid_Sector,
+        cartographer.LayerId.Grid_Subsector,
+        cartographer.LayerId.Grid_Parsec,
+        cartographer.LayerId.Names_Subsector,
+        cartographer.LayerId.Micro_BordersBackground,
+        cartographer.LayerId.Micro_BordersForeground,
+        cartographer.LayerId.Micro_Routes,
+        cartographer.LayerId.Micro_BorderExplicitLabels,
+        cartographer.LayerId.Names_Sector,
+        cartographer.LayerId.Macro_GovernmentRiftRouteNames,
+        cartographer.LayerId.Macro_CapitalsAndHomeWorlds,
+        cartographer.LayerId.Mega_GalaxyScaleLabels,
+        cartographer.LayerId.Worlds_Background,
+        cartographer.LayerId.Worlds_Foreground,
+        cartographer.LayerId.Worlds_Overlays,
 
         # Overlays
-        maprenderer.LayerId.Overlay_DroyneChirperWorlds,
-        maprenderer.LayerId.Overlay_MinorHomeworlds,
-        maprenderer.LayerId.Overlay_AncientsWorlds,
-        maprenderer.LayerId.Overlay_ReviewStatus])
+        cartographer.LayerId.Overlay_DroyneChirperWorlds,
+        cartographer.LayerId.Overlay_MinorHomeworlds,
+        cartographer.LayerId.Overlay_AncientsWorlds,
+        cartographer.LayerId.Overlay_ReviewStatus])
 
     class StyleElement(object):
         def __init__(self) -> None:
             self.visible = False
             self.content = ''
-            self.linePen: typing.Optional[maprenderer.AbstractPen] = None
-            self.fillBrush: typing.Optional[maprenderer.AbstractBrush] = None
-            self.textBrush: typing.Optional[maprenderer.AbstractBrush] = None
-            self.textHighlightBrush: typing.Optional[maprenderer.AbstractBrush] = None
+            self.linePen: typing.Optional[cartographer.AbstractPen] = None
+            self.fillBrush: typing.Optional[cartographer.AbstractBrush] = None
+            self.textBrush: typing.Optional[cartographer.AbstractBrush] = None
+            self.textHighlightBrush: typing.Optional[cartographer.AbstractBrush] = None
 
-            self.textStyle = maprenderer.LabelStyle()
-            self.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
-            self.font: typing.Optional[maprenderer.AbstractFont] = None
-            self.smallFont: typing.Optional[maprenderer.AbstractFont] = None
-            self.mediumFont: typing.Optional[maprenderer.AbstractFont] = None
-            self.largeFont: typing.Optional[maprenderer.AbstractFont] = None
-            self.position = maprenderer.PointF()
+            self.textStyle = cartographer.LabelStyle()
+            self.textBackgroundStyle = cartographer.TextBackgroundStyle.NoStyle
+            self.font: typing.Optional[cartographer.AbstractFont] = None
+            self.smallFont: typing.Optional[cartographer.AbstractFont] = None
+            self.mediumFont: typing.Optional[cartographer.AbstractFont] = None
+            self.largeFont: typing.Optional[cartographer.AbstractFont] = None
+            self.position = cartographer.PointF()
 
     def __init__(
             self,
             scale: float,
-            options: maprenderer.MapOptions,
+            options: cartographer.MapOptions,
             style: travellermap.Style,
-            graphics: maprenderer.AbstractGraphics
+            graphics: cartographer.AbstractGraphics
             ):
         self._scale = scale
         self._options = options
@@ -124,9 +124,9 @@ class StyleSheet(object):
             typing.Tuple[
                 str, # Family
                 int, # emSize
-                maprenderer.FontStyle
+                cartographer.FontStyle
                 ],
-            maprenderer.AbstractFont](capacity=StyleSheet._FontCacheSize)
+            cartographer.AbstractFont](capacity=StyleSheet._FontCacheSize)
         self._handleConfigUpdate()
 
     @property
@@ -141,10 +141,10 @@ class StyleSheet(object):
         self._handleConfigUpdate()
 
     @property
-    def options(self) -> maprenderer.MapOptions:
+    def options(self) -> cartographer.MapOptions:
         return self._options
     @options.setter
-    def options(self, options: maprenderer.MapOptions) -> None:
+    def options(self, options: cartographer.MapOptions) -> None:
         if options == self._options:
             return # Nothing to do
         self._options = options
@@ -195,7 +195,7 @@ class StyleSheet(object):
         self.t5AllegianceCodes = False
 
         self.highlightWorlds = StyleSheet.StyleElement()
-        self.highlightWorldsPattern: typing.Optional[maprenderer.HighlightWorldPattern] = None
+        self.highlightWorldsPattern: typing.Optional[cartographer.HighlightWorldPattern] = None
 
         self.droyneWorlds = StyleSheet.StyleElement()
         self.ancientsWorlds = StyleSheet.StyleElement()
@@ -211,22 +211,22 @@ class StyleSheet(object):
         self.capitalOverlayAltB = StyleSheet.StyleElement()
         self.showStellarOverlay = False
 
-        self.discPosition = maprenderer.PointF(0, 0)
+        self.discPosition = cartographer.PointF(0, 0)
         self.discRadius = 0.1
         self.gasGiantRadius = 0.05
-        self.allegiancePosition = maprenderer.PointF(0, 0)
-        self.baseTopPosition = maprenderer.PointF(0, 0)
-        self.baseBottomPosition = maprenderer.PointF(0, 0)
-        self.baseMiddlePosition = maprenderer.PointF(0, 0)
+        self.allegiancePosition = cartographer.PointF(0, 0)
+        self.baseTopPosition = cartographer.PointF(0, 0)
+        self.baseBottomPosition = cartographer.PointF(0, 0)
+        self.baseMiddlePosition = cartographer.PointF(0, 0)
 
         self.uwp = StyleSheet.StyleElement()
         self.starport = StyleSheet.StyleElement()
 
-        self.worldDetails: maprenderer.WorldDetails = maprenderer.WorldDetails.NoDetails
+        self.worldDetails: cartographer.WorldDetails = cartographer.WorldDetails.NoDetails
         self.lowerCaseAllegiance = False
 
-        self.wingdingFont: typing.Optional[maprenderer.AbstractFont] = None
-        self.glyphFont: typing.Optional[maprenderer.AbstractFont] = None
+        self.wingdingFont: typing.Optional[cartographer.AbstractFont] = None
+        self.glyphFont: typing.Optional[cartographer.AbstractFont] = None
 
         self.showGasGiantRing = False
 
@@ -236,7 +236,7 @@ class StyleSheet(object):
 
         # Hex Coordinates
         self.hexNumber = StyleSheet.StyleElement()
-        self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Sector
+        self.hexCoordinateStyle = cartographer.HexCoordinateStyle.Sector
         self.numberAllHexes = False
 
         # Sector Name
@@ -275,27 +275,27 @@ class StyleSheet(object):
         self.fillMicroBorders = False
         self.shadeMicroBorders = False
         self.showMicroNames = False
-        self.microBorderStyle = maprenderer.MicroBorderStyle.Hex
-        self.overrideLineStyle: typing.Optional[maprenderer.LineStyle] = None
+        self.microBorderStyle = cartographer.MicroBorderStyle.Hex
+        self.overrideLineStyle: typing.Optional[cartographer.LineStyle] = None
 
         self.layerOrder = StyleSheet._DefaultLayerOrder.copy()
 
         onePixel = 1.0 / self.scale
 
         self.subsectorGrid.visible = (self.scale >= StyleSheet._SubsectorsMinScale) and \
-            ((self.options & maprenderer.MapOptions.SubsectorGrid) != 0)
+            ((self.options & cartographer.MapOptions.SubsectorGrid) != 0)
         self.sectorGrid.visible = (self.scale >= StyleSheet._SectorGridMinScale) and \
-            ((self._options & maprenderer.MapOptions.SectorGrid) != 0)
+            ((self._options & cartographer.MapOptions.SectorGrid) != 0)
         self.parsecGrid.visible = (self.scale >= StyleSheet._ParsecMinScale)
         self.showSomeSectorNames = (self.scale >= StyleSheet._SectorNameMinScale) and \
             (self.scale <= StyleSheet._SectorNameMaxScale) and \
-            ((self._options & maprenderer.MapOptions.SectorsMask) != 0)
+            ((self._options & cartographer.MapOptions.SectorsMask) != 0)
         self.showAllSectorNames = self.showSomeSectorNames and \
             ((self.scale >= StyleSheet._SectorNameAllSelectedScale) or \
-             ((self._options & maprenderer.MapOptions.SectorsAll) != 0))
+             ((self._options & cartographer.MapOptions.SectorsAll) != 0))
         self.subsectorNames.visible = (self.scale >= StyleSheet._SubsectorNameMinScale) and \
             (self.scale <= StyleSheet._SubsectorNameMaxScale) and \
-            ((self._options & maprenderer.MapOptions.SectorsMask) != 0)
+            ((self._options & cartographer.MapOptions.SectorsMask) != 0)
 
         self.worlds.visible = self.scale >= StyleSheet._WorldMinScale
         self.pseudoRandomStars.visible = (StyleSheet._PseudoRandomStarsMinScale <= self.scale) and \
@@ -322,45 +322,45 @@ class StyleSheet(object):
         self.macroNames.visible = (self.scale >= StyleSheet._MacroLabelMinScale) and \
             (self.scale <= StyleSheet._MacroLabelMaxScale)
         self.megaNames.visible = self.scale <= StyleSheet._MegaLabelMaxScale and \
-            ((self.options & maprenderer.MapOptions.NamesMask) != 0)
+            ((self.options & cartographer.MapOptions.NamesMask) != 0)
         self.showMicroNames = (self.scale >= StyleSheet._MicroNameMinScale) and \
-            ((self.options & maprenderer.MapOptions.NamesMask) != 0)
+            ((self.options & cartographer.MapOptions.NamesMask) != 0)
         self.capitals.visible = (self.scale >= StyleSheet._MacroWorldsMinScale) and \
             (self.scale <= StyleSheet._MacroWorldsMaxScale)
 
-        self.microBorderStyle = maprenderer.MicroBorderStyle.Hex
+        self.microBorderStyle = cartographer.MicroBorderStyle.Hex
 
         self.macroBorders.visible = (self.scale >= StyleSheet._MacroBorderMinScale) and \
             (self.scale < StyleSheet._MicroBorderMinScale) and \
-            ((self.options & maprenderer.MapOptions.BordersMask) != 0)
+            ((self.options & cartographer.MapOptions.BordersMask) != 0)
         self.microBorders.visible = (self.scale >= StyleSheet._MicroBorderMinScale) and \
-            ((self.options & maprenderer.MapOptions.BordersMask) != 0)
+            ((self.options & cartographer.MapOptions.BordersMask) != 0)
         self.fillMicroBorders = self.microBorders.visible and \
-            ((self.options & maprenderer.MapOptions.FilledBorders) != 0)
+            ((self.options & cartographer.MapOptions.FilledBorders) != 0)
         self.microRoutes.visible = (self.scale >= StyleSheet._RouteMinScale) and \
-            ((self.options & maprenderer.MapOptions.RoutesMask) != 0)
+            ((self.options & cartographer.MapOptions.RoutesMask) != 0)
         self.macroRoutes.visible = (self.scale >= StyleSheet._MacroRouteMinScale) and \
             (self.scale <= StyleSheet._MacroRouteMaxScale) and \
-            ((self.options & maprenderer.MapOptions.RoutesMask) != 0)
+            ((self.options & cartographer.MapOptions.RoutesMask) != 0)
 
         if self.scale < StyleSheet._WorldBasicMinScale:
-            self.worldDetails = maprenderer.WorldDetails.Dotmap
+            self.worldDetails = cartographer.WorldDetails.Dotmap
         elif self.scale < StyleSheet._WorldFullMinScale:
-            self.worldDetails = maprenderer.WorldDetails.Atlas
+            self.worldDetails = cartographer.WorldDetails.Atlas
         else:
-            self.worldDetails = maprenderer.WorldDetails.Poster
+            self.worldDetails = cartographer.WorldDetails.Poster
 
-        self.discRadius = 0.1 if ((self.worldDetails & maprenderer.WorldDetails.Type) != 0) else  0.2
+        self.discRadius = 0.1 if ((self.worldDetails & cartographer.WorldDetails.Type) != 0) else  0.2
 
-        self.showWorldDetailColors = self.worldDetails == maprenderer.WorldDetails.Poster and \
-            ((self.options & maprenderer.MapOptions.WorldColors) != 0)
-        self.populationOverlay.visible = (self.options & maprenderer.MapOptions.PopulationOverlay) != 0
-        self.importanceOverlay.visible = (self.options & maprenderer.MapOptions.ImportanceOverlay) != 0
-        self.capitalOverlay.visible = (self.options & maprenderer.MapOptions.CapitalOverlay) != 0
-        self.showStellarOverlay = (self._options & maprenderer.MapOptions.StellarOverlay) != 0
-        self.ancientsWorlds.visible = (self.options & maprenderer.MapOptions.AncientWorlds) != 0
-        self.droyneWorlds.visible = (self.options & maprenderer.MapOptions.DroyneWorlds) != 0
-        self.minorHomeWorlds.visible = (self.options & maprenderer.MapOptions.MinorHomeWorlds) != 0
+        self.showWorldDetailColors = self.worldDetails == cartographer.WorldDetails.Poster and \
+            ((self.options & cartographer.MapOptions.WorldColors) != 0)
+        self.populationOverlay.visible = (self.options & cartographer.MapOptions.PopulationOverlay) != 0
+        self.importanceOverlay.visible = (self.options & cartographer.MapOptions.ImportanceOverlay) != 0
+        self.capitalOverlay.visible = (self.options & cartographer.MapOptions.CapitalOverlay) != 0
+        self.showStellarOverlay = (self._options & cartographer.MapOptions.StellarOverlay) != 0
+        self.ancientsWorlds.visible = (self.options & cartographer.MapOptions.AncientWorlds) != 0
+        self.droyneWorlds.visible = (self.options & cartographer.MapOptions.DroyneWorlds) != 0
+        self.minorHomeWorlds.visible = (self.options & cartographer.MapOptions.MinorHomeWorlds) != 0
 
         # NOTE: Force ancient worlds, droyne worlds & minor home world overlays
         # off when zoomed out as the further you zoom out the longer it takes
@@ -374,13 +374,13 @@ class StyleSheet(object):
         self.showGasGiantRing = (self.scale >= StyleSheet._WorldUwpMinScale)
         self.gasGiant.visible = True
 
-        self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.Rectangle
+        self.worlds.textBackgroundStyle = cartographer.TextBackgroundStyle.Rectangle
 
-        self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Sector
+        self.hexCoordinateStyle = cartographer.HexCoordinateStyle.Sector
         self.numberAllHexes = False
 
-        self.dimUnofficialSectors = (self.options & maprenderer.MapOptions.DimUnofficial) != 0
-        self.colorCodeSectorStatus = (self.options & maprenderer.MapOptions.ColorCodeSectorStatus) != 0
+        self.dimUnofficialSectors = (self.options & cartographer.MapOptions.DimUnofficial) != 0
+        self.colorCodeSectorStatus = (self.options & cartographer.MapOptions.ColorCodeSectorStatus) != 0
 
         if self.scale < StyleSheet._WorldFullMinScale:
             # Atlas-style
@@ -388,33 +388,33 @@ class StyleSheet(object):
             x = 0.225
             y = 0.125
 
-            self.baseTopPosition = maprenderer.PointF(-x, -y)
-            self.baseBottomPosition = maprenderer.PointF(-x, y)
-            self.gasGiant.position =  maprenderer.PointF(x, -y)
-            self.allegiancePosition = maprenderer.PointF(x, y)
+            self.baseTopPosition = cartographer.PointF(-x, -y)
+            self.baseBottomPosition = cartographer.PointF(-x, y)
+            self.gasGiant.position =  cartographer.PointF(x, -y)
+            self.allegiancePosition = cartographer.PointF(x, y)
 
-            self.baseMiddlePosition = maprenderer.PointF(-0.2, 0)
-            self.starport.position = maprenderer.PointF(0, -0.24)
-            self.uwp.position = maprenderer.PointF(0, 0.24)
-            self.worlds.position = maprenderer.PointF(0, 0.4)
+            self.baseMiddlePosition = cartographer.PointF(-0.2, 0)
+            self.starport.position = cartographer.PointF(0, -0.24)
+            self.uwp.position = cartographer.PointF(0, 0.24)
+            self.worlds.position = cartographer.PointF(0, 0.4)
         else:
             # Poster-style
 
             x = 0.25
             y = 0.18
 
-            self.baseTopPosition = maprenderer.PointF(-x, -y)
-            self.baseBottomPosition = maprenderer.PointF(-x, y)
-            self.gasGiant.position = maprenderer.PointF(x, -y)
-            self.allegiancePosition = maprenderer.PointF(x, y)
+            self.baseTopPosition = cartographer.PointF(-x, -y)
+            self.baseBottomPosition = cartographer.PointF(-x, y)
+            self.gasGiant.position = cartographer.PointF(x, -y)
+            self.allegiancePosition = cartographer.PointF(x, y)
 
-            self.baseMiddlePosition = maprenderer.PointF(-0.35, 0)
-            self.starport.position = maprenderer.PointF(0, -0.225)
-            self.uwp.position = maprenderer.PointF(0, 0.225)
-            self.worlds.position = maprenderer.PointF(0, 0.37)#  Don't hide hex bottom, leave room for UWP
+            self.baseMiddlePosition = cartographer.PointF(-0.35, 0)
+            self.starport.position = cartographer.PointF(0, -0.225)
+            self.uwp.position = cartographer.PointF(0, 0.225)
+            self.worlds.position = cartographer.PointF(0, 0.37)#  Don't hide hex bottom, leave room for UWP
 
         if self.scale >= StyleSheet._WorldUwpMinScale:
-            self.worldDetails |= maprenderer.WorldDetails.Uwp
+            self.worldDetails |= cartographer.WorldDetails.Uwp
             self.baseBottomPosition.setY(0.1)
             self.baseMiddlePosition.setY((self.baseBottomPosition.y() + self.baseTopPosition.y()) / 2)
             self.allegiancePosition.setY(0.1)
@@ -428,7 +428,7 @@ class StyleSheet(object):
             self.worlds.font = self._createFont(
                 families=StyleSheet._DefaultFont,
                 emSize=0.2 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
-                style=maprenderer.FontStyle.Bold)
+                style=cartographer.FontStyle.Bold)
 
             if self._graphics.supportsWingdings():
                 self.wingdingFont = self._createFont(
@@ -438,7 +438,7 @@ class StyleSheet(object):
             self.glyphFont = self._createFont(
                 families='Arial Unicode MS,Segoe UI Symbol,Arial',
                 emSize=0.175 if self.scale < StyleSheet._WorldFullMinScale else (0.15 * fontScale),
-                style=maprenderer.FontStyle.Bold)
+                style=cartographer.FontStyle.Bold)
 
             self.uwp.font = self.hexNumber.font = self._createFont(
                 families=StyleSheet._DefaultFont,
@@ -470,42 +470,42 @@ class StyleSheet(object):
         self.microBorders.font = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=0.6 if self.scale <= StyleSheet._MicroNameMinScale else 0.25,
-            style=maprenderer.FontStyle.Bold)
+            style=cartographer.FontStyle.Bold)
         self.microBorders.smallFont = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=0.15,
-            style=maprenderer.FontStyle.Bold)
+            style=cartographer.FontStyle.Bold)
         self.microBorders.largeFont = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=0.75,
-            style=maprenderer.FontStyle.Bold)
+            style=cartographer.FontStyle.Bold)
 
         self.macroNames.font = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=8 / 1.4,
-            style=maprenderer.FontStyle.Bold)
+            style=cartographer.FontStyle.Bold)
         self.macroNames.smallFont = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=5 / 1.4,
-            style=maprenderer.FontStyle.Regular)
+            style=cartographer.FontStyle.Regular)
         self.macroNames.mediumFont = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=6.5 / 1.4,
-            style=maprenderer.FontStyle.Italic)
+            style=cartographer.FontStyle.Italic)
 
         megaNameScaleFactor = min(35, 0.75 * onePixel)
         self.megaNames.font = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=24 * megaNameScaleFactor,
-            style=maprenderer.FontStyle.Bold)
+            style=cartographer.FontStyle.Bold)
         self.megaNames.mediumFont = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=22 * megaNameScaleFactor,
-            style=maprenderer.FontStyle.Regular)
+            style=cartographer.FontStyle.Regular)
         self.megaNames.smallFont = self._createFont(
             families=StyleSheet._DefaultFont,
             emSize=18 * megaNameScaleFactor,
-            style=maprenderer.FontStyle.Italic)
+            style=cartographer.FontStyle.Italic)
 
         # Cap pen widths when zooming in
         penScale = 1 if self.scale <= 64 else (64 / self.scale)
@@ -534,7 +534,7 @@ class StyleSheet(object):
         self.macroRoutes.linePen = self._graphics.createPen(
             color=travellermap.HtmlColors.White,
             width=borderPenWidth,
-            style=maprenderer.LineStyle.Dash)
+            style=cartographer.LineStyle.Dash)
         self.microBorders.linePen = self._graphics.createPen(
             color=travellermap.HtmlColors.Gray,
             width=borderPenWidth)
@@ -567,24 +567,24 @@ class StyleSheet(object):
             width=(4 if self.subsectorGrid.visible else 2) * onePixel)
 
         self.microBorders.textStyle.rotation = 0
-        self.microBorders.textStyle.translation = maprenderer.PointF(0, 0)
-        self.microBorders.textStyle.scale = maprenderer.SizeF(1.0, 1.0)
+        self.microBorders.textStyle.translation = cartographer.PointF(0, 0)
+        self.microBorders.textStyle.scale = cartographer.SizeF(1.0, 1.0)
         self.microBorders.textStyle.uppercase = False
 
         self.sectorName.textStyle.rotation = -50 # degrees
-        self.sectorName.textStyle.translation = maprenderer.PointF(0, 0)
-        self.sectorName.textStyle.scale = maprenderer.SizeF(0.75, 1.0)
+        self.sectorName.textStyle.translation = cartographer.PointF(0, 0)
+        self.sectorName.textStyle.scale = cartographer.SizeF(0.75, 1.0)
         self.sectorName.textStyle.uppercase = False
         self.sectorName.textStyle.wrap = True
 
         self.subsectorNames.textStyle = self.sectorName.textStyle
 
         self.worlds.textStyle.rotation = 0
-        self.worlds.textStyle.scale = maprenderer.SizeF(1.0, 1.0)
-        self.worlds.textStyle.translation = maprenderer.PointF(self.worlds.position)
+        self.worlds.textStyle.scale = cartographer.SizeF(1.0, 1.0)
+        self.worlds.textStyle.translation = cartographer.PointF(self.worlds.position)
         self.worlds.textStyle.uppercase = False
 
-        self.hexNumber.position = maprenderer.PointF(0, -0.5)
+        self.hexNumber.position = cartographer.PointF(0, -0.5)
 
         self.showNebulaBackground = False
         self.showGalaxyBackground = self.deepBackgroundOpacity > 0.0
@@ -598,15 +598,15 @@ class StyleSheet(object):
             color='#80FF0000')
 
         self.capitalOverlay.fillBrush = self._graphics.createBrush(
-            color=maprenderer.makeAlphaColor(
+            color=cartographer.makeAlphaColor(
                 alpha=0x80,
                 color=travellermap.HtmlColors.TravellerGreen))
         self.capitalOverlayAltA.fillBrush = self._graphics.createBrush(
-            color=maprenderer.makeAlphaColor(
+            color=cartographer.makeAlphaColor(
                 alpha=0x80,
                 color=travellermap.HtmlColors.Blue))
         self.capitalOverlayAltB.fillBrush = self._graphics.createBrush(
-            color=maprenderer.makeAlphaColor(
+            color=cartographer.makeAlphaColor(
                 alpha=0x80,
                 color=travellermap.HtmlColors.TravellerAmber))
 
@@ -616,7 +616,7 @@ class StyleSheet(object):
         self.placeholder.font = self._createFont(
             families='Georgia',
             emSize=0.6)
-        self.placeholder.position = maprenderer.PointF(0, 0.17)
+        self.placeholder.position = cartographer.PointF(0, 0.17)
 
         self.anomaly.content = "\u2316"; # POSITION INDICATOR
         self.anomaly.font = self._createFont(
@@ -663,29 +663,29 @@ class StyleSheet(object):
 
             self.showWorldDetailColors = False
 
-            self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.populationOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x40,
                 color=highlightColor))
             self.populationOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dash)
+                style=cartographer.LineStyle.Dash)
 
-            self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.importanceOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x20,
                 color=highlightColor))
             self.importanceOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dot)
+                style=cartographer.LineStyle.Dot)
 
-            self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.highlightWorlds.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x30,
                 color=highlightColor))
             self.highlightWorlds.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.DashDot)
+                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Fasa:
             self.showGalaxyBackground = False
             self.deepBackgroundOpacity = 0
@@ -705,7 +705,7 @@ class StyleSheet(object):
             self.amberZone.linePen.setWidth(onePixel * 2)
             self.redZone.linePen = None
             self.redZone.fillBrush = self._graphics.createBrush(
-                color=maprenderer.makeAlphaColor(
+                color=cartographer.makeAlphaColor(
                         alpha=0x80,
                         color=inkColor))
 
@@ -717,18 +717,18 @@ class StyleSheet(object):
             self.microBorders.font = self._createFont(
                 families=self.microBorders.font.family(),
                 emSize=self.microBorders.font.emSize() * 0.6,
-                style=maprenderer.FontStyle.Regular)
+                style=cartographer.FontStyle.Regular)
 
             self.microRoutes.linePen.setColor(inkColor)
 
-            lightColor = maprenderer.makeAlphaColor(
+            lightColor = cartographer.makeAlphaColor(
                 alpha=0x80,
                 color=inkColor)
             darkColor = inkColor
             dimColor = inkColor
             highlightColor = inkColor
             self.microBorders.textBrush.setColor(inkColor)
-            self.microBorderStyle = maprenderer.MicroBorderStyle.Curve
+            self.microBorderStyle = cartographer.MicroBorderStyle.Curve
 
             self.parsecGrid.linePen.setColor(lightColor)
             self.sectorGrid.linePen.setColor(lightColor)
@@ -741,47 +741,47 @@ class StyleSheet(object):
 
             self.showWorldDetailColors = False
 
-            self.worldDetails &= ~maprenderer.WorldDetails.Starport
-            self.worldDetails &= ~maprenderer.WorldDetails.Allegiance
-            self.worldDetails &= ~maprenderer.WorldDetails.Bases
-            self.worldDetails &= ~maprenderer.WorldDetails.GasGiant
-            self.worldDetails &= ~maprenderer.WorldDetails.Highlight
-            self.worldDetails &= ~maprenderer.WorldDetails.Uwp
+            self.worldDetails &= ~cartographer.WorldDetails.Starport
+            self.worldDetails &= ~cartographer.WorldDetails.Allegiance
+            self.worldDetails &= ~cartographer.WorldDetails.Bases
+            self.worldDetails &= ~cartographer.WorldDetails.GasGiant
+            self.worldDetails &= ~cartographer.WorldDetails.Highlight
+            self.worldDetails &= ~cartographer.WorldDetails.Uwp
 
             if self.worlds.visible:
                 self.worlds.font = self._createFont(
                     families=self.worlds.font.family(),
                     emSize=self.worlds.font.emSize() * 0.85,
                     style=self.worlds.font.style())
-                self.worlds.textStyle.translation = maprenderer.PointF(0, 0.25)
+                self.worlds.textStyle.translation = cartographer.PointF(0, 0.25)
 
             self.numberAllHexes = True
-            self.hexCoordinateStyle = maprenderer.HexCoordinateStyle.Subsector
-            self.overrideLineStyle = maprenderer.LineStyle.Solid
+            self.hexCoordinateStyle = cartographer.HexCoordinateStyle.Subsector
+            self.overrideLineStyle = cartographer.LineStyle.Solid
 
-            self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.populationOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x40,
                 color=highlightColor))
             self.populationOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dash)
+                style=cartographer.LineStyle.Dash)
 
-            self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.importanceOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x20,
                 color=highlightColor))
             self.importanceOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dot)
+                style=cartographer.LineStyle.Dot)
 
-            self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.highlightWorlds.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x30,
                 color=highlightColor))
             self.highlightWorlds.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.DashDot)
+                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Print:
             self.lightBackground = True
 
@@ -802,29 +802,29 @@ class StyleSheet(object):
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
 
-            self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.populationOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x40,
                 color=self.populationOverlay.fillBrush.color()))
             self.populationOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dash)
+                style=cartographer.LineStyle.Dash)
 
-            self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.importanceOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x20,
                 color=self.importanceOverlay.fillBrush.color()))
             self.importanceOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dot)
+                style=cartographer.LineStyle.Dot)
 
-            self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.highlightWorlds.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x30,
                 color=self.highlightWorlds.fillBrush.color()))
             self.highlightWorlds.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.DashDot)
+                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Draft:
             inkOpacity = 0xB0
 
@@ -834,24 +834,24 @@ class StyleSheet(object):
             self.deepBackgroundOpacity = 0
 
             self.backgroundBrush.setColor(travellermap.HtmlColors.AntiqueWhite)
-            foregroundColor = maprenderer.makeAlphaColor(
+            foregroundColor = cartographer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.Black)
-            highlightColor = maprenderer.makeAlphaColor(
+            highlightColor = cartographer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.TravellerRed)
 
-            lightColor = maprenderer.makeAlphaColor(
+            lightColor = cartographer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.DarkCyan)
-            darkColor = maprenderer.makeAlphaColor(
+            darkColor = cartographer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.Black)
-            dimColor = maprenderer.makeAlphaColor(
+            dimColor = cartographer.makeAlphaColor(
                 alpha=inkOpacity / 2,
                 color=travellermap.HtmlColors.Black)
 
-            self.subsectorGrid.linePen.setColor(maprenderer.makeAlphaColor(
+            self.subsectorGrid.linePen.setColor(cartographer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.Firebrick))
 
@@ -864,7 +864,7 @@ class StyleSheet(object):
                 self.worlds.largeFont = self._createFont(
                     families=fontName,
                     emSize=self.worlds.font.emSize() * 1.25,
-                    style=self.worlds.largeFont.style() | maprenderer.FontStyle.Underline)
+                    style=self.worlds.largeFont.style() | cartographer.FontStyle.Underline)
                 self.worlds.smallFont = self._createFont(
                     families=fontName,
                     emSize=self.worlds.smallFont.emSize(),
@@ -874,7 +874,7 @@ class StyleSheet(object):
                     emSize=self.worlds.font.emSize() * 0.8,
                     style=self.worlds.font.style())
                 self.worlds.textStyle.uppercase = True
-                self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
+                self.worlds.textBackgroundStyle = cartographer.TextBackgroundStyle.NoStyle
 
                 self.starport.font = self._createFont(
                     families=fontName,
@@ -920,7 +920,7 @@ class StyleSheet(object):
                 emSize=self.microBorders.font.emSize(),
                 style=self.microBorders.font.style())
             self.microBorders.textStyle.uppercase = True
-            self.microBorders.textBrush.setColor(maprenderer.makeAlphaColor(
+            self.microBorders.textBrush.setColor(cartographer.makeAlphaColor(
                 alpha=inkOpacity,
                 color=travellermap.HtmlColors.Brown))
 
@@ -937,10 +937,10 @@ class StyleSheet(object):
                 style=self.sectorName.font.style())
             self.sectorName.textStyle.uppercase = True
 
-            self.worldDetails &= ~maprenderer.WorldDetails.Allegiance
+            self.worldDetails &= ~cartographer.WorldDetails.Allegiance
 
             self.microBorders.linePen.setWidth(onePixel * 4)
-            self.microBorders.linePen.setStyle(maprenderer.LineStyle.Dot)
+            self.microBorders.linePen.setStyle(cartographer.LineStyle.Dot)
 
             self.worldNoWater.fillBrush.setColor(foregroundColor)
             self.worldWater.fillBrush = None
@@ -960,29 +960,29 @@ class StyleSheet(object):
 
             self.numberAllHexes = True
 
-            self.populationOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.populationOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x40,
                 color=self.populationOverlay.fillBrush.color()))
             self.populationOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dash)
+                style=cartographer.LineStyle.Dash)
 
-            self.importanceOverlay.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.importanceOverlay.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x20,
                 color=self.importanceOverlay.fillBrush.color()))
             self.importanceOverlay.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.Dot)
+                style=cartographer.LineStyle.Dot)
 
-            self.highlightWorlds.fillBrush.setColor(maprenderer.makeAlphaColor(
+            self.highlightWorlds.fillBrush.setColor(cartographer.makeAlphaColor(
                 alpha=0x30,
                 color=self.highlightWorlds.fillBrush.color()))
             self.highlightWorlds.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.Gray,
                 width=0.03 * penScale,
-                style=maprenderer.LineStyle.DashDot)
+                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Candy:
             self.useWorldImages = True
             self.pseudoRandomStars.visible = False
@@ -990,7 +990,7 @@ class StyleSheet(object):
 
             self.showNebulaBackground = self.deepBackgroundOpacity < 0.5
 
-            self.microBorderStyle = maprenderer.MicroBorderStyle.Curve
+            self.microBorderStyle = cartographer.MicroBorderStyle.Curve
 
             self.sectorGrid.visible = self.sectorGrid.visible and (self.scale >= 4)
             self.subsectorGrid.visible = self.subsectorGrid.visible and (self.scale >= 32)
@@ -998,55 +998,55 @@ class StyleSheet(object):
 
             self.subsectorGrid.linePen.setWidth(0.03 * (64.0 / self.scale))
             self.subsectorGrid.linePen.setStyle(
-                style=maprenderer.LineStyle.Custom,
+                style=cartographer.LineStyle.Custom,
                 pattern=[10.0, 8.0])
 
             self.sectorGrid.linePen.setWidth(0.03 * (64.0 / self.scale))
             self.sectorGrid.linePen.setStyle(
-                style=maprenderer.LineStyle.Custom,
+                style=cartographer.LineStyle.Custom,
                 pattern=[10.0, 8.0])
 
-            self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.Shadow
+            self.worlds.textBackgroundStyle = cartographer.TextBackgroundStyle.Shadow
 
-            self.worldDetails = self.worldDetails &  ~maprenderer.WorldDetails.Starport & \
-                ~maprenderer.WorldDetails.Allegiance & ~maprenderer.WorldDetails.Bases & \
-                ~maprenderer.WorldDetails.Hex
+            self.worldDetails = self.worldDetails &  ~cartographer.WorldDetails.Starport & \
+                ~cartographer.WorldDetails.Allegiance & ~cartographer.WorldDetails.Bases & \
+                ~cartographer.WorldDetails.Hex
 
             if self.scale < StyleSheet._CandyMinWorldNameScale:
-                self.worldDetails &= ~maprenderer.WorldDetails.KeyNames & \
-                ~maprenderer.WorldDetails.AllNames
+                self.worldDetails &= ~cartographer.WorldDetails.KeyNames & \
+                ~cartographer.WorldDetails.AllNames
             if self.scale < StyleSheet._CandyMinUwpScale:
-                self.worldDetails &= ~maprenderer.WorldDetails.Uwp
+                self.worldDetails &= ~cartographer.WorldDetails.Uwp
 
             self.amberZone.linePen.setColor(travellermap.HtmlColors.Goldenrod)
             self.amberZone.linePen.setWidth(0.035)
             self.redZone.linePen.setWidth(0.035)
 
             self.sectorName.textStyle.rotation = 0
-            self.sectorName.textStyle.translation = maprenderer.PointF(0, -0.25)
-            self.sectorName.textStyle.scale = maprenderer.SizeF(0.5, 0.25)
+            self.sectorName.textStyle.translation = cartographer.PointF(0, -0.25)
+            self.sectorName.textStyle.scale = cartographer.SizeF(0.5, 0.25)
             self.sectorName.textStyle.uppercase = True
 
             self.subsectorNames.textStyle.rotation = 0
-            self.subsectorNames.textStyle.translation = maprenderer.PointF(0, -0.25)
-            self.subsectorNames.textStyle.scale = maprenderer.SizeF(0.3, 0.15) #  Expand
+            self.subsectorNames.textStyle.translation = cartographer.PointF(0, -0.25)
+            self.subsectorNames.textStyle.scale = cartographer.SizeF(0.3, 0.15) #  Expand
             self.subsectorNames.textStyle.uppercase = True
 
             self.subsectorNames.textBrush = self._graphics.createBrush(
-                color=maprenderer.makeAlphaColor(
+                color=cartographer.makeAlphaColor(
                     alpha=128,
                     color=travellermap.HtmlColors.Goldenrod))
             self.sectorName.textBrush = self._graphics.createBrush(
-                color=maprenderer.makeAlphaColor(
+                color=cartographer.makeAlphaColor(
                     alpha=128,
                     color=travellermap.HtmlColors.Goldenrod))
 
             self.microBorders.textStyle.rotation = 0
-            self.microBorders.textStyle.translation = maprenderer.PointF(0, 0.25)
-            self.microBorders.textStyle.scale = maprenderer.SizeF(1.0, 0.5) # Expand
+            self.microBorders.textStyle.translation = cartographer.PointF(0, 0.25)
+            self.microBorders.textStyle.scale = cartographer.SizeF(1.0, 0.5) # Expand
             self.microBorders.textStyle.uppercase = True
 
-            self.microBorders.linePen.setColor(maprenderer.makeAlphaColor(
+            self.microBorders.linePen.setColor(cartographer.makeAlphaColor(
                 alpha=128,
                 color=travellermap.HtmlColors.TravellerRed))
             self.microRoutes.linePen.setWidth(
@@ -1057,8 +1057,8 @@ class StyleSheet(object):
                 borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
 
             self.worlds.textStyle.rotation = 0
-            self.worlds.textStyle.scale = maprenderer.SizeF(1, 0.5) # Expand
-            self.worlds.textStyle.translation = maprenderer.PointF(0, 0)
+            self.worlds.textStyle.scale = cartographer.SizeF(1, 0.5) # Expand
+            self.worlds.textStyle.translation = cartographer.PointF(0, 0)
             self.worlds.textStyle.uppercase = True
 
             self.gasGiant.fillBrush = self._graphics.createBrush(
@@ -1092,7 +1092,7 @@ class StyleSheet(object):
                 self.worlds.largeFont = self._createFont(
                     families=fontName,
                     emSize=self.worlds.font.emSize() * 1.25,
-                    style=self.worlds.largeFont.style() | maprenderer.FontStyle.Underline)
+                    style=self.worlds.largeFont.style() | cartographer.FontStyle.Underline)
                 self.worlds.smallFont = self._createFont(
                     families=fontName,
                     emSize=self.worlds.smallFont.emSize(),
@@ -1102,7 +1102,7 @@ class StyleSheet(object):
                     emSize=self.worlds.font.emSize() * 0.8,
                     style=self.worlds.font.style())
                 self.worlds.textStyle.uppercase = True
-                self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
+                self.worlds.textBackgroundStyle = cartographer.TextBackgroundStyle.NoStyle
 
                 self.starport.font = self._createFont(
                     families=fontName,
@@ -1146,28 +1146,28 @@ class StyleSheet(object):
             self.microBorders.font = self._createFont(
                 families=fontName,
                 emSize=self.microBorders.font.emSize(),
-                style=self.microBorders.font.style() | maprenderer.FontStyle.Underline)
+                style=self.microBorders.font.style() | cartographer.FontStyle.Underline)
             self.microBorders.textStyle.uppercase = True
             self.microBorders.linePen.setWidth(onePixel * 4)
-            self.microBorders.linePen.setStyle(maprenderer.LineStyle.Dot)
+            self.microBorders.linePen.setStyle(cartographer.LineStyle.Dot)
 
             self.sectorName.font = self._createFont(
                 families=fontName,
                 emSize=self.sectorName.font.emSize() * 0.5,
-                style=self.sectorName.font.style() | maprenderer.FontStyle.Bold)
+                style=self.sectorName.font.style() | cartographer.FontStyle.Bold)
             self.sectorName.textBrush = self._graphics.createBrush(
                 color=foregroundColor)
-            self.sectorName.textStyle.scale = maprenderer.SizeF(1, 1)
+            self.sectorName.textStyle.scale = cartographer.SizeF(1, 1)
             self.sectorName.textStyle.rotation = 0
             self.sectorName.textStyle.uppercase = True
 
             self.subsectorNames.font = self._createFont(
                 families=fontName,
                 emSize=self.subsectorNames.font.emSize() * 0.5,
-                style=self.subsectorNames.font.style() | maprenderer.FontStyle.Bold)
+                style=self.subsectorNames.font.style() | cartographer.FontStyle.Bold)
             self.subsectorNames.textBrush = self._graphics.createBrush(
                 color=foregroundColor)
-            self.subsectorNames.textStyle.scale = maprenderer.SizeF(1, 1)
+            self.subsectorNames.textStyle.scale = cartographer.SizeF(1, 1)
             self.subsectorNames.textStyle.rotation = 0
             self.subsectorNames.textStyle.uppercase = True
 
@@ -1201,11 +1201,11 @@ class StyleSheet(object):
             self.shadeMicroBorders = True
 
             self.layerOrder.moveAfter(
-                target=maprenderer.LayerId.Worlds_Background,
-                item=maprenderer.LayerId.Micro_BordersForeground)
+                target=cartographer.LayerId.Worlds_Background,
+                item=cartographer.LayerId.Micro_BordersForeground)
             self.layerOrder.moveAfter(
-                target=maprenderer.LayerId.Worlds_Foreground,
-                item=maprenderer.LayerId.Micro_Routes)
+                target=cartographer.LayerId.Worlds_Foreground,
+                item=cartographer.LayerId.Micro_Routes)
 
             self.deepBackgroundOpacity = 0
 
@@ -1225,13 +1225,13 @@ class StyleSheet(object):
 
             fontName = 'Calibri,Arial'
 
-            self.worldDetails &= ~maprenderer.WorldDetails.Allegiance
+            self.worldDetails &= ~cartographer.WorldDetails.Allegiance
 
             if self.worlds.visible:
                 self.worlds.font = self._createFont(
                     families=fontName,
                     emSize=self.worlds.font.emSize(),
-                    style=maprenderer.FontStyle.Regular)
+                    style=cartographer.FontStyle.Regular)
                 self.worlds.smallFont = self._createFont(
                     families=fontName,
                     emSize=self.worlds.smallFont.emSize(),
@@ -1239,16 +1239,16 @@ class StyleSheet(object):
                 self.worlds.largeFont = self._createFont(
                     families=fontName,
                     emSize=self.worlds.largeFont.emSize(),
-                    style=maprenderer.FontStyle.Bold)
+                    style=cartographer.FontStyle.Bold)
                 self.worlds.textStyle.uppercase = True
-                self.worlds.textStyle.translation = maprenderer.PointF(0, -0.04)
-                self.worlds.textBackgroundStyle = maprenderer.TextBackgroundStyle.NoStyle
+                self.worlds.textStyle.translation = cartographer.PointF(0, -0.04)
+                self.worlds.textBackgroundStyle = cartographer.TextBackgroundStyle.NoStyle
 
                 self.starport.font = self._createFont(
                     families=fontName,
                     emSize=self.starport.font.emSize(),
-                    style=maprenderer.FontStyle.Italic)
-                self.starport.position = maprenderer.PointF(0.175, 0.17)
+                    style=cartographer.FontStyle.Italic)
+                self.starport.position = cartographer.PointF(0.175, 0.17)
 
                 self.hexNumber.font = self._createFont(
                     families=fontName,
@@ -1257,8 +1257,8 @@ class StyleSheet(object):
                 self.hexNumber.position.setY(-0.49)
 
                 self.uwp.font = self.hexNumber.font
-                self.uwp.textBackgroundStyle = maprenderer.TextBackgroundStyle.Filled
-                self.uwp.position = maprenderer.PointF(0, 0.40)
+                self.uwp.textBackgroundStyle = cartographer.TextBackgroundStyle.Filled
+                self.uwp.position = cartographer.PointF(0, 0.40)
                 self.uwp.fillBrush = self._graphics.createBrush(
                     color=travellermap.HtmlColors.Black)
                 self.uwp.textBrush = self._graphics.createBrush(
@@ -1304,7 +1304,7 @@ class StyleSheet(object):
                 style=self.microBorders.font.style())
             self.microBorders.textStyle.uppercase = True
             self.microBorders.linePen.setWidth(0.11)
-            self.microBorders.linePen.setStyle(maprenderer.LineStyle.Dot)
+            self.microBorders.linePen.setStyle(cartographer.LineStyle.Dot)
             self.microBorders.textBrush.setColor(travellermap.HtmlColors.DarkSlateGray)
 
             self.sectorName.font = self._createFont(
@@ -1343,11 +1343,11 @@ class StyleSheet(object):
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
             self.discRadius = 0.11
-            self.gasGiant.position = maprenderer.PointF(0, -0.23)
-            self.baseTopPosition = maprenderer.PointF(-0.22, -0.21)
-            self.baseMiddlePosition = maprenderer.PointF(-0.32, 0.17)
-            self.baseBottomPosition = maprenderer.PointF(0.22, -0.21)
-            self.discPosition = maprenderer.PointF(-self.discRadius, 0.16)
+            self.gasGiant.position = cartographer.PointF(0, -0.23)
+            self.baseTopPosition = cartographer.PointF(-0.22, -0.21)
+            self.baseMiddlePosition = cartographer.PointF(-0.32, 0.17)
+            self.baseBottomPosition = cartographer.PointF(0.22, -0.21)
+            self.discPosition = cartographer.PointF(-self.discRadius, 0.16)
 
         if fadeSectorSubsectorNames and \
             (not self.sectorName.textBrush or not self.subsectorNames.textBrush):
@@ -1443,15 +1443,15 @@ class StyleSheet(object):
             self.worldVacuum.linePen = self._graphics.createPen(
                 color=travellermap.HtmlColors.White,
                 width=self.worldWater.linePen.width() if self.worldWater.linePen else onePixel,
-                style=self.worldWater.linePen.style() if self.worldWater.linePen else maprenderer.LineStyle.Solid,
+                style=self.worldWater.linePen.style() if self.worldWater.linePen else cartographer.LineStyle.Solid,
                 pattern=self.worldWater.linePen.pattern()if self.worldWater.linePen else None)
 
     def _createFont(
             self,
             families: str,
             emSize: float,
-            style: maprenderer.FontStyle = maprenderer.FontStyle.Regular
-            ) -> maprenderer.AbstractFont:
+            style: cartographer.FontStyle = cartographer.FontStyle.Regular
+            ) -> cartographer.AbstractFont:
         for family in families.split(','):
             key = (family, emSize, style)
             font = self._fontCache.get(key)
@@ -1505,6 +1505,6 @@ class StyleSheet(object):
             scale=scale,
             minScale=minScale,
             maxScale=maxScale)
-        return maprenderer.makeAlphaColor(
+        return cartographer.makeAlphaColor(
             alpha=alpha,
             color=color)

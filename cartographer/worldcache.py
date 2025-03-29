@@ -1,5 +1,5 @@
 import common
-import maprenderer
+import cartographer
 import math
 import random
 import traveller
@@ -44,7 +44,7 @@ class WorldInfo(object):
     def __init__(
             self,
             world: traveller.World,
-            imageCache: maprenderer.ImageCache
+            imageCache: cartographer.ImageCache
             ) -> None:
         self.name = world.name() if not world.isNameGenerated() else ''
         self.upperName = self.name.upper()
@@ -56,7 +56,7 @@ class WorldInfo(object):
             hexY=int((worldHex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
 
         hexCenterX, hexCenterY = worldHex.absoluteCenter()
-        self.hexCenter = maprenderer.PointF(x=hexCenterX, y=hexCenterY)
+        self.hexCenter = cartographer.PointF(x=hexCenterX, y=hexCenterY)
 
         uwp = world.uwp()
         self.uwpString = uwp.string()
@@ -83,7 +83,7 @@ class WorldInfo(object):
             self.asteroidRectangles = []
             for i in range(len(WorldInfo._AsteroidXPositions)):
                 if rand.random() < WorldInfo._AsteroidRadii[i]:
-                    self.asteroidRectangles.append(maprenderer.RectangleF(
+                    self.asteroidRectangles.append(cartographer.RectangleF(
                         x=WorldInfo._AsteroidXPositions[i] * 0.035,
                         y=WorldInfo._AsteroidYPositions[i] * 0.035,
                         width=0.04 + rand.random() * 0.03,
@@ -128,30 +128,30 @@ class WorldInfo(object):
             if self.basesAllegiance == 'Zh' and bases.string() == 'KM':
                 baseCode = 'Z'
 
-            self.primaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+            self.primaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.basesAllegiance,
                 code=baseCode)
 
         if bases.count() >= 2:
-            self.secondaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+            self.secondaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
                 code=traveller.Bases.code(bases[1]))
 
         if bases.count() >= 3:
-            self.tertiaryBaseGlyph = maprenderer.GlyphDefs.fromBaseCode(
+            self.tertiaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
                 code=traveller.Bases.code(bases[2]))
 
         if world.hasTradeCode(traveller.TradeCode.ResearchStation):
             remarks = world.remarks()
-            self.specialFeatureGlyph = maprenderer.GlyphDefs.fromResearchStation(
+            self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(
                 remarks.researchStation())
         elif world.hasTradeCode(traveller.TradeCode.Reserve):
-            self.specialFeatureGlyph = maprenderer.GlyphDefs.Reserve
+            self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
         elif world.hasTradeCode(traveller.TradeCode.PenalColony):
-            self.specialFeatureGlyph = maprenderer.GlyphDefs.Prison
+            self.specialFeatureGlyph = cartographer.GlyphDefs.Prison
         elif world.hasTradeCode(traveller.TradeCode.PrisonCamp):
-            self.specialFeatureGlyph = maprenderer.GlyphDefs.ExileCamp
+            self.specialFeatureGlyph = cartographer.GlyphDefs.ExileCamp
 
         self.worldSize = world.physicalSize()
         self.worldImage = WorldInfo._calcWorldImage(
@@ -227,8 +227,8 @@ class WorldInfo(object):
     @staticmethod
     def _calcWorldImage(
             world: traveller.World,
-            images: maprenderer.ImageCache
-            ) -> maprenderer.AbstractImage:
+            images: cartographer.ImageCache
+            ) -> cartographer.AbstractImage:
         uwp = world.uwp()
         size = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
         if size <= 0:
@@ -241,7 +241,7 @@ class WorldInfo(object):
 class WorldCache(object):
     def __init__(
             self,
-            imageCache: maprenderer.ImageCache,
+            imageCache: cartographer.ImageCache,
             capacity: int
             ) -> None:
         self._imageCache = imageCache

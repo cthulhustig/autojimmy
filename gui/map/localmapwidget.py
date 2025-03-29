@@ -3,7 +3,7 @@ import common
 import gc
 import gui
 import logic
-import maprenderer
+import cartographer
 import math
 import travellermap
 import typing
@@ -112,12 +112,12 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultScale, linear=True)
 
         self._graphics = gui.MapGraphics()
-        self._imageCache = maprenderer.ImageCache(
+        self._imageCache = cartographer.ImageCache(
             graphics=self._graphics)
-        self._vectorCache = maprenderer.VectorObjectCache(
+        self._vectorCache = cartographer.VectorObjectCache(
             graphics=self._graphics)
-        self._labelCache = maprenderer.LabelCache()
-        self._styleCache = maprenderer.StyleCache()
+        self._labelCache = cartographer.LabelCache()
+        self._styleCache = cartographer.StyleCache()
         self._renderer = self._createRenderer()
 
         self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
@@ -144,7 +144,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._directionTextFont = self._graphics.createFont(
             family=LocalMapWidget._DirectionTextFontFamily,
             emSize=LocalMapWidget._DirectionTextFontSize,
-            style=maprenderer.FontStyle.Bold)
+            style=cartographer.FontStyle.Bold)
         self._directionTextBrush = self._graphics.createBrush(
             color=travellermap.HtmlColors.TravellerRed)
 
@@ -518,7 +518,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 brush=self._directionTextBrush,
                 x=viewWidth / 2,
                 y=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
-                format=maprenderer.TextAlignment.Centered)
+                format=cartographer.TextAlignment.Centered)
 
             text = 'RIMWARD'
             _, textHeight = self._graphics.measureString(
@@ -530,7 +530,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 brush=self._directionTextBrush,
                 x=viewWidth / 2,
                 y=viewHeight - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
-                format=maprenderer.TextAlignment.Centered)
+                format=cartographer.TextAlignment.Centered)
 
             with self._graphics.save():
                 self._graphics.translateTransform(
@@ -547,7 +547,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                     font=self._directionTextFont,
                     brush=self._directionTextBrush,
                     x=0, y=0,
-                    format=maprenderer.TextAlignment.Centered)
+                    format=cartographer.TextAlignment.Centered)
 
             with self._graphics.save():
                 self._graphics.translateTransform(
@@ -564,7 +564,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                     font=self._directionTextFont,
                     brush=self._directionTextBrush,
                     x=0, y=0,
-                    format=maprenderer.TextAlignment.Centered)
+                    format=cartographer.TextAlignment.Centered)
         finally:
             self._graphics.setPainter(painter=None)
 
@@ -633,8 +633,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             absoluteX=worldClampedX,
             absoluteY=worldClampedY)
 
-    def _createRenderer(self) -> maprenderer.RenderContext:
-        return maprenderer.RenderContext(
+    def _createRenderer(self) -> cartographer.RenderContext:
+        return cartographer.RenderContext(
             graphics=self._graphics,
             absoluteCenterX=self._absoluteCenterPos.x(),
             absoluteCenterY=self._absoluteCenterPos.y(),
@@ -642,7 +642,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             outputPixelX=self.width(),
             outputPixelY=self.height(),
             style=app.Config.instance().mapStyle(),
-            options=maprenderer.mapOptionsToRenderOptions(
+            options=cartographer.mapOptionsToRenderOptions(
                 app.Config.instance().mapOptions()),
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
