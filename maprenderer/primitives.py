@@ -1,4 +1,5 @@
 import enum
+import travellermap
 import typing
 
 class TextAlignment(enum.Enum):
@@ -94,7 +95,6 @@ class MapOptions(enum.IntFlag):
     RoutesMajor = 0x10000000
     RoutesMinor = 0x20000000
     RoutesMask = RoutesMajor | RoutesMinor
-
 
 class LayerId(enum.Enum):
     #------------------------------------------------------------

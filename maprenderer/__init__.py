@@ -1,6 +1,6 @@
+from .primitives import *
 from .utils import *
 from .glyphs import *
-from .primitives import *
 from .abstract import *
 from .selector import *
 from .imagecache import *

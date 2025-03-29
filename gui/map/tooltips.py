@@ -41,14 +41,7 @@ def createHexToolTip(
             app.Config.instance().showToolTipImages() and \
             not _DisableWorldToolTipImages:
         try:
-            tileBytes, tileFormat = travellermap.TileClient.instance().tile(
-                milieu=app.Config.instance().milieu(),
-                style=app.Config.instance().mapStyle(),
-                options=app.Config.instance().mapOptions(),
-                hex=hex,
-                width=256,
-                height=256,
-                timeout=3)
+            tileBytes, tileFormat = gui.generateThumbnail(hex=hex, width=256, height=256)
             if tileBytes:
                 mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()

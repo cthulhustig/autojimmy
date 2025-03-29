@@ -44,6 +44,7 @@ from .common.plotwidgetex import *
 from .common.tooltips import *
 from .map.primitives import *
 from .map.mapgraphics import *
+from .map.thumbnail import *
 from .map.tooltips import *
 from .map.hexselectcombobox import *
 from .map.localmapwidget import *

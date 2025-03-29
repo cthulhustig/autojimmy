@@ -1,6 +1,5 @@
 import app
 import common
-import enum
 import gc
 import gui
 import logic
@@ -43,14 +42,13 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 #   rendered on top of the final frame
 # TODO: Other overlays
 # TODO: Ability to switch between local and web rendering
+# - I've made the changes so it's possible, just need to hook it up to the ui
 # TODO: Animated move to new location
 # TODO: Current scale line in bottom right
 # TODO: Fix colour vs color
 # TODO: Update tooltips to use renderer
 # TODO: Saving/restoring last view position and zoom
-# TODO: Share tile cache (and possibly others) between instances of local map widget
-# TODO: When the info/config controls are drawn over the local map, if you use the scroll wheel when it's over one
-# of the controls, the scrolls the control and the map (it just scrolls the control with the web map)
+
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -644,47 +642,12 @@ class LocalMapWidget(QtWidgets.QWidget):
             outputPixelX=self.width(),
             outputPixelY=self.height(),
             style=app.Config.instance().mapStyle(),
-            options=self._calculateMapOptions(),
+            options=maprenderer.mapOptionsToRenderOptions(
+                app.Config.instance().mapOptions()),
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
             labelCache=self._labelCache,
             styleCache=self._styleCache)
-
-    # TODO: Handle other option mappings
-    _MapOptionsMap: typing.Dict[
-        travellermap.Option,
-        maprenderer.MapOptions
-        ] = {
-            #travellermap.Option.GalacticDirections
-            travellermap.Option.SectorGrid: maprenderer.MapOptions.GridMask,
-            # TODO: There is currently no way to show all sector names as I don't have the
-            # tri-state controls that Traveller Map has
-            travellermap.Option.SectorNames: maprenderer.MapOptions.SectorsSelected,
-            travellermap.Option.Borders: maprenderer.MapOptions.BordersMask,
-            travellermap.Option.Routes: maprenderer.MapOptions.RoutesMask,
-            travellermap.Option.RegionNames: maprenderer.MapOptions.NamesMask,
-            travellermap.Option.ImportantWorlds: maprenderer.MapOptions.WorldsMask,
-            travellermap.Option.WorldColours: maprenderer.MapOptions.WorldColors,
-            travellermap.Option.FilledBorders: maprenderer.MapOptions.FilledBorders,
-            travellermap.Option.DimUnofficial: maprenderer.MapOptions.DimUnofficial,
-            travellermap.Option.ImportanceOverlay: maprenderer.MapOptions.ImportanceOverlay,
-            travellermap.Option.PopulationOverlay: maprenderer.MapOptions.PopulationOverlay,
-            travellermap.Option.CapitalsOverlay: maprenderer.MapOptions.CapitalOverlay,
-            travellermap.Option.MinorRaceOverlay: maprenderer.MapOptions.MinorHomeWorlds,
-            travellermap.Option.DroyneWorldOverlay: maprenderer.MapOptions.DroyneWorlds,
-            travellermap.Option.AncientSitesOverlay: maprenderer.MapOptions.AncientWorlds,
-            travellermap.Option.StellarOverlay: maprenderer.MapOptions.StellarOverlay,
-            #travellermap.Option.EmpressWaveOverlay
-            #travellermap.Option.QrekrshaZoneOverlay
-            #travellermap.Option.MainsOverlay
-        }
-    def _calculateMapOptions(self) -> maprenderer.MapOptions:
-        mapOptions = 0
-        for option in app.Config.instance().mapOptions():
-            flag = LocalMapWidget._MapOptionsMap.get(option)
-            if flag is not None:
-                mapOptions |= flag
-        return mapOptions
 
     def _updateRendererView(self) -> None:
         if not self._renderer:
