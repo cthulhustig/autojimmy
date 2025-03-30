@@ -28,6 +28,7 @@ class Icon(enum.Enum):
     Key = 'key.svg'
     Map = 'map.svg'
     Plus = 'plus.svg'
+    Home = 'home.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

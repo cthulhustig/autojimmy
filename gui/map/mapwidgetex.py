@@ -793,6 +793,8 @@ class MapWidgetEx(QtWidgets.QWidget):
     _SelectionOutlineLightStyleColour = '#5442f5'
     _SelectionOutlineWidth = 6
 
+    _HomeLinearScale = 1
+
     # Actions shared with all instances of this widget
     _sharedStyleGroup = None
     _sharedFeatureGroup = None
@@ -855,11 +857,11 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
 
-        self._reloadButton = _CustomIconButton(
-            icon=gui.loadIcon(id=gui.Icon.Reload),
+        self._homeButton = _CustomIconButton(
+            icon=gui.loadIcon(id=gui.Icon.Home),
             size=buttonSize,
             parent=self)
-        self._reloadButton.clicked.connect(self.reload)
+        self._homeButton.clicked.connect(self.gotoHome)
 
         self._legendButton = _CustomIconButton(
             icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Key)),
@@ -914,8 +916,14 @@ class MapWidgetEx(QtWidgets.QWidget):
             for action in MapWidgetEx._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
-    def reload(self) -> None:
-        self._mapWidget.reload()
+    def gotoHome(self) -> None:
+        self._mapWidget.centerOnHex(
+            hex=travellermap.HexPosition(
+                sectorX=travellermap.ReferenceSectorX,
+                sectorY=travellermap.ReferenceSectorY,
+                offsetX=travellermap.ReferenceHexX,
+                offsetY=travellermap.ReferenceHexY),
+            linearScale=MapWidgetEx._HomeLinearScale)
 
     def centerOnHex(
             self,
@@ -1246,7 +1254,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidgetSize = self._searchWidget.size()
         searchButtonSize = self._searchButton.size()
         infoButtonSize = self._infoButton.size()
-        reloadButtonSize = self._reloadButton.size()
+        homeButtonSize = self._homeButton.size()
         keyButtonSize = self._legendButton.size()
         configButtonSize = self._configButton.size()
         infoWidgetMinSize = self._infoWidget.minimumSize()
@@ -1259,7 +1267,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             MapWidgetEx._ControlWidgetSpacing + \
             infoButtonSize.width() + \
             MapWidgetEx._ControlWidgetSpacing + \
-            reloadButtonSize.width() + \
+            homeButtonSize.width() + \
             MapWidgetEx._ControlWidgetSpacing + \
             keyButtonSize.width() + \
             MapWidgetEx._ControlWidgetSpacing + \
@@ -1268,7 +1276,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             searchWidgetSize.height(),
             searchButtonSize.height(),
             infoButtonSize.height(),
-            reloadButtonSize.height(),
+            homeButtonSize.height(),
             keyButtonSize.height(),
             configButtonSize.height())
 
@@ -1488,7 +1496,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._legendWidget.syncContent()
         self._configureOverlayControls()
         self._recreateSelectionOverlays()
-        self.reload()
+        self.gotoHome()
         self.displayOptionsChanged.emit()
 
     def _configureOverlayControls(self) -> None:
@@ -1541,9 +1549,9 @@ class MapWidgetEx(QtWidgets.QWidget):
             MapWidgetEx._ControlWidgetSpacing,
             MapWidgetEx._ControlWidgetInset)
 
-        self._reloadButton.move(
+        self._homeButton.move(
             self.width() - \
-            (self._reloadButton.width() + \
+            (self._homeButton.width() + \
              MapWidgetEx._ControlWidgetSpacing + \
              self._legendButton.width() + \
              MapWidgetEx._ControlWidgetSpacing + \

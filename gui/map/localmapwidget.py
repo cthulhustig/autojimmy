@@ -45,7 +45,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Ability to switch between local and web rendering
 # - I've made the changes so it's possible, just need to hook it up to the ui
 # TODO: Animated move to new location
-# TODO: Current scale line in bottom right
 # TODO: Fix colour vs color
 
 
@@ -175,6 +174,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         center = hex.absoluteCenter()
         self._absoluteCenterPos.setX(center[0])
         self._absoluteCenterPos.setY(center[1])
+        self._viewScale.linear = linearScale
         self.update() # Force redraw
 
     def centerOnHexes(
