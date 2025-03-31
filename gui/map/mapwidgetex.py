@@ -938,15 +938,11 @@ class MapWidgetEx(QtWidgets.QWidget):
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
-            pitStopRadius: float = 0.4, # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
-            pitStopColour: str = '#8080FF'
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
             ) -> None:
         self._mapWidget.setJumpRoute(
             jumpRoute=jumpRoute,
-            refuellingPlan=refuellingPlan,
-            pitStopRadius=pitStopRadius,
-            pitStopColour=pitStopColour)
+            refuellingPlan=refuellingPlan)
 
     def clearJumpRoute(self) -> None:
         self._mapWidget.clearJumpRoute()

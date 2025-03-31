@@ -46,6 +46,83 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Animated move to new location
 # TODO: Fix colour vs color
 
+class _OverlayInterface(object):
+    def draw(self, painter: QtGui.QPainter) -> None:
+        raise RuntimeError(f'{type(self)} is derived from _OverlayInterface so must implement draw')
+
+class _JumpRouteOverlay(_OverlayInterface):
+    _JumpRouteColour = '#7F048104'
+    _PitStopColour = '#7F8080FF'
+    _PitStopRadius =  0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
+
+    def __init__(
+            self,
+            jumpRoute: typing.Optional[logic.JumpRoute],
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
+            ) -> None:
+        super().__init__()
+        self._refuellingPlan = refuellingPlan
+
+        self._jumpRoutePath = QtGui.QPolygonF()
+        for hex, _ in jumpRoute:
+            centerX, centerY = hex.absoluteCenter()
+            self._jumpRoutePath.append(QtCore.QPointF(
+                centerX * travellermap.ParsecScaleX,
+                centerY * travellermap.ParsecScaleY))
+
+        self._jumpRoutePen = QtGui.QPen(
+            QtGui.QColor(_JumpRouteOverlay._JumpRouteColour),
+            1, # Width will be set when rendering as it's dependant on scale
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.FlatCap)
+        self._jumpNodePen = QtGui.QPen(
+            QtGui.QColor(_JumpRouteOverlay._JumpRouteColour),
+            1, # Width will be set when rendering as it's dependant on scale
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.RoundCap)
+
+        self._pitStopPoints = None
+        self._pitStopPen = None
+        if refuellingPlan:
+            self._pitStopPoints = QtGui.QPolygonF()
+            for pitStop in refuellingPlan:
+                centerX, centerY = pitStop.hex().absoluteCenter()
+                self._pitStopPoints.append(QtCore.QPointF(
+                    centerX * travellermap.ParsecScaleX,
+                    centerY * travellermap.ParsecScaleY))
+
+            self._pitStopPen = QtGui.QPen(
+                QtGui.QColor(_JumpRouteOverlay._PitStopColour),
+                _JumpRouteOverlay._PitStopRadius * 2,
+                QtCore.Qt.PenStyle.SolidLine,
+                QtCore.Qt.PenCapStyle.RoundCap)
+
+    def draw(
+            self,
+            painter: QtGui.QPainter,
+            currentScale: travellermap.Scale
+            ):
+        lowDetail = currentScale.log < 7
+        routeLineWidth = 0.25 if not lowDetail else (15 / currentScale.linear)
+
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+
+        self._jumpRoutePen.setWidthF(routeLineWidth)
+        painter.setPen(self._jumpRoutePen)
+        painter.drawPolyline(self._jumpRoutePath)
+
+        self._jumpNodePen.setWidthF(routeLineWidth * 2)
+        painter.setPen(self._jumpNodePen)
+        if not lowDetail:
+            painter.drawPoints(self._jumpRoutePath)
+        else:
+            painter.drawPoint(self._jumpRoutePath.at(0))
+            painter.drawPoint(self._jumpRoutePath.at(self._jumpRoutePath.count() - 1))
+
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
+        if self._pitStopPoints:
+            painter.setPen(self._pitStopPen)
+            painter.drawPoints(self._pitStopPoints)
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -87,8 +164,6 @@ class LocalMapWidget(QtWidgets.QWidget):
     _ScaleLineIndent = 10
     _ScaleLineTickHeight = 10
     _ScaleLineWidth = 2
-
-    _JumpRouteColour = '#7F048104'
 
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
@@ -169,17 +244,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         # of the final image with the alpha value required by the overlay.
         self._overlayStagingImage: typing.Optional[QtGui.QImage] = None
 
-        self._jumpRoutePath: typing.Optional[QtGui.QPolygonF] = None
-        self._jumpRoutePen = QtGui.QPen(
-            QtGui.QColor(LocalMapWidget._JumpRouteColour),
-            1, # Width will be set when rendering as it's dependant on scale
-            QtCore.Qt.PenStyle.SolidLine,
-            QtCore.Qt.PenCapStyle.FlatCap)
-        self._jumpNodePen = QtGui.QPen(
-            QtGui.QColor(LocalMapWidget._JumpRouteColour),
-            1, # Width will be set when rendering as it's dependant on scale
-            QtCore.Qt.PenStyle.SolidLine,
-            QtCore.Qt.PenCapStyle.RoundCap)
+        self._jumpRouteOverlay: typing.Optional[_JumpRouteOverlay] = None
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -210,30 +275,23 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._handleViewUpdate(forceAtomicRedraw=True)
 
     def hasJumpRoute(self) -> bool:
-        return self._jumpRoutePath is not None
+        return self._jumpRouteOverlay is not None
 
-    # TODO: Handle refuelling plan
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
-            pitStopRadius: float = 0.4, # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
-            pitStopColour: str = '#8080FF'
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
             ) -> None:
-        if not jumpRoute:
-            self._jumpRoutePath = None
-            return
-
-        self._jumpRoutePath = QtGui.QPolygonF()
-        for hex, _ in jumpRoute:
-            centerX, centerY = hex.absoluteCenter()
-            self._jumpRoutePath.append(QtCore.QPointF(
-                centerX * travellermap.ParsecScaleX,
-                centerY * travellermap.ParsecScaleY))
+        if jumpRoute:
+            self._jumpRouteOverlay = _JumpRouteOverlay(
+                jumpRoute=jumpRoute,
+                refuellingPlan=refuellingPlan)
+        else:
+            self._jumpRouteOverlay = None
         self.update()
 
     def clearJumpRoute(self) -> None:
-        self._jumpRoutePath = None
+        self._jumpRouteOverlay = None
         self.update()
 
     def centerOnJumpRoute(self) -> None:
@@ -566,7 +624,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             painter: QtGui.QPainter
             ) -> None:
-        if not self._jumpRoutePath:
+        if not self._jumpRouteOverlay:
             return
 
         if not self._overlayStagingImage or \
@@ -581,23 +639,11 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         stagingPainter = QtGui.QPainter()
         with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
-            stagingPainter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-
             stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
 
-            routeLineWidth = 0.25 if self._viewScale.log >= 7 else (15 / self._viewScale.linear)
-
-            self._jumpRoutePen.setWidthF(routeLineWidth)
-            stagingPainter.setPen(self._jumpRoutePen)
-            stagingPainter.drawPolyline(self._jumpRoutePath)
-
-            self._jumpNodePen.setWidthF(routeLineWidth * 2)
-            stagingPainter.setPen(self._jumpNodePen)
-            if self._viewScale.log >= 7:
-                stagingPainter.drawPoints(self._jumpRoutePath)
-            else:
-                stagingPainter.drawPoint(self._jumpRoutePath.at(0))
-                stagingPainter.drawPoint(self._jumpRoutePath.at(self._jumpRoutePath.count() - 1))
+            self._jumpRouteOverlay.draw(
+                painter=stagingPainter,
+                currentScale=self._viewScale)
 
         with gui.PainterStateGuard(painter):
             painter.drawImage(

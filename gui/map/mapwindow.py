@@ -38,13 +38,11 @@ class MapWindow(gui.WindowWidget):
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
-            pitStopRadius: float = 0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
             ) -> None:
         self._mapWidget.setJumpRoute(
             jumpRoute=jumpRoute,
-            refuellingPlan=refuellingPlan,
-            pitStopRadius=pitStopRadius)
+            refuellingPlan=refuellingPlan)
         self._mapWidget.centerOnJumpRoute()
 
     def highlightHex(

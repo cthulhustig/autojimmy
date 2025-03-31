@@ -5,6 +5,7 @@ import itertools
 import logic
 import math
 import traveller
+import travellermap
 import typing
 
 class RefuellingType(enum.Enum):
@@ -271,6 +272,9 @@ class PitStop(object):
 
     def world(self) -> traveller.World:
         return self._world
+
+    def hex(self) -> travellermap.HexPosition:
+        return self._world.hex()
 
     def hasRefuelling(self) -> bool:
         return self._refuellingType != None

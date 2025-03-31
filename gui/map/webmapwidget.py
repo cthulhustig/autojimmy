@@ -147,6 +147,9 @@ class WebMapWidget(QtWidgets.QWidget):
     # Number of pixels the cursor can move before the displayed tool tip will be hidden
     _ToolTipMoveThreshold = 5
 
+    _JumpRoutePitStopRadius: float = 0.4, # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
+    _JumpRoutePitStopColour: str = '#8080FF'
+
     # Shared profile used by all instances of this widget. With Qt5 I could use the default profile,
     # however that wouldn't be possible if/when I switch to Qt6 as the default profile doesn't
     # persist cookies under Qt6. To avoid potential future issues I'm just using a custom shared
@@ -283,9 +286,7 @@ class WebMapWidget(QtWidgets.QWidget):
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
-            pitStopRadius: float = 0.4, # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
-            pitStopColour: str = '#8080FF'
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
             ) -> None:
         if not jumpRoute:
             self.clearJumpRoute()
@@ -300,8 +301,8 @@ class WebMapWidget(QtWidgets.QWidget):
             self._refuellingPlanOverlayHandle = self.createHexOverlay(
                 hexes=[pitStop.world().hex() for pitStop in refuellingPlan],
                 primitive=gui.MapPrimitiveType.Circle,
-                radius=pitStopRadius,
-                fillColour=pitStopColour)
+                radius=WebMapWidget._JumpRoutePitStopRadius,
+                fillColour=WebMapWidget._JumpRoutePitStopColour)
         elif self._refuellingPlanOverlayHandle != None:
             self.removeOverlay(handle=self._refuellingPlanOverlayHandle)
             self._refuellingPlanOverlayHandle = None
