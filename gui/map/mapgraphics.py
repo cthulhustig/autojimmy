@@ -368,28 +368,19 @@ class MapMatrix(cartographer.AbstractMatrix):
     def rotatePrepend(self, degrees: float, center: cartographer.PointF) -> None:
         if degrees == 0.0:
             return # Nothing to do
-        self.translatePrepend(dx=-center.x(), dy=-center.y())
-
-        transform = QtGui.QTransform()
-        transform.rotate(degrees, QtCore.Qt.Axis.ZAxis)
-        transform *= self._qtMatrix
-        self._qtMatrix = transform
+        self._qtMatrix.translate(-center.x(), -center.y())
+        self._qtMatrix.rotate(degrees, QtCore.Qt.Axis.ZAxis)
+        self._qtMatrix.translate(center.x(), center.y())
 
     def scalePrepend(self, sx: float, sy: float) -> None:
         if sx == 1.0 and sy == 1.0:
             return
-        transform = QtGui.QTransform()
-        transform.scale(sx, sy)
-        transform *= self._qtMatrix
-        self._qtMatrix = transform
+        self._qtMatrix.scale(sx, sy)
 
     def translatePrepend(self, dx: float, dy: float) -> None:
         if dx == 0.0 and dy == 0.0:
             return
-        transform = QtGui.QTransform()
-        transform.translate(dx, dy)
-        transform *= self._qtMatrix
-        self._qtMatrix = transform
+        self._qtMatrix.translate(dx, dy)
 
     def prepend(self, matrix: 'MapMatrix') -> None:
         self._qtMatrix = matrix.qtTransform() * self._qtMatrix
@@ -816,24 +807,24 @@ class MapGraphics(cartographer.AbstractGraphics):
     def scaleTransform(self, scaleX: float, scaleY: float) -> None:
         if scaleX == 1.0 and scaleY == 1.0:
             return
-        transform = QtGui.QTransform()
+        transform = self._painter.transform()
         transform.scale(scaleX, scaleY)
-        self._painter.setTransform(
-            transform * self._painter.transform())
+        self._painter.setTransform(transform)
+
     def translateTransform(self, dx: float, dy: float) -> None:
         if dx == 0.0 and dy == 0.0:
             return
-        transform = QtGui.QTransform()
+        transform = self._painter.transform()
         transform.translate(dx, dy)
-        self._painter.setTransform(
-            transform * self._painter.transform())
+        self._painter.setTransform(transform)
+
     def rotateTransform(self, degrees: float) -> None:
         if degrees == 0.0:
             return
-        transform = QtGui.QTransform()
+        transform = self._painter.transform()
         transform.rotate(degrees, QtCore.Qt.Axis.ZAxis)
-        self._painter.setTransform(
-            transform * self._painter.transform())
+        self._painter.setTransform(transform)
+
     def multiplyTransform(self, matrix: MapMatrix) -> None:
         self._painter.setTransform(
             matrix.qtTransform() * self._painter.transform())

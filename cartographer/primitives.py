@@ -341,13 +341,21 @@ class RectangleF(object):
             width=currentWidth + (x * 2),
             height=currentHeight + (y * 2))
 
-    def intersectsWith(self, other: 'RectangleF') -> bool:
+    def intersects(self, other: 'RectangleF') -> bool:
         selfX, selfY, selfWidth, selfHeight = self.rect()
         otherX, otherY, otherWidth, otherHeight = other.rect()
         return (otherX < selfX + selfWidth) and \
             (selfX < otherX + otherWidth) and \
             (otherY < selfY + selfHeight) and \
             (selfY < otherY + otherHeight)
+
+    def contains(self, other: typing.Union[PointF, 'RectangleF']) -> bool:
+        if isinstance(other, PointF):
+            return other.x() >= self.left() and other.x() <= self.right() and \
+                other.y() >= self.top() and other.y() <= self.bottom()
+        else:
+            return other.left() >= self.left() and other.right() <= self.right() and \
+                other.top() >= self.top() and other.bottom() <= self.bottom()
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, RectangleF):

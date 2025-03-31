@@ -91,18 +91,18 @@ def isAltKeyDown():
     return modifiers == QtCore.Qt.KeyboardModifier.AltModifier
 
 class SignalBlocker():
-    def __init__(self, widget: QtWidgets.QWidget):
+    def __init__(self, widget: QtWidgets.QWidget) -> None:
         self._widget = widget
 
     def __enter__(self) -> 'SignalBlocker':
         self._old = self._widget.blockSignals(True)
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback) -> None:
         self._widget.blockSignals(self._old)
 
 class UpdateBlocker():
-    def __init__(self, widget: QtWidgets.QWidget):
+    def __init__(self, widget: QtWidgets.QWidget) -> None:
         self._widget = widget
 
     def __enter__(self) -> 'UpdateBlocker':
@@ -110,8 +110,38 @@ class UpdateBlocker():
         self._widget.setUpdatesEnabled(False)
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback) -> None:
         self._widget.setUpdatesEnabled(self._old)
+
+class PainterDrawGuard():
+    def __init__(
+            self,
+            painter: QtGui.QPainter,
+            device: typing.Optional[QtGui.QPaintDevice] = None
+            ) -> None:
+        self._painter = painter
+        self._device = device
+
+    def __enter__(self) -> 'PainterDrawGuard':
+        self._painter.begin(self._device)
+        return self
+
+    def __exit__(self, type, value, traceback) -> None:
+        self._painter.end()
+
+class PainterStateGuard():
+    def __init__(
+            self,
+            painter: QtGui.QPainter
+            ) -> None:
+        self._painter = painter
+
+    def __enter__(self) -> 'PainterStateGuard':
+        self._painter.save()
+        return self
+
+    def __exit__(self, type, value, traceback) -> None:
+        self._painter.restore()
 
 # This generates a list of values for a PyQt enum. For example, to get all values for
 # QtWidgets.QMessageBox.StandardButton:

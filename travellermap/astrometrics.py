@@ -10,9 +10,9 @@ ReferenceSectorY = 0
 ReferenceHexX = 1
 ReferenceHexY = 40
 TravellerMapTileSize = 256
-ParsecScaleX = math.cos(math.pi / 6) # cosine 30°
+ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
 ParsecScaleY = 1
-HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX
+HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX # = 0.16666666666666666
 SubsectorWidth = 8 # parsecs
 SubsectorHeight = 10 # parsecs
 

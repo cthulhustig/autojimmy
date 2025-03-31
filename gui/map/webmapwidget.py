@@ -222,9 +222,7 @@ class WebMapWidget(QtWidgets.QWidget):
         self._loaded = False
         self._scriptQueue.clear()
         self._clickTrackingRect = None
-
         self._hideToolTip()
-
         self._loadMap()
 
     def centerOnHex(

@@ -861,7 +861,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             icon=gui.loadIcon(id=gui.Icon.Home),
             size=buttonSize,
             parent=self)
-        self._homeButton.clicked.connect(self.gotoHome)
+        self._homeButton.clicked.connect(self._gotoHome)
 
         self._legendButton = _CustomIconButton(
             icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Key)),
@@ -916,14 +916,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             for action in MapWidgetEx._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
-    def gotoHome(self) -> None:
-        self._mapWidget.centerOnHex(
-            hex=travellermap.HexPosition(
-                sectorX=travellermap.ReferenceSectorX,
-                sectorY=travellermap.ReferenceSectorY,
-                offsetX=travellermap.ReferenceHexX,
-                offsetY=travellermap.ReferenceHexY),
-            linearScale=MapWidgetEx._HomeLinearScale)
+    def reload(self) -> None:
+        self._mapWidget.reload()
 
     def centerOnHex(
             self,
@@ -977,7 +971,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        self._mapWidget.highlightHex(
+        self._mapWidget.highlightHexes(
             hexes=hexes,
             radius=radius,
             colour=colour)
@@ -1492,11 +1486,20 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self.rightClicked.emit(hex)
 
+    def _gotoHome(self) -> None:
+        self.centerOnHex(
+            hex=travellermap.HexPosition(
+                sectorX=travellermap.ReferenceSectorX,
+                sectorY=travellermap.ReferenceSectorY,
+                offsetX=travellermap.ReferenceHexX,
+                offsetY=travellermap.ReferenceHexY),
+            linearScale=MapWidgetEx._HomeLinearScale)
+
     def _displayOptionChanged(self) -> None:
         self._legendWidget.syncContent()
         self._configureOverlayControls()
         self._recreateSelectionOverlays()
-        self.gotoHome()
+        self.reload()
         self.displayOptionsChanged.emit()
 
     def _configureOverlayControls(self) -> None:

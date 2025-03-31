@@ -105,6 +105,11 @@ class RenderContext(object):
             graphics=self._graphics)
         self._selector = cartographer.RectSelector()
         self._absoluteViewRect = None
+        # TODO: Are these named backwards, I think the _imageSpaceToWorldSpace
+        # is actually applied when you want to convert world space to image
+        # space (i.e. points being rendered are in world space but the output
+        # is the image space window). If this is true then the same is true
+        # for LocalMapWidget
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
 
@@ -260,12 +265,12 @@ class RenderContext(object):
         self._selector.setRect(self._absoluteViewRect)
 
         m = self._graphics.createIdentityMatrix()
-        m.translatePrepend(
-            dx=-self._absoluteViewRect.left() * self._scale * travellermap.ParsecScaleX,
-            dy=-self._absoluteViewRect.top() * self._scale * travellermap.ParsecScaleY)
         m.scalePrepend(
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
+        m.translatePrepend(
+            dx=-self._absoluteViewRect.left(),
+            dy=-self._absoluteViewRect.top())
         self._imageSpaceToWorldSpace = self._graphics.copyMatrix(other=m)
         m.invert()
         self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
@@ -346,7 +351,7 @@ class RenderContext(object):
             return
 
         if self._styleSheet.deepBackgroundOpacity > 0 and \
-            self._galaxyImageRect.intersectsWith(self._absoluteViewRect):
+            self._galaxyImageRect.intersects(self._absoluteViewRect):
             galaxyImage = \
                 self._imageCache.galaxyImageGray \
                 if self._styleSheet.lightBackground else \
@@ -404,7 +409,7 @@ class RenderContext(object):
             return
 
         if self._styleSheet.riftOpacity > 0 and \
-            self._riftImageRect.intersectsWith(self._absoluteViewRect):
+            self._riftImageRect.intersects(self._absoluteViewRect):
             self._graphics.drawImageAlpha(
                 alpha=self._styleSheet.riftOpacity,
                 image=self._imageCache.riftImage,
@@ -1698,6 +1703,11 @@ class RenderContext(object):
             pen=element.linePen,
             brush=element.fillBrush)
 
+    # TODO: I'm seeing dots being drawn at the boundaries of some sectors at
+    # some zoom levels (~10-16) when using Candy style. It's no the border
+    # fill that's causing it as it happens when the fill is turned off. It
+    # looks like it's part of the outline of some of the borders being draw.
+    # It's much more noticeable when _not_ using tile rendering
     _MicroBorderFillAlpha = 64
     _MicroBorderShadeAlpha = 128
     def _drawMicroBorders(
@@ -1719,7 +1729,7 @@ class RenderContext(object):
             pen = self._graphics.createPen(
                 width=self._styleSheet.microBorders.linePen.width())
 
-        useCurvedBorders = self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve
+        drawCurvedBorders = self._styleSheet.microBorderStyle is cartographer.MicroBorderStyle.Curve
         drawRegions = drawBorders = False
         if layer is RenderContext.MicroBorderLayer.Background:
             drawRegions = True
@@ -1733,14 +1743,20 @@ class RenderContext(object):
                 sectorX=sector.x(),
                 sectorY=sector.y())
             sectorClipBounds = sectorClip.bounds()
-            if useCurvedBorders:
+            if drawCurvedBorders:
                 # Inflate the sector clip bounds slightly when drawing curved borders to
                 # account for the fact the borders can extend out slightly past the
-                # hexes they enclose
+                # hexes they enclose.
+                # If I'm ever looking to tweak the bloat value then Juro in Mavuzog is
+                # a good test as it is inside a border that touches the edge of the
+                # sector and will be clipped if this value is to low. Note that the
+                # fill is expected to be clipped but the outline is not. This is
+                # consistent with Traveller Map and is down to the fact the fill isn't
+                # drawn as a curve.
                 sectorClipBounds.inflate(
-                    travellermap.ParsecScaleX * 0.05,
-                    travellermap.ParsecScaleY * 0.05)
-            if not self._absoluteViewRect.intersectsWith(sectorClipBounds):
+                    travellermap.ParsecScaleX * 0.1,
+                    travellermap.ParsecScaleY * 0.1)
+            if not self._absoluteViewRect.intersects(sectorClipBounds):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
@@ -1749,9 +1765,9 @@ class RenderContext(object):
                 for outline in sectorRegions:
                     outlineBounds = \
                         outline.spline().bounds() \
-                        if useCurvedBorders else \
+                        if drawCurvedBorders else \
                         outline.path().bounds()
-                    if self._absoluteViewRect.intersectsWith(outlineBounds):
+                    if self._absoluteViewRect.intersects(outlineBounds):
                         regionOutlines.append(outline)
 
             sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
@@ -1760,9 +1776,9 @@ class RenderContext(object):
                 for outline in sectorBorders:
                     outlineBounds = \
                         outline.spline().bounds() \
-                        if useCurvedBorders else \
+                        if drawCurvedBorders else \
                         outline.path().bounds()
-                    if self._absoluteViewRect.intersectsWith(outlineBounds):
+                    if self._absoluteViewRect.intersects(outlineBounds):
                         borderOutlines.append(outline)
 
             if not regionOutlines and not borderOutlines:
@@ -1770,7 +1786,7 @@ class RenderContext(object):
 
             if  layer is RenderContext.MicroBorderLayer.Background and \
                 borderOutlines and self._styleSheet.fillMicroBorders and \
-                useCurvedBorders:
+                drawCurvedBorders:
                 # When drawing filled curved borders the clipping of the fill
                 # needs to be handled separately from border pen/shade and
                 # regions. This is required due to the kind of hacky way
@@ -1805,7 +1821,7 @@ class RenderContext(object):
                 # a slightly expanded clip rect is used rather than the
                 # exact sector hex outline as curved borders draw slightly
                 # outside the sectors true area
-                if not useCurvedBorders:
+                if not drawCurvedBorders:
                     self._graphics.intersectClipPath(path=sectorClip)
                 else:
                     self._graphics.intersectClipRect(rect=sectorClipBounds)
@@ -1821,7 +1837,7 @@ class RenderContext(object):
                         brush=brush)
 
                 useBrush = layer is RenderContext.MicroBorderLayer.Background and \
-                    self._styleSheet.fillMicroBorders and not useCurvedBorders
+                    self._styleSheet.fillMicroBorders and not drawCurvedBorders
                 if useBrush or pen:
                     for outline in borderOutlines:
                         color = self._calculateBorderColor(outline)
@@ -1846,10 +1862,12 @@ class RenderContext(object):
                                         style = cartographer.LineStyle.Solid
                                 pen.setStyle(style)
 
+
                         self._drawMicroBorder(
                             outline=outline,
                             brush=brush if useBrush else None,
                             pen=pen)
+
 
     def _calculateBorderColor(self, outline: cartographer.SectorPath) -> str:
         color = outline.color()
@@ -1891,7 +1909,7 @@ class RenderContext(object):
             vectorObject: cartographer.VectorObject,
             pen: cartographer.AbstractPen
             ) -> None:
-        if vectorObject.path and vectorObject.bounds.intersectsWith(self._absoluteViewRect):
+        if vectorObject.path and vectorObject.bounds.intersects(self._absoluteViewRect):
             with self._graphics.save():
                 self._graphics.scaleTransform(scaleX=vectorObject.scaleX, scaleY=vectorObject.scaleY)
                 self._graphics.translateTransform(dx=-vectorObject.originX, dy=-vectorObject.originY)
@@ -1904,7 +1922,7 @@ class RenderContext(object):
             textBrush: cartographer.AbstractBrush,
             labelStyle: cartographer.LabelStyle
             ) -> None:
-        if vectorObject.name and vectorObject.bounds.intersectsWith(self._absoluteViewRect):
+        if vectorObject.name and vectorObject.bounds.intersects(self._absoluteViewRect):
             text = vectorObject.name
             if labelStyle.uppercase:
                 text = text.upper()

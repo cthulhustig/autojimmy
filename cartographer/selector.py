@@ -93,7 +93,7 @@ class RectSelector(object):
                 left, top, width, height = travellermap.sectorBoundingRect(
                     sector=(sector.x(), sector.y()))
                 rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersectsWith(other=rect):
+                if self._rect.intersects(other=rect):
                     self._tightSectors.append(sector)
 
         #print('Sectors: Sloppy={sloppy} Tight={tight}'.format(
@@ -135,7 +135,7 @@ class RectSelector(object):
                         subsector.sectorX(), subsector.sectorY(),
                         subsector.indexX(), subsector.indexY()))
                 rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersectsWith(other=rect):
+                if self._rect.intersects(other=rect):
                     self._tightSubsectors.append(subsector)
 
         #print('Subsectors: Sloppy={sloppy} Tight={tight}'.format(
@@ -173,7 +173,7 @@ class RectSelector(object):
                 left, top, width, height = travellermap.hexBoundingRect(
                     absolute=world.hex().absolute())
                 rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersectsWith(other=rect):
+                if self._rect.intersects(other=rect):
                     self._tightWorlds.append(world)
 
         #print('Worlds: Sloppy={sloppy} Tight={tight}'.format(

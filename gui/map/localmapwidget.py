@@ -1,6 +1,5 @@
 import app
 import common
-import gc
 import gui
 import logic
 import logging
@@ -89,6 +88,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     _ScaleLineTickHeight = 10
     _ScaleLineWidth = 2
 
+    _JumpRouteColour = '#7F048104'
+
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
     # missed
@@ -116,6 +117,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             LocalMapWidget._DefaultCenterX,
             LocalMapWidget._DefaultCenterY)
         self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultScale, linear=True)
+        self._imageSpaceToWorldSpace = None
+        self._imageSpaceToOverlaySpace = None
 
         self._graphics = gui.MapGraphics()
         self._imageCache = cartographer.ImageCache(
@@ -144,6 +147,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             int, # Tile Y
             int # Tile Scale (linear)
             ]] = []
+        self._forceAtomicRedraw = False
 
         self._placeholderTile = LocalMapWidget._createPlaceholderTile()
 
@@ -157,14 +161,35 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._scaleFont = QtGui.QFont(LocalMapWidget._ScaleTextFontFamily)
         self._scaleFont.setPointSize(LocalMapWidget._ScaleTextFontSize)
 
+        # This is a staging buffer used when generating an overlay in order
+        # to get a consistent alpha blend level when the overlay consists
+        # of multiple overlapping primitives. The idea is that the overlay
+        # set to have a transparent background then the overlay is rendered
+        # to it without any alpha, the staging image is then applied on top
+        # of the final image with the alpha value required by the overlay.
+        self._overlayStagingImage: typing.Optional[QtGui.QImage] = None
+
+        self._jumpRoutePath: typing.Optional[QtGui.QPolygonF] = None
+        self._jumpRoutePen = QtGui.QPen(
+            QtGui.QColor(LocalMapWidget._JumpRouteColour),
+            1, # Width will be set when rendering as it's dependant on scale
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.FlatCap)
+        self._jumpNodePen = QtGui.QPen(
+            QtGui.QColor(LocalMapWidget._JumpRouteColour),
+            1, # Width will be set when rendering as it's dependant on scale
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.RoundCap)
+
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
+
+        self._handleViewUpdate()
 
     def reload(self) -> None:
         self._renderer = self._createRenderer()
         self._clearTileCache()
-        self._preloadCurrentDrawTiles()
-        self.update() # Force a redraw
+        self._handleViewUpdate(forceAtomicRedraw=True)
 
     def centerOnHex(
             self,
@@ -175,17 +200,19 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._absoluteCenterPos.setX(center[0])
         self._absoluteCenterPos.setY(center[1])
         self._viewScale.linear = linearScale
-        self.update() # Force redraw
+        self._handleViewUpdate(forceAtomicRedraw=True)
 
     def centerOnHexes(
             self,
             hexes: typing.Collection[travellermap.HexPosition]
             ) -> None:
-        pass # TODO: Implement me
+        # TODO: Implement me
+        self._handleViewUpdate(forceAtomicRedraw=True)
 
     def hasJumpRoute(self) -> bool:
-        return False # TODO: Implement me
+        return self._jumpRoutePath is not None
 
+    # TODO: Handle refuelling plan
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
@@ -193,13 +220,25 @@ class LocalMapWidget(QtWidgets.QWidget):
             pitStopRadius: float = 0.4, # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
             pitStopColour: str = '#8080FF'
             ) -> None:
-        pass # TODO: Implement me
+        if not jumpRoute:
+            self._jumpRoutePath = None
+            return
+
+        self._jumpRoutePath = QtGui.QPolygonF()
+        for hex, _ in jumpRoute:
+            centerX, centerY = hex.absoluteCenter()
+            self._jumpRoutePath.append(QtCore.QPointF(
+                centerX * travellermap.ParsecScaleX,
+                centerY * travellermap.ParsecScaleY))
+        self.update()
 
     def clearJumpRoute(self) -> None:
-        pass # TODO: Implement me
+        self._jumpRoutePath = None
+        self.update()
 
     def centerOnJumpRoute(self) -> None:
-        pass # TODO: Implement me
+        # TODO: Implement me
+        self._handleViewUpdate(forceAtomicRedraw=True)
 
     def highlightHex(
             self,
@@ -298,8 +337,16 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._absoluteCenterPos.setX(stream.readFloat())
         self._absoluteCenterPos.setY(stream.readFloat())
         self._viewScale.log = stream.readFloat()
-        self._updateRendererView()
+        self._handleViewUpdate(forceAtomicRedraw=True)
         return True
+
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Force an atomic redraw when the widget is first shown so the user
+            # doesn't see the tiles draw in
+            self._forceAtomicRedraw = True
+            self.update()
+        return super().showEvent(e)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super().mousePressEvent(event)
@@ -319,7 +366,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 self._absoluteCenterPos.x() - worldDeltaX)
             self._absoluteCenterPos.setY(
                 self._absoluteCenterPos.y() - worldDeltaY)
-            self._updateRendererView()
+            self._handleViewUpdate()
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseReleaseEvent(event)
@@ -358,7 +405,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self._updateRendererView()
+        self._handleViewUpdate(forceAtomicRedraw=True)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
@@ -383,7 +430,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                     self._absoluteCenterPos.setX(self._absoluteCenterPos.x() + dx)
                 if dy != None:
                     self._absoluteCenterPos.setY(self._absoluteCenterPos.y() + dy)
-                self._updateRendererView()
+                self._handleViewUpdate()
                 return
 
             if event.key() == QtCore.Qt.Key.Key_Z:
@@ -394,31 +441,11 @@ class LocalMapWidget(QtWidgets.QWidget):
             elif event.key() == QtCore.Qt.Key.Key_Minus:
                 self._zoomView(step=-LocalMapWidget._KeyZoomDelta)
 
-            if event.key() == QtCore.Qt.Key.Key_F1:
-                pass
-            elif event.key() == QtCore.Qt.Key.Key_F2:
-                pass
-            elif event.key() == QtCore.Qt.Key.Key_F3:
-                pass
-            elif event.key() == QtCore.Qt.Key.Key_F5:
-                print('Forcing garbage collection')
-                count = gc.collect()
-                print(f'{count}')
-                count = gc.collect()
-                print(f'{count}')
-            elif event.key() == QtCore.Qt.Key.Key_F7:
-                self.update()
-            elif event.key() == QtCore.Qt.Key.Key_F10:
-                gc.collect()
-            elif event.key() == QtCore.Qt.Key.Key_F11:
-                self._sharedTileCache.clear()
+            # TODO: Remove debug code (this should be a user configurable option somewhere)
+            if event.key() == QtCore.Qt.Key.Key_F12:
+                LocalMapWidget._TileRendering = not LocalMapWidget._TileRendering
                 self._tileQueue.clear()
                 self._tileTimer.stop()
-                self._renderer = self._createRenderer()
-                gc.collect()
-                self.update()
-            elif event.key() == QtCore.Qt.Key.Key_F12:
-                LocalMapWidget._TileRendering = not LocalMapWidget._TileRendering
                 print(f'TileRendering={LocalMapWidget._TileRendering}')
                 self.update()
 
@@ -454,18 +481,17 @@ class LocalMapWidget(QtWidgets.QWidget):
                 self._offscreenRenderImage = None
 
             painter = QtGui.QPainter()
-            painter.begin(self._offscreenRenderImage if self._offscreenRenderImage is not None else self)
-            try:
+            painterDevice = self._offscreenRenderImage if self._offscreenRenderImage is not None else self
+            with gui.PainterDrawGuard(painter, painterDevice):
                 painter.setBrush(QtCore.Qt.GlobalColor.black)
                 painter.drawRect(0, 0, self.width(), self.height())
 
                 self._drawMap(painter)
+                self._drawJumpRoute(painter)
                 self._drawScale(painter)
                 self._drawDirections(painter)
-            finally:
-                painter.end()
 
-            if LocalMapWidget._DelayedRendering:
+            if LocalMapWidget._TileRendering and LocalMapWidget._DelayedRendering:
                 if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
                     # If there are no tiles needing loaded, pre-load tiles just
                     # outside the current view area.
@@ -479,19 +505,18 @@ class LocalMapWidget(QtWidgets.QWidget):
 
             if self._offscreenRenderImage is not None:
                 painter = QtGui.QPainter()
-                painter.begin(self)
-                try:
+                with gui.PainterDrawGuard(painter, self):
                     renderRect = QtCore.QRect(0, 0, self.width(), self.height())
                     painter.drawImage(renderRect, self._offscreenRenderImage)
-                finally:
-                    painter.end()
+
+            self._forceAtomicRedraw = False
 
     def _drawMap(
             self,
             painter: QtGui.QPainter
             ) -> None:
         if LocalMapWidget._TileRendering:
-            tiles = self._currentDrawTiles()
+            tiles = self._currentDrawTiles(forceCreate=self._forceAtomicRedraw)
 
             # This is disabled as I think it actually makes scaled tiles
             # look worse (a bit to blurry)
@@ -533,6 +558,52 @@ class LocalMapWidget(QtWidgets.QWidget):
             finally:
                 self._graphics.setPainter(painter=None)
 
+    # TODO: This doesn't render quite right as the dots are getting alpha
+    # blended over the lines. I think the only solution is to render to
+    # a separate image without alpha blending and then overlay that image
+    # on the main image with alpha blending
+    def _drawJumpRoute(
+            self,
+            painter: QtGui.QPainter
+            ) -> None:
+        if not self._jumpRoutePath:
+            return
+
+        if not self._overlayStagingImage or \
+            self._overlayStagingImage.width() != self.width() or \
+            self._overlayStagingImage.height() != self.height():
+            self._overlayStagingImage = QtGui.QImage(
+                self.width(),
+                self.height(),
+                QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+
+        self._overlayStagingImage.fill(QtCore.Qt.GlobalColor.transparent)
+
+        stagingPainter = QtGui.QPainter()
+        with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
+            stagingPainter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+
+            stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
+
+            routeLineWidth = 0.25 if self._viewScale.log >= 7 else (15 / self._viewScale.linear)
+
+            self._jumpRoutePen.setWidthF(routeLineWidth)
+            stagingPainter.setPen(self._jumpRoutePen)
+            stagingPainter.drawPolyline(self._jumpRoutePath)
+
+            self._jumpNodePen.setWidthF(routeLineWidth * 2)
+            stagingPainter.setPen(self._jumpNodePen)
+            if self._viewScale.log >= 7:
+                stagingPainter.drawPoints(self._jumpRoutePath)
+            else:
+                stagingPainter.drawPoint(self._jumpRoutePath.at(0))
+                stagingPainter.drawPoint(self._jumpRoutePath.at(self._jumpRoutePath.count() - 1))
+
+        with gui.PainterStateGuard(painter):
+            painter.drawImage(
+                QtCore.QRectF(0, 0, self.width(), self.height()),
+                self._overlayStagingImage)
+
     def _drawScale(
             self,
             painter: QtGui.QPainter
@@ -555,29 +626,34 @@ class LocalMapWidget(QtWidgets.QWidget):
             travellermap.HtmlColors.White
             if travellermap.isDarkStyle(self._renderer.style()) else
             travellermap.HtmlColors.Black))
-        painter.setBrush(brush)
-        painter.setFont(self._scaleFont)
-        painter.drawText(
-            QtCore.QPointF(
-                scaleLeft + ((distance / 2) - (labelRect.width() / 2)),
-                scaleY - LocalMapWidget._ScaleLineIndent),
-            label)
-
         pen = QtGui.QPen(
             brush,
             LocalMapWidget._ScaleLineWidth,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.FlatCap)
-        painter.setPen(pen)
-        painter.drawLine(
-            QtCore.QPointF(scaleLeft - (LocalMapWidget._ScaleLineWidth / 2), scaleY),
-            QtCore.QPointF(scaleRight + (LocalMapWidget._ScaleLineWidth / 2), scaleY))
-        painter.drawLine(
-            QtCore.QPointF(scaleLeft, scaleY),
-            QtCore.QPointF(scaleLeft, scaleY - LocalMapWidget._ScaleLineTickHeight))
-        painter.drawLine(
-            QtCore.QPointF(scaleRight, scaleY),
-            QtCore.QPointF(scaleRight, scaleY - LocalMapWidget._ScaleLineTickHeight))
+
+        painter.save()
+        try:
+            painter.setBrush(brush)
+            painter.setFont(self._scaleFont)
+            painter.drawText(
+                QtCore.QPointF(
+                    scaleLeft + ((distance / 2) - (labelRect.width() / 2)),
+                    scaleY - LocalMapWidget._ScaleLineIndent),
+                label)
+
+            painter.setPen(pen)
+            painter.drawLine(
+                QtCore.QPointF(scaleLeft - (LocalMapWidget._ScaleLineWidth / 2), scaleY),
+                QtCore.QPointF(scaleRight + (LocalMapWidget._ScaleLineWidth / 2), scaleY))
+            painter.drawLine(
+                QtCore.QPointF(scaleLeft, scaleY),
+                QtCore.QPointF(scaleLeft, scaleY - LocalMapWidget._ScaleLineTickHeight))
+            painter.drawLine(
+                QtCore.QPointF(scaleRight, scaleY),
+                QtCore.QPointF(scaleRight, scaleY - LocalMapWidget._ScaleLineTickHeight))
+        finally:
+            painter.restore()
 
     # TODO: I don't like the fact this uses the graphics object rather
     # than using painter directly. The main reason it's done at the
@@ -592,6 +668,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         viewWidth = self.width()
         viewHeight = self.height()
 
+        painter.save()
         self._graphics.setPainter(painter=painter)
         try:
             text = 'COREWARD'
@@ -653,6 +730,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                     format=cartographer.TextAlignment.Centered)
         finally:
             self._graphics.setPainter(painter=None)
+            painter.restore()
 
     def _handleLeftClickEvent(
             self,
@@ -735,9 +813,32 @@ class LocalMapWidget(QtWidgets.QWidget):
             labelCache=self._labelCache,
             styleCache=self._styleCache)
 
-    def _updateRendererView(self) -> None:
-        if not self._renderer:
-            self._renderer = self._createRenderer()
+    # TODO: I'm currently only using the _imageSpaceToOverlaySpace, if that is still
+    # the case once I've finished all overlay stuff then I think it should be possible
+    # to simplify how it's calculated (at a minimum I think there is a scale I don't
+    # need)
+    def _handleViewUpdate(
+            self,
+            forceAtomicRedraw: bool = False
+            ) -> None:
+        absoluteWidth = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
+        absoluteHeight = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
+        absoluteLeft = self._absoluteCenterPos.x() - (absoluteWidth / 2)
+        absoluteTop = self._absoluteCenterPos.y() - (absoluteHeight / 2)
+
+        self._imageSpaceToWorldSpace = QtGui.QTransform()
+        self._imageSpaceToWorldSpace.scale(
+            self._viewScale.linear * travellermap.ParsecScaleX,
+            self._viewScale.linear * travellermap.ParsecScaleY)
+        self._imageSpaceToWorldSpace.translate(
+            -absoluteLeft,
+            -absoluteTop)
+
+        scaleMatrix = QtGui.QTransform()
+        scaleMatrix.scale(
+            1 / travellermap.ParsecScaleX,
+            1 / travellermap.ParsecScaleY)
+        self._imageSpaceToOverlaySpace = scaleMatrix * self._imageSpaceToWorldSpace
 
         # Clear the tile queue as the render view/style map have
         # changed so previous queue map be invalid. The redraw
@@ -745,8 +846,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._tileQueue.clear()
         self._tileTimer.stop()
 
-        # TODO: Should this be update rather than repaint? Feels inconsistent with other places
-        self.repaint()
+        self._forceAtomicRedraw = forceAtomicRedraw
+
+        self.update() # Trigger redraw
 
     def _zoomView(
             self,
@@ -771,7 +873,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._absoluteCenterPos.setY(
                 self._absoluteCenterPos.y() + (oldWorldCursor.y() - newWorldCursor.y()))
 
-        self._updateRendererView()
+        self._handleViewUpdate()
 
     def _currentDrawTiles(
             self,
@@ -940,11 +1042,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             maxTileY += 1
 
         return tiles
-
-    def _preloadCurrentDrawTiles(self) -> None:
-        self._currentDrawTiles(forceCreate=True)
-        self._tileQueue.clear()
-        self._tileTimer.stop()
 
     def _loadLookaheadTiles(self) -> None:
         # This method of rounding the scale is intended to match how it would
@@ -1164,7 +1261,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             """
             painter.setPen(QtGui.QColor('#FF0000'))
             painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
-            painter.drawRect(0, 0, MapHackView._TileSize, MapHackView._TileSize)
+            painter.drawRect(0, 0, LocalMapWidget._TileSize, LocalMapWidget._TileSize)
             """
         finally:
             self._graphics.setPainter(painter=None)
@@ -1204,8 +1301,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         rectsPerSize = math.ceil(LocalMapWidget._TileSize / LocalMapWidget._CheckerboardRectSize)
 
         painter = QtGui.QPainter()
-        painter.begin(image)
-        try:
+        with gui.PainterDrawGuard(painter, image):
             painter.setBrush(QtGui.QColor(LocalMapWidget._CheckerboardColourA))
             painter.drawRect(0, 0, LocalMapWidget._TileSize, LocalMapWidget._TileSize)
 
@@ -1217,7 +1313,5 @@ class LocalMapWidget(QtWidgets.QWidget):
                         y * LocalMapWidget._CheckerboardRectSize,
                         LocalMapWidget._CheckerboardRectSize,
                         LocalMapWidget._CheckerboardRectSize)
-        finally:
-            painter.end()
 
         return image
