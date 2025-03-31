@@ -546,7 +546,11 @@ class LocalMapWidget(QtWidgets.QWidget):
         pass # TODO: Implement me
 
     def createSnapshot(self) -> QtGui.QPixmap:
-        pass # TODO: Implement me
+        image = QtGui.QPixmap(self.size())
+        self._drawView(
+            paintDevice=image,
+            forceAtomic=True)
+        return image
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -714,17 +718,9 @@ class LocalMapWidget(QtWidgets.QWidget):
             else:
                 self._offscreenRenderImage = None
 
-            painter = QtGui.QPainter()
-            painterDevice = self._offscreenRenderImage if self._offscreenRenderImage is not None else self
-            with gui.PainterDrawGuard(painter, painterDevice):
-                painter.setBrush(QtCore.Qt.GlobalColor.black)
-                painter.drawRect(0, 0, self.width(), self.height())
-
-                self._drawMap(painter)
-                self._drawJumpRoute(painter)
-                self._drawHexHighlights(painter)
-                self._drawScale(painter)
-                self._drawDirections(painter)
+            self._drawView(
+                paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
+                forceAtomic=self._forceAtomicRedraw)
 
             if LocalMapWidget._TileRendering and LocalMapWidget._DelayedRendering:
                 if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
@@ -746,12 +742,29 @@ class LocalMapWidget(QtWidgets.QWidget):
 
             self._forceAtomicRedraw = False
 
+    def _drawView(
+            self,
+            paintDevice: QtGui.QPaintDevice,
+            forceAtomic: bool
+            ) -> None:
+        painter = QtGui.QPainter()
+        with gui.PainterDrawGuard(painter, paintDevice):
+            painter.setBrush(QtCore.Qt.GlobalColor.black)
+            painter.drawRect(0, 0, self.width(), self.height())
+
+            self._drawMap(painter, forceAtomic)
+            self._drawJumpRoute(painter)
+            self._drawHexHighlights(painter)
+            self._drawScale(painter)
+            self._drawDirections(painter)
+
     def _drawMap(
             self,
-            painter: QtGui.QPainter
+            painter: QtGui.QPainter,
+            forceAtomic: bool
             ) -> None:
         if LocalMapWidget._TileRendering:
-            tiles = self._currentDrawTiles(forceCreate=self._forceAtomicRedraw)
+            tiles = self._currentDrawTiles(forceCreate=forceAtomic)
 
             # This is disabled as I think it actually makes scaled tiles
             # look worse (a bit to blurry)
