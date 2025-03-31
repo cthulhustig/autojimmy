@@ -47,7 +47,23 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Fix colour vs color
 
 class _OverlayInterface(object):
-    def draw(self, painter: QtGui.QPainter) -> None:
+    # The draw function will be called with the painters coordinate space
+    # set to the isotropic space used for overlays. This is basically the
+    # same coordinate space that I use for rendering the dots used for
+    # worlds at some zoom levels. The primary reason it's used is so I can
+    # use the same trick of rendering groups of circles as points with a
+    # pen set to the desired circle with. This technique is limited to
+    # drawing circles that are the same size and colour but it allows for
+    # multiple circles to be drawn with a single QPainter draw call which,
+    # for large numbers of circles (100+), is MUCH faster than drawing
+    # individual circles with something like drawEllipse. For this technique
+    # to work an isotropic space needs to be used otherwise the circles are
+    # drawn as ellipses
+    def draw(
+            self,
+            painter: QtGui.QPainter,
+            currentScale: travellermap.Scale
+            ) -> None:
         raise RuntimeError(f'{type(self)} is derived from _OverlayInterface so must implement draw')
 
 class _JumpRouteOverlay(_OverlayInterface):
@@ -123,6 +139,150 @@ class _JumpRouteOverlay(_OverlayInterface):
         if self._pitStopPoints:
             painter.setPen(self._pitStopPen)
             painter.drawPoints(self._pitStopPoints)
+
+class _HexHighlightOverlay(_OverlayInterface):
+    # This alpha value matches the hard coded (global) alpha used by Traveller Map
+    # when drawing it renders overlays (drawOverlay in map.js)
+    _HighlightAlpha = 0.5
+
+    def __init__(self):
+        super().__init__()
+
+        # NOTE: The radius is stored as an integer in 100ths of a parsec to avoid
+        # floating point inaccuracies causing values that are effectively but not
+        # exactly equal causing multiple highlights to be created. It means there
+        # is limited precision to the radius but it should be good enough that it
+        # doesn't actually mater.
+        # In theory all this should be redundant at the moment as all the radii
+        # that I'm currently using are hard coded values so comparisons would
+        # always guarantee an exact match. However, doing it now prevents bugs in
+        # the future if I ever end having calculations that determine the radius
+        self._styleMap: typing.Mapping[
+            typing.Tuple[
+                str, # Colour
+                int], # Radius in 100ths of a parsec
+            typing.Tuple[
+                QtGui.QPolygonF, # Polygon containing hex locations in isotropic space
+                QtGui.QPen]
+            ] = {}
+
+        self._hexMap: typing.Mapping[
+            travellermap.HexPosition,
+            typing.Set[typing.Tuple[
+                str, # Colour
+                int]], # Radius in 100ths of a parsec
+            ] = {}
+
+    def addHex(
+            self,
+            hex: travellermap.HexPosition,
+            colour: str,
+            radius: float
+            ) -> None:
+        radius = round(radius * 100)
+        key = (colour, int(radius))
+
+        hexKeys = self._hexMap.get(hex)
+        if hexKeys and key in hexKeys:
+            # This hex already has a highlight with this style
+            return
+
+        highlightData = self._styleMap.get(key)
+        if highlightData is None:
+            highlightData = (
+                QtGui.QPolygonF(),
+                QtGui.QPen(
+                    QtGui.QColor(cartographer.makeAlphaColor(
+                        alpha=_HexHighlightOverlay._HighlightAlpha,
+                        color=colour,
+                        isNormalised=True)),
+                    radius / 100,
+                    QtCore.Qt.PenStyle.SolidLine,
+                    QtCore.Qt.PenCapStyle.RoundCap))
+            self._styleMap[key] = highlightData
+
+        centerX, centerY = hex.absoluteCenter()
+        polygon = highlightData[0]
+        polygon.append(QtCore.QPointF(
+            centerX * travellermap.ParsecScaleX,
+            centerY * travellermap.ParsecScaleY))
+
+        if not hexKeys:
+            hexKeys = set()
+            self._hexMap[hex] = hexKeys
+        hexKeys.add(key)
+
+    def addHexes(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition],
+            colour: str,
+            radius: float
+            ) -> None:
+        radius = round(radius * 100)
+        key = (colour, int(radius))
+
+        highlightData = self._styleMap.get(key)
+        if highlightData is None:
+            highlightData = (
+                QtGui.QPolygonF(),
+                QtGui.QPen(
+                    QtGui.QColor(cartographer.makeAlphaColor(
+                        alpha=_HexHighlightOverlay._HighlightAlpha,
+                        color=colour,
+                        isNormalised=True)),
+                    radius / 100,
+                    QtCore.Qt.PenStyle.SolidLine,
+                    QtCore.Qt.PenCapStyle.RoundCap))
+            self._styleMap[key] = highlightData
+
+        for hex in hexes:
+            hexKeys = self._hexMap.get(hex)
+            if hexKeys and key in hexKeys:
+                # This hex already has a highlight with this style
+                continue
+
+            centerX, centerY = hex.absoluteCenter()
+            polygon = highlightData[0]
+            polygon.append(QtCore.QPointF(
+                centerX * travellermap.ParsecScaleX,
+                centerY * travellermap.ParsecScaleY))
+
+            if not hexKeys:
+                hexKeys = set()
+                self._hexMap[hex] = hexKeys
+            hexKeys.add(key)
+
+    def removeHex(
+            self,
+            hex: travellermap.HexPosition
+            ) -> None:
+        hexKeys = self._hexMap.get(hex)
+        if not hexKeys:
+            return # The hex has no highlight to remove
+
+        centerX, centerY = hex.absoluteCenter()
+        for key in hexKeys:
+            polygon, _ = self._styleMap[key]
+            for i in range(polygon.count() - 1, -1, -1):
+                point = polygon.at(i)
+                if math.isclose(point.x(), centerX) and math.isclose(point.y(), centerY):
+                    polygon.remove(i)
+            if polygon.isEmpty():
+                # There are no more highlights with this style so remove it from
+                # the map
+                del self._styleMap[key]
+
+        del self._hexMap[hex]
+
+    def draw(
+            self,
+            painter: QtGui.QPainter,
+            currentScale: travellermap.Scale
+            ):
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+        for points, pen in self._styleMap.values():
+            painter.setPen(pen)
+            painter.drawPoints(points)
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -245,6 +405,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._overlayStagingImage: typing.Optional[QtGui.QImage] = None
 
         self._jumpRouteOverlay: typing.Optional[_JumpRouteOverlay] = None
+        self._hexHighlightOverlay: typing.Optional[_HexHighlightOverlay] = None
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -304,7 +465,13 @@ class LocalMapWidget(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        pass # TODO: Implement me
+        if not self._hexHighlightOverlay:
+            self._hexHighlightOverlay = _HexHighlightOverlay()
+        self._hexHighlightOverlay.addHex(
+            hex=hex,
+            colour=colour,
+            radius=radius)
+        self.update() # Trigger redraw
 
     def highlightHexes(
             self,
@@ -312,16 +479,25 @@ class LocalMapWidget(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        pass # TODO: Implement me
+        if not self._hexHighlightOverlay:
+            self._hexHighlightOverlay = _HexHighlightOverlay()
+        self._hexHighlightOverlay.addHexes(
+            hexes=hexes,
+            colour=colour,
+            radius=radius)
+        self.update() # Trigger redraw
 
     def clearHexHighlight(
             self,
             hex: travellermap.HexPosition
             ) -> None:
-        pass # TODO: Implement me
+        if self._hexHighlightOverlay:
+            self._hexHighlightOverlay.removeHex(hex)
+        self.update() # Trigger redraw
 
     def clearHexHighlights(self) -> None:
-        pass # TODO: Implement me
+        self._hexHighlightOverlay = None
+        self.update() # Trigger redraw
 
     # Create an overlay with a primitive at each hex
     def createHexOverlay(
@@ -546,6 +722,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
                 self._drawMap(painter)
                 self._drawJumpRoute(painter)
+                self._drawHexHighlights(painter)
                 self._drawScale(painter)
                 self._drawDirections(painter)
 
@@ -616,17 +793,29 @@ class LocalMapWidget(QtWidgets.QWidget):
             finally:
                 self._graphics.setPainter(painter=None)
 
-    # TODO: This doesn't render quite right as the dots are getting alpha
-    # blended over the lines. I think the only solution is to render to
-    # a separate image without alpha blending and then overlay that image
-    # on the main image with alpha blending
     def _drawJumpRoute(
             self,
             painter: QtGui.QPainter
             ) -> None:
-        if not self._jumpRouteOverlay:
-            return
+        if self._jumpRouteOverlay:
+            self._drawOverlay(
+                overlay=self._jumpRouteOverlay,
+                painter=painter)
 
+    def _drawHexHighlights(
+            self,
+            painter: QtGui.QPainter
+            ) -> None:
+        if self._hexHighlightOverlay:
+            self._drawOverlay(
+                overlay=self._hexHighlightOverlay,
+                painter=painter)
+
+    def _drawOverlay(
+            self,
+            overlay: _OverlayInterface,
+            painter: QtGui.QPainter
+            ) -> None:
         if not self._overlayStagingImage or \
             self._overlayStagingImage.width() != self.width() or \
             self._overlayStagingImage.height() != self.height():
@@ -640,8 +829,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         stagingPainter = QtGui.QPainter()
         with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
             stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
-
-            self._jumpRouteOverlay.draw(
+            overlay.draw(
                 painter=stagingPainter,
                 currentScale=self._viewScale)
 

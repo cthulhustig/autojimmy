@@ -4,11 +4,15 @@ import typing
 
 def makeAlphaColor(
         alpha: typing.Union[float, int],
-        color: str
+        color: str,
+        isNormalised: bool = False
         ) -> str:
     red, green, blue, _ = travellermap.parseHtmlColor(htmlColor=color)
 
-    alpha = int(alpha)
+    if isNormalised:
+        alpha *= 255
+
+    alpha = int(round(alpha))
     if alpha < 0:
         alpha = 0
     if alpha > 255:
