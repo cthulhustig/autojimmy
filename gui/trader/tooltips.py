@@ -56,10 +56,11 @@ RoutingTypeToolTip = gui.createStringToolTip(
     'refuelling plan that lets you know where along the route to take on fuel '
     'and how much to take on in order to complete the route at the lost cost.'
     '</li>'
-    '<li><b>Dead Space</b> - Dead Space routing has the same advantages as '
-    'Fuel Based routing, but it allows the algorithm to make jumps into and '
-    'out of dead space (i.e. empty hexes on the map) if doing so would result '
-    'in a more optimal jump route.'
+    '<li><b>Dead Space</b> - Dead Space routing uses the same algorithm as Fuel '
+    'Based routing but with the additional advantage that, if it will result in '
+    'a more optimal jump route, it will plot a route using dead space (i.e. '
+    'empty hexes on the map). This type of routing generally only makes sense if '
+    'your ship has the fuel capacity to make multiple jumps without refuelling.'
     '</li>'
     '</ul>',
     escape=False)
