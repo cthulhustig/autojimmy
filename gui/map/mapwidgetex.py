@@ -1023,12 +1023,15 @@ class MapWidgetEx(QtWidgets.QWidget):
             lineColour: typing.Optional[str] = None,
             lineWidth: typing.Optional[int] = None
             ) -> str:
-        return self._mapWidget.createRadiusOverlay(
-            center=center,
+        radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
+            includeInterior=False))
+        return self._mapWidget.createHexGroupsOverlay(
+            hexes=radiusHexes,
             fillColour=fillColour,
             lineColour=lineColour,
-            lineWidth=lineWidth)
+            lineWidth=lineWidth,
+            outerOutlinesOnly=True)
 
     def removeOverlay(
             self,

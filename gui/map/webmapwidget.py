@@ -454,26 +454,6 @@ class WebMapWidget(QtWidgets.QWidget):
 
         return overlay.handle()
 
-    # Create an overlay covering all hexes within the specified radius of the
-    # center hex
-    def createRadiusOverlay(
-            self,
-            center: travellermap.HexPosition,
-            radius: int,
-            fillColour: typing.Optional[str] = None,
-            lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None
-            ) -> str:
-        radiusHexes = list(center.yieldRadiusHexes(
-            radius=radius,
-            includeInterior=False))
-        return self.createHexGroupsOverlay(
-            hexes=radiusHexes,
-            fillColour=fillColour,
-            lineColour=lineColour,
-            lineWidth=lineWidth,
-            outerOutlinesOnly=True)
-
     def removeOverlay(
             self,
             handle: str

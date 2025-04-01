@@ -46,7 +46,14 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Animated move to new location
 # TODO: Fix colour vs color
 
-class _OverlayInterface(object):
+class _MapOverlay(object):
+    def __init__(self):
+        super().__init__()
+        self._handle = str(uuid.uuid4())
+
+    def handle(self) -> str:
+        return self._handle
+
     # The draw function will be called with the painters coordinate space
     # set to the isotropic space used for overlays. This is basically the
     # same coordinate space that I use for rendering the dots used for
@@ -64,27 +71,17 @@ class _OverlayInterface(object):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        raise RuntimeError(f'{type(self)} is derived from _OverlayInterface so must implement draw')
+        raise RuntimeError(f'{type(self)} is derived from _MapOverlay so must implement draw')
 
-class _JumpRouteOverlay(_OverlayInterface):
+class _JumpRouteOverlay(_MapOverlay):
     _JumpRouteColour = '#7F048104'
     _PitStopColour = '#7F8080FF'
     _PitStopRadius =  0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
 
-    def __init__(
-            self,
-            jumpRoute: typing.Optional[logic.JumpRoute],
-            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
-            ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._refuellingPlan = refuellingPlan
-
-        self._jumpRoutePath = QtGui.QPolygonF()
-        for hex, _ in jumpRoute:
-            centerX, centerY = hex.absoluteCenter()
-            self._jumpRoutePath.append(QtCore.QPointF(
-                centerX * travellermap.ParsecScaleX,
-                centerY * travellermap.ParsecScaleY))
+        self._jumpRoutePath = None
+        self._pitStopPoints = None
 
         self._jumpRoutePen = QtGui.QPen(
             QtGui.QColor(_JumpRouteOverlay._JumpRouteColour),
@@ -96,9 +93,32 @@ class _JumpRouteOverlay(_OverlayInterface):
             1, # Width will be set when rendering as it's dependant on scale
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.RoundCap)
+        self._pitStopPen = QtGui.QPen(
+            QtGui.QColor(_JumpRouteOverlay._PitStopColour),
+            _JumpRouteOverlay._PitStopRadius * 2,
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.RoundCap)
+
+    def hasJumpRoute(self) -> bool:
+        return self._jumpRoutePath is not None
+
+    def setRoute(
+            self,
+            jumpRoute: typing.Optional[logic.JumpRoute],
+            refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
+            ) -> None:
+        if not jumpRoute:
+            self._jumpRoutePath = self._pitStopPoints = None
+            return
+
+        self._jumpRoutePath = QtGui.QPolygonF()
+        for hex, _ in jumpRoute:
+            centerX, centerY = hex.absoluteCenter()
+            self._jumpRoutePath.append(QtCore.QPointF(
+                centerX * travellermap.ParsecScaleX,
+                centerY * travellermap.ParsecScaleY))
 
         self._pitStopPoints = None
-        self._pitStopPen = None
         if refuellingPlan:
             self._pitStopPoints = QtGui.QPolygonF()
             for pitStop in refuellingPlan:
@@ -107,17 +127,14 @@ class _JumpRouteOverlay(_OverlayInterface):
                     centerX * travellermap.ParsecScaleX,
                     centerY * travellermap.ParsecScaleY))
 
-            self._pitStopPen = QtGui.QPen(
-                QtGui.QColor(_JumpRouteOverlay._PitStopColour),
-                _JumpRouteOverlay._PitStopRadius * 2,
-                QtCore.Qt.PenStyle.SolidLine,
-                QtCore.Qt.PenCapStyle.RoundCap)
-
     def draw(
             self,
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ):
+        if not self._jumpRoutePath:
+            return
+
         lowDetail = currentScale.log < 7
         routeLineWidth = 0.25 if not lowDetail else (15 / currentScale.linear)
 
@@ -140,7 +157,7 @@ class _JumpRouteOverlay(_OverlayInterface):
             painter.setPen(self._pitStopPen)
             painter.drawPoints(self._pitStopPoints)
 
-class _HexHighlightOverlay(_OverlayInterface):
+class _HexHighlightOverlay(_MapOverlay):
     # This alpha value matches the hard coded (global) alpha used by Traveller Map
     # when drawing it renders overlays (drawOverlay in map.js)
     _HighlightAlpha = 0.5
@@ -157,7 +174,7 @@ class _HexHighlightOverlay(_OverlayInterface):
         # that I'm currently using are hard coded values so comparisons would
         # always guarantee an exact match. However, doing it now prevents bugs in
         # the future if I ever end having calculations that determine the radius
-        self._styleMap: typing.Mapping[
+        self._styleMap: typing.Dict[
             typing.Tuple[
                 str, # Colour
                 int], # Radius in 100ths of a parsec
@@ -166,7 +183,7 @@ class _HexHighlightOverlay(_OverlayInterface):
                 QtGui.QPen]
             ] = {}
 
-        self._hexMap: typing.Mapping[
+        self._hexMap: typing.Dict[
             travellermap.HexPosition,
             typing.Set[typing.Tuple[
                 str, # Colour
@@ -274,11 +291,18 @@ class _HexHighlightOverlay(_OverlayInterface):
 
         del self._hexMap[hex]
 
+    def clear(self) -> None:
+        self._styleMap.clear()
+        self._hexMap.clear()
+
     def draw(
             self,
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ):
+        if not self._styleMap:
+            return
+
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
         for points, pen in self._styleMap.values():
             painter.setPen(pen)
@@ -404,8 +428,15 @@ class LocalMapWidget(QtWidgets.QWidget):
         # of the final image with the alpha value required by the overlay.
         self._overlayStagingImage: typing.Optional[QtGui.QImage] = None
 
-        self._jumpRouteOverlay: typing.Optional[_JumpRouteOverlay] = None
-        self._hexHighlightOverlay: typing.Optional[_HexHighlightOverlay] = None
+        self._overlayMap: typing.Dict[
+            str, # Overlay handle
+            _MapOverlay] = {}
+
+        self._jumpRouteOverlay = _JumpRouteOverlay()
+        self._overlayMap[self._jumpRouteOverlay.handle()] = self._jumpRouteOverlay
+
+        self._hexHighlightOverlay = _HexHighlightOverlay()
+        self._overlayMap[self._hexHighlightOverlay.handle()] = self._hexHighlightOverlay
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -436,23 +467,20 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._handleViewUpdate(forceAtomicRedraw=True)
 
     def hasJumpRoute(self) -> bool:
-        return self._jumpRouteOverlay is not None
+        return self._jumpRouteOverlay.hasJumpRoute()
 
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
             refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
             ) -> None:
-        if jumpRoute:
-            self._jumpRouteOverlay = _JumpRouteOverlay(
-                jumpRoute=jumpRoute,
-                refuellingPlan=refuellingPlan)
-        else:
-            self._jumpRouteOverlay = None
+        self._jumpRouteOverlay.setRoute(
+            jumpRoute=jumpRoute,
+            refuellingPlan=refuellingPlan)
         self.update()
 
     def clearJumpRoute(self) -> None:
-        self._jumpRouteOverlay = None
+        self._jumpRouteOverlay.setRoute(jumpRoute=None)
         self.update()
 
     def centerOnJumpRoute(self) -> None:
@@ -465,8 +493,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        if not self._hexHighlightOverlay:
-            self._hexHighlightOverlay = _HexHighlightOverlay()
         self._hexHighlightOverlay.addHex(
             hex=hex,
             colour=colour,
@@ -479,8 +505,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        if not self._hexHighlightOverlay:
-            self._hexHighlightOverlay = _HexHighlightOverlay()
         self._hexHighlightOverlay.addHexes(
             hexes=hexes,
             colour=colour,
@@ -491,12 +515,11 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             hex: travellermap.HexPosition
             ) -> None:
-        if self._hexHighlightOverlay:
-            self._hexHighlightOverlay.removeHex(hex)
+        self._hexHighlightOverlay.removeHex(hex)
         self.update() # Trigger redraw
 
     def clearHexHighlights(self) -> None:
-        self._hexHighlightOverlay = None
+        self._hexHighlightOverlay.clear()
         self.update() # Trigger redraw
 
     # Create an overlay with a primitive at each hex
@@ -520,16 +543,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             lineColour: typing.Optional[str] = None,
             lineWidth: typing.Optional[int] = None,
             outerOutlinesOnly: bool = False
-            ) -> str:
-        return str(uuid.uuid4()) # TODO: Implement me
-
-    def createRadiusOverlay(
-            self,
-            center: travellermap.HexPosition,
-            radius: int,
-            fillColour: typing.Optional[str] = None,
-            lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None
             ) -> str:
         return str(uuid.uuid4()) # TODO: Implement me
 
@@ -753,8 +766,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             painter.drawRect(0, 0, self.width(), self.height())
 
             self._drawMap(painter, forceAtomic)
-            self._drawJumpRoute(painter)
-            self._drawHexHighlights(painter)
+            self._drawOverlays(painter)
             self._drawScale(painter)
             self._drawDirections(painter)
 
@@ -806,27 +818,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             finally:
                 self._graphics.setPainter(painter=None)
 
-    def _drawJumpRoute(
+    def _drawOverlays(
             self,
-            painter: QtGui.QPainter
-            ) -> None:
-        if self._jumpRouteOverlay:
-            self._drawOverlay(
-                overlay=self._jumpRouteOverlay,
-                painter=painter)
-
-    def _drawHexHighlights(
-            self,
-            painter: QtGui.QPainter
-            ) -> None:
-        if self._hexHighlightOverlay:
-            self._drawOverlay(
-                overlay=self._hexHighlightOverlay,
-                painter=painter)
-
-    def _drawOverlay(
-            self,
-            overlay: _OverlayInterface,
             painter: QtGui.QPainter
             ) -> None:
         if not self._overlayStagingImage or \
@@ -837,16 +830,16 @@ class LocalMapWidget(QtWidgets.QWidget):
                 self.height(),
                 QtGui.QImage.Format.Format_ARGB32_Premultiplied)
 
-        self._overlayStagingImage.fill(QtCore.Qt.GlobalColor.transparent)
+        for overlay in self._overlayMap.values():
+            self._overlayStagingImage.fill(QtCore.Qt.GlobalColor.transparent)
 
-        stagingPainter = QtGui.QPainter()
-        with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
-            stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
-            overlay.draw(
-                painter=stagingPainter,
-                currentScale=self._viewScale)
+            stagingPainter = QtGui.QPainter()
+            with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
+                stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
+                overlay.draw(
+                    painter=stagingPainter,
+                    currentScale=self._viewScale)
 
-        with gui.PainterStateGuard(painter):
             painter.drawImage(
                 QtCore.QRectF(0, 0, self.width(), self.height()),
                 self._overlayStagingImage)
