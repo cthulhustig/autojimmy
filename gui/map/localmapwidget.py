@@ -36,7 +36,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Not sure if me not inverting the y axis in my map space might
 # be an issue when it comes to rendering mains (or other things that
 # would be done with client side map space in Traveller Map)
-# TODO: Jump routes
 # TODO: mains
 # - I could render these onto the tiles but it might be better to have them
 #   rendered on top of the final frame
@@ -45,6 +44,10 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # - I've made the changes so it's possible, just need to hook it up to the ui
 # TODO: Animated move to new location
 # TODO: Fix colour vs color
+# TODO: There might be work needed around custom sector import. I support using
+# traveller map to lint the sector but I can't remember if there is some other
+# part of the import process that is actually reliant on Traveller Map to
+# process the file that is uploaded compared with what I import into my data
 
 class _MapOverlay(object):
     def __init__(self):
@@ -162,6 +165,33 @@ class _HexHighlightOverlay(_MapOverlay):
     # when drawing it renders overlays (drawOverlay in map.js)
     _HighlightAlpha = 0.5
 
+    _HexPolygon = QtGui.QPolygonF([
+        # Upper left
+        QtCore.QPointF(
+            (-0.5 + travellermap.HexWidthOffset) * travellermap.ParsecScaleX,
+            -0.5 * travellermap.ParsecScaleY),
+        # Upper right
+        QtCore.QPointF(
+            (+0.5 - travellermap.HexWidthOffset) * travellermap.ParsecScaleX,
+            -0.5 * travellermap.ParsecScaleY),
+        # Center right
+        QtCore.QPointF(
+            (+0.5 + travellermap.HexWidthOffset) * travellermap.ParsecScaleX,
+            0 * travellermap.ParsecScaleY) ,
+        # Lower right
+        QtCore.QPointF(
+            (+0.5 - travellermap.HexWidthOffset) * travellermap.ParsecScaleX,
+            +0.5 * travellermap.ParsecScaleY),
+        # Lower Left
+        QtCore.QPointF(
+            (-0.5 + travellermap.HexWidthOffset) * travellermap.ParsecScaleX,
+            +0.5 * travellermap.ParsecScaleY),
+        # Center left
+        QtCore.QPointF(
+            (-0.5 - travellermap.HexWidthOffset) * travellermap.ParsecScaleX,
+            0 * travellermap.ParsecScaleY),
+    ])
+
     def __init__(self):
         super().__init__()
 
@@ -176,110 +206,139 @@ class _HexHighlightOverlay(_MapOverlay):
         # the future if I ever end having calculations that determine the radius
         self._styleMap: typing.Dict[
             typing.Tuple[
+                gui.MapPrimitiveType,
                 str, # Colour
-                int], # Radius in 100ths of a parsec
+                # Integer radius in 100ths of a parsec for Circle primitive type
+                # or 0 for Hex
+                int],
             typing.Tuple[
-                QtGui.QPolygonF, # Polygon containing hex locations in isotropic space
-                QtGui.QPen]
+                QtGui.QPolygonF,
+                # QPen for Circle primitive type or QBrush for hex
+                typing.Union[QtGui.QPen, QtGui.QBrush]]
             ] = {}
 
         self._hexMap: typing.Dict[
             travellermap.HexPosition,
             typing.Set[typing.Tuple[
+                gui.MapPrimitiveType,
                 str, # Colour
-                int]], # Radius in 100ths of a parsec
+                # Integer radius in 100ths of a parsec for Circle primitive type
+                # or 0 for Hex
+                int]],
             ] = {}
 
     def addHex(
             self,
             hex: travellermap.HexPosition,
+            type: gui.MapPrimitiveType,
             colour: str,
-            radius: float
+            radius: float = 0.0 # Only valid if primitive type is Circle
             ) -> None:
-        radius = round(radius * 100)
-        key = (colour, int(radius))
+        radius = int(round(radius * 100))
+        styleKey = (type, colour, radius)
 
-        hexKeys = self._hexMap.get(hex)
-        if hexKeys and key in hexKeys:
+        hexStyleKeys = self._hexMap.get(hex)
+        if hexStyleKeys and styleKey in hexStyleKeys:
             # This hex already has a highlight with this style
             return
 
-        highlightData = self._styleMap.get(key)
-        if highlightData is None:
-            highlightData = (
+        renderData = self._styleMap.get(styleKey)
+        if renderData is None:
+            renderData = (
                 QtGui.QPolygonF(),
-                QtGui.QPen(
-                    QtGui.QColor(cartographer.makeAlphaColor(
-                        alpha=_HexHighlightOverlay._HighlightAlpha,
-                        color=colour,
-                        isNormalised=True)),
-                    radius / 100,
-                    QtCore.Qt.PenStyle.SolidLine,
-                    QtCore.Qt.PenCapStyle.RoundCap))
-            self._styleMap[key] = highlightData
+                _HexHighlightOverlay._createTool(
+                    type=type,
+                    colour=colour,
+                    radius=radius / 100))
+            self._styleMap[styleKey] = renderData
 
         centerX, centerY = hex.absoluteCenter()
-        polygon = highlightData[0]
+        polygon = renderData[0]
         polygon.append(QtCore.QPointF(
             centerX * travellermap.ParsecScaleX,
             centerY * travellermap.ParsecScaleY))
 
-        if not hexKeys:
-            hexKeys = set()
-            self._hexMap[hex] = hexKeys
-        hexKeys.add(key)
+        if not hexStyleKeys:
+            hexStyleKeys = set()
+            self._hexMap[hex] = hexStyleKeys
+        hexStyleKeys.add(styleKey)
 
     def addHexes(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            colour: str,
-            radius: float
+            type: gui.MapPrimitiveType,
+            colour: typing.Optional[str],
+            colourMap: typing.Optional[typing.Mapping[travellermap.HexPosition, str]] = None,
+            radius: float = 0.0 # Only valid if primitive type is Circle
             ) -> None:
-        radius = round(radius * 100)
-        key = (colour, int(radius))
+        radius = int(round(radius * 100)) if type is gui.MapPrimitiveType.Circle else 0
 
-        highlightData = self._styleMap.get(key)
-        if highlightData is None:
-            highlightData = (
-                QtGui.QPolygonF(),
-                QtGui.QPen(
-                    QtGui.QColor(cartographer.makeAlphaColor(
-                        alpha=_HexHighlightOverlay._HighlightAlpha,
-                        color=colour,
-                        isNormalised=True)),
-                    radius / 100,
-                    QtCore.Qt.PenStyle.SolidLine,
-                    QtCore.Qt.PenCapStyle.RoundCap))
-            self._styleMap[key] = highlightData
+        styleKey = None
+        renderData = None
+        if colourMap:
+            # There is a colour map so the style needs to be checked
+            # for each hex
+            styleKey = None
+        else:
+            # There is no colour map so all hexes are going to have
+            # the same style. Do the lookup once rather than for
+            # every hex
+            styleKey = (type, colour, radius)
+            renderData = self._styleMap.get(styleKey)
+            if renderData is None:
+                renderData = (
+                    QtGui.QPolygonF(),
+                    _HexHighlightOverlay._createTool(
+                        type=type,
+                        colour=colour,
+                        radius=radius / 100))
+                self._styleMap[styleKey] = renderData
 
         for hex in hexes:
-            hexKeys = self._hexMap.get(hex)
-            if hexKeys and key in hexKeys:
+            if colourMap:
+                hexColour = colourMap.get(hex, colour)
+                if not hexColour:
+                    # No specific colour for this hex and no default so nothing
+                    # to draw
+                    continue
+                styleKey = (type, hexColour, radius)
+                renderData = self._styleMap.get(styleKey)
+                if renderData is None:
+                    renderData = (
+                        QtGui.QPolygonF(),
+                        _HexHighlightOverlay._createTool(
+                            type=type,
+                            colour=hexColour,
+                            radius=radius / 100))
+                    self._styleMap[styleKey] = renderData
+
+            hexStyleKeys = self._hexMap.get(hex)
+            if hexStyleKeys and styleKey in hexStyleKeys:
                 # This hex already has a highlight with this style
                 continue
 
             centerX, centerY = hex.absoluteCenter()
-            polygon = highlightData[0]
+            polygon = renderData[0]
             polygon.append(QtCore.QPointF(
                 centerX * travellermap.ParsecScaleX,
                 centerY * travellermap.ParsecScaleY))
 
-            if not hexKeys:
-                hexKeys = set()
-                self._hexMap[hex] = hexKeys
-            hexKeys.add(key)
+            if not hexStyleKeys:
+                hexStyleKeys = set()
+                self._hexMap[hex] = hexStyleKeys
+            hexStyleKeys.add(styleKey)
 
     def removeHex(
             self,
             hex: travellermap.HexPosition
             ) -> None:
-        hexKeys = self._hexMap.get(hex)
-        if not hexKeys:
+        hexStyleKeys = self._hexMap.get(hex)
+        if not hexStyleKeys:
             return # The hex has no highlight to remove
 
         centerX, centerY = hex.absoluteCenter()
-        for key in hexKeys:
-            polygon, _ = self._styleMap[key]
+        for styleKey in hexStyleKeys:
+            polygon, _ = self._styleMap[styleKey]
             for i in range(polygon.count() - 1, -1, -1):
                 point = polygon.at(i)
                 if math.isclose(point.x(), centerX) and math.isclose(point.y(), centerY):
@@ -287,7 +346,7 @@ class _HexHighlightOverlay(_MapOverlay):
             if polygon.isEmpty():
                 # There are no more highlights with this style so remove it from
                 # the map
-                del self._styleMap[key]
+                del self._styleMap[styleKey]
 
         del self._hexMap[hex]
 
@@ -304,9 +363,44 @@ class _HexHighlightOverlay(_MapOverlay):
             return
 
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-        for points, pen in self._styleMap.values():
-            painter.setPen(pen)
-            painter.drawPoints(points)
+        for (type, _, _), (points, tool) in self._styleMap.items():
+            if type is gui.MapPrimitiveType.Circle:
+                painter.setPen(tool)
+                painter.drawPoints(points)
+            elif type is gui.MapPrimitiveType.Hex:
+                painter.setBrush(tool)
+                painter.setPen(QtCore.Qt.PenStyle.NoPen)
+
+                for i in range(points.count()):
+                    point = points.at(i)
+
+                    with gui.PainterStateGuard(painter):
+                        transform = painter.transform()
+                        transform.translate(point.x(), point.y())
+                        painter.setTransform(transform)
+                        painter.drawPolygon(_HexHighlightOverlay._HexPolygon)
+
+    @staticmethod
+    def _createTool(
+            type: gui.MapPrimitiveType,
+            colour: str,
+            radius: float
+            ) -> typing:
+        colour = QtGui.QColor(cartographer.makeAlphaColor(
+            alpha=_HexHighlightOverlay._HighlightAlpha,
+            color=colour,
+            isNormalised=True))
+
+        if type is gui.MapPrimitiveType.Circle:
+            return QtGui.QPen(
+                colour,
+                radius * 2,
+                QtCore.Qt.PenStyle.SolidLine,
+                QtCore.Qt.PenCapStyle.RoundCap)
+        elif type is gui.MapPrimitiveType.Hex:
+            return QtGui.QBrush(colour)
+        else:
+            raise RuntimeError(f'Invalid map primitive type {type}')
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -495,6 +589,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._hexHighlightOverlay.addHex(
             hex=hex,
+            type=gui.MapPrimitiveType.Circle,
             colour=colour,
             radius=radius)
         self.update() # Trigger redraw
@@ -507,6 +602,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._hexHighlightOverlay.addHexes(
             hexes=hexes,
+            type=gui.MapPrimitiveType.Circle,
             colour=colour,
             radius=radius)
         self.update() # Trigger redraw
@@ -534,7 +630,17 @@ class LocalMapWidget(QtWidgets.QWidget):
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
             ) -> str:
-        return str(uuid.uuid4()) # TODO: Implement me
+        overlay = _HexHighlightOverlay()
+        overlay.addHexes(
+            hexes=hexes,
+            type=primitive,
+            colour=fillColour,
+            colourMap=fillMap,
+            radius=radius)
+        self._overlayMap[overlay.handle()] = overlay
+
+        self.update() # Trigger redraw
+        return overlay.handle()
 
     def createHexGroupsOverlay(
             self,
@@ -550,7 +656,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             handle: str
             ) -> None:
-        pass # TODO: Implement me
+        if handle not in self._overlayMap:
+            return
+        del self._overlayMap[handle]
+        self.update() # Trigger redraw
 
     def setToolTipCallback(
             self,
@@ -833,12 +942,15 @@ class LocalMapWidget(QtWidgets.QWidget):
         for overlay in self._overlayMap.values():
             self._overlayStagingImage.fill(QtCore.Qt.GlobalColor.transparent)
 
-            stagingPainter = QtGui.QPainter()
-            with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
-                stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
-                overlay.draw(
-                    painter=stagingPainter,
-                    currentScale=self._viewScale)
+            try:
+                stagingPainter = QtGui.QPainter()
+                with gui.PainterDrawGuard(stagingPainter, self._overlayStagingImage):
+                    stagingPainter.setTransform(self._imageSpaceToOverlaySpace)
+                    overlay.draw(
+                        painter=stagingPainter,
+                        currentScale=self._viewScale)
+            except:
+                continue
 
             painter.drawImage(
                 QtCore.QRectF(0, 0, self.width(), self.height()),
