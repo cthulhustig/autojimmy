@@ -532,11 +532,16 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._hexHighlightOverlay = _HexHighlightOverlay()
         self._overlayMap[self._hexHighlightOverlay.handle()] = self._hexHighlightOverlay
 
+        self.installEventFilter(self)
+
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
 
         self._handleViewUpdate()
 
+    # TODO: When I finally remove WebMapWidget I should rework how
+    # reloading work as it doesn't make conceptual sense whe there
+    # is nothing to "load"
     def reload(self) -> None:
         self._renderer = self._createRenderer()
         self._clearTileCache()
@@ -661,11 +666,13 @@ class LocalMapWidget(QtWidgets.QWidget):
         del self._overlayMap[handle]
         self.update() # Trigger redraw
 
+    # TODO: When I finally remove WebMapWidget I should rework how tooltips
+    # are handled to make them more Qt like
     def setToolTipCallback(
             self,
             callback: typing.Optional[typing.Callable[[typing.Optional[travellermap.HexPosition]], typing.Optional[str]]],
             ) -> None:
-        pass # TODO: Implement me
+        self._toolTipCallback = callback
 
     def createSnapshot(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
@@ -699,6 +706,14 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._viewScale.log = stream.readFloat()
         self._handleViewUpdate(forceAtomicRedraw=True)
         return True
+
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
+        if obj is self and event.type() == QtCore.QEvent.Type.ToolTip:
+            assert(isinstance(event, QtGui.QHelpEvent))
+            hex = self._pixelSpaceToHex(event.pos())
+            text = self._toolTipCallback(hex) if self._toolTipCallback else ''
+            self.setToolTip(text)
+        return super().eventFilter(obj, event)
 
     def showEvent(self, e: QtGui.QShowEvent) -> None:
         if not e.spontaneous():
