@@ -134,7 +134,7 @@ class _JumpRouteOverlay(_MapOverlay):
             self,
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
-            ):
+            ) -> None:
         if not self._jumpRoutePath:
             return
 
@@ -163,6 +163,8 @@ class _JumpRouteOverlay(_MapOverlay):
 class _HexHighlightOverlay(_MapOverlay):
     # This alpha value matches the hard coded (global) alpha used by Traveller Map
     # when drawing it renders overlays (drawOverlay in map.js)
+    # TODO: WHen I get eventually get rid of the web map widget I should drop this
+    # constant and instead have alpha specified by the colour passed in
     _HighlightAlpha = 0.5
 
     _HexPolygon = QtGui.QPolygonF([
@@ -358,7 +360,7 @@ class _HexHighlightOverlay(_MapOverlay):
             self,
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
-            ):
+            ) -> None:
         if not self._styleMap:
             return
 
@@ -385,7 +387,7 @@ class _HexHighlightOverlay(_MapOverlay):
             type: gui.MapPrimitiveType,
             colour: str,
             radius: float
-            ) -> typing:
+            ) -> typing.Union[QtGui.QPen, QtGui.QBrush]:
         colour = QtGui.QColor(cartographer.makeAlphaColor(
             alpha=_HexHighlightOverlay._HighlightAlpha,
             color=colour,
@@ -401,6 +403,71 @@ class _HexHighlightOverlay(_MapOverlay):
             return QtGui.QBrush(colour)
         else:
             raise RuntimeError(f'Invalid map primitive type {type}')
+
+class _HexBorderOverlay(_MapOverlay):
+    # This alpha value matches the hard coded (global) alpha used by Traveller Map
+    # when drawing it renders overlays (drawOverlay in map.js)
+    # TODO: WHen I get eventually get rid of the web map widget I should drop this
+    # constant and instead have alpha specified by the colour passed in
+    _HighlightAlpha = 0.5
+
+    def __init__(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition],
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None, # In pixels
+            fillColour: typing.Optional[str] = None,
+            includeInterior: bool = True,
+            ):
+        super().__init__()
+
+        if includeInterior:
+            outlines = logic.calculateCompleteHexOutlines(hexes=hexes)
+        else:
+            outlines = logic.calculateOuterHexOutlines(hexes=hexes)
+        self._polygons: typing.List[QtGui.QPolygonF] = []
+        for outline in outlines:
+            polygon = QtGui.QPolygonF()
+            for x, y in outline:
+                # NOTE: Negate the Y as calculateCompleteHexOutlines returns
+                # Traveller Map map space coordinates whereas this overlay
+                # will render in my isotropic space
+                # TODO: When I finally get rid of the Traveller Map web widget I
+                # should update these functions to work in my coordinate space
+                polygon.append(QtCore.QPointF(x, -y))
+            self._polygons.append(polygon)
+
+        self._pen = self._brush = None
+        if lineColour:
+            self._pen = QtGui.QPen(
+                QtGui.QColor(cartographer.makeAlphaColor(
+                    alpha=_HexBorderOverlay._HighlightAlpha,
+                    color=lineColour,
+                    isNormalised=True)),
+                0) # Line width set at draw time as it's dependent on scale
+            self._lineWidth = lineWidth
+        if fillColour:
+            self._brush = QtGui.QBrush(
+                QtGui.QColor(cartographer.makeAlphaColor(
+                    alpha=_HexBorderOverlay._HighlightAlpha,
+                    color=fillColour,
+                    isNormalised=True)))
+
+    def draw(
+            self,
+            painter: QtGui.QPainter,
+            currentScale: travellermap.Scale
+            ) -> None:
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+
+        if self._pen:
+            self._pen.setWidthF(self._lineWidth / currentScale.linear)
+        painter.setPen(self._pen if self._pen else QtCore.Qt.PenStyle.NoPen)
+
+        painter.setBrush(self._brush if self._brush else QtCore.Qt.BrushStyle.NoBrush)
+
+        for polygon in self._polygons:
+            painter.drawPolygon(polygon)
 
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -532,6 +599,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._hexHighlightOverlay = _HexHighlightOverlay()
         self._overlayMap[self._hexHighlightOverlay.handle()] = self._hexHighlightOverlay
 
+        self._toolTipCallback = None
+
         self.installEventFilter(self)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
@@ -647,15 +716,24 @@ class LocalMapWidget(QtWidgets.QWidget):
         self.update() # Trigger redraw
         return overlay.handle()
 
-    def createHexGroupsOverlay(
+    def createHexBordersOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None,
-            outerOutlinesOnly: bool = False
+            lineWidth: typing.Optional[int] = None, # In pixels
+            fillColour: typing.Optional[str] = None,
+            includeInterior: bool = True
             ) -> str:
-        return str(uuid.uuid4()) # TODO: Implement me
+        overlay = _HexBorderOverlay(
+            hexes=hexes,
+            lineColour=lineColour,
+            lineWidth=lineWidth,
+            fillColour=fillColour,
+            includeInterior=includeInterior)
+        self._overlayMap[overlay.handle()] = overlay
+
+        self.update() # Trigger redraw
+        return overlay.handle()
 
     def removeOverlay(
             self,

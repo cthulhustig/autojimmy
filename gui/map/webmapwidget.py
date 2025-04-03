@@ -422,21 +422,21 @@ class WebMapWidget(QtWidgets.QWidget):
 
     # Create an overlay where groups of touching hexes have a border drawn
     # around them
-    def createHexGroupsOverlay(
+    def createHexBordersOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None,
-            outerOutlinesOnly: bool = False
+            lineWidth: typing.Optional[int] = None, # In pixels
+            fillColour: typing.Optional[str] = None,
+            includeInterior: bool = True
             ) -> str:
         overlay = _Overlay()
         self._overlays[overlay.handle()] = overlay
 
-        if outerOutlinesOnly:
-            borders = logic.calculateOuterHexOutlines(hexes=hexes)
-        else:
+        if includeInterior:
             borders = logic.calculateCompleteHexOutlines(hexes=hexes)
+        else:
+            borders = logic.calculateOuterHexOutlines(hexes=hexes)
         if not borders:
             # Still return the group even if there were no borders, but there
             # is no point running a script

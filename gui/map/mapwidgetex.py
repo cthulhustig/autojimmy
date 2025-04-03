@@ -1000,38 +1000,38 @@ class MapWidgetEx(QtWidgets.QWidget):
             fillMap=fillMap,
             radius=radius)
 
-    def createHexGroupsOverlay(
+    def createHexBordersOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None,
-            outerOutlinesOnly: bool = False
+            lineWidth: typing.Optional[int] = None, # In pixels
+            fillColour: typing.Optional[str] = None,
+            includeInterior: bool = True
             ) -> str:
-        return self._mapWidget.createHexGroupsOverlay(
+        return self._mapWidget.createHexBordersOverlay(
             hexes=hexes,
-            fillColour=fillColour,
             lineColour=lineColour,
             lineWidth=lineWidth,
-            outerOutlinesOnly=outerOutlinesOnly)
+            fillColour=fillColour,
+            includeInterior=includeInterior)
 
     def createRadiusOverlay(
             self,
             center: travellermap.HexPosition,
             radius: int,
-            fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
-            lineWidth: typing.Optional[int] = None
+            lineWidth: typing.Optional[int] = None, # In pixels
+            fillColour: typing.Optional[str] = None,
             ) -> str:
         radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
             includeInterior=False))
-        return self._mapWidget.createHexGroupsOverlay(
+        return self._mapWidget.createHexBordersOverlay(
             hexes=radiusHexes,
             fillColour=fillColour,
             lineColour=lineColour,
             lineWidth=lineWidth,
-            outerOutlinesOnly=True)
+            includeInterior=False)
 
     def removeOverlay(
             self,
@@ -1621,7 +1621,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self.removeOverlay(handle=self._selectionOutlineHandle)
             self._selectionOutlineHandle = None
         if self._selectedHexes:
-            self._selectionOutlineHandle = self.createHexGroupsOverlay(
+            self._selectionOutlineHandle = self.createHexBordersOverlay(
                 hexes=self._selectedHexes.keys(),
                 lineColour=self.selectionOutlineColour(),
                 lineWidth=self.selectionOutlineWidth())
