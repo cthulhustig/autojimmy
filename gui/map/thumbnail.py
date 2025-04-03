@@ -61,9 +61,9 @@ def generateThumbnail(
 
         image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
         painter = QtGui.QPainter()
-        _thumbnailGraphics.setPainter(painter)
         painter.begin(image)
         try:
+            _thumbnailGraphics.setPainter(painter)
             renderer.render()
         finally:
             painter.end()
