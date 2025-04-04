@@ -491,29 +491,34 @@ class ConfigDialog(gui.DialogEx):
             value=app.Config.instance().mapRenderingType())
         self._mapRenderingTypeComboBox.currentIndexChanged.connect(
             self._renderingTypeChanged)
-        # TODO: This tooltip needs updated to cover the fact there are
-        # multiple rendering types
         self._mapRenderingTypeComboBox.setToolTip(gui.createStringToolTip(
-            '<p>Enable or disable the Traveller Map proxy.</p>'
-            '<p>By default, {app} uses a local proxy to access Traveller Map. '
-            'Using this proxy has two main benefits:</p>'
-            '<ul style="margin-left:15px; -qt-list-indent:0;">'
-            '<li>It allows {app} to overlay custom sectors on tiles returned '
-            'by Traveller Map, in order to have them rendered in the map '
-            'views.</li>'
-            '<li>It allows {app} to create a persistent cache of the tiles '
-            'returned by Traveller Map, this allows quicker rendering when '
-            'viewing sections of the map you\'ve previously viewed.</li>'
-            '</ul>'
-            '<p>For security, this proxy only listens on localhost, meaning '
-            'it can only be accessed from the system {app} is running on. '
-            'The proxy also only allows access to the Traveller Map URL '
-            'configured below.<p>'.format(app=app.AppName) +
+            '<p>Select how the map will be rendered.</p>'
+            '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
+            '<li><b>Local</b> - By default, {app} uses its own map rendering '
+            'code to draw the map. This is a reimplementation of the Traveller '
+            'Map rendering code (in Python) and is intended to replicate the '
+            'look of the Traveller Map website as closely as possible, '
+            'however, it\'s not a pixel perfect recreation, so there may be '
+            'some very minor differences. As this rendering is done locally, '
+            'on most systems, it will be the fastest option. Local rendering '
+            'is also the recommended type when using custom sectors, as it '
+            'doesn\'t suffer from any of the compositing artifacts seen when '
+            'using the Web (Proxy) rendering.</li>'
+            '<li><b>Web (Proxy)</b> - When using Web (Proxy) rendering, {app} '
+            'uses a built-in web browser to display the Traveller Map website '
+            'with, access to it going through a local proxy. This proxy is '
+            'used to cache map tiles for faster access and overlay custom '
+            'sectors on those map tiles.</li>'
+            '<li><b>Web (Direct)</b> - When using Web (Direct) rendering, '
+            '{app} uses a built-in web browser to display the Traveller Map '
+            'website. Custom sectors are not supported when using Web (Direct) '
+            'rendering.</li>'
+            '</ul>'.format(app=app.AppName) +
             _RestartRequiredParagraph,
             escape=False))
 
         # Proxy Widgets
-        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapRenderingType.Proxy
+        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapRenderingType.WebProxy
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
@@ -1258,7 +1263,7 @@ class ConfigDialog(gui.DialogEx):
         message.exec()
 
     def _renderingTypeChanged(self) -> None:
-        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapRenderingType.Proxy
+        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapRenderingType.WebProxy
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)

@@ -548,7 +548,7 @@ def main() -> None:
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
         startProxy = False
-        if app.Config.instance().mapRenderingType() is app.MapRenderingType.Proxy:
+        if app.Config.instance().mapRenderingType() is app.MapRenderingType.WebProxy:
             hostPoolSize = _hostPoolSizeCheck()
             if hostPoolSize > 0:
                 proxy.MapProxy.configure(

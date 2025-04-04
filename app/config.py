@@ -26,8 +26,8 @@ class ColourTheme(enum.Enum):
 # not the value
 class MapRenderingType(enum.Enum):
     Local = 'Local'
-    Proxy = 'Traveller Map (Proxy)'
-    TravellerMap = 'Traveller Map (Direct)'
+    WebProxy = 'Web (Proxy)'
+    WebDirect = 'Web (Direct)'
 
 class Config(object):
     _ConfigFileName = 'autojimmy.ini'
