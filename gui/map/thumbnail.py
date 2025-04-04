@@ -40,7 +40,7 @@ def generateThumbnail(
         ) -> typing.Tuple[
             typing.Optional[bytes],
             typing.Optional[travellermap.MapFormat]]:
-    if _LocalRendering:
+    if app.Config.instance().mapRenderingType() is app.MapRenderingType.Local:
         _initThumbnailRenderer()
 
         centerX, centerY = hex.absoluteCenter()

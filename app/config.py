@@ -13,10 +13,21 @@ import typing
 import urllib
 from PyQt5 import QtCore
 
+# NOTE: If I ever change the name of these enums I'll need some mapping
+# as they're written to the config file. This only applies to the name
+# not the value
 class ColourTheme(enum.Enum):
     DarkMode = 'Dark Mode'
     LightMode = 'Light Mode'
     UseOSSetting = 'Use OS Setting'
+
+# NOTE: If I ever change the name of these enums I'll need some mapping
+# as they're written to the config file. This only applies to the name
+# not the value
+class MapRenderingType(enum.Enum):
+    Local = 'Local'
+    Proxy = 'Traveller Map (Proxy)'
+    TravellerMap = 'Traveller Map (Direct)'
 
 class Config(object):
     _ConfigFileName = 'autojimmy.ini'
@@ -24,6 +35,7 @@ class Config(object):
     _LogLevelKeyName = 'Debug/LogLevel'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
+    _MapRenderingTypeKeyName = 'TravellerMap/RenderingType'
 
     _ProxyEnabledKeyName = 'Proxy/Enabled'
     _ProxyPortKeyName = 'Proxy/Port'
@@ -215,15 +227,15 @@ class Config(object):
 
         return True # Restart required
 
-    def proxyEnabled(self) -> bool:
-        return self._proxyEnabled
+    def mapRenderingType(self) -> MapRenderingType:
+        return self._mapRenderingType
 
-    def setProxyEnabled(self, enabled: bool) -> bool:
-        if enabled == self._proxyEnabled:
+    def setMapRenderingType(self, renderingType: MapRenderingType) -> None:
+        if renderingType == self._mapRenderingType:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._ProxyEnabledKeyName, enabled)
+        self._settings.setValue(Config._MapRenderingTypeKeyName, renderingType.name)
         return True # Restart required
 
     def proxyPort(self) -> int:
@@ -1130,9 +1142,11 @@ class Config(object):
             key=Config._LogLevelKeyName,
             default=logging.WARNING)
 
-        self._proxyEnabled = self._loadBoolSetting(
-            key=Config._ProxyEnabledKeyName,
-            default=True)
+        self._mapRenderingType = self._loadEnumSetting(
+            key=Config._MapRenderingTypeKeyName,
+            default=MapRenderingType.Local,
+            members=MapRenderingType.__members__)
+
         self._proxyPort = self._loadIntSetting(
             key=Config._ProxyPortKeyName,
             default=61977,

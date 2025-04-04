@@ -40,8 +40,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # - I could render these onto the tiles but it might be better to have them
 #   rendered on top of the final frame
 # TODO: Other overlays
-# TODO: Ability to switch between local and web rendering
-# - I've made the changes so it's possible, just need to hook it up to the ui
 # TODO: Animated move to new location
 # TODO: Fix colour vs color
 # TODO: There might be work needed around custom sector import. I support using

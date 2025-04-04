@@ -823,7 +823,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        self._mapWidget = gui.LocalMapWidget(parent=self)
+        self._mapWidget = \
+            gui.LocalMapWidget(parent=self) \
+            if app.Config.instance().mapRenderingType() is app.MapRenderingType.Local else \
+            gui.WebMapWidget(parent=self)
         self._mapWidget.leftClicked.connect(self._handleLeftClick)
         self._mapWidget.rightClicked.connect(self._handleRightClick)
 
