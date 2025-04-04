@@ -56,6 +56,13 @@ class HexHistory(object):
         return list(HexHistory._history)
 
     def addHex(self, hex: travellermap.HexPosition) -> None:
+        try:
+            traveller.WorldManager.instance().positionToSectorHex(hex=hex)
+        except:
+            # Only hexes that can be converted to sector hex format to be added to the
+            # the history (i.e. ones fall within a known sector).
+            return
+
         if hex in HexHistory._history:
             # Remove the hex from the history so it can be re-added as the first entry
             HexHistory._history.remove(hex)

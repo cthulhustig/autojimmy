@@ -14,8 +14,8 @@ class WorldManager(object):
     # The absolute and relative hex patterns match search strings formatted
     # as 2 or 4 comma separated signed integers respectively, optionally
     # surrounded by brackets. All integer values are extracted.
-    _AbsoluteHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+)\)?$')
-    _RelativeHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)\)?$')
+    _AbsoluteHexSearchPattern = re.compile(r'^\(?(-?\d+)[,\s]?\s*(-?\d+)\)?$')
+    _RelativeHexSearchPattern = re.compile(r'^\(?(-?\d+)[,\s]?\s*(-?\d+)[,\s]?\s*(-?\d+)[,\s]?\s*(-?\d+)\)?$')
     # The sector hex search pattern matches a search string with the format
     # of a sector hex string optionally with the subsector in brackets
     # following it (i.e. the canonical name format used for a dead space
@@ -317,6 +317,46 @@ class WorldManager(object):
             offsetX=offsetX,
             offsetY=offsetY)
 
+    def stringToPosition(
+            self,
+            string: str
+            ) -> travellermap.HexPosition:
+        testString = string.strip()
+        if not testString:
+            raise ValueError(f'Invalid position string "{string}"')
+
+        result = self._SectorHexSearchPattern.match(testString)
+        if result:
+            try:
+                return self.sectorHexToPosition(sectorHex=testString)
+            except:
+                # Search string is not a valid sector hex. The search pattern
+                # regex was matched so it should have the correct format, most
+                # likely the sector name doesn't match a known sector
+                pass
+
+        result = self._AbsoluteHexSearchPattern.match(testString)
+        if result:
+            return travellermap.HexPosition(
+                absoluteX=int(result.group(1)),
+                absoluteY=int(result.group(2)))
+
+        result = self._RelativeHexSearchPattern.match(testString)
+        if result:
+            sectorX = int(result.group(1))
+            sectorY = int(result.group(2))
+            offsetX = int(result.group(3))
+            offsetY = int(result.group(4))
+            if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
+                    (offsetY >= 0 and offsetY < travellermap.SectorHeight):
+                return travellermap.HexPosition(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    offsetX=offsetX,
+                    offsetY=offsetY)
+
+        raise ValueError(f'Invalid position string "{string}"')
+
     def canonicalHexName(
             self,
             hex: travellermap.HexPosition
@@ -464,46 +504,15 @@ class WorldManager(object):
             # No matches if search string is empty after white space stripped
             return []
 
-        # If the search string matches the sector hex format or either the
-        # absolute or relative coordinate formats then try to a world at the
-        # specified location. If a world is found then it's our only result
-        result = self._SectorHexSearchPattern.match(searchString)
-        if result:
-            try:
-                foundWorld = self.worldBySectorHex(sectorHex=result.group(1))
-                if foundWorld:
-                    return [foundWorld]
-            except:
-                # Search string is not a valid sector hex. The search pattern
-                # regex was matched so it should have the correct format, most
-                # likely the sector name doesn't match a known sector
-                pass
-
-        result = self._AbsoluteHexSearchPattern.match(searchString)
-        if result:
-            hex = travellermap.HexPosition(
-                absoluteX=int(result.group(1)),
-                absoluteY=int(result.group(2)))
+        # Check if the world string specifies a hex, if it does and there is
+        # a world at that location then that is our only result
+        try:
+            hex = self.stringToPosition(string=searchString)
             foundWorld = self.worldByPosition(hex=hex)
             if foundWorld:
                 return [foundWorld]
-
-        result = self._RelativeHexSearchPattern.match(searchString)
-        if result:
-            sectorX = int(result.group(1))
-            sectorY = int(result.group(2))
-            offsetX = int(result.group(3))
-            offsetY = int(result.group(4))
-            if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
-                    (offsetY >= 0 and offsetY < travellermap.SectorHeight):
-                hex = travellermap.HexPosition(
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    offsetX=offsetX,
-                    offsetY=offsetY)
-                foundWorld = self.worldByPosition(hex=hex)
-                if foundWorld:
-                    return [foundWorld]
+        except:
+            pass
 
         searchWorldLists = None
         result = self._WorldSearchPattern.match(searchString)

@@ -21,7 +21,7 @@ def _formatHexName(hex: travellermap.HexPosition) -> str:
         subsector = traveller.WorldManager.instance().subsectorByPosition(hex=hex)
         return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
     except:
-        return ''
+        return f'{hex.absoluteX()},{hex.absoluteY()}'
 
 def _formatWorldHtml(world: traveller.World) -> str:
     return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
@@ -476,8 +476,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             if self._enableDeadSpaceSelection:
                 try:
-                    hex = traveller.WorldManager.instance().sectorHexToPosition(
-                        sectorHex=searchString)
+                    hex = traveller.WorldManager.instance().stringToPosition(
+                        string=searchString)
                     isDuplicate = False
                     for other in matches:
                         if hex == other:
