@@ -230,11 +230,22 @@ class ZoneFiler(WorldFilter):
             worldValue=ZoneFiler._zoneToInt(world.zone()),
             compareValue=self._integer)
 
+    # Greater/less than comparisons don't really make logical sense for zones
+    # but this function makes an attempt to map them to integers so it does
+    # something vaguely sensible if the user chooses to do it. It's based on the
+    # thinking that Forbidden/Unabsorbed are equivalent to Red/Amber zones
+    # respectively (at least the Traveller Map IsAmber/IsRed treat them that way).
     @staticmethod
     def _zoneToInt(zone: traveller.ZoneType) -> int:
         if zone == traveller.ZoneType.RedZone:
-            return 2
+            return 5
+        elif zone == traveller.ZoneType.Forbidden:
+            return 4
         elif zone == traveller.ZoneType.AmberZone:
+            return 3
+        elif zone == traveller.ZoneType.Unabsorbed:
+            return 2
+        elif zone == traveller.ZoneType.Balkanized:
             return 1
         else:
             return 0

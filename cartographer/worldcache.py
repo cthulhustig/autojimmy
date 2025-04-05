@@ -89,9 +89,14 @@ class WorldInfo(object):
                         width=0.04 + rand.random() * 0.03,
                         height=0.04 + rand.random() * 0.03))
 
-        # Split zone into separate bools for faster checks
-        self.isAmberZone = world.zone() is traveller.ZoneType.AmberZone
-        self.isRedZone = world.zone() is traveller.ZoneType.RedZone
+        # Split zone into separate bools for faster checks. The fact
+        # Unabsorbed/Forbidden are equivalent is base do the Traveller Map
+        # implementation is IsAmber/IsRed
+        zone = world.zone()
+        self.isAmberZone = zone is traveller.ZoneType.AmberZone or \
+            zone is traveller.ZoneType.Unabsorbed
+        self.isRedZone = zone is traveller.ZoneType.RedZone or \
+            zone is traveller.ZoneType.Forbidden
 
         self.hasWater = WorldInfo._calcHasWater(world)
         self.hasGasGiant = WorldInfo._calcHasGasGiants(world)

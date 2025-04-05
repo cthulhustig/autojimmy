@@ -1370,7 +1370,9 @@ class Config(object):
             keyType=traveller.ZoneType,
             default={
                 traveller.ZoneType.AmberZone: app.TagLevel.Warning,
-                traveller.ZoneType.RedZone: app.TagLevel.Danger
+                traveller.ZoneType.RedZone: app.TagLevel.Danger,
+                traveller.ZoneType.Unabsorbed: app.TagLevel.Warning,
+                traveller.ZoneType.Forbidden: app.TagLevel.Danger
             })
 
         self._taggedStarPortCodes = self._loadTaggingMap(
