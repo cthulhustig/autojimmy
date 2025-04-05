@@ -17,7 +17,7 @@ class VectorObject(object):
             nameY: float,
             bounds: cartographer.RectangleF,
             path: typing.Optional[cartographer.AbstractPath],
-            mapOptions: cartographer.MapOptions = 0
+            mapOptions: cartographer.RenderOptions = 0
             ) -> None:
         super().__init__()
 
@@ -139,7 +139,7 @@ class VectorObjectCache(object):
         element = rootElement.find('./MapOptions')
         if element is not None:
             for option in element.text.split():
-                mapOptions |= cartographer.MapOptions[option]
+                mapOptions |= cartographer.RenderOptions[option]
 
         originX = 0
         element = rootElement.find('./OriginX')

@@ -29,9 +29,6 @@ def _initThumbnailRenderer():
     _thumbnailStyleCache = cartographer.StyleCache()
     _thumbnailRenderInitialised = True
 
-# TODO: Need to make this user configurable
-_LocalRendering = True
-
 def generateThumbnail(
         hex: travellermap.HexPosition,
         width: int = 256,

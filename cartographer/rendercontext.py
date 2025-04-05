@@ -70,7 +70,7 @@ class RenderContext(object):
             outputPixelX: int,
             outputPixelY: int,
             style: travellermap.Style,
-            options: cartographer.MapOptions,
+            options: cartographer.RenderOptions,
             imageCache: cartographer.ImageCache,
             vectorCache: cartographer.VectorObjectCache,
             labelCache: cartographer.LabelCache,
@@ -169,12 +169,12 @@ class RenderContext(object):
         self._styleSheet.style = style
         self._updateLayerOrder()
 
-    def options(self) -> cartographer.MapOptions:
+    def options(self) -> cartographer.RenderOptions:
         return self._styleSheet.options
 
     def setOptions(
             self,
-            options: cartographer.MapOptions
+            options: cartographer.RenderOptions
             ) -> None:
         self._styleSheet.options = options
         self._updateLayerOrder()
@@ -422,7 +422,7 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
         for vectorObject in self._vectorCache.borders:
-            if (vectorObject.mapOptions & self._options & cartographer.MapOptions.BordersMask) != 0:
+            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
                     vectorObject=vectorObject,
                     pen=self._styleSheet.macroBorders.linePen)
@@ -434,7 +434,7 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
         for vectorObject in self._vectorCache.routes:
-            if (vectorObject.mapOptions & self._options & cartographer.MapOptions.BordersMask) != 0:
+            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
                     vectorObject=vectorObject,
                     pen=self._styleSheet.macroRoutes.linePen)
@@ -782,9 +782,9 @@ class RenderContext(object):
                 cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for vectorObject in self._vectorCache.borders:
-            if (vectorObject.mapOptions & self._options & cartographer.MapOptions.NamesMask) == 0:
+            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
                 continue
-            major = (vectorObject.mapOptions & cartographer.MapOptions.NamesMajor) != 0
+            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
             labelStyle = cartographer.LabelStyle(uppercase=major)
             font = \
                 self._styleSheet.macroNames.font \
@@ -801,7 +801,7 @@ class RenderContext(object):
                 labelStyle=labelStyle)
 
         for vectorObject in self._vectorCache.rifts:
-            major = (vectorObject.mapOptions & cartographer.MapOptions.NamesMajor) != 0
+            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
             labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
             font = \
                 self._styleSheet.macroNames.font \
@@ -819,9 +819,9 @@ class RenderContext(object):
 
         if self._styleSheet.macroRoutes.visible:
             for vectorObject in self._vectorCache.routes:
-                if (vectorObject.mapOptions & self._options & cartographer.MapOptions.NamesMask) == 0:
+                if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
                     continue
-                major = (vectorObject.mapOptions & cartographer.MapOptions.NamesMajor) != 0
+                major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
                 labelStyle = cartographer.LabelStyle(uppercase=major)
                 font = \
                     self._styleSheet.macroNames.font \
@@ -837,7 +837,7 @@ class RenderContext(object):
                     textBrush=brush,
                     labelStyle=labelStyle)
 
-        if (self._options & cartographer.MapOptions.NamesMinor) != 0:
+        if (self._options & cartographer.RenderOptions.NamesMinor) != 0:
             for label in self._labelCache.minorLabels:
                 font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
@@ -857,7 +857,7 @@ class RenderContext(object):
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if (not self._styleSheet.capitals.visible) or \
-            ((self._options & cartographer.MapOptions.WorldsMask) == 0):
+            ((self._options & cartographer.RenderOptions.WorldsMask) == 0):
             return
 
         dotPen = self._graphics.createPen(

@@ -112,7 +112,7 @@ class StyleSheet(object):
     def __init__(
             self,
             scale: float,
-            options: cartographer.MapOptions,
+            options: cartographer.RenderOptions,
             style: travellermap.Style,
             graphics: cartographer.AbstractGraphics
             ):
@@ -141,10 +141,10 @@ class StyleSheet(object):
         self._handleConfigUpdate()
 
     @property
-    def options(self) -> cartographer.MapOptions:
+    def options(self) -> cartographer.RenderOptions:
         return self._options
     @options.setter
-    def options(self, options: cartographer.MapOptions) -> None:
+    def options(self, options: cartographer.RenderOptions) -> None:
         if options == self._options:
             return # Nothing to do
         self._options = options
@@ -283,19 +283,19 @@ class StyleSheet(object):
         onePixel = 1.0 / self.scale
 
         self.subsectorGrid.visible = (self.scale >= StyleSheet._SubsectorsMinScale) and \
-            ((self.options & cartographer.MapOptions.SubsectorGrid) != 0)
+            ((self.options & cartographer.RenderOptions.SubsectorGrid) != 0)
         self.sectorGrid.visible = (self.scale >= StyleSheet._SectorGridMinScale) and \
-            ((self._options & cartographer.MapOptions.SectorGrid) != 0)
+            ((self._options & cartographer.RenderOptions.SectorGrid) != 0)
         self.parsecGrid.visible = (self.scale >= StyleSheet._ParsecMinScale)
         self.showSomeSectorNames = (self.scale >= StyleSheet._SectorNameMinScale) and \
             (self.scale <= StyleSheet._SectorNameMaxScale) and \
-            ((self._options & cartographer.MapOptions.SectorsMask) != 0)
+            ((self._options & cartographer.RenderOptions.SectorsMask) != 0)
         self.showAllSectorNames = self.showSomeSectorNames and \
             ((self.scale >= StyleSheet._SectorNameAllSelectedScale) or \
-             ((self._options & cartographer.MapOptions.SectorsAll) != 0))
+             ((self._options & cartographer.RenderOptions.SectorsAll) != 0))
         self.subsectorNames.visible = (self.scale >= StyleSheet._SubsectorNameMinScale) and \
             (self.scale <= StyleSheet._SubsectorNameMaxScale) and \
-            ((self._options & cartographer.MapOptions.SectorsMask) != 0)
+            ((self._options & cartographer.RenderOptions.SectorsMask) != 0)
 
         self.worlds.visible = self.scale >= StyleSheet._WorldMinScale
         self.pseudoRandomStars.visible = (StyleSheet._PseudoRandomStarsMinScale <= self.scale) and \
@@ -322,9 +322,9 @@ class StyleSheet(object):
         self.macroNames.visible = (self.scale >= StyleSheet._MacroLabelMinScale) and \
             (self.scale <= StyleSheet._MacroLabelMaxScale)
         self.megaNames.visible = self.scale <= StyleSheet._MegaLabelMaxScale and \
-            ((self.options & cartographer.MapOptions.NamesMask) != 0)
+            ((self.options & cartographer.RenderOptions.NamesMask) != 0)
         self.showMicroNames = (self.scale >= StyleSheet._MicroNameMinScale) and \
-            ((self.options & cartographer.MapOptions.NamesMask) != 0)
+            ((self.options & cartographer.RenderOptions.NamesMask) != 0)
         self.capitals.visible = (self.scale >= StyleSheet._MacroWorldsMinScale) and \
             (self.scale <= StyleSheet._MacroWorldsMaxScale)
 
@@ -332,16 +332,16 @@ class StyleSheet(object):
 
         self.macroBorders.visible = (self.scale >= StyleSheet._MacroBorderMinScale) and \
             (self.scale < StyleSheet._MicroBorderMinScale) and \
-            ((self.options & cartographer.MapOptions.BordersMask) != 0)
+            ((self.options & cartographer.RenderOptions.BordersMask) != 0)
         self.microBorders.visible = (self.scale >= StyleSheet._MicroBorderMinScale) and \
-            ((self.options & cartographer.MapOptions.BordersMask) != 0)
+            ((self.options & cartographer.RenderOptions.BordersMask) != 0)
         self.fillMicroBorders = self.microBorders.visible and \
-            ((self.options & cartographer.MapOptions.FilledBorders) != 0)
+            ((self.options & cartographer.RenderOptions.FilledBorders) != 0)
         self.microRoutes.visible = (self.scale >= StyleSheet._RouteMinScale) and \
-            ((self.options & cartographer.MapOptions.RoutesMask) != 0)
+            ((self.options & cartographer.RenderOptions.RoutesMask) != 0)
         self.macroRoutes.visible = (self.scale >= StyleSheet._MacroRouteMinScale) and \
             (self.scale <= StyleSheet._MacroRouteMaxScale) and \
-            ((self.options & cartographer.MapOptions.RoutesMask) != 0)
+            ((self.options & cartographer.RenderOptions.RoutesMask) != 0)
 
         if self.scale < StyleSheet._WorldBasicMinScale:
             self.worldDetails = cartographer.WorldDetails.Dotmap
@@ -353,14 +353,14 @@ class StyleSheet(object):
         self.discRadius = 0.1 if ((self.worldDetails & cartographer.WorldDetails.Type) != 0) else  0.2
 
         self.showWorldDetailColors = self.worldDetails == cartographer.WorldDetails.Poster and \
-            ((self.options & cartographer.MapOptions.WorldColors) != 0)
-        self.populationOverlay.visible = (self.options & cartographer.MapOptions.PopulationOverlay) != 0
-        self.importanceOverlay.visible = (self.options & cartographer.MapOptions.ImportanceOverlay) != 0
-        self.capitalOverlay.visible = (self.options & cartographer.MapOptions.CapitalOverlay) != 0
-        self.showStellarOverlay = (self._options & cartographer.MapOptions.StellarOverlay) != 0
-        self.ancientsWorlds.visible = (self.options & cartographer.MapOptions.AncientWorlds) != 0
-        self.droyneWorlds.visible = (self.options & cartographer.MapOptions.DroyneWorlds) != 0
-        self.minorHomeWorlds.visible = (self.options & cartographer.MapOptions.MinorHomeWorlds) != 0
+            ((self.options & cartographer.RenderOptions.WorldColors) != 0)
+        self.populationOverlay.visible = (self.options & cartographer.RenderOptions.PopulationOverlay) != 0
+        self.importanceOverlay.visible = (self.options & cartographer.RenderOptions.ImportanceOverlay) != 0
+        self.capitalOverlay.visible = (self.options & cartographer.RenderOptions.CapitalOverlay) != 0
+        self.showStellarOverlay = (self._options & cartographer.RenderOptions.StellarOverlay) != 0
+        self.ancientsWorlds.visible = (self.options & cartographer.RenderOptions.AncientWorlds) != 0
+        self.droyneWorlds.visible = (self.options & cartographer.RenderOptions.DroyneWorlds) != 0
+        self.minorHomeWorlds.visible = (self.options & cartographer.RenderOptions.MinorHomeWorlds) != 0
 
         # NOTE: Force ancient worlds, droyne worlds & minor home world overlays
         # off when zoomed out as the further you zoom out the longer it takes
@@ -379,8 +379,8 @@ class StyleSheet(object):
         self.hexCoordinateStyle = cartographer.HexCoordinateStyle.Sector
         self.numberAllHexes = False
 
-        self.dimUnofficialSectors = (self.options & cartographer.MapOptions.DimUnofficial) != 0
-        self.colorCodeSectorStatus = (self.options & cartographer.MapOptions.ColorCodeSectorStatus) != 0
+        self.dimUnofficialSectors = (self.options & cartographer.RenderOptions.DimUnofficial) != 0
+        self.colorCodeSectorStatus = (self.options & cartographer.RenderOptions.ColorCodeSectorStatus) != 0
 
         if self.scale < StyleSheet._WorldFullMinScale:
             # Atlas-style

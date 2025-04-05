@@ -626,7 +626,6 @@ class LocalMapWidget(QtWidgets.QWidget):
     _CheckerboardColourB ='#404040'
     _CheckerboardRectSize = 16
 
-    # TODO: Need to check this and the font size look ok in 4K
     _DirectionTextFontFamily = 'Arial'
     _DirectionTextFontSize = 12
     _DirectionTextIndent = 10
@@ -640,7 +639,6 @@ class LocalMapWidget(QtWidgets.QWidget):
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
     # missed
-    # TODO: This should be shared with web map widget
     _LeftClickMoveThreshold = 3
 
     _StateVersion = 'LocalMapWidget_v1'
@@ -1050,48 +1048,41 @@ class LocalMapWidget(QtWidgets.QWidget):
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
 
-        #print(f'View: {self.width()} {self.height()}')
-        #print(f'Pos: {self._absoluteCenterPos.x()} {self._absoluteCenterPos.y()}')
-        #print(f'Scale: Linear={self._viewScale.linear} Log={self._viewScale.log}')
+        if not LocalMapWidget._TileRendering and self._isWindows:
+            needsNewImage = self._offscreenRenderImage is None or \
+                self._offscreenRenderImage.width() != self.width() or \
+                self._offscreenRenderImage.height() != self.height()
+            if needsNewImage:
+                self._offscreenRenderImage = QtGui.QImage(
+                    self.width(),
+                    self.height(),
+                    QtGui.QImage.Format.Format_ARGB32)
+        else:
+            self._offscreenRenderImage = None
 
-        # TODO: Remove debug timer
-        #with common.DebugTimer('Draw Time'):
-        if True:
-            if not LocalMapWidget._TileRendering and self._isWindows:
-                needsNewImage = self._offscreenRenderImage is None or \
-                    self._offscreenRenderImage.width() != self.width() or \
-                    self._offscreenRenderImage.height() != self.height()
-                if needsNewImage:
-                    self._offscreenRenderImage = QtGui.QImage(
-                        self.width(),
-                        self.height(),
-                        QtGui.QImage.Format.Format_ARGB32)
-            else:
-                self._offscreenRenderImage = None
+        self._drawView(
+            paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
+            forceAtomic=self._forceAtomicRedraw)
 
-            self._drawView(
-                paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
-                forceAtomic=self._forceAtomicRedraw)
+        if LocalMapWidget._TileRendering and LocalMapWidget._DelayedRendering:
+            if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
+                # If there are no tiles needing loaded, pre-load tiles just
+                # outside the current view area.
+                self._loadLookaheadTiles()
 
-            if LocalMapWidget._TileRendering and LocalMapWidget._DelayedRendering:
-                if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
-                    # If there are no tiles needing loaded, pre-load tiles just
-                    # outside the current view area.
-                    self._loadLookaheadTiles()
+            # Start the timer to trigger loading of missing tiles. It's
+            # important to re-check the tile queue as it may have had
+            # lookahead tiles added
+            if self._tileQueue:
+                self._tileTimer.start()
 
-                # Start the timer to trigger loading of missing tiles. It's
-                # important to re-check the tile queue as it may have had
-                # lookahead tiles added
-                if self._tileQueue:
-                    self._tileTimer.start()
+        if self._offscreenRenderImage is not None:
+            painter = QtGui.QPainter()
+            with gui.PainterDrawGuard(painter, self):
+                renderRect = QtCore.QRect(0, 0, self.width(), self.height())
+                painter.drawImage(renderRect, self._offscreenRenderImage)
 
-            if self._offscreenRenderImage is not None:
-                painter = QtGui.QPainter()
-                with gui.PainterDrawGuard(painter, self):
-                    renderRect = QtCore.QRect(0, 0, self.width(), self.height())
-                    painter.drawImage(renderRect, self._offscreenRenderImage)
-
-            self._forceAtomicRedraw = False
+        self._forceAtomicRedraw = False
 
     def _drawView(
             self,
@@ -1837,13 +1828,6 @@ class LocalMapWidget(QtWidgets.QWidget):
                 outputPixelX=LocalMapWidget._TileSize,
                 outputPixelY=LocalMapWidget._TileSize)
             self._renderer.render()
-
-            # TODO: Remove debug code
-            """
-            painter.setPen(QtGui.QColor('#FF0000'))
-            painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
-            painter.drawRect(0, 0, LocalMapWidget._TileSize, LocalMapWidget._TileSize)
-            """
         finally:
             self._graphics.setPainter(painter=None)
             painter.end()
@@ -1852,23 +1836,21 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def _handleTileTimer(self) -> None:
         tileX, tileY, tileScale, _, _ = self._tileQueue.pop(0)
-        #with common.DebugTimer('Tile Render'):
-        if True:
-            image = None
-            if self._sharedTileCache.isFull():
-                # Reuse oldest cached tile
-                _, image = self._sharedTileCache.pop()
-            key = (
-                tileX,
-                tileY,
-                tileScale,
-                self._renderer.style(),
-                int(self._renderer.options()))
-            self._sharedTileCache[key] = self._renderTile(
-                tileX=tileX,
-                tileY=tileY,
-                tileScale=tileScale,
-                image=image)
+        image = None
+        if self._sharedTileCache.isFull():
+            # Reuse oldest cached tile
+            _, image = self._sharedTileCache.pop()
+        key = (
+            tileX,
+            tileY,
+            tileScale,
+            self._renderer.style(),
+            int(self._renderer.options()))
+        self._sharedTileCache[key] = self._renderTile(
+            tileX=tileX,
+            tileY=tileY,
+            tileScale=tileScale,
+            image=image)
         if self._tileQueue:
             self._tileTimer.start()
         self.update()

@@ -49,8 +49,7 @@ class HexCoordinateStyle(enum.Enum):
     Sector = 0
     Subsector = 1
 
-# TODO: Need to consolidate this and travellermap.Option
-class MapOptions(enum.IntFlag):
+class RenderOptions(enum.IntFlag):
     SectorGrid = 0x0001
     SubsectorGrid = 0x0002
     GridMask = SectorGrid | SubsectorGrid
@@ -71,14 +70,9 @@ class MapOptions(enum.IntFlag):
     WorldsHomeworlds = 0x0200
     WorldsMask = WorldsCapitals | WorldsHomeworlds
 
-    RoutesSelectedDeprecated = 0x0400
-
     ForceHexes = 0x2000
     WorldColors = 0x4000
     FilledBorders = 0x8000
-
-    # These were added by me. In the Traveller Map code these come from
-    # separate URL parameters rather than part of the map options
 
     PopulationOverlay = 0x10000
     ImportanceOverlay = 0x20000

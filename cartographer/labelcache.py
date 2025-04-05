@@ -21,7 +21,7 @@ class WorldLabel(object):
     def __init__(
             self,
             text: str,
-            options: cartographer.MapOptions,
+            options: cartographer.RenderOptions,
             position: cartographer.PointF,
             biasX: int = 0,
             biasY: int = 0,
@@ -75,9 +75,9 @@ class LabelCache(object):
                 options = 0
                 for token in optionsElement.text.split():
                     if token == 'WorldsHomeworlds':
-                        options |= cartographer.MapOptions.WorldsHomeworlds
+                        options |= cartographer.RenderOptions.WorldsHomeworlds
                     elif token == 'WorldsCapitals':
-                        options |= cartographer.MapOptions.WorldsCapitals
+                        options |= cartographer.RenderOptions.WorldsCapitals
 
                 locationElement = worldElement.find('./Location')
                 if locationElement is None:
