@@ -80,17 +80,18 @@ def createHexToolTip(
     toolTip += f'<li>Sector Hex: {html.escape(sectorHex)}</li>'
     toolTip += f'<li>Sector Position: ({hex.sectorX()}, {hex.sectorY()})</li>'
 
-    zone = world.zone()
-    if zone:
-        zoneTag = None
-        if zone is traveller.ZoneType.RedZone or zone is traveller.ZoneType.Forbidden:
-            zoneTag = app.TagLevel.Danger
-        elif zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.Unabsorbed:
-            zoneTag = app.TagLevel.Warning
+    if world:
+        zone = world.zone()
+        if zone:
+            zoneTag = None
+            if zone is traveller.ZoneType.RedZone or zone is traveller.ZoneType.Forbidden:
+                zoneTag = app.TagLevel.Danger
+            elif zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.Unabsorbed:
+                zoneTag = app.TagLevel.Warning
 
-        toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
-            style='' if not zoneTag else formatStyle(app.tagColour(zoneTag)),
-            zone=html.escape(traveller.zoneTypeName(zone)))
+            toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
+                style='' if not zoneTag else formatStyle(app.tagColour(zoneTag)),
+                zone=html.escape(traveller.zoneTypeName(zone)))
 
     refuellingTypes = []
     if world:

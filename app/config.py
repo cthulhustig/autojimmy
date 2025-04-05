@@ -153,6 +153,7 @@ class Config(object):
         travellermap.Option.StellarOverlay: 'TravellerMap/StellarOverlay',
         travellermap.Option.EmpressWaveOverlay: 'TravellerMap/EmpressWaveOverlay',
         travellermap.Option.QrekrshaZoneOverlay: 'TravellerMap/QrekrshaZoneOverlay',
+        travellermap.Option.AntaresSupernovaOverlay: 'TravellerMap/AntaresSupernovaOverlay',
         travellermap.Option.MainsOverlay: 'TravellerMap/MainsOverlay',
     }
 

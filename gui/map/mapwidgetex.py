@@ -1435,6 +1435,9 @@ class MapWidgetEx(QtWidgets.QWidget):
                     option=travellermap.Option.QrekrshaZoneOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
+                    option=travellermap.Option.AntaresSupernovaOverlay))
+            MapWidgetEx._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
                     option=travellermap.Option.MainsOverlay))
 
         for action in MapWidgetEx._sharedStyleGroup.actions():

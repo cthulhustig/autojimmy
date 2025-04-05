@@ -220,10 +220,15 @@ def _createCommonQueryList(
     elif not minimal:
         optionList.append('ew=') # Empty to clear rather than 0
 
-    if travellermap.Option.EmpressWaveOverlay in options:
+    if travellermap.Option.QrekrshaZoneOverlay in options:
         optionList.append('qz=1')
     elif not minimal:
         optionList.append('qz=') # Empty to clear rather than 0
+
+    if travellermap.Option.AntaresSupernovaOverlay in options:
+        optionList.append('as=milieu') # Show for current milieu
+    elif not minimal:
+        optionList.append('as=') # Empty to clear rather than 0
 
     return optionList
 

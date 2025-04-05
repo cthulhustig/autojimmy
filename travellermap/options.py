@@ -23,4 +23,5 @@ class Option(enum.Enum):
     StellarOverlay = 'Stellar'
     EmpressWaveOverlay = 'Empress Wave'
     QrekrshaZoneOverlay = 'Qrekrsha Zone'
+    AntaresSupernovaOverlay = 'Antares Supernova'
     MainsOverlay = 'Mains'
