@@ -51,7 +51,7 @@ class _OverlayLabel(QtWidgets.QLabel):
         self.setStyleSheet(f'background-color:#00000000')
         _setMinFontSize(widget=self)
 
-class _MapStyleToggleAction(QtWidgets.QAction):
+class _MapStyleAction(QtWidgets.QAction):
     def __init__(
             self,
             style: travellermap.Style,
@@ -68,13 +68,13 @@ class _MapStyleToggleAction(QtWidgets.QAction):
         # of TravellerMapWidget. This call needs to made first as it will write the updated
         # setting to the config so the instances of TravellerMapWidget can read it back when
         # updating their URL.
-        self.triggered.connect(self._optionToggled)
+        self.triggered.connect(self._actionTriggered)
 
-    def _optionToggled(self) -> None:
+    def _actionTriggered(self) -> None:
         if self.isChecked():
             app.Config.instance().setMapStyle(style=self._style)
 
-class _MapOptionToggleAction(QtWidgets.QAction):
+class _MapOptionAction(QtWidgets.QAction):
     def __init__(
             self,
             option: travellermap.Option,
@@ -91,12 +91,29 @@ class _MapOptionToggleAction(QtWidgets.QAction):
         # of TravellerMapWidget. This call needs to made first as it will write the updated
         # setting to the config so the instances of TravellerMapWidget can read it back when
         # updating their URL.
-        self.triggered.connect(self._optionToggled)
+        self.triggered.connect(self._actionTriggered)
 
-    def _optionToggled(self) -> None:
+    def _actionTriggered(self) -> None:
         app.Config.instance().setMapOption(
             option=self._option,
             enabled=self.isChecked())
+
+class _MapRenderingAction(QtWidgets.QAction):
+    def __init__(
+            self,
+            type: travellermap.Option,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(type.value, parent)
+        self._type = type
+
+        self.setCheckable(True)
+        self.setChecked(app.Config.instance().mapStyle() == type)
+
+        self.triggered.connect(self._actionTriggered)
+
+    def _actionTriggered(self) -> None:
+        app.Config.instance().setMapRenderingType(self._type)
 
 class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(self, *args, **kwargs):
@@ -796,10 +813,11 @@ class MapWidgetEx(QtWidgets.QWidget):
     _HomeLinearScale = 1
 
     # Actions shared with all instances of this widget
-    _sharedStyleGroup = None
-    _sharedFeatureGroup = None
-    _sharedAppearanceGroup = None
-    _sharedOverlayGroup = None
+    _sharedStyleGroup: typing.Optional[QtWidgets.QActionGroup] = None
+    _sharedRenderingGroup: typing.Optional[QtWidgets.QActionGroup] = None
+    _sharedFeatureGroup: typing.Optional[QtWidgets.QActionGroup] = None
+    _sharedAppearanceGroup: typing.Optional[QtWidgets.QActionGroup] = None
+    _sharedOverlayGroup: typing.Optional[QtWidgets.QActionGroup] = None
 
     def __init__(
             self,
@@ -807,7 +825,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._initOptionActions()
+        self._initSharedActions()
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
@@ -823,9 +841,11 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
+        useLocalRendering = app.Config.instance().mapSourceType() is app.MapSourceType.Local
+
         self._mapWidget = \
             gui.LocalMapWidget(parent=self) \
-            if app.Config.instance().mapRenderingType() is app.MapRenderingType.Local else \
+            if useLocalRendering else \
             gui.WebMapWidget(parent=self)
         self._mapWidget.leftClicked.connect(self._handleLeftClick)
         self._mapWidget.rightClicked.connect(self._handleRightClick)
@@ -889,6 +909,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._configWidget.addOptions(
             section='Style',
             actions=self._sharedStyleGroup)
+        if useLocalRendering:
+            self._configWidget.addOptions(
+                section='Rendering',
+                actions=self._sharedRenderingGroup)
         self._configWidget.addOptions(
             section='Features',
             actions=self._sharedFeatureGroup)
@@ -905,6 +929,10 @@ class MapWidgetEx(QtWidgets.QWidget):
     def __del__(self) -> None:
         if MapWidgetEx._sharedStyleGroup:
             for action in MapWidgetEx._sharedStyleGroup.actions():
+                action.triggered.disconnect(self._displayOptionChanged)
+
+        if MapWidgetEx._sharedRenderingGroup:
+            for action in MapWidgetEx._sharedRenderingGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
         if MapWidgetEx._sharedFeatureGroup:
@@ -1349,98 +1377,105 @@ class MapWidgetEx(QtWidgets.QWidget):
     def selectionOutlineWidth() -> int:
         return MapWidgetEx._SelectionOutlineWidth
 
-    def _initOptionActions(self) -> None:
+    def _initSharedActions(self) -> None:
         if not MapWidgetEx._sharedStyleGroup:
-            MapWidgetEx._sharedStyleGroup = \
-                QtWidgets.QActionGroup(None)
+            MapWidgetEx._sharedStyleGroup = QtWidgets.QActionGroup(None)
             MapWidgetEx._sharedStyleGroup.setExclusive(True)
 
             for style in travellermap.Style:
-                action = _MapStyleToggleAction(style=style)
+                action = _MapStyleAction(style=style)
                 MapWidgetEx._sharedStyleGroup.addAction(action)
 
+        if not MapWidgetEx._sharedRenderingGroup:
+            MapWidgetEx._sharedRenderingGroup =QtWidgets.QActionGroup(None)
+            MapWidgetEx._sharedRenderingGroup.setExclusive(True)
+
+            for type in app.MapRenderingType:
+                action = _MapRenderingAction(type=type)
+                MapWidgetEx._sharedRenderingGroup.addAction(action)
+
         if not MapWidgetEx._sharedFeatureGroup:
-            MapWidgetEx._sharedFeatureGroup = \
-                QtWidgets.QActionGroup(None)
+            MapWidgetEx._sharedFeatureGroup = QtWidgets.QActionGroup(None)
             MapWidgetEx._sharedFeatureGroup.setExclusive(False)
 
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.GalacticDirections))
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.SectorGrid))
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.SectorNames))
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.Borders))
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.Routes))
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.RegionNames))
             MapWidgetEx._sharedFeatureGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.ImportantWorlds))
 
         if not MapWidgetEx._sharedAppearanceGroup:
-            MapWidgetEx._sharedAppearanceGroup = \
-                QtWidgets.QActionGroup(None)
+            MapWidgetEx._sharedAppearanceGroup = QtWidgets.QActionGroup(None)
             MapWidgetEx._sharedAppearanceGroup.setExclusive(False)
 
             MapWidgetEx._sharedAppearanceGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.WorldColours))
             MapWidgetEx._sharedAppearanceGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.FilledBorders))
             MapWidgetEx._sharedAppearanceGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.DimUnofficial))
 
         if not MapWidgetEx._sharedOverlayGroup:
-            MapWidgetEx._sharedOverlayGroup = \
-                QtWidgets.QActionGroup(None)
+            MapWidgetEx._sharedOverlayGroup = QtWidgets.QActionGroup(None)
             MapWidgetEx._sharedOverlayGroup.setExclusive(False)
 
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.ImportanceOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.PopulationOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.CapitalsOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.MinorRaceOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.DroyneWorldOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.AncientSitesOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.StellarOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.EmpressWaveOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.QrekrshaZoneOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.AntaresSupernovaOverlay))
             MapWidgetEx._sharedOverlayGroup.addAction(
-                _MapOptionToggleAction(
+                _MapOptionAction(
                     option=travellermap.Option.MainsOverlay))
 
         for action in MapWidgetEx._sharedStyleGroup.actions():
+            action.triggered.connect(self._displayOptionChanged)
+
+        for action in MapWidgetEx._sharedRenderingGroup.actions():
             action.triggered.connect(self._displayOptionChanged)
 
         for action in MapWidgetEx._sharedFeatureGroup.actions():

@@ -487,8 +487,8 @@ class ConfigDialog(gui.DialogEx):
         travellerGroupBox.setLayout(travellerLayout)
 
         self._mapRenderingTypeComboBox = gui.EnumComboBox(
-            type=app.MapRenderingType,
-            value=app.Config.instance().mapRenderingType())
+            type=app.MapSourceType,
+            value=app.Config.instance().mapSourceType())
         self._mapRenderingTypeComboBox.currentIndexChanged.connect(
             self._renderingTypeChanged)
         self._mapRenderingTypeComboBox.setToolTip(gui.createStringToolTip(
@@ -518,7 +518,7 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         # Proxy Widgets
-        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapRenderingType.WebProxy
+        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapSourceType.WebProxy
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
@@ -1097,7 +1097,7 @@ class ConfigDialog(gui.DialogEx):
                 classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                 classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
                 classEStarPortFuelType=self._classEStarPortFuelType.currentEnum())))
-            checker.update(config.setMapRenderingType(self._mapRenderingTypeComboBox.currentEnum()))
+            checker.update(config.setMapSourceType(self._mapRenderingTypeComboBox.currentEnum()))
             checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
             checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
             checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
@@ -1263,7 +1263,7 @@ class ConfigDialog(gui.DialogEx):
         message.exec()
 
     def _renderingTypeChanged(self) -> None:
-        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapRenderingType.WebProxy
+        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapSourceType.WebProxy
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)

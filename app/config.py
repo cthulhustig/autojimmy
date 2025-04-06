@@ -24,10 +24,15 @@ class ColourTheme(enum.Enum):
 # NOTE: If I ever change the name of these enums I'll need some mapping
 # as they're written to the config file. This only applies to the name
 # not the value
-class MapRenderingType(enum.Enum):
+class MapSourceType(enum.Enum):
     Local = 'Local'
     WebProxy = 'Web (Proxy)'
     WebDirect = 'Web (Direct)'
+
+class MapRenderingType(enum.Enum):
+    Tiled = 'Tiled' # Tiles rendered in background (i.e. the same as Traveller Map)
+    Hybrid = 'Hybrid' # Tiles rendered in foreground
+    Full = 'Full' # Entire frame rendered each redraw and no digital zoom between log zoom levels
 
 class Config(object):
     _ConfigFileName = 'autojimmy.ini'
@@ -35,7 +40,8 @@ class Config(object):
     _LogLevelKeyName = 'Debug/LogLevel'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
-    _MapRenderingTypeKeyName = 'TravellerMap/RenderingType'
+    _MapSourceTypeKeyName = 'TravellerMap/MapSourceType'
+    _MapRenderingTypeKeyName = 'TravellerMap/MapRenderingType'
 
     _ProxyEnabledKeyName = 'Proxy/Enabled'
     _ProxyPortKeyName = 'Proxy/Port'
@@ -228,16 +234,26 @@ class Config(object):
 
         return True # Restart required
 
-    def mapRenderingType(self) -> MapRenderingType:
-        return self._mapRenderingType
+    def mapSourceType(self) -> MapSourceType:
+        return self._mapSourceType
 
-    def setMapRenderingType(self, renderingType: MapRenderingType) -> None:
-        if renderingType == self._mapRenderingType:
+    def setMapSourceType(self, type: MapSourceType) -> None:
+        if type == self._mapSourceType:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._MapRenderingTypeKeyName, renderingType.name)
+        self._settings.setValue(Config._MapSourceTypeKeyName, type.name)
         return True # Restart required
+
+    # NOTE: This is called every time LocalMapWidget draws the view so it needs
+    # to be quick
+    def mapRenderingType(self) -> MapRenderingType:
+        return self._mapRenderingType
+
+    def setMapRenderingType(self, type: MapRenderingType) -> None:
+        self._mapRenderingType = type
+        self._settings.setValue(Config._MapRenderingTypeKeyName, type.name)
+        return False # No restart required
 
     def proxyPort(self) -> int:
         return self._proxyPort
@@ -1143,9 +1159,14 @@ class Config(object):
             key=Config._LogLevelKeyName,
             default=logging.WARNING)
 
+        self._mapSourceType = self._loadEnumSetting(
+            key=Config._MapSourceTypeKeyName,
+            default=MapSourceType.Local,
+            members=MapSourceType.__members__)
+
         self._mapRenderingType = self._loadEnumSetting(
             key=Config._MapRenderingTypeKeyName,
-            default=MapRenderingType.Local,
+            default=MapRenderingType.Tiled,
             members=MapRenderingType.__members__)
 
         self._proxyPort = self._loadIntSetting(

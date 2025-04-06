@@ -1,5 +1,6 @@
 import app
 import common
+import enum
 import gui
 import logic
 import logging
@@ -596,6 +597,19 @@ class _AntaresSupernovaOverlay(_MapOverlay):
             painter.setPen(QtCore.Qt.PenStyle.NoPen)
             painter.drawEllipse(rect)
 
+class _MainsOverlay(_MapOverlay):
+    def __init__(self) -> None:
+        super().__init__()
+
+    # This code is based on the Traveller Map drawQZ code (map.js)
+    def draw(
+            self,
+            painter: QtGui.QPainter,
+            currentScale: travellermap.Scale
+            ) -> None:
+        if not app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
+            return
+
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -614,8 +628,6 @@ class LocalMapWidget(QtWidgets.QWidget):
     _KeyZoomDelta = 0.5
     _WheelZoomDelta = 0.15
 
-    _TileRendering = True
-    _DelayedRendering = True
     _LookaheadBorderTiles = 2
     _TileSize = 512 # Pixels
     _TileCacheSize = 250 # Number of tiles
@@ -733,6 +745,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._antaresSupernovaOverlay = _AntaresSupernovaOverlay()
         self._overlayMap[self._antaresSupernovaOverlay.handle()] = self._antaresSupernovaOverlay
 
+        self._mainsOverlay = _MainsOverlay()
+        self._overlayMap[self._mainsOverlay.handle()] = self._mainsOverlay
+
         self._toolTipCallback = None
 
         self.installEventFilter(self)
@@ -748,7 +763,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def reload(self) -> None:
         self._renderer = self._createRenderer()
         self._clearTileCache()
-        self._handleViewUpdate(forceAtomicRedraw=True)
+        self._handleViewUpdate()
 
     def centerOnHex(
             self,
@@ -916,7 +931,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._absoluteCenterPos.setX(stream.readFloat())
         self._absoluteCenterPos.setY(stream.readFloat())
         self._viewScale.log = stream.readFloat()
-        self._handleViewUpdate(forceAtomicRedraw=True)
+        self._handleViewUpdate()
         return True
 
     def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
@@ -927,6 +942,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             self.setToolTip(text)
         return super().eventFilter(obj, event)
 
+    # I've disabled doing a full redraw on first show as it's to slow at some
+    # scales so causes windows that contain the widget to display all white
+    # for a noticeable amount of time when first opened
+    """
     def showEvent(self, e: QtGui.QShowEvent) -> None:
         if not e.spontaneous():
             # Force an atomic redraw when the widget is first shown so the user
@@ -934,6 +953,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._forceAtomicRedraw = True
             self.update()
         return super().showEvent(e)
+    """
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super().mousePressEvent(event)
@@ -992,7 +1012,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self._handleViewUpdate(forceAtomicRedraw=True)
+        self._handleViewUpdate()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
@@ -1028,14 +1048,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             elif event.key() == QtCore.Qt.Key.Key_Minus:
                 self._zoomView(step=-LocalMapWidget._KeyZoomDelta)
 
-            # TODO: Remove debug code (this should be a user configurable option somewhere)
-            if event.key() == QtCore.Qt.Key.Key_F12:
-                LocalMapWidget._TileRendering = not LocalMapWidget._TileRendering
-                self._tileQueue.clear()
-                self._tileTimer.stop()
-                print(f'TileRendering={LocalMapWidget._TileRendering}')
-                self.update()
-
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
 
@@ -1048,7 +1060,15 @@ class LocalMapWidget(QtWidgets.QWidget):
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
 
-        if not LocalMapWidget._TileRendering and self._isWindows:
+        renderType = app.Config.instance().mapRenderingType()
+        if renderType is app.MapRenderingType.Tiled and self._forceAtomicRedraw:
+            # Render any missing tiles now rather than in the background. Hybrid
+            # rendering is used rather than Full as we want the same digital
+            # zooming between log scales that you would get with Background
+            # rendering
+            renderType = app.MapRenderingType.Hybrid
+
+        if renderType is app.MapRenderingType.Full and self._isWindows:
             needsNewImage = self._offscreenRenderImage is None or \
                 self._offscreenRenderImage.width() != self.width() or \
                 self._offscreenRenderImage.height() != self.height()
@@ -1062,9 +1082,9 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._drawView(
             paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
-            forceAtomic=self._forceAtomicRedraw)
+            renderType=renderType)
 
-        if LocalMapWidget._TileRendering and LocalMapWidget._DelayedRendering:
+        if renderType is app.MapRenderingType.Tiled:
             if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
                 # If there are no tiles needing loaded, pre-load tiles just
                 # outside the current view area.
@@ -1087,14 +1107,14 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _drawView(
             self,
             paintDevice: QtGui.QPaintDevice,
-            forceAtomic: bool
+            renderType: app.MapRenderingType
             ) -> None:
         painter = QtGui.QPainter()
         with gui.PainterDrawGuard(painter, paintDevice):
             painter.setBrush(QtCore.Qt.GlobalColor.black)
             painter.drawRect(0, 0, self.width(), self.height())
 
-            self._drawMap(painter, forceAtomic)
+            self._drawMap(painter, renderType)
             self._drawOverlays(painter)
             self._drawScale(painter)
             self._drawDirections(painter)
@@ -1102,38 +1122,38 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _drawMap(
             self,
             painter: QtGui.QPainter,
-            forceAtomic: bool
+            renderType: app.MapRenderingType
             ) -> None:
-        if LocalMapWidget._TileRendering:
-            tiles = self._currentDrawTiles(forceCreate=forceAtomic)
+        if renderType is app.MapRenderingType.Tiled or \
+            renderType is app.MapRenderingType.Hybrid:
+            tiles = self._currentDrawTiles(
+                createMissing=renderType is not app.MapRenderingType.Tiled)
 
             # This is disabled as I think it actually makes scaled tiles
             # look worse (a bit to blurry)
             #painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
 
-            #with common.DebugTimer('Blit Time'):
-            if True:
-                for image, renderRect, clipRect in tiles:
-                    painter.save()
-                    try:
-                        if clipRect:
-                            clipPath = painter.clipPath()
-                            clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
-                            clipPath.addRect(clipRect)
-                            painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
-                        else:
-                            # Manually scale the image if needed as drawImage does a piss poor job.
-                            # This is only done when there is no clip rect. A clip rect means it's
-                            # a placeholder tile so won't be drawn for very long so quality doesn't
-                            # mater as much so best to avoid the expensive scaling
-                            if image.width() != renderRect.width() or image.height() != renderRect.height():
-                                image = image.smoothScaled(
-                                    round(renderRect.width()),
-                                    round(renderRect.height()))
+            for image, renderRect, clipRect in tiles:
+                painter.save()
+                try:
+                    if clipRect:
+                        clipPath = painter.clipPath()
+                        clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
+                        clipPath.addRect(clipRect)
+                        painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
+                    else:
+                        # Manually scale the image if needed as drawImage does a piss poor job.
+                        # This is only done when there is no clip rect. A clip rect means it's
+                        # a placeholder tile so won't be drawn for very long so quality doesn't
+                        # mater as much so best to avoid the expensive scaling
+                        if image.width() != renderRect.width() or image.height() != renderRect.height():
+                            image = image.smoothScaled(
+                                round(renderRect.width()),
+                                round(renderRect.height()))
 
-                        painter.drawImage(renderRect, image)
-                    finally:
-                        painter.restore()
+                    painter.drawImage(renderRect, image)
+                finally:
+                    painter.restore()
         else:
             self._graphics.setPainter(painter=painter)
             try:
@@ -1176,6 +1196,11 @@ class LocalMapWidget(QtWidgets.QWidget):
                 QtCore.QRectF(0, 0, self.width(), self.height()),
                 self._overlayStagingImage)
 
+    # TODO: I think the scale (and direction) text will be affected by 4K text
+    # scaling on Windows as it's rendering the text directly to the main painter.
+    # This will only be an issue for tile rendering as full rendering will already
+    # be rendering to a buffer. The solution is probably to blit tiles to the same
+    # buffer and blit the final image to the screen in the same way as full rendering
     def _drawScale(
             self,
             painter: QtGui.QPainter
@@ -1449,7 +1474,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def _currentDrawTiles(
             self,
-            forceCreate: bool = False
+            createMissing: bool = False
             ) -> typing.Iterable[typing.Tuple[
                 QtGui.QImage,
                 QtCore.QRectF, # Render rect
@@ -1504,7 +1529,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             tileX=centerTileX,
             tileY=centerTileY,
             tileScale=tileScale,
-            forceCreate=forceCreate)
+            createMissing=createMissing)
         renderRect = QtCore.QRectF(
             ((centerTileX - leftTile) * tileSize) - offsetX,
             ((centerTileY - topTile) * tileSize) - offsetY,
@@ -1530,7 +1555,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                         tileX=x,
                         tileY=minTileY,
                         tileScale=tileScale,
-                        forceCreate=forceCreate)
+                        createMissing=createMissing)
                     renderRect = QtCore.QRectF(
                         ((x - leftTile) * tileSize) - offsetX,
                         ((minTileY - topTile) * tileSize) - offsetY,
@@ -1551,7 +1576,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                         tileX=maxTileX,
                         tileY=y,
                         tileScale=tileScale,
-                        forceCreate=forceCreate)
+                        createMissing=createMissing)
                     renderRect = QtCore.QRectF(
                         ((maxTileX - leftTile) * tileSize) - offsetX,
                         ((y - topTile) * tileSize) - offsetY,
@@ -1572,7 +1597,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                         tileX=x,
                         tileY=maxTileY,
                         tileScale=tileScale,
-                        forceCreate=forceCreate)
+                        createMissing=createMissing)
                     renderRect = QtCore.QRectF(
                         ((x - leftTile) * tileSize) - offsetX,
                         ((maxTileY - topTile) * tileSize) - offsetY,
@@ -1593,7 +1618,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                         tileX=minTileX,
                         tileY=y,
                         tileScale=tileScale,
-                        forceCreate=forceCreate)
+                        createMissing=createMissing)
                     renderRect = QtCore.QRectF(
                         ((minTileX - leftTile) * tileSize) - offsetX,
                         ((y - topTile) * tileSize) - offsetY,
@@ -1647,20 +1672,36 @@ class LocalMapWidget(QtWidgets.QWidget):
             bottomTile += 1
 
             for x in range(leftTile, rightTile):
-                self._lookupTile(tileX=x, tileY=topTile, tileScale=tileScale)
+                self._lookupTile(
+                    tileX=x,
+                    tileY=topTile,
+                    tileScale=tileScale,
+                    createMissing=False)
             for y in range(topTile, bottomTile):
-                self._lookupTile(tileX=rightTile, tileY=y, tileScale=tileScale)
+                self._lookupTile(
+                    tileX=rightTile,
+                    tileY=y,
+                    tileScale=tileScale,
+                    createMissing=False)
             for x in range(rightTile, leftTile, -1):
-                self._lookupTile(tileX=x, tileY=bottomTile, tileScale=tileScale)
+                self._lookupTile(
+                    tileX=x,
+                    tileY=bottomTile,
+                    tileScale=tileScale,
+                    createMissing=False)
             for y in range(bottomTile, topTile, -1):
-                self._lookupTile(tileX=leftTile, tileY=y, tileScale=tileScale)
+                self._lookupTile(
+                    tileX=leftTile,
+                    tileY=y,
+                    tileScale=tileScale,
+                    createMissing=False)
 
     def _lookupTile(
             self,
             tileX: int,
             tileY: int,
             tileScale: int, # Log scale rounded down,
-            forceCreate: bool = False
+            createMissing: bool
             ) -> typing.Optional[QtGui.QImage]:
         key = (
             tileX,
@@ -1670,10 +1711,12 @@ class LocalMapWidget(QtWidgets.QWidget):
             int(self._renderer.options()))
         image = self._sharedTileCache.get(key)
         if not image:
-            if LocalMapWidget._DelayedRendering and not forceCreate:
+            if not createMissing:
+                # Add the tile to the queue of tiles to be created in the background
                 if key not in self._tileQueue:
                     self._tileQueue.append(key)
             else:
+                # Render the tile
                 image = None
                 if self._sharedTileCache.isFull():
                     # Reuse oldest cached tile
