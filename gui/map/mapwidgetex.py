@@ -62,7 +62,7 @@ class _MapStyleAction(QtWidgets.QAction):
         self._style = style
 
         self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapStyle() == style)
+        self.setChecked(app.Config.instance().mapStyle() is style)
 
         # It's important that this is connected to the trigger signal before any instances
         # of TravellerMapWidget. This call needs to made first as it will write the updated
@@ -108,7 +108,7 @@ class _MapRenderingAction(QtWidgets.QAction):
         self._type = type
 
         self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapStyle() == type)
+        self.setChecked(app.Config.instance().mapRenderingType() is type)
 
         self.triggered.connect(self._actionTriggered)
 
