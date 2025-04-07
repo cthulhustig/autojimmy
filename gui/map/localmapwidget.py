@@ -758,15 +758,22 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._placeholderTile = LocalMapWidget._createPlaceholderTile()
 
-        self._directionTextFont = self._graphics.createFont(
-            family=LocalMapWidget._DirectionTextFontFamily,
-            emSize=LocalMapWidget._DirectionTextFontSize,
-            style=cartographer.FontStyle.Bold)
-        self._directionTextBrush = self._graphics.createBrush(
-            color=travellermap.HtmlColors.TravellerRed)
+        self._directionTextFont = QtGui.QFont(
+            LocalMapWidget._DirectionTextFontFamily,
+            LocalMapWidget._DirectionTextFontSize)
+        self._directionTextFont.setBold(True)
+        self._directionTextPen = QtGui.QPen(
+            QtGui.QColor(travellermap.HtmlColors.TravellerRed),
+            0)
 
-        self._scaleFont = QtGui.QFont(LocalMapWidget._ScaleTextFontFamily)
-        self._scaleFont.setPointSize(LocalMapWidget._ScaleTextFontSize)
+        self._scaleFont = QtGui.QFont(
+            LocalMapWidget._ScaleTextFontFamily,
+            LocalMapWidget._ScaleTextFontSize)
+        self._scalePen = QtGui.QPen(
+            QtGui.QColor(travellermap.HtmlColors.Black), # Colour will be updated when drawn
+            LocalMapWidget._ScaleLineWidth,
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenCapStyle.FlatCap)
 
         # This is a staging buffer used when generating an overlay in order
         # to get a consistent alpha blend level when the overlay consists
@@ -1306,19 +1313,13 @@ class LocalMapWidget(QtWidgets.QWidget):
         fontMetrics = QtGui.QFontMetricsF(self._scaleFont)
         labelRect = fontMetrics.tightBoundingRect(label)
 
-        brush = QtGui.QBrush(QtGui.QColor(
+        self._scalePen.setColor(QtGui.QColor(
             travellermap.HtmlColors.White
             if travellermap.isDarkStyle(self._renderer.style()) else
             travellermap.HtmlColors.Black))
-        pen = QtGui.QPen(
-            brush,
-            LocalMapWidget._ScaleLineWidth,
-            QtCore.Qt.PenStyle.SolidLine,
-            QtCore.Qt.PenCapStyle.FlatCap)
 
-        painter.save()
-        try:
-            painter.setBrush(brush)
+        with gui.PainterStateGuard(painter):
+            painter.setPen(self._scalePen)
             painter.setFont(self._scaleFont)
             painter.drawText(
                 QtCore.QPointF(
@@ -1326,7 +1327,6 @@ class LocalMapWidget(QtWidgets.QWidget):
                     scaleY - LocalMapWidget._ScaleLineIndent),
                 label)
 
-            painter.setPen(pen)
             painter.drawLine(
                 QtCore.QPointF(scaleLeft - (LocalMapWidget._ScaleLineWidth / 2), scaleY),
                 QtCore.QPointF(scaleRight + (LocalMapWidget._ScaleLineWidth / 2), scaleY))
@@ -1336,85 +1336,59 @@ class LocalMapWidget(QtWidgets.QWidget):
             painter.drawLine(
                 QtCore.QPointF(scaleRight, scaleY),
                 QtCore.QPointF(scaleRight, scaleY - LocalMapWidget._ScaleLineTickHeight))
-        finally:
-            painter.restore()
 
-    # TODO: I don't like the fact this uses the graphics object rather
-    # than using painter directly. The main reason it's done at the
-    # moment is it means I can use the code there for resolving the font
+    _DirectionLabels = [
+        # Text, Rotation, X View Alignment, Y View Alignment
+        ('COREWARD', 0, 0, -1),
+        ('RIMWARD', 0, 0, 1),
+        ('SPINWARD', 270, -1, 0),
+        ('TRAILING', 270, 1, 0)]
     def _drawDirections(
             self,
             painter: QtGui.QPainter
             ) -> None:
-        if not app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
+        if not self._directionTextFont or \
+            not app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
             return
 
         viewWidth = self.width()
         viewHeight = self.height()
 
-        painter.save()
-        self._graphics.setPainter(painter=painter)
-        try:
-            text = 'COREWARD'
-            _, textHeight = self._graphics.measureString(
-                text=text,
-                font=self._directionTextFont)
-            self._graphics.drawString(
-                text=text,
-                font=self._directionTextFont,
-                brush=self._directionTextBrush,
-                x=viewWidth / 2,
-                y=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
-                format=cartographer.TextAlignment.Centered)
+        fontMetrics = QtGui.QFontMetricsF(self._directionTextFont)
 
-            text = 'RIMWARD'
-            _, textHeight = self._graphics.measureString(
-                text=text,
-                font=self._directionTextFont)
-            self._graphics.drawString(
-                text=text,
-                font=self._directionTextFont,
-                brush=self._directionTextBrush,
-                x=viewWidth / 2,
-                y=viewHeight - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
-                format=cartographer.TextAlignment.Centered)
+        with gui.PainterStateGuard(painter):
+            painter.setFont(self._directionTextFont)
+            painter.setPen(self._directionTextPen)
+            for text, angle, alignX, alignY in LocalMapWidget._DirectionLabels:
+                textRect = fontMetrics.boundingRect(text)
+                textRect.moveTo(
+                    -textRect.width() / 2,
+                    -textRect.height() / 2)
+                textHeight = textRect.height()
+                with gui.PainterStateGuard(painter):
+                    if alignX:
+                        offsetX = (textHeight / 2) + LocalMapWidget._DirectionTextIndent
+                        if alignX > 0:
+                            offsetX = viewWidth - offsetX
+                    else:
+                        offsetX = (viewWidth / 2)
 
-            with self._graphics.save():
-                self._graphics.translateTransform(
-                    dx=(textHeight / 2) + LocalMapWidget._DirectionTextIndent,
-                    dy=viewHeight / 2)
-                self._graphics.rotateTransform(degrees=270)
+                    if alignY:
+                        offsetY = (textHeight / 2) + LocalMapWidget._DirectionTextIndent
+                        if alignY > 0:
+                            offsetY = viewHeight - offsetY
+                    else:
+                        offsetY = (viewHeight / 2)
 
-                text = 'SPINWARD'
-                _, textHeight = self._graphics.measureString(
-                    text=text,
-                    font=self._directionTextFont)
-                self._graphics.drawString(
-                    text=text,
-                    font=self._directionTextFont,
-                    brush=self._directionTextBrush,
-                    x=0, y=0,
-                    format=cartographer.TextAlignment.Centered)
+                    transform = painter.transform()
+                    transform.translate(offsetX, offsetY)
+                    transform.rotate(angle, QtCore.Qt.Axis.ZAxis)
+                    painter.setTransform(transform)
 
-            with self._graphics.save():
-                self._graphics.translateTransform(
-                    dx=viewWidth - ((textHeight / 2) + LocalMapWidget._DirectionTextIndent),
-                    dy=viewHeight / 2)
-                self._graphics.rotateTransform(degrees=270)
-
-                text = 'TRAILING'
-                _, textHeight = self._graphics.measureString(
-                    text=text,
-                    font=self._directionTextFont)
-                self._graphics.drawString(
-                    text=text,
-                    font=self._directionTextFont,
-                    brush=self._directionTextBrush,
-                    x=0, y=0,
-                    format=cartographer.TextAlignment.Centered)
-        finally:
-            self._graphics.setPainter(painter=None)
-            painter.restore()
+                    painter.drawText(
+                        textRect,
+                        QtCore.Qt.AlignmentFlag.AlignCenter,
+                        text)
 
     def _handleLeftClickEvent(
             self,
