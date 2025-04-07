@@ -780,6 +780,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             str, # Overlay handle
             _MapOverlay] = {}
 
+        self._jumpRoute = None
+        self._refuellingPlan = None
         self._jumpRouteOverlay = _JumpRouteOverlay()
         self._overlayMap[self._jumpRouteOverlay.handle()] = self._jumpRouteOverlay
 
@@ -830,29 +832,56 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             hexes: typing.Collection[travellermap.HexPosition]
             ) -> None:
-        # TODO: Implement me
+        if not hexes:
+            return
+
+        left = right = top = bottom = None
+        for hex in hexes:
+            hexLeft, hexTop, hexWidth, hexHeight = hex.absoluteBounds()
+            if left is None or hexLeft < left:
+                left = hexLeft
+            if top is None or hexTop < top:
+                top = hexTop
+            if right is None or (hexLeft + hexWidth) > right:
+                right = hexLeft + hexWidth
+            if bottom is None or (hexTop + hexHeight) > bottom:
+                bottom = hexTop + hexHeight
+
+        width = right - left
+        height = bottom - top
+
+        self._absoluteCenterPos.setX(left + (width / 2))
+        self._absoluteCenterPos.setY(top + (height / 2))
+        self._viewScale.linear = min(
+            self.width() / width,
+            self.height() / height)
         self._handleViewUpdate(forceAtomicRedraw=True)
 
     def hasJumpRoute(self) -> bool:
-        return self._jumpRouteOverlay.hasJumpRoute()
+        return self._jumpRoute is not None
 
     def setJumpRoute(
             self,
             jumpRoute: typing.Optional[logic.JumpRoute],
             refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None
             ) -> None:
+        self._jumpRoute = jumpRoute
+        self._refuellingPlan = refuellingPlan
         self._jumpRouteOverlay.setRoute(
             jumpRoute=jumpRoute,
             refuellingPlan=refuellingPlan)
         self.update()
 
     def clearJumpRoute(self) -> None:
+        self._jumpRoute = self._refuellingPlan = None
         self._jumpRouteOverlay.setRoute(jumpRoute=None)
         self.update()
 
     def centerOnJumpRoute(self) -> None:
-        # TODO: Implement me
-        self._handleViewUpdate(forceAtomicRedraw=True)
+        if not self._jumpRoute:
+            return
+        self.centerOnHexes(
+            hexes=[nodeHex for nodeHex, _ in self._jumpRoute])
 
     def highlightHex(
             self,
@@ -1471,10 +1500,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             labelCache=self._labelCache,
             styleCache=self._styleCache)
 
-    # TODO: I'm currently only using the _imageSpaceToOverlaySpace, if that is still
-    # the case once I've finished all overlay stuff then I think it should be possible
-    # to simplify how it's calculated (at a minimum I think there is a scale I don't
-    # need)
     def _handleViewUpdate(
             self,
             forceAtomicRedraw: bool = False

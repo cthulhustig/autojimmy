@@ -134,15 +134,6 @@ def subsectorBoundingRect(
 
     return (left, top, width, height)
 
-def hexBoundingRect(
-        absolute: typing.Tuple[int, int]
-        ) -> typing.Tuple[float, float, float, float]:
-    return (
-        absolute[0] - (1 + HexWidthOffset),
-        absolute[1] - (0.5 if absolute[0] % 2 else 1),
-        1 + (2 * HexWidthOffset),
-        1)
-
 # Similar to sectorBoundingRect but gets the largest absolute coordinate rect that can
 # fit inside the sector without overlapping any hexes from adjacent sectors. This is
 # useful as any rect that falls completely inside this rect is guaranteed to only cover
@@ -517,6 +508,16 @@ class HexPosition(object):
                 absX - 0.5,
                 absY - (0.0 if ((absX % 2) != 0) else 0.5))
         return self._absoluteCenter
+
+    def absoluteBounds(
+            self
+            ) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        absoluteX, absoluteY = self.absolute()
+        return (
+            absoluteX - (1 + HexWidthOffset),
+            absoluteY - (0.5 if absoluteX % 2 else 1),
+            1 + (2 * HexWidthOffset),
+            1)
 
     def _calculateRelative(self) -> None:
         self._relative = absoluteSpaceToRelativeSpace(pos=self._absolute)

@@ -170,8 +170,7 @@ class RectSelector(object):
             rect = cartographer.RectangleF()
             self._tightWorlds = []
             for world in self._sloppyWorlds:
-                left, top, width, height = travellermap.hexBoundingRect(
-                    absolute=world.hex().absolute())
+                left, top, width, height = world.hex().absoluteBounds()
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightWorlds.append(world)
