@@ -849,12 +849,18 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         width = right - left
         height = bottom - top
+        centerX = left + (width / 2)
+        centerY = top + (height / 2)
+        scale = common.clamp(
+            value=min(
+                self.width() / width,
+                self.height() / height),
+            minValue=LocalMapWidget._MinScale,
+            maxValue=LocalMapWidget._MaxScale)
 
-        self._absoluteCenterPos.setX(left + (width / 2))
-        self._absoluteCenterPos.setY(top + (height / 2))
-        self._viewScale.linear = min(
-            self.width() / width,
-            self.height() / height)
+        self._absoluteCenterPos.setX(centerX)
+        self._absoluteCenterPos.setY(centerY)
+        self._viewScale.linear = scale
         self._handleViewUpdate(forceAtomicRedraw=True)
 
     def hasJumpRoute(self) -> bool:
