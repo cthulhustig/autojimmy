@@ -18,6 +18,7 @@ from .border import *
 from .label import *
 from .route import *
 from .sector import *
+from .main import *
 from .tradegoods import *
 from .allegiance import *
 from .worldmanager import *

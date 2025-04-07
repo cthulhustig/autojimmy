@@ -56,6 +56,8 @@ class WorldManager(object):
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
     _subsectorSectorMap: typing.Dict[traveller.Subsector, traveller.Sector] = {}
     _absoluteWorldMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
+    _mainsList: typing.List[traveller.Main] = []
+    _hexMainMap: typing.Dict[travellermap.HexPosition, traveller.Main] = {}
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -162,6 +164,26 @@ class WorldManager(object):
                 for world in sector.worlds():
                     hex = world.hex()
                     self._absoluteWorldMap[(hex.absoluteX(), hex.absoluteY())] = world
+
+    def calculateMains(
+            self,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            ) -> None:
+        mainsFinder = travellermap.MainsFinder()
+        for sector in self._sectorList:
+            for world in sector:
+                mainsFinder.addWorld(world.hex())
+        mains = mainsFinder.search(progressCallback=progressCallback)
+        for hexes in mains:
+            worlds = []
+            for hex in hexes:
+                world = self.worldByPosition(hex=hex)
+                if world:
+                    worlds.append(world)
+            main = traveller.Main(worlds=worlds)
+            self._mainsList.append(main)
+            for world in main:
+                self._hexMainMap[world.hex()] = main
 
     def sectorNames(self) -> typing.Iterable[str]:
         sectorNames = []
@@ -372,6 +394,12 @@ class WorldManager(object):
             return name
         except KeyError:
             return str(hex)
+
+    def positionToMain(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[traveller.Main]:
+        return self._hexMainMap.get(hex)
 
     def yieldSectorsInArea(
             self,

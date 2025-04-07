@@ -1,3 +1,4 @@
+import multiprocessing.synchronize
 import aiohttp.web
 import asyncio
 import app
@@ -218,7 +219,7 @@ class MapProxy(object):
             installDir: str,
             appDir: str,
             logLevel: int,
-            shutdownEvent: multiprocessing.Event,
+            shutdownEvent: multiprocessing.synchronize.Event,
             messageQueue: multiprocessing.Queue
             ) -> None:
         try:
@@ -279,7 +280,7 @@ class MapProxy(object):
             mainsData = None
             try:
                 mainsGenerator = travellermap.MainsGenerator()
-                mainsData = mainsGenerator.generate(
+                mainsData = mainsGenerator.generateJson(
                     milieu=mainsMilieu,
                     progressCallback=progressCallback)
             except Exception as ex:

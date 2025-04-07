@@ -10,24 +10,21 @@ class MainsFinder(object):
     _WorldsPerProgressStep = 100
 
     def __init__(self) -> None:
-        self._worlds: typing.Set[typing.Tuple[int, int, int, int]] = set()
+        self._worlds: typing.Set[travellermap.HexPosition] = set()
 
     def addWorld(
             self,
-            sectorX,
-            sectorY,
-            hexX,
-            hexY
+            hex: travellermap.HexPosition
             ) -> None:
-        self._worlds.add((sectorX, sectorY, hexX, hexY))
+        self._worlds.add(hex)
 
     # Optimised version of algorithm used by Traveller Map (tools\mains.js)
     # Returns an iterable of mains, each main is an iterable of tuples
     # giving the sector x/y & hex x/y position of the world
-    def generate(
+    def search(
             self,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> typing.Iterable[typing.Iterable[typing.Tuple[int, int, int, int]]]:
+            ) -> typing.Iterable[typing.Iterable[travellermap.HexPosition]]:
         seen = set()
         mains = []
 
@@ -50,7 +47,7 @@ class MainsFinder(object):
                 index += 1
 
                 for edge in travellermap.HexEdge:
-                    neighbour = travellermap.neighbourRelativeHex(origin=world, edge=edge)
+                    neighbour = world.neighbourHex(edge=edge)
                     if (neighbour in self._worlds) and (neighbour not in seen):
                         main.append(neighbour)
                         seen.add(neighbour)
@@ -70,11 +67,11 @@ class MainsGenerator(object):
     def __init__(self) -> None:
         self._defaultSectors = None
 
-    def generate(
+    def calculate(
             self,
             milieu: travellermap.Milieu,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> str:
+            ) -> typing.Iterable[typing.Iterable[travellermap.HexPosition]]:
         # Traveller Map generates mains from M1105 world positions. The same
         # mains information is then use no mater which milieu you are viewing.
         # The unwritten rule seems to be that world positions can't change
@@ -121,18 +118,24 @@ class MainsGenerator(object):
                     logging.warning(message, exc_info=ex)
                     continue
 
-                mainsGenerator.addWorld(
+                mainsGenerator.addWorld(travellermap.HexPosition(
                     sectorX=sectorInfo.x(),
                     sectorY=sectorInfo.y(),
-                    hexX=hexX,
-                    hexY=hexY)
+                    offsetX=hexX,
+                    offsetY=hexY))
+        return mainsGenerator.search(progressCallback)
 
-        mains = mainsGenerator.generate(progressCallback)
+    def generateJson(
+            self,
+            milieu: travellermap.Milieu,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            ) -> str:
+        mains = self.calculate(milieu=milieu, progressCallback=progressCallback)
         outputData = []
         for main in mains:
             outputMain = []
-            for sectorX, sectorY, hexX, hexY in main:
-                outputMain.append(f'{sectorX}/{sectorY}/{hexX:02d}{hexY:02d}')
+            for hex in main:
+                outputMain.append(f'{hex.sectorX()}/{hex.sectorY()}/{hex.offsetX():02d}{hex.offsetY():02d}')
             outputData.append(outputMain)
 
         return json.dumps(outputData)
