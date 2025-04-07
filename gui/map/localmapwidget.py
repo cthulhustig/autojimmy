@@ -1153,7 +1153,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             # rendering
             renderType = app.MapRenderingType.Hybrid
 
-        if renderType is app.MapRenderingType.Full and self._isWindows:
+        if self._isWindows:
+            # On Windows the view is rendered to an offscreen image then blitted
+            # to the screen. This is done to prevent text being scaled by
+            # Windows font scaling on 4K+ screens
             needsNewImage = self._offscreenRenderImage is None or \
                 self._offscreenRenderImage.width() != self.width() or \
                 self._offscreenRenderImage.height() != self.height()
@@ -1285,13 +1288,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             except:
                 continue
 
-
-
-    # TODO: I think the scale (and direction) text will be affected by 4K text
-    # scaling on Windows as it's rendering the text directly to the main painter.
-    # This will only be an issue for tile rendering as full rendering will already
-    # be rendering to a buffer. The solution is probably to blit tiles to the same
-    # buffer and blit the final image to the screen in the same way as full rendering
     def _drawScale(
             self,
             painter: QtGui.QPainter
