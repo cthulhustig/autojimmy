@@ -105,11 +105,6 @@ class RenderContext(object):
             graphics=self._graphics)
         self._selector = cartographer.RectSelector()
         self._absoluteViewRect = None
-        # TODO: Are these named backwards, I think the _imageSpaceToWorldSpace
-        # is actually applied when you want to convert world space to image
-        # space (i.e. points being rendered are in world space but the output
-        # is the image space window). If this is true then the same is true
-        # for LocalMapWidget
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
 
@@ -1703,11 +1698,6 @@ class RenderContext(object):
             pen=element.linePen,
             brush=element.fillBrush)
 
-    # TODO: I'm seeing dots being drawn at the boundaries of some sectors at
-    # some zoom levels (~10-16) when using Candy style. It's no the border
-    # fill that's causing it as it happens when the fill is turned off. It
-    # looks like it's part of the outline of some of the borders being draw.
-    # It's much more noticeable when _not_ using tile rendering
     _MicroBorderFillAlpha = 64
     _MicroBorderShadeAlpha = 128
     def _drawMicroBorders(
@@ -1739,24 +1729,56 @@ class RenderContext(object):
             drawBorders = True
 
         for sector in self._selector.sectors():
-            sectorClip = self._sectorCache.clipPath(
+            sectorClipPath = self._sectorCache.clipPath(
                 sectorX=sector.x(),
                 sectorY=sector.y())
-            sectorClipBounds = sectorClip.bounds()
-            if drawCurvedBorders:
-                # Inflate the sector clip bounds slightly when drawing curved borders to
-                # account for the fact the borders can extend out slightly past the
-                # hexes they enclose.
-                # If I'm ever looking to tweak the bloat value then Juro in Mavuzog is
-                # a good test as it is inside a border that touches the edge of the
-                # sector and will be clipped if this value is to low. Note that the
-                # fill is expected to be clipped but the outline is not. This is
-                # consistent with Traveller Map and is down to the fact the fill isn't
-                # drawn as a curve.
-                sectorClipBounds.inflate(
+            sectorClipRect = sectorClipPath.bounds()
+            if drawCurvedBorders and self._scale >= 16:
+                # HACK: Inflate the sector clip bounds slightly when drawing
+                # curved borders to account for the fact the borders can extend
+                # out slightly past the hexes they enclose.
+                # If I'm ever looking to tweak the bloat value then Juro in
+                # Mavuzog is a good test as it is inside a border that touches
+                # the edge of the sector and will be clipped if this value is to
+                # low. Note that the fill is expected to be clipped but the
+                # outline is not. This is consistent with Traveller Map and is
+                # down to the fact the fill isn't drawn as a curve.
+                # HACK: The fact this is only done as scale value >= 16 is a
+                # hack to workaround a draw issue with candy style. Micro
+                # borders are rendered as closed polygons so that when border
+                # filling is enabled they can be filled. When a logical border
+                # covers multiple sectors, each sector has it's own closed
+                # polygons representing the area of that sector that is within
+                # the border with edges of that polygons running along the edges
+                # of the sector where it abuts other sectors in the same logical
+                # boundary. When drawing the outline of borders we don't want
+                # the polygon edges at the junction between sectors in the same
+                # logical border to be shown as the are just a graphical
+                # necessity rather than part of the logical boundary. When
+                # rendering non-candy styles, not showing these edges is handled
+                # by clipping to the sector outline when drawing borders for
+                # that sector. I found this doesn't work reliably for candy due
+                # a combination of the line width used for borders and the fact
+                # it uses curved borders so the border outlines extend outside
+                # the hexes they contain. The end result was at some scales
+                # (generally < linear 16) there would be noticeable dotted lines
+                # running along the boundaries of sectors inside the same
+                # border. Part of the solution to this issue is to slightly
+                # reduce the width of the border outline compared to the width
+                # Traveller Map would use. The other part is to disable the
+                # oversizing of the sector bounding box done when rendering zoom
+                # levels where the issue was seen. This oversizing is done to
+                # prevent the outlines of borders contained completely within
+                # the sector from being incorrectly clipped when if they touch
+                # the edge of the sector due to the curved outline extending
+                # outside the boundary of the hexes they contain. Disabling this
+                # oversizing at lower scale values isn't an issue as it's past
+                # the point where incorrect clipping of these internal borders
+                # is that noticeable.
+                sectorClipRect.inflate(
                     travellermap.ParsecScaleX * 0.1,
                     travellermap.ParsecScaleY * 0.1)
-            if not self._absoluteViewRect.intersects(sectorClipBounds):
+            if not self._absoluteViewRect.intersects(sectorClipRect):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
@@ -1784,7 +1806,7 @@ class RenderContext(object):
             if not regionOutlines and not borderOutlines:
                 continue
 
-            if  layer is RenderContext.MicroBorderLayer.Background and \
+            if layer is RenderContext.MicroBorderLayer.Background and \
                 borderOutlines and self._styleSheet.fillMicroBorders and \
                 drawCurvedBorders:
                 # When drawing filled curved borders the clipping of the fill
@@ -1805,7 +1827,7 @@ class RenderContext(object):
                 # just 2 to reduce the number of times the sector clip path is
                 # applied to the graphics as it's a relatively costly operation
                 with self._graphics.save():
-                    self._graphics.intersectClipPath(path=sectorClip)
+                    self._graphics.intersectClipPath(path=sectorClipPath)
 
                     for outline in borderOutlines:
                         color = self._calculateBorderColor(outline)
@@ -1817,14 +1839,18 @@ class RenderContext(object):
                             brush=brush)
 
             with self._graphics.save():
+                useBrush = layer is RenderContext.MicroBorderLayer.Background and \
+                    self._styleSheet.fillMicroBorders and not drawCurvedBorders
+                usePen = pen is not None
+
                 # Clip the drawing to the sector. When drawing curved borders
                 # a slightly expanded clip rect is used rather than the
                 # exact sector hex outline as curved borders draw slightly
                 # outside the sectors true area
                 if not drawCurvedBorders:
-                    self._graphics.intersectClipPath(path=sectorClip)
+                    self._graphics.intersectClipPath(path=sectorClipPath)
                 else:
-                    self._graphics.intersectClipRect(rect=sectorClipBounds)
+                    self._graphics.intersectClipRect(rect=sectorClipRect)
 
                 for outline in regionOutlines:
                     color = self._calculateBorderColor(outline)
@@ -1836,9 +1862,7 @@ class RenderContext(object):
                         outline=outline,
                         brush=brush)
 
-                useBrush = layer is RenderContext.MicroBorderLayer.Background and \
-                    self._styleSheet.fillMicroBorders and not drawCurvedBorders
-                if useBrush or pen:
+                if useBrush or usePen:
                     for outline in borderOutlines:
                         color = self._calculateBorderColor(outline)
 
@@ -1847,7 +1871,7 @@ class RenderContext(object):
                                 alpha=RenderContext._MicroBorderFillAlpha,
                                 color=color))
 
-                        if pen:
+                        if usePen:
                             if layer is RenderContext.MicroBorderLayer.Background:
                                 pen.setColor(cartographer.makeAlphaColor(
                                     alpha=RenderContext._MicroBorderShadeAlpha,
@@ -1862,11 +1886,10 @@ class RenderContext(object):
                                         style = cartographer.LineStyle.Solid
                                 pen.setStyle(style)
 
-
                         self._drawMicroBorder(
                             outline=outline,
                             brush=brush if useBrush else None,
-                            pen=pen)
+                            pen=pen if usePen else None)
 
 
     def _calculateBorderColor(self, outline: cartographer.SectorPath) -> str:

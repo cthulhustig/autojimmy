@@ -1051,10 +1051,36 @@ class StyleSheet(object):
                 color=travellermap.HtmlColors.TravellerRed))
             self.microRoutes.linePen.setWidth(
                 routePenWidth if self.scale < StyleSheet._CandyMaxRouteRelativeScale else routePenWidth / 2)
+
+            # HACK: Scaling the border pen like this is done to work around an
+            # issue with micro borders. Micro borders are rendered as closed
+            # polygons so that when border filling is enabled they can be
+            # filled. When a logical border covers multiple sectors, each
+            # sector has it's own closed polygons representing the area of that
+            # sector that is within the border with edges of that polygons
+            # running along the edges of the sector where it abuts other sectors
+            # in the same logical boundary. When drawing the outline of borders
+            # we don't want the polygon edges at the junction between sectors in
+            # the same logical border to be shown as the are just a graphical
+            # necessity rather than part of the logical boundary. When rendering
+            # non-candy styles, not showing these edges is handled by clipping
+            # to the sector outline when drawing borders for that sector. I
+            # found this doesn't work reliably for candy due a combination of the
+            # line width used for borders and the fact it uses curved borders so
+            # the border outlines extend outside the hexes they contain. The end
+            # result was at some scales (generally < linear 16) there would be
+            # noticeable dotted lines running along the boundaries of sectors
+            # inside the same border. Part of the solution to this issue is to
+            # slightly reduce the width of the border outline compared to the
+            # width Traveller Map would use. The other part is to disable the
+            # oversizing of the sector bounding box done when rendering zoom
+            # levels where the issue was seen.
+            borderPenScale = 0.8
+
             self.macroBorders.linePen.setWidth(
-                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
+                (borderPenWidth * borderPenScale) if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
             self.microBorders.linePen.setWidth(
-                borderPenWidth if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
+                (borderPenWidth * borderPenScale) if self.scale < StyleSheet._CandyMaxBorderRelativeScale else borderPenWidth / 4)
 
             self.worlds.textStyle.rotation = 0
             self.worlds.textStyle.scale = cartographer.SizeF(1, 0.5) # Expand
