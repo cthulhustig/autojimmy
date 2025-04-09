@@ -9,7 +9,7 @@ class Subsector(object):
             sectorY: int,
             code: str,
             subsectorName: str,
-            isSubsectorNameGenerated: bool,
+            isNameGenerated: bool,
             sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
@@ -17,7 +17,7 @@ class Subsector(object):
         self._sectorY = sectorY
         self._code = code
         self._name = subsectorName
-        self._isNameGenerated = isSubsectorNameGenerated
+        self._isNameGenerated = isNameGenerated
         self._sectorName = sectorName
         self._worlds = list(worlds)
 

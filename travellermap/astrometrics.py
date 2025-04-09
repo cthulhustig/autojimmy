@@ -424,6 +424,11 @@ class HexPosition(object):
             self._calculateAbsolute()
         return self._absolute
 
+    def sector(self) -> typing.Tuple[int, int]:
+        if not self._relative:
+            self._calculateRelative()
+        return (self._relative[0], self._relative[1])
+
     def sectorX(self) -> int:
         if not self._relative:
             self._calculateRelative()

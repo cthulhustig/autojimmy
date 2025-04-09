@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
         jobs.LoadSectorsJob: 'Loading: Sector - ',
+        jobs.LoadPlaceholdersJob: 'Loading: Placeholders',
         jobs.CalculateMainsJob: '',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
         jobs.LoadRobotsJob: 'Loading: Robot - ',
@@ -52,7 +53,8 @@ class StartupProgressDialog(QtWidgets.QDialog):
 
     def exec(self) -> int:
         self._jobQueue.append(jobs.LoadSectorsJob)
-        self._jobQueue.append(jobs.CalculateMainsJob)
+        self._jobQueue.append(jobs.LoadPlaceholdersJob) # Must be done after sectors are loaded
+        self._jobQueue.append(jobs.CalculateMainsJob) # Must be done after sectors and placeholders are loaded
         self._jobQueue.append(jobs.LoadWeaponsJob)
         self._jobQueue.append(jobs.LoadRobotsJob)
         if self._startProxy:

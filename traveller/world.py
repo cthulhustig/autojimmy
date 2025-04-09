@@ -8,7 +8,7 @@ class World(object):
             self,
             hex: travellermap.HexPosition,
             worldName: str,
-            isWorldNameGenerated: bool,
+            isNameGenerated: bool,
             sectorName: str,
             subsectorName: str,
             allegiance: str,
@@ -25,7 +25,7 @@ class World(object):
             ) -> None:
         self._hex = hex
         self._name = worldName
-        self._isNameGenerated = isWorldNameGenerated
+        self._isNameGenerated = isNameGenerated
         self._sectorName = sectorName
         self._subsectorName = subsectorName
         self._allegiance = allegiance

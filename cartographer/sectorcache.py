@@ -138,14 +138,15 @@ class SectorCache(object):
         if worlds is not None:
             return worlds
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = traveller.WorldManager.instance().sectorBySectorIndex(index=key)
         if not sector:
-            # Don't cache the fact the sector doesn't exist to avoid memory bloat
-            return None
+            sector = traveller.WorldManager.instance().placeholderSectorBySectorIndex(index=key)
+            if not sector:
+                # Don't cache the fact the sector doesn't exist to avoid memory bloat
+                return None
 
         points = []
-        for world in sector.worlds():
+        for world in sector:
             hex = world.hex()
             centerX, centerY = hex.absoluteCenter()
             points.append(cartographer.PointF(

@@ -13,6 +13,7 @@ from .sophont import *
 from .remarks import *
 from .stellar import *
 from .world import *
+from .placeholder import *
 from .region import *
 from .border import *
 from .label import *

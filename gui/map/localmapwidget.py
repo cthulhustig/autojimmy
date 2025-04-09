@@ -45,7 +45,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 #   - Ideally I would force the welcome message to be displayed again if the user has hidden it (new _V2 key????)
 # - Add something to the create dialog that makes it clear the options selected there only apply if using the proxy
 #   - I still need to have them enabled when local rendering is selected so the user can change them if they want
-# TODO: When not using M1105 Traveller Map shows worlds from M1105 as asterisks
 # TODO: The current split between the traveller/travellermap directories probably makes less sense now
 # - I suspect I want to move traveller bellow travellermap and move a some stuff out of traveller
 #   map and into either traveller or cartographer

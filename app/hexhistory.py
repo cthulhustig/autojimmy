@@ -103,7 +103,9 @@ class HexHistory(object):
                 hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
                 HexHistory._history.append(hex)
             except Exception as ex:
-                logging.error(
+                # This can happen if sector data has changed for whatever reason
+                # (e.g. map updates or custom sectors)
+                logging.debug(
                     f'Failed to resolve sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
                     exc_info=ex)
 
@@ -113,7 +115,9 @@ class HexHistory(object):
                     hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
                     HexHistory._history.append(hex)
                 except Exception as ex:
-                    logging.error(
+                    # This can happen if sector data has changed for whatever reason
+                    # (e.g. map updates or custom sectors)
+                    logging.debug(
                         f'Failed to resolve default sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
                         exc_info=ex)
 

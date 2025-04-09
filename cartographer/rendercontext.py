@@ -224,9 +224,7 @@ class RenderContext(object):
             RenderContext.LayerAction(cartographer.LayerId.Mega_GalaxyScaleLabels, self._drawMegaLabels),
 
             RenderContext.LayerAction(cartographer.LayerId.Worlds_Background, self._drawWorldsBackground),
-
             RenderContext.LayerAction(cartographer.LayerId.Worlds_Foreground, self._drawWorldsForeground),
-
             RenderContext.LayerAction(cartographer.LayerId.Worlds_Overlays, self._drawWorldsOverlay),
 
             #------------------------------------------------------------
@@ -1022,13 +1020,13 @@ class RenderContext(object):
                                                 pen=element.linePen)
 
                         if not self._styleSheet.numberAllHexes and renderHex:
-                            hex = \
+                            numberText = \
                                 worldInfo.ssHexString \
                                 if renderSubsector else \
                                 worldInfo.hexString
 
                             self._graphics.drawString(
-                                text=hex,
+                                text=numberText,
                                 font=self._styleSheet.hexNumber.font,
                                 brush=self._styleSheet.hexNumber.textBrush,
                                 x=self._styleSheet.hexNumber.position.x(),
@@ -1056,6 +1054,40 @@ class RenderContext(object):
                             self._graphics.drawImage(
                                 image=worldInfo.worldImage,
                                 rect=rect)
+
+            for placeholder in self._selector.placeholderWorlds(True):
+                with self._graphics.save():
+                    placeholderHex = placeholder.hex()
+                    centerX, centerY = placeholderHex.absoluteCenter()
+                    self._graphics.translateTransform(
+                        dx=centerX / scaleX,
+                        dy=centerY / scaleY)
+
+                    self._drawWorldLabel(
+                        bkStyle=self._styleSheet.placeholder.textBackgroundStyle,
+                        bkBrush=self._styleSheet.worlds.textBrush,
+                        textBrush=self._styleSheet.placeholder.textBrush,
+                        position=self._styleSheet.placeholder.position,
+                        font=self._styleSheet.placeholder.font,
+                        text=self._styleSheet.placeholder.content)
+
+                    if not self._styleSheet.numberAllHexes and renderHex:
+                        if renderSubsector:
+                            numberText = '{hexX:02d}{hexY:02d}'.format(
+                                hexX=int((placeholderHex.offsetX() - 1) % travellermap.SubsectorWidth) + 1,
+                                hexY=int((placeholderHex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
+                        else:
+                            numberText = '{hexX:02d}{hexY:02d}'.format(
+                                hexX=placeholderHex.offsetX(),
+                                hexY=placeholderHex.offsetY())
+
+                        self._graphics.drawString(
+                            text=numberText,
+                            font=self._styleSheet.hexNumber.font,
+                            brush=self._styleSheet.hexNumber.textBrush,
+                            x=self._styleSheet.hexNumber.position.x(),
+                            y=self._styleSheet.hexNumber.position.y(),
+                            format=cartographer.TextAlignment.TopCenter)
 
     def _drawWorldsForeground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay:
@@ -1087,6 +1119,13 @@ class RenderContext(object):
                     tip=cartographer.PenTip.Round) # Rounded end cap so a circle is drawn
 
                 for sector in self._selector.sectors(tight=True):
+                    worlds = self._sectorCache.isotropicWorldPoints(
+                        x=sector.x(),
+                        y=sector.y())
+                    if worlds:
+                        self._graphics.drawPoints(points=worlds, pen=pen)
+
+                for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
                         x=sector.x(),
                         y=sector.y())

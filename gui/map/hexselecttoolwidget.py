@@ -168,7 +168,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
                 hex = traveller.WorldManager.instance().sectorHexToPosition(
                     sectorHex=sectorHex)
             except Exception as ex:
-                logging.error(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
+                # This can happen if sector data has changed for whatever reason
+                # (e.g. map updates or custom sectors)
+                logging.warning(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
                 return False
 
         self.setSelectedHex(hex=hex, updateHistory=False)
