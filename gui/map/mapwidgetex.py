@@ -953,15 +953,22 @@ class MapWidgetEx(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64 # None keeps current scale
+            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            skipAnimation: bool = False
             ) -> None:
-        self._mapWidget.centerOnHex(hex=hex, linearScale=linearScale)
+        self._mapWidget.centerOnHex(
+            hex=hex,
+            linearScale=linearScale,
+            skipAnimation=skipAnimation)
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[travellermap.HexPosition]
+            hexes: typing.Collection[travellermap.HexPosition],
+            skipAnimation: bool = False
             ) -> None:
-        self._mapWidget.centerOnHexes(hexes=hexes)
+        self._mapWidget.centerOnHexes(
+            hexes=hexes,
+            skipAnimation=skipAnimation)
 
     def hasJumpRoute(self) -> bool:
         return self._mapWidget.hasJumpRoute()
@@ -978,8 +985,11 @@ class MapWidgetEx(QtWidgets.QWidget):
     def clearJumpRoute(self) -> None:
         self._mapWidget.clearJumpRoute()
 
-    def centerOnJumpRoute(self) -> None:
-        self._mapWidget.centerOnJumpRoute()
+    def centerOnJumpRoute(
+            self,
+            skipAnimation: bool = False
+            ) -> None:
+        self._mapWidget.centerOnJumpRoute(skipAnimation=skipAnimation)
 
     def highlightHex(
             self,
@@ -1088,15 +1098,18 @@ class MapWidgetEx(QtWidgets.QWidget):
     def selectHex(
             self,
             hex: travellermap.HexPosition,
-            centerOnHex: bool = True,
             setInfoHex: bool = True
             ) -> None:
-        world = traveller.WorldManager.instance().worldByPosition(hex=hex)
-        if not world and not self._enableDeadSpaceSelection:
+        if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
             return
 
-        if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect or \
-                hex in self._selectedHexes:
+        if hex in self._selectedHexes:
+            if setInfoHex:
+                self.setInfoHex(hex=hex)
+            return
+
+        world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+        if not world and not self._enableDeadSpaceSelection:
             return
 
         if self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect and \
@@ -1109,9 +1122,6 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._createSelectionHexOverlay(hex=hex)
         self._updateSelectionOutline()
-
-        if centerOnHex:
-            self.centerOnHex(hex=hex)
 
         if setInfoHex:
             self.setInfoHex(hex=hex)
@@ -1139,7 +1149,6 @@ class MapWidgetEx(QtWidgets.QWidget):
             # In single select mode just select the first item
             self.selectHex(
                 hex=hexes[0],
-                centerOnHex=False,
                 setInfoHex=False)
             return
 
@@ -1512,7 +1521,6 @@ class MapWidgetEx(QtWidgets.QWidget):
                 elif hex not in self._selectedHexes:
                     self.selectHex(
                         hex=hex,
-                        centerOnHex=False, # Don't center as user is interacting with map
                         setInfoHex=False) # Updating info world has already been handled
                 else:
                     # Clicking a selected worlds deselects it
@@ -1696,7 +1704,6 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._selectionMode == MapWidgetEx.SelectionMode.SingleSelect:
                 self.selectHex(
                     hex=hex,
-                    centerOnHex=False, # Centring on the world has already been handled
                     setInfoHex=False) # Updating info world has already been handled
 
         self._searchButton.setEnabled(hex != None)

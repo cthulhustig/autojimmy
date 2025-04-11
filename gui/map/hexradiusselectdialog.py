@@ -112,9 +112,10 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         with gui.SignalBlocker(self._travellerMapWidget):
             if hex:
-                self._travellerMapWidget.selectHex(
+                self._travellerMapWidget.selectHex(hex=hex)
+                self._travellerMapWidget.centerOnHex(
                     hex=hex,
-                    centerOnHex=True)
+                    skipAnimation=self.isHidden())
             else:
                 self._travellerMapWidget.clearSelectedHexes()
 

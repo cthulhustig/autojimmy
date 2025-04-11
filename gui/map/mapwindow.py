@@ -27,13 +27,16 @@ class MapWindow(gui.WindowWidget):
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
-            linearScale=linearScale)
+            linearScale=linearScale,
+            skipAnimation=self.isHidden())
 
     def centerOnHexes(
             self,
             hexes: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.centerOnHexes(hexes=hexes)
+        self._mapWidget.centerOnHexes(
+            hexes=hexes,
+            skipAnimation=self.isHidden())
 
     def setJumpRoute(
             self,
@@ -43,7 +46,8 @@ class MapWindow(gui.WindowWidget):
         self._mapWidget.setJumpRoute(
             jumpRoute=jumpRoute,
             refuellingPlan=refuellingPlan)
-        self._mapWidget.centerOnJumpRoute()
+        self._mapWidget.centerOnJumpRoute(
+            skipAnimation=self.isHidden())
 
     def highlightHex(
             self,
@@ -56,7 +60,8 @@ class MapWindow(gui.WindowWidget):
             radius=radius,
             colour=colour)
         self._mapWidget.centerOnHex(
-            hex=hex)
+            hex=hex,
+            skipAnimation=self.isHidden())
 
     def highlightHexes(
             self,
@@ -68,7 +73,9 @@ class MapWindow(gui.WindowWidget):
             hexes=hexes,
             radius=radius,
             colour=colour)
-        self._mapWidget.centerOnHexes(hexes=hexes)
+        self._mapWidget.centerOnHexes(
+            hexes=hexes,
+            skipAnimation=self.isHidden())
 
     def clearOverlays(self) -> None:
         self._mapWidget.clearHexHighlights()

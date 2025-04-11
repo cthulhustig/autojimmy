@@ -669,19 +669,34 @@ class LocalMapWidget(QtWidgets.QWidget):
     _DefaultCenterY = 0
     _DefaultScale = 64
     _DefaultScale = travellermap.logScaleToLinearScale(7)
-    #_DefaultCenterX, _DefaultCenterY = (13.971588572221023, -28.221357863973523)
-    #_DefaultCenterX, _DefaultCenterY = (-95.914 / travellermap.ParsecScaleX, 70.5 / -travellermap.ParsecScaleY)
-    #_DefaultCenterX, _DefaultCenterY = (-110.50311757412467, -70.5033270610736)
-    #_DefaultCenterX, _DefaultCenterY = travellermap.mapSpaceToAbsoluteSpace((-95.914, 70.5))
 
-    _KeyZoomDelta = 0.5
     _WheelZoomDelta = 0.15
+    _KeyboardZoomDelta = 0.5
+    _KeyboardMoveDelta = 30 # Pixels
 
+    # NOTE: The delay between keyboard movement updates can't be to low or it
+    # causes the tile rendering queue to stall and you just end up scrolling
+    # over background checkerboard
+    _KeyboardMovementTimerMs = 60
+    _TrackedMovementKeys = set([
+        QtCore.Qt.Key.Key_Left,
+        QtCore.Qt.Key.Key_Right,
+        QtCore.Qt.Key.Key_Up,
+        QtCore.Qt.Key.Key_Down,
+        # These are alternate keys that Traveller Map allows for movement
+        QtCore.Qt.Key.Key_I,
+        QtCore.Qt.Key.Key_J,
+        QtCore.Qt.Key.Key_K,
+        QtCore.Qt.Key.Key_L])
+
+    # TODO: This needs to be more adaptive, it feels to slow when only
+    # moving small distances but feels about right for large ones
+    _MoveAnimationTime = 1000
+
+    _TileSize = 256 # Pixels
+    _TileCacheSize = 1000 # Number of tiles
+    _TileRenderTimerMs = 1
     _LookaheadBorderTiles = 2
-    _TileSize = 512 # Pixels
-    _TileCacheSize = 250 # Number of tiles
-    _TileTimerMsecs = 1
-    #_TileTimerMsecs = 1000
 
     _CheckerboardColourA ='#000000'
     _CheckerboardColourB ='#404040'
@@ -744,11 +759,11 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._isWindows = common.isWindows()
         self._offscreenRenderImage: typing.Optional[QtGui.QImage] = None
 
-        self._tileTimer = QtCore.QTimer()
-        self._tileTimer.setInterval(LocalMapWidget._TileTimerMsecs)
-        self._tileTimer.setSingleShot(True)
-        self._tileTimer.timeout.connect(self._handleTileTimer)
-        self._tileQueue: typing.List[typing.Tuple[
+        self._tileRenderTimer = QtCore.QTimer()
+        self._tileRenderTimer.setInterval(LocalMapWidget._TileRenderTimerMs)
+        self._tileRenderTimer.setSingleShot(True)
+        self._tileRenderTimer.timeout.connect(self._handleRenderTileTimer)
+        self._tileRenderQueue: typing.List[typing.Tuple[
             int, # Tile X
             int, # Tile Y
             int # Tile Scale (linear)
@@ -808,6 +823,30 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._toolTipCallback = None
 
+        self._viewCenterAnimation = QtCore.QPropertyAnimation(
+            self,
+            b"_viewCenterAnimationProp")
+        self._viewCenterAnimation.setEasingCurve(QtCore.QEasingCurve.Type.Linear)
+
+        self._viewScaleAnimation = QtCore.QPropertyAnimation(
+            self,
+            b"_viewScaleAnimationProp")
+        self._viewScaleAnimation.setEasingCurve(QtCore.QEasingCurve.Type.Linear)
+
+        self._viewAnimationGroup = QtCore.QParallelAnimationGroup()
+        self._viewAnimationGroup.addAnimation(self._viewCenterAnimation)
+        self._viewAnimationGroup.addAnimation(self._viewScaleAnimation)
+
+        # This set keeps track of the move keys that are currently held
+        # down. Movement is then processed on a timer. This is done to
+        # give smoother movement and allows things like diagonal movement
+        # by holding down multiple keys at once
+        self._trackedMoveKeys: typing.Set[QtCore.Qt.Key] = set()
+        self._keyboardMovementTimer = QtCore.QTimer()
+        self._keyboardMovementTimer.setInterval(LocalMapWidget._KeyboardMovementTimerMs)
+        self._keyboardMovementTimer.setSingleShot(False)
+        self._keyboardMovementTimer.timeout.connect(self._handleKeyboardMovementTimer)
+
         self.installEventFilter(self)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
@@ -826,18 +865,38 @@ class LocalMapWidget(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64 # None keeps current scale
+            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            skipAnimation: bool = False
             ) -> None:
-        center = hex.absoluteCenter()
-        self._absoluteCenterPos.setX(center[0])
-        self._absoluteCenterPos.setY(center[1])
-        self._viewScale.linear = linearScale
-        self._handleViewUpdate(forceAtomicRedraw=True)
+        self._viewAnimationGroup.stop()
+
+        center = QtCore.QPointF(*hex.absoluteCenter())
+
+        if skipAnimation or self.isHidden(): # Don't animate when hidden
+            self._absoluteCenterPos = center
+
+            if linearScale is not None:
+                self._viewScale.linear = linearScale
+
+            self._handleViewUpdate(forceAtomicRedraw=True)
+        else:
+            logScale = \
+                travellermap.linearScaleToLogScale(linearScale) \
+                if linearScale is not None else \
+                self._viewScale.log
+
+            self._animateViewTransition(
+                newViewCenter=center,
+                newViewLogScale=logScale)
+
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[travellermap.HexPosition]
+            hexes: typing.Collection[travellermap.HexPosition],
+            skipAnimation: bool = False
             ) -> None:
+        self._viewAnimationGroup.stop()
+
         if not hexes:
             return
 
@@ -855,8 +914,9 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         width = right - left
         height = bottom - top
-        centerX = left + (width / 2)
-        centerY = top + (height / 2)
+        center = QtCore.QPointF(
+            left + (width / 2),
+            top + (height / 2))
         scale = common.clamp(
             value=min(
                 travellermap.linearScaleToLogScale(self.width() / width),
@@ -864,10 +924,15 @@ class LocalMapWidget(QtWidgets.QWidget):
             minValue=LocalMapWidget._MinScale,
             maxValue=LocalMapWidget._MaxScale)
 
-        self._absoluteCenterPos.setX(centerX)
-        self._absoluteCenterPos.setY(centerY)
-        self._viewScale.log = scale
-        self._handleViewUpdate(forceAtomicRedraw=True)
+        if skipAnimation or self.isHidden(): # Don't animate when hidden
+            self._absoluteCenterPos = center
+            self._viewScale.log = scale
+            self._handleViewUpdate(forceAtomicRedraw=True)
+        else:
+            self._animateViewTransition(
+                newViewCenter=center,
+                newViewLogScale=scale)
+
 
     def hasJumpRoute(self) -> bool:
         return self._jumpRoute is not None
@@ -889,11 +954,15 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._jumpRouteOverlay.setRoute(jumpRoute=None)
         self.update()
 
-    def centerOnJumpRoute(self) -> None:
+    def centerOnJumpRoute(
+            self,
+            skipAnimation: bool = False
+            ) -> None:
         if not self._jumpRoute:
             return
         self.centerOnHexes(
-            hexes=[nodeHex for nodeHex, _ in self._jumpRoute])
+            hexes=[nodeHex for nodeHex, _ in self._jumpRoute],
+            skipAnimation=skipAnimation)
 
     def highlightHex(
             self,
@@ -994,9 +1063,16 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def createSnapshot(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
+
+        renderType = app.Config.instance().mapRenderingType()
+        if renderType is app.MapRenderingType.Tiled:
+            # If tiled rendering is currently in use force hybrid so any
+            # missing tiles will be created
+            renderType = app.MapRenderingType.Hybrid
+
         self._drawView(
             paintDevice=image,
-            forceAtomic=True)
+            renderType=renderType)
         return image
 
     def saveState(self) -> QtCore.QByteArray:
@@ -1049,7 +1125,10 @@ class LocalMapWidget(QtWidgets.QWidget):
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super().mousePressEvent(event)
 
-        if self.isEnabled() and event.button() == QtCore.Qt.MouseButton.LeftButton:
+        if not self.isEnabled():
+            return
+
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self._pixelDragStart = event.pos()
             self._worldDragAnchor = self._pixelSpaceToWorldSpace(self._pixelDragStart)
 
@@ -1100,6 +1179,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
         self._worldDragAnchor = self._pixelDragStart = None
+        self._trackedMoveKeys.clear()
+        self._keyboardMovementTimer.stop()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
@@ -1108,36 +1189,29 @@ class LocalMapWidget(QtWidgets.QWidget):
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
 
-        if self._renderer:
-            dx = dy = None
-            if event.key() == QtCore.Qt.Key.Key_Left:
-                width = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
-                dx = -width / 10
-            elif event.key() == QtCore.Qt.Key.Key_Right:
-                width = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
-                dx = width / 10
-            elif event.key() == QtCore.Qt.Key.Key_Up:
-                height = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
-                dy = -height / 10
-            elif event.key() == QtCore.Qt.Key.Key_Down:
-                height = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
-                dy = height / 10
+        if not self.isEnabled():
+            return
 
-            if dx != None or dy != None:
-                if dx != None:
-                    self._absoluteCenterPos.setX(self._absoluteCenterPos.x() + dx)
-                if dy != None:
-                    self._absoluteCenterPos.setY(self._absoluteCenterPos.y() + dy)
-                self._handleViewUpdate()
-                return
+        if event.key() in LocalMapWidget._TrackedMovementKeys:
+            if not event.isAutoRepeat():
+                self._trackedMoveKeys.add(event.key())
+                if not self._keyboardMovementTimer.isActive():
+                    self._keyboardMovementTimer.start()
+        elif event.key() == QtCore.Qt.Key.Key_Z:
+            self._zoomView(
+                step=LocalMapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyboardZoomDelta)
+        elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
+            self._zoomView(step=LocalMapWidget._KeyboardZoomDelta)
+        elif event.key() == QtCore.Qt.Key.Key_Minus:
+            self._zoomView(step=-LocalMapWidget._KeyboardZoomDelta)
 
-            if event.key() == QtCore.Qt.Key.Key_Z:
-                self._zoomView(
-                    step=LocalMapWidget._KeyZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyZoomDelta)
-            elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
-                self._zoomView(step=LocalMapWidget._KeyZoomDelta)
-            elif event.key() == QtCore.Qt.Key.Key_Minus:
-                self._zoomView(step=-LocalMapWidget._KeyZoomDelta)
+    def keyReleaseEvent(self, event: QtGui.QKeyEvent):
+        super().keyReleaseEvent(event)
+
+        if not event.isAutoRepeat() and event.key() in self._trackedMoveKeys:
+            self._trackedMoveKeys.remove(event.key())
+            if not self._trackedMoveKeys:
+                self._keyboardMovementTimer.stop()
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
@@ -1178,8 +1252,9 @@ class LocalMapWidget(QtWidgets.QWidget):
             paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
             renderType=renderType)
 
-        if renderType is app.MapRenderingType.Tiled:
-            if not self._tileQueue and LocalMapWidget._LookaheadBorderTiles:
+        if renderType is app.MapRenderingType.Tiled or \
+            renderType is app.MapRenderingType.Hybrid:
+            if not self._tileRenderQueue and LocalMapWidget._LookaheadBorderTiles:
                 # If there are no tiles needing loaded, pre-load tiles just
                 # outside the current view area.
                 self._loadLookaheadTiles()
@@ -1187,8 +1262,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             # Start the timer to trigger loading of missing tiles. It's
             # important to re-check the tile queue as it may have had
             # lookahead tiles added
-            if self._tileQueue:
-                self._tileTimer.start()
+            if self._tileRenderQueue:
+                self._tileRenderTimer.start()
 
         if self._offscreenRenderImage is not None:
             painter = QtGui.QPainter()
@@ -1501,8 +1576,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         # Clear the tile queue as the render view/style map have
         # changed so previous queue map be invalid. The redraw
         # that is triggered will refill the queue if needed
-        self._tileQueue.clear()
-        self._tileTimer.stop()
+        self._tileRenderQueue.clear()
+        self._tileRenderTimer.stop()
 
         self._forceAtomicRedraw = forceAtomicRedraw
 
@@ -1533,6 +1608,15 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._handleViewUpdate()
 
+    # TODO: If there are there are keyboard move keys currently held down this should
+    # order tiles so ones in the direction being moved are prioritised
+    # - Might be able to do a simple(ish) sort if I take a target point to be the
+    #   current absolute point that we're roughly moving towards (corner of current
+    #   view if moving diagonally or center of edge if moving along a single axis).
+    #   I can then sort the tile queue by the distance between the target point and
+    #   the center of the tile. It doesn't have to be that accurate, just needs basic
+    #   prioritisation of tiles in that general direction over ones in the direction
+    #   we're moving away from
     def _currentDrawTiles(
             self,
             createMissing: bool = False
@@ -1582,8 +1666,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         centerTileX = math.floor(absoluteOrigin.x() / absoluteTileWidth)
         centerTileY = math.floor(absoluteOrigin.y() / absoluteTileHeight)
 
-        self._tileTimer.stop()
-        self._tileQueue.clear()
+        self._tileRenderTimer.stop()
+        self._tileRenderQueue.clear()
 
         tiles = []
         image = self._lookupTile(
@@ -1774,8 +1858,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         if not image:
             if not createMissing:
                 # Add the tile to the queue of tiles to be created in the background
-                if key not in self._tileQueue:
-                    self._tileQueue.append(key)
+                if key not in self._tileRenderQueue:
+                    self._tileRenderQueue.append(key)
             else:
                 # Render the tile
                 image = None
@@ -1896,8 +1980,8 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def _clearTileCache(self) -> None:
         self._sharedTileCache.clear()
-        self._tileQueue.clear()
-        self._tileTimer.stop()
+        self._tileRenderQueue.clear()
+        self._tileRenderTimer.stop()
         self.update() # Force redraw
 
     def _renderTile(
@@ -1938,8 +2022,8 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         return image
 
-    def _handleTileTimer(self) -> None:
-        tileX, tileY, tileScale, _, _ = self._tileQueue.pop(0)
+    def _handleRenderTileTimer(self) -> None:
+        tileX, tileY, tileScale, _, _ = self._tileRenderQueue.pop(0)
         image = None
         if self._sharedTileCache.isFull():
             # Reuse oldest cached tile
@@ -1955,9 +2039,78 @@ class LocalMapWidget(QtWidgets.QWidget):
             tileY=tileY,
             tileScale=tileScale,
             image=image)
-        if self._tileQueue:
-            self._tileTimer.start()
+        if self._tileRenderQueue:
+            self._tileRenderTimer.start()
         self.update()
+
+    def _handleKeyboardMovementTimer(self) -> None:
+        deltaX = deltaY = 0
+
+        if QtCore.Qt.Key.Key_Left in self._trackedMoveKeys or \
+            QtCore.Qt.Key.Key_J in self._trackedMoveKeys:
+            deltaX -= 1
+
+        if QtCore.Qt.Key.Key_Right in self._trackedMoveKeys or \
+            QtCore.Qt.Key.Key_L in self._trackedMoveKeys:
+            deltaX += 1
+
+        if QtCore.Qt.Key.Key_Up in self._trackedMoveKeys or \
+            QtCore.Qt.Key.Key_I in self._trackedMoveKeys:
+            deltaY -= 1
+
+        if QtCore.Qt.Key.Key_Down in self._trackedMoveKeys or \
+            QtCore.Qt.Key.Key_K in self._trackedMoveKeys:
+            deltaY += 1
+
+        if deltaX or deltaY:
+            # Normalize the delta and translate it to absolute space
+            length = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
+            if length:
+                horzStep = LocalMapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleX)
+                vertStep = LocalMapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleY)
+                deltaX = (deltaX / length) * horzStep
+                deltaY = (deltaY / length) * vertStep
+
+            self._absoluteCenterPos.setX(self._absoluteCenterPos.x() + deltaX)
+            self._absoluteCenterPos.setY(self._absoluteCenterPos.y() + deltaY)
+            self._handleViewUpdate()
+
+    def _animateViewCenterGetter(self) -> QtCore.QPointF:
+        return self._absoluteCenterPos
+    def _animateViewCenterSetter(self, pos: QtCore.QPointF) -> None:
+        self._absoluteCenterPos = pos
+        self._handleViewUpdate()
+
+    _viewCenterAnimationProp = QtCore.pyqtProperty(
+        QtCore.QPointF,
+        fget=_animateViewCenterGetter,
+        fset=_animateViewCenterSetter)
+
+    def _animateViewTransition(
+            self,
+            newViewCenter: QtCore.QPointF,
+            newViewLogScale: float
+            ) -> None:
+        self._viewCenterAnimation.setStartValue(self._absoluteCenterPos)
+        self._viewCenterAnimation.setEndValue(newViewCenter)
+        self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTime)
+
+        self._viewScaleAnimation.setStartValue(self._viewScale.log)
+        self._viewScaleAnimation.setEndValue(newViewLogScale)
+        self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTime)
+
+        self._viewAnimationGroup.start()
+
+    def _animateViewScaleGetter(self) -> QtCore.QPointF:
+        return self._viewScale.log
+    def _animateViewScaleSetter(self, scale: float) -> None:
+        self._viewScale.log = scale
+        self._handleViewUpdate()
+
+    _viewScaleAnimationProp = QtCore.pyqtProperty(
+        float,
+        fget=_animateViewScaleGetter,
+        fset=_animateViewScaleSetter)
 
     @staticmethod
     def _createPlaceholderTile() -> QtGui.QImage:

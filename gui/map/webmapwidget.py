@@ -231,7 +231,10 @@ class WebMapWidget(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64 # None keeps current scale
+            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            # This class doesn't support skipping animations but it needs to take
+            # the value for comparability with LocalMapWidget
+            skipAnimation: bool = False
             ) -> None:
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         if linearScale != None:
@@ -248,14 +251,19 @@ class WebMapWidget(QtWidgets.QWidget):
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[travellermap.HexPosition]
+            hexes: typing.Collection[travellermap.HexPosition],
+            # This class doesn't support skipping animations but it needs to take
+            # the value for comparability with LocalMapWidget
+            skipAnimation: bool = False
             ) -> None:
         if not hexes:
             return
         if len(hexes) == 1:
             # If there is just one world in the list so just show use centerOnHex. This avoids
             # zooming to far because the bounding box surrounding the worlds has no size
-            self.centerOnHex(hex=next(iter(hexes)))
+            self.centerOnHex(
+                hex=next(iter(hexes)),
+                skipAnimation=skipAnimation)
             return
 
         minX = maxX = minY = maxY = None
@@ -319,12 +327,19 @@ class WebMapWidget(QtWidgets.QWidget):
             self.removeOverlay(handle=self._refuellingPlanOverlayHandle)
             self._refuellingPlanOverlayHandle = None
 
-    def centerOnJumpRoute(self) -> None:
+    def centerOnJumpRoute(
+            self,
+            # This class doesn't support skipping animations but it needs to take
+            # the value for comparability with LocalMapWidget
+            skipAnimation: bool = False
+            ) -> None:
         if not self._jumpRoute:
             return
 
         hexes = [nodeHex for nodeHex, _ in self._jumpRoute]
-        self.centerOnHexes(hexes=hexes)
+        self.centerOnHexes(
+            hexes=hexes,
+            skipAnimation=skipAnimation)
 
     def highlightHex(
             self,

@@ -1481,6 +1481,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
+    # This moves/zooms the traveller map widget to show
+    # the current jump route
     def _showJumpRouteInTravellerMap(self) -> None:
         if not self._jumpRoute:
             return
