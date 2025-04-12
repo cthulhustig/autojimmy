@@ -25,9 +25,10 @@ _MapOptionsToRenderOptions: typing.Dict[
     cartographer.RenderOptions
     ] = {
         travellermap.Option.SectorGrid: cartographer.RenderOptions.GridMask,
-        # TODO: There is currently no way to show all sector names as I don't have the
-        # tri-state controls that Traveller Map has
-        travellermap.Option.SectorNames: cartographer.RenderOptions.SectorsSelected,
+        # The renderer supports none/selected/all when it comes to rendering
+        # sector names but the rest of my implementation doesn't (see comment
+        # on travellermap.Option.SectorNames).
+        travellermap.Option.SectorNames: cartographer.RenderOptions.SectorsAll,
         travellermap.Option.Borders: cartographer.RenderOptions.BordersMask,
         travellermap.Option.Routes: cartographer.RenderOptions.RoutesMask,
         travellermap.Option.RegionNames: cartographer.RenderOptions.NamesMask,
