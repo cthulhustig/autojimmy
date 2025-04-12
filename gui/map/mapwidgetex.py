@@ -902,6 +902,16 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
 
+        self._fullScreenButton= _CustomIconButton(
+            icon=gui.createToggleIcon(
+                onIcon=gui.loadIcon(id=gui.Icon.ArrowsMinimize),
+                offIcon=gui.loadIcon(id=gui.Icon.ArrowsMaximize)),
+            size=buttonSize,
+            parent=self)
+        self._fullScreenButton.setCheckable(True)
+        self._fullScreenButton.setChecked(False)
+        self._fullScreenButton.toggled.connect(self._fullScreenToggled)
+
         self._homeButton = _CustomIconButton(
             icon=gui.loadIcon(id=gui.Icon.Home),
             size=buttonSize,
@@ -1281,7 +1291,24 @@ class MapWidgetEx(QtWidgets.QWidget):
         return super().eventFilter(object, event)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-        if event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier:
+        if event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
+            if event.key() == QtCore.Qt.Key.Key_Escape:
+                if self._fullScreenButton.isChecked():
+                    self._fullScreenButton.setChecked(False)
+                return # Swallow event
+            elif event.key() == QtCore.Qt.Key.Key_H: # Copied from Traveller Map
+                self._gotoHome()
+                return # Swallow event
+            elif event.key() == QtCore.Qt.Key.Key_F: # Copied from Traveller Map
+                self._fullScreenButton.toggle()
+                return # Swallow event
+            elif event.key() == QtCore.Qt.Key.Key_M: # Copied from Traveller Map
+                self._legendButton.toggle()
+                return # Swallow event
+            elif event.key() == QtCore.Qt.Key.Key_Slash: # Copied from Traveller Map
+                self._searchWidget.setFocus()
+                return # Swallow event
+        elif event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier:
             if event.key() == QtCore.Qt.Key.Key_F:
                 self._searchWidget.setFocus()
                 return # Swallow event
@@ -1292,14 +1319,15 @@ class MapWidgetEx(QtWidgets.QWidget):
         super().keyPressEvent(event)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
         self._mapWidget.resize(event.size())
         self._configureOverlayControls()
-        return super().resizeEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
         searchWidgetSize = self._searchWidget.size()
         searchButtonSize = self._searchButton.size()
         infoButtonSize = self._infoButton.size()
+        fullScreenButtonSize = self._configButton.size()
         homeButtonSize = self._homeButton.size()
         keyButtonSize = self._legendButton.size()
         configButtonSize = self._configButton.size()
@@ -1313,6 +1341,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             MapWidgetEx._ControlWidgetSpacing + \
             infoButtonSize.width() + \
             MapWidgetEx._ControlWidgetSpacing + \
+            fullScreenButtonSize.width() + \
+            MapWidgetEx._ControlWidgetSpacing + \
             homeButtonSize.width() + \
             MapWidgetEx._ControlWidgetSpacing + \
             keyButtonSize.width() + \
@@ -1322,6 +1352,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             searchWidgetSize.height(),
             searchButtonSize.height(),
             infoButtonSize.height(),
+            fullScreenButtonSize.height(),
             homeButtonSize.height(),
             keyButtonSize.height(),
             configButtonSize.height())
@@ -1608,6 +1639,18 @@ class MapWidgetEx(QtWidgets.QWidget):
             MapWidgetEx._ControlWidgetSpacing,
             MapWidgetEx._ControlWidgetInset)
 
+        self._fullScreenButton.move(
+            self.width() - \
+            (self._fullScreenButton.width() + \
+             MapWidgetEx._ControlWidgetSpacing + \
+             self._homeButton.width() + \
+             MapWidgetEx._ControlWidgetSpacing + \
+             self._legendButton.width() + \
+             MapWidgetEx._ControlWidgetSpacing + \
+             self._configButton.width() + \
+             MapWidgetEx._ControlWidgetInset),
+            MapWidgetEx._ControlWidgetInset)
+
         self._homeButton.move(
             self.width() - \
             (self._homeButton.width() + \
@@ -1740,3 +1783,16 @@ class MapWidgetEx(QtWidgets.QWidget):
         else:
             self._configWidget.hide()
         self._configureOverlayControls()
+
+    def _fullScreenToggled(self) -> None:
+        if self._fullScreenButton.isChecked():
+            # Fullscreen and borderless
+            self.setWindowFlags(
+                QtCore.Qt.WindowType.Window | QtCore.Qt.WindowType.FramelessWindowHint)
+            self.showFullScreen()
+        else:
+            self.showNormal()
+            self.setWindowFlags(QtCore.Qt.WindowType.Widget)
+            self.show()
+            self.setFocus()
+

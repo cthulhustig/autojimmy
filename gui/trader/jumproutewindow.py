@@ -608,6 +608,7 @@ class JumpRouteWindow(gui.WindowWidget):
     # if the route was calculated before the widget was displayed for the first time. The hack works
     # by checking if the Traveller Map widget is not the displayed widget and forces a resize if
     # it's not.
+    # TODO: This can be removed when I finally ditch the web map widget
     def _travellerMapInitFix(self) -> None:
         currentWidget = self._resultsDisplayModeTabView.currentWidget()
         if currentWidget != self._travellerMapWidget:
@@ -820,11 +821,29 @@ class JumpRouteWindow(gui.WindowWidget):
             section='Jump Overlays',
             actions=[self._jumpRatingOverlayAction, self._worldTaggingOverlayAction])
 
+        # HACK: This wrapper widget for the map is a hacky fix for what looks
+        # like a bug in QTabWidget that is triggered if you make one of the
+        # controls it contains full screen (true borderless full screen not
+        # maximised). The issue I was seeing is the widget that I made full
+        # screen would get a resize event for the screen resolution as you would
+        # expect then immediately get another resize event that put it back to
+        # the size it was before going full screen. As far as I can tell it's
+        # caused by QTabWidget as it doesn't happen with the simulator window
+        # which usually doesn't have a QTabWidget but can be made to happen by
+        # adding one. The workaround I found is to warp the widget (the map in
+        # this case) in a layout and wrap that layout in a widget. When this is
+        # done the map doesn't get the second resize event setting it back to
+        # its original size.
+        mapWrapperLayout = QtWidgets.QVBoxLayout()
+        mapWrapperLayout.setContentsMargins(0, 0, 0, 0)
+        mapWrapperLayout.addWidget(self._travellerMapWidget)
+        mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
+
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(jumpRouteWidget, 'Jump Route')
         self._resultsDisplayModeTabView.addTab(self._refuellingPlanTable, 'Refuelling Plan')
-        self._resultsDisplayModeTabView.addTab(self._travellerMapWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
 
         routeLayout = QtWidgets.QVBoxLayout()
         routeLayout.addWidget(self._calculateRouteButton)
