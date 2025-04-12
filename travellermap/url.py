@@ -21,7 +21,7 @@ _WorldsCapitalsOption = 0x0100
 _WorldsHomeworldsOption = 0x0200
 _WorldsMaskOption = 0x0300 # aka Important Worlds
 _ForceHexesOption = 0x2000
-_WorldColorsOption = 0x4000
+_WorldColoursOption = 0x4000
 _FilledBordersOption = 0x8000
 
 _StyleOptionMap = {
@@ -147,7 +147,7 @@ def _createCommonQueryList(
     if travellermap.Option.ImportantWorlds in options:
         optionBitMask |= _WorldsMaskOption
     if travellermap.Option.WorldColours in options:
-        optionBitMask |= _WorldColorsOption
+        optionBitMask |= _WorldColoursOption
     if travellermap.Option.FilledBorders in options:
         optionBitMask |= _FilledBordersOption
     optionList.append('options=' + str(optionBitMask)) # Always add this as ForcedHexes is always set

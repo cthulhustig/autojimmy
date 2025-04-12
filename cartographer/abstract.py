@@ -65,18 +65,18 @@ class AbstractMatrix(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
 
 class AbstractBrush(object):
-    def color(self) -> str:
-        raise RuntimeError(f'{type(self)} is derived from AbstractBrush so must implement color')
-    def setColor(self, color: str) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractBrush so must implement setColor')
+    def colour(self) -> str:
+        raise RuntimeError(f'{type(self)} is derived from AbstractBrush so must implement colour')
+    def setColour(self, colour: str) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractBrush so must implement setColour')
     def copyFrom(self, other: 'AbstractBrush') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractBrush so must implement copyFrom')
 
 class AbstractPen(object):
-    def color(self) -> str:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement color')
-    def setColor(self, color: str) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setColor')
+    def colour(self) -> str:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement colour')
+    def setColour(self, colour: str) -> None:
+        raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement setColour')
     def width(self) -> float:
         raise RuntimeError(f'{type(self)} is derived from AbstractPen so must implement width')
     def setWidth(self, width: float) -> None:
@@ -184,14 +184,14 @@ class AbstractGraphics(object):
     def copyMatrix(self, other: AbstractMatrix) -> AbstractMatrix:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyMatrix')
 
-    def createBrush(self, color: str = '') -> AbstractBrush:
+    def createBrush(self, colour: str = '') -> AbstractBrush:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement createBrush')
     def copyBrush(self, other: AbstractBrush) -> AbstractBrush:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement copyBrush')
 
     def createPen(
             self,
-            color: str = '',
+            colour: str = '',
             width: float = 1,
             style: cartographer.LineStyle = cartographer.LineStyle.Solid,
             pattern: typing.Optional[typing.Sequence[float]] = None,

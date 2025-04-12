@@ -374,13 +374,13 @@ class RenderContext(object):
         finishX = math.ceil(self._absoluteViewRect.right() / chunkParsecs)
         finishY = math.ceil(self._absoluteViewRect.bottom() / chunkParsecs)
 
-        r, g, b, _ = travellermap.parseHtmlColor(
-            self._styleSheet.pseudoRandomStars.fillBrush.color())
-        color = travellermap.formatHtmlColor(
+        r, g, b, _ = travellermap.parseHtmlColour(
+            self._styleSheet.pseudoRandomStars.fillBrush.colour())
+        colour = travellermap.formatHtmlColour(
             r, g, b,
             alpha=int(255 / self._starfieldCache.intensitySteps()))
         pen = self._graphics.createPen(
-            color=color,
+            colour=colour,
             width=1 / self._scale) # One pixel
 
         self._graphics.setSmoothingMode(
@@ -606,7 +606,7 @@ class RenderContext(object):
 
             for sector in self._selector.sectors():
                 for route in self._sectorCache.routeLines(x=sector.x(), y=sector.y()):
-                    routeColor = route.color()
+                    routeColour = route.colour()
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
@@ -617,34 +617,34 @@ class RenderContext(object):
                         elif route.style() is traveller.Route.Style.Dotted:
                             routeStyle = cartographer.LineStyle.Dot
 
-                    if not routeWidth or not routeColor or not routeStyle:
+                    if not routeWidth or not routeColour or not routeStyle:
                         precedence = [route.allegiance(), route.type(), 'Im']
                         for key in precedence:
-                            defaultColor, defaultStyle, defaultWidth = self._styleCache.routeStyle(key)
-                            if not routeColor:
-                                routeColor = defaultColor
+                            defaultColour, defaultStyle, defaultWidth = self._styleCache.routeStyle(key)
+                            if not routeColour:
+                                routeColour = defaultColour
                             if not routeStyle:
                                 routeStyle = defaultStyle
                             if not routeWidth:
                                 routeWidth = defaultWidth
 
-                    # In grayscale, convert default color and style to non-default style
-                    if self._styleSheet.grayscale and (not routeColor) and (not routeStyle):
+                    # In grayscale, convert default colour and style to non-default style
+                    if self._styleSheet.grayscale and (not routeColour) and (not routeStyle):
                         routeStyle = cartographer.LineStyle.Dash
 
                     if not routeWidth:
                         routeWidth = 1.0
-                    if not routeColor:
-                        routeColor = self._styleSheet.microRoutes.linePen.color()
+                    if not routeColour:
+                        routeColour = self._styleSheet.microRoutes.linePen.colour()
                     if not routeStyle:
                         routeStyle = cartographer.LineStyle.Solid
 
-                    # Ensure color is visible
+                    # Ensure colour is visible
                     if self._styleSheet.grayscale or \
-                        not travellermap.noticeableColorDifference(routeColor, self._styleSheet.backgroundBrush.color()):
-                        routeColor = self._styleSheet.microRoutes.linePen.color() # default
+                        not travellermap.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
+                        routeColour = self._styleSheet.microRoutes.linePen.colour() # default
 
-                    pen.setColor(routeColor)
+                    pen.setColour(routeColour)
                     pen.setWidth(routeWidth * baseWidth)
                     pen.setStyle(routeStyle)
 
@@ -652,7 +652,7 @@ class RenderContext(object):
                         points=route.points(),
                         pen=pen)
 
-    _LabelDefaultColor = travellermap.HtmlColors.TravellerAmber
+    _LabelDefaultColour = travellermap.HtmlColours.TravellerAmber
     def _drawMicroLabels(self) -> None:
         if not self._styleSheet.showMicroNames:
             return
@@ -725,19 +725,19 @@ class RenderContext(object):
                     else:
                         font = self._styleSheet.microBorders.font
 
-                    useLabelColor = \
+                    useLabelColour = \
                         not self._styleSheet.grayscale and \
                         label.colour() and \
-                        (label.colour() != RenderContext._LabelDefaultColor) and \
-                        travellermap.noticeableColorDifference(label.colour(), self._styleSheet.backgroundBrush.color())
-                    if useLabelColor:
-                        brush.setColor(label.colour())
+                        (label.colour() != RenderContext._LabelDefaultColour) and \
+                        travellermap.noticeableColourDifference(label.colour(), self._styleSheet.backgroundBrush.colour())
+                    if useLabelColour:
+                        brush.setColour(label.colour())
 
                     self._drawLabel(
                         text=text,
                         center=labelPos,
                         font=font,
-                        brush=brush if useLabelColor else self._styleSheet.microBorders.textBrush,
+                        brush=brush if useLabelColour else self._styleSheet.microBorders.textBrush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
     def _drawSectorNames(self) -> None:
@@ -854,7 +854,7 @@ class RenderContext(object):
             return
 
         dotPen = self._graphics.createPen(
-            color=self._styleSheet.capitals.fillBrush.color(),
+            colour=self._styleSheet.capitals.fillBrush.colour(),
             width=1)
         dotBrush = self._styleSheet.capitals.fillBrush
         dotRadius = 3
@@ -1113,7 +1113,7 @@ class RenderContext(object):
                     scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
 
                 pen = self._graphics.createPen(
-                    color=self._styleSheet.worlds.textBrush.color(),
+                    colour=self._styleSheet.worlds.textBrush.colour(),
                     width=self._styleSheet.discRadius * self._styleSheet.hexContentScale * 2,
                     style=cartographer.LineStyle.Solid,
                     tip=cartographer.PenTip.Round) # Rounded end cap so a circle is drawn
@@ -1537,9 +1537,9 @@ class RenderContext(object):
         brush = self._graphics.createBrush()
 
         if self._styleSheet.dimUnofficialSectors and self._styleSheet.worlds.visible:
-            brush.setColor(cartographer.makeAlphaColor(
+            brush.setColour(cartographer.makeAlphaColour(
                 alpha=128,
-                color=self._styleSheet.backgroundBrush.color()))
+                colour=self._styleSheet.backgroundBrush.colour()))
             for sector in self._selector.sectors(tight=True):
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
                     clipPath = self._sectorCache.clipPath(
@@ -1550,28 +1550,28 @@ class RenderContext(object):
                         path=clipPath,
                         brush=brush)
 
-        if self._styleSheet.colorCodeSectorStatus and self._styleSheet.worlds.visible:
+        if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
                 if sector.hasTag('Official'):
-                    brush.setColor(cartographer.makeAlphaColor(
+                    brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        color=travellermap.HtmlColors.TravellerRed))
+                        colour=travellermap.HtmlColours.TravellerRed))
                 elif sector.hasTag('InReview'):
-                    brush.setColor(cartographer.makeAlphaColor(
+                    brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        color=travellermap.HtmlColors.Orange))
+                        colour=travellermap.HtmlColours.Orange))
                 elif sector.hasTag('Unreviewed'):
-                    brush.setColor(cartographer.makeAlphaColor(
+                    brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        color=travellermap.HtmlColors.TravellerAmber))
+                        colour=travellermap.HtmlColours.TravellerAmber))
                 elif sector.hasTag('Apocryphal'):
-                    brush.setColor(cartographer.makeAlphaColor(
+                    brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        color=travellermap.HtmlColors.Magenta))
+                        colour=travellermap.HtmlColours.Magenta))
                 elif sector.hasTag('Preserve'):
-                    brush.setColor(cartographer.makeAlphaColor(
+                    brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        color=travellermap.HtmlColors.TravellerGreen))
+                        colour=travellermap.HtmlColours.TravellerGreen))
                 else:
                     continue
 
@@ -1673,9 +1673,9 @@ class RenderContext(object):
             # 1 pixel which in Qt is a value of 0 and is called a 'cosmetic pen'
             pen.setWidth(0)
             brush = self._graphics.createBrush()
-            for i, (fillColour, lineColor, radius) in enumerate(RenderContext._worldStarProps(world=world)):
-                brush.setColor(fillColour)
-                pen.setColor(lineColor)
+            for i, (fillColour, lineColour, radius) in enumerate(RenderContext._worldStarProps(world=world)):
+                brush.setColour(fillColour)
+                pen.setColour(lineColour)
                 offset = RenderContext._starOffset(i)
                 offsetScale = 0.3
                 radius *= 0.15
@@ -1869,10 +1869,10 @@ class RenderContext(object):
                     self._graphics.intersectClipPath(path=sectorClipPath)
 
                     for outline in borderOutlines:
-                        color = self._calculateBorderColor(outline)
-                        brush.setColor(cartographer.makeAlphaColor(
+                        colour = self._calculateBorderColour(outline)
+                        brush.setColour(cartographer.makeAlphaColour(
                             alpha=RenderContext._MicroBorderFillAlpha,
-                            color=color))
+                            colour=colour))
                         self._drawMicroBorder(
                             outline=outline,
                             brush=brush)
@@ -1892,10 +1892,10 @@ class RenderContext(object):
                     self._graphics.intersectClipRect(rect=sectorClipRect)
 
                 for outline in regionOutlines:
-                    color = self._calculateBorderColor(outline)
-                    brush.setColor(cartographer.makeAlphaColor(
+                    colour = self._calculateBorderColour(outline)
+                    brush.setColour(cartographer.makeAlphaColour(
                         alpha=RenderContext._MicroBorderFillAlpha,
-                        color=color))
+                        colour=colour))
 
                     self._drawMicroBorder(
                         outline=outline,
@@ -1903,20 +1903,20 @@ class RenderContext(object):
 
                 if useBrush or usePen:
                     for outline in borderOutlines:
-                        color = self._calculateBorderColor(outline)
+                        colour = self._calculateBorderColour(outline)
 
                         if useBrush:
-                            brush.setColor(cartographer.makeAlphaColor(
+                            brush.setColour(cartographer.makeAlphaColour(
                                 alpha=RenderContext._MicroBorderFillAlpha,
-                                color=color))
+                                colour=colour))
 
                         if usePen:
                             if layer is RenderContext.MicroBorderLayer.Background:
-                                pen.setColor(cartographer.makeAlphaColor(
+                                pen.setColour(cartographer.makeAlphaColour(
                                     alpha=RenderContext._MicroBorderShadeAlpha,
-                                    color=color))
+                                    colour=colour))
                             else:
-                                pen.setColor(color)
+                                pen.setColour(colour)
 
                                 style = self._styleSheet.microBorders.linePen.style()
                                 if style is cartographer.LineStyle.Solid:
@@ -1931,16 +1931,16 @@ class RenderContext(object):
                             pen=pen if usePen else None)
 
 
-    def _calculateBorderColor(self, outline: cartographer.SectorPath) -> str:
-        color = outline.color()
-        if not color:
-            color = self._styleSheet.microRoutes.linePen.color()
+    def _calculateBorderColour(self, outline: cartographer.SectorPath) -> str:
+        colour = outline.colour()
+        if not colour:
+            colour = self._styleSheet.microRoutes.linePen.colour()
 
         if self._styleSheet.grayscale or \
-            not travellermap.noticeableColorDifference(color, self._styleSheet.backgroundBrush.color()):
-            color = self._styleSheet.microBorders.linePen.color()
+            not travellermap.noticeableColourDifference(colour, self._styleSheet.backgroundBrush.colour()):
+            colour = self._styleSheet.microBorders.linePen.colour()
 
-        return color
+        return colour
 
     def _drawMicroBorder(
             self,
@@ -2175,7 +2175,7 @@ class RenderContext(object):
             self,
             worldInfo: cartographer.WorldInfo
             ) -> cartographer.StyleSheet.StyleElement:
-        if self._styleSheet.showWorldDetailColors:
+        if self._styleSheet.showWorldDetailColours:
             if worldInfo.isAgricultural and worldInfo.isRich:
                 return self._styleSheet.worldRichAgricultural
             elif worldInfo.isAgricultural:
@@ -2193,7 +2193,6 @@ class RenderContext(object):
             else:
                 return self._styleSheet.worldNoWater
 
-        # Classic colors
         return self._styleSheet.worldWater if worldInfo.hasWater else self._styleSheet.worldNoWater
 
     _StarPropsMap = {
@@ -2213,33 +2212,33 @@ class RenderContext(object):
         'V': 0}
     @staticmethod
     def _worldStarProps(world: traveller.World) -> typing.Iterable[typing.Tuple[
-            str, # Fill Color,
-            str, # Border Color
+            str, # Fill Colour,
+            str, # Border Colour
             float]]: # Radius
         stellar = world.stellar()
         props = []
         for star in stellar.yieldStars():
             classification = star.string()
             if classification == 'D':
-                props.append((travellermap.HtmlColors.White, travellermap.HtmlColors.Black, 0.3))
+                props.append((travellermap.HtmlColours.White, travellermap.HtmlColours.Black, 0.3))
             elif classification == 'NS' or classification == 'PSR' or classification == 'BH':
-                props.append((travellermap.HtmlColors.Black, travellermap.HtmlColors.White, 0.8))
+                props.append((travellermap.HtmlColours.Black, travellermap.HtmlColours.White, 0.8))
             elif classification == 'BD':
-                props.append((travellermap.HtmlColors.Brown, travellermap.HtmlColors.Black, 0.3))
+                props.append((travellermap.HtmlColours.Brown, travellermap.HtmlColours.Black, 0.3))
             else:
-                color, radius = RenderContext._StarPropsMap.get(
+                colour, radius = RenderContext._StarPropsMap.get(
                     star.code(element=traveller.Star.Element.SpectralClass),
                     (None, None))
-                if color:
+                if colour:
                     luminance = star.code(element=traveller.Star.Element.LuminosityClass)
                     if luminance == 'VII':
                         # The second survey format spec says that some data uses VII to indicate
                         # a white dwarf (i.e. classification D).
                         # https://travellermap.com/doc/secondsurvey
-                        props.append((travellermap.HtmlColors.White, travellermap.HtmlColors.Black, 0.3))
+                        props.append((travellermap.HtmlColours.White, travellermap.HtmlColours.Black, 0.3))
                     else:
                         luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
-                        props.append((color, travellermap.HtmlColors.Black, radius + luminance))
+                        props.append((colour, travellermap.HtmlColours.Black, radius + luminance))
 
         props.sort(key=lambda p: p[2], reverse=True)
         return props

@@ -2,7 +2,7 @@ import common
 import math
 import typing
 
-class HtmlColors(object):
+class HtmlColours(object):
     TravellerRed = '#E32736'
     TravellerAmber = '#FFCC00'
     TravellerGreen = '#048104'
@@ -149,62 +149,62 @@ class HtmlColors(object):
     YellowGreen = '#9ACD32'
 
 #[k for k, v in vars(CONSTANT).items() if not callable(v) and not k.startswith("__")]
-_NameToColorMap = {name.lower(): color for name, color in common.getClassVariables(HtmlColors).items()}
+_NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(HtmlColours).items()}
 
 _ValidDigits = set('0123456789AaBbCcDdEeFf')
-def validateHtmlColor(htmlColor: str) -> bool:
-    length = len(htmlColor)
+def validateHtmlColour(htmlColour: str) -> bool:
+    length = len(htmlColour)
     if not length:
         return False
 
-    if htmlColor[0] != '#':
-        return htmlColor.lower() in _NameToColorMap
+    if htmlColour[0] != '#':
+        return htmlColour.lower() in _NameToColourMap
 
     if length != 7 and length != 9:
         return False
 
-    return set(htmlColor[1:]).issubset(_ValidDigits)
+    return set(htmlColour[1:]).issubset(_ValidDigits)
 
-def parseHtmlColor(
-        htmlColor: str
+def parseHtmlColour(
+        htmlColour: str
         ) -> typing.Tuple[
             int, # Red
             int, # Green
             int, # Blue
             int, # Alpha
         ]:
-    length = len(htmlColor)
+    length = len(htmlColour)
     if not length:
-        raise ValueError(f'Invalid color "{htmlColor}"')
-    if htmlColor[0] != '#':
-        namedColor = _NameToColorMap.get(htmlColor.lower())
-        if not namedColor:
-            raise ValueError(f'Invalid color "{htmlColor}"')
-        htmlColor = namedColor
-        length = len(namedColor)
+        raise ValueError(f'Invalid colour "{htmlColour}"')
+    if htmlColour[0] != '#':
+        namedColour = _NameToColourMap.get(htmlColour.lower())
+        if not namedColour:
+            raise ValueError(f'Invalid colour "{htmlColour}"')
+        htmlColour = namedColour
+        length = len(namedColour)
 
     if length == 7:
         try:
             alpha = 255
-            red = int(htmlColor[1:3], 16)
-            green = int(htmlColor[3:5], 16)
-            blue = int(htmlColor[5:7], 16)
+            red = int(htmlColour[1:3], 16)
+            green = int(htmlColour[3:5], 16)
+            blue = int(htmlColour[5:7], 16)
         except:
-            raise ValueError(f'Invalid color "{htmlColor}"')
+            raise ValueError(f'Invalid colour "{htmlColour}"')
     elif length == 9:
         try:
-            alpha = int(htmlColor[1:3], 16)
-            red = int(htmlColor[3:5], 16)
-            green = int(htmlColor[5:7], 16)
-            blue = int(htmlColor[7:9], 16)
+            alpha = int(htmlColour[1:3], 16)
+            red = int(htmlColour[3:5], 16)
+            green = int(htmlColour[5:7], 16)
+            blue = int(htmlColour[7:9], 16)
         except:
-            raise ValueError(f'Invalid color "{htmlColor}"')
+            raise ValueError(f'Invalid colour "{htmlColour}"')
     else:
-        raise ValueError(f'Invalid color "{htmlColor}"')
+        raise ValueError(f'Invalid colour "{htmlColour}"')
 
     return (red, green, blue, alpha)
 
-def formatHtmlColor(red: int, green: int, blue: int, alpha: int = 255) -> str:
+def formatHtmlColour(red: int, green: int, blue: int, alpha: int = 255) -> str:
     return f'#{alpha:02X}{red:02X}{green:02X}{blue:02X}'
 
 def _convertRGBtoXYZ(r: int, g: int, b: int) -> typing.Tuple[float, float, float]:
@@ -239,11 +239,11 @@ def _deltaE76(l1: float, a1: float, b1: float, l2: float, a2: float, b2: float) 
     c3 = b1 - b2
     return math.sqrt(c1 * c1 + c2 * c2 + c3 * c3)
 
-def noticeableColorDifference(a: str, b: str) -> bool:
+def noticeableColourDifference(a: str, b: str) -> bool:
     JND = 13 # 2.3
 
-    aRed, aGreen, aBlue, _ = parseHtmlColor(a)
-    bRed, bGreen, bBlue, _ = parseHtmlColor(b)
+    aRed, aGreen, aBlue, _ = parseHtmlColour(a)
+    bRed, bGreen, bBlue, _ = parseHtmlColour(b)
 
     ax, ay, az = _convertRGBtoXYZ(aRed, aGreen, aBlue)
     bx, by, bz = _convertRGBtoXYZ(bRed, bGreen, bBlue)

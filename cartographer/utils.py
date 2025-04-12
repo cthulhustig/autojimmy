@@ -2,12 +2,12 @@ import cartographer
 import travellermap
 import typing
 
-def makeAlphaColor(
+def makeAlphaColour(
         alpha: typing.Union[float, int],
-        color: str,
+        colour: str,
         isNormalised: bool = False
         ) -> str:
-    red, green, blue, _ = travellermap.parseHtmlColor(htmlColor=color)
+    red, green, blue, _ = travellermap.parseHtmlColour(htmlColour=colour)
 
     if isNormalised:
         alpha *= 255
@@ -33,7 +33,7 @@ _MapOptionsToRenderOptions: typing.Dict[
         travellermap.Option.Routes: cartographer.RenderOptions.RoutesMask,
         travellermap.Option.RegionNames: cartographer.RenderOptions.NamesMask,
         travellermap.Option.ImportantWorlds: cartographer.RenderOptions.WorldsMask,
-        travellermap.Option.WorldColours: cartographer.RenderOptions.WorldColors,
+        travellermap.Option.WorldColours: cartographer.RenderOptions.WorldColours,
         travellermap.Option.FilledBorders: cartographer.RenderOptions.FilledBorders,
         travellermap.Option.DimUnofficial: cartographer.RenderOptions.DimUnofficial,
         travellermap.Option.ImportanceOverlay: cartographer.RenderOptions.ImportanceOverlay,

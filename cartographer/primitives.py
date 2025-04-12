@@ -71,7 +71,7 @@ class RenderOptions(enum.IntFlag):
     WorldsMask = WorldsCapitals | WorldsHomeworlds
 
     ForceHexes = 0x2000
-    WorldColors = 0x4000
+    WorldColours = 0x4000
     FilledBorders = 0x8000
 
     PopulationOverlay = 0x10000
@@ -84,7 +84,7 @@ class RenderOptions(enum.IntFlag):
     MinorHomeWorlds = 0x400000
 
     DimUnofficial = 0x1000000
-    ColorCodeSectorStatus = 0x2000000
+    ColourCodeSectorStatus = 0x2000000
 
     RoutesMajor = 0x10000000
     RoutesMinor = 0x20000000
@@ -153,7 +153,7 @@ class WorldDetails(enum.IntFlag):
     AllNames = 1 << 8 # Show all world names, not just HiPop/Capitals
     Uwp = 1 << 9 # Show UWP below world name
     Asteroids = 1 << 10 # Render asteroids as pseudorandom ovals
-    Highlight = 1 << 11 # Highlight (text font, text color) HiPopCapital worlds
+    Highlight = 1 << 11 # Highlight (text font, text colour) HiPopCapital worlds
 
     Dotmap = NoDetails
     Atlas = Type | KeyNames | Starport | GasGiant | Allegiance | Bases | Zone | Highlight

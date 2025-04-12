@@ -9,12 +9,12 @@ class SectorPath(object):
             self,
             path: cartographer.AbstractPath,
             spline: cartographer.AbstractSpline,
-            color: typing.Optional[str],
+            colour: typing.Optional[str],
             style: typing.Optional[cartographer.LineStyle]
             ) -> None:
         self._path = path
         self._spline = spline
-        self._color = color
+        self._colour = colour
         self._style = style
 
     def path(self) -> cartographer.AbstractPath:
@@ -23,8 +23,8 @@ class SectorPath(object):
     def spline(self) -> cartographer.AbstractSpline:
         return self._spline
 
-    def color(self) -> typing.Optional[str]:
-        return self._color
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
 
     def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
@@ -33,14 +33,14 @@ class SectorLines(object):
     def __init__(
             self,
             points: typing.Iterable[cartographer.AbstractPointList],
-            color: typing.Optional[str],
+            colour: typing.Optional[str],
             width: typing.Optional[float],
             style: typing.Optional[cartographer.LineStyle],
             type: typing.Optional[str],
             allegiance: typing.Optional[str]
             ) -> None:
         self._points = points
-        self._color = color
+        self._colour = colour
         self._width = width
         self._style = style
         self._type = type
@@ -49,8 +49,8 @@ class SectorLines(object):
     def points(self) -> cartographer.AbstractPointList:
         return self._points
 
-    def color(self) -> typing.Optional[str]:
-        return self._color
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
 
     def width(self) -> typing.Optional[float]:
         return self._width
@@ -220,7 +220,7 @@ class SectorCache(object):
 
         routePointsMap: typing.Dict[
             typing.Tuple[
-                typing.Optional[str], # Color
+                typing.Optional[str], # Colour
                 typing.Optional[float], # Width
                 typing.Optional[cartographer.LineStyle], # Line style
                 typing.Optional[str], # Type
@@ -261,10 +261,10 @@ class SectorCache(object):
             routePoints.append(endPoint)
 
         routes = []
-        for (color, width, style, type, allegiance), points in routePointsMap.items():
+        for (colour, width, style, type, allegiance), points in routePointsMap.items():
             routes.append(SectorLines(
                 points=self._graphics.createPointList(points=points),
-                color=color,
+                colour=colour,
                 width=width,
                 style=style,
                 type=type,
@@ -338,7 +338,7 @@ class SectorCache(object):
             self,
             source: typing.Union[traveller.Region, traveller.Border]
             ) -> SectorPath:
-        color = source.colour()
+        colour = source.colour()
         style = None
 
         if isinstance(source, traveller.Border):
@@ -349,10 +349,10 @@ class SectorCache(object):
             elif source.style() is traveller.Border.Style.Dotted:
                 style = cartographer.LineStyle.Dot
 
-            if not color or not style:
-                defaultColor, defaultStyle = self._styleCache.borderStyle(source.allegiance())
-                if not color:
-                    color = defaultColor
+            if not colour or not style:
+                defaultColour, defaultStyle = self._styleCache.borderStyle(source.allegiance())
+                if not colour:
+                    colour = defaultColour
                 if not style:
                     style = defaultStyle
 
@@ -369,7 +369,7 @@ class SectorCache(object):
             tension=SectorCache._SplineTension,
             closed=True)
 
-        return SectorPath(path=path, spline=spline, color=color, style=style)
+        return SectorPath(path=path, spline=spline, colour=colour, style=style)
 
     @staticmethod
     def _offsetRouteSegment(

@@ -398,46 +398,46 @@ class MapBrush(cartographer.AbstractBrush):
     @typing.overload
     def __init__(self, other: 'MapBrush') -> None: ...
     @typing.overload
-    def __init__(self, color: str) -> None: ...
+    def __init__(self, colour: str) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self._color = ''
+            self._colour = ''
         elif len(args) == 1:
             arg = args[0]
             if isinstance(arg, MapBrush):
-                self._color = arg.color()
+                self._colour = arg.colour()
             else:
-                self._color = arg
+                self._colour = arg
         elif 'other' in kwargs:
             other = kwargs['other']
             if not isinstance(other, MapBrush):
                 raise TypeError('The other parameter must be a QtMapBrush')
-            self._color = other.color()
+            self._colour = other.colour()
         else:
-            self._color = kwargs['color']
+            self._colour = kwargs['colour']
 
         self._qtBrush: typing.Optional[QtGui.QBrush] = None
 
-    def color(self) -> str:
-        return self._color
+    def colour(self) -> str:
+        return self._colour
 
-    def setColor(self, color: str) -> None:
-        self._color = color
+    def setColour(self, colour: str) -> None:
+        self._colour = colour
         if self._qtBrush:
-            self._qtBrush.setColor(QtGui.QColor(self._color))
+            self._qtBrush.setColor(QtGui.QColor(self._colour))
 
     def copyFrom(self, other: 'MapBrush') -> None:
-        self._color = other._color
+        self._colour = other._colour
         if self._qtBrush:
             self._qtBrush.setColor(
                 other._qtBrush.color()
                 if other._qtBrush else
-                QtGui.QColor(self._color))
+                QtGui.QColor(self._colour))
 
     def qtBrush(self) -> QtGui.QBrush:
         if not self._qtBrush:
-            self._qtBrush = QtGui.QBrush(QtGui.QColor(self._color))
+            self._qtBrush = QtGui.QBrush(QtGui.QColor(self._colour))
         return self._qtBrush
 
 class MapPen(cartographer.AbstractPen):
@@ -460,7 +460,7 @@ class MapPen(cartographer.AbstractPen):
     @typing.overload
     def __init__(
         self,
-        color: str,
+        colour: str,
         width: float,
         style: cartographer.LineStyle = cartographer.LineStyle.Solid,
         pattern: typing.Optional[typing.Sequence[float]] = None,
@@ -469,7 +469,7 @@ class MapPen(cartographer.AbstractPen):
 
     def __init__(self, *args, **kwargs) -> None:
         if not args and not kwargs:
-            self._color = ''
+            self._colour = ''
             self._width = 0
             self._style = cartographer.LineStyle.Solid
             self._pattern = None
@@ -478,13 +478,13 @@ class MapPen(cartographer.AbstractPen):
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapPen):
                 raise TypeError('The other parameter must be a QtMapPen')
-            self._color = other.color()
+            self._colour = other.colour()
             self._width = other.width()
             self._style = other.style()
             self._pattern = list(other.pattern()) if other.pattern() else None
             self._tip = other.tip()
         else:
-            self._color = args[0] if len(args) > 0 else kwargs['color']
+            self._colour = args[0] if len(args) > 0 else kwargs['colour']
             self._width = args[1] if len(args) > 1 else kwargs['width']
             self._style = args[2] if len(args) > 2 else kwargs['style']
             self._pattern = args[3] if len(args) > 3 else kwargs.get('pattern')
@@ -492,13 +492,13 @@ class MapPen(cartographer.AbstractPen):
 
         self._qtPen = None
 
-    def color(self) -> str:
-        return self._color
+    def colour(self) -> str:
+        return self._colour
 
-    def setColor(self, color: str) -> None:
-        self._color = color
+    def setColour(self, colour: str) -> None:
+        self._colour = colour
         if self._qtPen:
-            self._qtPen.setColor(QtGui.QColor(self._color))
+            self._qtPen.setColor(QtGui.QColor(self._colour))
 
     def width(self) -> float:
         return self._width
@@ -555,12 +555,12 @@ class MapPen(cartographer.AbstractPen):
             self,
             other: 'MapPen'
             ) -> None:
-        self._color = other._color
+        self._colour = other._colour
         self._width = other._width
         self._style = other._style
         self._pattern = list(other._pattern) if other._pattern else None
         if self._qtPen:
-            self._qtPen.setColor(QtGui.QColor(self._color))
+            self._qtPen.setColor(QtGui.QColor(self._colour))
             self._qtPen.setWidthF(self._width)
             self._qtPen.setCapStyle(MapPen._PenTipMap[self._tip])
 
@@ -582,7 +582,7 @@ class MapPen(cartographer.AbstractPen):
                 qtStyle, qtPattern = MapPen._LineStyleMap[self._style]
 
             self._qtPen = QtGui.QPen(
-                QtGui.QColor(self._color),
+                QtGui.QColor(self._colour),
                 self._width,
                 qtStyle)
             if qtPattern:
@@ -757,20 +757,20 @@ class MapGraphics(cartographer.AbstractGraphics):
     def copyMatrix(self, other: MapMatrix) -> MapMatrix:
         return MapMatrix(other=other)
 
-    def createBrush(self, color: str = '') -> MapBrush:
-        return MapBrush(color=color)
+    def createBrush(self, colour: str = '') -> MapBrush:
+        return MapBrush(colour=colour)
     def copyBrush(self, other: MapBrush) -> MapBrush:
         return MapPath(other=other)
 
     def createPen(
             self,
-            color: str = '',
+            colour: str = '',
             width: float = 1,
             style: cartographer.LineStyle = cartographer.LineStyle.Solid,
             pattern: typing.Optional[typing.Sequence[float]] = None,
             tip: cartographer.PenTip = cartographer.PenTip.Flat
             ) -> MapPen:
-        return MapPen(color=color, width=width, style=style, pattern=pattern, tip=tip)
+        return MapPen(colour=colour, width=width, style=style, pattern=pattern, tip=tip)
     def copyPen(self, other: MapPen) -> MapPen:
         return MapPen(other=other)
 

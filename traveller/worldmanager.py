@@ -1075,7 +1075,7 @@ class WorldManager(object):
                                     width = defaultWidth
                                 break
 
-                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
                         logging.debug(f'Ignoring invalid colour for border {rawRoute.fileIndex()} in sector {sectorName}')
                         colour = None
 
@@ -1133,7 +1133,7 @@ class WorldManager(object):
                                     style = defaultStyle
                                 break
 
-                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
                         logging.debug(f'Ignoring invalid colour for border {rawBorder.fileIndex()} in sector {sectorName}')
                         colour = None
 
@@ -1192,7 +1192,7 @@ class WorldManager(object):
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
                     colour = rawRegion.colour()
-                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
                         logging.debug(f'Ignoring invalid colour for region {rawRegion.fileIndex()} in sector {sectorName}')
                         colour = None
 
@@ -1228,7 +1228,7 @@ class WorldManager(object):
                         text = WorldManager._LineWrapPattern.sub('\n', text)
 
                     colour = rawLabel.colour()
-                    if colour and not travellermap.validateHtmlColor(htmlColor=colour):
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
                         logging.debug(f'Ignoring invalid colour for label {rawLabel.fileIndex()} in sector {sectorName}')
                         colour = None
 

@@ -36,7 +36,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 #   basically the same overloading as traveller map where it uses
 #   world coordinates
 # TODO: Menu option to enable/disable move animations
-# TODO: Fix colour vs color
 # TODO: Full screen mode
 # TODO: Custom sector import
 # - Until I drop the web map widget I need to have it generate the map images
@@ -394,9 +393,9 @@ class _HexHighlightOverlay(_MapOverlay):
             colour: str,
             radius: float
             ) -> typing.Union[QtGui.QPen, QtGui.QBrush]:
-        colour = QtGui.QColor(cartographer.makeAlphaColor(
+        colour = QtGui.QColor(cartographer.makeAlphaColour(
             alpha=_HexHighlightOverlay._HighlightAlpha,
-            color=colour,
+            colour=colour,
             isNormalised=True))
 
         if type is gui.MapPrimitiveType.Circle:
@@ -446,17 +445,17 @@ class _HexBorderOverlay(_MapOverlay):
         self._pen = self._brush = None
         if lineColour:
             self._pen = QtGui.QPen(
-                QtGui.QColor(cartographer.makeAlphaColor(
+                QtGui.QColor(cartographer.makeAlphaColour(
                     alpha=_HexBorderOverlay._HighlightAlpha,
-                    color=lineColour,
+                    colour=lineColour,
                     isNormalised=True)),
                 0) # Line width set at draw time as it's dependent on scale
             self._lineWidth = lineWidth
         if fillColour:
             self._brush = QtGui.QBrush(
-                QtGui.QColor(cartographer.makeAlphaColor(
+                QtGui.QColor(cartographer.makeAlphaColour(
                     alpha=_HexBorderOverlay._HighlightAlpha,
-                    color=fillColour,
+                    colour=fillColour,
                     isNormalised=True)))
 
     def draw(
@@ -605,9 +604,9 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _MainsOverlay(_MapOverlay):
-    _SmallMainColour = travellermap.HtmlColors.Pink
+    _SmallMainColour = travellermap.HtmlColours.Pink
     _MediumMainColour = '#FFCC00'
-    _LargeMainColour = travellermap.HtmlColors.Cyan
+    _LargeMainColour = travellermap.HtmlColours.Cyan
     _MainAlpha = 0.25
     _PointSize = 1.15
 
@@ -636,8 +635,8 @@ class _MainsOverlay(_MapOverlay):
             colour = _MainsOverlay._LargeMainColour
 
         self._pen = QtGui.QPen(
-            QtGui.QColor(cartographer.makeAlphaColor(
-                color=colour,
+            QtGui.QColor(cartographer.makeAlphaColour(
+                colour=colour,
                 alpha=_MainsOverlay._MainAlpha,
                 isNormalised=True)),
             _MainsOverlay._PointSize,
@@ -823,14 +822,14 @@ class LocalMapWidget(QtWidgets.QWidget):
             LocalMapWidget._DirectionTextFontSize)
         self._directionTextFont.setBold(True)
         self._directionTextPen = QtGui.QPen(
-            QtGui.QColor(travellermap.HtmlColors.TravellerRed),
+            QtGui.QColor(travellermap.HtmlColours.TravellerRed),
             0)
 
         self._scaleFont = QtGui.QFont(
             LocalMapWidget._ScaleTextFontFamily,
             LocalMapWidget._ScaleTextFontSize)
         self._scalePen = QtGui.QPen(
-            QtGui.QColor(travellermap.HtmlColors.Black), # Colour will be updated when drawn
+            QtGui.QColor(travellermap.HtmlColours.Black), # Colour will be updated when drawn
             LocalMapWidget._ScaleLineWidth,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.FlatCap)
@@ -1437,9 +1436,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         labelRect = fontMetrics.tightBoundingRect(label)
 
         self._scalePen.setColor(QtGui.QColor(
-            travellermap.HtmlColors.White
+            travellermap.HtmlColours.White
             if travellermap.isDarkStyle(self._renderer.style()) else
-            travellermap.HtmlColors.Black))
+            travellermap.HtmlColours.Black))
 
         with gui.PainterStateGuard(painter):
             painter.setPen(self._scalePen)

@@ -25,23 +25,23 @@ class StyleCache(object):
             match = StyleCache._BorderPattern.match(group)
             if match:
                 key = match.group(1)
-                color = properties.get('color')
+                colour = properties.get('color')
                 style = properties.get('style')
                 if style:
                     style = StyleCache._StyleMap.get(style.lower())
-                self._borderStyles[key] = (color, style)
+                self._borderStyles[key] = (colour, style)
 
             match = StyleCache._RoutePattern.match(group)
             if match:
                 key = match.group(1)
-                color = properties.get('color')
+                colour = properties.get('color')
                 style = properties.get('style')
                 if style:
                     style = StyleCache._StyleMap.get(style.lower())
                 width = properties.get('width')
                 if width:
                     width = float(width)
-                self._routeStyles[key] = (color, style, width)
+                self._routeStyles[key] = (colour, style, width)
 
     def borderStyle(self, key: str) -> typing.Tuple[
             typing.Optional[str], # Colour
