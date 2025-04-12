@@ -42,6 +42,7 @@ class Config(object):
     _MapStyleKeyName = 'TravellerMap/MapStyle'
     _MapSourceTypeKeyName = 'TravellerMap/MapSourceType'
     _MapRenderingTypeKeyName = 'TravellerMap/MapRenderingType'
+    _MapAnimationsKeyName = 'TravellerMap/MapAnimations'
 
     _ProxyEnabledKeyName = 'Proxy/Enabled'
     _ProxyPortKeyName = 'Proxy/Port'
@@ -253,6 +254,14 @@ class Config(object):
     def setMapRenderingType(self, type: MapRenderingType) -> None:
         self._mapRenderingType = type
         self._settings.setValue(Config._MapRenderingTypeKeyName, type.name)
+        return False # No restart required
+
+    def mapAnimations(self) -> bool:
+        return self._mapAnimations
+
+    def setMapAnimations(self, enabled: bool) -> bool:
+        self._mapAnimations = enabled
+        self._settings.setValue(Config._MapAnimationsKeyName, enabled)
         return False # No restart required
 
     def proxyPort(self) -> int:
@@ -1168,6 +1177,10 @@ class Config(object):
             key=Config._MapRenderingTypeKeyName,
             default=MapRenderingType.Tiled,
             members=MapRenderingType.__members__)
+
+        self._mapAnimations = self._loadBoolSetting(
+            key=Config._MapAnimationsKeyName,
+            default=True)
 
         self._proxyPort = self._loadIntSetting(
             key=Config._ProxyPortKeyName,

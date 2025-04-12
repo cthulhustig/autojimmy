@@ -917,6 +917,9 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         center = QtCore.QPointF(*hex.absoluteCenter())
 
+        if not skipAnimation and not app.Config.instance().mapAnimations():
+            skipAnimation = True
+
         if skipAnimation or self.isHidden(): # Don't animate when hidden
             self._absoluteCenterPos = center
 
@@ -968,6 +971,9 @@ class LocalMapWidget(QtWidgets.QWidget):
                 travellermap.linearScaleToLogScale(self.height() / height)),
             minValue=LocalMapWidget._MinScale,
             maxValue=LocalMapWidget._MaxScale)
+
+        if not skipAnimation and not app.Config.instance().mapAnimations():
+            skipAnimation = True
 
         if skipAnimation or self.isHidden(): # Don't animate when hidden
             self._absoluteCenterPos = center
