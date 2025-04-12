@@ -35,7 +35,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 #   pair that represents a hex elsewhere in the code. I think this is
 #   basically the same overloading as traveller map where it uses
 #   world coordinates
-# TODO: Animated move to new location
+# TODO: Menu option to enable/disable move animations
 # TODO: Fix colour vs color
 # TODO: Custom sector import
 # - Until I drop the web map widget I need to have it generate the map images
@@ -1685,162 +1685,59 @@ class LocalMapWidget(QtWidgets.QWidget):
         offsetX = (absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX
         offsetY = (absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY
 
-        cursorPos = self.mapFromGlobal(QtGui.QCursor.pos())
-        isCursorOverWindow = cursorPos.x() >= 0 and cursorPos.x() < self.width() and \
-            cursorPos.y() >= 0 and cursorPos.y() < self.height()
-        if isCursorOverWindow:
-            # If the cursor is over the window, fan out from the cursor
-            # position when generating tiles
-            absoluteOrigin = self._pixelSpaceToWorldSpace(cursorPos)
-        else:
-            # If the cursor is not over the window, fan out from the
-            # center of the view when generating tiles
-            absoluteOrigin = self._absoluteCenterPos
-        centerTileX = math.floor(absoluteOrigin.x() / absoluteTileWidth)
-        centerTileY = math.floor(absoluteOrigin.y() / absoluteTileHeight)
-
-        self._tileRenderTimer.stop()
-        self._tileRenderQueue.clear()
-
         tiles = []
-        image = self._lookupTile(
-            tileX=centerTileX,
-            tileY=centerTileY,
-            tileScale=tileScale,
-            createMissing=createMissing)
-        renderRect = QtCore.QRectF(
-            ((centerTileX - leftTile) * tileSize) - offsetX,
-            ((centerTileY - topTile) * tileSize) - offsetY,
-            tileSize,
-            tileSize)
-        if image:
-            tiles.append((image, renderRect, None))
-        else:
-            placeholders = self._gatherPlaceholderTiles(
-                currentScale=tileScale,
-                tileRect=renderRect)
-            if placeholders:
-                tiles.extend(placeholders)
-
-        minTileX = centerTileX - 1
-        maxTileX = centerTileX + 1
-        minTileY = centerTileY - 1
-        maxTileY = centerTileY + 1
-        while minTileX >= leftTile or maxTileX <= rightTile or minTileY >= topTile or maxTileY <= bottomTile:
-            if minTileY >= topTile:
-                for x in range(max(minTileX, leftTile), min(maxTileX, rightTile + 1)):
-                    image = self._lookupTile(
-                        tileX=x,
-                        tileY=minTileY,
-                        tileScale=tileScale,
-                        createMissing=createMissing)
-                    renderRect = QtCore.QRectF(
-                        ((x - leftTile) * tileSize) - offsetX,
-                        ((minTileY - topTile) * tileSize) - offsetY,
-                        tileSize,
-                        tileSize)
-                    if image:
-                        tiles.append((image, renderRect, None))
-                    else:
-                        placeholders = self._gatherPlaceholderTiles(
-                            currentScale=tileScale,
-                            tileRect=renderRect)
-                        if placeholders:
-                            tiles.extend(placeholders)
-
-            if maxTileX <= rightTile:
-                for y in range(max(minTileY, topTile), min(maxTileY, bottomTile + 1)):
-                    image = self._lookupTile(
-                        tileX=maxTileX,
-                        tileY=y,
-                        tileScale=tileScale,
-                        createMissing=createMissing)
-                    renderRect = QtCore.QRectF(
-                        ((maxTileX - leftTile) * tileSize) - offsetX,
-                        ((y - topTile) * tileSize) - offsetY,
-                        tileSize,
-                        tileSize)
-                    if image:
-                        tiles.append((image, renderRect, None))
-                    else:
-                        placeholders = self._gatherPlaceholderTiles(
-                            currentScale=tileScale,
-                            tileRect=renderRect)
-                        if placeholders:
-                            tiles.extend(placeholders)
-
-            if maxTileY <= bottomTile:
-                for x in range(min(maxTileX, rightTile), max(minTileX, leftTile - 1), -1):
-                    image = self._lookupTile(
-                        tileX=x,
-                        tileY=maxTileY,
-                        tileScale=tileScale,
-                        createMissing=createMissing)
-                    renderRect = QtCore.QRectF(
-                        ((x - leftTile) * tileSize) - offsetX,
-                        ((maxTileY - topTile) * tileSize) - offsetY,
-                        tileSize,
-                        tileSize)
-                    if image:
-                        tiles.append((image, renderRect, None))
-                    else:
-                        placeholders = self._gatherPlaceholderTiles(
-                            currentScale=tileScale,
-                            tileRect=renderRect)
-                        if placeholders:
-                            tiles.extend(placeholders)
-
-            if minTileX >= leftTile:
-                for y in range(min(maxTileY, bottomTile), max(minTileY, topTile - 1), -1):
-                    image = self._lookupTile(
-                        tileX=minTileX,
-                        tileY=y,
-                        tileScale=tileScale,
-                        createMissing=createMissing)
-                    renderRect = QtCore.QRectF(
-                        ((minTileX - leftTile) * tileSize) - offsetX,
-                        ((y - topTile) * tileSize) - offsetY,
-                        tileSize,
-                        tileSize)
-                    if image:
-                        tiles.append((image, renderRect, None))
-                    else:
-                        placeholders = self._gatherPlaceholderTiles(
-                            currentScale=tileScale,
-                            tileRect=renderRect)
-                        if placeholders:
-                            tiles.extend(placeholders)
-
-            minTileX -= 1
-            maxTileX += 1
-            minTileY -= 1
-            maxTileY += 1
+        for x in range(leftTile, rightTile + 1):
+            for y in range(topTile, bottomTile + 1):
+                image = self._lookupTile(
+                    tileX=x,
+                    tileY=y,
+                    tileScale=tileScale,
+                    createMissing=createMissing)
+                renderRect = QtCore.QRectF(
+                    ((x - leftTile) * tileSize) - offsetX,
+                    ((y - topTile) * tileSize) - offsetY,
+                    tileSize,
+                    tileSize)
+                if image:
+                    tiles.append((image, renderRect, None))
+                else:
+                    placeholders = self._gatherPlaceholderTiles(
+                        currentScale=tileScale,
+                        tileRect=renderRect)
+                    if placeholders:
+                        tiles.extend(placeholders)
 
         if self._tileRenderQueue:
             self._optimiseTileQueue()
 
         return tiles
 
-    # If there are tiles needing rendered and the user is currently panning the
-    # view, sort the tiles so that the ones in the direction of movement will
-    # be rendered first
     def _optimiseTileQueue(self) -> None:
-        if self._keyboardMovementTracker.isIdle():
-            return # Sorting only make sense when panning
+        targetWorld = self._absoluteCenterPos
 
-        dirX, dirY = self._keyboardMovementTracker.direction()
-        if not dirX and not dirY:
-            return # Sorting only make sense when panning
+        if not self._keyboardMovementTracker.isIdle():
+            # If there are tiles needing rendered and the user is currently
+            # panning the view, sort the tiles so that the ones in the direction
+            # of movement will be rendered first
+            dirX, dirY = self._keyboardMovementTracker.direction()
+            if dirX or dirY:
+                viewPixelWidth = self.width()
+                viewHalfPixelWidth = viewPixelWidth / 2
+                viewPixelHeight = self.height()
+                viewHalfPixelHeight = viewPixelHeight / 2
 
-        viewPixelWidth = self.width()
-        viewHalfPixelWidth = viewPixelWidth / 2
-        viewPixelHeight = self.height()
-        viewHalfPixelHeight = viewPixelHeight / 2
-
-        targetPixel = QtCore.QPointF(
-            viewHalfPixelWidth + (dirX * viewHalfPixelWidth),
-            viewHalfPixelHeight + (dirY * viewHalfPixelHeight))
-        targetWorld = self._pixelSpaceToWorldSpace(targetPixel)
+                targetPixel = QtCore.QPointF(
+                    viewHalfPixelWidth + (dirX * viewHalfPixelWidth),
+                    viewHalfPixelHeight + (dirY * viewHalfPixelHeight))
+                targetWorld = self._pixelSpaceToWorldSpace(targetPixel)
+        else:
+            cursorPos = self.mapFromGlobal(QtGui.QCursor.pos())
+            isCursorOverWindow = cursorPos.x() >= 0 and cursorPos.x() < self.width() and \
+                cursorPos.y() >= 0 and cursorPos.y() < self.height()
+            if isCursorOverWindow:
+                # If the cursor is over the window, fan out from the cursor
+                # position when generating tiles
+                targetWorld = self._pixelSpaceToWorldSpace(cursorPos)
 
         tileScale = int(math.floor(self._viewScale.log + 0.5))
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
@@ -1850,6 +1747,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         targetTileX = int(math.floor(targetWorld.x() / tileWorldWidth))
         targetTileY = int(math.floor(targetWorld.y() / tileWorldHeight))
 
+        # Sort tiles by the square of the distance between them in tile space.
+        # The square of the distance is used for speed as we don't need exact
+        # distance, just distance relative to other tiles being compared.
         # NOTE: There is a massive assumption here that the tiles to be rendered
         # are all the same scale as the tile scale used when calculating the
         # target tile.
