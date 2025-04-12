@@ -659,6 +659,61 @@ class _MainsOverlay(_MapOverlay):
 
         return True # Something was drawn
 
+class _MoveKeyTracker(object):
+    _LeftKeys = [
+        QtCore.Qt.Key.Key_Left,
+        QtCore.Qt.Key.Key_J]
+    _RightKeys = [
+        QtCore.Qt.Key.Key_Right,
+        QtCore.Qt.Key.Key_L]
+    _UpKeys =[
+        QtCore.Qt.Key.Key_Up,
+        QtCore.Qt.Key.Key_I]
+    _DownKeys =[
+        QtCore.Qt.Key.Key_Down,
+        QtCore.Qt.Key.Key_K]
+    _TrackedKeys = set(_LeftKeys + _RightKeys + _UpKeys + _DownKeys)
+
+    def __init__(self) -> None:
+        self._trackedKeys: typing.Set[QtCore.Qt.Key] = set()
+
+    def direction(self) -> typing.Tuple[int, int]:
+        x = y = 0
+
+        if any(key in _MoveKeyTracker._LeftKeys for key in self._trackedKeys):
+            x -= 1
+        if any(key in _MoveKeyTracker._RightKeys for key in self._trackedKeys):
+            x += 1
+        if any(key in _MoveKeyTracker._UpKeys for key in self._trackedKeys):
+            y -= 1
+        if any(key in _MoveKeyTracker._DownKeys for key in self._trackedKeys):
+            y += 1
+
+        return (x, y)
+
+    def keyDown(self, event: QtGui.QKeyEvent) -> bool:
+        key = event.key()
+        if key in _MoveKeyTracker._TrackedKeys:
+            if not event.isAutoRepeat():
+                self._trackedKeys.add(key)
+            return True
+        return False
+
+    def keyUp(self, event: QtGui.QKeyEvent) -> bool:
+        key = event.key()
+        if key in _MoveKeyTracker._TrackedKeys:
+            if not event.isAutoRepeat():
+                if key in self._trackedKeys:
+                    self._trackedKeys.remove(key)
+            return True
+        return False
+
+    def isIdle(self) -> bool:
+        return len(self._trackedKeys) == 0
+
+    def clear(self) -> None:
+        self._trackedKeys.clear()
+
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -672,22 +727,12 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     _WheelZoomDelta = 0.15
     _KeyboardZoomDelta = 0.5
-    _KeyboardMoveDelta = 30 # Pixels
+    _KeyboardMoveDelta = 40 # Pixels
 
     # NOTE: The delay between keyboard movement updates can't be to low or it
     # causes the tile rendering queue to stall and you just end up scrolling
     # over background checkerboard
-    _KeyboardMovementTimerMs = 60
-    _TrackedMovementKeys = set([
-        QtCore.Qt.Key.Key_Left,
-        QtCore.Qt.Key.Key_Right,
-        QtCore.Qt.Key.Key_Up,
-        QtCore.Qt.Key.Key_Down,
-        # These are alternate keys that Traveller Map allows for movement
-        QtCore.Qt.Key.Key_I,
-        QtCore.Qt.Key.Key_J,
-        QtCore.Qt.Key.Key_K,
-        QtCore.Qt.Key.Key_L])
+    _KeyboardMovementTimerMs = 30
 
     # TODO: This needs to be more adaptive, it feels to slow when only
     # moving small distances but feels about right for large ones
@@ -841,7 +886,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         # down. Movement is then processed on a timer. This is done to
         # give smoother movement and allows things like diagonal movement
         # by holding down multiple keys at once
-        self._trackedMoveKeys: typing.Set[QtCore.Qt.Key] = set()
+        self._keyboardMovementTracker = _MoveKeyTracker()
         self._keyboardMovementTimer = QtCore.QTimer()
         self._keyboardMovementTimer.setInterval(LocalMapWidget._KeyboardMovementTimerMs)
         self._keyboardMovementTimer.setSingleShot(False)
@@ -1179,7 +1224,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
         self._worldDragAnchor = self._pixelDragStart = None
-        self._trackedMoveKeys.clear()
+        self._keyboardMovementTracker.clear()
         self._keyboardMovementTimer.stop()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
@@ -1192,11 +1237,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         if not self.isEnabled():
             return
 
-        if event.key() in LocalMapWidget._TrackedMovementKeys:
-            if not event.isAutoRepeat():
-                self._trackedMoveKeys.add(event.key())
-                if not self._keyboardMovementTimer.isActive():
-                    self._keyboardMovementTimer.start()
+        if self._keyboardMovementTracker.keyDown(event):
+            if not self._keyboardMovementTimer.isActive():
+                self._keyboardMovementTimer.start()
         elif event.key() == QtCore.Qt.Key.Key_Z:
             self._zoomView(
                 step=LocalMapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyboardZoomDelta)
@@ -1208,9 +1251,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     def keyReleaseEvent(self, event: QtGui.QKeyEvent):
         super().keyReleaseEvent(event)
 
-        if not event.isAutoRepeat() and event.key() in self._trackedMoveKeys:
-            self._trackedMoveKeys.remove(event.key())
-            if not self._trackedMoveKeys:
+        if self._keyboardMovementTracker.keyUp(event):
+            if self._keyboardMovementTracker.isIdle():
                 self._keyboardMovementTimer.stop()
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
@@ -1608,15 +1650,6 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._handleViewUpdate()
 
-    # TODO: If there are there are keyboard move keys currently held down this should
-    # order tiles so ones in the direction being moved are prioritised
-    # - Might be able to do a simple(ish) sort if I take a target point to be the
-    #   current absolute point that we're roughly moving towards (corner of current
-    #   view if moving diagonally or center of edge if moving along a single axis).
-    #   I can then sort the tile queue by the distance between the target point and
-    #   the center of the tile. It doesn't have to be that accurate, just needs basic
-    #   prioritisation of tiles in that general direction over ones in the direction
-    #   we're moving away from
     def _currentDrawTiles(
             self,
             createMissing: bool = False
@@ -1783,7 +1816,65 @@ class LocalMapWidget(QtWidgets.QWidget):
             minTileY -= 1
             maxTileY += 1
 
+        if self._tileRenderQueue:
+            self._optimiseTileQueue()
+
         return tiles
+
+    # If there are tiles needing rendered and the user is currently panning the
+    # view, sort the tiles so that the ones in the direction of movement will
+    # be rendered first
+    def _optimiseTileQueue(self) -> None:
+        if self._keyboardMovementTracker.isIdle():
+            return # Sorting only make sense when panning
+
+        dirX, dirY = self._keyboardMovementTracker.direction()
+        if not dirX and not dirY:
+            return # Sorting only make sense when panning
+
+        viewPixelWidth = self.width()
+        viewHalfPixelWidth = viewPixelWidth / 2
+        viewPixelHeight = self.height()
+        viewHalfPixelHeight = viewPixelHeight / 2
+
+        targetPixel = QtCore.QPointF(
+            viewHalfPixelWidth + (dirX * viewHalfPixelWidth),
+            viewHalfPixelHeight + (dirY * viewHalfPixelHeight))
+        targetWorld = self._pixelSpaceToWorldSpace(targetPixel)
+
+        tileScale = int(math.floor(self._viewScale.log + 0.5))
+        tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
+        tilePixelSize = LocalMapWidget._TileSize * tileMultiplier
+        tileWorldWidth = tilePixelSize / (self._viewScale.linear * travellermap.ParsecScaleX)
+        tileWorldHeight = tilePixelSize / (self._viewScale.linear * travellermap.ParsecScaleY)
+        targetTileX = int(math.floor(targetWorld.x() / tileWorldWidth))
+        targetTileY = int(math.floor(targetWorld.y() / tileWorldHeight))
+
+        # NOTE: There is a massive assumption here that the tiles to be rendered
+        # are all the same scale as the tile scale used when calculating the
+        # target tile.
+        self._tileRenderQueue.sort(
+            key=lambda tile: ((targetTileX - tile[0]) ** 2) + ((targetTileY - tile[1]) ** 2))
+
+    def _tileSortFunction(
+            self,
+            tileX,
+            tileY,
+            tileScale,
+            worldTarget: QtCore.QPointF
+            ) -> float:
+        tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
+        tileSize = LocalMapWidget._TileSize * tileMultiplier
+
+        pixelTileCenter = QtCore.QPointF(
+            (tileX * tileSize) + (tileSize / 2),
+            (tileY * tileSize) + (tileSize / 2))
+        worldTileCenter = self._pixelSpaceToWorldSpace(pixelTileCenter)
+
+        distance = math.hypot(
+            worldTarget.x() - worldTileCenter.x(),
+            worldTarget.y() - worldTileCenter.y())
+        return distance
 
     def _loadLookaheadTiles(self) -> None:
         # This method of rounding the scale is intended to match how it would
@@ -2044,24 +2135,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self.update()
 
     def _handleKeyboardMovementTimer(self) -> None:
-        deltaX = deltaY = 0
-
-        if QtCore.Qt.Key.Key_Left in self._trackedMoveKeys or \
-            QtCore.Qt.Key.Key_J in self._trackedMoveKeys:
-            deltaX -= 1
-
-        if QtCore.Qt.Key.Key_Right in self._trackedMoveKeys or \
-            QtCore.Qt.Key.Key_L in self._trackedMoveKeys:
-            deltaX += 1
-
-        if QtCore.Qt.Key.Key_Up in self._trackedMoveKeys or \
-            QtCore.Qt.Key.Key_I in self._trackedMoveKeys:
-            deltaY -= 1
-
-        if QtCore.Qt.Key.Key_Down in self._trackedMoveKeys or \
-            QtCore.Qt.Key.Key_K in self._trackedMoveKeys:
-            deltaY += 1
-
+        deltaX, deltaY = self._keyboardMovementTracker.direction()
         if deltaX or deltaY:
             # Normalize the delta and translate it to absolute space
             length = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
