@@ -37,6 +37,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 #   world coordinates
 # TODO: Menu option to enable/disable move animations
 # TODO: Fix colour vs color
+# TODO: Full screen mode
 # TODO: Custom sector import
 # - Until I drop the web map widget I need to have it generate the map images
 # in case the user changes the rendering type
