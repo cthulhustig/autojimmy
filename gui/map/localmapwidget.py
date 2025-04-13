@@ -657,19 +657,19 @@ class _MainsOverlay(_MapOverlay):
 class _MoveKeyTracker(object):
     _LeftKeys = [
         QtCore.Qt.Key.Key_Left,
-        QtCore.Qt.Key.Key_J,
+        QtCore.Qt.Key.Key_J, # Taken from Traveller Map
         QtCore.Qt.Key.Key_A]
     _RightKeys = [
         QtCore.Qt.Key.Key_Right,
-        QtCore.Qt.Key.Key_L,
+        QtCore.Qt.Key.Key_L, # Taken from Traveller Map
         QtCore.Qt.Key.Key_D]
     _UpKeys =[
         QtCore.Qt.Key.Key_Up,
-        QtCore.Qt.Key.Key_I,
+        QtCore.Qt.Key.Key_I, # Taken from Traveller Map
         QtCore.Qt.Key.Key_W]
     _DownKeys =[
         QtCore.Qt.Key.Key_Down,
-        QtCore.Qt.Key.Key_K,
+        QtCore.Qt.Key.Key_K, # Taken from Traveller Map
         QtCore.Qt.Key.Key_S]
     _TrackedKeys = set(_LeftKeys + _RightKeys + _UpKeys + _DownKeys)
 
