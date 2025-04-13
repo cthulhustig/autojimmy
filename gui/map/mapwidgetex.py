@@ -1296,6 +1296,10 @@ class MapWidgetEx(QtWidgets.QWidget):
                 if self._fullScreenButton.isChecked():
                     self._fullScreenButton.setChecked(False)
                 return # Swallow event
+            elif event.key() == QtCore.Qt.Key.Key_C:
+                hex = self._searchWidget.currentHex()
+                if hex:
+                    self.centerOnHex(hex=hex)
             elif event.key() == QtCore.Qt.Key.Key_H: # Copied from Traveller Map
                 self._gotoHome()
                 return # Swallow event

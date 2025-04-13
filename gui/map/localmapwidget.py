@@ -43,10 +43,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 #   - Ideally I would force the welcome message to be displayed again if the user has hidden it (new _V2 key????)
 # - Add something to the create dialog that makes it clear the options selected there only apply if using the proxy
 #   - I still need to have them enabled when local rendering is selected so the user can change them if they want
-# TODO: The current split between the traveller/travellermap directories probably makes less sense now
-# - I suspect I want to move traveller bellow travellermap and move a some stuff out of traveller
-#   map and into either traveller or cartographer
-# - This probably doesn't need done for the first release
+
 
 class _MapOverlay(object):
     def __init__(self):
@@ -660,16 +657,20 @@ class _MainsOverlay(_MapOverlay):
 class _MoveKeyTracker(object):
     _LeftKeys = [
         QtCore.Qt.Key.Key_Left,
-        QtCore.Qt.Key.Key_J]
+        QtCore.Qt.Key.Key_J,
+        QtCore.Qt.Key.Key_A]
     _RightKeys = [
         QtCore.Qt.Key.Key_Right,
-        QtCore.Qt.Key.Key_L]
+        QtCore.Qt.Key.Key_L,
+        QtCore.Qt.Key.Key_D]
     _UpKeys =[
         QtCore.Qt.Key.Key_Up,
-        QtCore.Qt.Key.Key_I]
+        QtCore.Qt.Key.Key_I,
+        QtCore.Qt.Key.Key_W]
     _DownKeys =[
         QtCore.Qt.Key.Key_Down,
-        QtCore.Qt.Key.Key_K]
+        QtCore.Qt.Key.Key_K,
+        QtCore.Qt.Key.Key_S]
     _TrackedKeys = set(_LeftKeys + _RightKeys + _UpKeys + _DownKeys)
 
     def __init__(self) -> None:
