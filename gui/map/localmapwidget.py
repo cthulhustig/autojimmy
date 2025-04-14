@@ -2137,7 +2137,11 @@ class LocalMapWidget(QtWidgets.QWidget):
         deltaY = newViewCenter.y() - self._absoluteCenterPos.y()
         xyDistance = math.sqrt(
             (deltaX * deltaX) + (deltaY * deltaY))
-        xyThreshold = travellermap.SectorHeight * 64 / self._viewScale.linear
+        # Traveller Map uses a value of 64 for the multiplier but I've
+        # increased it to 256 so it will animate over a larger transition
+        # as drawing tiles is "cheaper" with my implementation
+        xyThreshold = travellermap.SectorHeight * 256 / self._viewScale.linear
+        print(f'{xyDistance} < {xyThreshold}')
         return xyDistance < xyThreshold
 
     def _animateViewTransition(
