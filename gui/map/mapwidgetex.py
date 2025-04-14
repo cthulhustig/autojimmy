@@ -977,21 +977,21 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hex: travellermap.HexPosition,
             linearScale: typing.Optional[float] = 64, # None keeps current scale
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
             linearScale=linearScale,
-            skipAnimation=skipAnimation)
+            immediate=immediate)
 
     def centerOnHexes(
             self,
             hexes: typing.Collection[travellermap.HexPosition],
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHexes(
             hexes=hexes,
-            skipAnimation=skipAnimation)
+            immediate=immediate)
 
     def hasJumpRoute(self) -> bool:
         return self._mapWidget.hasJumpRoute()
@@ -1010,9 +1010,9 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def centerOnJumpRoute(
             self,
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
-        self._mapWidget.centerOnJumpRoute(skipAnimation=skipAnimation)
+        self._mapWidget.centerOnJumpRoute(immediate=immediate)
 
     def highlightHex(
             self,

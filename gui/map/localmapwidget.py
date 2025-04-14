@@ -713,16 +713,72 @@ class _MoveKeyTracker(object):
     def clear(self) -> None:
         self._trackedKeys.clear()
 
+class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
+    def __init__(
+            self,
+            normAccelPeriod: float = 0, # Normalised to duration of animation
+            normDecelPeriod: float = 0 # Normalised to duration of animation
+            ) -> None:
+        super().__init__()
+        self._normAccelPeriod = normAccelPeriod
+        self._normDecelPeriod = normDecelPeriod
+        self.setCustomType(self.extrapolate)
+
+    def setPeriods(
+            self,
+            normAccelPeriod: float, # Normalised to duration of animation
+            normDecelPeriod: float # Normalised to duration of animation
+            ) -> None:
+        self._normAccelPeriod = normAccelPeriod
+        self._normDecelPeriod = normDecelPeriod
+
+    def extrapolate(self, normProgress: float) -> float: # Returns value is normalized
+        if not self._normAccelPeriod and not self._normDecelPeriod:
+            return normProgress
+        return self._travellerMapSmoothingFunction(
+            time=normProgress,
+            duration=1, # QEasingCurve uses normalised progress/time
+            accelPeriod=self._normAccelPeriod,
+            decelPeriod=self._normDecelPeriod)
+
+    # This is the same algorithm Traveller Map uses (smooth in map.js)
+    #
+    # Time smoothing function - input time is t within duration dur.
+    # Acceleration period is a, deceleration period is d.
+    #
+    # Example:     t_filtered = smooth( t, 1.0, 0.25, 0.25 );
+    #
+    # Reference:   http://www.w3.org/TR/2005/REC-SMIL2-20050107/smil-timemanip.html
+    @staticmethod
+    def _travellerMapSmoothingFunction(
+            time: float,
+            duration: float,
+            accelPeriod: float,
+            decelPeriod: float
+            ) -> float:
+        dacc = duration * accelPeriod
+        ddec = duration * decelPeriod
+        r = 1 / (1 - accelPeriod / 2 - decelPeriod / 2)
+
+        if time < dacc:
+            r_t = r * (time / dacc)
+            return time * r_t / 2
+        elif time <= (duration - ddec):
+            return r * (time - dacc / 2)
+        else:
+            tdec = time - (duration - ddec)
+            pd = tdec / ddec
+            return r * (duration - dacc / 2 - ddec + tdec * (2 - pd) / 2)
+
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
 
-    _MinScale = -5
-    _MaxScale = 10
+    _MinLogScale = -5
+    _MaxLogScale = 10
     _DefaultCenterX = 0
     _DefaultCenterY = 0
-    _DefaultScale = 64
-    _DefaultScale = travellermap.logScaleToLinearScale(7)
+    _DefaultLogScale = travellermap.linearScaleToLogScale(64)
 
     _WheelZoomDelta = 0.15
     _KeyboardZoomDelta = 0.5
@@ -733,9 +789,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     # over background checkerboard
     _KeyboardMovementTimerMs = 30
 
-    # TODO: This needs to be more adaptive, it feels to slow when only
-    # moving small distances but feels about right for large ones
-    _MoveAnimationTime = 1000
+    _MoveAnimationTimeMs = 1000
 
     _TileSize = 256 # Pixels
     _TileCacheSize = 1000 # Number of tiles
@@ -781,7 +835,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._absoluteCenterPos = QtCore.QPointF(
             LocalMapWidget._DefaultCenterX,
             LocalMapWidget._DefaultCenterY)
-        self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultScale, linear=True)
+        self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultLogScale, linear=False)
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
@@ -867,15 +921,24 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._toolTipCallback = None
 
+        # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
+        # objects for the entire app. I got this error after a bit when I
+        # was creating them dynamically
+        # ValueError: a maximum of 10 different easing functions are supported
+        self._viewCenterAnimationEasing = _MoveAnimationEasingCurve()
+        self._viewScaleAnimationEasing = _MoveAnimationEasingCurve()
+
         self._viewCenterAnimation = QtCore.QPropertyAnimation(
             self,
             b"_viewCenterAnimationProp")
-        self._viewCenterAnimation.setEasingCurve(QtCore.QEasingCurve.Type.Linear)
+        self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
+        self._viewCenterAnimation.setEasingCurve(self._viewCenterAnimationEasing)
 
         self._viewScaleAnimation = QtCore.QPropertyAnimation(
             self,
             b"_viewScaleAnimationProp")
-        self._viewScaleAnimation.setEasingCurve(QtCore.QEasingCurve.Type.Linear)
+        self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
+        self._viewScaleAnimation.setEasingCurve(self._viewScaleAnimationEasing)
 
         self._viewAnimationGroup = QtCore.QParallelAnimationGroup()
         self._viewAnimationGroup.addAnimation(self._viewCenterAnimation)
@@ -910,37 +973,34 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             hex: travellermap.HexPosition,
             linearScale: typing.Optional[float] = 64, # None keeps current scale
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         self._viewAnimationGroup.stop()
 
         center = QtCore.QPointF(*hex.absoluteCenter())
+        logScale = \
+            travellermap.linearScaleToLogScale(linearScale) \
+            if linearScale is not None else \
+            self._viewScale.log
 
-        if not skipAnimation and not app.Config.instance().mapAnimations():
-            skipAnimation = True
+        if not immediate:
+            immediate = not self._shouldAnimateViewTransition(
+                newViewCenter=center,
+                newViewLogScale=logScale)
 
-        if skipAnimation or self.isHidden(): # Don't animate when hidden
+        if immediate:
             self._absoluteCenterPos = center
-
-            if linearScale is not None:
-                self._viewScale.linear = linearScale
-
+            self._viewScale.log = logScale
             self._handleViewUpdate(forceAtomicRedraw=True)
         else:
-            logScale = \
-                travellermap.linearScaleToLogScale(linearScale) \
-                if linearScale is not None else \
-                self._viewScale.log
-
             self._animateViewTransition(
                 newViewCenter=center,
                 newViewLogScale=logScale)
 
-
     def centerOnHexes(
             self,
             hexes: typing.Collection[travellermap.HexPosition],
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         self._viewAnimationGroup.stop()
 
@@ -964,25 +1024,26 @@ class LocalMapWidget(QtWidgets.QWidget):
         center = QtCore.QPointF(
             left + (width / 2),
             top + (height / 2))
-        scale = common.clamp(
+        logScale = common.clamp(
             value=min(
                 travellermap.linearScaleToLogScale(self.width() / width),
                 travellermap.linearScaleToLogScale(self.height() / height)),
-            minValue=LocalMapWidget._MinScale,
-            maxValue=LocalMapWidget._MaxScale)
+            minValue=LocalMapWidget._MinLogScale,
+            maxValue=LocalMapWidget._MaxLogScale)
 
-        if not skipAnimation and not app.Config.instance().mapAnimations():
-            skipAnimation = True
+        if not immediate:
+            immediate = not self._shouldAnimateViewTransition(
+                newViewCenter=center,
+                newViewLogScale=logScale)
 
-        if skipAnimation or self.isHidden(): # Don't animate when hidden
+        if immediate:
             self._absoluteCenterPos = center
-            self._viewScale.log = scale
+            self._viewScale.log = logScale
             self._handleViewUpdate(forceAtomicRedraw=True)
         else:
             self._animateViewTransition(
                 newViewCenter=center,
-                newViewLogScale=scale)
-
+                newViewLogScale=logScale)
 
     def hasJumpRoute(self) -> bool:
         return self._jumpRoute is not None
@@ -1006,13 +1067,13 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def centerOnJumpRoute(
             self,
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         if not self._jumpRoute:
             return
         self.centerOnHexes(
             hexes=[nodeHex for nodeHex, _ in self._jumpRoute],
-            skipAnimation=skipAnimation)
+            immediate=immediate)
 
     def highlightHex(
             self,
@@ -1175,8 +1236,9 @@ class LocalMapWidget(QtWidgets.QWidget):
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         super().mousePressEvent(event)
 
-        if not self.isEnabled():
-            return
+        # The user is interacting with the view so stop any in progress
+        # transition animation or they will just end up fighting it
+        self._viewAnimationGroup.stop()
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self._pixelDragStart = event.pos()
@@ -1197,9 +1259,6 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseReleaseEvent(event)
-
-        if not self.isEnabled():
-            return
 
         leftRelease = event.button() == QtCore.Qt.MouseButton.LeftButton
         rightRelease = event.button() == QtCore.Qt.MouseButton.RightButton
@@ -1239,8 +1298,9 @@ class LocalMapWidget(QtWidgets.QWidget):
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(event)
 
-        if not self.isEnabled():
-            return
+        # The user is interacting with the view so stop any in progress
+        # transition animation or they will just end up fighting it
+        self._viewAnimationGroup.stop()
 
         if self._keyboardMovementTracker.keyDown(event):
             if not self._keyboardMovementTimer.isActive():
@@ -1640,7 +1700,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         logViewScale = self._viewScale.log
         logViewScale += step
-        logViewScale = common.clamp(logViewScale, LocalMapWidget._MinScale, LocalMapWidget._MaxScale)
+        logViewScale = common.clamp(logViewScale, LocalMapWidget._MinLogScale, LocalMapWidget._MaxLogScale)
         if logViewScale == self._viewScale.log:
             return # Reached min/max zoom
         self._viewScale.log = logViewScale
@@ -1907,7 +1967,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 QtCore.QRectF, # Render rect
                 typing.Optional[QtCore.QRectF]]]: # Clip rect
         placeholderScale = currentScale + (-1 if lookLower else 1)
-        if placeholderScale < LocalMapWidget._MinScale or placeholderScale > LocalMapWidget._MaxScale:
+        if placeholderScale < LocalMapWidget._MinLogScale or placeholderScale > LocalMapWidget._MaxLogScale:
             return[]
 
         tileMultiplier = math.pow(2, self._viewScale.log - placeholderScale)
@@ -2065,6 +2125,21 @@ class LocalMapWidget(QtWidgets.QWidget):
         fget=_animateViewCenterGetter,
         fset=_animateViewCenterSetter)
 
+    def _shouldAnimateViewTransition(
+            self,
+            newViewCenter: QtCore.QPointF,
+            newViewLogScale: float
+            ) -> bool:
+        if self.isHidden() or not app.Config.instance().mapAnimations():
+            return False
+
+        deltaX = newViewCenter.x() - self._absoluteCenterPos.x()
+        deltaY = newViewCenter.y() - self._absoluteCenterPos.y()
+        xyDistance = math.sqrt(
+            (deltaX * deltaX) + (deltaY * deltaY))
+        xyThreshold = travellermap.SectorHeight * 64 / self._viewScale.linear
+        return xyDistance < xyThreshold
+
     def _animateViewTransition(
             self,
             newViewCenter: QtCore.QPointF,
@@ -2072,11 +2147,26 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._viewCenterAnimation.setStartValue(self._absoluteCenterPos)
         self._viewCenterAnimation.setEndValue(newViewCenter)
-        self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTime)
+        if newViewLogScale == self._viewScale.log:
+            self._viewCenterAnimationEasing.setPeriods(
+                normAccelPeriod=0.25,
+                normDecelPeriod=0.25)
+        elif newViewLogScale < self._viewScale.log:
+            # Zooming out
+            self._viewCenterAnimationEasing.setPeriods(
+                normAccelPeriod=0.75,
+                normDecelPeriod=0)
+        else: # newViewLogScale > self._viewScale.log
+            # Zooming in
+            self._viewCenterAnimationEasing.setPeriods(
+                normAccelPeriod=0.05,
+                normDecelPeriod=0.75)
 
         self._viewScaleAnimation.setStartValue(self._viewScale.log)
         self._viewScaleAnimation.setEndValue(newViewLogScale)
-        self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTime)
+        self._viewScaleAnimationEasing.setPeriods(
+            normAccelPeriod=0.25,
+            normDecelPeriod=0.25)
 
         self._viewAnimationGroup.start()
 

@@ -115,7 +115,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._travellerMapWidget.selectHex(hex=hex)
                 self._travellerMapWidget.centerOnHex(
                     hex=hex,
-                    skipAnimation=self.isHidden())
+                    immediate=self.isHidden())
             else:
                 self._travellerMapWidget.clearSelectedHexes()
 

@@ -234,7 +234,7 @@ class WebMapWidget(QtWidgets.QWidget):
             linearScale: typing.Optional[float] = 64, # None keeps current scale
             # This class doesn't support skipping animations but it needs to take
             # the value for comparability with LocalMapWidget
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         if linearScale != None:
@@ -254,7 +254,7 @@ class WebMapWidget(QtWidgets.QWidget):
             hexes: typing.Collection[travellermap.HexPosition],
             # This class doesn't support skipping animations but it needs to take
             # the value for comparability with LocalMapWidget
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         if not hexes:
             return
@@ -263,7 +263,7 @@ class WebMapWidget(QtWidgets.QWidget):
             # zooming to far because the bounding box surrounding the worlds has no size
             self.centerOnHex(
                 hex=next(iter(hexes)),
-                skipAnimation=skipAnimation)
+                immediate=immediate)
             return
 
         minX = maxX = minY = maxY = None
@@ -331,7 +331,7 @@ class WebMapWidget(QtWidgets.QWidget):
             self,
             # This class doesn't support skipping animations but it needs to take
             # the value for comparability with LocalMapWidget
-            skipAnimation: bool = False
+            immediate: bool = False
             ) -> None:
         if not self._jumpRoute:
             return
@@ -339,7 +339,7 @@ class WebMapWidget(QtWidgets.QWidget):
         hexes = [nodeHex for nodeHex, _ in self._jumpRoute]
         self.centerOnHexes(
             hexes=hexes,
-            skipAnimation=skipAnimation)
+            immediate=immediate)
 
     def highlightHex(
             self,

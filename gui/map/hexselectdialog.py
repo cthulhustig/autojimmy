@@ -57,7 +57,7 @@ class HexSelectDialog(gui.DialogEx):
         if centerOnHex:
             self._mapWidget.centerOnHex(
                 hex=hex,
-                skipAnimation=self.isHidden())
+                immediate=self.isHidden())
 
     def deselectHex(
             self,
