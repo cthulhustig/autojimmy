@@ -64,8 +64,8 @@ class RenderContext(object):
     def __init__(
             self,
             graphics: cartographer.AbstractGraphics,
-            absoluteCenterX: float,
-            absoluteCenterY: float,
+            worldCenterX: float,
+            worldCenterY: float,
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
@@ -77,8 +77,8 @@ class RenderContext(object):
             styleCache: cartographer.StyleCache
             ) -> None:
         self._graphics = graphics
-        self._absoluteCenterX = absoluteCenterX
-        self._absoluteCenterY = absoluteCenterY
+        self._worldCenterX = worldCenterX
+        self._worldCenterY = worldCenterY
         self._scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
@@ -104,7 +104,7 @@ class RenderContext(object):
         self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
         self._selector = cartographer.RectSelector()
-        self._absoluteViewRect = None
+        self._worldViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
 
@@ -130,8 +130,8 @@ class RenderContext(object):
 
     def setView(
             self,
-            absoluteCenterX: float,
-            absoluteCenterY: float,
+            worldCenterX: float,
+            worldCenterY: float,
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
@@ -139,8 +139,8 @@ class RenderContext(object):
         scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
         scaleUpdated = scale != self._scale
 
-        self._absoluteCenterX = absoluteCenterX
-        self._absoluteCenterY = absoluteCenterY
+        self._worldCenterX = worldCenterX
+        self._worldCenterY = worldCenterY
         self._scale = scale
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
@@ -175,12 +175,6 @@ class RenderContext(object):
         self._updateLayerOrder()
 
     def render(self) -> None:
-        #mapX, mapY = travellermap.absoluteSpaceToMapSpace((self._absoluteCenterX, self._absoluteCenterY))
-        #logScale = travellermap.linearScaleToLogScale(self._scale)
-        #print(f'Center {self._absoluteCenterX} {self._absoluteCenterY}')
-        #print(f'Scale linear={self._scale} log={logScale}')
-        #print(f'{mapX}!{mapY}!{logScale}')
-
         with self._graphics.save():
             # Overall, rendering is all in world-space; individual steps may transform back
             # to image-space as needed.
@@ -242,28 +236,28 @@ class RenderContext(object):
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder.index(l.id))
 
     def _updateView(self):
-        absoluteWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
-        absoluteHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
-        viewAreaChanged = (self._absoluteViewRect is None) or \
-            (absoluteWidth != self._absoluteViewRect.width()) or \
-            (absoluteHeight != self._absoluteViewRect.height())
+        worldWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
+        worldHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
+        viewAreaChanged = (self._worldViewRect is None) or \
+            (worldWidth != self._worldViewRect.width()) or \
+            (worldHeight != self._worldViewRect.height())
 
-        self._absoluteViewRect = cartographer.RectangleF(
-            x=self._absoluteCenterX - (absoluteWidth / 2),
-            y=self._absoluteCenterY - (absoluteHeight / 2),
-            width=absoluteWidth,
-            height=absoluteHeight)
+        self._worldViewRect = cartographer.RectangleF(
+            x=self._worldCenterX - (worldWidth / 2),
+            y=self._worldCenterY - (worldHeight / 2),
+            width=worldWidth,
+            height=worldHeight)
 
-        # This needs to be done after _absoluteViewRect is calculated
-        self._selector.setRect(self._absoluteViewRect)
+        # This needs to be done after _worldViewRect is calculated
+        self._selector.setRect(self._worldViewRect)
 
         m = self._graphics.createIdentityMatrix()
         m.scalePrepend(
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
         m.translatePrepend(
-            dx=-self._absoluteViewRect.left(),
-            dy=-self._absoluteViewRect.top())
+            dx=-self._worldViewRect.left(),
+            dy=-self._worldViewRect.top())
         self._imageSpaceToWorldSpace = self._graphics.copyMatrix(other=m)
         m.invert()
         self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
@@ -271,8 +265,8 @@ class RenderContext(object):
         if self._styleSheet.parsecGrid.visible:
             if viewAreaChanged or not self._parsecGrid:
                 self._parsecGrid = self._gridCache.grid(
-                    parsecWidth=int(math.ceil(self._absoluteViewRect.width())),
-                    parsecHeight=int(math.ceil(self._absoluteViewRect.height())))
+                    parsecWidth=int(math.ceil(self._worldViewRect.width())),
+                    parsecHeight=int(math.ceil(self._worldViewRect.height())))
         else:
             self._parsecGrid = None
 
@@ -283,7 +277,7 @@ class RenderContext(object):
         # NOTE: This is a comment from the original Traveller Map source code
         # HACK: Due to limited precisions of floats, tileRect can end up not covering
         # the full bitmap when far from the origin.
-        rect = cartographer.RectangleF(self._absoluteViewRect)
+        rect = cartographer.RectangleF(self._worldViewRect)
         rect.inflate(rect.width() * 0.1, rect.height() * 0.1)
         self._graphics.drawRectangle(
             rect=rect,
@@ -320,10 +314,10 @@ class RenderContext(object):
         nebulaWidth = RenderContext._NebulaRenderWidth / (nebulaScale * travellermap.ParsecScaleX)
         nebulaHeight = RenderContext._NebulaRenderHeight / (nebulaScale * travellermap.ParsecScaleY)
 
-        nebulaLeft = (self._absoluteViewRect.left() // nebulaWidth) * nebulaWidth
-        nebulaTop = (self._absoluteViewRect.top() // nebulaHeight) * nebulaHeight
-        nebulaRight = ((self._absoluteViewRect.right() // nebulaWidth) + 1) * nebulaWidth
-        nebulaBottom = ((self._absoluteViewRect.bottom() // nebulaHeight) + 1) * nebulaHeight
+        nebulaLeft = (self._worldViewRect.left() // nebulaWidth) * nebulaWidth
+        nebulaTop = (self._worldViewRect.top() // nebulaHeight) * nebulaHeight
+        nebulaRight = ((self._worldViewRect.right() // nebulaWidth) + 1) * nebulaWidth
+        nebulaBottom = ((self._worldViewRect.bottom() // nebulaHeight) + 1) * nebulaHeight
 
         hCount = math.ceil((nebulaRight - nebulaLeft) / nebulaWidth)
         vCount = math.ceil((nebulaBottom - nebulaTop) / nebulaHeight)
@@ -344,7 +338,7 @@ class RenderContext(object):
             return
 
         if self._styleSheet.deepBackgroundOpacity > 0 and \
-            self._galaxyImageRect.intersects(self._absoluteViewRect):
+            self._galaxyImageRect.intersects(self._worldViewRect):
             galaxyImage = \
                 self._imageCache.galaxyImageGray \
                 if self._styleSheet.lightBackground else \
@@ -369,10 +363,10 @@ class RenderContext(object):
             return
 
         chunkParsecs = self._starfieldCache.chunkParsecs()
-        startX = math.floor(self._absoluteViewRect.left() / chunkParsecs)
-        startY = math.floor(self._absoluteViewRect.top() / chunkParsecs)
-        finishX = math.ceil(self._absoluteViewRect.right() / chunkParsecs)
-        finishY = math.ceil(self._absoluteViewRect.bottom() / chunkParsecs)
+        startX = math.floor(self._worldViewRect.left() / chunkParsecs)
+        startY = math.floor(self._worldViewRect.top() / chunkParsecs)
+        finishX = math.ceil(self._worldViewRect.right() / chunkParsecs)
+        finishY = math.ceil(self._worldViewRect.bottom() / chunkParsecs)
 
         r, g, b, _ = travellermap.parseHtmlColour(
             self._styleSheet.pseudoRandomStars.fillBrush.colour())
@@ -402,7 +396,7 @@ class RenderContext(object):
             return
 
         if self._styleSheet.riftOpacity > 0 and \
-            self._riftImageRect.intersects(self._absoluteViewRect):
+            self._riftImageRect.intersects(self._worldViewRect):
             self._graphics.drawImageAlpha(
                 alpha=self._styleSheet.riftOpacity,
                 image=self._imageCache.riftImage,
@@ -443,15 +437,15 @@ class RenderContext(object):
         # sector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
-        left = ((self._absoluteViewRect.left() // travellermap.SectorWidth) * \
+        left = ((self._worldViewRect.left() // travellermap.SectorWidth) * \
                   travellermap.SectorWidth) - travellermap.ReferenceHexX
-        right = self._absoluteViewRect.right()
-        top = ((self._absoluteViewRect.top() // travellermap.SectorHeight) * \
+        right = self._worldViewRect.right()
+        top = ((self._worldViewRect.top() // travellermap.SectorHeight) * \
                   travellermap.SectorHeight) - travellermap.ReferenceHexY
-        bottom = self._absoluteViewRect.bottom()
+        bottom = self._worldViewRect.bottom()
 
         x = left + travellermap.SectorWidth
-        while x <= self._absoluteViewRect.right():
+        while x <= self._worldViewRect.right():
             self._graphics.drawLine(
                 pt1=cartographer.PointF(x, top),
                 pt2=cartographer.PointF(x, bottom),
@@ -459,7 +453,7 @@ class RenderContext(object):
             x += travellermap.SectorWidth
 
         y = top + travellermap.SectorHeight
-        while y <= self._absoluteViewRect.bottom():
+        while y <= self._worldViewRect.bottom():
             self._graphics.drawLine(
                 pt1=cartographer.PointF(left, y),
                 pt2=cartographer.PointF(right, y),
@@ -477,16 +471,16 @@ class RenderContext(object):
         # subsector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
-        left = ((self._absoluteViewRect.left() // travellermap.SubsectorWidth) * \
+        left = ((self._worldViewRect.left() // travellermap.SubsectorWidth) * \
                   travellermap.SubsectorWidth) - travellermap.ReferenceHexX
-        right = self._absoluteViewRect.right()
-        top = ((self._absoluteViewRect.top() // travellermap.SubsectorHeight) * \
+        right = self._worldViewRect.right()
+        top = ((self._worldViewRect.top() // travellermap.SubsectorHeight) * \
                   travellermap.SubsectorHeight) - travellermap.ReferenceHexY
-        bottom = self._absoluteViewRect.bottom()
+        bottom = self._worldViewRect.bottom()
 
         x = left + travellermap.SubsectorWidth
         lineIndex = int(round(x / travellermap.SubsectorWidth))
-        while x <= self._absoluteViewRect.right():
+        while x <= self._worldViewRect.right():
             if lineIndex % 4:
                 self._graphics.drawLine(
                     pt1=cartographer.PointF(x, top),
@@ -497,7 +491,7 @@ class RenderContext(object):
 
         y = top + travellermap.SubsectorHeight
         lineIndex = int(round(y / travellermap.SubsectorHeight))
-        while y <= self._absoluteViewRect.bottom():
+        while y <= self._worldViewRect.bottom():
             if lineIndex % 4:
                 self._graphics.drawLine(
                     pt1=cartographer.PointF(left, y),
@@ -515,22 +509,21 @@ class RenderContext(object):
 
         if self._parsecGrid:
             with self._graphics.save():
-                offsetX = math.floor(self._absoluteViewRect.left())
-                offsetY = math.floor(self._absoluteViewRect.top()) + (0.5 if offsetX % 2 else 0)
+                offsetX = math.floor(self._worldViewRect.left())
+                offsetY = math.floor(self._worldViewRect.top()) + (0.5 if offsetX % 2 else 0)
                 self._graphics.translateTransform(dx=offsetX, dy=offsetY)
                 self._graphics.drawLines(
                     points=self._parsecGrid,
                     pen=self._styleSheet.parsecGrid.linePen)
 
         if self._styleSheet.numberAllHexes and (self._styleSheet.worldDetails & cartographer.WorldDetails.Hex) != 0:
-            hx = int(math.floor(self._absoluteViewRect.x()))
-            hw = int(math.ceil(self._absoluteViewRect.width()))
-            hy = int(math.floor(self._absoluteViewRect.y()))
-            hh = int(math.ceil(self._absoluteViewRect.height()))
+            hx = int(math.floor(self._worldViewRect.x()))
+            hw = int(math.ceil(self._worldViewRect.width()))
+            hy = int(math.floor(self._worldViewRect.y()))
+            hh = int(math.ceil(self._worldViewRect.height()))
             for px in range(hx - RenderContext._ParsecGridSlop, hx + hw + RenderContext._ParsecGridSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - RenderContext._ParsecGridSlop, hy + hh + RenderContext._ParsecGridSlop):
-
                     relativePos = travellermap.absoluteSpaceToRelativeSpace((px + 1, py + 1))
                     if self._styleSheet.hexCoordinateStyle == cartographer.HexCoordinateStyle.Subsector:
                         hex = '{hexX:02d}{hexY:02d}'.format(
@@ -1058,7 +1051,7 @@ class RenderContext(object):
             for placeholder in self._selector.placeholderWorlds(True):
                 with self._graphics.save():
                     placeholderHex = placeholder.hex()
-                    centerX, centerY = placeholderHex.absoluteCenter()
+                    centerX, centerY = placeholderHex.worldCenter()
                     self._graphics.translateTransform(
                         dx=centerX / scaleX,
                         dy=centerY / scaleY)
@@ -1105,7 +1098,7 @@ class RenderContext(object):
                 # that the world points to be rendered have already been
                 # transformed into this coordinate space. It's necessary because
                 # (for speed) the worlds are being rendered as points with the
-                # pen width giving them their size. If this was done in absolute
+                # pen width giving them their size. If this was done in world
                 # coordinate space (where x & y don't scale the same) then the
                 # point would be drawn as an oval
                 self._graphics.scaleTransform(
@@ -1817,7 +1810,7 @@ class RenderContext(object):
                 sectorClipRect.inflate(
                     travellermap.ParsecScaleX * 0.1,
                     travellermap.ParsecScaleY * 0.1)
-            if not self._absoluteViewRect.intersects(sectorClipRect):
+            if not self._worldViewRect.intersects(sectorClipRect):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
@@ -1828,7 +1821,7 @@ class RenderContext(object):
                         outline.spline().bounds() \
                         if drawCurvedBorders else \
                         outline.path().bounds()
-                    if self._absoluteViewRect.intersects(outlineBounds):
+                    if self._worldViewRect.intersects(outlineBounds):
                         regionOutlines.append(outline)
 
             sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
@@ -1839,7 +1832,7 @@ class RenderContext(object):
                         outline.spline().bounds() \
                         if drawCurvedBorders else \
                         outline.path().bounds()
-                    if self._absoluteViewRect.intersects(outlineBounds):
+                    if self._worldViewRect.intersects(outlineBounds):
                         borderOutlines.append(outline)
 
             if not regionOutlines and not borderOutlines:
@@ -1971,7 +1964,7 @@ class RenderContext(object):
             vectorObject: cartographer.VectorObject,
             pen: cartographer.AbstractPen
             ) -> None:
-        if vectorObject.path and vectorObject.bounds.intersects(self._absoluteViewRect):
+        if vectorObject.path and vectorObject.bounds.intersects(self._worldViewRect):
             with self._graphics.save():
                 self._graphics.scaleTransform(scaleX=vectorObject.scaleX, scaleY=vectorObject.scaleY)
                 self._graphics.translateTransform(dx=-vectorObject.originX, dy=-vectorObject.originY)
@@ -1984,7 +1977,7 @@ class RenderContext(object):
             textBrush: cartographer.AbstractBrush,
             labelStyle: cartographer.LabelStyle
             ) -> None:
-        if vectorObject.name and vectorObject.bounds.intersects(self._absoluteViewRect):
+        if vectorObject.name and vectorObject.bounds.intersects(self._worldViewRect):
             text = vectorObject.name
             if labelStyle.uppercase:
                 text = text.upper()
@@ -2045,7 +2038,7 @@ class RenderContext(object):
             brush: cartographer.AbstractBrush,
             position: travellermap.HexPosition
             ) -> None:
-        centerX, centerY = position.absoluteCenter()
+        centerX, centerY = position.worldCenter()
         with self._graphics.save():
             self._graphics.scaleTransform(
                 scaleX=1 / travellermap.ParsecScaleX,
@@ -2273,5 +2266,5 @@ class RenderContext(object):
 
     @staticmethod
     def _hexToCenter(hex: travellermap.HexPosition) -> cartographer.PointF:
-        centerX, centerY = hex.absoluteCenter()
+        centerX, centerY = hex.worldCenter()
         return cartographer.PointF(x=centerX, y=centerY)

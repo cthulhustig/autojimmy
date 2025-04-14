@@ -148,7 +148,7 @@ class SectorCache(object):
         points = []
         for world in sector:
             hex = world.hex()
-            centerX, centerY = hex.absoluteCenter()
+            centerX, centerY = hex.worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
                 x=centerX * travellermap.ParsecScaleX,
@@ -239,10 +239,10 @@ class SectorCache(object):
             if needsSwap:
                 (startPoint, endPoint) = (endPoint, startPoint)
 
-            centerX, centerY = startPoint.absoluteCenter()
+            centerX, centerY = startPoint.worldCenter()
             startPoint = cartographer.PointF(x=centerX, y=centerY)
 
-            centerX, centerY = endPoint.absoluteCenter()
+            centerX, centerY = endPoint.worldCenter()
             endPoint = cartographer.PointF(x=centerX, y=centerY)
 
             # Shorten line to leave room for world glyph
@@ -283,7 +283,7 @@ class SectorCache(object):
         if clipPath:
             return clipPath
 
-        originX, originY = travellermap.relativeSpaceToAbsoluteSpace(
+        absoluteOriginX, absoluteOriginY = travellermap.relativeSpaceToAbsoluteSpace(
             (sectorX, sectorY, 1, 1))
 
         points = []
@@ -294,8 +294,8 @@ class SectorCache(object):
             for i in range(count):
                 offsetX, offsetY = SectorCache._TopClipOffsets[i]
                 points.append(cartographer.PointF(
-                    x=((originX + x) - 0.5) + offsetX,
-                    y=((originY + y) - 0.5) + offsetY))
+                    x=((absoluteOriginX + x) - 0.5) + offsetX,
+                    y=((absoluteOriginY + y) - 0.5) + offsetY))
 
         last = travellermap.SectorHeight - 2
         count = len(SectorCache._RightClipOffsets)
@@ -306,8 +306,8 @@ class SectorCache(object):
             for i in range(count):
                 offsetX, offsetY = SectorCache._RightClipOffsets[i]
                 points.append(cartographer.PointF(
-                    x=((originX + x) - 0.5) + offsetX,
-                    y=(originY + y) + offsetY))
+                    x=((absoluteOriginX + x) - 0.5) + offsetX,
+                    y=(absoluteOriginY + y) + offsetY))
 
         count = len(SectorCache._BottomClipOffsets)
         y = travellermap.SectorHeight - 1
@@ -315,8 +315,8 @@ class SectorCache(object):
             for i in range(count):
                 offsetX, offsetY = SectorCache._BottomClipOffsets[i]
                 points.append(cartographer.PointF(
-                    x=((originX + x) - 0.5) + offsetX,
-                    y=(originY + y) + offsetY))
+                    x=((absoluteOriginX + x) - 0.5) + offsetX,
+                    y=(absoluteOriginY + y) + offsetY))
 
         last = travellermap.SectorHeight - 2
         count = len(SectorCache._LeftClipOffsets)
@@ -327,8 +327,8 @@ class SectorCache(object):
             for i in range(count):
                 offsetX, offsetY = SectorCache._LeftClipOffsets[i]
                 points.append(cartographer.PointF(
-                    x=((originX + x) - 0.5) + offsetX,
-                    y=((originY + y) - 0.5) + offsetY))
+                    x=((absoluteOriginX + x) - 0.5) + offsetX,
+                    y=((absoluteOriginY + y) - 0.5) + offsetY))
 
         path = self._graphics.createPath(points=points, closed=True)
         self._clipCache[key] = path
@@ -356,7 +356,7 @@ class SectorCache(object):
                 if not style:
                     style = defaultStyle
 
-        outline = source.absoluteOutline()
+        outline = source.worldOutline()
         drawPath = []
         for x, y in outline:
             drawPath.append(cartographer.PointF(x=x, y=y))

@@ -12,29 +12,6 @@ import typing
 import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: I think a lot of the places I've referred to as absolute space
-# is actually map space, or at least my equivalent of it (i.e. without the
-# inverted y axis like in Traveller Map). I think anything the problem
-# might be around things that are using ParsecScaleX/ParsecScaleY.
-# Update: I think the coordinate system naming are a complete mess
-# - I think the render is working in its own coordinate system. I think
-#   traveller map might refer to it as world coordinates but this term
-#   seems a littler overloaded as the traveller map coordinate system
-#   documentation seems to use the term world space for the integer pair
-#   coordinate system that defines a hex relative to reference (i.e.
-#   what I've historically referred to as absolute coordinates)
-# - The coordinate system used by the renderer is in parsecs with a hex
-#   being 1 parsec high and slightly over 1 parsec wide when rendered.
-# - I have what I call relative space but in traveller map it refers to
-#   it sector hex. The traveller map terminology is a little ambiguous
-#   as there is also the string based sector hex format but that is
-#   effectively equivalent just with the sector coordinate replaced with
-#   the name
-# - I'm overloading the term absolute space. I'm using it as the term
-#   for what the renderer is working in and using it for the integer
-#   pair that represents a hex elsewhere in the code. I think this is
-#   basically the same overloading as traveller map where it uses
-#   world coordinates
 # TODO: Custom sector import
 # - Until I drop the web map widget I need to have it generate the map images
 # in case the user changes the rendering type
@@ -112,7 +89,7 @@ class _JumpRouteOverlay(_MapOverlay):
 
         self._jumpRoutePath = QtGui.QPolygonF()
         for hex, _ in jumpRoute:
-            centerX, centerY = hex.absoluteCenter()
+            centerX, centerY = hex.worldCenter()
             self._jumpRoutePath.append(QtCore.QPointF(
                 centerX * travellermap.ParsecScaleX,
                 centerY * travellermap.ParsecScaleY))
@@ -121,7 +98,7 @@ class _JumpRouteOverlay(_MapOverlay):
         if refuellingPlan:
             self._pitStopPoints = QtGui.QPolygonF()
             for pitStop in refuellingPlan:
-                centerX, centerY = pitStop.hex().absoluteCenter()
+                centerX, centerY = pitStop.hex().worldCenter()
                 self._pitStopPoints.append(QtCore.QPointF(
                     centerX * travellermap.ParsecScaleX,
                     centerY * travellermap.ParsecScaleY))
@@ -252,7 +229,7 @@ class _HexHighlightOverlay(_MapOverlay):
                     radius=radius / 100))
             self._styleMap[styleKey] = renderData
 
-        centerX, centerY = hex.absoluteCenter()
+        centerX, centerY = hex.worldCenter()
         polygon = renderData[0]
         polygon.append(QtCore.QPointF(
             centerX * travellermap.ParsecScaleX,
@@ -317,7 +294,7 @@ class _HexHighlightOverlay(_MapOverlay):
                 # This hex already has a highlight with this style
                 continue
 
-            centerX, centerY = hex.absoluteCenter()
+            centerX, centerY = hex.worldCenter()
             polygon = renderData[0]
             polygon.append(QtCore.QPointF(
                 centerX * travellermap.ParsecScaleX,
@@ -336,7 +313,7 @@ class _HexHighlightOverlay(_MapOverlay):
         if not hexStyleKeys:
             return # The hex has no highlight to remove
 
-        centerX, centerY = hex.absoluteCenter()
+        centerX, centerY = hex.worldCenter()
         for styleKey in hexStyleKeys:
             polygon, _ = self._styleMap[styleKey]
             for i in range(polygon.count() - 1, -1, -1):
@@ -580,7 +557,7 @@ class _AntaresSupernovaOverlay(_MapOverlay):
             return False
 
         # Center is Antares (ANT 2421)
-        x, y = _AntaresSupernovaOverlay._SupernovaCenter.absoluteCenter()
+        x, y = _AntaresSupernovaOverlay._SupernovaCenter.worldCenter()
         x *= travellermap.ParsecScaleX
         y *= travellermap.ParsecScaleY
 
@@ -617,7 +594,7 @@ class _MainsOverlay(_MapOverlay):
 
         self._points = QtGui.QPolygonF()
         for world in main:
-            centerX, centerY = world.hex().absoluteCenter()
+            centerX, centerY = world.hex().worldCenter()
             self._points.append(QtCore.QPointF(
                 centerX * travellermap.ParsecScaleX,
                 centerY * travellermap.ParsecScaleY))
@@ -832,7 +809,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
 
-        self._absoluteCenterPos = QtCore.QPointF(
+        self._worldCenterPos = QtCore.QPointF(
             LocalMapWidget._DefaultCenterX,
             LocalMapWidget._DefaultCenterY)
         self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultLogScale, linear=False)
@@ -977,7 +954,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._viewAnimationGroup.stop()
 
-        center = QtCore.QPointF(*hex.absoluteCenter())
+        center = QtCore.QPointF(*hex.worldCenter())
         logScale = \
             travellermap.linearScaleToLogScale(linearScale) \
             if linearScale is not None else \
@@ -989,7 +966,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 newViewLogScale=logScale)
 
         if immediate:
-            self._absoluteCenterPos = center
+            self._worldCenterPos = center
             self._viewScale.log = logScale
             self._handleViewUpdate(forceAtomicRedraw=True)
         else:
@@ -1009,7 +986,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         left = right = top = bottom = None
         for hex in hexes:
-            hexLeft, hexTop, hexWidth, hexHeight = hex.absoluteBounds()
+            hexLeft, hexTop, hexWidth, hexHeight = hex.worldBounds()
             if left is None or hexLeft < left:
                 left = hexLeft
             if top is None or hexTop < top:
@@ -1037,7 +1014,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                 newViewLogScale=logScale)
 
         if immediate:
-            self._absoluteCenterPos = center
+            self._worldCenterPos = center
             self._viewScale.log = logScale
             self._handleViewUpdate(forceAtomicRedraw=True)
         else:
@@ -1190,8 +1167,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(LocalMapWidget._StateVersion)
-        stream.writeFloat(self._absoluteCenterPos.x())
-        stream.writeFloat(self._absoluteCenterPos.y())
+        stream.writeFloat(self._worldCenterPos.x())
+        stream.writeFloat(self._worldCenterPos.y())
         stream.writeFloat(self._viewScale.log)
         return state
 
@@ -1206,8 +1183,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore LocalMapWidget state (Incorrect version)')
             return False
 
-        self._absoluteCenterPos.setX(stream.readFloat())
-        self._absoluteCenterPos.setY(stream.readFloat())
+        self._worldCenterPos.setX(stream.readFloat())
+        self._worldCenterPos.setY(stream.readFloat())
         self._viewScale.log = stream.readFloat()
         self._handleViewUpdate()
         return True
@@ -1251,10 +1228,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             worldDeltaX = worldCurrentPos.x() - self._worldDragAnchor.x()
             worldDeltaY = worldCurrentPos.y() - self._worldDragAnchor.y()
 
-            self._absoluteCenterPos.setX(
-                self._absoluteCenterPos.x() - worldDeltaX)
-            self._absoluteCenterPos.setY(
-                self._absoluteCenterPos.y() - worldDeltaY)
+            self._worldCenterPos.setX(
+                self._worldCenterPos.x() - worldDeltaX)
+            self._worldCenterPos.setY(
+                self._worldCenterPos.y() - worldDeltaY)
             self._handleViewUpdate()
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
@@ -1434,8 +1411,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._graphics.setPainter(painter=painter)
             try:
                 self._renderer.setView(
-                    absoluteCenterX=self._absoluteCenterPos.x(),
-                    absoluteCenterY=self._absoluteCenterPos.y(),
+                    worldCenterX=self._worldCenterPos.x(),
+                    worldCenterY=self._worldCenterPos.y(),
                     scale=self._viewScale.linear,
                     outputPixelX=self.width(),
                     outputPixelY=self.height())
@@ -1604,8 +1581,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         offsetY = pixelPos.y() / scaleY
 
         return QtCore.QPointF(
-            (self._absoluteCenterPos.x() - (width / 2)) + offsetX,
-            (self._absoluteCenterPos.y() - (height / 2)) + offsetY)
+            (self._worldCenterPos.x() - (width / 2)) + offsetX,
+            (self._worldCenterPos.y() - (height / 2)) + offsetY)
 
     def _worldSpaceToPixelSpace(
             self,
@@ -1617,8 +1594,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         width = self.width() / scaleX
         height = self.height() / scaleY
 
-        offsetX = worldPos.x() - (self._absoluteCenterPos.x() - (width / 2))
-        offsetY = worldPos.y() - (self._absoluteCenterPos.y() - (height / 2))
+        offsetX = worldPos.x() - (self._worldCenterPos.x() - (width / 2))
+        offsetY = worldPos.y() - (self._worldCenterPos.y() - (height / 2))
 
         return QtCore.QPointF(
             offsetX * scaleX,
@@ -1634,18 +1611,18 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             worldPos: typing.Union[QtCore.QPointF, QtCore.QPoint]
             ) -> travellermap.HexPosition:
-        worldClampedX = int(round(worldPos.x() + 0.5))
-        worldClampedY = int(round(worldPos.y() + (0.5 if (worldClampedX % 2 == 0) else 0)))
+        absoluteX = int(round(worldPos.x() + 0.5))
+        absoluteY = int(round(worldPos.y() + (0.5 if (absoluteX % 2 == 0) else 0)))
 
         return travellermap.HexPosition(
-            absoluteX=worldClampedX,
-            absoluteY=worldClampedY)
+            absoluteX=absoluteX,
+            absoluteY=absoluteY)
 
     def _createRenderer(self) -> cartographer.RenderContext:
         return cartographer.RenderContext(
             graphics=self._graphics,
-            absoluteCenterX=self._absoluteCenterPos.x(),
-            absoluteCenterY=self._absoluteCenterPos.y(),
+            worldCenterX=self._worldCenterPos.x(),
+            worldCenterY=self._worldCenterPos.y(),
             scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height(),
@@ -1661,18 +1638,18 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             forceAtomicRedraw: bool = False
             ) -> None:
-        absoluteWidth = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
-        absoluteHeight = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
-        absoluteLeft = self._absoluteCenterPos.x() - (absoluteWidth / 2)
-        absoluteTop = self._absoluteCenterPos.y() - (absoluteHeight / 2)
+        worldWidth = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
+        worldHeight = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
+        worldLeft = self._worldCenterPos.x() - (worldWidth / 2)
+        worldTop = self._worldCenterPos.y() - (worldHeight / 2)
 
         self._imageSpaceToWorldSpace = QtGui.QTransform()
         self._imageSpaceToWorldSpace.scale(
             self._viewScale.linear * travellermap.ParsecScaleX,
             self._viewScale.linear * travellermap.ParsecScaleY)
         self._imageSpaceToWorldSpace.translate(
-            -absoluteLeft,
-            -absoluteTop)
+            -worldLeft,
+            -worldTop)
 
         scaleMatrix = QtGui.QTransform()
         scaleMatrix.scale(
@@ -1708,10 +1685,10 @@ class LocalMapWidget(QtWidgets.QWidget):
         if cursor:
             newWorldCursor = self._pixelSpaceToWorldSpace(cursor)
 
-            self._absoluteCenterPos.setX(
-                self._absoluteCenterPos.x() + (oldWorldCursor.x() - newWorldCursor.x()))
-            self._absoluteCenterPos.setY(
-                self._absoluteCenterPos.y() + (oldWorldCursor.y() - newWorldCursor.y()))
+            self._worldCenterPos.setX(
+                self._worldCenterPos.x() + (oldWorldCursor.x() - newWorldCursor.x()))
+            self._worldCenterPos.setY(
+                self._worldCenterPos.y() + (oldWorldCursor.y() - newWorldCursor.y()))
 
         self._handleViewUpdate()
 
@@ -1733,22 +1710,22 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
-        absoluteViewWidth = self.width() / scaleX
-        absoluteViewHeight = self.height() / scaleY
-        absoluteViewLeft = self._absoluteCenterPos.x() - (absoluteViewWidth / 2)
-        absoluteViewRight = absoluteViewLeft + absoluteViewWidth
-        absoluteViewTop = self._absoluteCenterPos.y() - (absoluteViewHeight / 2)
-        absoluteViewBottom = absoluteViewTop + absoluteViewHeight
+        worldViewWidth = self.width() / scaleX
+        worldViewHeight = self.height() / scaleY
+        worldViewLeft = self._worldCenterPos.x() - (worldViewWidth / 2)
+        worldViewRight = worldViewLeft + worldViewWidth
+        worldViewTop = self._worldCenterPos.y() - (worldViewHeight / 2)
+        worldViewBottom = worldViewTop + worldViewHeight
 
-        absoluteTileWidth = tileSize / scaleX
-        absoluteTileHeight = tileSize / scaleY
-        leftTile = math.floor(absoluteViewLeft / absoluteTileWidth)
-        rightTile = math.floor(absoluteViewRight / absoluteTileWidth)
-        topTile = math.floor(absoluteViewTop / absoluteTileHeight)
-        bottomTile = math.floor(absoluteViewBottom / absoluteTileHeight)
+        worldTileWidth = tileSize / scaleX
+        worldTileHeight = tileSize / scaleY
+        leftTile = math.floor(worldViewLeft / worldTileWidth)
+        rightTile = math.floor(worldViewRight / worldTileWidth)
+        topTile = math.floor(worldViewTop / worldTileHeight)
+        bottomTile = math.floor(worldViewBottom / worldTileHeight)
 
-        offsetX = (absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX
-        offsetY = (absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY
+        offsetX = (worldViewLeft - (leftTile * worldTileWidth)) * scaleX
+        offsetY = (worldViewTop - (topTile * worldTileHeight)) * scaleY
 
         tiles = []
         for x in range(leftTile, rightTile + 1):
@@ -1778,7 +1755,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         return tiles
 
     def _optimiseTileQueue(self) -> None:
-        targetWorld = self._absoluteCenterPos
+        targetWorld = self._worldCenterPos
 
         if not self._keyboardMovementTracker.isIdle():
             # If there are tiles needing rendered and the user is currently
@@ -1852,19 +1829,19 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
-        absoluteViewWidth = self.width() / scaleX
-        absoluteViewHeight = self.height() / scaleY
-        absoluteViewLeft = self._absoluteCenterPos.x() - (absoluteViewWidth / 2)
-        absoluteViewRight = absoluteViewLeft + absoluteViewWidth
-        absoluteViewTop = self._absoluteCenterPos.y() - (absoluteViewHeight / 2)
-        absoluteViewBottom = absoluteViewTop + absoluteViewHeight
+        worldViewWidth = self.width() / scaleX
+        worldViewHeight = self.height() / scaleY
+        worldViewLeft = self._worldCenterPos.x() - (worldViewWidth / 2)
+        worldViewRight = worldViewLeft + worldViewWidth
+        worldViewTop = self._worldCenterPos.y() - (worldViewHeight / 2)
+        worldViewBottom = worldViewTop + worldViewHeight
 
-        absoluteTileWidth = tileSize / scaleX
-        absoluteTileHeight = tileSize / scaleY
-        leftTile = math.floor(absoluteViewLeft / absoluteTileWidth)
-        rightTile = math.floor(absoluteViewRight / absoluteTileWidth)
-        topTile = math.floor(absoluteViewTop / absoluteTileHeight)
-        bottomTile = math.floor(absoluteViewBottom / absoluteTileHeight)
+        worldTileWidth = tileSize / scaleX
+        worldTileHeight = tileSize / scaleY
+        leftTile = math.floor(worldViewLeft / worldTileWidth)
+        rightTile = math.floor(worldViewRight / worldTileWidth)
+        topTile = math.floor(worldViewTop / worldTileHeight)
+        bottomTile = math.floor(worldViewBottom / worldTileHeight)
 
         for _ in range(LocalMapWidget._LookaheadBorderTiles):
             leftTile -= 1
@@ -1975,20 +1952,20 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
-        absoluteViewWidth = self.width() / scaleX
-        absoluteViewHeight = self.height() / scaleY
-        absoluteViewLeft = self._absoluteCenterPos.x() - (absoluteViewWidth / 2)
-        absoluteViewTop = self._absoluteCenterPos.y() - (absoluteViewHeight / 2)
+        worldViewWidth = self.width() / scaleX
+        worldViewHeight = self.height() / scaleY
+        worldViewLeft = self._worldCenterPos.x() - (worldViewWidth / 2)
+        worldViewTop = self._worldCenterPos.y() - (worldViewHeight / 2)
 
-        absoluteTileWidth = tileSize / scaleX
-        absoluteTileHeight = tileSize / scaleY
-        leftTile = math.floor((((clipRect.left() / scaleX) + absoluteViewLeft) / absoluteTileWidth))
-        rightTile = math.floor((((clipRect.right() / scaleX) + absoluteViewLeft) / absoluteTileWidth))
-        topTile = math.floor((((clipRect.top() / scaleY) + absoluteViewTop) / absoluteTileHeight))
-        bottomTile = math.floor((((clipRect.bottom() / scaleY) + absoluteViewTop) / absoluteTileHeight))
+        worldTileWidth = tileSize / scaleX
+        worldTileHeight = tileSize / scaleY
+        leftTile = math.floor((((clipRect.left() / scaleX) + worldViewLeft) / worldTileWidth))
+        rightTile = math.floor((((clipRect.right() / scaleX) + worldViewLeft) / worldTileWidth))
+        topTile = math.floor((((clipRect.top() / scaleY) + worldViewTop) / worldTileHeight))
+        bottomTile = math.floor((((clipRect.bottom() / scaleY) + worldViewTop) / worldTileHeight))
 
-        offsetX = (absoluteViewLeft - (leftTile * absoluteTileWidth)) * scaleX
-        offsetY = (absoluteViewTop - (topTile * absoluteTileHeight)) * scaleY
+        offsetX = (worldViewLeft - (leftTile * worldTileWidth)) * scaleX
+        offsetY = (worldViewTop - (topTile * worldTileHeight)) * scaleY
 
         placeholders = []
         missing = []
@@ -2050,11 +2027,11 @@ class LocalMapWidget(QtWidgets.QWidget):
         tileScale = travellermap.logScaleToLinearScale(tileScale)
         scaleX = (tileScale * travellermap.ParsecScaleX)
         scaleY = (tileScale * travellermap.ParsecScaleY)
-        absoluteTileWidth = LocalMapWidget._TileSize / scaleX
-        absoluteTileHeight = LocalMapWidget._TileSize / scaleY
+        worldTileWidth = LocalMapWidget._TileSize / scaleX
+        worldTileHeight = LocalMapWidget._TileSize / scaleY
 
-        absoluteTileCenterX = ((tileX * LocalMapWidget._TileSize) / scaleX) + (absoluteTileWidth / 2)
-        absoluteTileCenterY = ((tileY * LocalMapWidget._TileSize) / scaleY) + (absoluteTileHeight / 2)
+        worldTileCenterX = ((tileX * LocalMapWidget._TileSize) / scaleX) + (worldTileWidth / 2)
+        worldTileCenterY = ((tileY * LocalMapWidget._TileSize) / scaleY) + (worldTileHeight / 2)
 
         if not image:
             image = QtGui.QImage(
@@ -2066,8 +2043,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         try:
             self._graphics.setPainter(painter=painter)
             self._renderer.setView(
-                absoluteCenterX=absoluteTileCenterX,
-                absoluteCenterY=absoluteTileCenterY,
+                worldCenterX=worldTileCenterX,
+                worldCenterY=worldTileCenterY,
                 scale=tileScale,
                 outputPixelX=LocalMapWidget._TileSize,
                 outputPixelY=LocalMapWidget._TileSize)
@@ -2102,7 +2079,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _handleKeyboardMovementTimer(self) -> None:
         deltaX, deltaY = self._keyboardMovementTracker.direction()
         if deltaX or deltaY:
-            # Normalize the delta and translate it to absolute space
+            # Normalize the delta and translate it to world space
             length = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
             if length:
                 horzStep = LocalMapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleX)
@@ -2110,14 +2087,14 @@ class LocalMapWidget(QtWidgets.QWidget):
                 deltaX = (deltaX / length) * horzStep
                 deltaY = (deltaY / length) * vertStep
 
-            self._absoluteCenterPos.setX(self._absoluteCenterPos.x() + deltaX)
-            self._absoluteCenterPos.setY(self._absoluteCenterPos.y() + deltaY)
+            self._worldCenterPos.setX(self._worldCenterPos.x() + deltaX)
+            self._worldCenterPos.setY(self._worldCenterPos.y() + deltaY)
             self._handleViewUpdate()
 
     def _animateViewCenterGetter(self) -> QtCore.QPointF:
-        return self._absoluteCenterPos
+        return self._worldCenterPos
     def _animateViewCenterSetter(self, pos: QtCore.QPointF) -> None:
-        self._absoluteCenterPos = pos
+        self._worldCenterPos = pos
         self._handleViewUpdate()
 
     _viewCenterAnimationProp = QtCore.pyqtProperty(
@@ -2133,8 +2110,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         if self.isHidden() or not app.Config.instance().mapAnimations():
             return False
 
-        deltaX = newViewCenter.x() - self._absoluteCenterPos.x()
-        deltaY = newViewCenter.y() - self._absoluteCenterPos.y()
+        deltaX = newViewCenter.x() - self._worldCenterPos.x()
+        deltaY = newViewCenter.y() - self._worldCenterPos.y()
         xyDistance = math.sqrt(
             (deltaX * deltaX) + (deltaY * deltaY))
         # Traveller Map uses a value of 64 for the multiplier but I've
@@ -2149,7 +2126,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             newViewCenter: QtCore.QPointF,
             newViewLogScale: float
             ) -> None:
-        self._viewCenterAnimation.setStartValue(self._absoluteCenterPos)
+        self._viewCenterAnimation.setStartValue(self._worldCenterPos)
         self._viewCenterAnimation.setEndValue(newViewCenter)
         if newViewLogScale == self._viewScale.log:
             self._viewCenterAnimationEasing.setPeriods(

@@ -40,11 +40,11 @@ def generateThumbnail(
     if app.Config.instance().mapSourceType() is app.MapSourceType.Local:
         _initThumbnailRenderer()
 
-        centerX, centerY = hex.absoluteCenter()
+        centerX, centerY = hex.worldCenter()
         renderer = cartographer.RenderContext(
             graphics=_thumbnailGraphics,
-            absoluteCenterX=centerX,
-            absoluteCenterY=centerY,
+            worldCenterX=centerX,
+            worldCenterY=centerY,
             scale=linearScale,
             outputPixelX=width,
             outputPixelY=height,

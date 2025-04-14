@@ -97,9 +97,9 @@ def tileSpaceToMapSpace(
     scalar = scale / TravellerMapTileSize
     return (pos[0] / scalar, -pos[1] / scalar)
 
-# This gets the bounding rect of a sector in absolute coordinates (world coordinates in Traveller
-# Map parlance). It's based on Bounds from Traveller Map (Sector.cs) but I've updated it so it
-# returns a bounding box that contains the full extent of all hexes in the sector.
+# This gets the bounding rect of a sector in world space coordinates. It's based
+# on Bounds from Traveller Map (Sector.cs) but I've updated it so it returns a
+# bounding box that contains the full extent of all hexes in the sector.
 def sectorBoundingRect(
         sector: typing.Tuple[int, int],
         ) -> typing.Tuple[float, float, float, float]:
@@ -134,10 +134,10 @@ def subsectorBoundingRect(
 
     return (left, top, width, height)
 
-# Similar to sectorBoundingRect but gets the largest absolute coordinate rect that can
-# fit inside the sector without overlapping any hexes from adjacent sectors. This is
-# useful as any rect that falls completely inside this rect is guaranteed to only cover
-# this sector
+# Similar to sectorBoundingRect but gets the largest world space coordinate rect
+# that can fit inside the sector without overlapping any hexes from adjacent
+# sectors. This is useful as any rect that falls completely inside this rect is
+# guaranteed to only cover this sector
 def sectorInteriorRect(
         sector: typing.Tuple[int, int],
         ) -> typing.Tuple[float, float, float, float]:
@@ -154,26 +154,6 @@ def sectorInteriorRect(
 
     return (left, bottom, width, height)
 
-# Reimplementation of code from Traveller Map source code.
-# HexDistance in Astrometrics.cs
-def hexDistance(
-        absolute1: typing.Tuple[int, int],
-        absolute2: typing.Tuple[int, int]
-        ) -> int:
-    dx = absolute2[0] - absolute1[0]
-    dy = absolute2[1] - absolute1[1]
-
-    adx = dx if dx >= 0 else -dx
-
-    ody = dy + (adx // 2)
-
-    if ((absolute1[0] & 0b1) == 0) and ((absolute2[0] & 0b1) != 0):
-        ody += 1
-
-    max = ody if ody > adx else adx
-    adx -= ody
-    return adx if adx > max else max
-
 # These are orientated visually as seen in Traveller Map
 class HexEdge(enum.Enum):
     Upper = 0
@@ -182,7 +162,6 @@ class HexEdge(enum.Enum):
     Lower = 3
     LowerLeft = 4
     UpperLeft = 5
-
 
 _OppositeEdgeTransitions = {
     HexEdge.Upper: HexEdge.Lower,
@@ -463,13 +442,27 @@ class HexPosition(object):
         self._mapSpace = absoluteSpaceToMapSpace(pos=self._absolute)
         return self._mapSpace
 
+    # Reimplementation of code from Traveller Map source code.
+    # HexDistance in Astrometrics.cs
     def parsecsTo(
             self,
             other: 'HexPosition'
             ) -> int:
-        return hexDistance(
-            absolute1=self.absolute(),
-            absolute2=other.absolute())
+        x1, y1 = self.absolute()
+        x2, y2 = other.absolute()
+        dx = x2 - x1
+        dy = y2 - y1
+
+        adx = dx if dx >= 0 else -dx
+
+        ody = dy + (adx // 2)
+
+        if ((x1 & 0b1) == 0) and ((x2 & 0b1) != 0):
+            ody += 1
+
+        max = ody if ody > adx else adx
+        adx -= ody
+        return adx if adx > max else max
 
     def neighbourHex(
             self,
@@ -506,7 +499,7 @@ class HexPosition(object):
             yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
 
     # Return the absolute center point of the hex
-    def absoluteCenter(self) -> typing.Tuple[float, float]:
+    def worldCenter(self) -> typing.Tuple[float, float]:
         if not self._absoluteCenter:
             absX, absY = self.absolute()
             self._absoluteCenter = (
@@ -514,7 +507,7 @@ class HexPosition(object):
                 absY - (0.0 if ((absX % 2) != 0) else 0.5))
         return self._absoluteCenter
 
-    def absoluteBounds(
+    def worldBounds(
             self
             ) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
         absoluteX, absoluteY = self.absolute()

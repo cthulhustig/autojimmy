@@ -55,7 +55,7 @@ class Region(object):
     def labelHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._labelHex
 
-    # Offset in absolute coordinates
+    # Offset in world coordinates
     def labelOffsetX(self) -> typing.Optional[float]:
         return self._labelOffsetX
 
@@ -68,7 +68,7 @@ class Region(object):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
-    def absoluteOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
+    def worldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:
             return self._outline
 
@@ -78,7 +78,7 @@ class Region(object):
         startHex, startEdge = Region._findOutlineStart(hexes=hexes)
         if not startEdge:
             # This is a single hex on it's own
-            centerX, centerY = startHex.absoluteCenter()
+            centerX, centerY = startHex.worldCenter()
             for offsetX, offsetY in Region._HexOutlineOffsets:
                 self._outline.append((centerX + offsetX, centerY + offsetY))
             return self._outline
@@ -145,6 +145,6 @@ class Region(object):
             hex: travellermap.HexPosition,
             edge: travellermap.HexEdge
             ) -> typing.Tuple[float, float]:
-        centerX, centerY = hex.absoluteCenter()
+        centerX, centerY = hex.worldCenter()
         offsetX, offsetY = Region._AntiClockwiseOffsets[edge]
         return (centerX + offsetX, centerY + offsetY)

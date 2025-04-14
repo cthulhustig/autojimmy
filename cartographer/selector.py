@@ -246,7 +246,7 @@ class RectSelector(object):
             rect = cartographer.RectangleF()
             tightWorlds = []
             for world in sloppyWorlds:
-                left, top, width, height = world.hex().absoluteBounds()
+                left, top, width, height = world.hex().worldBounds()
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     tightWorlds.append(world)

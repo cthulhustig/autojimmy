@@ -49,14 +49,14 @@ class WorldInfo(object):
         self.name = world.name() if not world.isNameGenerated() else ''
         self.upperName = self.name.upper()
 
-        worldHex = world.hex()
-        self.hexString = f'{worldHex.offsetX():02d}{worldHex.offsetY():02d}'
+        hex = world.hex()
+        self.hexString = f'{hex.offsetX():02d}{hex.offsetY():02d}'
         self.ssHexString = '{hexX:02d}{hexY:02d}'.format(
-            hexX=int((worldHex.offsetX() - 1) % travellermap.SubsectorWidth) + 1,
-            hexY=int((worldHex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
+            hexX=int((hex.offsetX() - 1) % travellermap.SubsectorWidth) + 1,
+            hexY=int((hex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
 
-        hexCenterX, hexCenterY = worldHex.absoluteCenter()
-        self.hexCenter = cartographer.PointF(x=hexCenterX, y=hexCenterY)
+        worldCenterX, worldCenterY = hex.worldCenter()
+        self.hexCenter = cartographer.PointF(x=worldCenterX, y=worldCenterY)
 
         uwp = world.uwp()
         self.uwpString = uwp.string()
