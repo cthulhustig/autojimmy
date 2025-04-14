@@ -1259,16 +1259,6 @@ class DataStore(object):
                 if not canonicalName:
                     raise RuntimeError('Sector has no name')
 
-                # TODO: Remove hacky code to skip sectors, DO NOT COMMIT
-                #if canonicalName.find('Solomani Rim') < 0:
-                if canonicalName != 'Core':
-                #if canonicalName != 'Mavuzog':
-                #if canonicalName != 'Porlock':
-                #if canonicalName.find('Fornast') < 0:
-                #if canonicalName.find('Zarushagar') < 0:
-                #if canonicalName.find('Daibei') < 0:
-                   continue
-
                 abbreviation = sectorElement.get('Abbreviation')
                 if abbreviation != None:
                     abbreviation = str(abbreviation)
