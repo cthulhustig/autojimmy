@@ -138,18 +138,27 @@ def _createCommonQueryList(
     optionBitMask = _ForceHexesOption # Always enabled
     if travellermap.Option.SectorGrid in options:
         optionBitMask |= _GridMaskOption
-    if travellermap.Option.SectorNames in options:
+
+    if travellermap.Option.AllSectorNames in options:
         optionBitMask |= _SectorsAllOption
+    elif travellermap.Option.SelectedSectorNames in options:
+        optionBitMask |= _SectorsSelectedOption
+
     if travellermap.Option.Borders in options:
         optionBitMask |= _BordersMaskOption
+
     if travellermap.Option.RegionNames in options:
         optionBitMask |= _NamesMaskOption
+
     if travellermap.Option.ImportantWorlds in options:
         optionBitMask |= _WorldsMaskOption
+
     if travellermap.Option.WorldColours in options:
         optionBitMask |= _WorldColoursOption
+
     if travellermap.Option.FilledBorders in options:
         optionBitMask |= _FilledBordersOption
+
     optionList.append('options=' + str(optionBitMask)) # Always add this as ForcedHexes is always set
 
     if travellermap.Option.HideUI in options:

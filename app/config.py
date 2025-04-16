@@ -143,7 +143,8 @@ class Config(object):
     _MapOptionToKeyNameMap = {
         travellermap.Option.GalacticDirections: 'TravellerMap/GalacticDirections',
         travellermap.Option.SectorGrid: 'TravellerMap/SectorGrid',
-        travellermap.Option.SectorNames: 'TravellerMap/SectorNames',
+        travellermap.Option.SelectedSectorNames: 'TravellerMap/SelectedSectorNames',
+        travellermap.Option.AllSectorNames: 'TravellerMap/AllSectorNames',
         travellermap.Option.Borders: 'TravellerMap/Borders',
         travellermap.Option.Routes: 'TravellerMap/Routes',
         travellermap.Option.RegionNames: 'TravellerMap/RegionNames',
@@ -168,7 +169,7 @@ class Config(object):
     _DefaultMapOptions = set([
         travellermap.Option.GalacticDirections,
         travellermap.Option.SectorGrid,
-        travellermap.Option.SectorNames,
+        travellermap.Option.SelectedSectorNames,
         travellermap.Option.Borders,
         travellermap.Option.Routes,
         travellermap.Option.RegionNames,

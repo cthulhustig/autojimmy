@@ -25,10 +25,8 @@ _MapOptionsToRenderOptions: typing.Dict[
     cartographer.RenderOptions
     ] = {
         travellermap.Option.SectorGrid: cartographer.RenderOptions.GridMask,
-        # The renderer supports none/selected/all when it comes to rendering
-        # sector names but the rest of my implementation doesn't (see comment
-        # on travellermap.Option.SectorNames).
-        travellermap.Option.SectorNames: cartographer.RenderOptions.SectorsAll,
+        travellermap.Option.SelectedSectorNames: cartographer.RenderOptions.SectorsSelected,
+        travellermap.Option.AllSectorNames: cartographer.RenderOptions.SectorsAll,
         travellermap.Option.Borders: cartographer.RenderOptions.BordersMask,
         travellermap.Option.Routes: cartographer.RenderOptions.RoutesMask,
         travellermap.Option.RegionNames: cartographer.RenderOptions.NamesMask,

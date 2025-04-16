@@ -506,10 +506,10 @@ class _NewSectorDialog(gui.DialogEx):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='SectorNamesCheckBoxState',
+            key='SectorNamesComboBoxState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._renderSectorNamesCheckBox.restoreState(storedValue)
+            self._renderSectorNamesComboBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -555,7 +555,7 @@ class _NewSectorDialog(gui.DialogEx):
         self._settings.setValue('MetadataFilePath', self._metadataFileLineEdit.text())
         self._settings.setValue('StyleComboBoxState', self._renderStyleComboBox.saveState())
         self._settings.setValue('SectorGridCheckBoxState', self._renderSectorGridCheckBox.saveState())
-        self._settings.setValue('SectorNamesCheckBoxState', self._renderSectorNamesCheckBox.saveState())
+        self._settings.setValue('SectorNamesComboBoxState', self._renderSectorNamesComboBox.saveState())
         self._settings.setValue('RegionNamesCheckBoxState', self._renderRegionNamesCheckBox.saveState())
         self._settings.setValue('BordersCheckBoxState', self._renderBordersCheckBox.saveState())
         self._settings.setValue('FilledBordersCheckBoxState', self._renderFilledBordersCheckBox.saveState())
@@ -618,9 +618,21 @@ class _NewSectorDialog(gui.DialogEx):
         self._renderSectorGridCheckBox.setChecked(
             travellermap.Option.SectorGrid in options)
 
-        self._renderSectorNamesCheckBox = gui.CheckBoxEx()
-        self._renderSectorNamesCheckBox.setChecked(
-            travellermap.Option.SectorNames in options)
+        renderSectorNames = None
+        if travellermap.Option.AllSectorNames in options:
+            renderSectorNames = travellermap.Option.AllSectorNames
+        elif travellermap.Option.SelectedSectorNames in options:
+            renderSectorNames = travellermap.Option.SelectedSectorNames
+        self._renderSectorNamesComboBox = gui.EnumComboBox(
+            type=travellermap.Option,
+            value=renderSectorNames,
+            isOptional=True,
+            options=[
+                travellermap.Option.SelectedSectorNames,
+                travellermap.Option.AllSectorNames],
+            textMap={
+                travellermap.Option.SelectedSectorNames: 'Selected',
+                travellermap.Option.AllSectorNames: 'All'})
 
         self._renderRegionNamesCheckBox = gui.CheckBoxEx()
         self._renderRegionNamesCheckBox.setChecked(
@@ -646,7 +658,7 @@ class _NewSectorDialog(gui.DialogEx):
         leftLayout.setContentsMargins(0, 0, 0, 0)
         leftLayout.addRow('Style:', self._renderStyleComboBox)
         leftLayout.addRow('Sector Grid:', self._renderSectorGridCheckBox)
-        leftLayout.addRow('Sector Names:', self._renderSectorNamesCheckBox)
+        leftLayout.addRow('Sector Names:', self._renderSectorNamesComboBox)
         leftLayout.addRow('Region Names:', self._renderRegionNamesCheckBox)
 
         rightLayout = gui.FormLayoutEx()
@@ -959,8 +971,8 @@ class _NewSectorDialog(gui.DialogEx):
         if self._renderSectorGridCheckBox.isChecked():
             renderOptions.append(travellermap.Option.SectorGrid)
 
-        if self._renderSectorNamesCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.SectorNames)
+        if self._renderSectorNamesComboBox.currentEnum():
+            renderOptions.append(self._renderSectorNamesComboBox.currentEnum())
 
         if self._renderRegionNamesCheckBox.isChecked():
             renderOptions.append(travellermap.Option.RegionNames)

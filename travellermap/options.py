@@ -10,7 +10,8 @@ class Option(enum.Enum):
     # support none/selected/all would be a bit of a faff and I don't think it's
     # worth the effort. Instead I've just gone with a single sector names options
     # that maps to all sector names
-    SectorNames = 'Sector Names'
+    SelectedSectorNames = 'Selected Sector Names'
+    AllSectorNames = 'All Sector Names'
     Borders = 'Borders'
     Routes = 'Routes'
     RegionNames = 'Region Names'

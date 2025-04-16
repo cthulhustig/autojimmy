@@ -516,14 +516,14 @@ class JumpRouteWindow(gui.WindowWidget):
         if storedValue:
             self._mainSplitter.restoreState(storedValue)
 
-        self._jumpRatingOverlayAction.setChecked(
+        self._jumpRatingOverlayToggle.setChecked(
             gui.safeLoadSetting(
                 settings=self._settings,
                 key='ShowJumpRatingOverlay',
                 type=bool,
                 default=False))
 
-        self._worldTaggingOverlayAction.setChecked(
+        self._worldTaggingOverlayToggle.setChecked(
             gui.safeLoadSetting(
                 settings=self._settings,
                 key='ShowWorldTaggingOverlay',
@@ -558,8 +558,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.setValue('RefuellingPlanTableState', self._refuellingPlanTable.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
-        self._settings.setValue('ShowJumpRatingOverlay', self._jumpRatingOverlayAction.isChecked())
-        self._settings.setValue('ShowWorldTaggingOverlay', self._worldTaggingOverlayAction.isChecked())
+        self._settings.setValue('ShowJumpRatingOverlay', self._jumpRatingOverlayToggle.isChecked())
+        self._settings.setValue('ShowWorldTaggingOverlay', self._worldTaggingOverlayToggle.isChecked())
 
         self._settings.endGroup()
 
@@ -807,19 +807,22 @@ class JumpRouteWindow(gui.WindowWidget):
         self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
         self._travellerMapWidget.displayOptionsChanged.connect(self._updateJumpOverlays)
 
-        self._jumpRatingOverlayAction = QtWidgets.QAction('Jump Rating', self)
-        self._jumpRatingOverlayAction.setCheckable(True)
-        self._jumpRatingOverlayAction.setChecked(False)
-        self._jumpRatingOverlayAction.triggered.connect(
-            self._updateJumpOverlays)
-        self._worldTaggingOverlayAction = QtWidgets.QAction('World Tagging', self)
-        self._worldTaggingOverlayAction.setCheckable(True)
-        self._worldTaggingOverlayAction.setChecked(False)
-        self._worldTaggingOverlayAction.triggered.connect(
-            self._updateJumpOverlays)
-        self._travellerMapWidget.addConfigActions(
+        self._jumpRatingOverlayToggle = gui.ToggleButton()
+        self._jumpRatingOverlayToggle.setChecked(False)
+        self._jumpRatingOverlayToggle.toggled.connect(self._updateJumpOverlays)
+        self._worldTaggingOverlayToggle = gui.ToggleButton()
+        self._worldTaggingOverlayToggle.setChecked(False)
+        self._worldTaggingOverlayToggle.toggled.connect(self._updateJumpOverlays)
+
+        configLayout = QtWidgets.QGridLayout()
+        configLayout.addWidget(self._jumpRatingOverlayToggle, 0, 0)
+        configLayout.addWidget(gui.MapOverlayLabel('Jump Rating'), 0, 1)
+        configLayout.addWidget(self._worldTaggingOverlayToggle, 1, 0)
+        configLayout.addWidget(gui.MapOverlayLabel('World Tagging'), 1, 1)
+
+        self._travellerMapWidget.addConfigSection(
             section='Jump Overlays',
-            actions=[self._jumpRatingOverlayAction, self._worldTaggingOverlayAction])
+            content=configLayout)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -1529,8 +1532,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._travellerMapWidget.removeOverlay(handle=handle)
         self._jumpOverlayHandles.clear()
 
-        showJumpRatingOverlay = self._jumpRatingOverlayAction.isChecked()
-        showWorldTaggingOverlay = self._worldTaggingOverlayAction.isChecked()
+        showJumpRatingOverlay = self._jumpRatingOverlayToggle.isChecked()
+        showWorldTaggingOverlay = self._worldTaggingOverlayToggle.isChecked()
         if not (showJumpRatingOverlay or showWorldTaggingOverlay):
             return # Nothing more to do
 

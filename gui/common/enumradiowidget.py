@@ -77,7 +77,7 @@ class EnumRadioWidget(QtWidgets.QWidget):
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(EnumRadioWidget._StateVersion)
-        stream.writeQString(value.name)
+        stream.writeQString(value.name if value else '')
         return state
 
     def restoreState(
@@ -92,10 +92,10 @@ class EnumRadioWidget(QtWidgets.QWidget):
             return False
 
         name = stream.readQString()
-        if name not in self._type.__members__:
+        if name and name not in self._type.__members__:
             logging.warning(f'Failed to restore EnumRadioWidget state (Unknown enum "{name}")')
             return False
-        self.setCurrentEnum(self._type.__members__[name])
+        self.setCurrentEnum(self._type.__members__[name] if name else None)
         return True
 
     def _addControl(self, text: str, value: typing.Optional[enum.Enum]) -> None:

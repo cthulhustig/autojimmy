@@ -2118,7 +2118,6 @@ class LocalMapWidget(QtWidgets.QWidget):
         # increased it to 256 so it will animate over a larger transition
         # as drawing tiles is "cheaper" with my implementation
         xyThreshold = travellermap.SectorHeight * 256 / self._viewScale.linear
-        print(f'{xyDistance} < {xyThreshold}')
         return xyDistance < xyThreshold
 
     def _animateViewTransition(
