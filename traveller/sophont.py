@@ -4,6 +4,8 @@ import travellermap
 import typing
 
 class SophontManager(object):
+    _T5OfficialSophontsPath = "res/t5ss/sophont_codes.tab"
+
     _instance = None # Singleton instance
     _sophontMap = {}
     _lock = threading.Lock()
@@ -33,7 +35,9 @@ class SophontManager(object):
     # This function assumes it's only called once when the singleton is created and that
     # the mutex is locked
     def _loadSophonts(self) -> None:
-        results = json.loads(travellermap.DataStore.instance().sophontsData())
+        _, results = travellermap.parseTabContent(
+            content=travellermap.DataStore.instance().loadTextResource(
+                filePath=SophontManager._T5OfficialSophontsPath))
 
         for sophont in results:
             code = sophont['Code']

@@ -450,7 +450,6 @@ class DataStore(object):
 
     _MilieuBaseDir = 'milieu'
     _UniverseFileName = 'universe.json'
-    _SophontsFileName = 'sophonts.json'
     _TimestampFileName = 'timestamp.txt'
     _DataFormatFileName = 'dataformat.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
@@ -631,10 +630,6 @@ class DataStore(object):
         return travellermap.MapImage(
             bytes=mapData,
             format=mapLevel.format())
-
-    def sophontsData(self) -> str:
-        return self._bytesToString(bytes=self._readStockFile(
-            relativeFilePath=self._SophontsFileName))
 
     # TODO: I need to be sure about the directory structure under the res
     # directory (e.g. upper/lower case, naming contention). It's currently
