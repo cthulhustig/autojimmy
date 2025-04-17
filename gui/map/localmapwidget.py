@@ -1,6 +1,5 @@
 import app
 import common
-import enum
 import gui
 import logic
 import logging
@@ -11,16 +10,6 @@ import travellermap
 import typing
 import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui
-
-# TODO: Custom sector import
-# - Until I drop the web map widget I need to have it generate the map images
-# in case the user changes the rendering type
-# - Update welcome message to cover the different rendering types
-#   - This would probably be the place to mention that I intend to remove web rendering
-#   - Ideally I would force the welcome message to be displayed again if the user has hidden it (new _V2 key????)
-# - Add something to the create dialog that makes it clear the options selected there only apply if using the proxy
-#   - I still need to have them enabled when local rendering is selected so the user can change them if they want
-
 
 class _MapOverlay(object):
     def __init__(self):

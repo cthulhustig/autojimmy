@@ -12,46 +12,52 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 _WelcomeMessage = """
     <html>
-    <p>The Custom Sectors dialog allows you to add your own sector definitions
-    along with associated metadata to {name}. Custom sector data will be merged
-    with the existing data from Traveller Map to give a consistent view of your
-    Traveller universe. This allows features such as jump route planning and
-    trade calculations to take your sectors into account. The custom sector data
-    is also uploaded to Traveller Map in order to generate posters of your
-    custom sector. These posters are used by {name} to composite your custom
-    sectors onto the tiles that Traveller Map generates to display the
-    universe.</p>
-    <p>There are a few important things to note about this feature:
-    <ul style="margin-left:15px; -qt-list-indent:0;">
-    <li>The posters of your custom sectors will be generated at the point you
-    add the sector. This means the display options (render style, filled
-    borders, sector grid etc) are fixed at the point you add the sector. If you
-    change the display options in the Traveller Map windows, custom sectors
-    will not reflect the change.</li>
-    <li>The eye candy style isn't supported.</li>
-    <li>The overlaying of custom sector posters onto tiles is not perfect. You
-    may see some visual artifacts around the borders where custom sectors meet
-    other sectors. You may also notice some blockiness at high zoom levels.</li>
-    <li>Custom sector and metadata files need to be created manually, {name} has
-    no tools for editing these files.</li>
-    <li>Supported data formats are:
+    <p>The Custom Sectors dialog allows you to add your own sectors to {name}.
+    These sectors will be merged with the stock data from Traveller Map to
+    create your own custom version of the Traveller universe. This allows
+    {name} to display the sectors in windows that show the map and for
+    features such as jump route planning and trade calculations to take your
+    sectors into account.</p>
+
+    <p>Each custom sector must have a sector file and a metadata file. The
+    metadata file must, at a minimum, specify the name and position of the
+    sector. Supported data formats are:
     <ul style="margin-left:15px; -qt-list-indent:0;">
     <li><a href='https://travellermap.com/doc/fileformats#t5-column-delimited-format'>T5 Column Delimited Sector Format</a> (aka Second Survey format)</li>
     <li><a href='https://travellermap.com/doc/fileformats#t5tab'>T5 Tab Delimited Sector Format</a></li>
     <li><a href='https://travellermap.com/doc/metadata#xml-metadata-file-structure'>XML Metadata Format</a></li>
-    <li>JSON Metadata Format (sorry, I can't find documentation for this format)</li>
+    <li>JSON Metadata Format (sorry, I can't find any documentation for this format)</li>
     </ul>
-    <li>Metadata files are required and must, at a minimum, specify the name and
-    position of the sector.</li>
-    <li>JSON metadata is the default output from the Traveller Map Metadata API,
-    however, it isn't supported by the Poster API. To account for this, {name}
-    will automatically convert JSON metadata to XML metadata when generating
-    Posters. It should be noted that the JSON metadata format doesn't support
-    all the features of XML metadata, notably style sheets, so XML is generally
-    the recommended format.</li>
-    <li>{name} support 3 modes of tile composition. Which is used is dependent
-    on configuration and if CairoSVG is installed. The composition modes
-    are:</li>
+    </p>
+
+    <p>How custom sectors are drawn in windows displaying the map differs
+    depending on if you're using the default local rendering, where {name}
+    draws the map, or if you're using one of the legacy web based rendering,
+    where the Traveller Map server draws it.</p>
+    <p>If local rendering is used, {name} will draw custom sectors at the
+    same time as it's drawing the rest of the map. Custom sectors will be
+    indistinguishable from other sectors and will update if the map style or
+    draw options are changed.</p>
+    <p>If one of the web based rendering methods is used, {name} will use
+    Traveller Map to draw the stock map, then composites the custom sectors
+    on top of that. This uses images of the custom sectors that are
+    automatically generated using the Traveller Map Poster API at the point
+    the sector is added to {name}. This approach to drawing custom sectors
+    has a few of significant drawbacks. Most significant of those are, there
+    can be graphical artifacts where a custom sector borders another sector
+    or at high zoom levels, and, the map style and draw options are set at
+    the point the custom sector is created, so custom sectors will not
+    update if they're changed later.<p>
+
+    <p>Web based rendering is now considered a legacy feature and will most
+    likely be removed in a future version of {name}. If you do choose to use
+    when also using custom sectors, there are a few additional things to be
+    aware of:
+    <ul style="margin-left:15px; -qt-list-indent:0;">
+    <li>The eye candy style isn't supported.</li>
+    <li>{name} support 3 modes of composition with web based rendering. Which
+    is used is dependent on configuration and if CairoSVG is installed. The
+    composition modes are:</li>
     <ul style="margin-left:15px; -qt-list-indent:0;">
     <li><i>Bitmap</i> - This is the fallback mode if CairoSVG is not installed.
     {name} uses Traveller Map to generate bitmap posters for composition. This
@@ -668,12 +674,25 @@ class _NewSectorDialog(gui.DialogEx):
         rightLayout.addRow('Routes:', self._renderRoutesCheckBox)
         rightLayout.addRow('More World Colours:', self._renderWorldColoursCheckBox)
 
-        groupLayout = QtWidgets.QHBoxLayout()
-        groupLayout.addLayout(leftLayout)
-        groupLayout.addLayout(rightLayout)
-        groupLayout.addStretch()
+        optionsLayout = QtWidgets.QHBoxLayout()
+        optionsLayout.setContentsMargins(0, 0, 0, 0)
+        optionsLayout.addLayout(leftLayout)
+        optionsLayout.addLayout(rightLayout)
+        optionsLayout.addStretch()
 
-        self._renderOptionsGroupBox = QtWidgets.QGroupBox('Render Options')
+        infoLabel = QtWidgets.QLabel(
+            '* These options only apply to custom sectors if you switch to legacy web based rendering. When using local rendering, custom sectors will be drawn using the same options as the rest of the map and will update dynamically as you change those options.')
+        infoLabel.setWordWrap(True)
+        infoLabel.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred,
+            QtWidgets.QSizePolicy.Policy.Minimum)
+
+        groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.addLayout(optionsLayout)
+        groupLayout.addSpacing(int(10 * app.Config.instance().interfaceScale()))
+        groupLayout.addWidget(infoLabel)
+
+        self._renderOptionsGroupBox = QtWidgets.QGroupBox('Web Rendering Options*')
         self._renderOptionsGroupBox.setLayout(groupLayout)
 
     def _setupDialogButtons(self):
@@ -1544,5 +1563,7 @@ class CustomSectorDialog(gui.DialogEx):
             parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
-            noShowAgainId='CustomSectorsWelcome')
+            # v1 = Initial custom sector release
+            # v2 = Update for local rendering
+            noShowAgainId='CustomSectorsWelcome_v2')
         message.exec()
