@@ -76,28 +76,28 @@ class VectorObject(object):
 # polygon.
 class VectorObjectCache(object):
     _BorderFiles = [
-        'res/Vectors/Imperium.xml',
-        'res/Vectors/Aslan.xml',
-        'res/Vectors/Kkree.xml',
-        'res/Vectors/Vargr.xml',
-        'res/Vectors/Zhodani.xml',
-        'res/Vectors/Solomani.xml',
-        'res/Vectors/Hive.xml',
-        'res/Vectors/SpinwardClient.xml',
-        'res/Vectors/RimwardClient.xml',
-        'res/Vectors/TrailingClient.xml']
+        'vectors/Imperium.xml',
+        'vectors/Aslan.xml',
+        'vectors/Kkree.xml',
+        'vectors/Vargr.xml',
+        'vectors/Zhodani.xml',
+        'vectors/Solomani.xml',
+        'vectors/Hive.xml',
+        'vectors/SpinwardClient.xml',
+        'vectors/RimwardClient.xml',
+        'vectors/TrailingClient.xml']
 
     _RiftFiles = [
-        'res/Vectors/GreatRift.xml',
-        'res/Vectors/LesserRift.xml',
-        'res/Vectors/WindhornRift.xml',
-        'res/Vectors/DelphiRift.xml',
-        'res/Vectors/ZhdantRift.xml']
+        'vectors/GreatRift.xml',
+        'vectors/LesserRift.xml',
+        'vectors/WindhornRift.xml',
+        'vectors/DelphiRift.xml',
+        'vectors/ZhdantRift.xml']
 
     _RouteFiles = [
-        'res/Vectors/J5Route.xml',
-        'res/Vectors/J4Route.xml',
-        'res/Vectors/CoreRoute.xml']
+        'vectors/J5Route.xml',
+        'vectors/J4Route.xml',
+        'vectors/CoreRoute.xml']
 
     _PointTypeStart = 0x00
     _PointTypeLine = 0x01

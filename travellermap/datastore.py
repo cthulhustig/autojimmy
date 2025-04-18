@@ -463,7 +463,7 @@ class DataStore(object):
     # assumed to be 0. It also allows white space at the end to stop an easy typo in the snapshot breaking
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
-    _MinDataFormatVersion = UniverseDataFormat(4, 0)
+    _MinDataFormatVersion = UniverseDataFormat(4, 1)
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -631,22 +631,6 @@ class DataStore(object):
             bytes=mapData,
             format=mapLevel.format())
 
-    # TODO: I need to be sure about the directory structure under the res
-    # directory (e.g. upper/lower case, naming contention). It's currently
-    # a direct copy of the Traveller Map structure but it's not that
-    # consistent. It's important because changing it after initial release
-    # is awkward due to the fact it will be in the update zip so will need
-    # to be backwards compatible
-    # - Having it match the Traveller Map structure identically will make
-    # it easier to update
-    # - Having it match could be awkward if I want to do anything on top of
-    # what Traveller Map is doing in the future.
-    # TODO: The content of the res dir needs to be in map updates as loading
-    # won't use the install dir if the overlay dir exists. I suspect the
-    # easiest thing to do is to add a copy of the res directory to the data
-    # repo.
-    # - IMPORTANT: Doing this will need an update format version uptick but
-    # it's only adding files so should only need a minor version uptick
     def loadBinaryResource(self, filePath: str) -> bytes:
         return self._readStockFile(
             relativeFilePath=filePath)

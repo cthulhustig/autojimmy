@@ -98,7 +98,7 @@ class AllegianceCodeInfo(object):
 # NOTE: Mapping allegiance codes to names needs to be case sensitive as some sectors have
 # allegiances that differ only by case (e.g. Knaeleng, Kharrthon, Phlange, Kruse)
 class AllegianceManager(object):
-    _T5OfficialAllegiancesPath = "res/t5ss/allegiance_codes.tab"
+    _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
 
     # These unofficial allegiances are taken from Traveller Map. It has a
     # comment saying they're for M1120 but as far as I can tell it uses

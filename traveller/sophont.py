@@ -4,7 +4,7 @@ import travellermap
 import typing
 
 class SophontManager(object):
-    _T5OfficialSophontsPath = "res/t5ss/sophont_codes.tab"
+    _T5OfficialSophontsPath = "t5ss/sophont_codes.tab"
 
     _instance = None # Singleton instance
     _sophontMap = {}

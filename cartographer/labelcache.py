@@ -33,9 +33,9 @@ class WorldLabel(object):
         self.biasY = biasY
 
 class LabelCache(object):
-    _MinorLabelsPath = 'res/labels/minor_labels.tab'
-    _MajorLabelsPath = 'res/labels/mega_labels.tab'
-    _WorldLabelPath = 'res/labels/Worlds.xml'
+    _MinorLabelsPath = 'labels/minor_labels.tab'
+    _MajorLabelsPath = 'labels/mega_labels.tab'
+    _WorldLabelPath = 'labels/Worlds.xml'
 
     def __init__(self):
         self.minorLabels = self._parseMapLabels(

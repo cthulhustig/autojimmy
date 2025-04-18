@@ -7,7 +7,7 @@ class StyleCache(object):
     _BorderPattern = re.compile(r'border\.(\w+)')
     _RoutePattern = re.compile(r'route\.(\w+)')
 
-    _DefaultStylePath = 'res/styles/otu.css'
+    _DefaultStylePath = 'styles/otu.css'
 
     _StyleMap = {
         'solid': cartographer.LineStyle.Solid,

@@ -10,50 +10,50 @@ class ImageCache(object):
         self._graphics = graphics
         self.nebulaImage = self._graphics.createImage(
             data=travellermap.DataStore.instance().loadBinaryResource(
-                filePath='res/Candy/Nebula.png'))
+                filePath='candy/Nebula.png'))
         self.riftImage = self._graphics.createImage(
             data=travellermap.DataStore.instance().loadBinaryResource(
-                filePath='res/Candy/Rifts.png'))
+                filePath='candy/Rifts.png'))
         self.galaxyImage = self._graphics.createImage(
             data=travellermap.DataStore.instance().loadBinaryResource(
-                filePath='res/Candy/Galaxy.png'))
+                filePath='candy/Galaxy.png'))
         self.galaxyImageGray = self._graphics.createImage(
             data=travellermap.DataStore.instance().loadBinaryResource(
-                filePath='res/Candy/Galaxy_Gray.png'))
+                filePath='candy/Galaxy_Gray.png'))
         self.worldImages: typing.Dict[str, cartographer.AbstractImage] = {
             'Hyd0': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd0.png')),
+                    filePath='candy/Hyd0.png')),
             'Hyd1': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd1.png')),
+                    filePath='candy/Hyd1.png')),
             'Hyd2': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd2.png')),
+                    filePath='candy/Hyd2.png')),
             'Hyd3': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd3.png')),
+                    filePath='candy/Hyd3.png')),
             'Hyd4': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd4.png')),
+                    filePath='candy/Hyd4.png')),
             'Hyd5': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd5.png')),
+                    filePath='candy/Hyd5.png')),
             'Hyd6': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd6.png')),
+                    filePath='candy/Hyd6.png')),
             'Hyd7': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd7.png')),
+                    filePath='candy/Hyd7.png')),
             'Hyd8': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd8.png')),
+                    filePath='candy/Hyd8.png')),
             'Hyd9': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Hyd9.png')),
+                    filePath='candy/Hyd9.png')),
             'HydA': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/HydA.png')),
+                    filePath='candy/HydA.png')),
             'Belt': self._graphics.createImage(
                 data=travellermap.DataStore.instance().loadBinaryResource(
-                    filePath='res/Candy/Belt.png'))}
+                    filePath='candy/Belt.png'))}
