@@ -625,8 +625,8 @@ class _NewSectorDialog(gui.DialogEx):
             travellermap.Option.SectorGrid in options)
 
         renderSectorNames = None
-        if travellermap.Option.AllSectorNames in options:
-            renderSectorNames = travellermap.Option.AllSectorNames
+        if travellermap.Option.SectorNames in options:
+            renderSectorNames = travellermap.Option.SectorNames
         elif travellermap.Option.SelectedSectorNames in options:
             renderSectorNames = travellermap.Option.SelectedSectorNames
         self._renderSectorNamesComboBox = gui.EnumComboBox(
@@ -635,10 +635,10 @@ class _NewSectorDialog(gui.DialogEx):
             isOptional=True,
             options=[
                 travellermap.Option.SelectedSectorNames,
-                travellermap.Option.AllSectorNames],
+                travellermap.Option.SectorNames],
             textMap={
                 travellermap.Option.SelectedSectorNames: 'Selected',
-                travellermap.Option.AllSectorNames: 'All'})
+                travellermap.Option.SectorNames: 'All'})
 
         self._renderRegionNamesCheckBox = gui.CheckBoxEx()
         self._renderRegionNamesCheckBox.setChecked(

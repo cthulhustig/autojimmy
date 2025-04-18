@@ -26,7 +26,7 @@ _MapOptionsToRenderOptions: typing.Dict[
     ] = {
         travellermap.Option.SectorGrid: cartographer.RenderOptions.GridMask,
         travellermap.Option.SelectedSectorNames: cartographer.RenderOptions.SectorsSelected,
-        travellermap.Option.AllSectorNames: cartographer.RenderOptions.SectorsAll,
+        travellermap.Option.SectorNames: cartographer.RenderOptions.SectorsAll,
         travellermap.Option.Borders: cartographer.RenderOptions.BordersMask,
         travellermap.Option.Routes: cartographer.RenderOptions.RoutesMask,
         travellermap.Option.RegionNames: cartographer.RenderOptions.NamesMask,

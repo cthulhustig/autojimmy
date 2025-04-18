@@ -1,5 +1,11 @@
 import enum
 
+# NOTE: If I ever change the name of any of these enums I'll
+# need to add a mapping to the code that loads CustomMapOptions
+# from the custom universe.json format I use for custom sectors.
+# TODO: The note above can be removed when I remove the web map
+# as the options used when the sector was added aren't relevant
+# for local rendering
 class Option(enum.Enum):
     GalacticDirections = 'Galactic Directions'
     SectorGrid = 'Sector Grid'
@@ -11,7 +17,10 @@ class Option(enum.Enum):
     # worth the effort. Instead I've just gone with a single sector names options
     # that maps to all sector names
     SelectedSectorNames = 'Selected Sector Names'
-    AllSectorNames = 'All Sector Names'
+    # TODO: This enum should really be called AllSectorNames but changing it
+    # would cause pre-existing custom sectors that used it to fail to load
+    # (see note above). When I remove the web map I can rename it.
+    SectorNames = 'All Sector Names'
     Borders = 'Borders'
     Routes = 'Routes'
     RegionNames = 'Region Names'

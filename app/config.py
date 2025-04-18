@@ -144,7 +144,7 @@ class Config(object):
         travellermap.Option.GalacticDirections: 'TravellerMap/GalacticDirections',
         travellermap.Option.SectorGrid: 'TravellerMap/SectorGrid',
         travellermap.Option.SelectedSectorNames: 'TravellerMap/SelectedSectorNames',
-        travellermap.Option.AllSectorNames: 'TravellerMap/AllSectorNames',
+        travellermap.Option.SectorNames: 'TravellerMap/AllSectorNames',
         travellermap.Option.Borders: 'TravellerMap/Borders',
         travellermap.Option.Routes: 'TravellerMap/Routes',
         travellermap.Option.RegionNames: 'TravellerMap/RegionNames',

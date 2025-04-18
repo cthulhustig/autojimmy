@@ -139,7 +139,7 @@ def _createCommonQueryList(
     if travellermap.Option.SectorGrid in options:
         optionBitMask |= _GridMaskOption
 
-    if travellermap.Option.AllSectorNames in options:
+    if travellermap.Option.SectorNames in options:
         optionBitMask |= _SectorsAllOption
     elif travellermap.Option.SelectedSectorNames in options:
         optionBitMask |= _SectorsSelectedOption

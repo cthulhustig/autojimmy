@@ -1562,7 +1562,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             MapWidgetEx._sharedSectorNamesActionGroup.addAction(
                 _ToggleOptionAction(option=travellermap.Option.SelectedSectorNames))
             MapWidgetEx._sharedSectorNamesActionGroup.addAction(
-                _ToggleOptionAction(option=travellermap.Option.AllSectorNames))
+                _ToggleOptionAction(option=travellermap.Option.SectorNames))
         MapWidgetEx._sharedSectorNamesActionGroup.triggered.connect(self._displayOptionChanged)
 
         if not MapWidgetEx._sharedBordersAction:
