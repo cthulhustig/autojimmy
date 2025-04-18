@@ -1548,8 +1548,17 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not MapWidgetEx._sharedSectorNamesActionGroup:
             MapWidgetEx._sharedSectorNamesActionGroup = QtWidgets.QActionGroup(None)
             MapWidgetEx._sharedSectorNamesActionGroup.setExclusive(True)
-            MapWidgetEx._sharedSectorNamesActionGroup.setExclusionPolicy(
-                QtWidgets.QActionGroup.ExclusionPolicy.ExclusiveOptional)
+
+            # HACK: This is a horrible, horrible hack. The setExclusionPolicy
+            # method was added in 5.14 which means it's not available on macOS
+            # Sierra. By not calling the method if the version is to low it
+            # means we don't throw an exception but the sector name toggle
+            # buttons won't work properly but should work well enough to be
+            # usable
+            if gui.minPyQtVersionCheck(minVersion='5.14'):
+                MapWidgetEx._sharedSectorNamesActionGroup.setExclusionPolicy(
+                    QtWidgets.QActionGroup.ExclusionPolicy.ExclusiveOptional)
+
             MapWidgetEx._sharedSectorNamesActionGroup.addAction(
                 _ToggleOptionAction(option=travellermap.Option.SelectedSectorNames))
             MapWidgetEx._sharedSectorNamesActionGroup.addAction(
