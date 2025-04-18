@@ -39,7 +39,9 @@ class HexSelectDialog(gui.DialogEx):
         windowLayout.addLayout(buttonLayout, 0)
 
         self.setLayout(windowLayout)
+        self.resize(640, 480)
         self.showMaximizeButton()
+
         self._updateLabel()
 
     def selectedHexes(self) -> typing.Iterable[traveller.World]:

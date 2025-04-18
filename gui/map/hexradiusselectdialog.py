@@ -66,6 +66,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
+        self.resize(640, 480)
         self.showMaximizeButton()
 
         self._handleConfigChange()

@@ -18,6 +18,7 @@ class MapWindow(gui.WindowWidget):
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._mapWidget)
         windowLayout.addWidget(self._importJumpRouteButton)
+        self.resize(640, 480)
         self.setLayout(windowLayout)
 
     def centerOnHex(
