@@ -353,11 +353,11 @@ class RenderContext(object):
     # rng by the tile origin. As the web interface always chunks the universe into
     # tiles with the same origins this means, for a given tile, the random stars
     # will always be in the same place.
-    # This approach doesn't work for me as I'm not using tiles in that way. I'm
-    # drawing a single tile where the origin will vary depending on where the
-    # current viewport is. To achieve a similar effect I'm chunking the random
-    # stars by sector. The downside of this is you always have to draw process
-    # all stars for all sectors overlapped by the viewport
+    # This approach doesn't work for me as I want to support rendering a full
+    # frame, effectively a single tile where the origin will vary depending on
+    # where the current viewport is. To achieve a similar effect I'm chunking the
+    # random stars by sector. The downside of this is you always have to draw
+    # process all stars for all sectors overlapped by the viewport
     def _drawPseudoRandomStars(self) -> None:
         if not self._styleSheet.pseudoRandomStars.visible:
             return
