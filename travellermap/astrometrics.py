@@ -361,7 +361,7 @@ class HexPosition(object):
         else:
             raise ValueError('Invalid hex position arguments')
 
-        self._absoluteCenter: typing.Optional[typing.Tuple[float, float]] = None
+        self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
         self._mapSpace: typing.Optional[typing.Tuple[float, float]] = None
 
     def __eq__(self, other):
@@ -433,6 +433,8 @@ class HexPosition(object):
             self._calculateRelative()
         return self._relative
 
+    # TODO: When I get rid of map rendering I should be able to get rid
+    # of this and any other map space stuff this file
     def mapSpace(self) -> typing.Tuple[float, float]:
         if self._mapSpace:
             return self._mapSpace
@@ -500,12 +502,12 @@ class HexPosition(object):
 
     # Return the absolute center point of the hex
     def worldCenter(self) -> typing.Tuple[float, float]:
-        if not self._absoluteCenter:
+        if not self._worldCenter:
             absX, absY = self.absolute()
-            self._absoluteCenter = (
+            self._worldCenter = (
                 absX - 0.5,
                 absY - (0.0 if ((absX % 2) != 0) else 0.5))
-        return self._absoluteCenter
+        return self._worldCenter
 
     def worldBounds(
             self
