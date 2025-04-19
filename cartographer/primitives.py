@@ -359,31 +359,6 @@ class RectangleF(object):
                 selfHeight == otherHeight and selfWidth == otherWidth
         return super().__eq__(other)
 
-class HighlightWorldPattern(object):
-    class Field(enum.Enum):
-        Starport = 0
-        Size = 1
-        Atmosphere = 2
-        Hydrosphere = 3
-        Population = 4
-        Government = 5
-        Law = 6
-        Tech = 7
-        Importance = 8
-        Bases = 9
-
-    def __init__(
-            self,
-            field: 'HighlightWorldPattern.Field' = Field.Starport,
-            min: typing.Optional[int] = None,
-            max: typing.Optional[int] = None,
-            matches: typing.Optional[typing.Collection[str]] = None
-            ):
-        self.field = field
-        self.min = min
-        self.max = max
-        self.matches = list(matches)
-
 class LabelStyle(object):
     @typing.overload
     def __init__(self) -> None: ...

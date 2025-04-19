@@ -164,7 +164,6 @@ class StyleSheet(object):
     def hasWorldOverlays(self) -> bool:
         return self.populationOverlay.visible or \
             self.importanceOverlay.visible or  \
-            self.highlightWorlds.visible or \
             self.showStellarOverlay or \
             self.capitalOverlay.visible
 
@@ -193,9 +192,6 @@ class StyleSheet(object):
         self.routeEndAdjust = 0.25
 
         self.t5AllegianceCodes = False
-
-        self.highlightWorlds = StyleSheet.StyleElement()
-        self.highlightWorldsPattern: typing.Optional[cartographer.HighlightWorldPattern] = None
 
         self.droyneWorlds = StyleSheet.StyleElement()
         self.ancientsWorlds = StyleSheet.StyleElement()
@@ -594,8 +590,6 @@ class StyleSheet(object):
             colour='#80FFFF00')
         self.importanceOverlay.fillBrush = self._graphics.createBrush(
             colour='#2080FF00')
-        self.highlightWorlds.fillBrush = self._graphics.createBrush(
-            colour='#80FF0000')
 
         self.capitalOverlay.fillBrush = self._graphics.createBrush(
             colour=cartographer.makeAlphaColour(
@@ -678,14 +672,6 @@ class StyleSheet(object):
                 colour=travellermap.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-
-            self.highlightWorlds.fillBrush.setColour(cartographer.makeAlphaColour(
-                alpha=0x30,
-                colour=highlightColour))
-            self.highlightWorlds.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
-                width=0.03 * penScale,
-                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Fasa:
             self.showGalaxyBackground = False
             self.deepBackgroundOpacity = 0
@@ -774,14 +760,6 @@ class StyleSheet(object):
                 colour=travellermap.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-
-            self.highlightWorlds.fillBrush.setColour(cartographer.makeAlphaColour(
-                alpha=0x30,
-                colour=highlightColour))
-            self.highlightWorlds.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
-                width=0.03 * penScale,
-                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Print:
             self.lightBackground = True
 
@@ -817,14 +795,6 @@ class StyleSheet(object):
                 colour=travellermap.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-
-            self.highlightWorlds.fillBrush.setColour(cartographer.makeAlphaColour(
-                alpha=0x30,
-                colour=self.highlightWorlds.fillBrush.colour()))
-            self.highlightWorlds.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
-                width=0.03 * penScale,
-                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Draft:
             inkOpacity = 0xB0
 
@@ -975,14 +945,6 @@ class StyleSheet(object):
                 colour=travellermap.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-
-            self.highlightWorlds.fillBrush.setColour(cartographer.makeAlphaColour(
-                alpha=0x30,
-                colour=self.highlightWorlds.fillBrush.colour()))
-            self.highlightWorlds.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
-                width=0.03 * penScale,
-                style=cartographer.LineStyle.DashDot)
         elif self._style is travellermap.Style.Candy:
             self.useWorldImages = True
             self.pseudoRandomStars.visible = False
