@@ -524,11 +524,13 @@ def main() -> None:
 
         gui.configureAppStyle(application)
 
-        # Check if CairoSVG is working, possibly prompting the user if it's not. This needs to be
-        # done after the DataStore singleton has been set up so it can check if there are any
-        # existing SVG custom sectors
-        if not _cairoSvgInstallCheck():
-            sys.exit(0)
+        if app.Config.instance().mapSourceType() is app.MapSourceType.WebProxy:
+            # Check if CairoSVG is working, possibly prompting the user if it's
+            # not. This needs to be done after the DataStore singleton has been
+            # set up so it can check if there are any existing SVG custom
+            # sectors
+            if not _cairoSvgInstallCheck():
+                sys.exit(0)
 
         # Check if there is new universe data available BEFORE the app loads the
         # local snapshot so it can be updated without restarting
