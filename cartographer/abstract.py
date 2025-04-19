@@ -26,15 +26,15 @@ class AbstractPath(object):
 
 class AbstractSpline(object):
     def points(self) -> typing.Sequence[cartographer.PointF]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement points')
+        raise RuntimeError(f'{type(self)} is derived from AbstractSpline so must implement points')
     def closed(self) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement closed')
+        raise RuntimeError(f'{type(self)} is derived from AbstractSpline so must implement closed')
     def bounds(self) -> cartographer.RectangleF:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement bounds')
+        raise RuntimeError(f'{type(self)} is derived from AbstractSpline so must implement bounds')
     def translate(self, dx: float, dy: float) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement translate')
+        raise RuntimeError(f'{type(self)} is derived from AbstractSpline so must implement translate')
     def copyFrom(self, other: 'AbstractSpline') -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractPath so must implement copyFrom')
+        raise RuntimeError(f'{type(self)} is derived from AbstractSpline so must implement copyFrom')
 
 class AbstractMatrix(object):
     def m11(self) -> float:
@@ -62,7 +62,7 @@ class AbstractMatrix(object):
     def prepend(self, matrix: 'AbstractMatrix') -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
     def transform(self, point: cartographer.PointF) -> cartographer.PointF:
-        raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement prepend')
+        raise RuntimeError(f'{type(self)} is derived from AbstractMatrix so must implement transform')
 
 class AbstractBrush(object):
     def colour(self) -> str:
@@ -227,9 +227,9 @@ class AbstractGraphics(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement multiplyTransform')
 
     def intersectClipPath(self, clip: AbstractPath) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement intersectClipPath')
     def intersectClipRect(self, rect: cartographer.RectangleF) -> None:
-        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement IntersectClip')
+        raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement intersectClipRect')
 
     def drawPoint(self, point: cartographer.PointF, pen: AbstractPen) -> None:
         raise RuntimeError(f'{type(self)} is derived from AbstractGraphics so must implement drawPoint')
