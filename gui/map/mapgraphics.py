@@ -25,7 +25,7 @@ class MapPointList(cartographer.AbstractPath):
         elif 'other' in kwargs:
             other = kwargs['other']
             if not isinstance(other, MapPointList):
-                raise TypeError('The other parameter must be a QtMapPointList')
+                raise TypeError('The other parameter must be a MapPointList')
             self._points = list(other.points())
         else:
             self._points = list(kwargs['points'])
@@ -96,7 +96,7 @@ class MapPath(cartographer.AbstractPath):
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapPath):
-                raise TypeError('The other parameter must be a QtMapPath')
+                raise TypeError('The other parameter must be a MapPath')
             # NOTE: This assumes the points and types methods return copies of
             # the lists held by other not the lists themselves
             self._points = other.points()
@@ -177,7 +177,7 @@ class MapSpline(object):
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapSpline):
-                raise TypeError('The other parameter must be a QtMapSpline')
+                raise TypeError('The other parameter must be a MapSpline')
             # NOTE: This assumes the points methods return copies of
             # the list held by other not the list themselves
             self._points = other.points()
@@ -327,7 +327,7 @@ class MapMatrix(cartographer.AbstractMatrix):
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapMatrix):
-                raise TypeError('The other parameter must be an QtMapMatrix')
+                raise TypeError('The other parameter must be an MapMatrix')
             self._qtMatrix = QtGui.QTransform(other._qtMatrix)
         else:
             self._qtMatrix = QtGui.QTransform(
@@ -412,7 +412,7 @@ class MapBrush(cartographer.AbstractBrush):
         elif 'other' in kwargs:
             other = kwargs['other']
             if not isinstance(other, MapBrush):
-                raise TypeError('The other parameter must be a QtMapBrush')
+                raise TypeError('The other parameter must be a MapBrush')
             self._colour = other.colour()
         else:
             self._colour = kwargs['colour']
@@ -477,7 +477,7 @@ class MapPen(cartographer.AbstractPen):
         elif len(args) + len(kwargs) == 1:
             other = args[0] if len(args) > 0 else kwargs['other']
             if not isinstance(other, MapPen):
-                raise TypeError('The other parameter must be a QtMapPen')
+                raise TypeError('The other parameter must be a MapPen')
             self._colour = other.colour()
             self._width = other.width()
             self._style = other.style()
