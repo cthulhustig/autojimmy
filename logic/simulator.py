@@ -144,7 +144,7 @@ class Simulator(object):
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
-            self._nearbyWorlds = traveller.WorldManager.instance().worldsInArea(
+            self._nearbyWorlds = traveller.WorldManager.instance().worldsInRadius(
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
                 worldFilterCallback=worldFilterCallback)

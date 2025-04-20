@@ -61,7 +61,7 @@ class WindowWidget(QtWidgets.QWidget):
             settings=self._settings,
             key='WindowGeometry',
             type=QtCore.QRect if isMaximised else QtCore.QByteArray)
-        if storedGeometry:
+        if storedGeometry != None:
             if isMaximised:
                 self.setGeometry(storedGeometry)
             else:
@@ -75,7 +75,7 @@ class WindowWidget(QtWidgets.QWidget):
         self._settings.beginGroup(self._configSection)
         isMaximised = self.isMaximized()
         self._settings.setValue('WindowIsMaximised', isMaximised)
-        if  isMaximised:
+        if isMaximised:
             self._settings.setValue('WindowGeometry', self.normalGeometry())
         else:
             self._settings.setValue('WindowGeometry', self.saveGeometry())

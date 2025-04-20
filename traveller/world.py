@@ -6,10 +6,11 @@ import typing
 class World(object):
     def __init__(
             self,
-            name: str,
+            hex: travellermap.HexPosition,
+            worldName: str,
+            isNameGenerated: bool,
             sectorName: str,
             subsectorName: str,
-            hex: travellermap.HexPosition,
             allegiance: str,
             uwp: str,
             economics: str,
@@ -22,10 +23,11 @@ class World(object):
             systemWorlds: str,
             bases: str
             ) -> None:
-        self._name = name
+        self._hex = hex
+        self._name = worldName
+        self._isNameGenerated = isNameGenerated
         self._sectorName = sectorName
         self._subsectorName = subsectorName
-        self._hex = hex
         self._allegiance = allegiance
         self._uwp = traveller.UWP(uwp)
         self._economics = traveller.Economics(economics)
@@ -44,19 +46,28 @@ class World(object):
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
         self._bases = traveller.Bases(bases)
 
-    def name(self, includeSubsector: bool = False) -> str:
+        # Importance is calculated on demand
+        self._importance = None
+
+    def hex(self) -> travellermap.HexPosition:
+        return self._hex
+
+    def name(
+            self,
+            includeSubsector: bool = False
+            ) -> str:
         if includeSubsector:
             return f'{self._name} ({self._subsectorName})'
         return self._name
+
+    def isNameGenerated(self) -> bool:
+        return self._isNameGenerated
 
     def sectorName(self) -> str:
         return self._sectorName
 
     def subsectorName(self) -> str:
         return self._subsectorName
-
-    def hex(self) -> travellermap.HexPosition:
-        return self._hex
 
     def sectorHex(self) -> str:
         _, _, offsetX, offsetY = self._hex.relative()
@@ -76,6 +87,9 @@ class World(object):
 
     def remarks(self) -> traveller.Remarks:
         return self._remarks
+
+    def hasRemark(self, remark: str) -> None:
+        return self._remarks.hasRemark(remark=remark)
 
     def zone(self) -> typing.Optional[traveller.ZoneType]:
         return self._zone
@@ -102,6 +116,12 @@ class World(object):
         starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
+    def isMajorHomeworld(self) -> bool:
+        return self._remarks.isMajorHomeworld()
+
+    def isMinorHomeworld(self) -> bool:
+        return self._remarks.isMinorHomeworld()
+
     def hasOwner(self) -> bool:
         return self._remarks.hasOwner()
 
@@ -116,6 +136,9 @@ class World(object):
 
     def colonySectorHexes(self) -> typing.Optional[typing.Iterable[str]]:
         return self._remarks.colonySectorHexes()
+
+    def physicalSize(self) -> int:
+        return self._uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
 
     # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:
@@ -229,8 +252,78 @@ class World(object):
                 travellermap.HexPosition
             ]
             ) -> int:
-        return self._hexPosition.parsecsTo(
+        return self._hex.parsecsTo(
             dest.hex() if isinstance(dest, World) else dest)
+
+    # This is based on code from Traveller Map which I believe is
+    # based on the T5.10 rules
+    def importance(self) -> int:
+        if self._importance is None:
+            self._importance = 0
+
+            starportCode = self._uwp.code(traveller.UWP.Element.StarPort)
+            techLevel = self._uwp.numeric(traveller.UWP.Element.TechLevel, default=0)
+            population = self._uwp.numeric(traveller.UWP.Element.Population, default=0)
+            atmosphere = self._uwp.numeric(traveller.UWP.Element.Atmosphere, default=-1)
+            hydrographics = self._uwp.numeric(traveller.UWP.Element.Hydrographics, default=-1)
+
+            if 'AB'.find(starportCode) >= 0:
+                self._importance += 1
+            elif 'DEX'.find(starportCode) >= 0:
+                self._importance -= 1
+
+            if techLevel >= 16:
+                self._importance += 2
+            elif techLevel >= 10:
+                self._importance += 1
+            elif techLevel <= 8:
+                self._importance -= 1
+
+            if population >= 9:
+                self._importance += 1
+            elif population <= 6:
+                self._importance -= 1
+
+            isAgricultural = \
+                (atmosphere >= 4 and atmosphere <= 9) and \
+                (hydrographics >= 4 and hydrographics <= 8) and \
+                (population >= 5 and population <= 7)
+            isRich = \
+                (atmosphere == 6 or atmosphere == 8) and \
+                (population >= 6 and population <= 8)
+            isIndustrial = \
+                ((atmosphere >= 0 and atmosphere <= 2) or \
+                 (atmosphere == 4) or \
+                 (atmosphere == 7) or
+                 (atmosphere >= 9 and atmosphere <= 12)) and \
+                 (population >= 9)
+            if isAgricultural:
+                self._importance += 1
+            if isRich:
+                self._importance += 1
+            if isIndustrial:
+                self._importance += 1
+
+            # NOTE: The definition of hasNavalBase intentionally doesn't include
+            # things like VargrNavalBase as Traveller Map doesn't
+            hasNavalBase = self._bases.hasBase(traveller.BaseType.ImperialNavalBase) or \
+                self._bases.hasBase(traveller.BaseType.NavalBase)
+            hasOtherServiceBase = self._bases.hasBase(traveller.BaseType.ImperialScoutBase) or \
+                self._bases.hasBase(traveller.BaseType.MilitaryBase) or \
+                self._bases.hasBase(traveller.BaseType.ExplorationBase) or \
+                self._bases.hasBase(traveller.BaseType.VargrCorsairBase)
+            hasServiceSpecialBase = self._bases.hasBase(traveller.BaseType.WayStation) or \
+                self._bases.hasBase(traveller.BaseType.NavalDepot)
+            hasAslanAndTlaukhuBase = self._bases.hasBase(traveller.BaseType.AslanClanBase) and \
+                self._bases.hasBase(traveller.BaseType.AslanTlaukhuBase)
+            if hasNavalBase and hasOtherServiceBase:
+                self._importance += 1
+            if hasServiceSpecialBase:
+                self._importance += 1
+            if hasAslanAndTlaukhuBase:
+                self._importance += 1
+
+        return self._importance
 
     # Prevent deep and shallow copies of world objects some code
     # (specifically the jump route calculations) expect there to

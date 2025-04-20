@@ -1,3 +1,4 @@
+import common
 import fnmatch
 import re
 import logging
@@ -13,8 +14,8 @@ class WorldManager(object):
     # The absolute and relative hex patterns match search strings formatted
     # as 2 or 4 comma separated signed integers respectively, optionally
     # surrounded by brackets. All integer values are extracted.
-    _AbsoluteHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+)\)?$')
-    _RelativeHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)\)?$')
+    _AbsoluteHexSearchPattern = re.compile(r'^\(?(-?\d+)[,\s]?\s*(-?\d+)\)?$')
+    _RelativeHexSearchPattern = re.compile(r'^\(?(-?\d+)[,\s]?\s*(-?\d+)[,\s]?\s*(-?\d+)[,\s]?\s*(-?\d+)\)?$')
     # The sector hex search pattern matches a search string with the format
     # of a sector hex string optionally with the subsector in brackets
     # following it (i.e. the canonical name format used for a dead space
@@ -25,6 +26,14 @@ class WorldManager(object):
     # a world name followed by its subsector in brackets. Both the world name
     # and subsector name are extracted
     _WorldSearchPattern = re.compile(r'^(.+)\s+\(\s*(.+)\s*\)$')
+    # Route and border style sheet regexes
+    _BorderStylePattern = re.compile(r'border\.(\w+)')
+    _RouteStylePattern = re.compile(r'route\.(\w+)')
+
+    # Pattern used by Traveller Map to replace white space with '\n' to do
+    # word wrapping
+    # Use with `_WrapPattern.sub('\n', label)` to  replace
+    _LineWrapPattern = re.compile(r'\s+(?![a-z])')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -46,7 +55,18 @@ class WorldManager(object):
     _sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
     _subsectorSectorMap: typing.Dict[traveller.Subsector, traveller.Sector] = {}
-    _absoluteWorldMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
+    _worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
+    _mainsList: typing.List[traveller.Main] = []
+    _hexMainMap: typing.Dict[travellermap.HexPosition, traveller.Main] = {}
+
+    # For milieu other than M1105, if that milieu doesn't have a sector
+    # at a location M1105 does have a sector, the world positions from
+    # the M1105 sector is used as a "placeholder" location. This is done
+    # to allow the cartographer to render those locations as placeholders
+    # to mimic what Traveller Map does. Also to mimic Traveller Map, these
+    # locations included when calculating mains.
+    _placeholderSectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.PlaceholderSector] = {}
+    _placeholderWorldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.PlaceholderWorld] = {}
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -152,7 +172,89 @@ class WorldManager(object):
 
                 for world in sector.worlds():
                     hex = world.hex()
-                    self._absoluteWorldMap[(hex.absoluteX(), hex.absoluteY())] = world
+                    self._worldPositionMap[(hex.absoluteX(), hex.absoluteY())] = world
+
+    def loadPlaceholders(
+            self,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            ) -> None:
+        if self._milieu == travellermap.Milieu.M1105:
+            return # No placeholders for M1105
+
+        sectors = travellermap.DataStore.instance().sectors(
+            milieu=travellermap.Milieu.M1105)
+
+        toLoad: typing.List[travellermap.SectorInfo] = []
+        for sectorInfo in sectors:
+            # Skip placeholder sectors where there is already a sector at
+            # that location in the current milieu
+            if (sectorInfo.x(), sectorInfo.y()) not in self._sectorPositionMap:
+                toLoad.append(sectorInfo)
+
+        for i, sectorInfo in enumerate(toLoad):
+            sectorName = sectorInfo.canonicalName()
+            logging.debug(f'Loading worlds for sector {sectorName}')
+
+            if progressCallback:
+                progressCallback(sectorInfo.canonicalName(), i, len(toLoad))
+
+            try:
+                sectorData = travellermap.DataStore.instance().sectorFileData(
+                    sectorName=sectorName,
+                    milieu=travellermap.Milieu.M1105)
+                worlds = travellermap.readSector(
+                    content=sectorData,
+                    format=sectorInfo.sectorFormat(),
+                    identifier=sectorInfo.canonicalName())
+            except Exception as ex:
+                logging.error(
+                    f'Failed to load placeholder world data for {sectorName}',
+                    exc_info=ex)
+                continue # Keep trying to load more sectors
+
+            placeholders: typing.List[traveller.PlaceholderWorld] = []
+            for world in worlds:
+                hex = world.attribute(travellermap.WorldAttribute.Hex)
+                hex = travellermap.HexPosition(
+                    sectorX=sectorInfo.x(),
+                    sectorY=sectorInfo.y(),
+                    offsetX=int(hex[:2]),
+                    offsetY=int(hex[-2:]))
+                placeholder = traveller.PlaceholderWorld(hex=hex)
+                self._placeholderWorldPositionMap[hex.absolute()] = placeholder
+                placeholders.append(placeholder)
+
+            if placeholders:
+                self._placeholderSectorPositionMap[(sectorInfo.x(), sectorInfo.y())] = \
+                    traveller.PlaceholderSector(
+                        x=sectorInfo.x(),
+                        y=sectorInfo.y(),
+                        placeholders=placeholders)
+
+            if progressCallback:
+                progressCallback(sectorInfo.canonicalName(), i + 1, len(toLoad))
+
+    def calculateMains(
+            self,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            ) -> None:
+        mainsFinder = travellermap.MainsFinder()
+        for sector in self._sectorList:
+            for world in sector:
+                mainsFinder.addWorld(world.hex())
+        for placeholder in self._placeholderWorldPositionMap.values():
+            mainsFinder.addWorld(placeholder.hex())
+        mains = mainsFinder.search(progressCallback=progressCallback)
+        for hexes in mains:
+            worlds = []
+            for hex in hexes:
+                world = self.worldByPosition(hex=hex)
+                if world:
+                    worlds.append(world)
+            main = traveller.Main(worlds=worlds)
+            self._mainsList.append(main)
+            for world in main:
+                self._hexMainMap[world.hex()] = main
 
     def sectorNames(self) -> typing.Iterable[str]:
         sectorNames = []
@@ -183,13 +285,19 @@ class WorldManager(object):
             self,
             hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.World]:
-        return self._absoluteWorldMap.get(hex.absolute())
+        return self._worldPositionMap.get(hex.absolute())
 
     def sectorByPosition(
             self,
             hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.Sector]:
         return self._sectorPositionMap.get((hex.sectorX(), hex.sectorY()))
+
+    def sectorBySectorIndex(
+            self,
+            index: typing.Tuple[int, int]
+            ) -> typing.Optional[traveller.Sector]:
+        return self._sectorPositionMap.get(index)
 
     def subsectorByPosition(
             self,
@@ -210,15 +318,44 @@ class WorldManager(object):
 
         return subsectors[index]
 
+    def sectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.List[traveller.Sector]:
+        return list(self.yieldSectorsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight))
+
+    def subsectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.List[traveller.Subsector]:
+        return list(self.yieldSubsectorsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight))
+
     def worldsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            worldFilterCallback: typing.Callable[[traveller.World], bool] = None
+            ) -> typing.List[traveller.World]:
+        return list(self.yieldWorldsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight,
+            worldFilterCallback=worldFilterCallback))
+
+    def worldsInRadius(
             self,
             center: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
-        return list(self.yieldWorldsInArea(
+        return list(self.yieldWorldsInRadius(
             center=center,
-            searchRadius=searchRadius,
+            radius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
     def worldsInFlood(
@@ -279,6 +416,46 @@ class WorldManager(object):
             offsetX=offsetX,
             offsetY=offsetY)
 
+    def stringToPosition(
+            self,
+            string: str
+            ) -> travellermap.HexPosition:
+        testString = string.strip()
+        if not testString:
+            raise ValueError(f'Invalid position string "{string}"')
+
+        result = self._SectorHexSearchPattern.match(testString)
+        if result:
+            try:
+                return self.sectorHexToPosition(sectorHex=testString)
+            except:
+                # Search string is not a valid sector hex. The search pattern
+                # regex was matched so it should have the correct format, most
+                # likely the sector name doesn't match a known sector
+                pass
+
+        result = self._AbsoluteHexSearchPattern.match(testString)
+        if result:
+            return travellermap.HexPosition(
+                absoluteX=int(result.group(1)),
+                absoluteY=int(result.group(2)))
+
+        result = self._RelativeHexSearchPattern.match(testString)
+        if result:
+            sectorX = int(result.group(1))
+            sectorY = int(result.group(2))
+            offsetX = int(result.group(3))
+            offsetY = int(result.group(4))
+            if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
+                    (offsetY >= 0 and offsetY < travellermap.SectorHeight):
+                return travellermap.HexPosition(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    offsetX=offsetX,
+                    offsetY=offsetY)
+
+        raise ValueError(f'Invalid position string "{string}"')
+
     def canonicalHexName(
             self,
             hex: travellermap.HexPosition
@@ -295,27 +472,91 @@ class WorldManager(object):
         except KeyError:
             return str(hex)
 
+    def positionToMain(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[traveller.Main]:
+        return self._hexMainMap.get(hex)
+
+    def yieldSectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.Sector, None, None]:
+        startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
+        startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
+
+        x = startX
+        while x <= finishX:
+            y = startY
+            while y <= finishY:
+                sector = self._sectorPositionMap.get((x, y))
+                if sector:
+                    yield sector
+                y += 1
+            x += 1
+
+    def yieldSubsectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.Subsector, None, None]:
+        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
+        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
+
+        for x in range(startX, finishX + travellermap.SubsectorWidth, travellermap.SubsectorWidth):
+            for y in range(startY, finishY + travellermap.SubsectorHeight, travellermap.SubsectorHeight):
+                sectorX, sectorY, offsetX, offsetY = \
+                    travellermap.absoluteSpaceToRelativeSpace((x, y))
+                sector = self._sectorPositionMap.get((sectorX, sectorY))
+                if not sector:
+                    continue
+                subsector = sector.subsectorByIndex(
+                    indexX=(offsetX - 1) // WorldManager._SubsectorHexWidth,
+                    indexY=(offsetY - 1) // WorldManager._SubsectorHexHeight)
+                if subsector:
+                    yield subsector
+
     def yieldWorldsInArea(
             self,
-            center: travellermap.HexPosition,
-            searchRadius: int,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.Generator[traveller.World, None, None]:
-        minLength = searchRadius + 1
-        maxLength = (searchRadius * 2) + 1
+        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
+        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
+
+        x = startX
+        while x <= finishX:
+            y = startY
+            while y <= finishY:
+                world = self._worldPositionMap.get((x, y))
+                if world and ((not worldFilterCallback) or worldFilterCallback(world)):
+                    yield world
+                y += 1
+            x += 1
+
+    def yieldWorldsInRadius(
+            self,
+            center: travellermap.HexPosition,
+            radius: int,
+            worldFilterCallback: typing.Callable[[traveller.World], bool] = None
+            ) -> typing.Generator[traveller.World, None, None]:
+        minLength = radius + 1
+        maxLength = (radius * 2) + 1
         deltaLength = int(math.floor((maxLength - minLength) / 2))
 
         centerX, centerY = center.absolute()
-        startX = centerX - searchRadius
-        finishX = centerX + searchRadius
-        startY = (centerY - searchRadius) + deltaLength
-        finishY = (centerY + searchRadius) - deltaLength
+        startX = centerX - radius
+        finishX = centerX + radius
+        startY = (centerY - radius) + deltaLength
+        finishY = (centerY + radius) - deltaLength
         if (startX & 0b1) != 0:
             startY += 1
-            if (searchRadius & 0b1) != 0:
+            if (radius & 0b1) != 0:
                 finishY -= 1
         else:
-            if (searchRadius & 0b1) != 0:
+            if (radius & 0b1) != 0:
                 startY += 1
             finishY -= 1
         for x in range(startX, finishX + 1):
@@ -331,7 +572,7 @@ class WorldManager(object):
                     startY += 1
 
             for y in range(startY, finishY + 1):
-                world = self._absoluteWorldMap.get((x, y))
+                world = self._worldPositionMap.get((x, y))
                 if world and ((not worldFilterCallback) or worldFilterCallback(world)):
                     yield world
 
@@ -368,46 +609,15 @@ class WorldManager(object):
             # No matches if search string is empty after white space stripped
             return []
 
-        # If the search string matches the sector hex format or either the
-        # absolute or relative coordinate formats then try to a world at the
-        # specified location. If a world is found then it's our only result
-        result = self._SectorHexSearchPattern.match(searchString)
-        if result:
-            try:
-                foundWorld = self.worldBySectorHex(sectorHex=result.group(1))
-                if foundWorld:
-                    return [foundWorld]
-            except:
-                # Search string is not a valid sector hex. The search pattern
-                # regex was matched so it should have the correct format, most
-                # likely the sector name doesn't match a known sector
-                pass
-
-        result = self._AbsoluteHexSearchPattern.match(searchString)
-        if result:
-            hex = travellermap.HexPosition(
-                absoluteX=int(result.group(1)),
-                absoluteY=int(result.group(2)))
+        # Check if the world string specifies a hex, if it does and there is
+        # a world at that location then that is our only result
+        try:
+            hex = self.stringToPosition(string=searchString)
             foundWorld = self.worldByPosition(hex=hex)
             if foundWorld:
                 return [foundWorld]
-
-        result = self._RelativeHexSearchPattern.match(searchString)
-        if result:
-            sectorX = int(result.group(1))
-            sectorY = int(result.group(2))
-            offsetX = int(result.group(3))
-            offsetY = int(result.group(4))
-            if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
-                    (offsetY >= 0 and offsetY < travellermap.SectorHeight):
-                hex = travellermap.HexPosition(
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    offsetX=offsetX,
-                    offsetY=offsetY)
-                foundWorld = self.worldByPosition(hex=hex)
-                if foundWorld:
-                    return [foundWorld]
+        except:
+            pass
 
         searchWorldLists = None
         result = self._WorldSearchPattern.match(searchString)
@@ -581,6 +791,78 @@ class WorldManager(object):
 
         return matches
 
+    def placeholderWorldByPosition(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[traveller.PlaceholderWorld]:
+        return self._placeholderWorldPositionMap.get(hex.absolute())
+
+    def placeholderWorldsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.Iterable[traveller.PlaceholderWorld]:
+        return list(self.yieldPlaceholderWorldsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight))
+
+    def yieldPlaceholderWorldsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.Generator[traveller.PlaceholderWorld, None, None]:
+        startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
+        startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
+
+        x = startX
+        while x <= finishX:
+            y = startY
+            while y <= finishY:
+                placeholder = self._placeholderWorldPositionMap.get((x, y))
+                if placeholder:
+                    yield placeholder
+                y += 1
+            x += 1
+
+    def placeholderSectorByPosition(
+            self,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[traveller.PlaceholderSector]:
+        return self._placeholderSectorPositionMap.get((hex.sectorX(), hex.sectorY()))
+
+    def placeholderSectorBySectorIndex(
+            self,
+            index: typing.Tuple[int, int]
+            ) -> typing.Optional[traveller.PlaceholderSector]:
+        return self._placeholderSectorPositionMap.get(index)
+
+    def placeholderSectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition
+            ) -> typing.List[traveller.PlaceholderSector]:
+        return list(self.yieldPlaceholderSectorsInArea(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight))
+
+    def yieldPlaceholderSectorsInArea(
+            self,
+            upperLeft: travellermap.HexPosition,
+            lowerRight: travellermap.HexPosition,
+            ) -> typing.Generator[traveller.PlaceholderSector, None, None]:
+        startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
+        startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
+
+        x = startX
+        while x <= finishX:
+            y = startY
+            while y <= finishY:
+                sector = self._placeholderSectorPositionMap.get((x, y))
+                if sector:
+                    yield sector
+                y += 1
+            x += 1
+
     @staticmethod
     def _loadSector(
             sectorInfo: travellermap.SectorInfo,
@@ -591,34 +873,42 @@ class WorldManager(object):
         sectorX = sectorInfo.x()
         sectorY = sectorInfo.y()
 
-        subsectorMap = {}
-        allegianceMap = {}
+        subsectorNameMap: typing.Dict[
+            str, # Subsector code (A-P)
+            typing.Tuple[
+                str, # Subsector name
+                bool # True if the name was generated
+        ]] = {}
+        subsectorWorldsMap: typing.Dict[
+            str, # Subsector code (A-P)
+            typing.List[traveller.World]
+        ] = {}
+        allegianceNameMap: typing.Dict[
+            str, # Allegiance code
+            str # Allegiance name
+        ] = {}
 
         # Setup default subsector names. Some sectors just use the code A-P but we need
         # something unique
-        for code in list(map(chr, range(ord('A'), ord('P') + 1))):
-            subsectorMap[code] = f'{sectorName} Subsector {code}'
+        subsectorCodes = list(map(chr, range(ord('A'), ord('P') + 1)))
+        for subsectorCode in subsectorCodes:
+            subsectorNameMap[subsectorCode] = (f'{sectorName} Subsector {subsectorCode}', True)
+            subsectorWorldsMap[subsectorCode] = []
 
         rawMetadata = travellermap.readMetadata(
             content=metadataContent,
             format=sectorInfo.metadataFormat(),
             identifier=sectorName)
 
-        rawWorlds = travellermap.readSector(
-            content=sectorContent,
-            format=sectorInfo.sectorFormat(),
-            identifier=sectorName)
-
         subsectorNames = rawMetadata.subsectorNames()
         if subsectorNames:
-            for code, name in subsectorNames.items():
-                if not code or not name:
+            for subsectorCode, subsectorName in subsectorNames.items():
+                if not subsectorCode or not subsectorName:
                     continue
 
                 # NOTE: Unlike most other places, it's intentional that this is upper
-                code = code.upper()
-                assert(code in subsectorMap)
-                subsectorMap[code] = name
+                subsectorCode = subsectorCode.upper()
+                subsectorNameMap[subsectorCode] = (subsectorName, False)
 
         allegiances = rawMetadata.allegiances()
         if allegiances:
@@ -628,31 +918,38 @@ class WorldManager(object):
 
                 # NOTE: The code here is intentionally left with the case as it appears int metadata as
                 # there are some sectors where allegiances vary only by case (see AllegianceManager)
-                allegianceMap[allegiance.code()] = allegiance.name()
+                allegianceNameMap[allegiance.code()] = allegiance.name()
 
-        worlds = []
+        rawWorlds = travellermap.readSector(
+            content=sectorContent,
+            format=sectorInfo.sectorFormat(),
+            identifier=sectorName)
+
         for rawWorld in rawWorlds:
             try:
                 hex = rawWorld.attribute(travellermap.WorldAttribute.Hex)
                 worldName = rawWorld.attribute(travellermap.WorldAttribute.Name)
+                isNameGenerated = False
                 if not worldName:
                     # If the world doesn't have a name the sector combined with the hex. This format
                     # is important as it's the same format as Traveller Map meaning searches will
                     # work
                     worldName = f'{sectorName} {hex}'
+                    isNameGenerated = True
 
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
-                subsectorName = subsectorMap[subsectorCode]
+                subsectorName, _ = subsectorNameMap[subsectorCode]
 
                 world = traveller.World(
-                    name=worldName,
-                    sectorName=sectorName,
-                    subsectorName=subsectorName,
                     hex=travellermap.HexPosition(
                         sectorX=sectorX,
                         sectorY=sectorY,
                         offsetX=int(hex[:2]),
                         offsetY=int(hex[-2:])),
+                    worldName=worldName,
+                    isNameGenerated=isNameGenerated,
+                    sectorName=sectorName,
+                    subsectorName=subsectorName,
                     allegiance=rawWorld.attribute(travellermap.WorldAttribute.Allegiance),
                     uwp=rawWorld.attribute(travellermap.WorldAttribute.UWP),
                     economics=rawWorld.attribute(travellermap.WorldAttribute.Economics),
@@ -664,26 +961,357 @@ class WorldManager(object):
                     pbg=rawWorld.attribute(travellermap.WorldAttribute.PBG),
                     systemWorlds=rawWorld.attribute(travellermap.WorldAttribute.SystemWorlds),
                     bases=rawWorld.attribute(travellermap.WorldAttribute.Bases))
-                worlds.append(world)
+
+                subsectorWorlds = subsectorWorldsMap[subsectorCode]
+                subsectorWorlds.append(world)
             except Exception as ex:
                 logging.warning(
                     f'Failed to process world entry on line {rawWorld.lineNumber()} in data for sector {sectorName}',
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
+        subsectors = []
+        for subsectorCode in subsectorCodes:
+            subsectorName, isNameGenerated = subsectorNameMap[subsectorCode]
+            subsectorWorlds = subsectorWorldsMap[subsectorCode]
+            subsectors.append(traveller.Subsector(
+                sectorX=sectorX,
+                sectorY=sectorY,
+                code=subsectorCode,
+                subsectorName=subsectorName,
+                isNameGenerated=isNameGenerated,
+                sectorName=sectorName,
+                worlds=subsectorWorlds))
+
         # Add the allegiances for this sector to the allegiance manager
         traveller.AllegianceManager.instance().addSectorAllegiances(
             sectorName=sectorName,
-            allegiances=allegianceMap)
+            allegiances=allegianceNameMap)
+
+        styleSheet = rawMetadata.styleSheet()
+        borderStyleMap: typing.Dict[
+            str, # Allegiance/Type
+            typing.Tuple[
+                typing.Optional[str], # Colour
+                typing.Optional[traveller.Border.Style] # Style
+            ]] = {}
+        routeStyleMap: typing.Dict[
+            str, # Allegiance/Type
+            typing.Tuple[
+                typing.Optional[str], # Colour
+                typing.Optional[traveller.Route.Style], # Style
+                typing.Optional[float] # Width
+            ]] = {}
+        if styleSheet:
+            try:
+                content = travellermap.readCssContent(styleSheet)
+                for styleKey, properties in content.items():
+                    try:
+                        match = WorldManager._BorderStylePattern.match(styleKey)
+                        if match:
+                            tag = match.group(1)
+                            colour = properties.get('color')
+                            style = WorldManager._mapBorderStyle(properties.get('style'))
+                            if colour or style:
+                                borderStyleMap[tag] = (colour, style)
+
+                        match = WorldManager._RouteStylePattern.match(styleKey)
+                        if match:
+                            tag = match.group(1)
+                            colour = properties.get('color')
+                            style = WorldManager._mapRouteStyle(properties.get('style'))
+                            width = properties.get('width')
+                            if width:
+                                width = float(width)
+                            if colour or style or width:
+                                routeStyleMap[tag] = (colour, style, width)
+                    except Exception as ex:
+                        logging.warning(
+                            f'Failed to process style sheet entry for {styleKey} in metadata for sector {sectorName}',
+                            exc_info=ex)
+            except Exception as ex:
+                logging.warning(
+                    f'Failed to parse style sheet for sector {sectorName}',
+                    exc_info=ex)
+
+        rawRoutes = rawMetadata.routes()
+        routes = []
+        if rawRoutes:
+            for rawRoute in rawRoutes:
+                try:
+                    startHex = rawRoute.startHex()
+                    startHex = travellermap.HexPosition(
+                        sectorX=sectorX + (rawRoute.startOffsetX() if rawRoute.startOffsetX() else 0),
+                        sectorY=sectorY + (rawRoute.startOffsetY() if rawRoute.startOffsetY() else 0),
+                        offsetX=int(startHex[:2]),
+                        offsetY=int(startHex[-2:]))
+
+                    endHex = rawRoute.endHex()
+                    endHex = travellermap.HexPosition(
+                        sectorX=sectorX + (rawRoute.endOffsetX() if rawRoute.endOffsetX() else 0),
+                        sectorY=sectorY + (rawRoute.endOffsetY() if rawRoute.endOffsetY() else 0),
+                        offsetX=int(endHex[:2]),
+                        offsetY=int(endHex[-2:]))
+
+                    colour = rawRoute.colour()
+                    style = WorldManager._mapRouteStyle(rawRoute.style())
+                    width = rawRoute.width()
+
+                    if not colour or not style or not width:
+                        # This order of precedence matches the order in the Traveller Map
+                        # DrawMicroRoutes code
+                        stylePrecedence = [
+                            rawRoute.allegiance(),
+                            rawRoute.type(),
+                            'Im']
+                        for tag in stylePrecedence:
+                            if tag in routeStyleMap:
+                                defaultColour, defaultStyle, defaultWidth = routeStyleMap[tag]
+                                if not colour:
+                                    colour = defaultColour
+                                if not style:
+                                    style = defaultStyle
+                                if not width:
+                                    width = defaultWidth
+                                break
+
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
+                        logging.debug(f'Ignoring invalid colour for border {rawRoute.fileIndex()} in sector {sectorName}')
+                        colour = None
+
+                    routes.append(traveller.Route(
+                        startHex=startHex,
+                        endHex=endHex,
+                        allegiance=rawRoute.allegiance(),
+                        type=rawRoute.type(),
+                        style=style,
+                        colour=colour,
+                        width=width))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process route {rawRoute.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
+        rawBorders = rawMetadata.borders()
+        borders = []
+        if rawBorders:
+            for rawBorder in rawBorders:
+                try:
+                    hexes = []
+                    for rawHex in rawBorder.hexList():
+                        hexes.append(travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(rawHex[:2]),
+                            offsetY=int(rawHex[-2:])))
+
+                    labelHex = rawBorder.labelHex()
+                    if labelHex:
+                        labelHex = travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(labelHex[:2]),
+                            offsetY=int(labelHex[-2:]))
+                    else:
+                        labelHex = None
+
+                    colour = rawBorder.colour()
+                    style = WorldManager._mapBorderStyle(rawBorder.style())
+
+                    if not colour or not style:
+                        # This order of precedence matches the order in the Traveller Map
+                        # DrawMicroBorders code
+                        stylePrecedence = [
+                            rawBorder.allegiance(),
+                            'Im']
+                        for tag in stylePrecedence:
+                            if tag in borderStyleMap:
+                                defaultColour, defaultStyle = borderStyleMap[tag]
+                                if not colour:
+                                    colour = defaultColour
+                                if not style:
+                                    style = defaultStyle
+                                break
+
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
+                        logging.debug(f'Ignoring invalid colour for border {rawBorder.fileIndex()} in sector {sectorName}')
+                        colour = None
+
+                    # Default label to allegiance and word wrap now so it doesn't need
+                    # to be done every time the border is rendered
+                    label = rawBorder.label()
+                    if not label and rawBorder.allegiance():
+                        label = traveller.AllegianceManager.instance().allegianceName(
+                            allegianceCode=rawBorder.allegiance(),
+                            sectorName=sectorName)
+                    if label and rawBorder.wrapLabel():
+                        label = WorldManager._LineWrapPattern.sub('\n', label)
+
+                    borders.append(traveller.Border(
+                        hexList=hexes,
+                        allegiance=rawBorder.allegiance(),
+                        # Show label use the same defaults as the traveller map Border class
+                        showLabel=rawBorder.showLabel() if rawBorder.showLabel() != None else True,
+                        label=label,
+                        labelHex=labelHex,
+                        labelOffsetX=rawBorder.labelOffsetX(),
+                        labelOffsetY=rawBorder.labelOffsetY(),
+                        style=style,
+                        colour=colour))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process border {rawBorder.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
+        rawRegions = rawMetadata.regions()
+        regions = []
+        if rawRegions:
+            for rawRegion in rawRegions:
+                try:
+                    hexes = []
+                    for rawHex in rawRegion.hexList():
+                        hexes.append(travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(rawHex[:2]),
+                            offsetY=int(rawHex[-2:])))
+
+                    labelHex = rawRegion.labelHex()
+                    if labelHex:
+                        labelHex = travellermap.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=int(labelHex[:2]),
+                            offsetY=int(labelHex[-2:]))
+                    else:
+                        labelHex = None
+
+                    # Line wrap now so it doesn't need to be done every time the border is rendered
+                    label = rawRegion.label()
+                    if label and rawRegion.wrapLabel():
+                        label = WorldManager._LineWrapPattern.sub('\n', label)
+
+                    colour = rawRegion.colour()
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
+                        logging.debug(f'Ignoring invalid colour for region {rawRegion.fileIndex()} in sector {sectorName}')
+                        colour = None
+
+                    regions.append(traveller.Region(
+                        hexList=hexes,
+                        # Show label use the same defaults as the Traveller Map Border class
+                        showLabel=rawRegion.showLabel() if rawRegion.showLabel() != None else True,
+                        label=label,
+                        labelHex=labelHex,
+                        labelOffsetX=rawRegion.labelOffsetX(),
+                        labelOffsetY=rawRegion.labelOffsetY(),
+                        colour=colour))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process region {rawRegion.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
+        rawLabels = rawMetadata.labels()
+        labels = []
+        if rawLabels:
+            for rawLabel in rawLabels:
+                try:
+                    hex = rawLabel.hex()
+                    hex = travellermap.HexPosition(
+                        sectorX=sectorX,
+                        sectorY=sectorY,
+                        offsetX=int(hex[:2]),
+                        offsetY=int(hex[-2:]))
+
+                    # Line wrap now so it doesn't need to be done every time the border is rendered
+                    text = rawLabel.text()
+                    if rawLabel.wrap():
+                        text = WorldManager._LineWrapPattern.sub('\n', text)
+
+                    colour = rawLabel.colour()
+                    if colour and not travellermap.validateHtmlColour(htmlColour=colour):
+                        logging.debug(f'Ignoring invalid colour for label {rawLabel.fileIndex()} in sector {sectorName}')
+                        colour = None
+
+                    labels.append(traveller.Label(
+                        text=text,
+                        hex=hex,
+                        colour=colour,
+                        size=WorldManager._mapLabelSize(rawLabel.size()),
+                        offsetX=rawLabel.offsetX(),
+                        offsetY=rawLabel.offsetY()))
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process label {rawLabel.fileIndex()} in metadata for sector {sectorName}',
+                        exc_info=ex)
+
+        rawTags = rawMetadata.tags()
+        tags = []
+        if rawTags:
+            tags.extend(rawTags.split())
 
         return traveller.Sector(
             name=sectorName,
             alternateNames=rawMetadata.alternateNames(),
             abbreviation=rawMetadata.abbreviation(),
+            sectorLabel=rawMetadata.sectorLabel(),
             x=sectorX,
             y=sectorY,
-            worlds=worlds,
-            subsectorNames=subsectorMap.values())
+            subsectors=subsectors,
+            routes=routes,
+            borders=borders,
+            regions=regions,
+            labels=labels,
+            selected=rawMetadata.selected() if rawMetadata.selected() else False,
+            tags=tags)
+
+    _RouteStyleMap = {
+        'solid': traveller.Route.Style.Solid,
+        'dashed': traveller.Route.Style.Dashed,
+        'dotted': traveller.Route.Style.Dotted,
+    }
+    @staticmethod
+    def _mapRouteStyle(
+            style: typing.Optional[str]
+            ) -> typing.Optional[traveller.Route.Style]:
+        if not style:
+            return None
+        lowerStyle = style.lower()
+        mappedStyle = WorldManager._RouteStyleMap.get(lowerStyle)
+        if not mappedStyle:
+            raise ValueError(f'Invalid route style "{style}"')
+        return mappedStyle
+
+    _BorderStyleMap = {
+        'solid': traveller.Border.Style.Solid,
+        'dashed': traveller.Border.Style.Dashed,
+        'dotted': traveller.Border.Style.Dotted,
+    }
+    @staticmethod
+    def _mapBorderStyle(
+            style: typing.Optional[str]
+            ) -> typing.Optional[traveller.Border.Style]:
+        if not style:
+            return None
+        lowerStyle = style.lower()
+        mappedStyle = WorldManager._BorderStyleMap.get(lowerStyle)
+        if not mappedStyle:
+            raise ValueError(f'Invalid border style "{style}"')
+        return mappedStyle
+
+    _LabelSizeMap = {
+        'small': traveller.Label.Size.Small,
+        'large': traveller.Label.Size.Large,
+    }
+    def _mapLabelSize(
+            size: typing.Optional[str]
+            ) -> typing.Optional[traveller.Label.Size]:
+        if not size:
+            return None
+        lowerSize = size.lower()
+        mappedSize = WorldManager._LabelSizeMap.get(lowerSize)
+        if not mappedSize:
+            raise ValueError(f'Invalid label size "{size}"')
+        return mappedSize
 
     @staticmethod
     def _calculateSubsectorCode(

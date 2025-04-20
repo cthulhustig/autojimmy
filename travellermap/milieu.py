@@ -22,5 +22,21 @@ _MilieuDescriptionMap = {
     Milieu.M1900: '1900 - The Far Far Future'
 }
 
+_MilieuYearMap = {
+    Milieu.IW: -2404,
+    Milieu.M0: 0,
+    Milieu.M990: 990,
+    Milieu.M1105: 1105,
+    Milieu.M1120: 1120,
+    Milieu.M1201: 1201,
+    Milieu.M1248: 1248,
+    Milieu.M1900: 1900
+}
+
 def milieuDescription(milieu: Milieu) -> str:
     return _MilieuDescriptionMap[milieu]
+
+# TODO: Support arbitrary dates so you can see things like Empress
+# wave progression (see Traveller Map currentYear in map.js)
+def milieuToYear(milieu: Milieu) -> int:
+    return _MilieuYearMap[milieu]

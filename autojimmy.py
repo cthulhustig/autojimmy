@@ -524,11 +524,13 @@ def main() -> None:
 
         gui.configureAppStyle(application)
 
-        # Check if CairoSVG is working, possibly prompting the user if it's not. This needs to be
-        # done after the DataStore singleton has been set up so it can check if there are any
-        # existing SVG custom sectors
-        if not _cairoSvgInstallCheck():
-            sys.exit(0)
+        if app.Config.instance().mapEngine() is app.MapEngine.WebProxy:
+            # Check if CairoSVG is working, possibly prompting the user if it's
+            # not. This needs to be done after the DataStore singleton has been
+            # set up so it can check if there are any existing SVG custom
+            # sectors
+            if not _cairoSvgInstallCheck():
+                sys.exit(0)
 
         # Check if there is new universe data available BEFORE the app loads the
         # local snapshot so it can be updated without restarting
@@ -548,7 +550,7 @@ def main() -> None:
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
         startProxy = False
-        if app.Config.instance().proxyEnabled():
+        if app.Config.instance().mapEngine() is app.MapEngine.WebProxy:
             hostPoolSize = _hostPoolSizeCheck()
             if hostPoolSize > 0:
                 proxy.MapProxy.configure(

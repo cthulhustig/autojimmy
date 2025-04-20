@@ -21,7 +21,7 @@ _WorldsCapitalsOption = 0x0100
 _WorldsHomeworldsOption = 0x0200
 _WorldsMaskOption = 0x0300 # aka Important Worlds
 _ForceHexesOption = 0x2000
-_WorldColorsOption = 0x4000
+_WorldColoursOption = 0x4000
 _FilledBordersOption = 0x8000
 
 _StyleOptionMap = {
@@ -34,12 +34,6 @@ _StyleOptionMap = {
     travellermap.Style.Terminal: 'terminal',
     travellermap.Style.Mongoose: 'mongoose'
 }
-
-def linearScaleToLogScale(linearScale: float) -> float:
-    return 1 + math.log2(linearScale)
-
-def logScaleToLinearScale(logScale: float) -> float:
-    return math.pow(2, logScale - 1)
 
 def formatMapUrl(
         baseMapUrl: str,
@@ -61,7 +55,7 @@ def formatMapUrl(
         options=options,
         minimal=minimal)
     if (mapPosition != None) and (linearScale != None):
-        logScale = linearScaleToLogScale(linearScale=linearScale)
+        logScale = travellermap.linearScaleToLogScale(linearScale=linearScale)
         queryList.append(f'p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}')
 
     if queryList:
@@ -144,18 +138,27 @@ def _createCommonQueryList(
     optionBitMask = _ForceHexesOption # Always enabled
     if travellermap.Option.SectorGrid in options:
         optionBitMask |= _GridMaskOption
+
     if travellermap.Option.SectorNames in options:
         optionBitMask |= _SectorsAllOption
+    elif travellermap.Option.SelectedSectorNames in options:
+        optionBitMask |= _SectorsSelectedOption
+
     if travellermap.Option.Borders in options:
         optionBitMask |= _BordersMaskOption
+
     if travellermap.Option.RegionNames in options:
         optionBitMask |= _NamesMaskOption
+
     if travellermap.Option.ImportantWorlds in options:
         optionBitMask |= _WorldsMaskOption
+
     if travellermap.Option.WorldColours in options:
-        optionBitMask |= _WorldColorsOption
+        optionBitMask |= _WorldColoursOption
+
     if travellermap.Option.FilledBorders in options:
         optionBitMask |= _FilledBordersOption
+
     optionList.append('options=' + str(optionBitMask)) # Always add this as ForcedHexes is always set
 
     if travellermap.Option.HideUI in options:
@@ -226,10 +229,15 @@ def _createCommonQueryList(
     elif not minimal:
         optionList.append('ew=') # Empty to clear rather than 0
 
-    if travellermap.Option.EmpressWaveOverlay in options:
+    if travellermap.Option.QrekrshaZoneOverlay in options:
         optionList.append('qz=1')
     elif not minimal:
         optionList.append('qz=') # Empty to clear rather than 0
+
+    if travellermap.Option.AntaresSupernovaOverlay in options:
+        optionList.append('as=milieu') # Show for current milieu
+    elif not minimal:
+        optionList.append('as=') # Empty to clear rather than 0
 
     return optionList
 
@@ -255,4 +263,4 @@ def parseScaleFromMapUrl(
     tokens = paramValues[0].split('!')
     if len(tokens) != 3:
         return None
-    return logScaleToLinearScale(float(tokens[2]))
+    return travellermap.logScaleToLinearScale(float(tokens[2]))

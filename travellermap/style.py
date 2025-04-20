@@ -3,12 +3,12 @@ import enum
 class Style(enum.Enum):
     Poster = 'Poster'
     Print = 'Print'
-    Atlas = 'Atlas'
+    Mongoose = 'Mongoose'
     Candy = 'Eye Candy'
     Draft = 'Draft'
     Fasa = 'FASA'
+    Atlas = 'Atlas'
     Terminal = 'Terminal'
-    Mongoose = 'Mongoose'
 
 
 _DarkStyles = [

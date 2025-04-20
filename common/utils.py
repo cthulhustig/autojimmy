@@ -1,12 +1,23 @@
+import cProfile
 import datetime
 import enum
 import ipaddress
+import io
 import itertools
 import locale
 import math
 import platform
+import pstats
 import re
 import typing
+
+def stringToBool(string: str, strict: bool = False) -> bool:
+    lower = string.lower()
+    if lower == 'true':
+        return True
+    if strict and lower != 'false':
+        raise ValueError(f'Unable to convert "{string}" to a boolean')
+    return False
 
 def hasMethod(obj: typing.Any, method: str, includeSubclasses=True) -> bool:
     classType = obj if isinstance(obj, type) else type(obj)
@@ -130,6 +141,14 @@ def formatNumber(
 
     return string
 
+def minmax(
+        val1: typing.Union[float, int],
+        val2: typing.Union[float, int]
+        ) -> typing.Tuple[typing.Union[float, int], typing.Union[float, int]]:
+    if val1 < val2:
+        return (val1, val2)
+    return (val2, val1)
+
 def clamp(
         value: typing.Union[float, int],
         minValue: typing.Union[float, int],
@@ -233,6 +252,13 @@ def getSubclasses(
 
     return subclasses
 
+def getClassVariables(
+        classType: typing.Type[typing.Any]
+        ) -> typing.Mapping[str, typing.Any]:
+    return {
+        k: v for k, v in vars(classType).items()
+        if not callable(v) and not k.startswith("__")}
+
 def humanFriendlyListString(strings: typing.Sequence[str]) -> str:
     count = len(strings)
     if not count:
@@ -296,3 +322,19 @@ class DebugTimer():
     def __exit__(self, type, value, traceback):
         delta = utcnow() - self._startTime
         print(f'{self._string}: {delta.total_seconds() * 1000}ms')
+
+class Profiler():
+    def __init__(self, sortBy = pstats.SortKey.TIME):
+        self._sortBy = sortBy
+        self._profiler = cProfile.Profile()
+
+    def __enter__(self) -> 'DebugTimer':
+        self._profiler.enable()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._profiler.disable()
+        stream = io.StringIO()
+        stats = pstats.Stats(self._profiler, stream=stream).sort_stats(self._sortBy)
+        stats.print_stats()
+        print(stream.getvalue())

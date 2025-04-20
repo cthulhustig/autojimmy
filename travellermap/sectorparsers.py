@@ -62,11 +62,13 @@ class RawAllegiance(object):
             self,
             code: str,
             name: str,
-            base: typing.Optional[str]
+            base: typing.Optional[str],
+            fileIndex: int
             ) -> None:
         self._code = code
         self._name = name
         self._base = base
+        self._fileIndex = fileIndex
 
     def code(self) -> str:
         return self._code
@@ -76,6 +78,9 @@ class RawAllegiance(object):
 
     def base(self) -> typing.Optional[str]:
         return self._base
+
+    def fileIndex(self) -> int:
+        return self._fileIndex
 
 class RawRoute(object):
     def __init__(
@@ -90,7 +95,8 @@ class RawRoute(object):
             type: typing.Optional[str],
             style: typing.Optional[str],
             colour: typing.Optional[str],
-            width: typing.Optional[float]
+            width: typing.Optional[float],
+            fileIndex: int
             ) -> None:
         self._startHex = startHex
         self._endHex = endHex
@@ -103,6 +109,7 @@ class RawRoute(object):
         self._style = style
         self._colour = colour
         self._width = width
+        self._fileIndex = fileIndex
 
     def startHex(self) -> str:
         return self._startHex
@@ -137,6 +144,9 @@ class RawRoute(object):
     def width(self) -> typing.Optional[float]:
         return self._width
 
+    def fileIndex(self) -> int:
+        return self._fileIndex
+
 # NOTE: If I'm ever generating borders then there are rules about the "winding" of the hex list
 # https://travellermap.com/doc/metadata#borders
 class RawBorder(object):
@@ -152,6 +162,7 @@ class RawBorder(object):
             label: typing.Optional[str],
             style: typing.Optional[str],
             colour: typing.Optional[str],
+            fileIndex: int
             ) -> None:
         self._hexList = hexList
         self._allegiance = allegiance
@@ -163,6 +174,7 @@ class RawBorder(object):
         self._label = label
         self._style = style
         self._colour = colour
+        self._fileIndex = fileIndex
 
     def hexList(self) -> typing.Iterable[str]:
         return self._hexList
@@ -194,6 +206,9 @@ class RawBorder(object):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
+    def fileIndex(self) -> int:
+        return self._fileIndex
+
 class RawLabel(object):
     def __init__(
             self,
@@ -203,7 +218,8 @@ class RawLabel(object):
             size: typing.Optional[str],
             wrap: typing.Optional[bool],
             offsetX: typing.Optional[float],
-            offsetY: typing.Optional[float]
+            offsetY: typing.Optional[float],
+            fileIndex: int
             ) -> None:
         self._text = text
         self._hex = hex
@@ -212,6 +228,7 @@ class RawLabel(object):
         self._wrap = wrap
         self._offsetX = offsetX
         self._offsetY = offsetY
+        self._fileIndex = fileIndex
 
     def text(self) -> str:
         return self._text
@@ -234,6 +251,9 @@ class RawLabel(object):
     def offsetY(self) -> typing.Optional[float]:
         return self._offsetY
 
+    def fileIndex(self) -> int:
+        return self._fileIndex
+
 # NOTE: If I'm ever generating routes then they follow the same "winding" rules for the hex list as borders
 # https://travellermap.com/doc/metadata#borders
 class RawRegion(object):
@@ -247,6 +267,7 @@ class RawRegion(object):
             labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],
             colour: typing.Optional[str],
+            fileIndex: int
             ) -> None:
         self._hexList = hexList
         self._showLabel = showLabel
@@ -256,6 +277,7 @@ class RawRegion(object):
         self._labelOffsetY = labelOffsetY
         self._label = label
         self._colour = colour
+        self._fileIndex = fileIndex
 
     def hexList(self) -> typing.Iterable[str]:
         return self._hexList
@@ -281,6 +303,9 @@ class RawRegion(object):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
+    def fileIndex(self) -> int:
+        return self._fileIndex
+
 class RawMetadata(object):
     def __init__(
             self,
@@ -288,9 +313,11 @@ class RawMetadata(object):
             alternateNames: typing.Optional[typing.Iterable[str]],
             nameLanguages: typing.Optional[typing.Mapping[str, str]],
             abbreviation: typing.Optional[str],
+            sectorLabel: typing.Optional[str],
             subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
             x: int,
             y: int,
+            selected: typing.Optional[bool],
             tags: typing.Optional[str],
             allegiances: typing.Optional[typing.Iterable[RawAllegiance]],
             routes: typing.Optional[typing.Iterable[RawRoute]],
@@ -303,9 +330,11 @@ class RawMetadata(object):
         self._alternateNames = alternateNames
         self._nameLanguages = nameLanguages
         self._abbreviation = abbreviation
+        self._sectorLabel = sectorLabel
         self._subsectorNames = subsectorNames
         self._x = x
         self._y = y
+        self._selected = selected
         self._tags = tags
         self._allegiances = allegiances
         self._routes = routes
@@ -337,6 +366,9 @@ class RawMetadata(object):
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
 
+    def sectorLabel(self) -> typing.Optional[str]:
+        return self._sectorLabel
+
     def subsectorNames(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._subsectorNames
 
@@ -345,6 +377,9 @@ class RawMetadata(object):
 
     def y(self) -> int:
         return self._y
+
+    def selected(self) -> typing.Optional[bool]:
+        return self._selected
 
     def tags(self) -> typing.Optional[str]:
         return self._tags
@@ -726,6 +761,9 @@ def readXMLMetadata(
         if lang != None:
             nameLanguages[name] = lang
 
+    sectorLabelElement = sectorElement.find('./Label')
+    sectorLabel = sectorLabelElement.text if sectorLabelElement != None else None
+
     xElement = sectorElement.find('./X')
     if xElement == None:
         raise RuntimeError(f'Failed to find X element in {identifier} metadata')
@@ -761,7 +799,7 @@ def readXMLMetadata(
     allegiances = None
     if allegianceElements:
         allegiances = []
-        for element in allegianceElements:
+        for index, element in enumerate(allegianceElements):
             code = element.get('Code')
             if code == None:
                 raise RuntimeError(f'Failed to find Code attribute for Allegiance in {identifier} metadata')
@@ -771,13 +809,14 @@ def readXMLMetadata(
                 allegiances.append(RawAllegiance(
                     code=code,
                     name=element.text,
-                    base=element.get('Base')))
+                    base=element.get('Base'),
+                    fileIndex=index))
 
     routeElements = sectorElement.findall('./Routes/Route')
     routes = None
     if routeElements:
         routes = []
-        for element in routeElements:
+        for index, element in enumerate(routeElements):
             startHex = element.get('Start')
             if not startHex:
                 raise RuntimeError(f'Failed to find Start attribute for Route in {identifier} metadata')
@@ -803,13 +842,14 @@ def readXMLMetadata(
                 type=element.get('Type'),
                 style=element.get('Style'),
                 colour=element.get('Color'),
-                width=width))
+                width=width,
+                fileIndex=index))
 
     borderElements = sectorElement.findall('./Borders/Border')
     borders = None
     if borderElements:
         borders = []
-        for element in borderElements:
+        for index, element in enumerate(borderElements):
             path = element.text.split(' ')
             showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Border', identifier)
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Border', identifier)
@@ -826,13 +866,14 @@ def readXMLMetadata(
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
                 style=element.get('Style'),
-                colour=element.get('Color')))
+                colour=element.get('Color'),
+                fileIndex=index))
 
     labelElements = sectorElement.findall('./Labels/Label')
     labels = None
     if labelElements:
         labels = []
-        for element in labelElements:
+        for index, element in enumerate(labelElements):
             hex = element.get('Hex')
             if hex == None:
                 raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')
@@ -852,13 +893,14 @@ def readXMLMetadata(
                 size=element.get('Size'),
                 wrap=wrap,
                 offsetX=offsetX,
-                offsetY=offsetY))
+                offsetY=offsetY,
+                fileIndex=index))
 
     regionElements = sectorElement.findall('./Regions/Region')
     regions = None
     if regionElements:
         regions = []
-        for element in regionElements:
+        for index, element in enumerate(regionElements):
             path = element.text.split(' ')
             showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Region', identifier)
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Region', identifier)
@@ -873,19 +915,22 @@ def readXMLMetadata(
                 labelOffsetX=labelOffsetX,
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
-                colour=element.get('Color')))
+                colour=element.get('Color'),
+                fileIndex=index))
 
     styleSheetElement = sectorElement.find('./Stylesheet')
-    styleSheet = styleSheetElement.text if styleSheetElement else None
+    styleSheet = styleSheetElement.text if styleSheetElement != None else None
 
     return RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
         abbreviation=sectorElement.get('Abbreviation'),
+        sectorLabel=sectorLabel,
         subsectorNames=subsectorNames,
         x=x,
         y=y,
+        selected=_optionalConvertToBool(sectorElement.get('Selected'), 'Selected', 'Sector', identifier),
         tags=sectorElement.get('Tags'),
         allegiances=allegiances,
         routes=routes,
@@ -958,7 +1003,7 @@ def readJSONMetadata(
     if allegianceElements:
         allegiances = []
         if allegianceElements:
-            for element in allegianceElements:
+            for index, element in enumerate(allegianceElements):
                 name = element.get('Name')
                 if name == None:
                     raise RuntimeError(f'Failed to find Name element for Allegiance in {identifier} metadata')
@@ -972,13 +1017,14 @@ def readJSONMetadata(
                     allegiances.append(RawAllegiance(
                         code=code,
                         name=name,
-                        base=element.get('Base')))
+                        base=element.get('Base'),
+                        fileIndex=index))
 
     routeElements = sectorElement.get('Routes')
     routes = None
     if routeElements:
         routes = []
-        for element in routeElements:
+        for index, element in enumerate(routeElements):
             startHex = element.get('Start')
             if startHex == None:
                 raise RuntimeError(f'Failed to find Start element for Route in {identifier} metadata')
@@ -1004,13 +1050,14 @@ def readJSONMetadata(
                 type=element.get('Type'),
                 style=element.get('Style'),
                 colour=element.get('Color'),
-                width=width))
+                width=width,
+                fileIndex=index))
 
     borderElements = sectorElement.get('Borders')
     borders = None
     if borderElements:
         borders = []
-        for element in borderElements:
+        for index, element in enumerate(borderElements):
             path = element.get('Path')
             if path == None:
                 raise RuntimeError(f'Failed to find Path element for Border in {identifier} metadata')
@@ -1031,13 +1078,14 @@ def readJSONMetadata(
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
                 style=element.get('Style'),
-                colour=element.get('Color')))
+                colour=element.get('Color'),
+                fileIndex=index))
 
     labelElements = sectorElement.get('Labels')
     labels = None
     if labelElements:
         labels = []
-        for element in labelElements:
+        for index, element in enumerate(labelElements):
             text = element.get('Text')
             if text == None:
                 raise RuntimeError(f'Failed to find Text element for Label in {identifier} metadata')
@@ -1061,13 +1109,14 @@ def readJSONMetadata(
                 size=element.get('Size'),
                 wrap=wrap,
                 offsetX=offsetX,
-                offsetY=offsetY))
+                offsetY=offsetY,
+                fileIndex=index))
 
     regionElements = sectorElement.get('Regions')
     regions = None
     if regionElements:
         regions = []
-        for element in regionElements:
+        for index, element in enumerate(regionElements):
             path = element.get('Path')
             if path == None:
                 raise RuntimeError(f'Failed to find Path element for Region in {identifier} metadata')
@@ -1086,16 +1135,19 @@ def readJSONMetadata(
                 labelOffsetX=labelOffsetX,
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
-                colour=element.get('Color')))
+                colour=element.get('Color'),
+                fileIndex=index))
 
     return RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
         abbreviation=sectorElement.get('Abbreviation'),
+        sectorLabel=sectorElement.get('Label'),
         subsectorNames=subsectorNames,
         x=x,
         y=y,
+        selected=_optionalConvertToBool(sectorElement.get('Selected'), 'Selected', 'Sector', identifier),
         tags=sectorElement.get('Tags'),
         allegiances=allegiances,
         routes=routes,
@@ -1125,6 +1177,9 @@ def writeXMLMetadata(
         identifier: str
         ) -> bytes:
     sectorAttributes = {}
+
+    if metadata.selected() != None:
+        sectorAttributes['Selected'] = str(metadata.selected())
 
     # NOTE: The Traveller Map documentation doesn't mention Tags or Abbreviation for the XML
     # format but the XSD does have them

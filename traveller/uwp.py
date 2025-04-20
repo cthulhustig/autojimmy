@@ -315,6 +315,14 @@ class UWP(object):
             ) -> str:
         return self._sanitised[element.value]
 
+    def numeric(
+            self,
+            element: Element,
+            default: int = -1
+            ) -> int:
+        code = self.code(element=element)
+        return traveller.ehexToInteger(code, default)
+
     def description(
             self,
             element: Element

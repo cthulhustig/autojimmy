@@ -28,6 +28,9 @@ class Icon(enum.Enum):
     Key = 'key.svg'
     Map = 'map.svg'
     Plus = 'plus.svg'
+    Home = 'home.svg'
+    ArrowsMaximize = 'arrows_maximize.svg'
+    ArrowsMinimize = 'arrows_minimize.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override
@@ -129,13 +132,42 @@ def loadIcon(id: Icon) -> QtGui.QIcon:
 
 def createOnOffIcon(source: QtGui.QIcon) -> QtGui.QIcon:
     icon = QtGui.QIcon()
-    for availableSize in source.availableSizes():
+    for size in source.availableSizes():
         icon.addPixmap(
-            source.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+            source.pixmap(size, QtGui.QIcon.Mode.Normal),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.On)
         icon.addPixmap(
-            source.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+            source.pixmap(size, QtGui.QIcon.Mode.Disabled),
             QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.Off)
+    return icon
+
+def createToggleIcon(
+        onIcon: QtGui.QIcon,
+        offIcon: QtGui.QIcon
+        ) -> QtGui.QIcon:
+    sizesA = onIcon.availableSizes()
+    sizesB = offIcon.availableSizes()
+    sharedSizes = list(filter(lambda x: x in sizesA, sizesB))
+
+    icon = QtGui.QIcon()
+    for size in sharedSizes:
+        icon.addPixmap(
+            onIcon.pixmap(size, QtGui.QIcon.Mode.Normal),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.On)
+        icon.addPixmap(
+            onIcon.pixmap(size, QtGui.QIcon.Mode.Disabled),
+            QtGui.QIcon.Mode.Disabled,
+            QtGui.QIcon.State.On)
+
+        icon.addPixmap(
+            offIcon.pixmap(size, QtGui.QIcon.Mode.Normal),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.Off)
+        icon.addPixmap(
+            offIcon.pixmap(size, QtGui.QIcon.Mode.Disabled),
+            QtGui.QIcon.Mode.Disabled,
             QtGui.QIcon.State.Off)
     return icon

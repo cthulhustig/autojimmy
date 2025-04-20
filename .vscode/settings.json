@@ -2,6 +2,7 @@
     "cSpell.words": [
         "'Kree",
         "Accurised",
+        "Antares",
         "Aslan",
         "Astrogation",
         "Astrography",
@@ -45,12 +46,14 @@
         "Medkit",
         "Metapsychology",
         "Metempsychology",
+        "minmax",
         "objectdb",
         "Ornithopter",
         "Ortillery",
         "Planetology",
         "PRIS",
         "Psionicology",
+        "Qrekrsha",
         "Quickdraw",
         "Radioactives",
         "recon",
@@ -75,7 +78,8 @@
         "Vargr",
         "Voder",
         "Xenoarchaeology",
-        "Xenolinguistics"
+        "Xenolinguistics",
+        "Zhodani"
     ],
     "cSpell.language": "en-GB",
     "search.exclude": {

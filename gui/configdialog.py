@@ -486,33 +486,44 @@ class ConfigDialog(gui.DialogEx):
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
 
-        # Proxy Widgets
-        self._proxyEnabledCheckBox = gui.CheckBoxEx()
-        self._proxyEnabledCheckBox.setChecked(app.Config.instance().proxyEnabled())
-        self._proxyEnabledCheckBox.stateChanged.connect(self._enableProxyToggled)
-        self._proxyEnabledCheckBox.setToolTip(gui.createStringToolTip(
-            '<p>Enable or disable the Traveller Map proxy.</p>'
-            '<p>By default, {app} uses a local proxy to access Traveller Map. '
-            'Using this proxy has two main benefits:</p>'
-            '<ul style="margin-left:15px; -qt-list-indent:0;">'
-            '<li>It allows {app} to overlay custom sectors on tiles returned '
-            'by Traveller Map, in order to have them rendered in the map '
-            'views.</li>'
-            '<li>It allows {app} to create a persistent cache of the tiles '
-            'returned by Traveller Map, this allows quicker rendering when '
-            'viewing sections of the map you\'ve previously viewed.</li>'
-            '</ul>'
-            '<p>For security, this proxy only listens on localhost, meaning '
-            'it can only be accessed from the system {app} is running on. '
-            'The proxy also only allows access to the Traveller Map URL '
-            'configured below.<p>'.format(app=app.AppName) +
+        self._mapEngineComboBox = gui.EnumComboBox(
+            type=app.MapEngine,
+            value=app.Config.instance().mapEngine())
+        self._mapEngineComboBox.currentIndexChanged.connect(
+            self._renderingTypeChanged)
+        self._mapEngineComboBox.setToolTip(gui.createStringToolTip(
+            '<p>Select how the map will be rendered.</p>'
+            '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
+            '<li><b>Local</b> - By default, {app} uses its own map rendering '
+            'code to draw the map. This is a reimplementation of the Traveller '
+            'Map rendering code (in Python) and is intended to replicate the '
+            'look of the Traveller Map website as closely as possible, '
+            'however, it\'s not a pixel perfect recreation, so there may be '
+            'some very minor differences. As this rendering is done locally, '
+            'on most systems, it will be the fastest option. Local rendering '
+            'is also the recommended type when using custom sectors, as it '
+            'doesn\'t suffer from any of the compositing artifacts seen when '
+            'using the Web (Proxy) rendering.</li>'
+            '<li><b>Web (Proxy)</b> - When using Web (Proxy) rendering, {app} '
+            'uses a built-in web browser to display the Traveller Map website '
+            'with, access to it going through a local proxy. This proxy is '
+            'used to cache map tiles for faster access and overlay custom '
+            'sectors on those map tiles.</li>'
+            '<li><b>Web (Direct)</b> - When using Web (Direct) rendering, '
+            '{app} uses a built-in web browser to display the Traveller Map '
+            'website. Custom sectors are not supported when using Web (Direct) '
+            'rendering.</li>'
+            '</ul>'.format(app=app.AppName) +
             _RestartRequiredParagraph,
             escape=False))
+
+        # Proxy Widgets
+        isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
         self._proxyPortSpinBox.setValue(app.Config.instance().proxyPort())
-        self._proxyPortSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the port the local Traveller Map proxy will listen '
             'on.</p>' \
@@ -524,7 +535,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
         self._proxyHostPoolSizeSpinBox.setRange(1, 10)
         self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
-        self._proxyHostPoolSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the number of localhost addresses the proxy will '
             'listen on.</p>'
@@ -548,7 +559,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyMapUrlLineEdit = gui.LineEditEx()
         self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
         self._proxyMapUrlLineEdit.setMaximumWidth(200)
-        self._proxyMapUrlLineEdit.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
             '<p>Specify the URL the proxy will use to access Traveller Map.</p>'
             '<p>If you run your own copy of Traveller Map, you can specify its '
@@ -565,8 +576,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyCompositionModeComboBox.addItem('SVG', True)
         self._proxyCompositionModeComboBox.setCurrentByUserData(
             userData=app.Config.instance().proxySvgCompositionEnabled())
-        self._proxyCompositionModeComboBox.setEnabled(
-            self._proxyEnabledCheckBox.isChecked())
+        self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
         self._proxyCompositionModeComboBox.setHidden(
             not depschecker.DetectedCairoSvgState)
         self._proxyCompositionModeComboBox.currentIndexChanged.connect(
@@ -598,7 +608,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
         self._proxyTileCacheSizeSpinBox.setValue(
             int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
-        self._proxyTileCacheSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the amount of disk space to use to cache tiles.</p>'
             '<p>When the cache size reaches the specified limit, tiles will be '
@@ -611,7 +621,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
         self._proxyTileCacheLifetimeSpinBox.setValue(
             app.Config.instance().proxyTileCacheLifetime())
-        self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the max time the proxy will cache a tile on disk.</p>'
             '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
@@ -628,7 +638,7 @@ class ConfigDialog(gui.DialogEx):
         self._clearTileCacheButton.clicked.connect(self._clearTileCacheClicked)
 
         proxyLayout = gui.FormLayoutEx()
-        proxyLayout.addRow('Enabled:', self._proxyEnabledCheckBox)
+        proxyLayout.addRow('Map Engine:', self._mapEngineComboBox)
         proxyLayout.addRow('Port:', self._proxyPortSpinBox)
         proxyLayout.addRow('Host Pool Size:', self._proxyHostPoolSizeSpinBox)
         proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
@@ -637,7 +647,7 @@ class ConfigDialog(gui.DialogEx):
         proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
         proxyLayout.addRow('Clear Tile Cache:', self._clearTileCacheButton)
 
-        proxyGroupBox = QtWidgets.QGroupBox('Proxy')
+        proxyGroupBox = QtWidgets.QGroupBox('Map Rendering')
         proxyGroupBox.setLayout(proxyLayout)
 
         # GUI widgets
@@ -1087,7 +1097,7 @@ class ConfigDialog(gui.DialogEx):
                 classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                 classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
                 classEStarPortFuelType=self._classEStarPortFuelType.currentEnum())))
-            checker.update(config.setProxyEnabled(self._proxyEnabledCheckBox.isChecked()))
+            checker.update(config.setMapEngine(self._mapEngineComboBox.currentEnum()))
             checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
             checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
             checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
@@ -1252,14 +1262,14 @@ class ConfigDialog(gui.DialogEx):
             noShowAgainId='ConfigWelcome')
         message.exec()
 
-    def _enableProxyToggled(self, value: int) -> None:
-        enabled = value != 0
-        self._proxyPortSpinBox.setEnabled(enabled)
-        self._proxyHostPoolSizeSpinBox.setEnabled(enabled)
-        self._proxyMapUrlLineEdit.setEnabled(enabled)
-        self._proxyTileCacheSizeSpinBox.setEnabled(enabled)
-        self._proxyTileCacheLifetimeSpinBox.setEnabled(enabled)
-        self._proxyCompositionModeComboBox.setEnabled(enabled)
+    def _renderingTypeChanged(self) -> None:
+        isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
+        self._proxyPortSpinBox.setEnabled(isProxyEnabled)
+        self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
+        self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
+        self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
+        self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
 
     def _proxyModeChanged(self) -> None:
         if not self._proxyCompositionModeComboBox.currentUserData():

@@ -175,15 +175,33 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
         self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
 
-        self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget = gui.MapWidgetEx()
         self._travellerMapWidget.setSelectionMode(
-            mode=gui.TravellerMapWidget.SelectionMode.MultiSelect)
+            mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
         self._travellerMapWidget.selectionChanged.connect(self._mapSelectionChanged)
+
+        # HACK: This wrapper widget for the map is a hacky fix for what looks
+        # like a bug in QTabWidget that is triggered if you make one of the
+        # controls it contains full screen (true borderless full screen not
+        # maximised). The issue I was seeing is the widget that I made full
+        # screen would get a resize event for the screen resolution as you would
+        # expect then immediately get another resize event that put it back to
+        # the size it was before going full screen. As far as I can tell it's
+        # caused by QTabWidget as it doesn't happen with the simulator window
+        # which usually doesn't have a QTabWidget but can be made to happen by
+        # adding one. The workaround I found is to warp the widget (the map in
+        # this case) in a layout and wrap that layout in a widget. When this is
+        # done the map doesn't get the second resize event setting it back to
+        # its original size.
+        mapWrapperLayout = QtWidgets.QVBoxLayout()
+        mapWrapperLayout.setContentsMargins(0, 0, 0, 0)
+        mapWrapperLayout.addWidget(self._travellerMapWidget)
+        mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(self._worldManagementWidget, 'World Details')
-        self._resultsDisplayModeTabView.addTab(self._travellerMapWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._resultsDisplayModeTabView)
@@ -242,7 +260,6 @@ class WorldComparisonWindow(gui.WindowWidget):
             for world in self._worldTable.worlds():
                 self._travellerMapWidget.selectHex(
                     hex=world.hex(),
-                    centerOnHex=False,
                     setInfoHex=False)
 
     def _mapSelectionChanged(self) -> None:

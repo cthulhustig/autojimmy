@@ -569,7 +569,7 @@ class RoutePlanner(object):
         if routingType is RoutingType.DeadSpace:
             alreadyProcessed = set()
 
-        for nearbyWorld in worldManager.yieldWorldsInArea(center=currentHex, searchRadius=searchRadius):
+        for nearbyWorld in worldManager.yieldWorldsInRadius(center=currentHex, radius=searchRadius):
             nearbyHex = nearbyWorld.hex()
 
             if nearbyHex == currentHex:

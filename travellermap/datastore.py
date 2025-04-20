@@ -450,8 +450,6 @@ class DataStore(object):
 
     _MilieuBaseDir = 'milieu'
     _UniverseFileName = 'universe.json'
-    _SophontsFileName = 'sophonts.json'
-    _AllegiancesFileName = 'allegiances.json'
     _TimestampFileName = 'timestamp.txt'
     _DataFormatFileName = 'dataformat.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
@@ -465,7 +463,7 @@ class DataStore(object):
     # assumed to be 0. It also allows white space at the end to stop an easy typo in the snapshot breaking
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
-    _MinDataFormatVersion = UniverseDataFormat(4, 0)
+    _MinDataFormatVersion = UniverseDataFormat(4, 1)
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -633,13 +631,13 @@ class DataStore(object):
             bytes=mapData,
             format=mapLevel.format())
 
-    def sophontsData(self) -> str:
-        return self._bytesToString(bytes=self._readStockFile(
-            relativeFilePath=self._SophontsFileName))
+    def loadBinaryResource(self, filePath: str) -> bytes:
+        return self._readStockFile(
+            relativeFilePath=filePath)
 
-    def allegiancesData(self) -> str:
+    def loadTextResource(self, filePath: str) -> bytes:
         return self._bytesToString(bytes=self._readStockFile(
-            relativeFilePath=self._AllegiancesFileName))
+            relativeFilePath=filePath))
 
     def universeTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
@@ -1159,7 +1157,10 @@ class DataStore(object):
             relativeFilePath: str
             ) -> bytes:
         # If the overlay directory exists load files from there, if not load from the
-        # install directory
+        # install directory. This approach allows for files to be deleted (or renamed
+        # in an overlay (compared to checking if the file exists in the overlay
+        # directory and loading it from the install dir if it doesn't). This is important
+        # as sectors can be renamed/deleted
         filePath = os.path.join(
             self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
             relativeFilePath)

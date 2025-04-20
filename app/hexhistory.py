@@ -56,6 +56,13 @@ class HexHistory(object):
         return list(HexHistory._history)
 
     def addHex(self, hex: travellermap.HexPosition) -> None:
+        try:
+            traveller.WorldManager.instance().positionToSectorHex(hex=hex)
+        except:
+            # Only hexes that can be converted to sector hex format to be added to the
+            # the history (i.e. ones fall within a known sector).
+            return
+
         if hex in HexHistory._history:
             # Remove the hex from the history so it can be re-added as the first entry
             HexHistory._history.remove(hex)
@@ -96,7 +103,9 @@ class HexHistory(object):
                 hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
                 HexHistory._history.append(hex)
             except Exception as ex:
-                logging.error(
+                # This can happen if sector data has changed for whatever reason
+                # (e.g. map updates or custom sectors)
+                logging.debug(
                     f'Failed to resolve sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
                     exc_info=ex)
 
@@ -106,7 +115,9 @@ class HexHistory(object):
                     hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
                     HexHistory._history.append(hex)
                 except Exception as ex:
-                    logging.error(
+                    # This can happen if sector data has changed for whatever reason
+                    # (e.g. map updates or custom sectors)
+                    logging.debug(
                         f'Failed to resolve default sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
                         exc_info=ex)
 

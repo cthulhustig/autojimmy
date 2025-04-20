@@ -1,7 +1,6 @@
 # Auto-Jimmy
 Auto-Jimmy is a collection of tools for the Traveller RPG. It's primarily aimed at Mongoose 1e and
-2e Traveller, but much of the functionality can be used with other rule systems. It can be used
-offline, but can also integrate with Traveller Map (internet connection required). It's written in
+2e Traveller, but much of the functionality can be used with other rule systems. It's written in
 Python and can be run on Windows, Linux and macOS.
 
 ## Feature Highlights
@@ -34,6 +33,9 @@ Python and can be run on Windows, Linux and macOS.
     * Custom sector data integrated into all tools
     * Posters of custom sectors automatically generated and overlaid onto Traveller Map views
     * Support for T5 Column & Tab sector files and XML & JSON metadata
+* Fast map drawing using a port of the Traveller Map rendering code
+    * Replicates all Traveller Map map styles and overlays
+    * No internet connection required
 
 ## Installing
 For Windows users, an installer is available [here](https://github.com/cthulhustig/autojimmy/releases).
@@ -41,25 +43,21 @@ The installer allows Auto-Jimmy to be run without requiring Python and other dep
 to be manually installed. The downside of using the installer is I only create them
 periodically so you may need to wait a bit longer for new features and bug fixes.
 
-> [!NOTE] 
+> [!NOTE]
 > The installer isn't digitally signed, so Windows may warn you about running it. If you
 have problems, check out the [Known Issues](./docs/known_issues.md#windows-microsoft-defender-smartscreen-prevents-the-installer-from-running) section.
 
 For Linux, macOS and more adventurous Windows users, the instructions below cover how to
 download Auto-Jimmy, install dependencies and run the application.
 
-> [!NOTE]  
+> [!NOTE]
 > If you have any problems when installing, you can check the
 > [Known Issues](./docs/known_issues.md) for a possible solution.
 
 ### Prerequisites
 Before you begin, ensure that you have the following prerequisites installed:
-* Python 3.11+ (3.8+ _should_ be ok, ymmv)
+* Python 3.12+ (3.8+ _should_ be ok, ymmv)
 * Pip (Python package installer)
-
-> [!IMPORTANT]  
-> If you're using Python 3.12 on Windows, see
-> [Installing requirements.txt fails for Python 3.12](./docs/known_issues.md#windows-installing-requirementstxt-fails-for-python-312)
 
 ### Step 1: Download the Auto-Jimmy Source Code
 Downloading the source code can be done either by cloning the repo with git or downloading a zip archive.
@@ -87,11 +85,15 @@ Downloading the source code can be done either by cloning the repo with git or d
    ```
 
 ### Step 3: Install libcairo (Optional)
-Installing [libcairo](https://www.cairographics.org/) is recommended if you're going to
-create custom sectors as it allows the use of SVG sector posters rather than bitmap
-posters. Primarily this is done to reduce visual artifacts when compositing the
-posters onto the map tiles Traveller Map uses to display the universe, however, it also
-has the added advantage that SVG posters take less time to generate.
+> [!NOTE]
+> By default, Auto-Jimmy will use its own in-app rendering engine to draw the map of
+> the Traveller universe and there is no need to install libcairo.
+
+If you configure Auto-Jimmy to use web proxy based rendering and are creating
+custom sectors, it is recommended to install [libcairo](https://www.cairographics.org/).
+Primarily this is done to reduce visual artifacts when compositing custom
+sectors onto the map tiles Traveller Map uses to display the universe, however,
+it also has the added advantage that generating custom sectors is quicker.
 
 #### Install libcairo on Windows
 On Windows, libcairo can be installed using the package manager that comes with

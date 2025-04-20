@@ -122,9 +122,9 @@ class WindowManager(object):
         self._calculationWindow.bringToFront()
         return self._calculationWindow
 
-    def showTravellerMapWindow(self) -> 'gui.TravellerMapWindow':
+    def showTravellerMapWindow(self) -> 'gui.MapWindow':
         if not self._travellerMapWindow:
-            self._travellerMapWindow = gui.TravellerMapWindow()
+            self._travellerMapWindow = gui.MapWindow()
         self._travellerMapWindow.bringToFront()
         return self._travellerMapWindow
 

@@ -534,7 +534,7 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationFundsLabel)
         labelLayout.addWidget(self._simulationTravelledLabel)
 
-        self._mapWidget = gui.TravellerMapWidget()
+        self._mapWidget = gui.MapWidgetEx()
 
         simulationLayout = QtWidgets.QVBoxLayout()
         simulationLayout.addWidget(self._runSimulationButton, 0)

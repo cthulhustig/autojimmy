@@ -1,7 +1,5 @@
-import json
 import logging
 import threading
-import traveller
 import travellermap
 import typing
 
@@ -9,15 +7,25 @@ class AllegianceCodeInfo(object):
     def __init__(
             self,
             code: str,
+            legacyCode: typing.Optional[str],
+            basesCode: typing.Optional[str],
             globalName: typing.Optional[str]
             ) -> None:
         self._code = code
+        self._legacyCode = legacyCode
+        self._basesCode = basesCode
         self._globalName = globalName
-        self._localNames = {}
+        self._localNames: typing.Dict[str, str] = {}
         self._consistentName = True
 
     def code(self) -> str:
         return self._code
+
+    def legacyCode(self) -> typing.Optional[str]:
+        return self._legacyCode
+
+    def basesCode(self) -> typing.Optional[str]:
+        return self._basesCode
 
     def name(self, sectorName) -> typing.Optional[str]:
         localName = self._localNames.get(sectorName)
@@ -52,7 +60,7 @@ class AllegianceCodeInfo(object):
 
         if self._consistentName and len(self._localNames) > 0:
             if allegianceName.lower() not in (name.lower() for name in self._localNames.values()):
-                # This name is different to other local names so this allegiance is no longer
+                # This name is different to other local names so this allegiance no longer
                 # has a consistent local name
                 self._consistentName = False
 
@@ -90,6 +98,36 @@ class AllegianceCodeInfo(object):
 # NOTE: Mapping allegiance codes to names needs to be case sensitive as some sectors have
 # allegiances that differ only by case (e.g. Knaeleng, Kharrthon, Phlange, Kruse)
 class AllegianceManager(object):
+    _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
+
+    # These unofficial allegiances are taken from Traveller Map. It has a
+    # comment saying they're for M1120 but as far as I can tell it uses
+    # them no mater which milieu you have selected. In my implementation
+    # they are only used for M1120
+    _T5UnofficialAllegiancesMap = {
+        travellermap.Milieu.M1120: [
+            # -----------------------
+            # Unofficial/Unreviewed
+            # -----------------------
+
+            # M1120
+            ( 'FdAr', 'Fa', None, 'Federation of Arden' ),
+            ( 'BoWo', 'Bw', None, 'Border Worlds' ),
+            ( 'LuIm', 'Li', 'Im', 'Lucan\'s Imperium' ),
+            ( 'MaSt', 'Ma', 'Im', 'Maragaret\'s Domain' ),
+            ( 'BaCl', 'Bc', None, 'Backman Cluster' ),
+            ( 'FdDa', 'Fd', 'Im', 'Federation of Daibei' ),
+            ( 'FdIl', 'Fi', 'Im', 'Federation of Ilelish' ),
+            ( 'AvCn', 'Ac', None, 'Avalar Consulate' ),
+            ( 'CoAl', 'Ca', None, 'Corsair Alliance' ),
+            ( 'StIm', 'St', 'Im', 'Strephon\'s Worlds' ),
+            ( 'ZiSi', 'Rv', 'Im', 'Restored Vilani Imperium' ), # Ziru Sirka
+            ( 'VA16', 'V6', None, 'Assemblage of 1116' ),
+            ( 'CRVi', 'CV', None, 'Vilani Cultural Region' ),
+            ( 'CRGe', 'CG', None, 'Geonee Cultural Region' ),
+            ( 'CRSu', 'CS', None, 'Suerrat Cultural Region' ),
+            ( 'CRAk', 'CA', None, 'Anakudnu Cultural Region' )]}
+
     _instance = None # Singleton instance
     _allegianceMap: typing.Dict[str, AllegianceCodeInfo] = {}
     _lock = threading.Lock()
@@ -106,7 +144,7 @@ class AllegianceManager(object):
                 # first check adn the lock
                 if not cls._instance:
                     cls._instance = cls.__new__(cls)
-                    cls._instance._loadGlobalAllegiances()
+                    cls._instance._loadAllegiances()
         return cls._instance
 
     @staticmethod
@@ -118,32 +156,69 @@ class AllegianceManager(object):
     def allegiances(self) -> typing.Iterable[AllegianceCodeInfo]:
         return self._allegianceMap.values()
 
-    def allegianceName(self, world: traveller.World) -> typing.Optional[str]:
-        code = world.allegiance()
-        if not code:
+    def allegianceName(
+            self,
+            allegianceCode: str,
+            sectorName: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
             return None
 
-        codeInfo = self._allegianceMap.get(code)
+        codeInfo = self._allegianceMap.get(allegianceCode)
         if not codeInfo:
             return None
 
-        return codeInfo.name(world.sectorName())
+        return codeInfo.name(sectorName)
 
-    def uniqueAllegianceCode(self, world: traveller.World) -> typing.Optional[str]:
-        code = world.allegiance()
-        if not code:
+    def legacyCode(
+            self,
+            allegianceCode: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
             return None
 
-        codeInfo = self._allegianceMap.get(code)
+        codeInfo = self._allegianceMap.get(allegianceCode)
         if not codeInfo:
             return None
 
-        return codeInfo.uniqueCode(world.sectorName())
+        return codeInfo.legacyCode()
 
-    def formatAllegianceString(self, world: traveller.World) -> str:
-        allegianceCode = world.allegiance()
+    def basesCode(
+            self,
+            allegianceCode: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
+            return None
+
+        codeInfo = self._allegianceMap.get(allegianceCode)
+        if not codeInfo:
+            return None
+
+        return codeInfo.basesCode()
+
+    def uniqueAllegianceCode(
+            self,
+            allegianceCode: str,
+            sectorName: str
+            ) -> typing.Optional[str]:
+        if not allegianceCode:
+            return None
+
+        codeInfo = self._allegianceMap.get(allegianceCode)
+        if not codeInfo:
+            return None
+
+        return codeInfo.uniqueCode(sectorName)
+
+    def formatAllegianceString(
+            self,
+            allegianceCode: str,
+            sectorName: str
+            ) -> str:
         if allegianceCode:
-            allegianceName = traveller.AllegianceManager.instance().allegianceName(world)
+            allegianceName = self.allegianceName(
+                allegianceCode=allegianceCode,
+                sectorName=sectorName)
             if allegianceName:
                 allegianceString = f'{allegianceCode} - {allegianceName}'
             else:
@@ -159,31 +234,16 @@ class AllegianceManager(object):
             ) -> None:
         with self._lock:
             for code, name in allegiances.items():
-                codeInfo = self._allegianceMap.get(code)
-                if not codeInfo:
-                    codeInfo = self._addAllegianceCode(
-                        code=code,
-                        globalName=None) # Codes added from sectors don't have global names
+                codeInfo = self._addAllegianceCode(code=code)
                 codeInfo.addLocalName(sectorName=sectorName, allegianceName=name)
 
     # This function assumes it's only called once when the singleton is created and that
     # the mutex is locked
-    def _loadGlobalAllegiances(self) -> None:
-        # Pre-load mapping with legacy allegiances. This is done so to control which
-        # name ends up being used as the data retrieved from Traveller Map has multiple
-        # allegiances (with different names) mapped to the same legacy code
-        self._addAllegianceCode(code='Im', globalName='Third Imperium')
-        self._addAllegianceCode(code='Dr', globalName='Droyne')
-        self._addAllegianceCode(code='Na', globalName='Non-Aligned, Human-dominated')
-        self._addAllegianceCode(code='Zh', globalName='Zhodani Consulate')
-        self._addAllegianceCode(code='Va', globalName='Non-Aligned, Vargr-dominated')
-        self._addAllegianceCode(code='So', globalName='Solomani Confederation')
-        self._addAllegianceCode(code='Zc', globalName='Zhodani Client')
-        self._addAllegianceCode(code='As', globalName='Aslan Hierate')
-        self._addAllegianceCode(code='Kk', globalName='The Two Thousand Worlds')
-
+    def _loadAllegiances(self) -> None:
         # Load the T5 second survey allegiances pulled from Traveller Map
-        results = json.loads(travellermap.DataStore.instance().allegiancesData())
+        _, results = travellermap.parseTabContent(
+            content=travellermap.DataStore.instance().loadTextResource(
+                filePath=AllegianceManager._T5OfficialAllegiancesPath))
 
         # Split results into global and local allegiances
         globalAllegiances = []
@@ -206,26 +266,29 @@ class AllegianceManager(object):
         # First the entries with no location or location of 'various' are added as global names
         for allegiance in globalAllegiances:
             code = allegiance['Code']
-            legacyCode = allegiance['LegacyCode']
-            name = allegiance['Name']
+            legacyCode = allegiance['Legacy']
+            baseCode = allegiance['BaseCode']
+            globalName = allegiance['Name']
 
-            self._addAllegianceCode(code=code, globalName=name)
-            self._addAllegianceCode(code=legacyCode, globalName=name)
+            self._addAllegianceCode(
+                code=code,
+                legacyCode=legacyCode if legacyCode else None,
+                basesCode=baseCode if baseCode else None,
+                globalName=globalName if globalName else None)
 
         # Now entries where the locations specify sectors are added as names for those
         # sectors
         for allegiance in localAllegiances:
             code = allegiance['Code']
-            legacyCode = allegiance['LegacyCode']
-            name = allegiance['Name']
+            legacyCode = allegiance['Legacy']
+            baseCode = allegiance['BaseCode']
+            localName = allegiance['Name']
             location = allegiance['Location']
 
             codeInfo = self._addAllegianceCode(
                 code=code,
-                globalName=None)
-            legacyCodeInfo = self._addAllegianceCode(
-                code=legacyCode,
-                globalName=None)
+                legacyCode=legacyCode if legacyCode else None,
+                basesCode=baseCode if baseCode else None)
 
             abbreviations = location.split('/')
             for abbreviation in abbreviations:
@@ -237,18 +300,31 @@ class AllegianceManager(object):
 
                 codeInfo.addLocalName(
                     sectorName=sectorName,
-                    allegianceName=name)
-                legacyCodeInfo.addLocalName(
-                    sectorName=sectorName,
-                    allegianceName=name)
+                    allegianceName=localName)
+
+        # Now unofficial global entries for the current milieu
+        unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(self._milieu)
+        if unofficialAllegiance:
+            for code, legacyCode, basesCode, globalName in unofficialAllegiance:
+                self._addAllegianceCode(
+                    code=code,
+                    legacyCode=legacyCode if legacyCode else None,
+                    basesCode=basesCode if baseCode else None,
+                    globalName=globalName if globalName else None)
 
     def _addAllegianceCode(
             self,
             code: str,
-            globalName: typing.Optional[str],
+            legacyCode: typing.Optional[str] = None,
+            basesCode: typing.Optional[str] = None,
+            globalName: typing.Optional[str] = None,
             ) -> AllegianceCodeInfo:
         codeInfo = self._allegianceMap.get(code)
         if not codeInfo:
-            codeInfo = AllegianceCodeInfo(code=code, globalName=globalName)
+            codeInfo = AllegianceCodeInfo(
+                code=code,
+                legacyCode=legacyCode,
+                basesCode=basesCode,
+                globalName=globalName)
             self._allegianceMap[code] = codeInfo
         return codeInfo

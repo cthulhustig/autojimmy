@@ -112,7 +112,11 @@ class Stellar(object):
         return not self._string
 
     def stars(self) -> typing.Iterable[Star]:
-        return self._stars
+        return list(self._stars)
+
+    def yieldStars(self) -> typing.Generator[Star, None, None]:
+        for star in self._stars:
+            yield star
 
     def starCount(self) -> int:
         return len(self._stars)

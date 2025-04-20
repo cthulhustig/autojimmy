@@ -516,14 +516,14 @@ class JumpRouteWindow(gui.WindowWidget):
         if storedValue:
             self._mainSplitter.restoreState(storedValue)
 
-        self._jumpRatingOverlayAction.setChecked(
+        self._jumpRatingOverlayToggle.setChecked(
             gui.safeLoadSetting(
                 settings=self._settings,
                 key='ShowJumpRatingOverlay',
                 type=bool,
                 default=False))
 
-        self._worldTaggingOverlayAction.setChecked(
+        self._worldTaggingOverlayToggle.setChecked(
             gui.safeLoadSetting(
                 settings=self._settings,
                 key='ShowWorldTaggingOverlay',
@@ -558,8 +558,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.setValue('RefuellingPlanTableState', self._refuellingPlanTable.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
-        self._settings.setValue('ShowJumpRatingOverlay', self._jumpRatingOverlayAction.isChecked())
-        self._settings.setValue('ShowWorldTaggingOverlay', self._worldTaggingOverlayAction.isChecked())
+        self._settings.setValue('ShowJumpRatingOverlay', self._jumpRatingOverlayToggle.isChecked())
+        self._settings.setValue('ShowWorldTaggingOverlay', self._worldTaggingOverlayToggle.isChecked())
 
         self._settings.endGroup()
 
@@ -608,6 +608,7 @@ class JumpRouteWindow(gui.WindowWidget):
     # if the route was calculated before the widget was displayed for the first time. The hack works
     # by checking if the Traveller Map widget is not the displayed widget and forces a resize if
     # it's not.
+    # TODO: This can be removed when I finally ditch the web map widget
     def _travellerMapInitFix(self) -> None:
         currentWidget = self._resultsDisplayModeTabView.currentWidget()
         if currentWidget != self._travellerMapWidget:
@@ -798,7 +799,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
 
-        self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget = gui.MapWidgetEx()
         self._travellerMapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._travellerMapWidget.setToolTipCallback(self._formatMapToolTip)
         self._travellerMapWidget.enableDeadSpaceSelection(
@@ -806,25 +807,47 @@ class JumpRouteWindow(gui.WindowWidget):
         self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
         self._travellerMapWidget.displayOptionsChanged.connect(self._updateJumpOverlays)
 
-        self._jumpRatingOverlayAction = QtWidgets.QAction('Jump Rating', self)
-        self._jumpRatingOverlayAction.setCheckable(True)
-        self._jumpRatingOverlayAction.setChecked(False)
-        self._jumpRatingOverlayAction.triggered.connect(
-            self._updateJumpOverlays)
-        self._worldTaggingOverlayAction = QtWidgets.QAction('World Tagging', self)
-        self._worldTaggingOverlayAction.setCheckable(True)
-        self._worldTaggingOverlayAction.setChecked(False)
-        self._worldTaggingOverlayAction.triggered.connect(
-            self._updateJumpOverlays)
-        self._travellerMapWidget.addConfigActions(
+        self._jumpRatingOverlayToggle = gui.ToggleButton()
+        self._jumpRatingOverlayToggle.setChecked(False)
+        self._jumpRatingOverlayToggle.toggled.connect(self._updateJumpOverlays)
+        self._worldTaggingOverlayToggle = gui.ToggleButton()
+        self._worldTaggingOverlayToggle.setChecked(False)
+        self._worldTaggingOverlayToggle.toggled.connect(self._updateJumpOverlays)
+
+        configLayout = QtWidgets.QGridLayout()
+        configLayout.addWidget(self._jumpRatingOverlayToggle, 0, 0)
+        configLayout.addWidget(gui.MapOverlayLabel('Jump Rating'), 0, 1)
+        configLayout.addWidget(self._worldTaggingOverlayToggle, 1, 0)
+        configLayout.addWidget(gui.MapOverlayLabel('World Tagging'), 1, 1)
+
+        self._travellerMapWidget.addConfigSection(
             section='Jump Overlays',
-            actions=[self._jumpRatingOverlayAction, self._worldTaggingOverlayAction])
+            content=configLayout)
+
+        # HACK: This wrapper widget for the map is a hacky fix for what looks
+        # like a bug in QTabWidget that is triggered if you make one of the
+        # controls it contains full screen (true borderless full screen not
+        # maximised). The issue I was seeing is the widget that I made full
+        # screen would get a resize event for the screen resolution as you would
+        # expect then immediately get another resize event that put it back to
+        # the size it was before going full screen. As far as I can tell it's
+        # caused by QTabWidget as it doesn't happen with the simulator window
+        # which usually doesn't have a QTabWidget but can be made to happen by
+        # adding one. The workaround I found is to warp the widget (the map in
+        # this case) in a layout and wrap that layout in a widget. When this is
+        # done the map doesn't get the second resize event setting it back to
+        # its original size.
+        mapWrapperLayout = QtWidgets.QVBoxLayout()
+        mapWrapperLayout.setContentsMargins(0, 0, 0, 0)
+        mapWrapperLayout.addWidget(self._travellerMapWidget)
+        mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(jumpRouteWidget, 'Jump Route')
         self._resultsDisplayModeTabView.addTab(self._refuellingPlanTable, 'Refuelling Plan')
-        self._resultsDisplayModeTabView.addTab(self._travellerMapWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.setCurrentWidget(mapWrapperWidget)
 
         routeLayout = QtWidgets.QVBoxLayout()
         routeLayout.addWidget(self._calculateRouteButton)
@@ -1481,6 +1504,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
+    # This moves/zooms the traveller map widget to show
+    # the current jump route
     def _showJumpRouteInTravellerMap(self) -> None:
         if not self._jumpRoute:
             return
@@ -1508,8 +1533,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._travellerMapWidget.removeOverlay(handle=handle)
         self._jumpOverlayHandles.clear()
 
-        showJumpRatingOverlay = self._jumpRatingOverlayAction.isChecked()
-        showWorldTaggingOverlay = self._worldTaggingOverlayAction.isChecked()
+        showJumpRatingOverlay = self._jumpRatingOverlayToggle.isChecked()
+        showWorldTaggingOverlay = self._worldTaggingOverlayToggle.isChecked()
         if not (showJumpRatingOverlay or showWorldTaggingOverlay):
             return # Nothing more to do
 
@@ -1531,7 +1556,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if startHex and showWorldTaggingOverlay:
             try:
-                worlds = traveller.WorldManager.instance().worldsInArea(
+                worlds = traveller.WorldManager.instance().worldsInRadius(
                     center=startHex,
                     searchRadius=jumpRating)
             except Exception as ex:
@@ -1562,7 +1587,7 @@ class JumpRouteWindow(gui.WindowWidget):
             if taggedHexes:
                 handle = self._travellerMapWidget.createHexOverlay(
                     hexes=taggedHexes,
-                    primitive=gui.TravellerMapWidget.PrimitiveType.Hex,
+                    primitive=gui.MapPrimitiveType.Hex,
                     fillMap=colourMap)
                 self._jumpOverlayHandles.add(handle)
 

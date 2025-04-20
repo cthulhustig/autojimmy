@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Worlds>
+<!--
+	Data sources:
+
+	- Imperium Worlds, W.L. Guatney, HIWG, http://traveller.mu.org/archive/HIWG/imperium.worlds.txt
+-->
+	<World>
+		<Name>Reference</Name>
+		<MapOptions>WorldsCapitals</MapOptions>
+		<Location Sector="Core" Hex="0140"/>
+		<LabelBiasY>-1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Capital</Name>
+		<MapOptions>WorldsCapitals</MapOptions>
+		<Location Sector="Core" Hex="2118"/>
+		<LabelBiasY>-1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Vland (Vilani Home World)</Name>
+		<MapOptions>WorldsHomeworlds</MapOptions>
+		<Location Sector="Vland" Hex="1717"/>
+	</World>
+	<World>
+		<Name>Terra&#x0A;(Solomani Home World)</Name>
+		<MapOptions>WorldsHomeworlds</MapOptions>
+		<Location Sector="Solomani Rim" Hex="1827"/>
+		<LabelBiasY>1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Zhodane (Zhodani Home World)</Name>
+		<MapOptions>WorldsHomeworlds WorldsCapitals</MapOptions>
+		<Location Sector="Zhdant" Hex="2719"/>
+		<LabelBiasX>0</LabelBiasX>
+    <LabelBiasY>-1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Lair (Vargr Home World)</Name>
+		<MapOptions>WorldsHomeworlds</MapOptions>
+		<Location Sector="Provence" Hex="2402"/>
+		<LabelBiasY>-1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Kirur (Centaur Home World)</Name>
+		<MapOptions>WorldsHomeworlds WorldsCapitals</MapOptions>
+		<Location Sector="Ruupiin" Hex="1315"/>
+		<LabelBiasY>-1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Guaran (Hive Home World)</Name>
+		<MapOptions>WorldsHomeworlds</MapOptions>
+		<Location Sector="Ricenden" Hex="0827"/>
+		<LabelBiasY>-1</LabelBiasY>
+	</World>
+	<World>
+		<Name>Glea (Hive Federation Capital)</Name>
+		<MapOptions>WorldsCapitals</MapOptions>
+		<Location Sector="Centrax" Hex="2609"/>
+	</World>
+	<World>
+		<Name>Kusyu&#x0A;(Aslan Home World)</Name>
+		<MapOptions>WorldsHomeworlds WorldsCapitals</MapOptions>
+		<Location Sector="Dark Nebula" Hex="1226"/>
+		<LabelBiasX>-1</LabelBiasX>
+	</World>
+	<World>
+		<Name>Regina</Name>
+		<MapOptions>WorldsCapitals</MapOptions>
+		<Location Sector="Spinward Marches" Hex="1910"/>
+	</World>
+</Worlds>

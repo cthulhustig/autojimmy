@@ -13,10 +13,26 @@ import typing
 import urllib
 from PyQt5 import QtCore
 
+# NOTE: If I ever change the name of these enums I'll need some mapping
+# as they're written to the config file. This only applies to the name
+# not the value
 class ColourTheme(enum.Enum):
     DarkMode = 'Dark Mode'
     LightMode = 'Light Mode'
     UseOSSetting = 'Use OS Setting'
+
+# NOTE: If I ever change the name of these enums I'll need some mapping
+# as they're written to the config file. This only applies to the name
+# not the value
+class MapEngine(enum.Enum):
+    InApp = app.AppName
+    WebProxy = 'Web (Proxy)'
+    WebDirect = 'Web (Direct)'
+
+class MapRenderingType(enum.Enum):
+    Tiled = 'Tiled' # Tiles rendered in background (i.e. the same as Traveller Map)
+    Hybrid = 'Hybrid' # Tiles rendered in foreground
+    Full = 'Full' # Entire frame rendered each redraw and no digital zoom between log zoom levels
 
 class Config(object):
     _ConfigFileName = 'autojimmy.ini'
@@ -24,6 +40,9 @@ class Config(object):
     _LogLevelKeyName = 'Debug/LogLevel'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
+    _MapEngineTypeKeyName = 'TravellerMap/MapEngine'
+    _MapRenderingTypeKeyName = 'TravellerMap/MapRenderingType'
+    _MapAnimationsKeyName = 'TravellerMap/MapAnimations'
 
     _ProxyEnabledKeyName = 'Proxy/Enabled'
     _ProxyPortKeyName = 'Proxy/Port'
@@ -124,7 +143,8 @@ class Config(object):
     _MapOptionToKeyNameMap = {
         travellermap.Option.GalacticDirections: 'TravellerMap/GalacticDirections',
         travellermap.Option.SectorGrid: 'TravellerMap/SectorGrid',
-        travellermap.Option.SectorNames: 'TravellerMap/SectorNames',
+        travellermap.Option.SelectedSectorNames: 'TravellerMap/SelectedSectorNames',
+        travellermap.Option.SectorNames: 'TravellerMap/AllSectorNames',
         travellermap.Option.Borders: 'TravellerMap/Borders',
         travellermap.Option.Routes: 'TravellerMap/Routes',
         travellermap.Option.RegionNames: 'TravellerMap/RegionNames',
@@ -141,6 +161,7 @@ class Config(object):
         travellermap.Option.StellarOverlay: 'TravellerMap/StellarOverlay',
         travellermap.Option.EmpressWaveOverlay: 'TravellerMap/EmpressWaveOverlay',
         travellermap.Option.QrekrshaZoneOverlay: 'TravellerMap/QrekrshaZoneOverlay',
+        travellermap.Option.AntaresSupernovaOverlay: 'TravellerMap/AntaresSupernovaOverlay',
         travellermap.Option.MainsOverlay: 'TravellerMap/MainsOverlay',
     }
 
@@ -148,7 +169,7 @@ class Config(object):
     _DefaultMapOptions = set([
         travellermap.Option.GalacticDirections,
         travellermap.Option.SectorGrid,
-        travellermap.Option.SectorNames,
+        travellermap.Option.SelectedSectorNames,
         travellermap.Option.Borders,
         travellermap.Option.Routes,
         travellermap.Option.RegionNames,
@@ -215,16 +236,34 @@ class Config(object):
 
         return True # Restart required
 
-    def proxyEnabled(self) -> bool:
-        return self._proxyEnabled
+    def mapEngine(self) -> MapEngine:
+        return self._mapEngine
 
-    def setProxyEnabled(self, enabled: bool) -> bool:
-        if enabled == self._proxyEnabled:
+    def setMapEngine(self, engine: MapEngine) -> None:
+        if engine == self._mapEngine:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._ProxyEnabledKeyName, enabled)
+        self._settings.setValue(Config._MapEngineTypeKeyName, engine.name)
         return True # Restart required
+
+    # NOTE: This is called every time LocalMapWidget draws the view so it needs
+    # to be quick
+    def mapRenderingType(self) -> MapRenderingType:
+        return self._mapRenderingType
+
+    def setMapRenderingType(self, type: MapRenderingType) -> None:
+        self._mapRenderingType = type
+        self._settings.setValue(Config._MapRenderingTypeKeyName, type.name)
+        return False # No restart required
+
+    def mapAnimations(self) -> bool:
+        return self._mapAnimations
+
+    def setMapAnimations(self, enabled: bool) -> bool:
+        self._mapAnimations = enabled
+        self._settings.setValue(Config._MapAnimationsKeyName, enabled)
+        return False # No restart required
 
     def proxyPort(self) -> int:
         return self._proxyPort
@@ -1130,9 +1169,20 @@ class Config(object):
             key=Config._LogLevelKeyName,
             default=logging.WARNING)
 
-        self._proxyEnabled = self._loadBoolSetting(
-            key=Config._ProxyEnabledKeyName,
+        self._mapEngine = self._loadEnumSetting(
+            key=Config._MapEngineTypeKeyName,
+            default=MapEngine.InApp,
+            members=MapEngine.__members__)
+
+        self._mapRenderingType = self._loadEnumSetting(
+            key=Config._MapRenderingTypeKeyName,
+            default=MapRenderingType.Tiled,
+            members=MapRenderingType.__members__)
+
+        self._mapAnimations = self._loadBoolSetting(
+            key=Config._MapAnimationsKeyName,
             default=True)
+
         self._proxyPort = self._loadIntSetting(
             key=Config._ProxyPortKeyName,
             default=61977,
@@ -1356,7 +1406,9 @@ class Config(object):
             keyType=traveller.ZoneType,
             default={
                 traveller.ZoneType.AmberZone: app.TagLevel.Warning,
-                traveller.ZoneType.RedZone: app.TagLevel.Danger
+                traveller.ZoneType.RedZone: app.TagLevel.Danger,
+                traveller.ZoneType.Unabsorbed: app.TagLevel.Warning,
+                traveller.ZoneType.Forbidden: app.TagLevel.Danger
             })
 
         self._taggedStarPortCodes = self._loadTaggingMap(

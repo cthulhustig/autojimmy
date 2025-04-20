@@ -230,11 +230,22 @@ class ZoneFiler(WorldFilter):
             worldValue=ZoneFiler._zoneToInt(world.zone()),
             compareValue=self._integer)
 
+    # Greater/less than comparisons don't really make logical sense for zones
+    # but this function makes an attempt to map them to integers so it does
+    # something vaguely sensible if the user chooses to do it. It's based on the
+    # thinking that Forbidden/Unabsorbed are equivalent to Red/Amber zones
+    # respectively (at least the Traveller Map IsAmber/IsRed treat them that way).
     @staticmethod
     def _zoneToInt(zone: traveller.ZoneType) -> int:
         if zone == traveller.ZoneType.RedZone:
-            return 2
+            return 5
+        elif zone == traveller.ZoneType.Forbidden:
+            return 4
         elif zone == traveller.ZoneType.AmberZone:
+            return 3
+        elif zone == traveller.ZoneType.Unabsorbed:
+            return 2
+        elif zone == traveller.ZoneType.Balkanized:
             return 1
         else:
             return 0
@@ -537,7 +548,9 @@ class AllegianceFilter(WorldFilter):
             else:
                 raise ValueError('Invalid allegiance filter operation')
 
-            allegianceName = traveller.AllegianceManager.instance().allegianceName(world)
+            allegianceName = traveller.AllegianceManager.instance().allegianceName(
+                allegianceCode=world.allegiance(),
+                sectorName=world.sectorName())
             if allegianceName:
                 if self._operation == StringFilterOperation.ContainsString:
                     if self._regex.search(allegianceName):
@@ -931,7 +944,7 @@ class WorldSearch(object):
         if not subsectorName:
             return self._searchWorldList(worldList=sector, maxResults=maxResults)
         else:
-            subsector = sector.subsector(name=subsectorName)
+            subsector = sector.subsectorByName(name=subsectorName)
             if not subsector:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorldList(worldList=subsector, maxResults=maxResults)
@@ -941,7 +954,7 @@ class WorldSearch(object):
             centerHex: travellermap.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
-        return traveller.WorldManager.instance().worldsInArea(
+        return traveller.WorldManager.instance().worldsInRadius(
             center=centerHex,
             searchRadius=searchRadius,
             worldFilterCallback=self.checkWorld)
