@@ -966,6 +966,8 @@ class MapWidgetEx(QtWidgets.QWidget):
         featuresConfigLayout = _ConfigSectionLayout()
         featuresConfigLayout.addToggleAction(
             self._sharedGalacticDirectionsAction)
+        featuresConfigLayout.addToggleAction(
+            self._sharedSectorGridAction)
         sectorNamesLayout = _ConfigSectionLayout()
         for action in self._sharedSectorNamesActionGroup.actions():
             sectorNamesLayout.addToggleAction(action)
