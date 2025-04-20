@@ -435,6 +435,7 @@ class _LintJobResultsDialog(gui.DialogEx):
         dialogLayout.addLayout(buttonLayout)
 
         self.setLayout(dialogLayout)
+        self.showMaximizeButton(True)
 
 class _NewSectorDialog(gui.DialogEx):
     _SectorFileFilter = 'Sector (*.sec *.tab *.t5 *.t5col *.t5tab)'
