@@ -86,14 +86,13 @@ Downloading the source code can be done either by cloning the repo with git or d
 
 ### Step 3: Install libcairo (Optional)
 > [!NOTE] By default, Auto-Jimmy will use its own rendering engine to draw the
-> map of the Traveller universe and there is no need to install
-> [libcairo](https://www.cairographics.org/).
+> map of the Traveller universe and there is no need to install libcairo.
 
 If you configure Auto-Jimmy to use web proxy based rendering and are creating
-custom sectors, it is recommended to install libcairo. Primarily this is done
-to reduce visual artifacts when compositing custom sectors onto the map tiles
-Traveller Map uses to display the universe, however, it also has the added
-advantage that generating custom sectors is quicker.
+custom sectors, it is recommended to install [libcairo](https://www.cairographics.org/).
+Primarily this is done to reduce visual artifacts when compositing custom
+sectors onto the map tiles Traveller Map uses to display the universe, however,
+it also has the added advantage that generating custom sectors is quicker.
 
 #### Install libcairo on Windows
 On Windows, libcairo can be installed using the package manager that comes with
