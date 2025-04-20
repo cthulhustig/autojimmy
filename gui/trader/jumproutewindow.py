@@ -847,6 +847,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._resultsDisplayModeTabView.addTab(jumpRouteWidget, 'Jump Route')
         self._resultsDisplayModeTabView.addTab(self._refuellingPlanTable, 'Refuelling Plan')
         self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.setCurrentWidget(mapWrapperWidget)
 
         routeLayout = QtWidgets.QVBoxLayout()
         routeLayout.addWidget(self._calculateRouteButton)
