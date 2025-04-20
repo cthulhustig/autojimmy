@@ -999,6 +999,8 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         overlayConfigLayout = _ConfigSectionLayout()
         overlayConfigLayout.addToggleAction(
+            self._sharedMainsOverlayAction)
+        overlayConfigLayout.addToggleAction(
             self._sharedImportanceOverlayAction)
         overlayConfigLayout.addToggleAction(
             self._sharedPopulationOverlayAction)
@@ -1018,8 +1020,6 @@ class MapWidgetEx(QtWidgets.QWidget):
             self._sharedQrekrshaZoneOverlayAction)
         overlayConfigLayout.addToggleAction(
             self._sharedAntaresSupernovaOverlayAction)
-        overlayConfigLayout.addToggleAction(
-            self._sharedMainsOverlayAction)
         self._configWidget.addSection(
             section='Overlays',
             content=overlayConfigLayout)
