@@ -1,48 +1,8 @@
 # Custom Sectors
 Auto-Jimmy allows you to import custom sector and metadata files so your
-sectors can be merged into the stock Traveller Map universe. Custom sectors
+sectors can be merged into the stock Traveller universe. Custom sectors
 can either be added to an empty region of space or they can replace existing
 sectors to allow you to customize the universe for your setting.
-
-Once a sector has been imported, Auto-Jimmy will merge it into its snapshot of
-the Traveller Map universe, so it can be used in tools such as the jump route
-planner and trade option calculators. As well as this, Auto-Jimmy will also
-use the Traveller Map [Poster API](https://travellermap.com/doc/api) to upload
-your sector files and generate a set of images of your sector. These images are
-then composited onto the tiles that Traveller Map uses to display the universe,
-allowing your sector to be shown in the Traveller Map pages displayed inside
-Auto-Jimmy.
-
-## Limitations
-The way in which Auto-Jimmy displays your custom sectors in the integrated
-Traveller Map web pages is relatively simple (in concept at least). You'll
-probably have noticed that when Traveller Map displays the universe, it does it
-in square sections, these are known as tiles. All Auto-Jimmy is doing is, if the
-tile requested by the Traveller Map web page overlaps one of your custom
-sectors, it does some fancy copy/pasting to overlay it on the tile before the
-web page displays it.
-
-As what Auto-Jimmy is doing is so simple, there are a few known limitations:
-* The most notable limitation is that the display options (render style, fill
-borders, show sector grid etc) are fixed at the point the custom sector is
-imported. If you later change how the universe is displayed in the Traveller
-Map pages, the custom sectors will still be displayed using their original
-settings.
-* If there are worlds from other sectors that have long names and they're
-also positioned directly next to the edge of one of your custom sectors, their
-names may be truncated at some zoom levels. The names will be fully displayed
-if you zoom in more.
-* If you have the sector grid enabled, at boundaries where your sector meets
-a stock sector, you may see some "stepping" where the sector grid line is a
-different width on hexes from the custom sector compared to hexes from the
-stock sector.
-* You may notice slight pixelisation at very high zoom levels. This is mostly
-noticeable if you zoom in on one of your custom sectors as far as it will go.
-* When you zoom out to the point Traveller Map shows the red region outlines,
-they won't be drawn over custom sectors.
-* Sector and world names containing non-ascii characters are not fully
-supported, your results may vary.
-* The Candy render style isn't supported.
 
 ## Supported Formats
 Auto-Jimmy supports the following sector and metadata file formats:
@@ -134,12 +94,46 @@ before creating the sectors saves you time and means you're not putting addition
 load on the Traveller Map servers by recreating the sector once you notice
 something isn't being displayed correctly.
 
-> [!NOTE]
+> [!TIP]
 > You can lint your sectors from the same Auto-Jimmy dialog you use to create a
 > new custom sector. Just click the 'Lint' button after selecting your sector
 > and metadata file.
 
-## Composition Modes
+## Custom Sector Rendering
+
+By default, Auto-Jimmy will use its own in-app rendering engine to draw
+custom sectors so they are seamlessly integrated with the rest of the
+Traveller universe. This is the recommended method of rendering custom
+sectors.
+
+If Auto-Jimmy is configured to use web proxy rendering of the map, the
+map will be drawn by the Traveller Map server and Auto-Jimmy will composite
+pre-generated images of the custom sectors over the top of it. This method
+of rendering custom sectors has a number of limitations.
+
+### Web Proxy Limitations
+* The most notable limitation is that the display options (render style, fill
+borders, show sector grid etc) are fixed at the point the images of the sector
+are generated when during the custom sector import process. If you later change
+how the universe is displayed in the Traveller Map pages, the custom sectors
+will still be displayed using their original settings.
+* If there are worlds from other sectors that have long names and they're
+also positioned directly next to the edge of one of your custom sectors, their
+names may be truncated at some zoom levels. The names will be fully displayed
+if you zoom in more.
+* If you have the sector grid enabled, at boundaries where your sector meets
+a stock sector, you may see some "stepping" where the sector grid line is a
+different width on hexes from the custom sector compared to hexes from the
+stock sector.
+* You may notice slight pixelisation at very high zoom levels. This is mostly
+noticeable if you zoom in on one of your custom sectors as far as it will go.
+* When you zoom out to the point Traveller Map shows the red region outlines,
+they won't be drawn over custom sectors.
+* Sector and world names containing non-ascii characters are not fully
+supported, your results may vary.
+* The Candy render style isn't supported.
+
+### Web Proxy Composition Modes
 There are 3 ways Auto-Jimmy can composite custom sector images onto the tiles
 used by Traveller Map.
 
