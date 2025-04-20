@@ -120,6 +120,7 @@ class WorldInfo(object):
 
         bases = world.bases()
         self.primaryBaseGlyph = self.secondaryBaseGlyph = self.tertiaryBaseGlyph = self.specialFeatureGlyph = None
+        ignoreSecondBase = False
 
         # NOTE: When determining the primary base glyph the standard allegiance
         # is used but the legacy allegiance is used for the secondary and tertiary
@@ -132,12 +133,13 @@ class WorldInfo(object):
             # Special case: Show Zho Naval+Military as diamond
             if self.basesAllegiance == 'Zh' and bases.string() == 'KM':
                 baseCode = 'Z'
+                ignoreSecondBase = True
 
             self.primaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.basesAllegiance,
                 code=baseCode)
 
-        if bases.count() >= 2:
+        if bases.count() >= 2 and not ignoreSecondBase:
             self.secondaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
                 code=traveller.Bases.code(bases[1]))
