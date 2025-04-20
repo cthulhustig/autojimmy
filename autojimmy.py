@@ -524,7 +524,7 @@ def main() -> None:
 
         gui.configureAppStyle(application)
 
-        if app.Config.instance().mapSourceType() is app.MapSourceType.WebProxy:
+        if app.Config.instance().mapEngine() is app.MapEngine.WebProxy:
             # Check if CairoSVG is working, possibly prompting the user if it's
             # not. This needs to be done after the DataStore singleton has been
             # set up so it can check if there are any existing SVG custom
@@ -550,7 +550,7 @@ def main() -> None:
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
         startProxy = False
-        if app.Config.instance().mapSourceType() is app.MapSourceType.WebProxy:
+        if app.Config.instance().mapEngine() is app.MapEngine.WebProxy:
             hostPoolSize = _hostPoolSizeCheck()
             if hostPoolSize > 0:
                 proxy.MapProxy.configure(

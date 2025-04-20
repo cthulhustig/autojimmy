@@ -24,8 +24,8 @@ class ColourTheme(enum.Enum):
 # NOTE: If I ever change the name of these enums I'll need some mapping
 # as they're written to the config file. This only applies to the name
 # not the value
-class MapSourceType(enum.Enum):
-    Local = 'Local'
+class MapEngine(enum.Enum):
+    InApp = app.AppName
     WebProxy = 'Web (Proxy)'
     WebDirect = 'Web (Direct)'
 
@@ -40,7 +40,7 @@ class Config(object):
     _LogLevelKeyName = 'Debug/LogLevel'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
-    _MapSourceTypeKeyName = 'TravellerMap/MapSourceType'
+    _MapEngineTypeKeyName = 'TravellerMap/MapEngine'
     _MapRenderingTypeKeyName = 'TravellerMap/MapRenderingType'
     _MapAnimationsKeyName = 'TravellerMap/MapAnimations'
 
@@ -236,15 +236,15 @@ class Config(object):
 
         return True # Restart required
 
-    def mapSourceType(self) -> MapSourceType:
-        return self._mapSourceType
+    def mapEngine(self) -> MapEngine:
+        return self._mapEngine
 
-    def setMapSourceType(self, type: MapSourceType) -> None:
-        if type == self._mapSourceType:
+    def setMapEngine(self, engine: MapEngine) -> None:
+        if engine == self._mapEngine:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._MapSourceTypeKeyName, type.name)
+        self._settings.setValue(Config._MapEngineTypeKeyName, engine.name)
         return True # Restart required
 
     # NOTE: This is called every time LocalMapWidget draws the view so it needs
@@ -1169,10 +1169,10 @@ class Config(object):
             key=Config._LogLevelKeyName,
             default=logging.WARNING)
 
-        self._mapSourceType = self._loadEnumSetting(
-            key=Config._MapSourceTypeKeyName,
-            default=MapSourceType.Local,
-            members=MapSourceType.__members__)
+        self._mapEngine = self._loadEnumSetting(
+            key=Config._MapEngineTypeKeyName,
+            default=MapEngine.InApp,
+            members=MapEngine.__members__)
 
         self._mapRenderingType = self._loadEnumSetting(
             key=Config._MapRenderingTypeKeyName,

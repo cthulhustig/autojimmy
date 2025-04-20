@@ -486,12 +486,12 @@ class ConfigDialog(gui.DialogEx):
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
 
-        self._mapRenderingTypeComboBox = gui.EnumComboBox(
-            type=app.MapSourceType,
-            value=app.Config.instance().mapSourceType())
-        self._mapRenderingTypeComboBox.currentIndexChanged.connect(
+        self._mapEngineComboBox = gui.EnumComboBox(
+            type=app.MapEngine,
+            value=app.Config.instance().mapEngine())
+        self._mapEngineComboBox.currentIndexChanged.connect(
             self._renderingTypeChanged)
-        self._mapRenderingTypeComboBox.setToolTip(gui.createStringToolTip(
+        self._mapEngineComboBox.setToolTip(gui.createStringToolTip(
             '<p>Select how the map will be rendered.</p>'
             '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
             '<li><b>Local</b> - By default, {app} uses its own map rendering '
@@ -518,7 +518,7 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         # Proxy Widgets
-        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapSourceType.WebProxy
+        isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
@@ -638,7 +638,7 @@ class ConfigDialog(gui.DialogEx):
         self._clearTileCacheButton.clicked.connect(self._clearTileCacheClicked)
 
         proxyLayout = gui.FormLayoutEx()
-        proxyLayout.addRow('Rendering Type:', self._mapRenderingTypeComboBox)
+        proxyLayout.addRow('Map Engine:', self._mapEngineComboBox)
         proxyLayout.addRow('Port:', self._proxyPortSpinBox)
         proxyLayout.addRow('Host Pool Size:', self._proxyHostPoolSizeSpinBox)
         proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
@@ -1097,7 +1097,7 @@ class ConfigDialog(gui.DialogEx):
                 classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                 classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
                 classEStarPortFuelType=self._classEStarPortFuelType.currentEnum())))
-            checker.update(config.setMapSourceType(self._mapRenderingTypeComboBox.currentEnum()))
+            checker.update(config.setMapEngine(self._mapEngineComboBox.currentEnum()))
             checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
             checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
             checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
@@ -1263,7 +1263,7 @@ class ConfigDialog(gui.DialogEx):
         message.exec()
 
     def _renderingTypeChanged(self) -> None:
-        isProxyEnabled = self._mapRenderingTypeComboBox.currentEnum() is app.MapSourceType.WebProxy
+        isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)

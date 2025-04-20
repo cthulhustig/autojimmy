@@ -871,11 +871,11 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        useLocalRendering = app.Config.instance().mapSourceType() is app.MapSourceType.Local
+        useInAppRendering = app.Config.instance().mapEngine() is app.MapEngine.InApp
 
         self._mapWidget = \
             gui.LocalMapWidget(parent=self) \
-            if useLocalRendering else \
+            if useInAppRendering else \
             gui.WebMapWidget(parent=self)
         self._mapWidget.leftClicked.connect(self._handleLeftClick)
         self._mapWidget.rightClicked.connect(self._handleRightClick)
@@ -952,7 +952,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             content=_ActionGroupComboBox(self._sharedStyleActionGroup))
         self._configWidget.hide()
 
-        if useLocalRendering:
+        if useInAppRendering:
             renderingConfigLayout = _ConfigSectionLayout()
             renderingConfigLayout.addWidget(
                 _ActionGroupComboBox(self._sharedRenderingTypeActionGroup),
