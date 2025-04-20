@@ -196,7 +196,7 @@ class WorldManager(object):
             logging.debug(f'Loading worlds for sector {sectorName}')
 
             if progressCallback:
-                progressCallback(f'Sector {sectorInfo.x()} {sectorInfo.y()}', i, len(toLoad))
+                progressCallback(sectorInfo.canonicalName(), i, len(toLoad))
 
             try:
                 sectorData = travellermap.DataStore.instance().sectorFileData(
@@ -232,7 +232,7 @@ class WorldManager(object):
                         placeholders=placeholders)
 
             if progressCallback:
-                progressCallback(f'Sector {sectorInfo.x()} {sectorInfo.y()}', i + 1, len(toLoad))
+                progressCallback(sectorInfo.canonicalName(), i + 1, len(toLoad))
 
     def calculateMains(
             self,

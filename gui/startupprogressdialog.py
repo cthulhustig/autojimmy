@@ -10,7 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
         jobs.LoadSectorsJob: 'Loading: Sector - ',
-        jobs.LoadPlaceholdersJob: 'Loading: Placeholders',
+        jobs.LoadPlaceholdersJob: 'Loading: Placeholders - ',
         jobs.CalculateMainsJob: '',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
         jobs.LoadRobotsJob: 'Loading: Robot - ',
