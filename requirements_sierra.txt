@@ -17,3 +17,4 @@ CairoSVG>=2.7.1
 # https://stackoverflow.com/questions/49577343/filesystem-with-c17-doesnt-work-on-my-mac-os-x-high-sierra
 numpy==2.0.2
 packaging>=24.0
+certifi>=2025
