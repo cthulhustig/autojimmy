@@ -40,8 +40,8 @@ if __name__ == "__main__":
     print('Creating version file')
 
     appName = sys.argv[1]
-    appDescription = sys.argv[2]
-    appVersion = sys.argv[3]
+    appVersion = sys.argv[2]
+    appDescription = sys.argv[3]
     appAuthor = sys.argv[4]
     outputFile = sys.argv[5]
 
