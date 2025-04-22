@@ -1,4 +1,5 @@
 import common
+import certifi
 import datetime
 import enum
 import io
@@ -7,6 +8,7 @@ import logging
 import os
 import re
 import shutil
+import ssl
 import threading
 import travellermap
 import typing
@@ -464,6 +466,7 @@ class DataStore(object):
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
     _MinDataFormatVersion = UniverseDataFormat(4, 1)
+    _SSLContext = ssl.create_default_context(cafile=certifi.where())
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -674,7 +677,8 @@ class DataStore(object):
         try:
             response = urllib.request.urlopen(
                 DataStore._TimestampUrl,
-                timeout=DataStore._SnapshotCheckTimeout)
+                timeout=DataStore._SnapshotCheckTimeout,
+                context=DataStore._SSLContext)
             repoTimestamp = DataStore._parseTimestamp(data=response.read())
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot timestamp ({str(ex)})')
@@ -686,7 +690,8 @@ class DataStore(object):
         try:
             response = urllib.request.urlopen(
                 DataStore._DataFormatUrl,
-                timeout=DataStore._SnapshotCheckTimeout)
+                timeout=DataStore._SnapshotCheckTimeout,
+                context=DataStore._SSLContext)
             repoDataFormat = DataStore._parseUniverseDataFormat(data=response.read())
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot data format ({str(ex)})')
@@ -717,7 +722,7 @@ class DataStore(object):
                 progressCallback(DataStore.UpdateStage.DownloadStage, 0)
 
             dataBuffer = io.BytesIO()
-            with urllib.request.urlopen(DataStore._DataArchiveUrl) as response:
+            with urllib.request.urlopen(DataStore._DataArchiveUrl, context=DataStore._SSLContext) as response:
                 length = response.getheader('content-length')
                 blockSize = 1000000  # default value
 

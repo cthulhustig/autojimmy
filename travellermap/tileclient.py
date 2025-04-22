@@ -1,4 +1,6 @@
+import certifi
 import logging
+import ssl
 import time
 import threading
 import travellermap
@@ -12,6 +14,8 @@ class TileClient(object):
     _lock = threading.Lock()
     _baseMapUrl = None
     _cache = {}
+
+    _SSLContext = ssl.create_default_context(cafile=certifi.where())
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -87,7 +91,7 @@ class TileClient(object):
 
         # Any exception that occurs here is just allowed to pass up to the caller
         try:
-            with urllib.request.urlopen(url=url, timeout=timeout) as response:
+            with urllib.request.urlopen(url=url, timeout=timeout, context=TileClient._SSLContext) as response:
                 info = response.info()
                 contentType = info.get('content-type')
                 mapFormat = travellermap.mimeTypeToMapFormat(contentType)
