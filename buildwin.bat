@@ -24,7 +24,11 @@ if exist %MSYS2COPY%\ rmdir %MSYS2COPY% /s /q
 python ./scripts/packagemsys2.py %MSYS2COPY%
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
-pyinstaller -w autojimmy.py -n %APPNAME% --icon ".\icons\autojimmy.ico" --add-data "data;data" --add-data "icons;icons" --add-data "licenses;licenses" --add-data "%XMLSCHEMACOPY%;xmlschema" --add-data "%MSYS2COPY%;msys64" --clean --noconfirm
+set APPVERSIONFILE=.\build\binary_version.txt
+python ./scripts/createversionfile.py %APPVERSIONFILE%
+if %ERRORLEVEL% NEQ 0 exit /b 1
+
+pyinstaller -w autojimmy.py -n %APPNAME% --icon ".\icons\autojimmy.ico" --version-file %APPVERSIONFILE% --add-data "data;data" --add-data "icons;icons" --add-data "licenses;licenses" --add-data "%XMLSCHEMACOPY%;xmlschema" --add-data "%MSYS2COPY%;msys64" --clean --noconfirm
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
 iscc installer.iss /DApplicationName=%APPNAME% /DApplicationVersion=%APPVERSION%

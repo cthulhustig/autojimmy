@@ -2,7 +2,9 @@ import argparse
 
 AppName = 'Auto-Jimmy'
 AppVersion = '0.9.2'
+AppDescription = 'Referee and Player aid for the Traveller RPG'
 AppURL = 'https://github.com/cthulhustig/autojimmy'
+AppAuthor = 'CthulhuStig'
 
 # This is a hack so that the script that builds the installer can call this to get the current
 # application version number
