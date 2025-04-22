@@ -3,9 +3,11 @@ rem  Building the installer requires the following to be installed and added to 
 rem  - PyInstaller - https://pyinstaller.org
 rem  - Inno Setup - https://jrsoftware.org/isinfo.php
 
-rem This runs appdetails.py and captures the output 
+rem This runs appdetails.py and captures the output
 for /F "tokens=*" %%a in ('python .\app\appdetails.py --name') do SET APPNAME=%%a
 for /F "tokens=*" %%a in ('python .\app\appdetails.py --version') do SET APPVERSION=%%a
+for /F "tokens=*" %%a in ('python .\app\appdetails.py --description') do SET APPDESCRIPTION=%%a
+for /F "tokens=*" %%a in ('python .\app\appdetails.py --author') do SET APPAUTHOR=%%a
 for /F "tokens=*" %%a in ('python -c "import xmlschema; import os; print(os.path.dirname(xmlschema.__file__))"') do  SET XMLSCHEMAPATH=%%a
 
 echo Building installer for %APPNAME% %APPVERSION%
@@ -25,7 +27,7 @@ python ./scripts/packagemsys2.py %MSYS2COPY%
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
 set APPVERSIONFILE=.\build\binary_version.txt
-python ./scripts/createversionfile.py %APPVERSIONFILE%
+python ./scripts/createversionfile.py "%APPNAME%" "%APPVERSION%" "%APPDESCRIPTION%" "%APPAUTHOR%" "%APPVERSIONFILE%"
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
 pyinstaller -w autojimmy.py -n %APPNAME% --icon ".\icons\autojimmy.ico" --version-file %APPVERSIONFILE% --add-data "data;data" --add-data "icons;icons" --add-data "licenses;licenses" --add-data "%XMLSCHEMACOPY%;xmlschema" --add-data "%MSYS2COPY%;msys64" --clean --noconfirm
