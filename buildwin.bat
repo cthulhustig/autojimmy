@@ -2,6 +2,7 @@
 rem  Building the installer requires the following to be installed and added to the path
 rem  - PyInstaller - https://pyinstaller.org
 rem  - Inno Setup - https://jrsoftware.org/isinfo.php
+rem  - MSYS2 - https://www.msys2.org/
 
 rem This runs appdetails.py and captures the output
 for /F "tokens=*" %%a in ('python .\app\appdetails.py --name') do SET APPNAME=%%a
