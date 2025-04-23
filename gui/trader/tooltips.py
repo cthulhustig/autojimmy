@@ -177,9 +177,9 @@ AvailableFundsToolTip = gui.createStringToolTip(
     'Funds available for trading (including logistics costs if applied).',
     escape=False)
 PlayerBrokerDmToolTip = gui.createStringToolTip('<p>Player\'s broker skill with all modifiers</p>',
-                                            escape=False)
+                                                escape=False)
 PlayerAdminDmToolTip = gui.createStringToolTip('<p>Player\'s admin skill with all modifiers</p>',
-                                           escape=False)
+                                               escape=False)
 PlayerStreetWiseDmToolTip = gui.createStringToolTip(
     '<p>Player\'s street wise skill with all modifiers</p>',
     escape=False)

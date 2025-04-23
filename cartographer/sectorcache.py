@@ -289,7 +289,7 @@ class SectorCache(object):
         points = []
 
         count = len(SectorCache._TopClipOffsets)
-        y=0
+        y = 0
         for x in range(0, travellermap.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._TopClipOffsets[i]

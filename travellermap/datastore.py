@@ -673,9 +673,9 @@ class DataStore(object):
         currentTimestamp = self.universeTimestamp()
         try:
             with requests.get(
-                url=DataStore._TimestampUrl,
-                timeout=DataStore._SnapshotCheckTimeout
-                ) as response:
+                    url=DataStore._TimestampUrl,
+                    timeout=DataStore._SnapshotCheckTimeout
+                    ) as response:
                 repoTimestamp = DataStore._parseTimestamp(data=response.content)
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot timestamp ({str(ex)})')
@@ -686,9 +686,9 @@ class DataStore(object):
 
         try:
             with requests.get(
-                url=DataStore._DataFormatUrl,
-                timeout=DataStore._SnapshotCheckTimeout
-                ) as response:
+                    url=DataStore._DataFormatUrl,
+                    timeout=DataStore._SnapshotCheckTimeout
+                    ) as response:
                 repoDataFormat = DataStore._parseUniverseDataFormat(data=response.content)
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot data format ({str(ex)})')
@@ -720,10 +720,10 @@ class DataStore(object):
 
             dataBuffer = io.BytesIO()
             with requests.get(
-                url=DataStore._DataArchiveUrl,
-                timeout=DataStore._SnapshotDownloadTimeout,
-                stream=True
-                ) as response:
+                    url=DataStore._DataArchiveUrl,
+                    timeout=DataStore._SnapshotDownloadTimeout,
+                    stream=True
+                    ) as response:
                 length = response.headers.get('content-length')
                 length = int(length) if length else 0
                 progress = 0

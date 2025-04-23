@@ -83,6 +83,7 @@ class MapPath(cartographer.AbstractPath):
     def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, other: 'MapPath') -> None: ...
+
     @typing.overload
     def __init__(
         self,
@@ -162,6 +163,7 @@ class MapSpline(object):
     def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, other: 'MapSpline') -> None: ...
+
     @typing.overload
     def __init__(
         self,
@@ -248,7 +250,7 @@ class MapSpline(object):
         # values used by Traveller Map to the values used by the algorithm
         # I'm using to convert the spline to cubicTo calls. This value was
         # derived at by trial and error and seems to give an good approximation
-        qtTension = self._tension * 2/3
+        qtTension = self._tension * 2 / 3
 
         controlPoints = MapSpline._calcControlPoints(
             self._points[-1],
@@ -457,6 +459,7 @@ class MapPen(cartographer.AbstractPen):
     def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, other: 'MapPen') -> None: ...
+
     @typing.overload
     def __init__(
         self,
@@ -598,6 +601,7 @@ class MapImage(cartographer.AbstractImage):
 
     def width(self) -> int:
         return self._qtImage.width()
+
     def height(self) -> int:
         return self._qtImage.height()
 
@@ -720,6 +724,7 @@ class MapGraphics(cartographer.AbstractGraphics):
             points: typing.Sequence[cartographer.PointF]
             ) -> MapPointList:
         return MapPointList(points=points)
+
     def copyPointList(self, other: MapPointList) -> MapPointList:
         return MapPointList(other=other)
 
@@ -729,6 +734,7 @@ class MapGraphics(cartographer.AbstractGraphics):
             closed: bool
             ) -> MapPath:
         return MapPath(points=points, closed=closed)
+
     def copyPath(self, other: MapPath) -> MapPath:
         return MapPath(other=other)
 
@@ -739,11 +745,13 @@ class MapGraphics(cartographer.AbstractGraphics):
             closed: bool
             ) -> MapSpline:
         return MapSpline(points=points, tension=tension, closed=closed)
+
     def copySpline(self, other: MapSpline) -> MapSpline:
         return MapSpline(other=other)
 
     def createIdentityMatrix(self) -> MapMatrix:
         return MapMatrix()
+
     def createMatrix(
             self,
             m11: float,
@@ -754,11 +762,13 @@ class MapGraphics(cartographer.AbstractGraphics):
             dy: float
             ) -> MapMatrix:
         return MapMatrix(m11=m11, m12=m12, m21=m21, m22=m22, dx=dx, dy=dy)
+
     def copyMatrix(self, other: MapMatrix) -> MapMatrix:
         return MapMatrix(other=other)
 
     def createBrush(self, colour: str = '') -> MapBrush:
         return MapBrush(colour=colour)
+
     def copyBrush(self, other: MapBrush) -> MapBrush:
         return MapPath(other=other)
 
@@ -771,6 +781,7 @@ class MapGraphics(cartographer.AbstractGraphics):
             tip: cartographer.PenTip = cartographer.PenTip.Flat
             ) -> MapPen:
         return MapPen(colour=colour, width=width, style=style, pattern=pattern, tip=tip)
+
     def copyPen(self, other: MapPen) -> MapPen:
         return MapPen(other=other)
 
@@ -837,6 +848,7 @@ class MapGraphics(cartographer.AbstractGraphics):
         if not currentClip.isEmpty():
             newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
+
     def intersectClipRect(self, rect: cartographer.RectangleF) -> None:
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
@@ -849,6 +861,7 @@ class MapGraphics(cartographer.AbstractGraphics):
     def drawPoint(self, point: cartographer.PointF, pen: MapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoint(self._convertPoint(point))
+
     def drawPoints(self, points: MapPointList, pen: MapPen) -> None:
         self._painter.setPen(pen.qtPen())
         self._painter.drawPoints(points.qtPolygon())
@@ -863,6 +876,7 @@ class MapGraphics(cartographer.AbstractGraphics):
         self._painter.drawLine(
             self._convertPoint(pt1),
             self._convertPoint(pt2))
+
     def drawLines(
             self,
             points: MapPointList,
@@ -935,6 +949,7 @@ class MapGraphics(cartographer.AbstractGraphics):
         self._painter.drawImage(
             QtCore.QRectF(*rect.rect()),
             image.qtImage())
+
     def drawImageAlpha(
             self,
             alpha: float,
@@ -1045,6 +1060,7 @@ class MapGraphics(cartographer.AbstractGraphics):
     def save(self) -> cartographer.AbstractGraphicsState:
         self._painter.save()
         return cartographer.AbstractGraphicsState(graphics=self)
+
     def restore(self) -> None:
         self._painter.restore()
 

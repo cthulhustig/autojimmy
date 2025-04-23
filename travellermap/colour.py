@@ -148,6 +148,7 @@ class HtmlColours(object):
     Yellow = '#FFFF00'
     YellowGreen = '#9ACD32'
 
+
 _NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(HtmlColours).items()}
 
 _ValidDigits = set('0123456789AaBbCcDdEeFf')

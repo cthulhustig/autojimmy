@@ -41,7 +41,7 @@ class _MapOverlay(object):
 class _JumpRouteOverlay(_MapOverlay):
     _JumpRouteColour = '#7F048104'
     _PitStopColour = '#7F8080FF'
-    _PitStopRadius =  0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
+    _PitStopRadius = 0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
 
     def __init__(self) -> None:
         super().__init__()
@@ -611,7 +611,7 @@ class _MainsOverlay(_MapOverlay):
             currentScale: travellermap.Scale
             ) -> None:
         if not self._points or not self._pen or \
-            not app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
+                not app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
             return False
 
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
@@ -629,11 +629,11 @@ class _MoveKeyTracker(object):
         QtCore.Qt.Key.Key_Right,
         QtCore.Qt.Key.Key_L, # Taken from Traveller Map
         QtCore.Qt.Key.Key_D]
-    _UpKeys =[
+    _UpKeys = [
         QtCore.Qt.Key.Key_Up,
         QtCore.Qt.Key.Key_I, # Taken from Traveller Map
         QtCore.Qt.Key.Key_W]
-    _DownKeys =[
+    _DownKeys = [
         QtCore.Qt.Key.Key_Down,
         QtCore.Qt.Key.Key_K, # Taken from Traveller Map
         QtCore.Qt.Key.Key_S]
@@ -762,8 +762,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     _TileRenderTimerMs = 1
     _LookaheadBorderTiles = 4
 
-    _CheckerboardColourA ='#000000'
-    _CheckerboardColourB ='#404040'
+    _CheckerboardColourA = '#000000'
+    _CheckerboardColourB = '#404040'
     _CheckerboardRectSize = 16
 
     _DirectionTextFontFamily = 'Arial'
@@ -1326,7 +1326,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             renderType=renderType)
 
         if renderType is app.MapRenderingType.Tiled or \
-            renderType is app.MapRenderingType.Hybrid:
+                renderType is app.MapRenderingType.Hybrid:
             if not self._tileRenderQueue and LocalMapWidget._LookaheadBorderTiles:
                 # If there are no tiles needing loaded, pre-load tiles just
                 # outside the current view area.
@@ -1367,7 +1367,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             renderType: app.MapRenderingType
             ) -> None:
         if renderType is app.MapRenderingType.Tiled or \
-            renderType is app.MapRenderingType.Hybrid:
+                renderType is app.MapRenderingType.Hybrid:
             tiles = self._currentDrawTiles(
                 createMissing=renderType is not app.MapRenderingType.Tiled)
 
@@ -1414,8 +1414,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             painter: QtGui.QPainter
             ) -> None:
         if not self._overlayStagingImage or \
-            self._overlayStagingImage.width() != self.width() or \
-            self._overlayStagingImage.height() != self.height():
+                self._overlayStagingImage.width() != self.width() or \
+                self._overlayStagingImage.height() != self.height():
             self._overlayStagingImage = QtGui.QImage(
                 self.width(),
                 self.height(),
@@ -1490,12 +1490,13 @@ class LocalMapWidget(QtWidgets.QWidget):
         ('RIMWARD', 0, 0, 1),
         ('SPINWARD', 270, -1, 0),
         ('TRAILING', 270, 1, 0)]
+
     def _drawDirections(
             self,
             painter: QtGui.QPainter
             ) -> None:
         if not self._directionTextFont or \
-            not app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
+                not app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
             return
 
         viewWidth = self.width()
@@ -2082,6 +2083,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def _animateViewCenterGetter(self) -> QtCore.QPointF:
         return self._worldCenterPos
+
     def _animateViewCenterSetter(self, pos: QtCore.QPointF) -> None:
         self._worldCenterPos = pos
         self._handleViewUpdate()
@@ -2141,6 +2143,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def _animateViewScaleGetter(self) -> QtCore.QPointF:
         return self._viewScale.log
+
     def _animateViewScaleSetter(self, scale: float) -> None:
         self._viewScale.log = scale
         self._handleViewUpdate()

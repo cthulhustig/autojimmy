@@ -283,7 +283,6 @@ class RenderContext(object):
             rect=rect,
             brush=self._styleSheet.backgroundBrush)
 
-
     # Nebula drawing is clunky as hell and doesn't really look right if you
     # look to closely as you zoom in and out. In the Traveller Map code the
     # nebula rendering is done in pixel space and the nebula tiles are
@@ -303,6 +302,7 @@ class RenderContext(object):
     # sideways as you zoom. To help mitigate the issue I've updated the
     # nebula drawing code so that it always scales tiles in the same way as
     # they would scale on Traveller Map tiles
+
     def _drawNebulaBackground(self) -> None:
         if not self._styleSheet.showNebulaBackground:
             return
@@ -338,7 +338,7 @@ class RenderContext(object):
             return
 
         if self._styleSheet.deepBackgroundOpacity > 0 and \
-            self._galaxyImageRect.intersects(self._worldViewRect):
+                self._galaxyImageRect.intersects(self._worldViewRect):
             galaxyImage = \
                 self._imageCache.galaxyImageGray \
                 if self._styleSheet.lightBackground else \
@@ -396,7 +396,7 @@ class RenderContext(object):
             return
 
         if self._styleSheet.riftOpacity > 0 and \
-            self._riftImageRect.intersects(self._worldViewRect):
+                self._riftImageRect.intersects(self._worldViewRect):
             self._graphics.drawImageAlpha(
                 alpha=self._styleSheet.riftOpacity,
                 image=self._imageCache.riftImage,
@@ -407,7 +407,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
+            cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
         for vectorObject in self._vectorCache.borders:
             if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
@@ -419,7 +419,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
+            cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
         for vectorObject in self._vectorCache.routes:
             if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
@@ -431,17 +431,17 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
+            cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
 
         # Quantizes the left & top values so grid lines are always drawn from a
         # sector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
         left = ((self._worldViewRect.left() // travellermap.SectorWidth) * \
-                  travellermap.SectorWidth) - travellermap.ReferenceHexX
+                travellermap.SectorWidth) - travellermap.ReferenceHexX
         right = self._worldViewRect.right()
         top = ((self._worldViewRect.top() // travellermap.SectorHeight) * \
-                  travellermap.SectorHeight) - travellermap.ReferenceHexY
+               travellermap.SectorHeight) - travellermap.ReferenceHexY
         bottom = self._worldViewRect.bottom()
 
         x = left + travellermap.SectorWidth
@@ -465,17 +465,17 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
+            cartographer.AbstractGraphics.SmoothingMode.HighSpeed)
 
         # Quantizes the left & top values so grid lines are always drawn from a
         # subsector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
         left = ((self._worldViewRect.left() // travellermap.SubsectorWidth) * \
-                  travellermap.SubsectorWidth) - travellermap.ReferenceHexX
+                travellermap.SubsectorWidth) - travellermap.ReferenceHexX
         right = self._worldViewRect.right()
         top = ((self._worldViewRect.top() // travellermap.SubsectorHeight) * \
-                  travellermap.SubsectorHeight) - travellermap.ReferenceHexY
+               travellermap.SubsectorHeight) - travellermap.ReferenceHexY
         bottom = self._worldViewRect.bottom()
 
         x = left + travellermap.SubsectorWidth
@@ -553,7 +553,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for subsector in self._selector.subsectors():
             if subsector.isNameGenerated():
@@ -634,7 +634,7 @@ class RenderContext(object):
 
                     # Ensure colour is visible
                     if self._styleSheet.grayscale or \
-                        not travellermap.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
+                            not travellermap.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
                         routeColour = self._styleSheet.microRoutes.linePen.colour() # default
 
                     pen.setColour(routeColour)
@@ -646,6 +646,7 @@ class RenderContext(object):
                         pen=pen)
 
     _LabelDefaultColour = travellermap.HtmlColours.TravellerAmber
+
     def _drawMicroLabels(self) -> None:
         if not self._styleSheet.showMicroNames:
             return
@@ -738,13 +739,13 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for sector in self._selector.sectors():
             sectorLabel = sector.sectorLabel()
 
             if not self._styleSheet.showAllSectorNames and not sector.selected() \
-                and not sectorLabel:
+                    and not sectorLabel:
                 continue
 
             centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
@@ -765,7 +766,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for vectorObject in self._vectorCache.borders:
             if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
@@ -843,7 +844,7 @@ class RenderContext(object):
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if (not self._styleSheet.capitals.visible) or \
-            ((self._options & cartographer.RenderOptions.WorldsMask) == 0):
+                ((self._options & cartographer.RenderOptions.WorldsMask) == 0):
             return
 
         dotPen = self._graphics.createPen(
@@ -912,7 +913,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for label in self._labelCache.megaLabels:
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
@@ -928,7 +929,7 @@ class RenderContext(object):
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
-            or not self._styleSheet.worldDetails or self._styleSheet.worldDetails is cartographer.WorldDetails.NoDetails:
+                or not self._styleSheet.worldDetails or self._styleSheet.worldDetails is cartographer.WorldDetails.NoDetails:
             return
 
         renderAllNames = (self._styleSheet.worldDetails & cartographer.WorldDetails.AllNames) != 0
@@ -1210,7 +1211,7 @@ class RenderContext(object):
                                 if worldInfo.primaryBaseGlyph and worldInfo.primaryBaseGlyph.isPrintable:
                                     pt = self._styleSheet.baseTopPosition
                                     if worldInfo.primaryBaseGlyph.bias is cartographer.Glyph.GlyphBias.Bottom and \
-                                        not self._styleSheet.ignoreBaseBias:
+                                            not self._styleSheet.ignoreBaseBias:
                                         pt = self._styleSheet.baseBottomPosition
                                         bottomUsed = True
 
@@ -1300,7 +1301,7 @@ class RenderContext(object):
                         if renderName and worldInfo.name:
                             name = worldInfo.name
                             if (worldInfo.isHiPop and renderHighlight) or \
-                                self._styleSheet.worlds.textStyle.uppercase:
+                                    self._styleSheet.worlds.textStyle.uppercase:
                                 name = worldInfo.upperName
 
                             textBrush = \
@@ -1483,7 +1484,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             allegiance = world.allegiance()
 
@@ -1503,7 +1504,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             if world.isMinorHomeworld():
                 self._drawOverlayGlyph(
@@ -1517,7 +1518,7 @@ class RenderContext(object):
             return
 
         self._graphics.setSmoothingMode(
-                cartographer.AbstractGraphics.SmoothingMode.HighQuality)
+            cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
@@ -1610,7 +1611,7 @@ class RenderContext(object):
                     height=height),
                 brush=bkBrush)
         elif bkStyle is cartographer.TextBackgroundStyle.Outline or \
-            bkStyle is cartographer.TextBackgroundStyle.Shadow:
+                bkStyle is cartographer.TextBackgroundStyle.Shadow:
 
             # Invert the current scaling transforms
             sx = 1.0 / self._styleSheet.hexContentScale
@@ -1732,6 +1733,7 @@ class RenderContext(object):
 
     _MicroBorderFillAlpha = 64
     _MicroBorderShadeAlpha = 128
+
     def _drawMicroBorders(
             self,
             layer: MicroBorderLayer
@@ -1839,8 +1841,8 @@ class RenderContext(object):
                 continue
 
             if layer is RenderContext.MicroBorderLayer.Background and \
-                borderOutlines and self._styleSheet.fillMicroBorders and \
-                drawCurvedBorders:
+                    borderOutlines and self._styleSheet.fillMicroBorders and \
+                    drawCurvedBorders:
                 # When drawing filled curved borders the clipping of the fill
                 # needs to be handled separately from border pen/shade and
                 # regions. This is required due to the kind of hacky way
@@ -1923,14 +1925,13 @@ class RenderContext(object):
                             brush=brush if useBrush else None,
                             pen=pen if usePen else None)
 
-
     def _calculateBorderColour(self, outline: cartographer.SectorPath) -> str:
         colour = outline.colour()
         if not colour:
             colour = self._styleSheet.microRoutes.linePen.colour()
 
         if self._styleSheet.grayscale or \
-            not travellermap.noticeableColourDifference(colour, self._styleSheet.backgroundBrush.colour()):
+                not travellermap.noticeableColourDifference(colour, self._styleSheet.backgroundBrush.colour()):
             colour = self._styleSheet.microBorders.linePen.colour()
 
         return colour
@@ -2003,6 +2004,7 @@ class RenderContext(object):
         '\u2726': '\xAA', # U+2726 (BLACK FOUR POINTED STAR)
         '\u2605': '\xAB', # U+2605 (BLACK STAR)
         '\u2736': '\xAC'} # U+2736 (BLACK SIX POINTED STAR)
+
     def _drawWorldGlyph(
             self,
             glyph: cartographer.Glyph,
@@ -2125,22 +2127,22 @@ class RenderContext(object):
 
         widthFactor = 0
         if format == cartographer.TextAlignment.MiddleLeft or \
-            format == cartographer.TextAlignment.Centered or \
-            format == cartographer.TextAlignment.MiddleRight:
+                format == cartographer.TextAlignment.Centered or \
+                format == cartographer.TextAlignment.MiddleRight:
             y -= totalHeight / 2
         elif format == cartographer.TextAlignment.BottomLeft or \
-            format == cartographer.TextAlignment.BottomCenter or \
-            format == cartographer.TextAlignment.BottomRight:
+                format == cartographer.TextAlignment.BottomCenter or \
+                format == cartographer.TextAlignment.BottomRight:
             y -= totalHeight
 
         if format == cartographer.TextAlignment.TopCenter or \
-            format == cartographer.TextAlignment.Centered or \
-            format == cartographer.TextAlignment.BottomCenter:
-                widthFactor = -0.5
+                format == cartographer.TextAlignment.Centered or \
+                format == cartographer.TextAlignment.BottomCenter:
+            widthFactor = -0.5
         elif format == cartographer.TextAlignment.TopRight or \
-            format == cartographer.TextAlignment.MiddleRight or \
-            format == cartographer.TextAlignment.BottomRight:
-                widthFactor = -1
+                format == cartographer.TextAlignment.MiddleRight or \
+                format == cartographer.TextAlignment.BottomRight:
+            widthFactor = -1
 
         for line, width in zip(lines, widths):
             self._graphics.drawString(
@@ -2203,6 +2205,7 @@ class RenderContext(object):
         'III': 2,
         'IV': 1,
         'V': 0}
+
     @staticmethod
     def _worldStarProps(world: traveller.World) -> typing.Iterable[typing.Tuple[
             str, # Fill Colour,
@@ -2244,6 +2247,7 @@ class RenderContext(object):
         0.0,
         math.sin(math.pi * 1 / 3), math.sin(math.pi * 2 / 3), math.sin(math.pi * 3 / 3),
         math.sin(math.pi * 4 / 3), math.sin(math.pi * 5 / 3), math.sin(math.pi * 6 / 3)]
+
     @staticmethod
     def _starOffset(index: int) -> cartographer.PointF:
         if index >= len(RenderContext._StarOffsetX):

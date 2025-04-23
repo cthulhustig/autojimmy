@@ -362,15 +362,16 @@ class RectangleF(object):
 class LabelStyle(object):
     @typing.overload
     def __init__(self) -> None: ...
+
     @typing.overload
     def __init__(
-            self,
-            rotation: float = 0,
-            scale: typing.Optional[SizeF] = None,
-            translation: typing.Optional[PointF] = None,
-            uppercase: bool = False,
-            wrap: bool = False
-            ) -> None: ...
+        self,
+        rotation: float = 0,
+        scale: typing.Optional[SizeF] = None,
+        translation: typing.Optional[PointF] = None,
+        uppercase: bool = False,
+        wrap: bool = False
+        ) -> None: ...
 
     def __init__(
             self,

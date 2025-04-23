@@ -5,7 +5,7 @@ class Region(object):
     _AntiClockwiseOffsets = {
         travellermap.HexEdge.Upper: (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
         travellermap.HexEdge.UpperRight: (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
-        travellermap.HexEdge.LowerRight: (+0.5 + travellermap.HexWidthOffset, 0) ,# Center right
+        travellermap.HexEdge.LowerRight: (+0.5 + travellermap.HexWidthOffset, 0), # Center right
         travellermap.HexEdge.Lower: (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
         travellermap.HexEdge.LowerLeft: (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
         travellermap.HexEdge.UpperLeft: (-0.5 - travellermap.HexWidthOffset, 0), # Center left

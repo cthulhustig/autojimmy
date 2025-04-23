@@ -910,7 +910,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
 
-        self._fullScreenButton= _CustomIconButton(
+        self._fullScreenButton = _CustomIconButton(
             icon=gui.createToggleIcon(
                 onIcon=gui.loadIcon(id=gui.Icon.ArrowsMinimize),
                 offIcon=gui.loadIcon(id=gui.Icon.ArrowsMaximize)),
@@ -1539,12 +1539,12 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         if not MapWidgetEx._sharedGalacticDirectionsAction:
             MapWidgetEx._sharedGalacticDirectionsAction = _ToggleOptionAction(
-                    option=travellermap.Option.GalacticDirections)
+                option=travellermap.Option.GalacticDirections)
         MapWidgetEx._sharedGalacticDirectionsAction.triggered.connect(self._displayOptionChanged)
 
         if not MapWidgetEx._sharedSectorGridAction:
             MapWidgetEx._sharedSectorGridAction = _ToggleOptionAction(
-                    option=travellermap.Option.SectorGrid)
+                option=travellermap.Option.SectorGrid)
         MapWidgetEx._sharedSectorGridAction.triggered.connect(self._displayOptionChanged)
 
         if not MapWidgetEx._sharedSectorNamesActionGroup:
@@ -1917,4 +1917,3 @@ class MapWidgetEx(QtWidgets.QWidget):
             self.setWindowFlags(QtCore.Qt.WindowType.Widget)
             self.show()
             self.setFocus()
-
