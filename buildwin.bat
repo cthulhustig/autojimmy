@@ -26,7 +26,7 @@ if exist %MSYS2COPY%\ rmdir %MSYS2COPY% /s /q
 python ./scripts/packagemsys2.py %MSYS2COPY%
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
-set APPVERSIONFILE=.\build\binary_version.txt
+set APPVERSIONFILE=.\build\app_version.txt
 python ./scripts/createversionfile.py "%APPNAME%" "%APPVERSION%" "%APPDESCRIPTION%" "%APPAUTHOR%" "%APPVERSIONFILE%"
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
