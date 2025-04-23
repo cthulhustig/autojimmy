@@ -98,9 +98,7 @@ for lib in _Requirements:
             continue
         _MissingRequirements.append(lib)
 
-# TODO: Fix this in installer
-"""
-if _MissingRequirements:
+if _MissingRequirements and not os.environ.get('AUTOJIMMY_NO_DEPENDENCIES_CHECK'):
     print(f'Unable to start Auto-Jimmy due to missing dependencies.')
     print('The following modules were not found: ' + ', '.join(_MissingRequirements))
     print()
@@ -112,4 +110,3 @@ if _MissingRequirements:
     print()
     print('Further documentation can be found at https://github.com/cthulhustig/autojimmy')
     exit(1)
-"""

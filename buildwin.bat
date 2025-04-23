@@ -30,6 +30,13 @@ set APPVERSIONFILE=.\build\binary_version.txt
 python ./scripts/createversionfile.py "%APPNAME%" "%APPVERSION%" "%APPDESCRIPTION%" "%APPAUTHOR%" "%APPVERSIONFILE%"
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
+rem Disable the dependency check in depscheck.py while pyinstaller is running.
+rem This is needed as it looks like it does some kind of import of the source
+rem code to find dependencies. Due to the hacky way my dependency checking code
+rem works it gets run during this import and fails because it looks like not all
+rem libraries can be found at that point in time.
+set AUTOJIMMY_NO_DEPENDENCIES_CHECK=1
+
 pyinstaller -w autojimmy.py -n %APPNAME% --icon ".\icons\autojimmy.ico" --version-file %APPVERSIONFILE% --add-data "data;data" --add-data "icons;icons" --add-data "licenses;licenses" --add-data "%XMLSCHEMACOPY%;xmlschema" --add-data "%MSYS2COPY%;msys64" --clean --noconfirm
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
