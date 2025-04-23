@@ -2,6 +2,7 @@ import enum
 import importlib
 import os
 import platform
+import sys
 
 class CairoSvgState(enum.Enum):
     Working = 0
@@ -99,14 +100,26 @@ for lib in _Requirements:
         _MissingRequirements.append(lib)
 
 if _MissingRequirements and not os.environ.get('AUTOJIMMY_NO_DEPENDENCIES_CHECK'):
-    print(f'Unable to start Auto-Jimmy due to missing dependencies.')
-    print('The following modules were not found: ' + ', '.join(_MissingRequirements))
-    print()
-    print('To install all required dependencies, run the following commands:')
-    print()
     # NOTE: This assumes that this file is at the same level as the requirements file
-    print(f'cd {_InstallPath}')
-    print(f'pip3 install -r {_RequirementsFile}')
-    print()
-    print('Further documentation can be found at https://github.com/cthulhustig/autojimmy')
-    exit(1)
+    errorMessage = \
+        'Unable to start Auto-Jimmy due to missing dependencies.\n'  \
+        '\n' \
+        'The following modules were not found: \n' + ', '.join(_MissingRequirements) + '\n' \
+        '\n' \
+        'To install all required dependencies, open a command prompt and run the following commands:\n' \
+        '\n' \
+        f'cd {_InstallPath}\n' \
+        f'pip3 install -r {_RequirementsFile}\n' \
+        '\n' \
+        'Further documentation can be found at\nhttps://github.com/cthulhustig/autojimmy'
+
+    try:
+        from PyQt5.QtWidgets import QApplication, QMessageBox
+        app = QApplication(sys.argv)
+        QMessageBox.critical(None, "Error", errorMessage, QMessageBox.Ok)
+        sys.exit(1)
+    except Exception:
+        pass # Just fall through to print to the console
+
+    print(errorMessage)
+    sys.exit(1)
