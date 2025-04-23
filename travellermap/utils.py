@@ -17,5 +17,5 @@ def parseTabContent(content: str) -> typing.Tuple[
             header = tokens
             continue
 
-        rows.append({header[i]:t for i, t in enumerate(tokens)})
+        rows.append({header[i]: t for i, t in enumerate(tokens)})
     return (header, rows)

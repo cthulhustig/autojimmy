@@ -39,7 +39,7 @@ class TabWidgetEx(QtWidgets.QTabWidget):
         return True
 
 class ItemCountTabWidget(TabWidgetEx):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self._itemCountMap: typing.Dict[QtWidgets.QWidget, int] = {}

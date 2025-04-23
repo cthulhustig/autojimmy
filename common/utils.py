@@ -324,7 +324,7 @@ class DebugTimer():
         print(f'{self._string}: {delta.total_seconds() * 1000}ms')
 
 class Profiler():
-    def __init__(self, sortBy = pstats.SortKey.TIME):
+    def __init__(self, sortBy=pstats.SortKey.TIME):
         self._sortBy = sortBy
         self._profiler = cProfile.Profile()
 

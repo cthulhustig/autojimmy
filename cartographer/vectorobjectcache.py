@@ -149,7 +149,7 @@ class VectorObjectCache(object):
         originY = 0
         element = rootElement.find('./OriginY')
         if element is not None:
-            originY= float(element.text)
+            originY = float(element.text)
 
         scaleX = 1
         element = rootElement.find('./ScaleX')

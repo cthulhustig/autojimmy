@@ -296,7 +296,7 @@ class World(object):
                  (atmosphere == 4) or \
                  (atmosphere == 7) or
                  (atmosphere >= 9 and atmosphere <= 12)) and \
-                 (population >= 9)
+                (population >= 9)
             if isAgricultural:
                 self._importance += 1
             if isRich:

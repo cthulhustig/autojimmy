@@ -878,7 +878,7 @@ class WorldManager(object):
             typing.Tuple[
                 str, # Subsector name
                 bool # True if the name was generated
-        ]] = {}
+                ]] = {}
         subsectorWorldsMap: typing.Dict[
             str, # Subsector code (A-P)
             typing.List[traveller.World]
@@ -1269,6 +1269,7 @@ class WorldManager(object):
         'dashed': traveller.Route.Style.Dashed,
         'dotted': traveller.Route.Style.Dotted,
     }
+
     @staticmethod
     def _mapRouteStyle(
             style: typing.Optional[str]
@@ -1286,6 +1287,7 @@ class WorldManager(object):
         'dashed': traveller.Border.Style.Dashed,
         'dotted': traveller.Border.Style.Dotted,
     }
+
     @staticmethod
     def _mapBorderStyle(
             style: typing.Optional[str]
@@ -1302,6 +1304,7 @@ class WorldManager(object):
         'small': traveller.Label.Size.Small,
         'large': traveller.Label.Size.Large,
     }
+
     def _mapLabelSize(
             size: typing.Optional[str]
             ) -> typing.Optional[traveller.Label.Size]:

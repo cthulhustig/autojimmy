@@ -944,7 +944,6 @@ class WorldTraderWindow(_BaseTraderWindow):
                 speculativeCargoPaneWidget,
                 self._speculativeCargoTable.rowCount()))
 
-
         # Available cargo controls
         self._availableCargoTable = gui.CargoRecordTable(
             columns=[

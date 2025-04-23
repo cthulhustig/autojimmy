@@ -116,6 +116,7 @@ class Remarks(object):
     'T' == Theta
     'O' == Omicron
     """
+
     def researchStation(self) -> typing.Optional[str]:
         return self._researchStation
 

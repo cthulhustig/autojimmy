@@ -34,6 +34,7 @@ class Scale(object):
         if self._linear is None:
             self._linear = logScaleToLinearScale(self._log)
         return self._linear
+
     @linear.setter
     def linear(self, value: float) -> None:
         if value == self._linear:
@@ -47,6 +48,7 @@ class Scale(object):
         if self._log is None:
             self._log = linearScaleToLogScale(self._linear)
         return self._log
+
     @log.setter
     def log(self, value: float) -> None:
         if value == self._log:

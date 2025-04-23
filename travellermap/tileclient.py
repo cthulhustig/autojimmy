@@ -86,9 +86,9 @@ class TileClient(object):
         # Any exception that occurs here is just allowed to pass up to the caller
         try:
             with requests.get(
-                url=url,
-                timeout=timeout
-                ) as response:
+                    url=url,
+                    timeout=timeout
+                    ) as response:
                 contentType = response.headers['content-type']
                 mapFormat = travellermap.mimeTypeToMapFormat(contentType)
                 if not mapFormat:

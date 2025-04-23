@@ -3,7 +3,7 @@ import packaging.version
 import sys
 
 _Template = \
-"""
+    """
 VSVersionInfo(
   ffi=FixedFileInfo(
     filevers=({major}, {minor}, {build}, 0),

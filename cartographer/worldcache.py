@@ -162,8 +162,8 @@ class WorldInfo(object):
 
         self.worldSize = world.physicalSize()
         self.worldImage = WorldInfo._calcWorldImage(
-                                world=world,
-                                images=imageCache)
+            world=world,
+            images=imageCache)
         self.imageRadius = (0.6 if self.worldSize <= 0 else (0.3 * (self.worldSize / 5.0 + 0.2))) / 2
 
         self.populationOverlayRadius = \

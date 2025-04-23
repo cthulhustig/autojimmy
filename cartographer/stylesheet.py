@@ -132,6 +132,7 @@ class StyleSheet(object):
     @property
     def scale(self) -> float:
         return self._scale
+
     @scale.setter
     def scale(self, scale: float) -> None:
         if scale == self._scale:
@@ -143,6 +144,7 @@ class StyleSheet(object):
     @property
     def options(self) -> cartographer.RenderOptions:
         return self._options
+
     @options.setter
     def options(self, options: cartographer.RenderOptions) -> None:
         if options == self._options:
@@ -153,6 +155,7 @@ class StyleSheet(object):
     @property
     def style(self) -> travellermap.Style:
         return self._style
+
     @style.setter
     def style(self, style: travellermap.Style) -> None:
         if style == self._style:
@@ -295,9 +298,9 @@ class StyleSheet(object):
 
         self.worlds.visible = self.scale >= StyleSheet._WorldMinScale
         self.pseudoRandomStars.visible = (StyleSheet._PseudoRandomStarsMinScale <= self.scale) and \
-             (self.scale <= StyleSheet._PseudoRandomStarsMaxScale)
+            (self.scale <= StyleSheet._PseudoRandomStarsMaxScale)
         self.showRiftOverlay = (self.scale <= StyleSheet._PseudoRandomStarsMaxScale) or \
-             (StyleSheet.style == travellermap.Style.Candy)
+            (StyleSheet.style == travellermap.Style.Candy)
 
         self.t5AllegianceCodes = self.scale >= StyleSheet._T5AllegianceCodeMinScale
 
@@ -386,7 +389,7 @@ class StyleSheet(object):
 
             self.baseTopPosition = cartographer.PointF(-x, -y)
             self.baseBottomPosition = cartographer.PointF(-x, y)
-            self.gasGiant.position =  cartographer.PointF(x, -y)
+            self.gasGiant.position = cartographer.PointF(x, -y)
             self.allegiancePosition = cartographer.PointF(x, y)
 
             self.baseMiddlePosition = cartographer.PointF(-0.2, 0)
@@ -508,7 +511,7 @@ class StyleSheet(object):
 
         borderPenWidth = 1
         if self.scale >= StyleSheet._MicroBorderMinScale and \
-            self.scale >= StyleSheet._ParsecMinScale:
+                self.scale >= StyleSheet._ParsecMinScale:
             borderPenWidth = 0.16 * penScale
 
         routePenWidth = 0.2 if self.scale <= 16 else (0.08 * penScale)
@@ -692,8 +695,8 @@ class StyleSheet(object):
             self.redZone.linePen = None
             self.redZone.fillBrush = self._graphics.createBrush(
                 colour=cartographer.makeAlphaColour(
-                        alpha=0x80,
-                        colour=inkColour))
+                    alpha=0x80,
+                    colour=inkColour))
 
             self.macroBorders.linePen.setColour(inkColour)
             self.macroRoutes.linePen.setColour(inkColour)
@@ -970,13 +973,13 @@ class StyleSheet(object):
 
             self.worlds.textBackgroundStyle = cartographer.TextBackgroundStyle.Shadow
 
-            self.worldDetails = self.worldDetails &  ~cartographer.WorldDetails.Starport & \
+            self.worldDetails = self.worldDetails & ~cartographer.WorldDetails.Starport & \
                 ~cartographer.WorldDetails.Allegiance & ~cartographer.WorldDetails.Bases & \
                 ~cartographer.WorldDetails.Hex
 
             if self.scale < StyleSheet._CandyMinWorldNameScale:
                 self.worldDetails &= ~cartographer.WorldDetails.KeyNames & \
-                ~cartographer.WorldDetails.AllNames
+                    ~cartographer.WorldDetails.AllNames
             if self.scale < StyleSheet._CandyMinUwpScale:
                 self.worldDetails &= ~cartographer.WorldDetails.Uwp
 
@@ -1338,7 +1341,7 @@ class StyleSheet(object):
             self.discPosition = cartographer.PointF(-self.discRadius, 0.16)
 
         if fadeSectorSubsectorNames and \
-            (not self.sectorName.textBrush or not self.subsectorNames.textBrush):
+                (not self.sectorName.textBrush or not self.subsectorNames.textBrush):
             if self.scale < 16:
                 fadeColour = foregroundColour
             elif self.scale < 48:
