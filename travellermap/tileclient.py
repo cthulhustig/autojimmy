@@ -1,11 +1,9 @@
 import logging
+import requests
 import time
 import threading
 import travellermap
 import typing
-import urllib.error
-import urllib.parse
-import urllib.request
 
 class TileClient(object):
     _instance = None # Singleton instance
@@ -87,20 +85,18 @@ class TileClient(object):
 
         # Any exception that occurs here is just allowed to pass up to the caller
         try:
-            with urllib.request.urlopen(url=url, timeout=timeout) as response:
-                info = response.info()
-                contentType = info.get('content-type')
+            with requests.get(
+                url=url,
+                timeout=timeout
+                ) as response:
+                contentType = response.headers['content-type']
                 mapFormat = travellermap.mimeTypeToMapFormat(contentType)
                 if not mapFormat:
                     raise RuntimeError(f'Unknown format {contentType}')
 
-                content = response.read()
-        except urllib.error.HTTPError as ex:
-            raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
-        except urllib.error.URLError as ex:
-            if isinstance(ex.reason, TimeoutError):
-                raise TimeoutError(f'Tile request timeout for {url}') from ex
-            raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
+                content = response.content
+        except requests.Timeout as ex:
+            raise TimeoutError(f'Tile request timeout for {url}') from ex
         except Exception as ex:
             raise RuntimeError(f'Tile request failed for {url} ({ex})') from ex
 

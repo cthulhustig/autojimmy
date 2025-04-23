@@ -19,7 +19,6 @@ class DownloadProgressDialog(QtWidgets.QDialog):
 
         self._stageLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
-        self._progressBar.setMaximum(100)
         self._cancelButton = QtWidgets.QPushButton('Cancel')
         self._cancelButton.clicked.connect(self._cancelDownload)
 
@@ -77,13 +76,19 @@ class DownloadProgressDialog(QtWidgets.QDialog):
     def _updateProgress(
             self,
             stage: travellermap.DataStore.UpdateStage,
-            percentage: int
+            progress: int,
+            total: int
             ) -> None:
         self._stageLabel.setText(
             'Downloading universe data update...'
             if stage == travellermap.DataStore.UpdateStage.DownloadStage else
             'Extracting universe data update...')
-        self._progressBar.setValue(int(percentage))
+        if total:
+            self._progressBar.setValue(int((progress / total) * 100))
+            self._progressBar.setMaximum(100)
+        else:
+            self._progressBar.setValue(progress)
+            self._progressBar.setMaximum(0)
 
     def _downloadFinished(
             self,
