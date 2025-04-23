@@ -6,7 +6,7 @@ class DataDownloadJob(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals
-    _progressSignal = QtCore.pyqtSignal([travellermap.DataStore.UpdateStage, int])
+    _progressSignal = QtCore.pyqtSignal([travellermap.DataStore.UpdateStage, int, int])
     _finishedSignal = QtCore.pyqtSignal([str], [Exception])
 
     _remainingTimeSmoothingFactor = 0.05
@@ -14,13 +14,13 @@ class DataDownloadJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            progressCallback: typing.Callable[[travellermap.DataStore.UpdateStage, int], typing.Any],
+            progressCallback: typing.Callable[[travellermap.DataStore.UpdateStage, int, int], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             ) -> None:
         super().__init__(parent=parent)
 
         if progressCallback:
-            self._progressSignal[travellermap.DataStore.UpdateStage, int].connect(progressCallback)
+            self._progressSignal[travellermap.DataStore.UpdateStage, int, int].connect(progressCallback)
         if finishedCallback:
             self._finishedSignal[str].connect(finishedCallback)
             self._finishedSignal[Exception].connect(finishedCallback)
@@ -51,6 +51,7 @@ class DataDownloadJob(QtCore.QThread):
     def _handleProgressUpdate(
             self,
             stage: travellermap.DataStore.UpdateStage,
-            percentage: int
+            progress: int,
+            total: int
             ) -> None:
-        self._progressSignal[travellermap.DataStore.UpdateStage, int].emit(stage, percentage)
+        self._progressSignal[travellermap.DataStore.UpdateStage, int, int].emit(stage, progress, total)

@@ -1,5 +1,4 @@
 import common
-import certifi
 import datetime
 import enum
 import io
@@ -7,14 +6,11 @@ import json
 import logging
 import os
 import re
+import requests
 import shutil
-import ssl
 import threading
 import travellermap
 import typing
-import urllib.error
-import urllib.parse
-import urllib.request
 import xmlschema
 import xml.etree.ElementTree
 import zipfile
@@ -461,12 +457,13 @@ class DataStore(object):
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
     _DataFormatUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/dataformat.txt'
     _SnapshotCheckTimeout = 3 # Seconds
+    _SnapshotDownloadTimeout = 60 # Seconds
+    _SnapshotChunkSize = 10 * 1024 * 1024 # Bytes
     # NOTE: Pattern for matching data version treats the second digit as optional, if not specified it's
     # assumed to be 0. It also allows white space at the end to stop an easy typo in the snapshot breaking
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
     _MinDataFormatVersion = UniverseDataFormat(4, 1)
-    _SSLContext = ssl.create_default_context(cafile=certifi.where())
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -675,11 +672,11 @@ class DataStore(object):
     def checkForNewSnapshot(self) -> SnapshotAvailability:
         currentTimestamp = self.universeTimestamp()
         try:
-            response = urllib.request.urlopen(
-                DataStore._TimestampUrl,
-                timeout=DataStore._SnapshotCheckTimeout,
-                context=DataStore._SSLContext)
-            repoTimestamp = DataStore._parseTimestamp(data=response.read())
+            with requests.get(
+                url=DataStore._TimestampUrl,
+                timeout=DataStore._SnapshotCheckTimeout
+                ) as response:
+                repoTimestamp = DataStore._parseTimestamp(data=response.content)
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot timestamp ({str(ex)})')
 
@@ -688,11 +685,11 @@ class DataStore(object):
             return DataStore.SnapshotAvailability.NoNewSnapshot
 
         try:
-            response = urllib.request.urlopen(
-                DataStore._DataFormatUrl,
-                timeout=DataStore._SnapshotCheckTimeout,
-                context=DataStore._SSLContext)
-            repoDataFormat = DataStore._parseUniverseDataFormat(data=response.read())
+            with requests.get(
+                url=DataStore._DataFormatUrl,
+                timeout=DataStore._SnapshotCheckTimeout
+                ) as response:
+                repoDataFormat = DataStore._parseUniverseDataFormat(data=response.content)
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot data format ({str(ex)})')
 
@@ -713,40 +710,36 @@ class DataStore(object):
 
     def downloadSnapshot(
             self,
-            progressCallback: typing.Optional[typing.Callable[[UpdateStage, int], typing.Any]] = None,
+            progressCallback: typing.Optional[typing.Callable[[UpdateStage, int, int], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         with self._lock:
             logging.info('Downloading universe snapshot')
             if progressCallback:
-                progressCallback(DataStore.UpdateStage.DownloadStage, 0)
+                progressCallback(DataStore.UpdateStage.DownloadStage, 0, 0)
 
             dataBuffer = io.BytesIO()
-            with urllib.request.urlopen(DataStore._DataArchiveUrl, context=DataStore._SSLContext) as response:
-                length = response.getheader('content-length')
-                blockSize = 1000000  # default value
-
-                if length:
-                    length = int(length)
-                    blockSize = max(4096, length // 20)
-
-                downloaded = 0
-                while True:
+            with requests.get(
+                url=DataStore._DataArchiveUrl,
+                timeout=DataStore._SnapshotDownloadTimeout,
+                stream=True
+                ) as response:
+                length = response.headers.get('content-length')
+                length = int(length) if length else 0
+                progress = 0
+                for chunk in response.iter_content(chunk_size=DataStore._SnapshotChunkSize):
                     if isCancelledCallback and isCancelledCallback():
                         return # Operation cancelled
-                    chunk = response.read(blockSize)
-                    if not chunk:
-                        break
                     dataBuffer.write(chunk)
-                    downloaded += len(chunk)
-                    if length:
-                        progressCallback(
-                            DataStore.UpdateStage.DownloadStage,
-                            int((downloaded / length) * 100))
+                    progress += len(chunk)
+                    progressCallback(
+                        DataStore.UpdateStage.DownloadStage,
+                        progress,
+                        length)
 
             logging.info('Extracting universe snapshot')
             if progressCallback:
-                progressCallback(DataStore.UpdateStage.ExtractStage, 0)
+                progressCallback(DataStore.UpdateStage.ExtractStage, 0, 0)
 
             workingDirPath = DataStore._makeWorkingDir(
                 baseDirPath=self._overlayDir)
@@ -782,7 +775,8 @@ class DataStore(object):
                 if progressCallback:
                     progressCallback(
                         DataStore.UpdateStage.ExtractStage,
-                        int((extractIndex / len(fileInfoList)) * 100))
+                        extractIndex,
+                        len(fileInfoList))
 
                 if fileInfo.is_dir():
                     continue # Skip directories

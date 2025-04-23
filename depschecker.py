@@ -29,7 +29,7 @@ _Requirements = [
     'cairosvg',
     'numpy',
     'packaging',
-    'certifi']
+    'requests']
 _RequirementsFile = 'requirements.txt'
 _CairoModuleName = 'cairosvg'
 
