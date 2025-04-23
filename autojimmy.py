@@ -484,6 +484,7 @@ def main() -> None:
         app.setupLogger(logDir=logDirectory, logFile='autojimmy.log')
         # Log version before setting log level as it should always be logged
         logging.info(f'{app.AppName} v{app.AppVersion}')
+        logging.info(f'Python: {sys.version}')
 
         try:
             locale.setlocale(locale.LC_ALL, '')
