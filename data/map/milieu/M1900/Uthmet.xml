@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="OTU" Abbreviation="Uthm">
+  <Name>Uthmet</Name>
+  <Credits>
+		Empty sector Uthmet created by Raku Script, October 2024.
+		This is an empty sector file template for use with Traveller Map.
+   </Credits>
+  <X>350</X>
+  <Y>-200</Y>
+  <DataFile Author="Robert Eaglestone" Milieu="M1900" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances />
+</Sector>

@@ -65,7 +65,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0304 Yayohyarl            B553837-A Po Ph                { 2 }  (C7B+2) [8A5A] - R  - 102 11 AsWc F8 V          
 0307 Aea                  C554584-7 Ag Ni                { -1 } (743-3) [3435] - -  - 502 9  AsTv F2 V          
 0308 Asealea              C5847BC-8 Ag Ri Pz             { 1 }  (E69+4) [A88B] - -  A 414 11 AsMw F9 V          
-0408 Eaaiyiyo             D5668A5-6 Ri Pa Ph             { -1 } (A76-3) [6734] - -  - 802 7  AsT9 K3 V          
+0408 Eaaiyiyo             D5668A5-6 Ri Pa Ph             { -1 } (A76-3) [6734] - -  - 802 7  AsT0 K3 V          
 0409 Auea                 B310687-9 Na Ni                { 0 }  (B54+1) [6659] - R  - 203 12 AsVc F6 III K2 V   
 0501 Oei                  X5509B7-4 De Hi Po Fo Lt       { -1 } (B86-1) [9854] - -  R 706 12 AsTv F5 V M1 V     
 0502 Khtaileirl           C52877C-9 Pi Pz                { 0 }  (A69+3) [A78C] - -  A 701 13 AsSc K7 V          
@@ -179,7 +179,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2908 Wyeheul              C65579A-8 Ag Ga                { 0 }  (B68+2) [977A] - R  - 420 14 AsWc F5 V          
 2909 Arlas                D000724-9 As Na Va Pi          { -1 } (D68-3) [5637] - -  - 404 17 AsT6 M3 V M3 V     
 3001 Kaiyawea             D43045A-7 De Ni Po             { -3 } (631-1) [6179] - -  - 204 14 AsWc M1 V          
-3002 Ewwiylrer            C757883-8 Ga Pa Ph             { -1 } (C77-4) [5725] - T  - 702 6  AsT9 F2 V          
+3002 Ewwiylrer            C757883-8 Ga Pa Ph             { -1 } (C77-4) [5725] - T  - 702 6  AsT1 F2 V          
 3003 Hyeailryoyo          C796578-9 Ag Ni                { 0 }  (G44+1) [5559] - -  - 627 17 AsSc G9 V M6 V M7 V
 3004 Hfaerluaeih          C310277-9 Lo                   { -1 } (610-1) [2159] - -  - 402 11 AsSc M1 V          
 3005 Ieakha               B430314-D De Lo Po Ht          { 1 }  (A21-1) [143B] - -  - 523 13 AsMw M3 V          
@@ -240,7 +240,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1411 Ihkeahfos            E579000-0 Ba Lt                { -3 } (200-5) [0000] - -  - 002 9  AsXX F2 V M5 V     
 1413 Ilkhtuilr            C542885-8 He Po Ph Pi          { -1 } (C77-3) [6736] - -  - 120 11 AsMw F2 V M8 V     
 1415 Aleiho               D5587CB-6 Ag Pz                { -1 } (966+1) [9678] - -  A 302 12 AsT0 F1 V M5 V     
-1416 Kheaaktear           C966743-8 Ag Ri                { 1 }  (969-2) [4825] - T  - 600 7  AsT9 F0 V          
+1416 Kheaaktear           C966743-8 Ag Ri                { 1 }  (969-2) [4825] - T  - 600 7  AsT1 F0 V          
 1418 Eahleihei            C766546-9 Ag Ni Ga Pr          { 0 }  (944-1) [4548] - T  - 802 7  AsTv F5 V          
 1420 Hteiyo               C765833-8 Ga Ri Pa Ph          { 0 }  (A78-3) [5825] - -  - 200 8  AsT6 G9 V M1 V     
 1511 Lehe                 C75A488-A Ni Wa                { 0 }  (933+1) [445A] - R  - 803 8  AsWc F6 V          
@@ -256,7 +256,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1620 Yaleirla             A575879-C Pa Ph Pi Ht          { 2 }  (E7C+3) [9A6D] - T  - 204 7  AsSc F0 V          
 1711 Ahaukyeeares         E779685-5 Ni Lt                { -3 } (851-5) [4333] - -  - 610 11 AsWc F0 V          
 1712 Eleikui              E423000-0 Ba Po Lt             { -3 } (200-5) [0000] - -  - 023 12 AsXX M1 V M7 V     
-1714 Hiyhakh              E6477BC-6 Ag Pi Pz             { -1 } (966+2) [A689] - -  A 803 11 AsT8 F1 V M7 V     
+1714 Hiyhakh              E6477BC-6 Ag Pi Pz             { -1 } (966+2) [A689] - -  A 803 11 AsT1 F1 V M7 V     
 1717 Oufou                E566478-7 Ni Pa                { -3 } (631-3) [4157] - -  - 103 11 AsSc F9 V M7 V     
 1811 Aiouhta              C846438-8 Ni Pa                { -2 } (931-2) [4258] - -  - 212 8  AsMw F6 V M8 V     
 1812 Ia                   D6977A5-6 Ag Pi                { -1 } (966-3) [5634] - -  - 804 16 AsT2 K8 V M6 V     
@@ -378,7 +378,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1924 Kheaouou             C546376-9 Lo                   { -1 } (920-2) [2248] - -  - 713 13 AsSc F0 V M2 V     
 1930 Oaoaalao             C789213-9 Lo                   { -1 } (810-4) [1126] - -  - 904 8  AsMw M1 V          
 2021 Aeaaheir             B8C8587-A Fl Ni                { 1 }  (F45+1) [565A] - -  - 726 15 AsWc G6 V M7 V     
-2023 Ouhla                B547388-B Lo                   { 1 }  (A21+1) [345B] - T  - 114 11 AsT9 F8 V          
+2023 Ouhla                B547388-B Lo                   { 1 }  (A21+1) [345B] - T  - 114 11 AsT2 F8 V          
 2024 Oaihoaoaew           E88727A-7 Lo Ga                { -3 } (410-1) [4179] - -  - 700 11 AsSc F0 V          
 2026 Aoka                 D575434-7 Ni Pa                { -3 } (631-5) [2135] - -  - 601 6  AsVc F5 V          
 2027 Oulyekhaul           A531368-D Lo Po O:1826 Ht      { 1 }  (521+1) [345D] - -  - 900 5  AsSc M1 V          
@@ -405,14 +405,14 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2529 Oukha                C542676-7 He Ni Po             { -2 } (852-3) [5446] - -  - 301 4  AsSc F5 V          
 2530 Telas                A310578-E Ni Ht                { 1 }  (945+1) [565E] - -  - 902 10 AsSc F4 V          
 2623 Oae                  C5546BA-8 Ag Ni Da             { -1 } (A53+1) [857A] - -  A 202 6  AsMw F7 V          
-2624 Eieae                C8A38B9-9 Fl Ph Pz             { 0 }  (D79+1) [986A] - T  A 603 14 AsT8 F6 V M5 V     
+2624 Eieae                C8A38B9-9 Fl Ph Pz             { 0 }  (D79+1) [986A] - T  A 603 14 AsT1 F6 V M5 V     
 2626 Hiyraos              B20097B-E Hi In Na Va Pz Ht    { 4 }  (B8G+5) [BD7G] - R  A 400 10 AsSc F8 V M0 V     
 2627 Hwiyoorlaio          C534745-9                      { 0 }  (B69-2) [5737] - R  - 702 12 AsVc M2 V M5 V     
 2628 Ahkayaheiei          C65559C-9 Ag Ni Ga Da          { 0 }  (744+3) [858C] - -  A 600 8  AsMw F5 V          
-2722 Aoao                 B548557-B Ag Ni                { 2 }  (A46+2) [575B] - T  - 703 15 AsT9 F0 V          
+2722 Aoao                 B548557-B Ag Ni                { 2 }  (A46+2) [575B] - T  - 703 15 AsT1 F0 V          
 2724 Waieeaiy             A654AA5-E Hi Ht                { 3 }  (H9F+1) [8D3C] - T  - 805 14 AsT9 F0 V          
 2730 Eayu                 B545655-B Ag Ni                { 2 }  (956+1) [4839] - -  - 801 9  AsTv F7 V          
-2822 Hweahes              C834516-8 Ni                   { -2 } (842-3) [4347] - -  - 901 7  AsT9 M1 V          
+2822 Hweahes              C834516-8 Ni                   { -2 } (842-3) [4347] - -  - 901 7  AsT2 M1 V          
 2823 Treaiy               C521424-A He Ni Po             { 0 }  (833-2) [2438] - -  - 402 11 AsT4 M1 V M2 V     
 2825 Yostahlea            E550574-6 De Ni Po             { -3 } (741-5) [3234] - -  - 404 9  AsSc F8 V M5 V     
 2826 Airliweahyo          E10027A-7 Lo Va                { -3 } (410-1) [4179] - -  - 903 12 AsSc M1 V          
@@ -440,11 +440,11 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0334 Khteakaii            C8B3558-8 Fl Ni                { -2 } (C42-2) [5358] - R  - 214 15 AsTv M1 V          
 0340 Erlyuwah             C000367-B As Lo Va O:0639      { 0 }  (820+1) [335B] - -  - 703 12 AsSc F0 V M1 V     
 0431 Yetitryuw            C77A68B-9 Ni Wa Da             { -1 } (B53+1) [857B] - T  A 921 10 AsT5 F6 V M4 V     
-0440 Earaw                B425585-D Ni Ht                { 1 }  (C45-1) [363B] - T  - 114 11 AsT8 A0 V          
+0440 Earaw                B425585-D Ni Ht                { 1 }  (C45-1) [363B] - T  - 114 11 AsT1 A0 V          
 0532 Eko                  C694167-9 Lo O:0535            { -1 } (B00-1) [1159] - -  - 608 15 AsMw F5 V M4 V     
 0534 Felairlao            C436369-A Lo O:0535            { 0 }  (920+1) [436B] - -  - 904 9  AsMw G5 V          
 0535 Feahehah             B79688A-A Pa Ph Pi             { 2 }  (E7B+4) [AA7C] - R  - 413 15 AsMw F8 V          
-0536 Ayri                 C764884-8 Ri Pa Ph             { 0 }  (F78-2) [6836] - T  - 605 13 AsT8 F1 V          
+0536 Ayri                 C764884-8 Ri Pa Ph             { 0 }  (F78-2) [6836] - T  - 605 13 AsT2 F1 V          
 0539 Ealahre              E562677-6 Ni Ri                { -2 } (852-2) [6456] - -  - 305 9  AsSc F5 V          
 0634 Aeasaorlais          B56949B-C Ni Da Ht             { 1 }  (834+3) [657E] - R  A 402 13 AsVc F9 V M2 V     
 0635 Ehyariyh             C669272-8 Lo                   { -2 } (910-5) [1114] - -  - 223 13 AsSc F7 V          

@@ -65,7 +65,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3216 Hei'                 C00059B-8 As Ni Va             { -2 } (F43+4) [2389] - - - 225 16 AsWc M7 V       
 3217 Ktihtyeoh            C0008CE-9 As Na Va Ph Pi       { 0 }  (B7A+1) [B888] - - - 103 11 AsVc M9 V       
 3218 Eiahiyhawer          C78868A-3 Ag Ni Ri Lt          { 0 }  (953+1) [6651] - - - 314 12 AsT5 M2 V D     
-3219 Aoasa                B575654-A Ag Ni                { 2 }  (858+2) [685A] - T - 611 14 AsT8 F5 V       
+3219 Aoasa                B575654-A Ag Ni                { 2 }  (858+2) [685A] - T - 611 14 AsT0 F5 V       
 0228 Urlich's Find        X557701-1 Ag (minor) Lt        { -1 } (564+2) [7662] - - - 413 12 NaXX K5 V       
 0230 Hiyalrou             C458889-7 Pa Ph                { -1 } (879-4) [5725] - - - 212 15 AsMw F6 V       
 0530 Ealraowaw            E510448-8 Ni                   { -3 } (930+3) [1195] - - - 403 10 AsSc M0 V       
@@ -73,7 +73,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0728 Yaferoakh            E889765-6 Ri                   { -1 } (861+1) [7686] - - - 312 9  AsMw F3 V       
 0729 Eayakheahyei         C466410-5 Ni Pa Lt             { -2 } (A30+1) [1245] - - - 304 10 AsT3 F2 V       
 0821 Khuiseatasyeh        E894600-5 Ag Ni Lt             { -2 } (950+3) [6444] - - - 302 11 NaXX F4 V       
-0828 Aihu                 E67999B-6 Hi In                { 0 }  (584+2) [D928] - - - 923 9  AsT8 F0 V D     
+0828 Aihu                 E67999B-6 Hi In                { 0 }  (584+2) [D928] - - - 923 9  AsT0 F0 V D     
 1027 Tlaistole'           E423000-0 Ba Po An Lt          { -3 } (200-5) [0000] - - - 004 7  AsT3 M6 V M7 V  
 1029 Eieihkeieikh         D000734-5 As Na Va Pi Lt       { -2 } (563+1) [A593] - - - 422 14 AsMw F5 V       
 1030 Yoaheis              E753540-5 Ni Po Lt             { -3 } (840-2) [4242] - - - 634 13 AsSc F1 V       

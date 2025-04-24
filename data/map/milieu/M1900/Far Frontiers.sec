@@ -35,7 +35,6 @@
 # Alleg: Fb: "Hearthland"
 # Alleg: Fc: "Niaddek"
 # Alleg: Fd: "Worlds of Tajat"
-# Alleg: Fe: "Agravaine Holdings"
 # Alleg: Ff: "Dloshl Council"
 # Alleg: Wild: "Wilds"
 
@@ -163,7 +162,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 0115 Bliepl               B663841-8 Ph Ri                      { 1 }  (F76+2) [7946] BCe  - - 304 11 Wild M0 V             
 0116 Zhans                E564000-0 Ba                         { -3 } (B00+1) [0000] B    - - 024 14 Wild G6 V             
 0117 Ichevr Par           E431000-8 Di Po                      { -3 } (B00-3) [0000] B    - - 004 16 Wild M1 V             
-0119 Kitl                 E000420-8 As Va Ni                   { -2 } (731-1) [7277] B    W - 102 12 Fb   M1 V             
+0119 Kitl                 E000420-8 As Va Ni                   { -2 } (731-1) [7277] B    W - 102 12 Wild M1 V             
 0216 Tefia Sekr           E546432-A Ni Pa                      { -1 } (831+1) [5395] Bc   - - 300 9  Wild M2 V M7 V        
 0311 Tlabrotl             E683473-2 Ni                         { -3 } (632-1) [5131] B    - - 402 7  Wild M2 V M5 V        
 0312 Shaapl               D6A08AC-8 He Ph                      { -2 } (F74-2) [868D] Be   - - 114 12 Wild K4 IV M3 V       
@@ -174,26 +173,26 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 0415 Lochtiakur           E696000-0 Ba                         { -3 } (500-4) [0000] B    - - 002 12 Wild M1 V             
 0416 Zidi Chiaeda         E310000-0 Ba                         { -3 } (800-4) [0000] B    - - 005 13 Wild G4 V M7 V        
 0419 Meietle'             B422874-B He Na Pi Po Ph             { 2 }  (F7E+1) [5A5D] BDe  - - 105 12 Wild M1 V             
-0420 Encheishe            E433697-6 Na Px Po Ni                { -3 } (853-1) [5361] B    - - 412 7  Fb   K8 V M6 V        
+0420 Encheishe            E433697-6 Na Px Po Ni                { -3 } (853-1) [5361] B    - - 412 7  Wild K8 V M6 V        
 0519 Zdetsiz              D688851-7 Pa Ri Ph                   { -1 } (77B-2) [B743] BcCe - - 612 10 Wild G0 V M6 V        
-0520 Nesbon               E523000-0 Ba Po                      { -3 } (200+1) [0000] B    - - 003 10 Fb   M3 V             
+0520 Nesbon               E523000-0 Ba Po                      { -3 } (200+1) [0000] B    - - 003 10 Wild M3 V             
 0611 Stonziats            E62A797-5 Pi                         { -2 } (C65-4) [8566] BD   - - 403 11 Wild M1 V M7 V        
 0613 Yachblitanj          E78678D-4 Ag Ri Ga                   { 1 }  (A69+3) [7893] BC   W - 403 7  Wild M0 V M2 V        
-0614 Dezhsiaj             E9D4000-7 Di                         { -3 } (600-3) [0000] B    - - 014 12 Fb   G4 II            
-0616 Pridira              A426685-A Ni                         { 1 }  (E57+3) [A73A] B    - - 914 13 Fb   G2 V             
-0617 Charpiv              X424000-A Di                         { -1 } (C00-2) [0000] B    - - 012 16 Fb   F6 V             
-0620 Zimbir               X400000-8 Di Va                      { -3 } (600+1) [0000] B    - - 001 8  Fb   M1 V             
+0614 Dezhsiaj             E9D4000-7 Di                         { -3 } (600-3) [0000] B    - - 014 12 Wild G4 II            
+0616 Pridira              A426685-A Ni                         { 1 }  (E57+3) [A73A] B    - - 914 13 Wild G2 V             
+0617 Charpiv              X424000-A Di                         { -1 } (C00-2) [0000] B    - - 012 16 Wild F6 V             
+0620 Zimbir               X400000-8 Di Va                      { -3 } (600+1) [0000] B    - - 001 8  Wild M1 V             
 0712 Yopliabr             E779844-5 Ph Pi                      { -2 } (A77-4) [9678] BDe  - - 300 11 Wild M1 V             
 0714 Ieantoz              B7B0754-B He                         { 3 }  (F6C+1) [9A3E] B    W - 905 10 Wild G5 V M4 V        
-0716 Adlish               E411000-E Di Ic                      { -1 } (B00+1) [0000] B    - - 004 11 Fb   K1 V             
+0716 Adlish               E411000-E Di Ic                      { -1 } (B00+1) [0000] B    - - 004 11 Wild K1 V             
 0815 N'dallambin          E726000-8 Di                         { -3 } (900+3) [0000] B    - - 004 16 Wild G9 V             
 0818 Danodild             X100000-7 Di Va                      { -3 } (800+1) [0000] B    - - 020 8  Wild K6 V             
 0819 Mirhinnit            D423000-B Di Po                      { -1 } (500-3) [0000] B    - - 010 6  Wild M2 V             
 0913 Gazbol               E556000-0 Ba                         { -3 } (200-3) [0000] B    - - 003 15 Wild M0 V             
 0915 Zehripan             E779000-9 Di                         { -2 } (B00-2) [0000] B    - - 003 7  Wild M0 V M3 V        
 0917 Gerabh               E434000-A Di                         { -1 } (800+1) [0000] B    - - 005 10 Wild M3 V             
-0918 Zilledhepr           B867300-7 Ga Lo                      { -1 } (420+1) [529A] B    - - 410 8  Fb   M0 V             
-0919 Gillihillar          C400544-8 Ni Va                      { -2 } (840+1) [7358] B    - - 210 11 Fb   F2 V             
+0918 Zilledhepr           B867300-7 Ga Lo                      { -1 } (420+1) [529A] B    - - 410 8  Wild M0 V             
+0919 Gillihillar          C400544-8 Ni Va                      { -2 } (840+1) [7358] B    - - 210 11 Wild F2 V             
 1011 Bangehk              X310000-9 Di                         { -2 } (500+3) [0000] B    - - 000 5  Wild M1 V             
 1012 Zeyr                 D000000-9 As Va Di                   { -2 } (A00+3) [0000] B    - - 023 16 Wild M2 V             
 1013 Dihmir               E537777-6                            { -2 } (961+1) [8586] B    - - 100 7  Wild K7 II M8 V       
@@ -314,7 +313,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 1026 Tinahely             A76A755-E Ri Wa                      { 3 }  (A69-2) [5A1J] BC   - - 101 12 Wild K3 V             
 1027 Odugama              C651546-9 Ni Po                      { -1 } (741-2) [745A] B    - - 200 9  Wild F7 V             
 1029 Freemantle           X380000-0 An Ba De                   { -3 } (200-2) [0000] B    - - 000 8  Wild G4 V             
-1122 Sevilla              E540300-8 De He Lo Po                { -3 } (720+2) [516B] B    - - 901 5  Fb   F4 V             
+1122 Sevilla              E540300-8 De He Lo Po                { -3 } (720+2) [516B] B    - - 901 5  Wild F4 V             
 1123 Katano               D420000-A De He Di Po                { -1 } (400-4) [0000] B    - - 000 10 Ff   F2 IV D          
 1125 Lac Remi             C964348-5 Lo                         { -2 } (A20+1) [1185] B    - - 701 6  Ff   M2 V             
 1126 McNee's World        X652000-9 Di Po                      { -2 } (700+2) [0000] B    - - 000 5  Ff   G4 V             
@@ -349,7 +348,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 2028 Ulintl               B543899-A Ph Pi Po                   { 2 }  (C7C-2) [6A29] BDe  - - 420 14 Ff   F2 V             
 2122 Jacobi               E610000-0 Ba                         { -3 } (200+3) [0000] B    - - 002 9  Fd   M7 III D         
 2125 Amanni               C574444-4 Ni Pa                      { -2 } (C30-4) [1242] Bc   - - 200 7  Ff   G6 IV            
-2127 Agravane             A5007A9-A Na Pi Va                   { 2 }  (D65+2) [6719] B    - - 105 9  Fe   M2 V D           
+2127 Agravane             A5007A9-A Na Pi Va                   { 2 }  (D65+2) [6719] B    - - 105 9  Wild M2 V D           
 2129 Rellion              A88327A-9 Lo                         { 0 }  (C10+2) [1289] B    - - 213 11 Ff   G0 V             
 2221 Bumerril             ECCA000-B Di Fl                      { -1 } (800-2) [0000] B    - - 002 10 Wild M2 V             
 2224 Walur                E572000-B Di He                      { -1 } (900-3) [0000] B    - - 011 7  Ff   G6 III           
@@ -360,18 +359,18 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 2328 Bloemtol             E7C3000-9 Di Fl                      { -2 } (C00-3) [0000] B    - - 004 10 Ff   M0 II            
 2422 Caracta Cala         C793646-4 Ni                         { -2 } (C54-5) [1445] B    - - 103 14 Fd   G6 V             
 2424 Calamain             X000000-B As Va Di                   { -1 } (800+1) [0000] B    - - 011 8  Wild M2 V             
-2425 Kintara              D554210-9 Lo                         { -2 } (810-4) [3124] B    - - 101 10 Fe   A3 V             
-2428 Numicta              E9A767A-4 Fl Ni                      { -3 } (C52+1) [7367] B    - - 101 11 Fe   F9 V             
+2425 Kintara              D554210-9 Lo                         { -2 } (810-4) [3124] B    - - 101 10 Wild A3 V             
+2428 Numicta              E9A767A-4 Fl Ni                      { -3 } (C52+1) [7367] B    - - 101 11 Wild F9 V             
 2521 Aimar                D974353-7 Lo                         { -3 } (820+1) [3179] B    - - 101 11 Fd   F4 III           
 2523 Perattir             D7A9000-B Di Fl                      { -1 } (700-2) [0000] B    - - 011 11 Wild K3 V             
 2524 Narovil              C655401-6 Ga Ni Pa                   { -2 } (732+1) [5246] Bc   - - 701 11 Wild K8 V             
 2525 Farovil              C767543-5 Ag Pr Ga Ni                { -1 } (945+2) [4465] BcC  - - 900 10 Fa   K3 IV            
 2526 Shadowsand           D000000-B As Va Di                   { -1 } (700+2) [0000] B    - - 010 10 Fa   BH               
-2527 Kerchol              D557200-9 Lo                         { -2 } (710+3) [1156] B    - - 604 9  Fe   F4 V             
+2527 Kerchol              D557200-9 Lo                         { -2 } (710+3) [1156] B    - - 604 9  Wild F4 V             
 2530 Njisse               B755100-C Ga Lo                      { 1 }  (501-1) [622F] B    - - 400 13 Wild F5 V             
 2625 Luwell               AA6A77A-B Ri Oc                      { 3 }  (F66-2) [564A] Bc   - - 424 18 Fa   F4 V D           
 2627 Freedonia            A768854-C Ri Ph Pa                   { 3 }  (C78+2) [8B4A] B    - - 604 13 Fa   F3 V             
-2629 Sequitor             D566200-9 Lo                         { -2 } (610+2) [2159] B    - - 500 8  Fe   F9 V D           
+2629 Sequitor             D566200-9 Lo                         { -2 } (610+2) [2159] B    - - 500 8  Wild F9 V D           
 2630 Rijnvell             X626000-D Di                         { -1 } (700-1) [0000] B    - - 000 10 Wild G9 V             
 2721 Mallir               E423000-9 Di Po                      { -2 } (900+3) [0000] B    - - 020 12 Wild G2 V             
 2723 Eberthirn            C658633-8 Ag Ni                      { -1 } (C54+2) [6559] BC   - - 603 6  Fa   G3 V             

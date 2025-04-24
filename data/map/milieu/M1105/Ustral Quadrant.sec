@@ -102,7 +102,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 1408 Uisi                 A6A1478-E Fl He Ni Ht                { 2 }  (635+2) [465E] - RT - 900 10 AsSc M0 V M5 V     
 1409 Eaktakhiyhyu         C300167-B Lo Va O:1308               { 0 }  (300+1) [115B] - -  - 500 11 AsVc F7 V          
 1501 Wuih                 A430488-A De Ni Po                   { 1 }  (B34+1) [455A] - T  - 414 11 AsT1 M1 V M1 V     
-1503 Heasairlui           A894A79-E Hi In Pz Ht                { 4 }  (G9G+5) [BE6F] - -  A 304 8  AsSc G7 V          
+1503 Heasairlui           A894A79-E Hi In Pz Ht                { 4 }  (G9G+5) [BE6F] - -  A 304 9  AsSc G7 V          
 1507 Eieaua               B432533-D Ni Po Ht                   { 1 }  (945-2) [262A] - -  - 702 8  AsVc A7 V          
 1602 Hrai'aoeti           C776377-7 Lo                         { -2 } (520-2) [3157] - -  - 203 10 AsSc G6 V M7 V     
 1604 Elaulrah             C545473-9 Ni Pa                      { -1 } (A32-4) [1326] - R  - 204 16 AsSc F9 V M1 V     
@@ -194,7 +194,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 1813 Eaeie                A555777-C Ag Ht                      { 4 }  (C6E+4) [7B5C] - RT - 421 11 AsSc F6 V          
 1817 Iyrauhyuhear         C644858-9 Pa Ph Pi                   { 0 }  (D79+1) [8859] - -  - 503 6  AsTv F3 V          
 1911 Eiasaihaur           C639687-8 Ni                         { -2 } (A52-2) [6458] - R  - 120 8  AsVc F0 V M5 V     
-1912 Iysusawehelao        D564588-7 Ag Ni Pr                   { -2 } (742-2) [5357] - -  - 530 13 AsT9 F6 V          
+1912 Iysusawehelao        D564588-7 Ag Ni Pr                   { -2 } (742-2) [5357] - -  - 530 13 AsT1 F6 V          
 1914 Aeahaihluil          A576A72-D Hi In Ht                   { 4 }  (F9G+1) [6E19] - T  - 412 11 AsSc F0 V          
 2014 Rarouhiywakho        C672314-7 He Lo                      { -2 } (520-4) [1135] - -  - 820 10 AsMw K5 V          
 2016 Stariy               E8446A5-6 Ag Ni                      { -2 } (852-4) [4434] - -  - 823 11 AsMw F1 V          

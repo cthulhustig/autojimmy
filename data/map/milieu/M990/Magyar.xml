@@ -31,13 +31,13 @@
     <Subsector Index="P">Morency</Subsector>
   </Subsectors>
   <Allegiances>
-    <Allegiance Code="SoCf">Solomani Confederation</Allegiance>
+    <Allegiance Code="SoCf" Base="So">Solomani Confederation</Allegiance>
     <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
-    <Allegiance Code="SoWu">Solomani Confederation, Wuan Technology Association</Allegiance>
+    <Allegiance Code="SoWu" Base="So">Solomani Confederation, Wuan Technology Association</Allegiance>
     <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
-    <Allegiance Code="SoNS">Solomani Confederation, New Slavic Solidarity</Allegiance>
+    <Allegiance Code="SoNS" Base="So">Solomani Confederation, New Slavic Solidarity</Allegiance>
     <Allegiance Code="Ac">Solomani Confederation, Acaran Allied Worlds</Allegiance>
-    <Allegiance Code="SoRD">Solomani Confederation, Reformed Dootchen Estates</Allegiance>
+    <Allegiance Code="SoRD" Base="So">Solomani Confederation, Reformed Dootchen Estates</Allegiance>
     <Allegiance Code="TK">Solomani Confederation, Tolson Interstellar Kingdom</Allegiance>
   </Allegiances>
   <Borders>

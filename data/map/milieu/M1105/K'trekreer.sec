@@ -42,110 +42,109 @@
 Hex  Name                 UWP       Remarks                  {Ix}   (Ex)    [Cx]   N B  Z PBG W  A    Stellar         
 ---- -------------------- --------- ------------------------ ------ ------- ------ - -- - --- -- ---- ----------------
 0102 Kallilku             C63673A-6 (Kallilku) Fo            { -1 } (663-2) [5638] - M  R 703 14 KkTw M9 V            
-0104                      C33533A-7 Lo                       { -2 } (A20+1) [5156] - M  - 800 7  KkTw M2 V M9 V       
-0108                      B33021A-8 De Lo Po                 { -1 } (C10+3) [112D] - M  - 710 7  KkTw G9 V M9 V       
-0207                      A94933A-B Lo                       {  1 } (821+3) [145B] - K  - 801 10 KkTw G0 V            
-0208                      B44121A-A He Lo Po Pz              {  1 } (711-1) [334F] - M  A 702 13 KkTw K0 V            
+0104 Aikre Aa’            C33533A-7 Lo                       { -2 } (A20+1) [5156] - M  - 800 7  KkTw M2 V M9 V       
+0108 Urrgii Roorr         B33021A-8 De Lo Po                 { -1 } (C10+3) [112D] - M  - 710 7  KkTw G9 V M9 V       
+0207 Raau Krulat          A94933A-B Lo                       {  1 } (821+3) [145B] - K  - 801 10 KkTw G0 V            
+0208 Iix Keergha          B44121A-A He Lo Po Pz              {  1 } (711-1) [334F] - M  A 702 13 KkTw K0 V            
 0210 Iirakxka             A47699A-B Hi In                    {  4 } (A87-5) [8D39] - E  - 524 15 KkTw A2 V            
-0303                      A84848A-8 Ni Pa                    { -1 } (B35+1) [7348] - -  - 804 11 KkTw M4 V            
-0306                      C44159A-7 He Ni Po                 { -2 } (942+1) [73A4] - -  - 100 9  KkTw M8 V            
-0309                      C67A21A-7 Lo Wa                    { -2 } (710+1) [3149] - M  - 603 11 KkTw M9 V            
-0403                      E221000-0 Ba Po                    { -3 } (600-5) [0000] - -  - 000 9  KkTw G9 IV           
-0404                      E52A000-0 Ba                       { -3 } (900-5) [0000] - -  - 022 11 KkTw M0 V            
-0407                      A66A69A-9 Ni Ri Wa                 {  1 } (A53+3) [8738] - -  - 903 13 KkTw M8 V M8 V       
+0303 Gn'krmuur            A84848A-8 Ni Pa                    { -1 } (B35+1) [7348] - -  - 804 11 KkTw M4 V            
+0306 Taga Mbaghuk         C44159A-7 He Ni Po                 { -2 } (942+1) [73A4] - -  - 100 9  KkTw M8 V            
+0309 Tilk'k'nam           C67A21A-7 Lo Wa                    { -2 } (710+1) [3149] - M  - 603 11 KkTw M9 V            
+0403 Kiixa                E221000-0 Ba Po                    { -3 } (600-5) [0000] - -  - 000 9  KkTw G9 IV           
+0404 Gatab                E52A000-0 Ba                       { -3 } (900-5) [0000] - -  - 022 11 KkTw M0 V            
+0407 Aakux                A66A69A-9 Ni Ri Wa                 {  1 } (A53+3) [8738] - -  - 903 13 KkTw M8 V M8 V       
 0408                      B330102-C De Lo Po                 {  1 } (A01+2) [129A] - N  - 904 14 NaXX M2 V M9 V       
 0409                      E210000-0 Ba                       { -3 } (600-5) [0000] - -  - 011 11 NaXX F8 V M0 V       
 0410                      D985634-5 Ag Ni Ri                 { -1 } (553-2) [6545] - N  - 813 16 NaXX M3 V            
-0503                      C55579A-7 Ag                       {  0 } (A65-3) [7768] - -  - 804 12 KkTw M6 V M6 V       
+0503 Ghuxree              C55579A-7 Ag                       {  0 } (A65-3) [7768] - -  - 804 12 KkTw M6 V M6 V       
 0509 Uurgnaxuud           A656A9A-C Hi Ga                    {  3 } (A9B-4) [DD5C] - E  - 914 17 KkTw F8 V M7 V       
 0510                      C693414-6 Ni                       { -2 } (830+1) [1211] - N  - 813 10 NaXX G0 V M2 V       
-0602                      C75469A-7 Ag Ni                    { -1 } (851+1) [6512] - -  - 805 9  KkTw M3 V M8 V       
-0604                      A24011A-C De Lo Po                 {  1 } (A01+1) [127C] - E  - 703 6  KkTw G7 V M4 V       
-0606                      C67721A-5 Lo                       { -2 } (310-4) [2137] - M  - 822 13 KkTw M2 V M7 V       
-0610                      C99A203-9 Lo Wa                    { -1 } (810+2) [1148] - N  - 904 16 NaXX M0 V            
-0706                      C87733A-9 Lo                       { -1 } (D20+1) [1224] - -  - 914 15 KkTw M1 V            
+0602 Akkirgamrra          C75469A-7 Ag Ni                    { -1 } (851+1) [6512] - -  - 805 9  KkTw M3 V M8 V       
+0604 Reka Naoot           A24011A-C De Lo Po                 {  1 } (A01+1) [127C] - E  - 703 6  KkTw G7 V M4 V       
+0606 Truar                C99A203-9 Lo Wa                    { -1 } (810+2) [1148] - N  - 904 16 NaXX M0 V            
+0706 Akaaktakii           C87733A-9 Lo                       { -1 } (D20+1) [1224] - -  - 914 15 KkTw M1 V            
 0709 !!kgnata             D785A7A-7 Hi Ga                    { -1 } (895+1) [D914] - -  - 623 12 KkTw K9 V            
-0805                      C42553A-7 Ni                       { -2 } (340+1) [7355] - M  - 915 15 KkTw G7 V M5 V       
-0809                      C79443A-8 Ni Pa                    { -2 } (534+2) [5248] - -  - 110 14 KkTw M0 V            
+0805 Ungeex               C42553A-7 Ni                       { -2 } (340+1) [7355] - M  - 915 15 KkTw G7 V M5 V       
+0809 Kaorakka             C79443A-8 Ni Pa                    { -2 } (534+2) [5248] - -  - 110 14 KkTw M0 V            
 0901 Kuxktunuk            A56999A-C Hi Pr                    {  3 } (E8D-1) [8C5D] - K  - 504 8  KkTw M5 V M6 V       
-0904                      C94733A-5 Lo                       { -2 } (420+4) [1193] - -  - 713 14 KkTw K1 V M0 V       
-0910                      E429000-0 Ba                       { -3 } (300-5) [0000] - -  - 015 15 KkTw M1 V M3 V       
-1003                      B23011A-A De Lo Po                 {  1 } (F01+1) [125C] - K  - 804 11 KkTw G5 V M1 V       
-1004                      E97A000-0 Ba Wa                    { -3 } (500-5) [0000] - -  - 000 5  KkTw M5 V            
-1010                      B85A43A-A Ni Wa                    {  1 } (B34+1) [555B] - -  - 513 10 KkTw M0 V M4 V       
-1101                      CAD811A-5 Lo                       { -2 } (700+4) [1118] - M  - 923 13 KkTw K2 V            
-1109                      C88753A-9 Ga Ag Ni Pr              {  0 } (946+5) [957C] - M  - 713 10 KkTw M1 V M8 V       
-1110                      E27021A-7 De Lo                    { -3 } (610+1) [1185] - -  - 802 12 KkTw G6 V            
-1203                      E100000-0 Ba Va                    { -3 } (700-5) [0000] - -  - 003 12 KkTw G3 V M6 V       
-1204                      E310000-0 Ba                       { -3 } (200-5) [0000] - -  - 004 11 KkTw G7 V M1 V       
-1208                      B24543A-7 Ni Pa Fo                 { -1 } (532+3) [6318] - K  R 900 4  KkTw M4 V            
-1209                      C46179A-9 Ri                       {  1 } (F69+1) [587D] - -  - 524 9  KkTw M1 V            
-1301                      B33233A-8 Lo Po                    { -1 } (E20+1) [123C] - K  - 502 12 KkTw K1 IV           
-1304                      E77821A-5 Lo                       { -3 } (710+1) [1158] - -  - 620 10 KkTw M6 V            
-1309                      C16053A-7 De Ni Pr                 { -2 } (A42-1) [2378] - -  - 813 10 KkTw M4 V M9 V       
-1402                      E45779A-4 Ag                       { -1 } (A65+2) [4688] - -  - 114 16 KkTw G6 V            
-1403                      E520000-0 Ba De He Po              { -3 } (500-5) [0000] - -  - 004 13 KkTw G5 V M1 V       
-1408                      A53343A-D Ni Po Fo                 {  1 } (932-2) [5539] - K  R 903 13 KkTw K1 V M1 V M2 V  
-1501                      E000000-0 As Ba Va                 { -3 } (600-5) [0000] - -  - 002 10 KkTw M5 V            
-1603                      CAC411A-9 Lo Fl                    {  0 } (800+3) [1188] - KM - 303 10 KkTw M4 V M6 V       
-1604                      C8A543A-9 Fl Ni                    { -1 } (733+3) [43AD] - -  - 802 10 KkTw M5 IV M8 V      
-1606                      B11011A-C Lo Pz                    {  1 } (901+2) [12AF] - K  A 703 8  KkTw K8 V            
-1608                      A41243A-D Ic Ni                    {  1 } (A36-4) [153F] - -  - 903 6  KkTw K6 V M7 V       
-1609                      E23021A-6 De Lo Po                 { -3 } (710+3) [2184] - -  - 804 11 KkTw M2 V            
-1610                      E9A0000-0 Ba He                    { -3 } (500-5) [0000] - -  - 001 8  KkTw K0 V            
-1705                      C78A89A-7 Ri Wa Ph                 {  0 } (579-1) [C86B] - -  - 514 8  KkTw G9 V M9 V       
+0904 Nuxna'rkuu           C94733A-5 Lo                       { -2 } (420+4) [1193] - -  - 713 14 KkTw K1 V M0 V       
+0910 Akapongtee           E429000-0 Ba                       { -3 } (300-5) [0000] - -  - 015 15 KkTw M1 V M3 V       
+1003 Gaegking             B23011A-A De Lo Po                 {  1 } (F01+1) [125C] - K  - 804 11 KkTw G5 V M1 V       
+1004 Ua Koeet             E97A000-0 Ba Wa                    { -3 } (500-5) [0000] - -  - 000 5  KkTw M5 V            
+1010 Tekkret              B85A43A-A Ni Wa                    {  1 } (B34+1) [555B] - -  - 513 10 KkTw M0 V M4 V       
+1101 Eragaro Nuu          CAD811A-5 Lo                       { -2 } (700+4) [1118] - M  - 923 13 KkTw K2 V            
+1109 Kuiku                C88753A-9 Ga Ag Ni Pr              {  0 } (946+5) [957C] - M  - 713 10 KkTw M1 V M8 V       
+1110 Arrburoo             E27021A-7 De Lo                    { -3 } (610+1) [1185] - -  - 802 12 KkTw G6 V            
+1203 K’l’                 E100000-0 Ba Va                    { -3 } (700-5) [0000] - -  - 003 12 KkTw G3 V M6 V       
+1204 Arruxt'tra           E310000-0 Ba                       { -3 } (200-5) [0000] - -  - 004 11 KkTw G7 V M1 V       
+1208 Gh'xuur              B24543A-7 Ni Pa Fo                 { -1 } (532+3) [6318] - K  R 900 4  KkTw M4 V            
+1209 Rakkrakuk            C46179A-9 Ri                       {  1 } (F69+1) [587D] - -  - 524 9  KkTw M1 V            
+1301 Ekkeeir              B33233A-8 Lo Po                    { -1 } (E20+1) [123C] - K  - 502 12 KkTw K1 IV           
+1304 K’nakee              E77821A-5 Lo                       { -3 } (710+1) [1158] - -  - 620 10 KkTw M6 V            
+1309 Beekrareek           C16053A-7 De Ni Pr                 { -2 } (A42-1) [2378] - -  - 813 10 KkTw M4 V M9 V       
+1402 Kut'mbee             E45779A-4 Ag                       { -1 } (A65+2) [4688] - -  - 114 16 KkTw G6 V            
+1403 L’ateer              E520000-0 Ba De He Po              { -3 } (500-5) [0000] - -  - 004 13 KkTw G5 V M1 V       
+1408 Ariixtaa             A53343A-D Ni Po Fo                 {  1 } (932-2) [5539] - K  R 903 13 KkTw K1 V M1 V M2 V  
+1501 Kriiarrax Uk         E000000-0 As Ba Va                 { -3 } (600-5) [0000] - -  - 002 10 KkTw M5 V            
+1603 Kihkapte             CAC411A-9 Lo Fl                    {  0 } (800+3) [1188] - KM - 303 10 KkTw M4 V M6 V       
+1604 Rroorria             C8A543A-9 Fl Ni                    { -1 } (733+3) [43AD] - -  - 802 10 KkTw M5 IV M8 V      
+1606 Urixkarr             B11011A-C Lo Pz                    {  1 } (901+2) [12AF] - K  A 703 8  KkTw K8 V            
+1608 Xtoopaka             A41243A-D Ic Ni                    {  1 } (A36-4) [153F] - -  - 903 6  KkTw K6 V M7 V       
+1609 Aeena Kraaa          E23021A-6 De Lo Po                 { -3 } (710+3) [2184] - -  - 804 11 KkTw M2 V            
+1610 Aareb                E9A0000-0 Ba He                    { -3 } (500-5) [0000] - -  - 001 8  KkTw K0 V            
+1705 Ranggnaktur          C78A89A-7 Ri Wa Ph                 {  0 } (579-1) [C86B] - -  - 514 8  KkTw G9 V M9 V       
 1706 X!tkak!              C73761A-6 Ni (X!tkak!) Pz          { -2 } (651+1) [1474] - -  A 714 16 KkTw G8 V M6 V       
-1708                      E32579A-7 Pi X!tkW Pz              { -2 } (760+2) [3566] - -  A 705 14 KkTw A0 V            
-1710                      C76579A-6 Ga Ag Ri                 {  1 } (C68-3) [6842] - -  - 923 10 KkTw M4 V            
-1808                      E8C521A-6 Fl Lo                    { -3 } (810+5) [616A] - -  - 314 14 KkTw K1 V M9 V M2 V  
-1901                      X57411A-1 Lo                       { -3 } (400+1) [1125] - -  - 602 7  KkTw M8 V            
-1904                      E510000-0 Ba                       { -3 } (500-5) [0000] - -  - 005 11 KkTw M0 V            
+1708 Kaghuul              E32579A-7 Pi X!tkW Pz              { -2 } (760+2) [3566] - -  A 705 14 KkTw A0 V            
+1710 Krarkudnal           C76579A-6 Ga Ag Ri                 {  1 } (C68-3) [6842] - -  - 923 10 KkTw M4 V            
+1808 Gigrukghi            E8C521A-6 Fl Lo                    { -3 } (810+5) [616A] - -  - 314 14 KkTw K1 V M9 V M2 V  
+1901 Kulirur              X57411A-1 Lo                       { -3 } (400+1) [1125] - -  - 602 7  KkTw M8 V            
+1904 Uglatgar             E510000-0 Ba                       { -3 } (500-5) [0000] - -  - 005 11 KkTw M0 V            
 1905 Timan!               A675A9A-E Hi In                    {  4 } (B9E-4) [7E5C] - -  - 510 5  KkTw G1 V            
-1906                      A57453A-9 Ag Ni                    {  1 } (F44-3) [668B] - -  - 813 9  KkTw M8 V            
-1908                      E120000-0 Ba De Po                 { -3 } (600-5) [0000] - -  - 012 8  KkTw G3 IV M9 V      
-2004                      B20021A-B Lo Va Pz                 {  1 } (711-4) [431E] - M  A 711 9  KkTw M6 V M9 V       
-2006                      C69721A-8 Lo                       { -2 } (A10-2) [118B] - -  - 924 16 KkTw M2 V M7 V       
-2007                      E140000-0 Ba De Po                 { -3 } (600-5) [0000] - -  - 004 12 KkTw F0 V            
-2010                      A69379A-9 Pi                       {  1 } (B66-1) [A84A] - -  - 523 13 KkTw G9 V M1 V       
-2101                      E210000-0 Ba                       { -3 } (600+5) [0000] - -  - 012 7  KkTw M5 V            
-2104                      E97A000-0 Ba Wa                    { -3 } (700-3) [0000] - -  - 010 11 KkTw K5 V M6 V       
-2105                      B57543A-8 Ni Pa                    { -1 } (934+2) [533A] - K  - 502 11 KkTw G5 V M2 V       
-2108                      E67911A-7 Lo                       { -3 } (600+5) [1126] - -  - 804 16 KkTw M2 V            
-2202                      DA9733A-6 Lo                       { -3 } (820-3) [2188] - -  - 904 10 KkTw A5 V K2 V       
-2309                      B87A21A-8 Lo Wa                    { -1 } (A10+5) [1125] - K  - 810 13 KkTw M0 V M2 V M4 V  
-2310                      C46469A-5 Ag Ni Ri                 {  0 } (754+5) [3666] - -  - 614 9  KkTw F9 V            
-2407                      E478000-0 Ba                       { -3 } (800-5) [0000] - -  - 010 10 KkTw G0 V M2 V       
-2408                      E441000-0 Ba He Po                 { -3 } (700-5) [0000] - -  - 004 16 KkTw K6 V M1 V       
-2409                      B6A121A-8 Fl He Lo Pz              { -1 } (710+3) [1167] - K  A 612 12 KkTw M3 V M5 V       
-2502                      B00021A-C As Va Lo                 {  1 } (F11+1) [137D] - K  - 904 8  KkTw K1 V M2 V       
-2505                      B24379A-7 Pi Po Fo                 {  0 } (866-1) [A747] - K  R 622 10 KkTw G5 V            
-2506                      E57369A-5 Ni                       { -3 } (853-4) [7326] - -  - 704 12 KkTw A5 V G4 V       
-2508                      C30021A-7 Lo Va                    { -2 } (810+4) [4166] - M  - 103 12 KkTw K3 V            
+1906 Rat’xu               A57453A-9 Ag Ni                    {  1 } (F44-3) [668B] - -  - 813 9  KkTw M8 V            
+1908 Nenpaa               E120000-0 Ba De Po                 { -3 } (600-5) [0000] - -  - 012 8  KkTw G3 IV M9 V      
+2004 Nitrier              B20021A-B Lo Va Pz                 {  1 } (711-4) [431E] - M  A 711 9  KkTw M6 V M9 V       
+2006 Xratraox             C69721A-8 Lo                       { -2 } (A10-2) [118B] - -  - 924 16 KkTw M2 V M7 V       
+2007 Aak!'ak              E140000-0 Ba De Po                 { -3 } (600-5) [0000] - -  - 004 12 KkTw F0 V            
+2010 Tingeerrn!r          A69379A-9 Pi                       {  1 } (B66-1) [A84A] - -  - 523 13 KkTw G9 V M1 V       
+2101 Eeniam               E210000-0 Ba                       { -3 } (600+5) [0000] - -  - 012 7  KkTw M5 V            
+2104 Rakliang             E97A000-0 Ba Wa                    { -3 } (700-3) [0000] - -  - 010 11 KkTw K5 V M6 V       
+2105 Akraghung            B57543A-8 Ni Pa                    { -1 } (934+2) [533A] - K  - 502 11 KkTw G5 V M2 V       
+2108 !Aak                 E67911A-7 Lo                       { -3 } (600+5) [1126] - -  - 804 16 KkTw M2 V            
+2202 Kitou                DA9733A-6 Lo                       { -3 } (820-3) [2188] - -  - 904 10 KkTw A5 V K2 V       
+2309 Nielleer             B87A21A-8 Lo Wa                    { -1 } (A10+5) [1125] - K  - 810 13 KkTw M0 V M2 V M4 V  
+2310 Laoorgh!             C46469A-5 Ag Ni Ri                 {  0 } (754+5) [3666] - -  - 614 9  KkTw F9 V            
+2407 Aokkood              E478000-0 Ba                       { -3 } (800-5) [0000] - -  - 010 10 KkTw G0 V M2 V       
+2408 Kiioorrtra           E441000-0 Ba He Po                 { -3 } (700-5) [0000] - -  - 004 16 KkTw K6 V M1 V       
+2409 Teernuu!ng           B6A121A-8 Fl He Lo Pz              { -1 } (710+3) [1167] - K  A 612 12 KkTw M3 V M5 V       
+2502 Keerxrunee Tul       B00021A-C As Va Lo                 {  1 } (F11+1) [137D] - K  - 904 8  KkTw K1 V M2 V       
+2505 Kaung!k              B24379A-7 Pi Po Fo                 {  0 } (866-1) [A747] - K  R 622 10 KkTw G5 V            
+2506 Xurrita              E57369A-5 Ni                       { -3 } (853-4) [7326] - -  - 704 12 KkTw A5 V G4 V       
+2508 Rurrangkal U         C30021A-7 Lo Va                    { -2 } (810+4) [4166] - M  - 103 12 KkTw K3 V            
 2509 N'xkrrurkra          B255A9A-C Hi                       {  3 } (F9C+1) [AD9F] - -  - 903 14 KkTw M7 V            
-2601                      E14021A-6 De Lo Po                 { -3 } (410+1) [2147] - -  - 900 7  KkTw M0 V            
-2604                      B75A89A-9 Wa Ph                    {  1 } (E76+3) [695A] - K  - 223 18 KkTw M8 V            
+2601 Rag’kee              E14021A-6 De Lo Po                 { -3 } (410+1) [2147] - -  - 900 7  KkTw M0 V            
+2604 Tair!!               B75A89A-9 Wa Ph                    {  1 } (E76+3) [695A] - K  - 223 18 KkTw M8 V            
 2605 Kragnab'             A72A83A-E Ph Pi (Kragnab') Pz      {  2 } (875-3) [5A4F] - -  A 900 8  KkTw F9 IV M7 V      
-2607                      C61353A-7 Ic Ni                    { -2 } (340+3) [432C] - -  - 704 10 KkTw K1 V K7 V       
-2610                      E63A000-0 Ba Wa                    { -3 } (900-5) [0000] - -  - 003 9  KkTw G6 V M3 V       
-2701                      B64289A-9 He Pi Po Ph Da           {  1 } (97A+5) [8979] - K  A 800 5  KkTw K3 V            
-2703                      EAC7000-0 Ba Fl                    { -3 } (700-5) [0000] - -  - 004 12 KkTw F0 V M3 V       
-2704                      E200000-0 Ba Va                    { -3 } (700-5) [0000] - -  - 001 4  KkTw M4 V            
-2706                      C53721A-6 Lo                       { -2 } (A10-1) [2155] - M  - 904 12 KkTw M7 V M8 V       
-2709                      E89A000-0 Ba Wa                    { -3 } (400-5) [0000] - -  - 004 17 KkTw G6 V M5 V       
-2806                      C73479A-8                          { -1 } (767+1) [8678] - M  - 611 11 KkTw G2 V M7 V       
-2807                      E7C7000-0 Ba Fl                    { -3 } (400-5) [0000] - -  - 023 8  KkTw M3 V            
-2808                      D25069A-5 De Ni Po                 { -3 } (850-2) [5385] - -  - 601 10 KkTw M1 V            
-2809                      B89653A-8 Ag Ni                    {  0 } (C46+1) [4559] - K  - 910 8  KkTw M1 V M9 V       
-2907                      C89A11A-9 Lo Wa                    { -1 } (C00+5) [1169] - -  - 623 8  KkTw M7 V            
-3001                      B56043A-8 De Ni                    { -1 } (C34+3) [139A] - -  - 503 13 KkTw M3 V M8 V       
-3003                      E320000-0 Ba De He Po              { -3 } (800-5) [0000] - -  - 000 13 KkTw M2 V            
-3104                      A57379A-9 Pi                       {  1 } (A69-3) [4818] - K  - 402 13 KkTw M8 V            
-3105                      C8A811A-9 Fl Lo                    { -1 } (A00+4) [3159] - M  - 313 15 KkTw M4 V M8 V       
-3108                      C54A21A-A Lo Wa Pz                 {  0 } (A10+1) [3257] - M  A 423 8  KkTw G3 V            
+2607 Rarrbikurr           C61353A-7 Ic Ni                    { -2 } (340+3) [432C] - -  - 704 10 KkTw K1 V K7 V       
+2610 Erxiro               E63A000-0 Ba Wa                    { -3 } (900-5) [0000] - -  - 003 9  KkTw G6 V M3 V       
+2701 Gheimreep            B64289A-9 He Pi Po Ph Da           {  1 } (97A+5) [8979] - K  A 800 5  KkTw K3 V            
+2703 Kaeg' Gub            EAC7000-0 Ba Fl                    { -3 } (700-5) [0000] - -  - 004 12 KkTw F0 V M3 V       
+2704 An Ghin              E200000-0 Ba Va                    { -3 } (700-5) [0000] - -  - 001 4  KkTw M4 V            
+2706 Gnagagua             C53721A-6 Lo                       { -2 } (A10-1) [2155] - M  - 904 12 KkTw M7 V M8 V       
+2709 Katii Nu             E89A000-0 Ba Wa                    { -3 } (400-5) [0000] - -  - 004 17 KkTw G6 V M5 V       
+2806 Keerkarad            C73479A-8                          { -1 } (767+1) [8678] - M  - 611 11 KkTw G2 V M7 V       
+2807 Gzarhk!iuu Kee       E7C7000-0 Ba Fl                    { -3 } (400-5) [0000] - -  - 023 8  KkTw M3 V            
+2808 Agheergn'a           D25069A-5 De Ni Po                 { -3 } (850-2) [5385] - -  - 601 10 KkTw M1 V            
+2809 Rilug'kghat          B89653A-8 Ag Ni                    {  0 } (C46+1) [4559] - K  - 910 8  KkTw M1 V M9 V       
+2907 Aakkratadal          C89A11A-9 Lo Wa                    { -1 } (C00+5) [1169] - -  - 623 8  KkTw M7 V            
+3001 Gnaaiirkii           B56043A-8 De Ni                    { -1 } (C34+3) [139A] - -  - 503 13 KkTw M3 V M8 V       
+3003 R’ugrraak            E320000-0 Ba De He Po              { -3 } (800-5) [0000] - -  - 000 13 KkTw M2 V            
+3104 Ilimnarr             A57379A-9 Pi                       {  1 } (A69-3) [4818] - K  - 402 13 KkTw M8 V            
+3105 Karareer             C8A811A-9 Fl Lo                    { -1 } (A00+4) [3159] - M  - 313 15 KkTw M4 V M8 V       
+3108 Orgruuboox           C54A21A-A Lo Wa Pz                 {  0 } (A10+1) [3257] - M  A 423 8  KkTw G3 V            
 3109 KIVllupka            B68199A-A Hi Pr                    {  3 } (886-2) [6C2B] - K  - 413 8  KkTw K4 II M1 V      
 3202 Iikrkakra            A35299A-A Hi Po                    {  3 } (986-5) [BC7E] - K  - 823 10 KkTw M3 V            
-3203                      D34033A-7 De He Lo Po              { -3 } (720+2) [3138] - -  - 803 13 KkTw M4 V            
-0111                      A67779A-7 Ag Pi                    {  1 } (C6B+1) [9816] - E  - 714 12 KkTw F7 V M2 V       
+3203 Bateeang             D34033A-7 De He Lo Po              { -3 } (720+2) [3138] - -  - 803 13 KkTw M4 V            
+0111 Iikar!'r             A67779A-7 Ag Pi                    {  1 } (C6B+1) [9816] - E  - 714 12 KkTw F7 V M2 V       
 0117 Spaeqola             B463974-C Hi Pr Cp                 {  3 } (B89+1) [CC2F] - N  - 604 15 HvFd K6 V M1 V M7 V  
 0120 Niiqida              A311412-E Ic Ni                    {  1 } (A36+5) [25AD] - -  - 920 11 HvFd A1 V G8 V       
 0217 Ksii                 B684626-A Ag Ni Ri                 {  3 } (C58-1) [9939] - -  - 914 15 HvFd G4 V M0 V       
@@ -205,7 +204,7 @@ Hex  Name                 UWP       Remarks                  {Ix}   (Ex)    [Cx]
 1515 Qu de                E959576-7 Ni Orar8                 { -3 } (942-2) [725C] - -  - 204 14 HvFd M2 V            
 1613 Xofuksu              B8A1203-8 Fl He Lo                 { -1 } (B10+1) [5134] - N  - 900 8  CsHv M3 V            
 1616 Aaao                 B556A86-9 Hi Orar6                 {  2 } (997+1) [BC78] - -  - 802 7  HvFd M0 V M4 V       
-1711                      A20021A-D Lo Va                    {  1 } (D11+1) [235D] - -  - 904 9  KkTw M6 V M9 V       
+1711 Uukrbaktuee          A20021A-D Lo Va                    {  1 } (D11+1) [235D] - -  - 904 9  KkTw M6 V M9 V       
 1714                      C451725-9 Po                       {  0 } (C6B-1) [9749] - N  - 314 13 Na   M1 V            
 1814 Xe                   B000102-C As Lo Va                 {  1 } (C01+3) [126F] - -  - 905 12 CsTw G6 V            
 1817 Juefu                E347220-7 Lo Orar8                 { -3 } (410+1) [5189] - -  - 704 12 HvFd A4 V            
@@ -222,52 +221,52 @@ Hex  Name                 UWP       Remarks                  {Ix}   (Ex)    [Cx]
 2015                      X553324-3 Lo Po                    { -3 } (720+1) [3132] - -  - 510 12 NaXX M0 V M2 V       
 2020 Wooafax              D555961-8 Hi Cy O:1916             { -1 } (D83+3) [D874] - -  - 820 12 CsHv K1 V M7 V       
 2116                      E482621-6 Ni Ri                    { -2 } (652+1) [B417] - -  - 514 12 NaXX M5 V M8 V       
-2211                      B40153A-C Ic Ni Va                 {  1 } (C46+5) [568F] - M  - 624 10 KkTw G8 V M2 V       
-2212                      A51253A-B Ic Ni                    {  1 } (C42+2) [566A] - K  - 513 9  KkTw M2 V M4 V M6 V  
-2213                      E430000-0 Ba De Po                 { -3 } (A00-5) [0000] - -  - 003 9  KkTw G3 V            
-2214                      E564616-4 Ag Ni Ri                 { -1 } (954+3) [3545] - -  - 823 12 CsTw A4 V M2 V       
-2313                      A42553A-E Ni Pz                    {  1 } (D43+3) [362F] - -  A 314 14 KkTw F7 V            
+2211 ‘Toorangka           B40153A-C Ic Ni Va                 {  1 } (C46+5) [568F] - M  - 624 10 KkTw G8 V M2 V       
+2212 Nitlarkanku          A51253A-B Ic Ni                    {  1 } (C42+2) [566A] - K  - 513 9  KkTw M2 V M4 V M6 V  
+2213 Riikiog              E430000-0 Ba De Po                 { -3 } (A00-5) [0000] - -  - 003 9  KkTw G3 V            
+2214 Meekrakrukin         E564616-4 Ag Ni Ri                 { -1 } (954+3) [3545] - -  - 823 12 CsTw A4 V M2 V       
+2313 Atkoonarrat          A42553A-E Ni Pz                    {  1 } (D43+3) [362F] - -  A 314 14 KkTw F7 V            
 2314                      D767405-8 Ni Ga Pa                 { -3 } (B32+1) [2156] - -  - 800 12 NaXX M0 V            
 2317                      E635625-6 Ni                       { -3 } (750-1) [3367] - -  - 302 8  NaXX G7 V            
 2318                      E300105-9 Lo Va                    { -2 } (D00-3) [517B] - N  - 721 12 NaXX G9 V            
 2319                      E447417-5 Ni Pa Pz                 { -3 } (433+1) [4195] - N  A 204 13 NaXX M7 V            
 2320                      E100000-0 Ba Va                    { -3 } (500-5) [0000] - -  - 000 5  NaXX K0 V M0 V       
-2411                      E000000-0 As Ba Va                 { -3 } (400-5) [0000] - -  - 002 6  KkTw M8 V            
-2414                      C33021A-8 De Lo Po                 { -2 } (D10+1) [1158] - -  - 620 9  KkTw M0 V            
+2411 Akireengkal          E000000-0 As Ba Va                 { -3 } (400-5) [0000] - -  - 002 6  KkTw M8 V            
+2414 Liibgunturek         C33021A-8 De Lo Po                 { -2 } (D10+1) [1158] - -  - 620 9  KkTw M0 V            
 2415                      B210231-B Lo                       {  1 } (511+1) [3357] - N  - 703 13 NaXX M2 V M8 V       
 2419 Worathi              C856A97-B Hi Ga                    {  2 } (F9A+1) [CC8B] - N  - 804 11 NaXX M3 V M9 V       
 2420                      D89A411-5 Ni Wa                    { -3 } (C30-3) [4144] - -  - 915 17 NaXX G8 V M5 V       
-2511                      B59733A-A Lo                       {  1 } (F21-1) [441A] - -  - 935 18 KkTw M1 V M2 V       
-2512                      C99833A-6 Lo                       { -2 } (720-1) [6165] - M  - 933 11 KkTw M3 V M7 V       
-2611                      B75969A-A Ni                       {  1 } (C52+2) [8757] - -  - 804 15 KkTw K2 V M8 V       
-2715                      D61243A-7 Ic Ni                    { -3 } (531+2) [5153] - -  - 515 12 KkTw M5 V M7 V       
-2717                      C9A621A-8 Fl Lo Pz                 { -2 } (F10-3) [3159] - M  A 823 15 KkTw G2 V M9 V       
-2718                      B54569A-9 Ag Ni                    {  1 } (755+3) [6798] - K  - 720 11 KkTw G0 V            
+2511 Nooakutra            B59733A-A Lo                       {  1 } (F21-1) [441A] - -  - 935 18 KkTw M1 V M2 V       
+2512 Inkekrteerur         C99833A-6 Lo                       { -2 } (720-1) [6165] - M  - 933 11 KkTw M3 V M7 V       
+2611 Gaookogh             B75969A-A Ni                       {  1 } (C52+2) [8757] - -  - 804 15 KkTw K2 V M8 V       
+2715 Axrikrum             D61243A-7 Ic Ni                    { -3 } (531+2) [5153] - -  - 515 12 KkTw M5 V M7 V       
+2717 Kangkatril           C9A621A-8 Fl Lo Pz                 { -2 } (F10-3) [3159] - M  A 823 15 KkTw G2 V M9 V       
+2718 Akatroo              B54569A-9 Ag Ni                    {  1 } (755+3) [6798] - K  - 720 11 KkTw G0 V            
 2720                      C527423-7 Ni                       { -2 } (A33-3) [825A] - N  - 800 5  NaXX M7 V            
-2811                      C57579A-6 Ag Pi                    {  0 } (763+1) [A799] - -  - 700 9  KkTw M6 V            
-2815                      A67553A-8 Ag Ni                    {  0 } (343-1) [356B] - E  - 500 6  KkTw K8 V            
-2816                      B36379A-A Ri                       {  3 } (86A+1) [7A3B] - K  - 701 9  KkTw F1 V M2 V       
-2819                      A77A21A-D Lo Wa                    {  1 } (A11+3) [137E] - E  - 810 10 KkTw M3 V            
+2811 Ree’kee              C57579A-6 Ag Pi                    {  0 } (763+1) [A799] - -  - 700 9  KkTw M6 V            
+2815 Anuee                A67553A-8 Ag Ni                    {  0 } (343-1) [356B] - E  - 500 6  KkTw K8 V            
+2816 Ktaeu                B36379A-A Ri                       {  3 } (86A+1) [7A3B] - K  - 701 9  KkTw F1 V M2 V       
+2819 Autxi                A77A21A-D Lo Wa                    {  1 } (A11+3) [137E] - E  - 810 10 KkTw M3 V            
 2820 Rrarpaut             D40061C-6 Na Ni Va (Rrarpaut) Pz   { -3 } (851+1) [1352] - M  A 823 14 KkTw K6 V M1 V       
-2911                      A56679A-9 Ag Ri                    {  3 } (C69+2) [9A1C] - K  - 604 11 KkTw K9 V            
-2912                      C66289A-7 Ri Ph                    {  0 } (279+1) [4826] - M  - 800 9  KkTw M8 V            
-2916                      E23321A-6 Lo Po Pz                 { -3 } (810+1) [4189] - -  A 902 6  KkTw M4 V M9 V       
-2917                      C6A343A-9 Fl Ni                    { -1 } (C33-3) [4338] - M  - 804 14 KkTw G1 V            
-2918                      A79A11A-E Lo Wa                    {  1 } (901+1) [125C] - -  - 802 11 KkTw M3 V M5 V       
-2919                      E75821A-4 Lo                       { -3 } (B10+1) [4188] - -  - 102 11 KkTw M0 V            
-2920                      C77843A-8 Ni Pa                    { -2 } (934+2) [4259] - M  - 503 10 KkTw M2 V M7 V       
-3015                      E64743A-6 Ni Pa                    { -3 } (630-1) [4165] - -  - 902 10 KkTw G5 V            
-3111                      E000000-0 As Ba Va                 { -3 } (700-5) [0000] - -  - 004 10 KkTw M9 V            
-3113                      E110000-0 Ba                       { -3 } (500-5) [0000] - -  - 003 12 KkTw K4 V            
-3114                      E88821A-6 Lo                       { -3 } (A10+5) [113A] - -  - 502 10 KkTw G7 V M6 V       
-3115                      C22621A-7 Lo                       { -2 } (310+1) [613A] - M  - 504 11 KkTw G6 V            
-3117                      C14021A-A De Lo Po                 {  0 } (F10+4) [2247] - M  - 523 11 KkTw K3 V            
-3120                      E538000-0 Ba                       { -3 } (400-5) [0000] - -  - 004 12 KkTw M2 III          
-3211                      B47553A-B Ag Ni                    {  2 } (B45+1) [178C] - -  - 804 16 KkTw K0 V            
-3213                      E000000-0 As Va Ba                 { -3 } (A00-5) [0000] - -  - 004 12 KkTw M2 V            
-3215                      E46289A-6 Ri Ph                    { -1 } (777+5) [5746] - -  - 802 9  KkTw K5 V M8 V       
-3216                      B78869A-A Ag Ni Ri                 {  3 } (658+2) [695A] - K  - 800 5  KkTw G5 V            
-3220                      E748000-0 Ba                       { -3 } (400-5) [0000] - -  - 001 11 KkTw M4 V M6 V       
+2911 Gara’                A56679A-9 Ag Ri                    {  3 } (C69+2) [9A1C] - K  - 604 11 KkTw K9 V            
+2912 Tuurkraa             C66289A-7 Ri Ph                    {  0 } (279+1) [4826] - M  - 800 9  KkTw M8 V            
+2916 Uughata              E23321A-6 Lo Po Pz                 { -3 } (810+1) [4189] - -  A 902 6  KkTw M4 V M9 V       
+2917 Irixing              C6A343A-9 Fl Ni                    { -1 } (C33-3) [4338] - M  - 804 14 KkTw G1 V            
+2918 Tekriia              A79A11A-E Lo Wa                    {  1 } (901+1) [125C] - -  - 802 11 KkTw M3 V M5 V       
+2919 Gneeloa              E75821A-4 Lo                       { -3 } (B10+1) [4188] - -  - 102 11 KkTw M0 V            
+2920 Ruax                 C77843A-8 Ni Pa                    { -2 } (934+2) [4259] - M  - 503 10 KkTw M2 V M7 V       
+3015 Traanaak             E64743A-6 Ni Pa                    { -3 } (630-1) [4165] - -  - 902 10 KkTw G5 V            
+3111 Uarra Nu             E000000-0 As Ba Va                 { -3 } (700-5) [0000] - -  - 004 10 KkTw M9 V            
+3113 Rookkera             E110000-0 Ba                       { -3 } (500-5) [0000] - -  - 003 12 KkTw K4 V            
+3114 Nuuxakar             E88821A-6 Lo                       { -3 } (A10+5) [113A] - -  - 502 10 KkTw G7 V M6 V       
+3115 R!anrum              C22621A-7 Lo                       { -2 } (310+1) [613A] - M  - 504 11 KkTw G6 V            
+3117 Uara                 C14021A-A De Lo Po                 {  0 } (F10+4) [2247] - M  - 523 11 KkTw K3 V            
+3120 Baghirge             E538000-0 Ba                       { -3 } (400-5) [0000] - -  - 004 12 KkTw M2 III          
+3211 Kaankagh             B47553A-B Ag Ni                    {  2 } (B45+1) [178C] - -  - 804 16 KkTw K0 V            
+3213 Arranxka             E000000-0 As Va Ba                 { -3 } (A00-5) [0000] - -  - 004 12 KkTw M2 V            
+3215 Raaxkang Xu          E46289A-6 Ri Ph                    { -1 } (777+5) [5746] - -  - 802 9  KkTw K5 V M8 V       
+3216 Atragniix            B78869A-A Ag Ni Ri                 {  3 } (658+2) [695A] - K  - 800 5  KkTw G5 V            
+3220 Kigrulu              E748000-0 Ba                       { -3 } (400-5) [0000] - -  - 001 11 KkTw M4 V M6 V       
 0122 Faduedii             E310000-0 Ba                       { -3 } (600-5) [0000] - -  - 014 17 HvFd K5 V            
 0125 Despask              D262985-9 Hi Pr                    {  0 } (E84+2) [498B] - -  - 830 7  HvFd M4 V M8 V       
 0127 Rorfanki             D646736-5 Ag Pi (Rorfanki) Da      { -1 } (368+2) [4653] - -  A 704 13 HvFd G3 V            
@@ -371,7 +370,7 @@ Hex  Name                 UWP       Remarks                  {Ix}   (Ex)    [Cx]
 2722                      C444401-9 Ni Pa                    { -1 } (930-3) [7327] - N  - 215 12 NaXX G7 V M2 V       
 2723                      BAD6422-B Ni                       {  1 } (A32-3) [553B] - N  - 822 11 NaXX K0 V M2 V       
 2727                      E200164-7 Lo Va Re Pz              { -3 } (A00+1) [3169] - -  A 313 13 Na   G1 IV M0 IV     
-2821                      B13011A-B De Lo Po RrarW Pz        {  1 } (801+3) [427B] - M  A 600 6  KkTw M2 V M4 V M8 V  
+2821 Maraara              B13011A-B De Lo Po RrarW Pz        {  1 } (801+3) [427B] - M  A 600 6  KkTw M2 V M4 V M8 V  
 2822                      E748000-0 Ba                       { -3 } (200-5) [0000] - -  - 000 4  NaXX K9 V            
 2825                      C412412-7 Ic Ni                    { -2 } (A33+5) [8248] - N  - 804 10 Na   K3 V M2 V       
 2826                      E684725-5 Ag Ri                    {  0 } (963+4) [2763] - -  - 804 13 Na   M0 V            
@@ -380,14 +379,14 @@ Hex  Name                 UWP       Remarks                  {Ix}   (Ex)    [Cx]
 2924                      E100000-0 Ba Va                    { -3 } (C00-5) [0000] - -  - 000 7  NaXX F0 V            
 2929                      A537203-E Lo                       {  1 } (A11-1) [636D] - -  - 802 12 NaHu G6 V M0 V       
 2930                      X456301-5 Lo                       { -3 } (520+3) [8163] - -  - 803 10 NaXX G4 V M6 V       
-3021                      B64853A-8 Ag Ni                    {  0 } (B44+2) [5537] - -  - 815 17 KkTw M2 V M8 V       
-3022                      A44733A-9 Lo Pz                    {  0 } (620+1) [1359] - K  A 800 8  KkTw M1 V M2 V       
+3021 Rukruar              B64853A-8 Ag Ni                    {  0 } (B44+2) [5537] - -  - 815 17 KkTw M2 V M8 V       
+3022 Ognaar               A44733A-9 Lo Pz                    {  0 } (620+1) [1359] - K  A 800 8  KkTw M1 V M2 V       
 3029                      C556832-6 Ph Pa                    { -1 } (A76+1) [9737] - N  - 104 16 NaXX G8 V            
 3124                      C444726-5 Ag Pi Da                 {  0 } (766+1) [6786] - N  A 810 7  NaXX M4 IV M8 V      
 3129                      E220000-0 Ba De Po                 { -3 } (800-5) [0000] - -  - 004 16 NaXX A1 V            
 3130                      C524623-8 Ni                       { -2 } (A51-1) [448A] - N  - 203 9  NaXX M5 V M5 V       
 3221                      D7B7255-5 Fl Lo                    { -3 } (710-3) [3167] - -  - 625 14 NaXX M1 V            
-3222                      E96469A-5 Ag Ni Ri                 { -1 } (650+1) [9583] - -  - 901 10 KkTw K0 V M3 V       
+3222 Aktrarkum            E96469A-5 Ag Ni Ri                 { -1 } (650+1) [9583] - -  - 901 10 KkTw K0 V M3 V       
 3230                      E896302-5 Lo                       { -3 } (720+2) [1136] - -  - 525 10 NaXX M3 V            
 0132 Puanan               E8A4000-0 Ba Fl                    { -3 } (400-5) [0000] - -  - 001 14 HvFd M7 V            
 0134 Aftal                EAA8000-0 Ba Fl                    { -3 } (300-5) [0000] - -  - 004 16 HvFd M2 V M2 V       

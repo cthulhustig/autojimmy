@@ -349,7 +349,7 @@ Hex  Name                 UWP       Remarks               {Ix}   (Ex)    [Cx]   
 2624 Taw                  A100298-B Lo Va Tz              { 1 }  (C11+2) [535B] - R  - 800 7  AsVc M2 V          
 2629 Iyou'iy              X100148-7 Lo Va Tz Fo           { -3 } (900-1) [114B] - -  R 114 15 AsMw M0 V          
 2722 Taar                 B100168-9 Lo Va Co Tz O:2623    { 0 }  (C00-1) [111A] - -  - 402 10 AsMw M1 V M1 V     
-2724 Ftao                 E547366-7 Lo Sa O:2623          { -3 } (820+1) [2168] - -  - 102 9  AsMw K1 V          
+2724 Raoleiwao'           A547986-D Hi In                 { 4 }  (88D+2) [AD6D] - T  - 102 9  AsT6 K1 V          
 2725 Yo'eaou              C410298-9 Lo Co Tz              { -1 } (C10-2) [612A] - R  - 132 16 AsWc M2 V M7 V     
 2727 Yaloiroihearl        B00059C-E As Ni Va Da           { 1 }  (A43+1) [565G] - R  A 814 13 AsVc M8 V          
 2729 Yahea                C510787-9 Na Pi                 { 0 }  (965+1) [783E] - R  - 501 10 AsTv F5 V M1 V     
@@ -408,7 +408,7 @@ Hex  Name                 UWP       Remarks               {Ix}   (Ex)    [Cx]   
 1433 Esyeorl              E9B698B-9 Fl Hi In              { 1 }  (F89-3) [8B2C] - -  - 104 15 NaAs F3 V          
 1438 Te'arlao             X4A7544-8 Fl Ni Fo              { -3 } (543-2) [9419] - -  R 411 12 NaAs G9 V K9 V     
 1533 Trui                 E956689-6 Ag Ni                 { -2 } (A52+5) [855A] - -  - 711 9  NaAs G8 V          
-1535 A'el                 E000678-9 As Na Ni Va           { -2 } (950+3) [4457] - -  - 111 11 NaAs G7 V          
+1535 A'el                 E000678-9 As Na Ni Va           { -2 } (950+3) [4457] - -  - 111 11 NaAs A3 III        
 1536 Wilrakhel            A679966-D Hi In Tz O:1633       { 4 }  (88E+3) [CD4A] - -  - 200 8  NaAs M0 V          
 1537 Airoasekh            C300667-A Na Ni Va O:1633       { 0 }  (C56+3) [6679] - K  - 213 15 NaAs F4 V M2 V     
 1538 Hlyeo                B41032A-9 Lo                    { 0 }  (E20+1) [135A] - -  - 330 12 NaAs K2 V M1 V     

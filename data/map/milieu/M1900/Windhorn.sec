@@ -32,6 +32,7 @@
 # Subsector O: Voenggaks
 # Subsector P: Kishadiku
 
+# Alleg: Vz: "Ziru Kishigi"
 # Alleg: Wild: "Wilds"
 
 Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N    B Z PBG W  A    Stellar            
@@ -175,17 +176,17 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1432 Allunsoeks           A578578-A Ag Ni                { 2 }  (B45-2) [371A] BC   - - 704 11 Wild F9 V               
 1435 Akezaenae            X634000-E Di                   { -1 } (900-1) [0000] B    - - 003 12 Wild M0 V               
 1438 Ineon                D594100-8 Lo                   { -3 } (C00+1) [616C] B    - - 803 10 Wild G3 V               
-1440 Senguva              X562500-0 Ni Pr                { -3 } (740+1) [9251] Bc   - - 403 8  Wild G3 V               
+1440 Sengurda             C562688-5 Ri Ni Var2           { -1 } (750+1) [9251] Bc   - - 403 8  Vz   G3 V               
 1536 Kfogthan             X8C7000-9 Di Fl                { -2 } (700+3) [0000] B    - - 001 10 Wild M2 V               
 1537 Aefoung              X410000-7 Di                   { -3 } (600+2) [0000] B    - - 002 11 Wild M2 V M3 V          
 1538 Gvueo                X422000-8 Di He Po             { -3 } (A00+1) [0000] B    - - 003 8  Wild M2 V M5 V          
-1539 Ksoga                E776642-1 Ag Ni                { -2 } (850-4) [9461] BC   - - 800 9  Wild M1 V               
+1539 Kishigi              A776742-9 Ag Pi Var1           { 2 }  (868+1) [9469] BC   - - 200 9  Vz   M1 V               
 1631 Aar                  E799000-4 Di                   { -3 } (700-2) [0000] B    - - 003 13 Wild F4 V M3 V          
 1632 Vaezoaerr            A854100-9 Lo                   { 0 }  (H00-2) [1147] B    - - 609 14 Wild M0 V M2 V M2 V     
 1634 Oego                 E565000-4 Di                   { -3 } (600-2) [0000] B    - - 015 16 Wild F9 V               
 1635 Khuoenknan           X513000-7 Di Ic                { -3 } (900-1) [0000] B    - - 008 20 Wild M2 V M4 V          
-1638 Gvokfizoeks          X564975-1 Hi Pr                { -1 } (B88-1) [9811] BcE  - - 403 15 Wild F6 V               
-1640 Llaegvoigz           E767000-5 Di Ga                { -3 } (500+1) [0000] B    - - 001 10 Wild F7 V M3 V          
+1638 Gvokfizoeks          D564975-4 Hi Pr Var9           { -1 } (B88-1) [9811] BcE  - - 403 15 Vz   F6 V               
+1640 Zirzan               C767750-8 Ag Ri Ga Var0        { 1 }  (568+1) [7858] B    - - 501 10 Vz   F7 V M3 V          
 1731 Erulgoengarrg        D6578A9-5 Ga Pa Ph             { -2 } (A78+1) [A627] Bce  - - 100 10 Wild F2 V               
 1732 Soghzalghag          B778200-8 (Aezorgh) Lo         { -1 } (G10-4) [4148] B    - - 904 15 Wild F7 V               
 1736 Zokfofaenkudh        B100510-9 Ni Va                { 0 }  (G42-3) [256B] B    - - 705 14 Wild F5 V               

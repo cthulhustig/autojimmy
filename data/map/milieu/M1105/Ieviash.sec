@@ -247,42 +247,42 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0815                      C572543-9 Ni                                  - S  - 124   Na        
 0816                      B749125-8 Lo Ni                               - -  - 624   Na        
 0820                      B160577-9 De Ni                               - -  - 820   Na        
-0911                      C98A541-A Ni Wa                               - -  - 714   Na        
-0914                      E865734-5 Ag                                  - -  - 203   Na        
-0916                      A636366-9 Lo Ni                               - -  - 604   Na        
-0917                      EA89267-4 Lo Ni                               - -  - 700   Na        
-0919                      C63A558-C Ni Wa                               - S  - 800   Na        
-0920                      C445466-6 Ni                                  - -  - 104   Na        
-1013                      C95A575-7 Ni Wa                               - S  - 610   Na        
-1016                      D666477-6 Ni                                  - S  - 422   Na        
-1017                      A755200-C Lo Ni                               - NS - 710   Na        
-1020                      C222435-6 Ni Po                               - S  - 704   Na        
-1111                      C573551-5 Ni                                  - S  - 923   Na        
-1112                      C886337-8 Lo Ni                               - S  - 400   Na        
-1113                      CA9A776-A Wa                                  - -  - 520   Na        
-1118                      C343315-7 Lo Ni Po                            - -  - 903   Na        
-1212                      C120567-A De Ni Po                            - S  - 302   Na        
-1213 Eshez                B341223-C Lo Ni Po                            - KM - 901   Zc        
-1214                      C400423-7 Ni Va                               - S  - 405   Na        
-1216                      C0009DC-8 As Hi Na                            - -  - 800   Na        
+0911 Atmion               C98A541-A Ni Wa                               - -  - 714   Na        
+0914 Tsiadra              E865734-5 Ag                                  - -  - 203   Na        
+0916 Iresle               A636366-9 Lo Ni                               - -  - 604   Na        
+0917 Briaer               EA89267-4 Lo Ni                               - -  - 700   Na        
+0919 Vieplen              C63A558-C Ni Wa                               - S  - 800   Na        
+0920 Ryder                C445466-6 Ni                                  - -  - 104   Na        
+1013 Jdeja                C95A575-7 Ni Wa                               - S  - 610   Na        
+1016 Ebloiev              D666477-6 Ni                                  - S  - 422   Na        
+1017 Blansaj              A755200-C Lo Ni                               - NS - 710   Na        
+1020 Jdez                 C222435-6 Ni Po                               - S  - 704   Na        
+1111 Tlosh                C573551-5 Ni                                  - S  - 923   Zc        
+1112 Zhere                C886337-8 Lo Ni                               - S  - 400   Zc        
+1113 Zhera                CA9A776-A Wa                                  - -  - 520   Zc        
+1118 Choplie              C343315-7 Lo Ni Po                            - -  - 903   Na        
+1212 Shokl                C120567-A De Ni Po                            - S  - 302   Zc        
+1213 Eshez                A866587-E Lo Ni Po                            - KM - 901   Zc        
+1214 Srchen               C400423-7 Ni Va                               - S  - 405   Zc        
+1216 Ialvilve             C0009DC-8 As Hi Na                            - -  - 800   Na        
 1220 Ezhefrjdot           B3127BG-7 Ic Na                               - KM - 512   Zc        
-1313                      C4849AC-9 Hi                                  - -  - 901   Na        
-1315                      D110102-A Lo Ni                               - S  - 513   Na        
-1316                      CA98200-6 Lo Ni                               - S  - 421   Na        
-1317                      C372556-B Ni                                  - S  - 301   Na        
-1318                      C552720-4 Po                                  - -  - 900   Na        
-1413                      B538533-9 Ni                                  - N  - 915   Na        
-1414                      D674441-4 Ni                                  - S  - 604   Na        
-1415                      A669113-B Lo Ni                               - -  - 704   Na        
-1418                      C74999C-B Hi In                               - -  - 312   Na        
-1420                      E7577BC-6 Ag                                  - -  - 312   Na        
-1511                      C57899C-7 Hi In                               - -  - 720   Na        
-1516                      A447676-C Ag Ni                               - N  - 803   Na        
-1612                      C482421-6 Ni                                  - S  - 623   Na        
-1616                      E554643-6 Ag Ni                               - -  - 803   Na        
-1618                      C000441-C As Ni                               - S  - 424   Na        
-1619                      C610752-8 Na                                  - -  - 203   Na        
-1620                      X424545-1 Ni                                  - -  R 202   Na        
+1313 Eiem                 C4849AC-9 Hi                                  - -  - 901   Zc        
+1315 Qleka                D110102-A Lo Ni                               - S  - 513   Zc        
+1316 Chentredr            CA98200-6 Lo Ni                               - S  - 421   Zc        
+1317 Tlazh                C372556-B Ni                                  - S  - 301   Zc        
+1318 Shtavr               C552720-4 Po                                  - -  - 900   Na        
+1413 Mansh                B538533-9 Ni                                  - N  - 915   Zc        
+1414 Shifchal             D674441-4 Ni                                  - S  - 604   Na        
+1415 Tia                  A669113-B Lo Ni                               - -  - 704   Zc        
+1418 Azhal                C74999C-B Hi In                               - -  - 312   Na        
+1420 Invostol             E7577BC-6 Ag                                  - -  - 312   Na        
+1511 Chtench              C57899C-7 Hi In                               - -  - 720   Na        
+1516 Iklal                A447676-C Ag Ni                               - N  - 803   Zc        
+1612 Zianjai              C482421-6 Ni                                  - S  - 623   Na        
+1616 Zlera                E554643-6 Ag Ni                               - -  - 803   Zc        
+1618 Chanshakev           C000441-C As Ni                               - S  - 424   Na        
+1619 Oshav                C610752-8 Na                                  - -  - 203   Na        
+1620 Sef                  X424545-1 Ni                                  - -  - 202   Na        
 1712                      E5336A8-7 Na Ni Po                            - -  - 804   Na        
 1714                      C433734-7 Na Po                               - -  - 314   Na        
 1716                      E537311-3 Lo Ni                               - -  - 413   Na        

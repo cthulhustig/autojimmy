@@ -33,17 +33,23 @@
     <Subsector Index="P">Oihareiy</Subsector>
   </Subsectors>
   <Allegiances>
-    <Allegiance Code="XXXX">Unknown</Allegiance>
     <Allegiance Code="NaAs" Base="As">Non-Aligned, Aslan-dominated</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
     <Allegiance Code="Et">Etra</Allegiance>
     <Allegiance Code="Sy">Steaakh Yeasaol</Allegiance>
-    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
-    <Allegiance Code="As">Aslan Hierate</Allegiance>
+    <Allegiance Code="AsSc" Base="As">Aslan Hierate, multiple clans split control</Allegiance>
+    <Allegiance Code="AsTv" Base="As">Aslan Hierate, Tlaukhu vassal clan dominates</Allegiance>
+    <Allegiance Code="AsVc" Base="As">Aslan Hierate, vassal clan dominates</Allegiance>
+    <Allegiance Code="AsWc" Base="As">Aslan Hierate, single one-world clan dominates</Allegiance>
     <Allegiance Code="Ko">Khosarliyh</Allegiance>
-    <Allegiance Code="A4" Base="As">Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)</Allegiance>
-    <Allegiance Code="A8" Base="As">Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)</Allegiance>
-    <Allegiance Code="A2" Base="As">Aslan Hierate, Tlaukhu control, Syoisuis (3)</Allegiance>
-    <Allegiance Code="A9" Base="As">Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)</Allegiance>
+    <Allegiance Code="AsT4" Base="As">Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)</Allegiance>
+    <Allegiance Code="AsXX" Base="As">Aslan Hierate, unknown</Allegiance>
+    <Allegiance Code="AsT8" Base="As">Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)</Allegiance>
+    <Allegiance Code="AsMw" Base="As">Aslan Hierate, single multiple-world clan dominates</Allegiance>
+    <Allegiance Code="AsT2" Base="As">Aslan Hierate, Tlaukhu control, Syoisuis (3)</Allegiance>
+    <Allegiance Code="AsT9" Base="As">Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)</Allegiance>
     <Allegiance Code="Se">Steaak'heafera</Allegiance>
   </Allegiances>
   <Borders>
