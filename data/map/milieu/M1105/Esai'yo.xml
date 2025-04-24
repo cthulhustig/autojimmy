@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Sector Tags="OTU" Abbreviation="Esai">
   <Name Lang="as">Esai'yo</Name>
-  <Credits />
+  <Credits>
+               &lt;b&gt;Esai'yo&lt;/b&gt; sector was updated to T5SS format by
+               Randy Dorman, based on data from Jo Grant's CORE site.
+      </Credits>
   <X>-7</X>
   <Y>3</Y>
   <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/i5.htm" />
@@ -24,8 +27,21 @@
     <Subsector Index="P">Aeie</Subsector>
   </Subsectors>
   <Allegiances>
-    <Allegiance Code="As">Aslan Hierate</Allegiance>
-    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="AsVc" Base="As">Aslan Hierate, vassal clan dominates</Allegiance>
+    <Allegiance Code="AsSc" Base="As">Aslan Hierate, multiple clans split control</Allegiance>
+    <Allegiance Code="AsWc" Base="As">Aslan Hierate, single one-world clan dominates</Allegiance>
+    <Allegiance Code="AsXX" Base="As">Aslan Hierate, unknown</Allegiance>
+    <Allegiance Code="AsT9" Base="As">Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)</Allegiance>
+    <Allegiance Code="AsMw" Base="As">Aslan Hierate, single multiple-world clan dominates</Allegiance>
+    <Allegiance Code="AsT0" Base="As">Aslan Hierate, Tlaukhu control, Yerlyaruiwo (1), Hrawoao (13), Eisohiyw (14), Ferekhearl (19)</Allegiance>
+    <Allegiance Code="AsTv" Base="As">Aslan Hierate, Tlaukhu vassal clan dominates</Allegiance>
+    <Allegiance Code="AsT3" Base="As">Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)</Allegiance>
+    <Allegiance Code="AsT8" Base="As">Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)</Allegiance>
+    <Allegiance Code="AsT4" Base="As">Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)</Allegiance>
+    <Allegiance Code="AsT5" Base="As">Aslan Hierate, Tlaukhu control, Hlyueawi (6), Isoitiyro (15)</Allegiance>
+    <Allegiance Code="AsT6" Base="As">Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)</Allegiance>
+    <Allegiance Code="AsT2" Base="As">Aslan Hierate, Tlaukhu control, Syoisuis (3)</Allegiance>
+    <Allegiance Code="AsT1" Base="As">Aslan Hierate, Tlaukhu control, Khaukheairl (2), Estoieie' (16), Toaseilwi (22)</Allegiance>
   </Allegiances>
   <Borders>
     <Border Allegiance="As" LabelPosition="1726">0029 0130 0230 0330 0430 0531 0630 0730 0729 0728 0727 0827 0928 1028 1129 1229 1329 1428 1528 1627 1727 1726 1826 1927 2026 2126 2225 2224 2223 2222 2323 2422 2522 2621 2721 2820 2819 2818 2918 2917 3016 3015 3014 3013 2913 2812 2912 3011 3111 3211 3311 3312 3313 3314 3315 3316 3317 3318 3319 3320 3321 3322 3323 3324 3325 3326 3327 3328 3329 3330 3331 3332 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341 2241 2141 2041 1941 1841 1741 1641 1541 1441 1341 1241 1141 1041 0941 0841 0741 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031 0030 0029</Border>

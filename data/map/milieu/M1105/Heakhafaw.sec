@@ -60,7 +60,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 0801 Auouearlei           C222889-C Na Ph Pi Po Sa             {  1 } (B77+5) [594C] - -  - 331 11 AsVc M2 V     
 0803 Liyeasaual           C695563-7 Ag Ni O:1002               { -1 } (541+2) [546A] - R  - 403 9  AsMw K2 V     
 1002 Waea                 B539743-C                            {  2 } (A67+1) [893E] - -  - 722 12 AsMw M0 V     
-1008 Ieeil                B42168A-9 He Na Ni Po                {  0 } (652+3) [8639] - -  - 210 10 AsT8 M0 V     
+1008 Ieeil                B42168A-9 He Na Ni Po                {  0 } (652+3) [8639] - -  - 210 10 AsT0 M0 V     
 1010 Ikhuieasta           C798448-E Ni Pa Rs                   {  0 } (333-3) [14A9] - -  - 300 9  AsXX K0 V     
 1102 Hfeiftuieih          E99A688-A Ni Wa                      { -1 } (755+1) [1549] - -  - 300 6  AsVc K0 V     
 1104 Iywaoleh             E55A58B-7 Da Ni Wa                   { -3 } (440+2) [627A] - -  A 300 3  AsMw K2 V     
@@ -127,7 +127,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 2610 Oaaewoi              C334543-9 Ni                         { -1 } (A41-1) [4447] - R  - 422 12 AsMw M7 V     
 2702 Ealeye               C68378C-9 Pz Ri                      {  1 } (869+2) [C836] - -  A 310 8  AsWc K3 V     
 2710 Ai                   D410389-7 Lo                         { -3 } (320-1) [114B] - -  - 232 13 AsVc M3 V     
-2805 Heaua                D999546-9 Ni                         { -2 } (D40+2) [13A9] - T  - 232 15 AsT0 G9 V     
+2805 Heaua                A999546-D Ni                         {  1 } (D43+2) [16AD] - T  - 232 15 AsT0 G9 V     
 2903 Khtaeus              C669888-A Ph Ri                      {  2 } (D79+1) [3A58] - -  - 411 12 AsVc K2 V     
 2908 Oieahtoso            C67A544-A Ni Wa                      {  0 } (B43-3) [1579] - T  - 101 11 AsT7 K0 V     
 2909 Iywi                 E340876-A De He Ph Pi Po Sa          {  0 } (677+3) [6855] - -  - 621 8  AsSc F5 V     
@@ -142,7 +142,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 3108 A'oeii               D340546-A De He Ni Po                { -1 } (A44+1) [1448] - -  - 221 11 AsMw F0 V     
 3109 Kaoioi               C35028B-B De Lo Po                   {  0 } (C10+1) [524B] - -  - 231 17 AsWc F7 V     
 3203 Ktawui               D463745-A Ri                         {  1 } (56A+1) [B828] - -  - 401 13 AsWc K1 V     
-0115 Iyleawea             E57248B-8 Da He Ni                   { -3 } (832+5) [1179] - -  A 200 8  AsT9 K2 V     
+0115 Iyleawea             E57248B-8 Da He Ni                   { -3 } (832+5) [1179] - -  A 200 8  AsT2 K2 V     
 0116 Eihoiloi             C200887-D Na Ph Pi Va                {  1 } (477-1) [697D] - R  - 100 8  AsWc M4 V     
 0118 Aheahyotlauw         C300389-9 Lo Va                      { -1 } (B20-4) [3286] - -  - 114 13 AsVc M0 V     
 0119 Triytow              CAB8444-9 Fl Ni                      { -1 } (J35+1) [833A] - R  - 433 18 AsMw M0 V     
@@ -155,7 +155,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 0312 Au'eawiyheah         D41068B-9 Da Na Ni                   { -2 } (A53+1) [145C] - -  A 213 9  AsMw M0 V     
 0313 Tyuaharl             D410899-B Na Ph Pi                   {  0 } (673+4) [485F] - R  - 103 12 AsWc M0 V     
 0314 Uiyaouea             C96A589-B Ni Pr Wa                   {  0 } (745-3) [1537] - -  - 701 9  AsWc K0 V     
-0319 Aha                  E898643-7 Ag Ni                      { -2 } (750+2) [1468] - -  - 902 13 AsT9 K4 V     
+0319 Aha                  E898643-7 Ag Ni                      { -2 } (750+2) [1468] - -  - 902 13 AsT0 K4 V     
 0413 Hkuieiheawoi         C300545-8 Ni Va                      { -2 } (541+1) [1393] - T  - 401 7  AsT9 M0 V     
 0414 Treaeah              DAAA000-0 Ba Fl                      { -3 } (600-5) [0000] - -  - 000 6  AsXX M0 V     
 0416 Ayewi                C859378-9 Lo                         { -1 } (820+1) [1259] - R  - 401 5  AsSc G1 V     
@@ -163,7 +163,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 0418 Tye'eires            C767543-9 Ag Ga Ni Pr                {  0 } (A45+1) [15A9] - -  - 423 11 AsTv K2 V M8 V
 0511 Irleaa               X72A863-A Cy Ph Pi Pz O:1014         {  0 } (873-3) [888E] - -  A 602 9  AsVc M0 V     
 0517 Ihteaw               A535778-B                            {  3 } (969-3) [2A4D] - RT - 103 11 AsSc K0 IV    
-0518 Rea'astuirl          B76A88B-E Ph Pz Ri Wa                {  3 } (F7B+1) [4B5B] - T  A 103 10 AsT8 K0 V     
+0518 Rea'astuirl          B76A88B-E Ph Pz Ri Wa                {  3 } (F7B+1) [4B5B] - T  A 103 10 AsT0 K0 V     
 0611 Oueluatra            B410799-B Na Pi                      {  2 } (769+1) [B94B] - R  - 623 13 AsVc M7 V     
 0613 Saelarli             E6A5000-0 Ba Fl                      { -3 } (C00-5) [0000] - -  - 001 11 AsXX K0 V     
 0615 Iyloi                A646887-E Pa Ph Pi                   {  2 } (57A+1) [4A6C] - T  - 200 9  AsT6 G6 V     
@@ -173,7 +173,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 0717 Ekoharleah           C325687-7 Ni                         { -2 } (751+1) [148B] - -  - 120 11 AsVc M3 V     
 0719 Hakha                C465444-8 Ni Pa                      { -2 } (734-5) [1223] - -  - 100 5  AsMw K0 V     
 0720 Yehoue               D664763-6 Ag Cy Ri O:0518            {  0 } (46A+3) [B783] - -  - 312 10 AsTv K4 V     
-0811 Alr                  C340146-A De He Lo Po                {  0 } (A00+3) [417B] - T  - 520 10 AsT9 F4 V     
+0811 Alr                  C340146-A De He Lo Po                {  0 } (A00+3) [417B] - T  - 520 10 AsT1 F4 V     
 0812 Aiwyo                B335886-9 Ph                         {  1 } (B7C-1) [797D] - -  - 103 11 AsT6 M7 V     
 0819 Oilreahai            B52458C-D Da Ni                      {  1 } (646+2) [165A] - T  A 302 13 AsT6 M4 V     
 0820 Treiiysakh           D00049C-A As Ni Va                   { -1 } (330+1) [1357] - R  - 310 9  AsTv M0 V     
@@ -230,7 +230,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 2211 Kyefta               DAD7898-A Ph                         {  0 } (477-1) [B839] - -  - 211 9  AsWc K3 V M8 V
 2212 A'ao'eyeh            C446445-7 Ni Pa                      { -2 } (930+3) [125B] - -  - 521 12 AsWc K0 V     
 2214 Aihaihroite          C324795-8 Pi                         { -1 } (762+1) [366A] - R  - 212 11 AsMw M0 V     
-2216 Auaheah              C000348-B As Lo Va                   {  0 } (820+2) [1327] - -  - 112 13 AsT9 M1 V     
+2216 Auaheah              C000348-B As Lo Va                   {  0 } (820+2) [1327] - -  - 112 13 AsT2 M1 V     
 2217 Ktaoukhoktai         CAAAA74-A Fl Hi In                   {  3 } (69C-2) [BD27] - R  - 630 16 AsSc M2 V     
 2218 Eiyaser              E665478-6 Ga Ni Pa                   { -3 } (732+1) [4129] - -  - 424 11 AsSc K0 V     
 2219 Ewailea              C66678B-D Ag Ga Pz Ri                {  3 } (C6A+5) [3A1D] - -  A 902 12 AsWc K0 V     
@@ -254,7 +254,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 2716 Aailreaw             A837697-B Ni                         {  1 } (656+1) [971C] - R  - 400 7  AsVc M0 V     
 2719 Eye                  D455000-0 Ba                         { -3 } (600-5) [0000] - -  - 003 14 AsXX K2 V     
 2720 Ekhoaeiy             C220000-B Da De Di Po                {  0 } (700-5) [0000] - -  A 000 6  AsXX M4 V     
-2813 Iyaaoheire           C332344-8 Lo Po                      { -2 } (A20-2) [613C] - T  - 832 11 AsT8 M0 V     
+2813 Iyaaoheire           C332344-8 Lo Po                      { -2 } (A20-2) [613C] - T  - 832 11 AsT1 M0 V     
 2816 Taelei'oa            B455978-D Hi                         {  3 } (A89-1) [AC6B] - R  - 200 11 AsSc K1 V     
 2912 Uakhtyeyaa           C200212-C Lo Va                      {  0 } (D10+1) [221A] - -  - 723 15 AsVc M4 V     
 2915 Lealoieei            E764696-9 Ag Ni Ri                   {  0 } (D55+1) [7636] - -  - 412 11 AsTv K0 V M8 V
@@ -391,12 +391,12 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 2728 Aouhtyeeah           C464000-E Di                         {  0 } (C00-5) [0000] - -  - 012 11 AsXX K0 V     
 2730 Ktoawa               C737548-B Ni                         {  0 } (842-3) [1556] - -  - 102 12 AsT2 M7 V     
 2822 Staieaei             B878586-A Ag Ni                      {  2 } (347+1) [572B] - T  - 510 7  AsT7 G5 V     
-2823 Fteakhahis           A845747-E Ag Pi                      {  3 } (96A-1) [7A1G] - T  - 404 13 AsT9 G8 V     
+2823 Fteakhahis           A845747-E Ag Pi                      {  3 } (96A-1) [7A1G] - T  - 404 13 AsT1 G8 V     
 2825 Seaayoh              C859436-A Ni                         {  1 } (F33-2) [1569] - RT - 312 9  AsTv G7 V     
 2826 Hkeatei              E792147-A He Lo                      { -1 } (A00+1) [114C] - -  - 221 13 AsMw K0 V     
 2923 Eihwoa               C457688-C Ag Ni                      {  1 } (752+1) [475D] - -  - 200 10 AsVc K1 V     
 2924 Lurea'eakh           D678446-B Ni Pa                      {  0 } (431-1) [1438] - RT - 402 7  AsTv K5 V     
-2926 Hkehas               C453447-9 Ni Po                      { -1 } (730-1) [1366] - -  - 603 11 AsT9 K0 V     
+2926 Hkehas               C453447-9 Ni Po                      { -1 } (730-1) [1366] - -  - 603 11 AsT0 K0 V     
 2927 Eaiy'                E23078C-6 De Na Po Pz                { -2 } (868+1) [9581] - -  A 100 5  AsVc M1 V     
 3023 Auawaw               C323444-A Ni Po                      {  0 } (731+1) [149B] - T  - 300 6  AsT6 M0 V     
 3024 Teaktiaryos          C88A788-9 Ri Wa                      {  1 } (A69+1) [485C] - R  - 400 4  AsVc K5 V M8 V

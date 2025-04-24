@@ -1,9 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
-<Sector Selected="true" Tags="InReview OTU" Abbreviation="Gate">
+<Sector Selected="true" Tags="Official OTU" Abbreviation="Gate">
   <Name>Gateway</Name>
   <Credits>
              &lt;b&gt;Gateway&lt;/b&gt; sector was designed by William H. Keith, Jr.
              and appears in &lt;cite&gt;The MegaTraveller Journal #4&lt;/cite&gt; (DGP, 1993).
+
+             It was revisited by Martin J. Dougherty and Hunter Gordon and appeared
+             in &lt;cite&gt;Gateway to Destiny&lt;/cite&gt; (QuikLink Interactive, 2006).
+             It was further revisited by Martin J. Doughherty in
+             &lt;cite&gt;The Trailing Frontier&lt;/cite&gt; (Mongoose Publishing, 2024).
+
     </Credits>
   <X>3</X>
   <Y>0</Y>

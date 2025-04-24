@@ -4,7 +4,7 @@
   <Credits />
   <X>-7</X>
   <Y>5</Y>
-  <DataFile Source="Solomani and Aslan" Milieu="M1105" Ref="https://travellermap.com/data/fahreahluis" />
+  <DataFile Author="Leigh Heron" Source="Solomani and Aslan" Milieu="M1105" Ref="https://travellermap.com/data/fahreahluis" />
   <Subsectors>
     <Subsector Index="A">Weoasoar</Subsector>
     <Subsector Index="B">Eaearleke</Subsector>

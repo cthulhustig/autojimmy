@@ -32,6 +32,7 @@
 # Subsector O: Imkhuruuka
 # Subsector P: Naakhulige
 
+# Alleg: Fi: "Federation of Ilelish"
 # Alleg: Wild: "Wilds"
 
 Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N    B Z PBG W  A    Stellar       
@@ -85,32 +86,32 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2710 Narkin               X555832-1 Pa Ph                { -2 } (A77-1) [8671] Bce  - - 304 12 Wild M3 V M4 V     
 2805 Lagi                 X436000-E Di                   { -1 } (F00+2) [0000] B    - - 004 12 Wild K9 V          
 2806 Tuzhiri              X422000-9 Di He Po             { -2 } (B00+2) [0000] B    - - 010 14 Wild K3 V          
-2807 Arthit's World       D657346-6 Ga Lo                { -3 } (520-4) [3138] B    - - 805 15 Wild K1 V M9 V     
-2808 Khiniel              B895337-B Lo                   { 1 }  (C21-4) [145E] B    - - 503 10 Wild M1 V M4 V     
-2810 Noldak               X869545-3 Ni Pr                { -3 } (740-1) [8211] Bc   - - 402 5  Wild K8 V          
+2807 Arthit's World       D657346-6 Ga Lo                { -3 } (520-4) [3138] B    - - 805 15 Fi   K1 V M9 V     
+2808 Khiniel              B895337-B Lo                   { 1 }  (C21-4) [145E] B    - - 503 10 Fi   M1 V M4 V     
+2810 Noldak               X869545-3 Ni Pr                { -3 } (740-1) [8211] Bc   - - 402 5  Fi   K8 V          
 2901 Fallion              X401000-C Di Ic Va             { -1 } (800-2) [0000] B    - - 001 10 Wild G1 V          
 2902 Joe's World          X681000-5 Di                   { -3 } (300+4) [0000] B    - - 012 11 Wild M1 V          
 2903 Serafim              X538000-A Di                   { -1 } (800+1) [0000] B    - - 013 12 Wild K5 V M9 V     
 2905 Amdarush             X531000-A Di Po                { -1 } (F00+1) [0000] B    - - 022 9  Wild M1 V          
-2906 Minor                CA696BD-9 Ni Ri                { 0 }  (C51-5) [661A] BC   - - 522 13 Wild K5 V          
-2908 Tlaq                 C54A346-7 Lo Wa                { -2 } (B20+4) [3135] B    - - 901 14 Wild K2 V          
-2910 Kosar                B765787-8 Ag Ri Ga             { 2 }  (D67+1) [7917] BC   - - 705 10 Wild M1 V M8 V     
+2906 Minor                CA696BD-9 Ni Ri                { 0 }  (C51-5) [661A] BC   - - 522 13 Fi   K5 V          
+2908 Tlaq                 C54A346-7 Lo Wa                { -2 } (B20+4) [3135] B    - - 901 14 Fi   K2 V          
+2910 Kosar                B765787-8 Ag Ri Ga             { 2 }  (D67+1) [7917] BC   - - 705 10 Fi   M1 V M8 V     
 3001 Kapakoo              C564312-9 Lo                   { -1 } (C20+2) [529A] B    - - 523 14 Wild M2 V          
-3006 Arkunen              E689347-7 Chir4 Lo             { -3 } (A20-1) [212C] B    - - 704 8  Wild M2 V M4 V     
-3007 Tier                 B000687-D As Va Na Ni          { 1 }  (E55+1) [672G] B    - - 303 8  Wild K9 V          
-3008 Dirakhasu            X200000-F Di Va                { -1 } (600+3) [0000] B    - - 003 10 Wild A3 V M6 V     
-3009 Pakraan              X654000-4 Di                   { -3 } (400+1) [0000] B    - - 013 8  Wild M2 V          
-3010 Arthit's World       D755420-7 Ga Ni Pa             { -3 } (630-3) [2127] Bc   - - 114 14 Wild M2 V          
+3006 Arkunen              E689347-7 Chir4 Lo             { -3 } (A20-1) [212C] B    - - 704 8  Fi   M2 V M4 V     
+3007 Tier                 B000687-D As Va Na Ni          { 1 }  (E55+1) [672G] B    - - 303 8  Fi   K9 V          
+3008 Dirakhasu            X200000-F Di Va                { -1 } (600+3) [0000] B    - - 003 10 Fi   A3 V M6 V     
+3009 Pakraan              X654000-4 Di                   { -3 } (400+1) [0000] B    - - 013 8  Fi   M2 V          
+3010 Arthit's World       D755420-7 Ga Ni Pa             { -3 } (630-3) [2127] Bc   - - 114 14 Fi   M2 V          
 3101 Lekhana              D556000-3 Di                   { -3 } (900-3) [0000] B    - - 002 8  Wild M2 V          
 3102 Meesis               X635000-8 Di                   { -3 } (D00+3) [0000] B    - - 013 14 Wild M0 V          
 3106 Stipa                D89A000-7 Di Wa                { -3 } (600-4) [0000] B    - - 024 11 Wild M1 V M3 V     
-3108 Metting              X749000-6 Di                   { -3 } (900+4) [0000] B    - - 003 11 Wild K1 V          
-3109 Punlamaasin          X310000-A Di                   { -1 } (A00+1) [0000] B    - - 005 10 Wild M1 V M7 V     
+3108 Metting              X749000-6 Di                   { -3 } (900+4) [0000] B    - - 003 11 Fi   K1 V          
+3109 Punlamaasin          X310000-A Di                   { -1 } (A00+1) [0000] B    - - 005 10 Fi   M1 V M7 V     
 3202 Kutubba              B56369A-A Ni Ri                { 2 }  (D58+2) [685F] BC   - - 413 14 Wild K5 V M1 V     
 3205 Khinbalii            X540413-1 De He Ni Po          { -3 } (631-1) [8181] B    - - 423 8  Wild K0 V          
-3206 Kismayu              B582321-B Lo                   { 1 }  (F21+1) [148C] B    - - 924 9  Wild M2 V          
-3207 Diredawa             X433000-D Di Po                { -1 } (600+3) [0000] B    - - 000 13 Wild M0 V M1 V     
-3210 Inkha                A576787-C Ag Pi                { 3 }  (H6A-2) [7A3C] BCD  - - 924 9  Wild K3 V M6 V M5 V
+3206 Kismayu              B582321-B Lo                   { 1 }  (F21+1) [148C] B    - - 924 9  Fi   M2 V          
+3207 Diredawa             X433000-D Di Po                { -1 } (600+3) [0000] B    - - 000 13 Fi   M0 V M1 V     
+3210 Inkha                A576787-C Ag Pi                { 3 }  (H6A-2) [7A3C] BCD  - - 924 9  Fi   K3 V M6 V M5 V
 0418 Attus                E549000-5 Di                   { -3 } (600+1) [0000] B    - - 002 10 Wild K8 V M6 V     
 0517 Assena               C541873-8 He Ph Pi Po          { -1 } (D79-2) [9757] BDe  - - 503 11 Wild M2 V M9 V     
 0520 Tremfara             C9A8500-B Fl Ni                { 0 }  (D44+1) [454E] B    - - 220 8  Wild K2 V          
@@ -179,7 +180,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3113 Ellas                X876000-4 Di                   { -3 } (500+1) [0000] B    - - 000 7  Wild K4 V M6 V     
 3114 Ramana               X310000-A Di                   { -1 } (A00-2) [0000] B    - - 004 10 Wild M8 III        
 3116 Okhirbat             X565455-4 Ni Pa                { -3 } (630+1) [8121] Bc   - - 100 13 Wild M1 V          
-3213 Sirarog              B748578-D Ag Ni                { 2 }  (A44+2) [673D] BC   - - 703 9  Wild M2 V M7 V     
+3213 Sirarog              B748578-D Ag Ni                { 2 }  (A44+2) [673D] BC   - - 703 9  Fi   M2 V M7 V     
 3214 Makilala             E69A000-7 Di Wa                { -3 } (700-1) [0000] B    - - 002 11 Wild M3 V M4 V     
 3220 Naktong              X642000-4 Di He Po             { -3 } (500-2) [0000] B    - - 005 8  Wild K9 V M3 V     
 0526 Durko                B561545-B Ni Pr                { 1 }  (B47+2) [46AB] Bc   - - 203 14 Wild M2 V M5 V     

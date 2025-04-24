@@ -32,339 +32,333 @@
 # Subsector O: Uekhourg
 # Subsector P: Daekvagul
 
-# Alleg: NaVa: "Non-Aligned, Vargr-dominated"
-# Alleg: Va: "Soukazog"
-# Alleg: Vb: "Aeraeghegaa"
-# Alleg: Vc: "Galloua"
-# Alleg: Vd: "Dzouga"
-# Alleg: Ve: "Songell"
-# Alleg: Vf: "Vakh"
+# Alleg: Wild: "Wilds"
 
 Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N    B Z PBG W  A    Stellar     
 ---- -------------------- --------- -------------------- ------ ------- ------ ---- - - --- -- ---- ------------
-0101 Ngulruedukh          C8A168A-8 Fl He Ni             { -2 } (A53-1) [9446] B    - - 612 13 Vc   M1 III M2 V 
-0102 Gzaerzserorgh        B69A788-A Pi Wa                { 2 }  (76C-1) [895C] BD   - - 501 10 Vc   G9 V D      
-0103 Thurraekh            C8A1400-B Fl He Ni             { 0 }  (C34+4) [144G] B    - - 403 9  Vd   M3 V        
-0107 Kuerrgoeng           A788B97-G Hi                   { 4 }  (DAC+3) [9F7G] BEf  - - 114 13 NaVa F5 V        
-0108 Gaeksuergh           C561434-8 Ni                   { -2 } (C30-4) [5219] B    - - 722 13 NaVa G4 V M3 V   
-0109 Adzoeknogh           B424355-B Lo                   { 1 }  (721+2) [1459] B    - - 803 11 NaVa M2 V M5 V   
-0110 Ang Aeth             A544644-B Ag Ni                { 2 }  (C56+1) [483C] BC   - - 925 12 NaVa F1 V D      
-0203 Aellorr              A756976-D Ga Hi                { 3 }  (H8B+2) [6C3B] BE   - - 415 10 NaVa G7 V D      
-0204 Kunag                A300888-E Na Pi Ph Va          { 2 }  (C79+1) [6A2G] BDe  - - 912 12 NaVa M0 V        
-0205 Kota                 A100110-C Lo Va                { 1 }  (D01-1) [125D] B    - - 111 6  NaVa M1 V M8 V   
-0210 Ath Aghe             A685110-D Ga Lo                { 1 }  (E01-2) [227E] B    - - 624 17 NaVa F8 V        
-0302 Ae Uer               E787674-6 Ag Ri Ga Ni          { -1 } (750+2) [3554] BC   - - 913 11 Vc   G1 V        
-0303 Vaggvuek             E535AAA-A Hi                   { 1 }  (69C+2) [BB7D] BE   - - 502 13 Vc   G8 IV       
-0304 Kath                 D310999-9 Hi Na In             { 1 }  (D89+1) [7A1A] BE   - - 604 13 Vc   M1 V        
-0305 Taktelugh            C558434-8 Ni Pa                { -2 } (C31-2) [6299] Bc   - - 922 14 Ve   G7 V        
-0306 Sa Thaen             B68A621-B Ni Ri Wa             { 2 }  (B53-3) [881B] BC   - - 313 14 Ve   K0 V M1 V   
-0308 Llaes                E764320-5 Lo                   { -3 } (920-4) [6123] B    - - 604 12 NaVa G5 V M0 V   
-0309 Oghzourr             C515410-9 Ic Ni                { -1 } (B32-1) [834B] B    - - 924 16 NaVa F9 V        
-0401 Urr Orr              E558437-7 Ni Pa                { -3 } (630+2) [4147] Bc   - - 924 13 Vc   G9 V D      
-0402 Ardhaer              A43399A-G Hi Na Po             { 4 }  (A89-1) [7D4G] BEf  - - 513 16 Vc   K2 V K7 V   
-0403 Klur                 E310301-9 Lo                   { -2 } (F20+3) [116A] B    - - 324 12 Vc   F4 V M4 V   
-0406 Ouskathoerz          C558302-A Lo                   { 0 }  (C20-1) [337B] B    - - 222 9  Ve   K0 V K2 V   
-0409 Ranghou              A544520-B Ag Ni                { 2 }  (946+4) [472D] BC   - - 920 12 NaVa F8 V D      
-0410 Founeghen            C5816A9-7 Ni Ri                { -1 } (A50+1) [5527] BC   - - 204 15 NaVa F3 V        
-0502 To Oukan             C64257A-9 He Ni Po             { -1 } (E44+1) [6427] B    - - 514 16 Vc   G9 V        
-0507 Nurugholi            B634889-B Ph                   { 2 }  (C79-3) [7A4D] Be   - - 322 16 Vc   K9 V        
-0508 Zekhghe              D779777-6 Pi                   { -2 } (566+1) [6573] BD   - - 815 14 Vc   G5 V        
-0603 Vo Dikh              D544879-5 Pa Pi Ph             { -2 } (773+2) [8644] BcDe - - 622 13 Vc   K3 V        
-0604 Llaegharrgh          E666205-7 Ga Lo                { -3 } (B10+1) [3147] B    - - 224 18 Vc   G2 V        
-0606 Ung Uksa             D686348-7 Ga Lo                { -3 } (A20-5) [1198] B    - - 323 14 Vc   G1 IV M8 V  
-0608 Khid                 A310123-F Lo                   { 1 }  (901+1) [129G] B    - - 914 13 Vc   K8 V D      
-0701 Urerknun             A95A9DD-E Hi Wa                { 3 }  (989+3) [AC4D] BE   - - 803 9  Vc   F0 IV F5 V  
-0702 Okhoe                C524677-9 Ni Px                { -1 } (E50-3) [952C] B    - - 724 13 Vc   M3 V D      
-0704 Faarzgaen            D000000-E As Va Di             { -1 } (G00+1) [0000] B    - - 014 16 Vc   M0 V M0 V   
-0705 Vo Oeg               A664645-9 Ag Ri Ni             { 2 }  (G54-1) [A886] BC   - - 304 12 Vc   F0 V F2 V   
-0706 Inggvuenloek         C648510-6 Ag Ni                { -1 } (841+1) [64A5] BC   - - 234 14 Vc   G6 V        
-0707 Vrraknog             E678000-2 Di                   { -3 } (B00+1) [0000] B    - - 004 14 Vc   K9 V        
-0709 Ngekhong             C7A4330-8 Fl Lo                { -2 } (B20+1) [1179] B    - - 823 8  NaVa M2 V M4 V   
-0710 Errokdzor            C539143-B Lo                   { 0 }  (800-3) [115C] B    - - 904 10 NaVa M9 II       
-0801 Vungeketh            B7597A8-A                      { 2 }  (C68+1) [894A] B    - - 903 11 Vc   K4 V        
-0805 Tughghorr            C556688-5 Ag Ni                { -1 } (C52-2) [5574] BC   - - 323 15 Vc   K9 V M0 V   
-0809 Rothksigho           C88A654-9 Ni Ri Wa             { 0 }  (955-2) [4618] BC   - - 501 9  NaVa F6 V        
-0810 Alloghz              B9C6798-C Fl                   { 2 }  (A66+3) [593H] B    - - 312 9  NaVa F4 IV F8 V D
-0901 Aktsthungso          C88A523-B Ni Pr Wa             { 0 }  (D42+4) [356E] Bc   - - 422 14 Vc   G3 V D      
-0903 Ghaez-Larrgh         C584774-6 Ag Ri                { 1 }  (868+4) [4816] BC   - - 704 9  Vc   F9 V        
-0904 Aedzuedza            E424730-6 Pi                   { -2 } (569+1) [6529] BD   - - 323 13 Vf   M0 V M7 V   
-0906 Doughaerr            DAA9233-8 Fl Lo                { -3 } (B10+1) [3167] B    - - 922 8  Vc   F9 V        
-0908 Kuzllonge            A546300-E Lo                   { 1 }  (A21+1) [148D] B    - - 204 12 NaVa G6 IV M6 V D
-1002 Kugh                 B000575-C As Va Ni             { 1 }  (C43+2) [462D] B    - - 122 12 Vf   A2 V G8 V   
-1003 Aelues               C553410-9 Ni Po                { -1 } (F35+3) [2369] B    - - 922 12 Vf   G4 V        
-1008 Vuegva               E556000-8 Di                   { -3 } (900+2) [0000] B    - - 003 10 NaVa M1 III      
-1009 Viksougu             D547300-5 Lo                   { -3 } (320+4) [4161] B    - - 114 12 NaVa M3 V        
-1103 Edhsaza              B787433-A Ga Ni Pa             { 1 }  (937+1) [3539] Bc   - - 413 16 NaVa G9 V        
-1106 Aekaedho             A997234-C Lo                   { 1 }  (E11+3) [138G] B    - - 403 10 NaVa K4 V D      
-1108 Eg Orrou             E500200-5 Lo Va                { -3 } (510-1) [4144] B    - - 903 12 NaVa M2 V        
-1110 Aersathun            B54347B-A Ni Po                { 1 }  (B37+2) [354F] B    - - 401 12 NaVa K6 V K9 V   
-1201 Adhkfurral           CAD4444-8 Ni                   { -2 } (533+2) [626C] B    - - 201 5  NaVa M2 V        
-1204 Kerro                A000100-F As Va Lo             { 1 }  (E01+3) [123B] B    - - 513 11 NaVa M3 V        
-1205 Un Gzang             C9B8454-9 Fl Ni                { -1 } (833+1) [8385] B    - - 603 7  NaVa F8 IV F0 V  
-1208 Sondhuen             C794576-9 Ag Ni                { 0 }  (F45+2) [357E] BC   - - 334 11 NaVa F7 V        
-1209 Daethrrorrg          A573833-B Ph Pi                { 2 }  (976+1) [7A6A] BDe  - - 102 9  NaVa G8 V        
-1301 Guekouzaeks          E572759-6 He Pi                { -2 } (469+1) [7578] BD   - - 501 10 NaVa F6 V        
-1302 Llonknarrluts        A550750-D De Po                { 2 }  (76C+1) [696J] B    - - 301 10 NaVa F0 V F6 V   
-1304 Knak                 C30049A-8 Ni Va                { -2 } (G33+2) [3253] B    - - 614 15 NaVa A5 IV G4 V  
-1306 Gaengael             C544503-A Ag Ni                { 1 }  (G44+1) [268B] BC   - - 733 15 NaVa F7 V M2 V   
-1403 Farrurgneng          A544423-D Ni Pa                { 1 }  (F35-2) [158G] Bc   - - 925 16 NaVa G7 V        
-1404 Uengngil             D575000-1 Di                   { -3 } (600-3) [0000] B    - - 003 7  NaVa G4 V        
-1405 Ksarthangtsout       B78A457-B Ni Wa                { 1 }  (A33+1) [854A] B    - - 104 16 NaVa F6 V        
-1410 Kathae               A421833-B He Na Pi Po Ph       { 2 }  (775-3) [4A47] BDe  - - 722 11 NaVa M0 V M5 V   
-1505 Vorvoun              B77868C-A Ag Ni                { 2 }  (E54-1) [9898] BC   - - 703 9  NaVa G0 V        
-1507 Oungrroll            D8A4536-7 Fl Ni Px             { -3 } (740-3) [4244] B    - - 811 8  NaVa M2 V D      
-1509 Dhoradhue            X576573-2 Ag Ni                { -2 } (742-2) [1342] BC   - - 704 11 NaVa F1 V D      
-1601 Zaeghaego            B753323-A Lo Po                { 1 }  (C21+1) [447A] B    - - 303 9  NaVa G5 V        
-1602 Dhurrg               C863533-8 Ni Pr                { -2 } (C43-1) [9334] Bc   - - 803 11 NaVa F6 V        
-1605 Kaengku              C568699-8 Ag Ri Ni             { 0 }  (C55-2) [8646] BC   - - 503 15 NaVa F2 V M3 V   
-1608 Dholgva              B570357-9 De He Lo             { 0 }  (720-4) [3359] B    - - 103 8  NaVa F3 V F6 V   
-1701 Dhuellzugza          C755212-9 Ga Lo                { -1 } (A10-5) [1169] B    - - 621 8  NaVa G8 V        
-1703 Odhrrigh             C7B2200-B Fl He Lo             { 0 }  (A10-1) [1258] B    - - 622 14 NaVa M0 V        
-1706 Anur                 B594110-6 Lo                   { -1 } (B00+3) [4143] B    - - 613 12 NaVa M4 III M0 V 
-1707 Hoenguel             C671378-9 He Lo                { -1 } (B20+1) [2249] B    - - 122 15 NaVa K2 V        
-1708 Tsueghogrugllo       B996377-9 Lo                   { 0 }  (A20-2) [638E] B    - - 403 6  NaVa F9 V        
-1709 Gzoerghaen           C594524-9 Ag Ni                { 0 }  (E43-1) [9538] BC   - - 724 11 NaVa K3 V K9 V   
-1802 Oegninong            C4256AC-6 Ni                   { -2 } (B54-1) [3446] B    - - 101 6  NaVa M2 V        
-1804 Kfaege               A202543-D Ic Va Ni             { 1 }  (A46+1) [661E] B    - - 111 7  NaVa M2 V        
-1805 Grnouf               B869547-B Ni Pr                { 1 }  (C43-1) [564B] Bc   - - 802 9  NaVa K0 V D      
-1806 Sastsuks             C544632-8 Ag Ni                { -1 } (D53-1) [6544] BC   - - 722 13 NaVa F4 V        
-1810 Udhagaksuen          A545ADA-H Hi In                { 5 }  (99E-1) [AF8F] BEf  - - 804 11 NaVa F6 IV       
-1904 Kfakfug              D200544-7 Ni Va                { -3 } (A41-1) [A2A6] B    - - 911 6  NaVa M0 V        
-1905 Kfeks                A100520-F Ni Va                { 1 }  (F47-1) [367F] B    - - 325 14 NaVa G9 V        
-1906 Gnerr                C7558CG-7 Ga Pa Ph             { -1 } (874+1) [8717] Bce  - - 414 17 NaVa K9 V D      
-1907 Ueksouk              B7C28B6-A Fl He Ph             { 2 }  (D7B+4) [7A9D] Be   - - 902 5  NaVa F2 V        
-1909 Uengoz               C556547-9 Ag Ni                { 0 }  (C43-2) [5579] BC   - - 904 12 NaVa F1 V D      
-2001 Zargvaetsr           C76AAC8-C Hi Wa                { 2 }  (C99-1) [9C3F] BE   - - 712 10 NaVa G7 V        
-2004 Kfaengzuen           B312243-C Ic Lo                { 1 }  (B11-2) [1359] B    - - 113 15 NaVa M1 V        
-2005 Otsaerghuerr         A88A446-E Ni Wa                { 1 }  (A33+1) [553C] B    - - 803 8  NaVa G9 IV       
-2006 Voukifaerrg          E533789-7 Na Po                { -2 } (964-1) [A567] B    - - 105 18 NaVa F1 V        
-2101 Aertsvad             B59487A-9 Pa Pi Ph             { 1 }  (E78+1) [793C] BcDe - - 905 15 NaVa K1 V K6 V   
-2102 Oeghzvar             A586500-E Ag Pr Ni             { 2 }  (E44-3) [97AE] BcC  - - 704 14 NaVa G4 V        
-2107 Kfasaegerr           C423536-8 Ni Px Po             { -2 } (E40-2) [5337] B    - - 812 11 NaVa F3 V M3 V   
-2108 Egzan                C558516-7 Ag Ni                { -1 } (B42-2) [9445] BC   - - 302 11 NaVa G6 V        
-2109 Uengva               E581477-6 Ni                   { -3 } (731-2) [6183] B    - - 602 8  NaVa F1 V        
-2206 Daekhs               C7A1887-8 Fl He Ph             { -1 } (A7B-5) [477A] Be   - - 213 13 NaVa M2 V        
-2208 Saellok              C597248-8 Lo                   { -2 } (E10+1) [2135] B    - - 104 12 NaVa M0 V        
-2301 Zhorurn              A8849BE-E Hi Pr                { 3 }  (D8E-2) [8C5C] BcE  - - 613 12 NaVa F9 V        
-2302 Fraets-Vog           A685879-C Ga Pa Ri Ph          { 3 }  (C7A-2) [6B6A] BcCe - - 503 9  NaVa K1 V        
-2305 Arrunoer             A596751-D Ag Pi                { 3 }  (D6A+1) [7A7J] BCD  - - 404 11 NaVa F8 V F8 V   
-2306 Geksoen              A55647B-D Ni Pa                { 1 }  (832-3) [754G] Bc   - - 500 11 NaVa G0 V        
-2308 Vaesan               E5A15AD-5 Fl He Ni             { -3 } (643-5) [8275] B    - - 903 13 NaVa M1 V        
-2310 Koeldoun             C400543-A Ni Va                { 0 }  (C42+1) [2557] B    - - 903 15 NaVa K0 V        
-2401 Firgvaar             B667120-B Ga Lo                { 1 }  (G01+4) [1229] B    - - 914 13 NaVa G0 V        
-2402 Lair                 D885799-6 Ag Ri Ga [rgr]       { 0 }  (B65+4) [9746] BC   - - 613 12 NaVa G5 V        
-2405 Foukakh              D555000-5 Di                   { -3 } (900+1) [0000] B    - - 004 14 NaVa K3 V K8 V   
-2410 Uk Olou              B884655-B Ag Ri Ni             { 3 }  (A56+5) [897A] BC   - - 811 10 NaVa G4 V        
-2501 Khvhaergvaetso       A546523-D Ag Ni                { 2 }  (D43-3) [574F] BC   - - 104 13 NaVa G8 V        
-2509 Ugouksnge            C645420-8 Ni Pa                { -2 } (B30-2) [6215] Bc   - - 713 13 NaVa M5 III M1 V 
-2603 Okhdzueg             C886899-8 Ga Pa Ri Ph          { 0 }  (E76-2) [585A] BcCe - - 415 17 NaVa G1 V G4 V D 
-2604 Tsaegag              A556549-D Ag Ni                { 2 }  (F47-2) [272F] BC   - - 614 12 NaVa K2 V K7 V   
-2706 Oekh Dal             B573550-C Ni                   { 1 }  (F46+1) [764E] B    - - 722 8  NaVa F6 V D      
-2810 Gvoghaellthoe        C434431-9 Ni                   { -1 } (933+4) [9349] B    - - 802 13 NaVa M3 V        
-2903 Kugk                 C200ABC-B Hi Na In Va          { 3 }  (59A-1) [7D7F] BE   - - 202 9  NaVa M2 V        
-3003 Khok Ae              B203221-B Ic Va Lo             { 1 }  (B11+3) [635F] B    - - 422 15 NaVa M1 V M7 V   
-3101 Larrothaegan         A557434-C Ni Pa                { 1 }  (832+2) [757G] Bc   - - 403 10 NaVa F5 V        
-3108 Uedh Kal             C310556-C Ni                   { 0 }  (941+5) [855D] B    - - 904 11 NaVa M2 V D      
-3201 Gzorrksaerr          D788000-1 Di                   { -3 } (900-2) [0000] B    - - 014 9  NaVa G6 V        
-0112 Dhotsaeng            C577677-8 Ag Ni                { -1 } (751-1) [655B] BC   - - 903 12 NaVa F9 V        
-0115 Koudhgzaen           A563859-B Ph Ri                { 3 }  (E7D+1) [7B2D] BCe  - - 612 12 NaVa A5 V        
-0119 Nogh                 D566410-7 Ni Pa                { -3 } (831-1) [3184] Bc   - - 405 11 NaVa K3 V K6 V   
-0120 Zadz                 B88A585-B Ni Pr Wa             { 1 }  (C45+1) [667E] Bc   - - 705 8  NaVa G2 V D      
-0212 Ghoghzsorgh          C635798-9                      { 0 }  (763+3) [8775] B    - - 104 12 NaVa M0 V        
-0216 Rataetaenrar         C548AAA-A Hi In                { 3 }  (A9A+4) [7D77] BE   - - 805 11 NaVa M0 V        
-0219 Oughdzak             B7A6445-9 Fl Ni                { 0 }  (C31+2) [642A] B    - - 225 13 NaVa M1 V M7 V   
-0314 Dorrar               B573257-8 Lo                   { -1 } (F10+1) [413C] B    - - 213 13 NaVa G0 V        
-0414 Oeksaegh             B612558-D Ic Ni                { 1 }  (744+3) [763C] B    - - 304 12 NaVa M2 V        
-0415 Anghikh              A556444-B Ni Pa                { 1 }  (G37+3) [754B] Bc   - - 604 9  NaVa K5 V        
-0416 Uedzaell             B540325-B De He Lo Po          { 1 }  (B21+1) [144E] B    - - 202 10 NaVa F5 V        
-0418 Khaghdaeksong        D674642-6 Ag Ni                { -2 } (853-2) [4454] BC   - - 703 14 NaVa M3 V M8 V   
-0419 Ughfangkhoeg         E594576-5 Ag Ni                { -2 } (443-3) [3388] BC   - - 323 15 NaVa A7 IV G7 V  
-0516 Oeghzdharok          B979579-B Ni                   { 1 }  (945+4) [868A] B    - - 404 10 NaVa K0 V        
-0612 Aengour              C31245A-A Ic Ni                { 0 }  (F36-4) [2427] B    - - 422 11 NaVa M1 V M5 V   
-0614 Ksungkath            B581141-B Lo                   { 1 }  (B01+5) [122D] B    - - 903 11 NaVa F1 V        
-0618 Llorz                E877579-5 Ag Ni                { -2 } (644+1) [9372] BC   - - 501 8  NaVa G0 V M8 V   
-0712 Okhuers              C626341-8 Lo                   { -2 } (620+3) [6179] B    - - 603 8  NaVa M2 V D      
-0718 Dhaen                A578474-D Ni Pa                { 1 }  (D35-2) [456D] Bc   - - 505 11 NaVa F8 IV       
-0815 Zeng                 D64A8A9-4 Ph Pi Wa             { -2 } (975+3) [9638] BDe  - - 704 12 NaVa G3 V        
-0820 Dhaen                B542445-B He Ni Po             { 1 }  (F35+2) [352B] B    - - 304 15 NaVa F8 V        
-0911 Ozkhakhstoul         EA6A677-6 Ni Oc Ri             { -2 } (850-2) [3433] BC   - - 804 10 NaVa G5 V        
-0912 Ozkhakh              D546743-6 Ag Pi                { -1 } (966-1) [6656] BCD  - - 215 15 NaVa F0 V D      
-0913 Anngang              D687000-5 Di Ga                { -3 } (B00+2) [0000] B    - - 012 11 NaVa G3 V        
-0915 Athoekhuerrg         E527452-9 Ni                   { -2 } (832+3) [2275] B    - - 604 9  NaVa M0 V        
-0916 Gaentsiroell         B99988B-A Ph Pi                { 2 }  (A77+1) [6AAC] BDe  - - 322 10 NaVa K5 V        
-0920 Aeraerir             C68367A-8 Ni Ri                { -1 } (B53+2) [456B] BC   - - 802 10 NaVa F2 V        
-1012 Thursou              A5A2737-A Fl He                { 2 }  (C6D+3) [697D] B    - - 501 7  NaVa K4 V        
-1013 Llurang              A988356-A Lo                   { 1 }  (821+1) [349D] B    - - 402 6  NaVa K4 V        
-1020 Ghakong              CA97ABB-C Hi In                { 3 }  (A9D-2) [AD5C] BE   - - 113 8  NaVa G6 V        
-1111 Ouksdzaenouk         E555321-4 Lo                   { -3 } (B20+4) [1153] B    - - 804 12 NaVa F9 V        
-1112 Khoengaen            C571574-9 He Ni                { -1 } (D42-1) [642C] B    - - 924 15 NaVa F4 V        
-1113 Aegh Rong            B674202-C Lo                   { 1 }  (E11+1) [138B] B    - - 324 14 NaVa K9 V        
-1115 Oesaevang            C99A453-8 Ni Wa                { -2 } (B31-1) [223D] B    - - 623 13 NaVa F5 V        
-1117 Koenalor             D864658-5 Ag Ri Ni             { -1 } (955-3) [8567] BC   - - 302 13 NaVa G2 IV       
-1214 Kaegrogz             E310400-8 Ni                   { -3 } (E30-3) [219D] B    - - 803 12 NaVa M1 V        
-1217 Lloedh               C97A300-9 Lo Wa                { -1 } (C20+2) [125B] B    - - 224 16 NaVa G9 V M1 V   
-1314 Gvighue              C8A5575-7 Fl Ni                { -2 } (B40-1) [3398] B    - - 424 14 NaVa M2 V D      
-1316 Igzinghuell          B573757-5 Pi                   { 0 }  (B64-1) [7794] BD   - - 313 7  NaVa F4 V M7 V D 
-1317 Vifueks              C786785-7 Ag Ri Ga             { 1 }  (767+1) [6885] BC   - - 101 6  NaVa F8 III D    
-1413 Ueng Fak             E551122-6 Lo Po                { -3 } (600+1) [1165] B    - - 401 9  NaVa F3 V D      
-1419 Uerelodza            A583788-C Ri                   { 3 }  (B67-3) [7A39] BC   - - 913 12 NaVa M6 III      
-1613 Foungdaeghz          X54797A-4 Hi In                { 0 }  (78B+1) [5953] BE   - - 503 14 NaVa A4 V K5 V D 
-1711 Koudzhsakhgo         A64878A-B Ag Pi                { 3 }  (C66+2) [5A3A] BCD  - - 204 14 NaVa F0 V D      
-1712 Aeghvoekogz          D564000-1 Di                   { -3 } (A00-1) [0000] B    - - 021 10 NaVa G3 V D      
-1920 Ongrro               A787120-C Ga Lo                { 1 }  (B01+1) [5259] B    - - 803 11 NaVa F4 IV       
-2116 Togikhtsurzall       A645554-E Ag Ni                { 2 }  (A47-4) [674K] BC   - - 812 7  NaVa K3 V D      
-2211 Kfaenggzon           A430555-D De Ni Po             { 1 }  (C47+1) [865H] B    - - 505 11 NaVa M3 V        
-2220 Gegllurirse          D586100-8 Lo                   { -3 } (C00-2) [1186] B    - - 413 10 Vb   G3 V D      
-2319 Farr                 D798535-7 Ag Ni                { -2 } (944-2) [9366] BC   - - 113 16 Vb   K7 V        
-2611 Laeghkag             B997787-6 Ag Pi                { 1 }  (B66+5) [B812] BCD  - - 703 11 NaVa F1 V        
-2920 Naeztir              B7857BA-A Ag Ri Ga             { 4 }  (86C-2) [7B79] BCf  - - 802 8  Va   F0 V        
-0127 Thagaers             A553325-D Lo Po                { 1 }  (F21+3) [144E] B    - - 423 13 NaVa M2 V        
-0130 Ghourknodz           D79A000-0 Ba Wa                { -3 } (600+3) [0000] B    - - 001 9  NaVa G7 V        
-0222 Llaedkher            D546795-3 Ag Pi                { -1 } (563+4) [3647] BCD  - - 115 15 NaVa G7 V        
-0225 Dzarrvaer            E766479-5 Ga Ni Pa             { -3 } (C33-3) [6132] Bc   - - 603 11 NaVa G4 IV       
-0227 Ghourrgadz           D556400-8 Ni Pa                { -3 } (D31+1) [917B] Bc   - - 703 16 NaVa F9 V        
-0230 Oetsorkeda           D9B7686-7 Fl Ni                { -3 } (551-3) [4319] B    - - 614 15 NaVa K3 V        
-0321 Rrukagae             E52968B-7 Ni                   { -3 } (450-5) [7348] B    - - 914 10 NaVa M2 V M4 V   
-0325 Oth Uegaen           C688674-7 Ag Ri Ni             { 0 }  (756+1) [5645] BC   - - 113 9  NaVa G0 V M6 V   
-0328 Ughtuerz             E759534-8 Ni                   { -3 } (440-2) [127A] B    - - 901 7  NaVa F8 V        
-0329 Gvousaegh            BA98114-8 Lo                   { -1 } (A00-4) [215B] B    - - 623 16 NaVa K8 V        
-0421 Knunguegaegn         B5448CF-8 Pa Pi Ph             { 0 }  (C73-4) [886A] BcDe - - 101 11 NaVa F8 V D      
-0422 Knokseng             D785577-6 Ag Pr Ga Ni          { -2 } (B40+2) [9337] BcC  - - 302 6  NaVa K2 V D      
-0423 Lugh                 AA8A483-C Ni Oc                { 1 }  (935+2) [856H] B    - - 612 11 NaVa G4 V        
-0427 Turz                 B544659-B Ag Ni                { 2 }  (E54-3) [3878] BC   - - 123 17 NaVa G1 V        
-0428 Tuerrg               A575530-B Ag Ni                { 2 }  (H48+1) [275C] BC   - - 114 17 NaVa K8 V D      
-0430 Aezorr               C554359-8 Lo                   { -2 } (E20+1) [315A] B    - - 512 12 NaVa M2 V        
-0523 Anakae               E66A875-7 Ph Ri Wa             { -1 } (773+1) [A742] BCe  - - 625 17 NaVa A6 V        
-0526 Oksruenvae           B654556-A Ag Ni                { 2 }  (A45+1) [875D] BC   - - 104 10 NaVa A9 IV       
-0527 Gnerang              C897838-6 Pa Pi Ph             { -1 } (B7A-2) [6733] BcDe - - 102 8  NaVa K3 V        
-0624 Thezroendzang        B544222-7 Lo                   { -1 } (810+1) [3164] B    - - 614 14 NaVa F9 V        
-0627 Kas                  C000446-A As Va Ni             { 0 }  (A36+1) [6458] B    - - 214 13 NaVa F6 V D      
-0628 Ungokhton            C571585-6 He Ni                { -2 } (844-1) [535A] B    - - 400 8  NaVa K3 III M4 V 
-0629 Kvae                 B100459-C Ni Va                { 1 }  (735+1) [5559] B    - - 604 8  NaVa M1 V        
-0723 Fakor                D565543-7 Ag Pr Ni             { -2 } (943+2) [1367] BcC  - - 201 9  NaVa F6 V        
-0728 Darz                 C654204-9 Lo                   { -1 } (F10+1) [3158] B    - - 622 13 NaVa K6 V D      
-0729 Rruefaez             A75A545-B Ni Wa                { 1 }  (545+1) [665C] B    - - 702 8  NaVa G1 V        
-0822 Khsa                 C421A84-D He Hi Na In Po       { 3 }  (F96+3) [BD4C] BE   - - 104 11 NaVa M1 V        
-0823 Kouk                 A31058C-B Ni                   { 1 }  (A47+3) [765E] B    - - 212 14 NaVa M1 V        
-0826 Knoekhs              D424520-5 Ni                   { -3 } (440+1) [5299] B    - - 304 13 NaVa M3 V        
-0828 Aruekhoe             C676432-8 Ni Pa                { -2 } (C31+1) [4237] Bc   - - 803 11 NaVa G0 V        
-0829 Dhoenggo             D678000-3 Di                   { -3 } (A00-4) [0000] B    - - 004 13 Va   F7 V F7 V   
-0830 Kvoen                D311000-C Di Ic                { -1 } (500-2) [0000] B    - - 011 7  Va   M0 V M6 V   
-0921 Ous Foroe            B88A322-D Lo Wa                { 1 }  (721-1) [4418] B    - - 401 11 NaVa K7 V K9 V   
-0923 Kaegh                A100989-D Hi Na In Va          { 4 }  (F8A-3) [ED9C] BEf  - - 313 10 NaVa F2 V        
-0924 Ukhsarsoeghe         BA6A574-D Ni Oc Pr             { 1 }  (E45+1) [161E] Bc   - - 923 16 NaVa F9 IV       
-0926 Oengdaksuvue         E739452-6 Ni                   { -3 } (631+2) [7135] B    - - 824 15 NaVa F5 V        
-1028 Tuegu                B56389B-6 Ph Ri                { 1 }  (C74+4) [7997] BCe  - - 804 12 Va   K5 V D      
-1122 Okhaeg               C4337B8-A Na Po                { 1 }  (76B+2) [78AA] B    - - 702 8  Va   M1 V        
-1126 Fueghz               D422653-6 He Na Po Ni          { -3 } (350+2) [3351] B    - - 511 11 NaVa M2 V        
-1224 Nokoegz              X569344-0 Lo                   { -3 } (B20-3) [4171] B    - - 603 12 Va   F2 V        
-1226 Llokhaegueg          B676AFG-E Hi In                { 4 }  (C9B+1) [CE4G] BEf  - - 304 15 Va   F8 IV       
-1227 Angaergh             B889334-C Lo                   { 1 }  (A21-1) [442B] B    - - 201 11 Va   G6 V D      
-1229 Okfuegh              E7B4643-3 Fl Ni                { -3 } (553-1) [6355] B    - - 614 12 Va   M1 V        
-1322 Kuz                  D000341-A As Va Lo             { -1 } (A20+1) [327B] B    - - 811 15 Va   M0 V M7 V   
-1328 Aenkuk               A674376-B Lo                   { 1 }  (G21+1) [4439] B    - - 813 12 NaVa G2 V        
-1421 Suerz                B648431-A Ni Pa                { 1 }  (B36+1) [1597] Bc   - - 124 13 NaVa K6 V        
-1422 Killagthoghz         E304446-8 Ic Va Ni             { -3 } (D31+4) [4154] B    - - 704 10 Va   M1 V        
-1424 Nurrok               C551226-7 Lo Po                { -2 } (610-3) [112A] B    - - 114 9  Va   F6 V        
-1427 Klag                 B430578-B De Ni Po             { 1 }  (A44+1) [668A] B    - - 913 10 Va   M2 V M4 V   
-1428 Agkuz                A43067B-C De Na Po Ni          { 1 }  (A53-1) [974E] B    - - 313 15 Va   M3 V        
-1522 Foedargh             E873479-0 Ni                   { -3 } (B30+1) [4111] B    - - 805 15 Va   M4 II       
-1525 Ezksog               X549226-3 Lo                   { -3 } (710+1) [1191] B    - - 623 9  Va   K3 V K4 V   
-1527 Uznukhozots          B79657B-B Ag Ni                { 2 }  (948-1) [378G] BC   - - 522 12 Va   F6 V D      
-1629 Naetsarraluz         C597554-7 Ag Ni                { -1 } (C44+2) [3437] BC   - - 524 13 Va   G7 V        
-1729 Karrdzae             C557987-8 Hi                   { 0 }  (H86+2) [896A] BE   - - 823 17 Va   K9 V        
-1828 Oudzkharz            C566572-9 Ag Pr Droy5 Ni       { 0 }  (E43+2) [7579] BcC  - - 924 14 Va   G8 V K0 V   
-2230 Aegerri              B775779-A Ag Pi                { 3 }  (966+1) [6A4E] BCD  - - 104 12 NaVa K7 V D      
-2826 Dhorue               B434674-A Ni                   { 1 }  (552-3) [A76B] B    - - 801 9  NaVa M3 V M6 V   
-3227 Kaerfoz              B78A7A6-A Ri Wa                { 3 }  (969-2) [AAA6] BC   - - 123 13 NaVa G6 V        
-0131 Dzaegkaek            E422000-A Di He Po             { -1 } (600+1) [0000] B    - - 021 11 NaVa G0 V M6 V   
-0132 Uevoto               D583683-6 Ni Ri                { -2 } (954-1) [947A] BC   - - 701 12 NaVa K4 V M4 V   
-0137 Anthonkfoers         E300641-6 Na Ni Va             { -3 } (650-2) [6316] B    - - 223 11 NaVa M1 V        
-0140 Aenggvug             B000221-B As Va Lo             { 1 }  (A11-1) [335G] B    - - 813 9  NaVa M0 V        
-0232 Kuronraer            C556788-8 Ag                   { 0 }  (B63+1) [9746] BC   - - 202 7  NaVa G1 V        
-0237 Gingrue              C502553-A Ic Va Ni             { 0 }  (945-2) [2529] B    - - 521 12 NaVa F9 V        
-0238 Lloezoers            AAC368C-C Fl Ni                { 1 }  (854+1) [6749] B    - - 903 11 NaVa F4 V        
-0240 Aeghzisung           B200477-B Ni Va                { 1 }  (D32-1) [855B] B    - - 122 10 NaVa F2 II M2 V  
-0331 Errkous              E557100-5 Lo                   { -3 } (400-2) [1193] B    - - 505 17 NaVa G4 V D      
-0335 Lighoz               C555454-8 Ni Pa                { -2 } (D30+4) [1256] Bc   - - 802 9  Va   G4 V        
-0432 Dzirrsrue            A9B3301-F Fl Lo                { 1 }  (721-3) [142J] B    - - 203 11 NaVa F0 V        
-0532 Ugzugu               E773AAB-8 Hi In                { 0 }  (D95-1) [6A2B] BE   - - 224 11 NaVa F8 V        
-0533 Kaghoekne            E799212-7 Lo                   { -3 } (510-3) [2188] B    - - 214 12 NaVa F2 III M4 V 
-0537 Ug Kanek             A668689-9 Ag Ri Ni             { 2 }  (G55+1) [28A9] BC   - - 623 12 Va   G5 V M3 V   
-0631 Aenloegin            A574400-E Ni Pa                { 1 }  (C35+1) [751H] Bc   - - 214 12 NaVa G0 V        
-0632 Thueni               X574444-0 Ni Pa                { -3 } (532-3) [3111] Bc   - - 403 15 NaVa F7 V        
-0634 Arerzthoe            B565634-5 Ag Ri Ni             { 1 }  (C56-4) [7777] BC   - - 103 8  Va   F4 V        
-0635 Uedtzon              D434000-D Di                   { -1 } (800-5) [0000] B    - - 001 7  Va   K2 V D      
-0637 Kalongourr           B78A252-C Lo Wa                { 1 }  (G11-3) [633D] B    - - 123 13 Va   F6 IV       
-0733 Okfaeng              B755378-9 Ga Lo                { 0 }  (A20-1) [4369] B    - - 201 10 Va   F2 V D      
-0735 Ongvoerrg            B525320-C Lo                   { 1 }  (C21-1) [745D] B    - - 104 12 Va   M3 V        
-0736 Irr Zouth            D579302-8 Lo                   { -3 } (B20+1) [315A] B    - - 203 15 Va   G4 V        
-0737 Toulingitsa          C9A47AA-8 Fl                   { -1 } (663-1) [6654] B    - - 801 8  Va   M0 V        
-0739 Duethrang            A788234-C Lo                   { 1 }  (C11-3) [438D] B    - - 904 13 Va   G4 V        
-0740 Kukhou               C536656-8 Ni                   { -2 } (A50-2) [9455] B    - - 803 11 Va   M0 V        
-0831 Kirg                 E98A000-2 Di Wa                { -3 } (900-3) [0000] B    - - 022 14 Va   K7 V        
-0837 Tarrthek             B672644-A He Ni                { 1 }  (B55+2) [778A] B    - - 812 14 Va   F9 V M1 V   
-0838 Orsaethvok           C737975-A Hi                   { 2 }  (B87-1) [7B6D] BE   - - 323 13 Va   F7 V M5 V   
-0931 Oruzoefu             A562432-C Ni                   { 1 }  (B32-3) [15AC] B    - - 603 14 Va   F2 II       
-0935 Sughanduerr          E765124-5 Ga Lo                { -3 } (B00-2) [5152] B    - - 701 10 NaVa F7 V        
-0937 Okfae                B753358-B Lo Po                { 1 }  (B21-1) [144C] B    - - 804 9  Va   F2 V M9 V   
-0939 Khuekhsgor           D511558-6 Ic Ni                { -3 } (643-3) [6244] B    - - 222 11 Va   M0 V        
-1039 Voudzeur             D88A775-4 Ri Wa                { -1 } (C6A+1) [7683] BC   - - 511 12 Va   G6 V        
-1040 Aerragvull           B737421-8 Ni                   { -1 } (A32+1) [6364] B    - - 304 11 NaVa F0 V        
-1132 Gnethogh             D542230-7 He Lo Po             { -3 } (710-3) [2167] B    - - 411 7  Va   M3 V D      
-1140 Oerrg                A837474-C Ni                   { 1 }  (635+1) [552B] B    - - 402 5  Va   K9 V        
-1233 Urueng               C768500-6 Ag Pr Ni             { -1 } (643-1) [4498] BcC  - - 201 7  Va   G2 II M9 V  
-1236 Oez Uekhae           C432200-C Lo Po                { 0 }  (A10-2) [223D] B    - - 621 9  Va   M3 V D      
-1237 Orgukung             C420101-8 De He Lo Po          { -2 } (900-2) [4166] B    - - 824 13 Va   F0 III M1 V 
-1331 Thoelksor            B543326-A Lo Po                { 1 }  (D21+1) [6445] B    - - 304 12 Va   M0 V D      
-1332 Aengksegz            B627554-9 Ni                   { 0 }  (842+4) [455C] B    - - 213 10 Va   M3 V D      
-1337 Gastsukhaksi         E553552-8 Ni Po                { -3 } (B41-1) [6217] B    - - 804 15 Va   K7 V        
-1431 Igunfaksa            C667434-8 Ga Ni Pa             { -2 } (G34+4) [5274] Bc   - - 714 13 Va   F7 V D      
-1432 Thigha               A87A831-A Ph Pi Wa             { 2 }  (C79-2) [AA7F] BDe  - - 414 14 Va   G2 V        
-1433 Kfueghoeror          C593898-3 Ph Pi                { -1 } (574+1) [A742] BDe  - - 213 15 NaVa K1 V        
-1434 Knaerghgvou          C77A996-A Hi In Wa             { 3 }  (B8B-3) [BC2A] BE   - - 711 12 NaVa F8 IV       
-1439 Gaghkuelek           E552611-6 Ni Po                { -3 } (953+1) [8357] B    - - 911 11 Va   K8 V        
-1440 Gherrg               A65567C-8 Ag Ga Ni             { 0 }  (D51+1) [8673] BC   - - 402 12 Va   F3 V        
-1533 Ue Rrava             B200324-D Lo Va                { 1 }  (621+3) [4468] B    - - 601 6  NaVa M0 V M6 V   
-1540 Ksousuek             C559877-6 Ph                   { -1 } (877+4) [A776] Be   - - 723 11 Va   G1 V D      
-1637 Ouraesothk           B768688-7 Ag Ri Ni             { 1 }  (852-1) [6779] BC   - - 123 13 Va   M0 III M0 V 
-1731 Khungorr             E989698-7 Ni Ri                { -2 } (950-4) [A42A] BC   - - 203 11 NaVa G0 V D      
-1732 Gangoulaerr          BA8A45A-C Ni Oc                { 1 }  (B35-1) [654C] B    - - 122 14 NaVa F6 V        
-1735 Kfuega               B434574-B Ni                   { 1 }  (743+5) [367A] B    - - 301 11 Va   G3 III M9 V 
-1738 Ruegvoerr            A782635-B Ni Ri                { 2 }  (B56+1) [9816] BC   - - 412 16 NaVa G5 V        
-1834 Urregzang            A434477-D Ni Px                { 1 }  (535-1) [655H] B    - - 701 10 NaVa M3 V        
-1835 Taarskoerzn          C888579-7 Ag Pr Ni             { -1 } (B44+1) [6417] BcC  - - 502 7  NaVa F4 V M7 V   
-1836 Khgouk               E562756-6 Ri                   { -1 } (965+1) [2676] BC   - - 103 10 NaVa F8 III M1 V 
-1933 Khvusu               A659654-D Ni                   { 1 }  (B55+1) [871B] B    - - 302 7  NaVa F6 V        
-1936 Ang Vueng            E555444-4 Ni Pa                { -3 } (630+3) [4166] Bc   - - 412 12 NaVa K0 V D      
-2034 Koen                 E000234-6 As Va Lo             { -3 } (510-4) [3157] B    - - 411 15 NaVa F5 V M8 V   
-2036 Kuegh Dan            B8B0376-A He Lo                { 1 }  (B21+4) [5467] B    - - 224 13 NaVa F4 V        
-2037 Tsaerzouth           C796573-8 Ag Ni                { -1 } (F45-1) [844A] BC   - - 714 16 NaVa K6 V        
-2131 Uedzodhaeg           B544200-9 Lo                   { 0 }  (D10+1) [2259] B    - - 422 12 NaVa F8 II M1 V  
-2135 Aknae                E423200-A Lo Po                { -1 } (B10+3) [3148] B    - - 304 15 NaVa M2 II       
-2139 Kughoelvor           B657984-A Ga Hi                { 3 }  (E89+3) [BC6A] BE   - - 103 6  NaVa F6 V        
-2236 Arrgarrg             B581204-C Lo                   { 1 }  (A11+1) [437G] B    - - 602 12 NaVa F0 V        
-2240 Arr Laen             C796646-6 Ag Ni                { -1 } (B50-5) [6587] BC   - - 424 15 NaVa K1 V        
-2332 Gvalur               B65667A-A Ag Ga Ni             { 2 }  (758-1) [387A] BC   - - 403 15 NaVa K3 V        
-2337 On Uenlang           C54678A-7 Ag Pi                { 0 }  (967-2) [7752] BCD  - - 803 6  NaVa F2 V        
-2339 Aerraekoukh          E868231-5 Lo                   { -3 } (710+2) [2174] B    - - 804 11 NaVa G0 V        
-2437 Uekhourg             B6778AA-7 Pa Pi Ph             { 0 }  (C7B-4) [9848] BcDe - - 123 9  NaVa F1 IV       
-2537 Aeltsigaez           C8B6348-9 Fl Lo                { -1 } (720+1) [1279] B    - - 301 11 NaVa A6 V D      
-2538 Voukonaekhs          B4309BE-B De Hi Na Po          { 3 }  (98B-2) [9C9B] BE   - - 813 15 NaVa F0 V D      
-2539 Knol                 D000652-7 As Va Na Ni          { -3 } (350-1) [8317] B    - - 713 13 NaVa M1 V        
-2540 Daekvagul            C76958D-6 Ni Pr                { -2 } (C41+3) [4392] Bc   - - 102 10 NaVa G6 V K6 V D 
-2634 Okhsilo              C673857-6 Ph Pi                { -1 } (B79+3) [C727] BDe  - - 724 12 NaVa G5 V        
-2636 Angoer               D8A3532-6 Fl Ni                { -3 } (542-3) [3236] B    - - 314 14 NaVa M0 V M0 V   
-2638 Theksas              C666535-6 Ag Pr Ga Ni          { -1 } (B44-1) [8465] BcC  - - 704 13 NaVa F0 V        
-2640 Anglorr              A546676-B Ag Ni                { 2 }  (D58+1) [5839] BC   - - 112 13 NaVa G5 III M2 V 
-2737 Koezla               D434579-6 Ni Px                { -3 } (540+2) [2215] B    - - 101 10 NaVa M2 III      
-2740 Gzong                A698976-D Hi In                { 4 }  (D8C+1) [8D5B] BEf  - - 923 17 NaVa K2 V D      
-2832 Vozoekeng            C5877A9-8 Ag Ri                { 1 }  (D68-1) [4844] BC   - - 603 12 NaVa G0 V        
-2839 Garogag              D764843-2 Pa Ri Ph             { -1 } (A74-3) [B792] BcCe - - 501 9  NaVa F9 V D      
-2840 Thuezou              D66A623-6 Huma0 Ni Ri Wa       { -2 } (952+1) [6445] BC   - - 402 10 NaVa K1 V        
-2939 Vugkaer              CA8965A-5 Ni Ri                { -1 } (653+4) [A581] BC   - - 705 13 NaVa G8 II       
-2940 Gnoersuk             D637224-6 Lo                   { -3 } (810-1) [1153] B    - - 104 9  NaVa M2 V M6 V   
-3039 Eghgvun              X7B5643-1 Fl Ni                { -3 } (550+5) [9315] B    - - 302 6  NaVa F7 V        
-3139 Utsi                 A562610-A Ni Ri                { 2 }  (E57-2) [A82A] BC   - - 225 12 NaVa K1 III      
-3140 Aeson Sog            A585541-B Ag Pr Huma1 Ni       { 2 }  (947+1) [578C] BcC  - - 103 11 NaVa G5 V        
-3238 Alang                A896887-C Pa Pi Ph             { 2 }  (D75-2) [CA2B] BcDe - - 424 13 NaVa K2 V        
+0101 Ngulruedukh          C8A168A-8 Fl He Ni             { -2 } (A53-1) [9446] B    - - 612 13 Wild M1 III M2 V 
+0102 Gzaerzserorgh        B69A788-A Pi Wa                { 2 }  (76C-1) [895C] BD   - - 501 10 Wild G9 V D      
+0103 Thurraekh            C8A1400-B Fl He Ni             { 0 }  (C34+4) [144G] B    - - 403 9  Wild M3 V        
+0107 Kuerrgoeng           A788B97-G Hi                   { 4 }  (DAC+3) [9F7G] BEf  - - 114 13 Wild F5 V        
+0108 Gaeksuergh           C561434-8 Ni                   { -2 } (C30-4) [5219] B    - - 722 13 Wild G4 V M3 V   
+0109 Adzoeknogh           B424355-B Lo                   { 1 }  (721+2) [1459] B    - - 803 11 Wild M2 V M5 V   
+0110 Ang Aeth             A544644-B Ag Ni                { 2 }  (C56+1) [483C] BC   - - 925 12 Wild F1 V D      
+0203 Aellorr              A756976-D Ga Hi                { 3 }  (H8B+2) [6C3B] BE   - - 415 10 Wild G7 V D      
+0204 Kunag                A300888-E Na Pi Ph Va          { 2 }  (C79+1) [6A2G] BDe  - - 912 12 Wild M0 V        
+0205 Kota                 A100110-C Lo Va                { 1 }  (D01-1) [125D] B    - - 111 6  Wild M1 V M8 V   
+0210 Ath Aghe             A685110-D Ga Lo                { 1 }  (E01-2) [227E] B    - - 624 17 Wild F8 V        
+0302 Ae Uer               E787674-6 Ag Ri Ga Ni          { -1 } (750+2) [3554] BC   - - 913 11 Wild G1 V        
+0303 Vaggvuek             E535AAA-A Hi                   { 1 }  (69C+2) [BB7D] BE   - - 502 13 Wild G8 IV       
+0304 Kath                 D310999-9 Hi Na In             { 1 }  (D89+1) [7A1A] BE   - - 604 13 Wild M1 V        
+0305 Taktelugh            C558434-8 Ni Pa                { -2 } (C31-2) [6299] Bc   - - 922 14 Wild G7 V        
+0306 Sa Thaen             B68A621-B Ni Ri Wa             { 2 }  (B53-3) [881B] BC   - - 313 14 Wild K0 V M1 V   
+0308 Llaes                E764320-5 Lo                   { -3 } (920-4) [6123] B    - - 604 12 Wild G5 V M0 V   
+0309 Oghzourr             C515410-9 Ic Ni                { -1 } (B32-1) [834B] B    - - 924 16 Wild F9 V        
+0401 Urr Orr              E558437-7 Ni Pa                { -3 } (630+2) [4147] Bc   - - 924 13 Wild G9 V D      
+0402 Ardhaer              A43399A-G Hi Na Po             { 4 }  (A89-1) [7D4G] BEf  - - 513 16 Wild K2 V K7 V   
+0403 Klur                 E310301-9 Lo                   { -2 } (F20+3) [116A] B    - - 324 12 Wild F4 V M4 V   
+0406 Ouskathoerz          C558302-A Lo                   { 0 }  (C20-1) [337B] B    - - 222 9  Wild K0 V K2 V   
+0409 Ranghou              A544520-B Ag Ni                { 2 }  (946+4) [472D] BC   - - 920 12 Wild F8 V D      
+0410 Founeghen            C5816A9-7 Ni Ri                { -1 } (A50+1) [5527] BC   - - 204 15 Wild F3 V        
+0502 To Oukan             C64257A-9 He Ni Po             { -1 } (E44+1) [6427] B    - - 514 16 Wild G9 V        
+0507 Nurugholi            B634889-B Ph                   { 2 }  (C79-3) [7A4D] Be   - - 322 16 Wild K9 V        
+0508 Zekhghe              D779777-6 Pi                   { -2 } (566+1) [6573] BD   - - 815 14 Wild G5 V        
+0603 Vo Dikh              D544879-5 Pa Pi Ph             { -2 } (773+2) [8644] BcDe - - 622 13 Wild K3 V        
+0604 Llaegharrgh          E666205-7 Ga Lo                { -3 } (B10+1) [3147] B    - - 224 18 Wild G2 V        
+0606 Ung Uksa             D686348-7 Ga Lo                { -3 } (A20-5) [1198] B    - - 323 14 Wild G1 IV M8 V  
+0608 Khid                 A310123-F Lo                   { 1 }  (901+1) [129G] B    - - 914 13 Wild K8 V D      
+0701 Urerknun             A95A9DD-E Hi Wa                { 3 }  (989+3) [AC4D] BE   - - 803 9  Wild F0 IV F5 V  
+0702 Okhoe                C524677-9 Ni Px                { -1 } (E50-3) [952C] B    - - 724 13 Wild M3 V D      
+0704 Faarzgaen            D000000-E As Va Di             { -1 } (G00+1) [0000] B    - - 014 16 Wild M0 V M0 V   
+0705 Vo Oeg               A664645-9 Ag Ri Ni             { 2 }  (G54-1) [A886] BC   - - 304 12 Wild F0 V F2 V   
+0706 Inggvuenloek         C648510-6 Ag Ni                { -1 } (841+1) [64A5] BC   - - 234 14 Wild G6 V        
+0707 Vrraknog             E678000-2 Di                   { -3 } (B00+1) [0000] B    - - 004 14 Wild K9 V        
+0709 Ngekhong             C7A4330-8 Fl Lo                { -2 } (B20+1) [1179] B    - - 823 8  Wild M2 V M4 V   
+0710 Errokdzor            C539143-B Lo                   { 0 }  (800-3) [115C] B    - - 904 10 Wild M9 II       
+0801 Vungeketh            B7597A8-A                      { 2 }  (C68+1) [894A] B    - - 903 11 Wild K4 V        
+0805 Tughghorr            C556688-5 Ag Ni                { -1 } (C52-2) [5574] BC   - - 323 15 Wild K9 V M0 V   
+0809 Rothksigho           C88A654-9 Ni Ri Wa             { 0 }  (955-2) [4618] BC   - - 501 9  Wild F6 V        
+0810 Alloghz              B9C6798-C Fl                   { 2 }  (A66+3) [593H] B    - - 312 9  Wild F4 IV F8 V D
+0901 Aktsthungso          C88A523-B Ni Pr Wa             { 0 }  (D42+4) [356E] Bc   - - 422 14 Wild G3 V D      
+0903 Ghaez-Larrgh         C584774-6 Ag Ri                { 1 }  (868+4) [4816] BC   - - 704 9  Wild F9 V        
+0904 Aedzuedza            E424730-6 Pi                   { -2 } (569+1) [6529] BD   - - 323 13 Wild M0 V M7 V   
+0906 Doughaerr            DAA9233-8 Fl Lo                { -3 } (B10+1) [3167] B    - - 922 8  Wild F9 V        
+0908 Kuzllonge            A546300-E Lo                   { 1 }  (A21+1) [148D] B    - - 204 12 Wild G6 IV M6 V D
+1002 Kugh                 B000575-C As Va Ni             { 1 }  (C43+2) [462D] B    - - 122 12 Wild A2 V G8 V   
+1003 Aelues               C553410-9 Ni Po                { -1 } (F35+3) [2369] B    - - 922 12 Wild G4 V        
+1008 Vuegva               E556000-8 Di                   { -3 } (900+2) [0000] B    - - 003 10 Wild M1 III      
+1009 Viksougu             D547300-5 Lo                   { -3 } (320+4) [4161] B    - - 114 12 Wild M3 V        
+1103 Edhsaza              B787433-A Ga Ni Pa             { 1 }  (937+1) [3539] Bc   - - 413 16 Wild G9 V        
+1106 Aekaedho             A997234-C Lo                   { 1 }  (E11+3) [138G] B    - - 403 10 Wild K4 V D      
+1108 Eg Orrou             E500200-5 Lo Va                { -3 } (510-1) [4144] B    - - 903 12 Wild M2 V        
+1110 Aersathun            B54347B-A Ni Po                { 1 }  (B37+2) [354F] B    - - 401 12 Wild K6 V K9 V   
+1201 Adhkfurral           CAD4444-8 Ni                   { -2 } (533+2) [626C] B    - - 201 5  Wild M2 V        
+1204 Kerro                A000100-F As Va Lo             { 1 }  (E01+3) [123B] B    - - 513 11 Wild M3 V        
+1205 Un Gzang             C9B8454-9 Fl Ni                { -1 } (833+1) [8385] B    - - 603 7  Wild F8 IV F0 V  
+1208 Sondhuen             C794576-9 Ag Ni                { 0 }  (F45+2) [357E] BC   - - 334 11 Wild F7 V        
+1209 Daethrrorrg          A573833-B Ph Pi                { 2 }  (976+1) [7A6A] BDe  - - 102 9  Wild G8 V        
+1301 Guekouzaeks          E572759-6 He Pi                { -2 } (469+1) [7578] BD   - - 501 10 Wild F6 V        
+1302 Llonknarrluts        A550750-D De Po                { 2 }  (76C+1) [696J] B    - - 301 10 Wild F0 V F6 V   
+1304 Knak                 C30049A-8 Ni Va                { -2 } (G33+2) [3253] B    - - 614 15 Wild A5 IV G4 V  
+1306 Gaengael             C544503-A Ag Ni                { 1 }  (G44+1) [268B] BC   - - 733 15 Wild F7 V M2 V   
+1403 Farrurgneng          A544423-D Ni Pa                { 1 }  (F35-2) [158G] Bc   - - 925 16 Wild G7 V        
+1404 Uengngil             D575000-0 Ba Di                { -3 } (600-3) [0000] B    - - 003 7  Wild G4 V        
+1405 Ksarthangtsout       B78A457-B Ni Wa                { 1 }  (A33+1) [854A] B    - - 104 16 Wild F6 V        
+1410 Kathae               A421833-B He Na Pi Po Ph       { 2 }  (775-3) [4A47] BDe  - - 722 11 Wild M0 V M5 V   
+1505 Vorvoun              B77868C-A Ag Ni                { 2 }  (E54-1) [9898] BC   - - 703 9  Wild G0 V        
+1507 Oungrroll            D8A4536-7 Fl Ni Px             { -3 } (740-3) [4244] B    - - 811 8  Wild M2 V D      
+1509 Dhoradhue            X576573-2 Ag Ni                { -2 } (742-2) [1342] BC   - - 704 11 Wild F1 V D      
+1601 Zaeghaego            B753323-A Lo Po                { 1 }  (C21+1) [447A] B    - - 303 9  Wild G5 V        
+1602 Dhurrg               C863533-8 Ni Pr                { -2 } (C43-1) [9334] Bc   - - 803 11 Wild F6 V        
+1605 Kaengku              C568699-8 Ag Ri Ni             { 0 }  (C55-2) [8646] BC   - - 503 15 Wild F2 V M3 V   
+1608 Dholgva              B570357-9 De He Lo             { 0 }  (720-4) [3359] B    - - 103 8  Wild F3 V F6 V   
+1701 Dhuellzugza          C755212-9 Ga Lo                { -1 } (A10-5) [1169] B    - - 621 8  Wild G8 V        
+1703 Odhrrigh             C7B2200-B Fl He Lo             { 0 }  (A10-1) [1258] B    - - 622 14 Wild M0 V        
+1706 Anur                 B594110-6 Lo                   { -1 } (B00+3) [4143] B    - - 613 12 Wild M4 III M0 V 
+1707 Hoenguel             C671378-9 He Lo                { -1 } (B20+1) [2249] B    - - 122 15 Wild K2 V        
+1708 Tsueghogrugllo       B996377-9 Lo                   { 0 }  (A20-2) [638E] B    - - 403 6  Wild F9 V        
+1709 Gzoerghaen           C594524-9 Ag Ni                { 0 }  (E43-1) [9538] BC   - - 724 11 Wild K3 V K9 V   
+1802 Oegninong            C4256AC-6 Ni                   { -2 } (B54-1) [3446] B    - - 101 6  Wild M2 V        
+1804 Kfaege               A202543-D Ic Va Ni             { 1 }  (A46+1) [661E] B    - - 111 7  Wild M2 V        
+1805 Grnouf               B869547-B Ni Pr                { 1 }  (C43-1) [564B] Bc   - - 802 9  Wild K0 V D      
+1806 Sastsuks             C544632-8 Ag Ni                { -1 } (D53-1) [6544] BC   - - 722 13 Wild F4 V        
+1810 Dhagaks Suen         A545A5A-G Hi In                { 5 }  (99E-1) [AF8F] BEf  - - 804 11 Wild F6 IV       
+1904 Kfakfug              D200544-7 Ni Va                { -3 } (A41-1) [A2A6] B    - - 911 6  Wild M0 V        
+1905 Kfeks                A100520-F Ni Va                { 1 }  (F47-1) [367F] B    - - 325 14 Wild G9 V        
+1906 Gnerr                C7558CG-7 Ga Pa Ph             { -1 } (874+1) [8717] Bce  - - 414 17 Wild K9 V D      
+1907 Ueksouk              B7C28B6-A Fl He Ph             { 2 }  (D7B+4) [7A9D] Be   - - 902 5  Wild F2 V        
+1909 Uengoz               C556547-9 Ag Ni                { 0 }  (C43-2) [5579] BC   - - 904 12 Wild F1 V D      
+2001 Zargvaetsr           C76AAC8-C Hi Wa                { 2 }  (C99-1) [9C3F] BE   - - 712 10 Wild G7 V        
+2004 Kfaengzuen           B312243-C Ic Lo                { 1 }  (B11-2) [1359] B    - - 113 15 Wild M1 V        
+2005 Otsaerghuerr         A88A446-E Ni Wa                { 1 }  (A33+1) [553C] B    - - 803 8  Wild G9 IV       
+2006 Voukifaerrg          E533789-7 Na Po                { -2 } (964-1) [A567] B    - - 105 18 Wild F1 V        
+2101 Aertsvad             B59487A-9 Pa Pi Ph             { 1 }  (E78+1) [793C] BcDe - - 905 15 Wild K1 V K6 V   
+2102 Oeghzvar             A586500-E Ag Pr Ni             { 2 }  (E44-3) [97AE] BcC  - - 704 14 Wild G4 V        
+2107 Kfasaegerr           C423536-8 Ni Px Po             { -2 } (E40-2) [5337] B    - - 812 11 Wild F3 V M3 V   
+2108 Egzan                C558516-7 Ag Ni                { -1 } (B42-2) [9445] BC   - - 302 11 Wild G6 V        
+2109 Uengva               E581477-6 Ni                   { -3 } (731-2) [6183] B    - - 602 8  Wild F1 V        
+2206 Daekhs               C7A1887-8 Fl He Ph             { -1 } (A7B-5) [477A] Be   - - 213 13 Wild M2 V        
+2208 Saellok              C597248-8 Lo                   { -2 } (E10+1) [2135] B    - - 104 12 Wild M0 V        
+2301 Zhorurn              A8849BE-E Hi Pr                { 3 }  (D8E-2) [8C5C] BcE  - - 613 12 Wild F9 V        
+2302 Fraets-Vog           A685879-C Ga Pa Ri Ph          { 3 }  (C7A-2) [6B6A] BcCe - - 503 9  Wild K1 V        
+2305 Arrunoer             A596751-D Ag Pi                { 3 }  (D6A+1) [7A7J] BCD  - - 404 11 Wild F8 V F8 V   
+2306 Geksoen              A55647B-D Ni Pa                { 1 }  (832-3) [754G] Bc   - - 500 11 Wild G0 V        
+2308 Vaesan               E5A15AD-5 Fl He Ni             { -3 } (643-5) [8275] B    - - 903 13 Wild M1 V        
+2310 Koeldoun             C400543-A Ni Va                { 0 }  (C42+1) [2557] B    - - 903 15 Wild K0 V        
+2401 Firgvaar             B667120-B Ga Lo                { 1 }  (G01+4) [1229] B    - - 914 13 Wild G0 V        
+2402 Lair                 D885799-6 Ag Ri Ga [rgr]       { 0 }  (B65+4) [9746] BC   - - 613 12 Wild G5 V        
+2405 Foukakh              D555000-5 Di                   { -3 } (900+1) [0000] B    - - 004 14 Wild K3 V K8 V   
+2410 Uk Olou              B884655-B Ag Ri Ni             { 3 }  (A56+5) [897A] BC   - - 811 10 Wild G4 V        
+2501 Khvhaergvaetso       A546523-D Ag Ni                { 2 }  (D43-3) [574F] BC   - - 104 13 Wild G8 V        
+2509 Ugouksnge            C645420-8 Ni Pa                { -2 } (B30-2) [6215] Bc   - - 713 13 Wild M5 III M1 V 
+2603 Okhdzueg             C886899-8 Ga Pa Ri Ph          { 0 }  (E76-2) [585A] BcCe - - 415 17 Wild G1 V G4 V D 
+2604 Tsaegag              A556549-D Ag Ni                { 2 }  (F47-2) [272F] BC   - - 614 12 Wild K2 V K7 V   
+2706 Oekh Dal             B573550-C Ni                   { 1 }  (F46+1) [764E] B    - - 722 8  Wild F6 V D      
+2810 Gvoghaellthoe        C434431-9 Ni                   { -1 } (933+4) [9349] B    - - 802 13 Wild M3 V        
+2903 Kugk                 C200ABC-B Hi Na In Va          { 3 }  (59A-1) [7D7F] BE   - - 202 9  Wild M2 V        
+3003 Khok Ae              B203221-B Ic Va Lo             { 1 }  (B11+3) [635F] B    - - 422 15 Wild M1 V M7 V   
+3101 Larrothaegan         A557434-C Ni Pa                { 1 }  (832+2) [757G] Bc   - - 403 10 Wild F5 V        
+3108 Uedh Kal             C310556-C Ni                   { 0 }  (941+5) [855D] B    - - 904 11 Wild M2 V D      
+3201 Gzorrksaerr          D788000-0 Ba Di                { -3 } (900-2) [0000] B    - - 014 9  Wild G6 V        
+0112 Dhotsaeng            C577677-8 Ag Ni                { -1 } (751-1) [655B] BC   - - 903 12 Wild F9 V        
+0115 Koudhgzaen           A563859-B Ph Ri                { 3 }  (E7D+1) [7B2D] BCe  - - 612 12 Wild A5 V        
+0119 Nogh                 D566410-7 Ni Pa                { -3 } (831-1) [3184] Bc   - - 405 11 Wild K3 V K6 V   
+0120 Zadz                 B88A585-B Ni Pr Wa             { 1 }  (C45+1) [667E] Bc   - - 705 8  Wild G2 V D      
+0212 Ghoghzsorgh          C635798-9                      { 0 }  (763+3) [8775] B    - - 104 12 Wild M0 V        
+0216 Rataetaenrar         C548AAA-A Hi In                { 3 }  (A9A+4) [7D77] BE   - - 805 11 Wild M0 V        
+0219 Oughdzak             B7A6445-9 Fl Ni                { 0 }  (C31+2) [642A] B    - - 225 13 Wild M1 V M7 V   
+0314 Dorrar               B573257-8 Lo                   { -1 } (F10+1) [413C] B    - - 213 13 Wild G0 V        
+0414 Oeksaegh             B612558-D Ic Ni                { 1 }  (744+3) [763C] B    - - 304 12 Wild M2 V        
+0415 Anghikh              A556444-B Ni Pa                { 1 }  (G37+3) [754B] Bc   - - 604 9  Wild K5 V        
+0416 Uedzaell             B540325-B De He Lo Po          { 1 }  (B21+1) [144E] B    - - 202 10 Wild F5 V        
+0418 Khaghdaeksong        D674642-6 Ag Ni                { -2 } (853-2) [4454] BC   - - 703 14 Wild M3 V M8 V   
+0419 Ughfangkhoeg         E594576-5 Ag Ni                { -2 } (443-3) [3388] BC   - - 323 15 Wild A7 IV G7 V  
+0516 Oeghzdharok          B979579-B Ni                   { 1 }  (945+4) [868A] B    - - 404 10 Wild K0 V        
+0612 Aengour              C31245A-A Ic Ni                { 0 }  (F36-4) [2427] B    - - 422 11 Wild M1 V M5 V   
+0614 Ksungkath            B581141-B Lo                   { 1 }  (B01+5) [122D] B    - - 903 11 Wild F1 V        
+0618 Llorz                E877579-5 Ag Ni                { -2 } (644+1) [9372] BC   - - 501 8  Wild G0 V M8 V   
+0712 Okhuers              C626341-8 Lo                   { -2 } (620+3) [6179] B    - - 603 8  Wild M2 V D      
+0718 Dhaen                A578474-D Ni Pa                { 1 }  (D35-2) [456D] Bc   - - 505 11 Wild F8 IV       
+0815 Zeng                 D64A8A9-4 Ph Pi Wa             { -2 } (975+3) [9638] BDe  - - 704 12 Wild G3 V        
+0820 Dhaen                B542445-B He Ni Po             { 1 }  (F35+2) [352B] B    - - 304 15 Wild F8 V        
+0911 Ozkhakhstoul         EA6A677-6 Ni Oc Ri             { -2 } (850-2) [3433] BC   - - 804 10 Wild G5 V        
+0912 Ozkhakh              D546743-6 Ag Pi                { -1 } (966-1) [6656] BCD  - - 215 15 Wild F0 V D      
+0913 Anngang              D687000-5 Di Ga                { -3 } (B00+2) [0000] B    - - 012 11 Wild G3 V        
+0915 Athoekhuerrg         E527452-9 Ni                   { -2 } (832+3) [2275] B    - - 604 9  Wild M0 V        
+0916 Gaentsiroell         B99988B-A Ph Pi                { 2 }  (A77+1) [6AAC] BDe  - - 322 10 Wild K5 V        
+0920 Aeraerir             C68367A-8 Ni Ri                { -1 } (B53+2) [456B] BC   - - 802 10 Wild F2 V        
+1012 Thursou              A5A2737-A Fl He                { 2 }  (C6D+3) [697D] B    - - 501 7  Wild K4 V        
+1013 Llurang              A988356-A Lo                   { 1 }  (821+1) [349D] B    - - 402 6  Wild K4 V        
+1020 Ghakong              CA97ABB-C Hi In                { 3 }  (A9D-2) [AD5C] BE   - - 113 8  Wild G6 V        
+1111 Ouksdzaenouk         E555321-4 Lo                   { -3 } (B20+4) [1153] B    - - 804 12 Wild F9 V        
+1112 Khoengaen            C571574-9 He Ni                { -1 } (D42-1) [642C] B    - - 924 15 Wild F4 V        
+1113 Aegh Rong            B674202-C Lo                   { 1 }  (E11+1) [138B] B    - - 324 14 Wild K9 V        
+1115 Oesaevang            C99A453-8 Ni Wa                { -2 } (B31-1) [223D] B    - - 623 13 Wild F5 V        
+1117 Koenalor             D864658-5 Ag Ri Ni             { -1 } (955-3) [8567] BC   - - 302 13 Wild G2 IV       
+1214 Kaegrogz             E310400-8 Ni                   { -3 } (E30-3) [219D] B    - - 803 12 Wild M1 V        
+1217 Lloedh               C97A300-9 Lo Wa                { -1 } (C20+2) [125B] B    - - 224 16 Wild G9 V M1 V   
+1314 Gvighue              C8A5575-7 Fl Ni                { -2 } (B40-1) [3398] B    - - 424 14 Wild M2 V D      
+1316 Igzinghuell          B573757-6 Pi                   { 0 }  (B64-1) [7794] BD   - - 313 7  Wild F4 V M7 V D 
+1317 Vifueks              C786785-7 Ag Ri Ga             { 1 }  (767+1) [6885] BC   - - 101 6  Wild F8 III D    
+1413 Ueng Fak             E551122-6 Lo Po                { -3 } (600+1) [1165] B    - - 401 9  Wild F3 V D      
+1419 Uerelodza            A583788-C Ri                   { 3 }  (B67-3) [7A39] BC   - - 913 12 Wild M6 III      
+1613 Foungdaeghz          X54797A-4 Hi In                { 0 }  (78B+1) [5953] BE   - - 503 14 Wild A4 V K5 V D 
+1711 Koudzhsakhgo         A64878A-B Ag Pi                { 3 }  (C66+2) [5A3A] BCD  - - 204 14 Wild F0 V D      
+1712 Aeghvoekogz          D564000-0 Ba Di                { -3 } (A00-1) [0000] B    - - 021 10 Wild G3 V D      
+1920 Ongrro               A787120-C Ga Lo                { 1 }  (B01+1) [5259] B    - - 803 11 Wild F4 IV       
+2116 Togikhtsurzall       A645554-E Ag Ni                { 2 }  (A47-4) [674K] BC   - - 812 7  Wild K3 V D      
+2211 Kfaenggzon           A430555-D De Ni Po             { 1 }  (C47+1) [865H] B    - - 505 11 Wild M3 V        
+2220 Gegllurirse          D586100-8 Lo                   { -3 } (C00-2) [1186] B    - - 413 10 Wild G3 V D      
+2319 Farr                 D798535-7 Ag Ni                { -2 } (944-2) [9366] BC   - - 113 16 Wild K7 V        
+2611 Laeghkag             B997787-6 Ag Pi                { 1 }  (B66+5) [B812] BCD  - - 703 11 Wild F1 V        
+2920 Naeztir              B7857BA-A Ag Ri Ga             { 4 }  (86C-2) [7B79] BCf  - - 802 8  Wild F0 V        
+0127 Thagaers             A553325-D Lo Po                { 1 }  (F21+3) [144E] B    - - 423 13 Wild M2 V        
+0130 Ghourknodz           D79A000-0 Ba Wa                { -3 } (600+3) [0000] B    - - 001 9  Wild G7 V        
+0222 Llaedkher            D546795-3 Ag Pi                { -1 } (563+4) [3647] BCD  - - 115 15 Wild G7 V        
+0225 Dzarrvaer            E766479-5 Ga Ni Pa             { -3 } (C33-3) [6132] Bc   - - 603 11 Wild G4 IV       
+0227 Ghourrgadz           D556400-8 Ni Pa                { -3 } (D31+1) [917B] Bc   - - 703 16 Wild F9 V        
+0230 Oetsorkeda           D9B7686-7 Fl Ni                { -3 } (551-3) [4319] B    - - 614 15 Wild K3 V        
+0321 Rrukagae             E52968B-7 Ni                   { -3 } (450-5) [7348] B    - - 914 10 Wild M2 V M4 V   
+0325 Oth Uegaen           C688674-7 Ag Ri Ni             { 0 }  (756+1) [5645] BC   - - 113 9  Wild G0 V M6 V   
+0328 Ughtuerz             E759534-8 Ni                   { -3 } (440-2) [127A] B    - - 901 7  Wild F8 V        
+0329 Gvousaegh            BA98114-8 Lo                   { -1 } (A00-4) [215B] B    - - 623 16 Wild K8 V        
+0421 Knunguegaegn         B5448CF-8 Pa Pi Ph             { 0 }  (C73-4) [886A] BcDe - - 101 11 Wild F8 V D      
+0422 Knokseng             D785577-6 Ag Pr Ga Ni          { -2 } (B40+2) [9337] BcC  - - 302 6  Wild K2 V D      
+0423 Lugh                 AA8A483-C Ni Oc                { 1 }  (935+2) [856H] B    - - 612 11 Wild G4 V        
+0427 Turz                 B544659-B Ag Ni                { 2 }  (E54-3) [3878] BC   - - 123 17 Wild G1 V        
+0428 Tuerrg               A575530-B Ag Ni                { 2 }  (H48+1) [275C] BC   - - 114 17 Wild K8 V D      
+0430 Aezorr               C554359-8 Lo                   { -2 } (E20+1) [315A] B    - - 512 12 Wild M2 V        
+0523 Anakae               E66A875-7 Ph Ri Wa             { -1 } (773+1) [A742] BCe  - - 625 17 Wild A6 V        
+0526 Oksruenvae           B654556-A Ag Ni                { 2 }  (A45+1) [875D] BC   - - 104 10 Wild A9 IV       
+0527 Gnerang              C897838-6 Pa Pi Ph             { -1 } (B7A-2) [6733] BcDe - - 102 8  Wild K3 V        
+0624 Thezroendzang        B544222-7 Lo                   { -1 } (810+1) [3164] B    - - 614 14 Wild F9 V        
+0627 Kas                  C000446-A As Va Ni             { 0 }  (A36+1) [6458] B    - - 214 13 Wild F6 V D      
+0628 Ungokhton            C571585-6 He Ni                { -2 } (844-1) [535A] B    - - 400 8  Wild K3 III M4 V 
+0629 Kvae                 B100459-C Ni Va                { 1 }  (735+1) [5559] B    - - 604 8  Wild M1 V        
+0723 Fakor                D565543-7 Ag Pr Ni             { -2 } (943+2) [1367] BcC  - - 201 9  Wild F6 V        
+0728 Darz                 C654204-9 Lo                   { -1 } (F10+1) [3158] B    - - 622 13 Wild K6 V D      
+0729 Rruefaez             A75A545-B Ni Wa                { 1 }  (545+1) [665C] B    - - 702 8  Wild G1 V        
+0822 Khsa                 C421A84-D He Hi Na In Po       { 3 }  (F96+3) [BD4C] BE   - - 104 11 Wild M1 V        
+0823 Kouk                 A31058C-B Ni                   { 1 }  (A47+3) [765E] B    - - 212 14 Wild M1 V        
+0826 Knoekhs              D424520-5 Ni                   { -3 } (440+1) [5299] B    - - 304 13 Wild M3 V        
+0828 Aruekhoe             C676432-8 Ni Pa                { -2 } (C31+1) [4237] Bc   - - 803 11 Wild G0 V        
+0829 Dhoenggo             D678000-3 Di                   { -3 } (A00-4) [0000] B    - - 004 13 Wild F7 V F7 V   
+0830 Kvoen                D311000-C Di Ic                { -1 } (500-2) [0000] B    - - 011 7  Wild M0 V M6 V   
+0921 Ous Foroe            B88A322-D Lo Wa                { 1 }  (721-1) [4418] B    - - 401 11 Wild K7 V K9 V   
+0923 Kaegh                A100989-D Hi Na In Va          { 4 }  (F8A-3) [ED9C] BEf  - - 313 10 Wild F2 V        
+0924 Ukhsarsoeghe         BA6A574-D Ni Oc Pr             { 1 }  (E45+1) [161E] Bc   - - 923 16 Wild F9 IV       
+0926 Oengdaksuvue         E739452-6 Ni                   { -3 } (631+2) [7135] B    - - 824 15 Wild F5 V        
+1028 Tuegu                B56389B-6 Ph Ri                { 1 }  (C74+4) [7997] BCe  - - 804 12 Wild K5 V D      
+1122 Okhaeg               C4337B8-A Na Po                { 1 }  (76B+2) [78AA] B    - - 702 8  Wild M1 V        
+1126 Fueghz               D422653-6 He Na Po Ni          { -3 } (350+2) [3351] B    - - 511 11 Wild M2 V        
+1224 Nokoegz              X569344-0 Lo                   { -3 } (B20-3) [4171] B    - - 603 12 Wild F2 V        
+1226 Llokhaegueg          B676AFG-E Hi In                { 4 }  (C9B+1) [CE4G] BEf  - - 304 15 Wild F8 IV       
+1227 Angaergh             B889334-C Lo                   { 1 }  (A21-1) [442B] B    - - 201 11 Wild G6 V D      
+1229 Okfuegh              E7B4643-3 Fl Ni                { -3 } (553-1) [6355] B    - - 614 12 Wild M1 V        
+1322 Kuz                  D000341-A As Va Lo             { -1 } (A20+1) [327B] B    - - 811 15 Wild M0 V M7 V   
+1328 Aenkuk               A674376-B Lo                   { 1 }  (G21+1) [4439] B    - - 813 12 Wild G2 V        
+1421 Suerz                B648431-A Ni Pa                { 1 }  (B36+1) [1597] Bc   - - 124 13 Wild K6 V        
+1422 Killagthoghz         E304446-8 Ic Va Ni             { -3 } (D31+4) [4154] B    - - 704 10 Wild M1 V        
+1424 Nurrok               C551226-7 Lo Po                { -2 } (610-3) [112A] B    - - 114 9  Wild F6 V        
+1427 Klag                 B430578-B De Ni Po             { 1 }  (A44+1) [668A] B    - - 913 10 Wild M2 V M4 V   
+1428 Agkuz                A43067B-C De Na Po Ni          { 1 }  (A53-1) [974E] B    - - 313 15 Wild M3 V        
+1522 Foedargh             E873479-2 Ni                   { -3 } (B30+1) [4111] B    - - 805 15 Wild M4 II       
+1525 Ezksog               X549226-3 Lo                   { -3 } (710+1) [1191] B    - - 623 9  Wild K3 V K4 V   
+1527 Uznukhozots          B79657B-B Ag Ni                { 2 }  (948-1) [378G] BC   - - 522 12 Wild F6 V D      
+1629 Naetsarraluz         C597554-7 Ag Ni                { -1 } (C44+2) [3437] BC   - - 524 13 Wild G7 V        
+1729 Karrdzae             C557987-8 Hi                   { 0 }  (H86+2) [896A] BE   - - 823 17 Wild K9 V        
+1828 Oudzkharz            C566572-9 Ag Pr Droy5 Ni       { 0 }  (E43+2) [7579] BcC  - - 924 14 Wild G8 V K0 V   
+2230 Aegerri              B775779-A Ag Pi                { 3 }  (966+1) [6A4E] BCD  - - 104 12 Wild K7 V D      
+2826 Dhorue               B434674-A Ni                   { 1 }  (552-3) [A76B] B    - - 801 9  Wild M3 V M6 V   
+3227 Kaerfoz              B78A7A6-A Ri Wa                { 3 }  (969-2) [AAA6] BC   - - 123 13 Wild G6 V        
+0131 Dzaegkaek            E422000-A Di He Po             { -1 } (600+1) [0000] B    - - 021 11 Wild G0 V M6 V   
+0132 Uevoto               D583683-6 Ni Ri                { -2 } (954-1) [947A] BC   - - 701 12 Wild K4 V M4 V   
+0137 Anthonkfoers         E300641-6 Na Ni Va             { -3 } (650-2) [6316] B    - - 223 11 Wild M1 V        
+0140 Aenggvug             B000221-B As Va Lo             { 1 }  (A11-1) [335G] B    - - 813 9  Wild M0 V        
+0232 Kuronraer            C556788-8 Ag                   { 0 }  (B63+1) [9746] BC   - - 202 7  Wild G1 V        
+0237 Gingrue              C502553-A Ic Va Ni             { 0 }  (945-2) [2529] B    - - 521 12 Wild F9 V        
+0238 Lloezoers            AAC368C-C Fl Ni                { 1 }  (854+1) [6749] B    - - 903 11 Wild F4 V        
+0240 Aeghzisung           B200477-B Ni Va                { 1 }  (D32-1) [855B] B    - - 122 10 Wild F2 II M2 V  
+0331 Errkous              E557100-5 Lo                   { -3 } (400-2) [1193] B    - - 505 17 Wild G4 V D      
+0335 Lighoz               C555454-8 Ni Pa                { -2 } (D30+4) [1256] Bc   - - 802 9  Wild G4 V        
+0432 Dzirrsrue            A9B3301-F Fl Lo                { 1 }  (721-3) [142J] B    - - 203 11 Wild F0 V        
+0532 Ugzugu               E773AAB-8 Hi In                { 0 }  (D95-1) [6A2B] BE   - - 224 11 Wild F8 V        
+0533 Kaghoekne            E799212-7 Lo                   { -3 } (510-3) [2188] B    - - 214 12 Wild F2 III M4 V 
+0537 Ug Kanek             A668689-9 Ag Ri Ni             { 2 }  (G55+1) [28A9] BC   - - 623 12 Wild G5 V M3 V   
+0631 Aenloegin            A574400-E Ni Pa                { 1 }  (C35+1) [751H] Bc   - - 214 12 Wild G0 V        
+0632 Thueni               X574444-0 Ni Pa                { -3 } (532-3) [3111] Bc   - - 403 15 Wild F7 V        
+0634 Arerzthoe            B565634-5 Ag Ri Ni             { 1 }  (C56-4) [7777] BC   - - 103 8  Wild F4 V        
+0635 Uedtzon              D434000-A Di                   { -1 } (800-5) [0000] B    - - 001 7  Wild K2 V D      
+0637 Kalongourr           B78A252-C Lo Wa                { 1 }  (G11-3) [633D] B    - - 123 13 Wild F6 IV       
+0733 Okfaeng              B755378-9 Ga Lo                { 0 }  (A20-1) [4369] B    - - 201 10 Wild F2 V D      
+0735 Ongvoerrg            B525320-C Lo                   { 1 }  (C21-1) [745D] B    - - 104 12 Wild M3 V        
+0736 Irr Zouth            D579302-8 Lo                   { -3 } (B20+1) [315A] B    - - 203 15 Wild G4 V        
+0737 Toulingitsa          C9A47AA-8 Fl                   { -1 } (663-1) [6654] B    - - 801 8  Wild M0 V        
+0739 Duethrang            A788234-C Lo                   { 1 }  (C11-3) [438D] B    - - 904 13 Wild G4 V        
+0740 Kukhou               C536656-8 Ni                   { -2 } (A50-2) [9455] B    - - 803 11 Wild M0 V        
+0831 Kirg                 E98A000-0 Ba Di Wa             { -3 } (900-3) [0000] B    - - 022 14 Wild K7 V        
+0837 Tarrthek             B672644-A He Ni                { 1 }  (B55+2) [778A] B    - - 812 14 Wild F9 V M1 V   
+0838 Orsaethvok           C737975-A Hi                   { 2 }  (B87-1) [7B6D] BE   - - 323 13 Wild F7 V M5 V   
+0931 Oruzoefu             A562432-C Ni                   { 1 }  (B32-3) [15AC] B    - - 603 14 Wild F2 II       
+0935 Sughanduerr          E765124-5 Ga Lo                { -3 } (B00-2) [5152] B    - - 701 10 Wild F7 V        
+0937 Okfae                B753358-B Lo Po                { 1 }  (B21-1) [144C] B    - - 804 9  Wild F2 V M9 V   
+0939 Khuekhsgor           D511558-6 Ic Ni                { -3 } (643-3) [6244] B    - - 222 11 Wild M0 V        
+1039 Voudzeur             D88A775-4 Ri Wa                { -1 } (C6A+1) [7683] BC   - - 511 12 Wild G6 V        
+1040 Aerragvull           B737421-8 Ni                   { -1 } (A32+1) [6364] B    - - 304 11 Wild F0 V        
+1132 Gnethogh             D542230-7 He Lo Po             { -3 } (710-3) [2167] B    - - 411 7  Wild M3 V D      
+1140 Oerrg                A837474-C Ni                   { 1 }  (635+1) [552B] B    - - 402 5  Wild K9 V        
+1233 Urueng               C768500-6 Ag Pr Ni             { -1 } (643-1) [4498] BcC  - - 201 7  Wild G2 II M9 V  
+1236 Oez Uekhae           C432200-C Lo Po                { 0 }  (A10-2) [223D] B    - - 621 9  Wild M3 V D      
+1237 Orgukung             C420101-8 De He Lo Po          { -2 } (900-2) [4166] B    - - 824 13 Wild F0 III M1 V 
+1331 Thoelksor            B543326-A Lo Po                { 1 }  (D21+1) [6445] B    - - 304 12 Wild M0 V D      
+1332 Aengksegz            B627554-9 Ni                   { 0 }  (842+4) [455C] B    - - 213 10 Wild M3 V D      
+1337 Gastsukhaksi         E553552-8 Ni Po                { -3 } (B41-1) [6217] B    - - 804 15 Wild K7 V        
+1431 Igunfaksa            C667434-8 Ga Ni Pa             { -2 } (G34+4) [5274] Bc   - - 714 13 Wild F7 V D      
+1432 Thigha               A87A831-A Ph Pi Wa             { 2 }  (C79-2) [AA7F] BDe  - - 414 14 Wild G2 V        
+1433 Kfueghoeror          C593898-3 Ph Pi                { -1 } (574+1) [A742] BDe  - - 213 15 Wild K1 V        
+1434 Knaerghgvou          C77A996-A Hi In Wa             { 3 }  (B8B-3) [BC2A] BE   - - 711 12 Wild F8 IV       
+1439 Gaghkuelek           E552611-6 Ni Po                { -3 } (953+1) [8357] B    - - 911 11 Wild K8 V        
+1440 Gherrg               A65567C-8 Ag Ga Ni             { 0 }  (D51+1) [8673] BC   - - 402 12 Wild F3 V        
+1533 Ue Rrava             B200324-D Lo Va                { 1 }  (621+3) [4468] B    - - 601 6  Wild M0 V M6 V   
+1540 Ksousuek             C559877-6 Ph                   { -1 } (877+4) [A776] Be   - - 723 11 Wild G1 V D      
+1637 Ouraesothk           B768688-7 Ag Ri Ni             { 1 }  (852-1) [6779] BC   - - 123 13 Wild M0 III M0 V 
+1731 Khungorr             E989698-7 Ni Ri                { -2 } (950-4) [A42A] BC   - - 203 11 Wild G0 V D      
+1732 Gangoulaerr          BA8A45A-C Ni Oc                { 1 }  (B35-1) [654C] B    - - 122 14 Wild F6 V        
+1735 Kfuega               B434574-B Ni                   { 1 }  (743+5) [367A] B    - - 301 11 Wild G3 III M9 V 
+1738 Ruegvoerr            A782635-B Ni Ri                { 2 }  (B56+1) [9816] BC   - - 412 16 Wild G5 V        
+1834 Urregzang            A434477-D Ni Px                { 1 }  (535-1) [655H] B    - - 701 10 Wild M3 V        
+1835 Taarskoerzn          C888579-7 Ag Pr Ni             { -1 } (B44+1) [6417] BcC  - - 502 7  Wild F4 V M7 V   
+1836 Khgouk               E562756-6 Ri                   { -1 } (965+1) [2676] BC   - - 103 10 Wild F8 III M1 V 
+1933 Khvusu               A659654-D Ni                   { 1 }  (B55+1) [871B] B    - - 302 7  Wild F6 V        
+1936 Ang Vueng            E555444-4 Ni Pa                { -3 } (630+3) [4166] Bc   - - 412 12 Wild K0 V D      
+2034 Koen                 E000234-6 As Va Lo             { -3 } (510-4) [3157] B    - - 411 15 Wild F5 V M8 V   
+2036 Kuegh Dan            B8B0376-A He Lo                { 1 }  (B21+4) [5467] B    - - 224 13 Wild F4 V        
+2037 Tsaerzouth           C796573-8 Ag Ni                { -1 } (F45-1) [844A] BC   - - 714 16 Wild K6 V        
+2131 Uedzodhaeg           B544200-9 Lo                   { 0 }  (D10+1) [2259] B    - - 422 12 Wild F8 II M1 V  
+2135 Aknae                E423200-A Lo Po                { -1 } (B10+3) [3148] B    - - 304 15 Wild M2 II       
+2139 Kughoelvor           B657984-A Ga Hi                { 3 }  (E89+3) [BC6A] BE   - - 103 6  Wild F6 V        
+2236 Arrgarrg             B581204-C Lo                   { 1 }  (A11+1) [437G] B    - - 602 12 Wild F0 V        
+2240 Arr Laen             C796646-6 Ag Ni                { -1 } (B50-5) [6587] BC   - - 424 15 Wild K1 V        
+2332 Gvalur               B65667A-A Ag Ga Ni             { 2 }  (758-1) [387A] BC   - - 403 15 Wild K3 V        
+2337 On Uenlang           C54678A-7 Ag Pi                { 0 }  (967-2) [7752] BCD  - - 803 6  Wild F2 V        
+2339 Aerraekoukh          E868231-5 Lo                   { -3 } (710+2) [2174] B    - - 804 11 Wild G0 V        
+2437 Uekhourg             B6778AA-7 Pa Pi Ph             { 0 }  (C7B-4) [9848] BcDe - - 123 9  Wild F1 IV       
+2537 Aeltsigaez           C8B6348-9 Fl Lo                { -1 } (720+1) [1279] B    - - 301 11 Wild A6 V D      
+2538 Voukonaekhs          B4309BE-B De Hi Na Po          { 3 }  (98B-2) [9C9B] BE   - - 813 15 Wild F0 V D      
+2539 Knol                 D000652-7 As Va Na Ni          { -3 } (350-1) [8317] B    - - 713 13 Wild M1 V        
+2540 Daekvagul            C76958D-6 Ni Pr                { -2 } (C41+3) [4392] Bc   - - 102 10 Wild G6 V K6 V D 
+2634 Okhsilo              C673857-6 Ph Pi                { -1 } (B79+3) [C727] BDe  - - 724 12 Wild G5 V        
+2636 Angoer               D8A3532-6 Fl Ni                { -3 } (542-3) [3236] B    - - 314 14 Wild M0 V M0 V   
+2638 Theksas              C666535-6 Ag Pr Ga Ni          { -1 } (B44-1) [8465] BcC  - - 704 13 Wild F0 V        
+2640 Anglorr              A546676-B Ag Ni                { 2 }  (D58+1) [5839] BC   - - 112 13 Wild G5 III M2 V 
+2737 Koezla               D434579-6 Ni Px                { -3 } (540+2) [2215] B    - - 101 10 Wild M2 III      
+2740 Gzong                A698976-D Hi In                { 4 }  (D8C+1) [8D5B] BEf  - - 923 17 Wild K2 V D      
+2832 Vozoekeng            C5877A9-8 Ag Ri                { 1 }  (D68-1) [4844] BC   - - 603 12 Wild G0 V        
+2839 Garogag              D764843-2 Pa Ri Ph             { -1 } (A74-3) [B792] BcCe - - 501 9  Wild F9 V D      
+2840 Thuezou              D66A623-6 Huma0 Ni Ri Wa       { -2 } (952+1) [6445] BC   - - 402 10 Wild K1 V        
+2939 Vugkaer              CA8965A-5 Ni Ri                { -1 } (653+4) [A581] BC   - - 705 13 Wild G8 II       
+2940 Gnoersuk             D637224-6 Lo                   { -3 } (810-1) [1153] B    - - 104 9  Wild M2 V M6 V   
+3039 Eghgvun              X7B5643-1 Fl Ni VunW           { -3 } (550+5) [9315] B    - - 302 6  Wild F7 V        
+3139 Utsi                 A562610-A Ni Ri                { 2 }  (E57-2) [A82A] BC   - - 225 12 Wild K1 III      
+3140 Aeson Sog            A585541-B Ag Pr Huma1 Ni       { 2 }  (947+1) [578C] BcC  - - 103 11 Wild G5 V        
+3238 Alang                A896887-C Pa Pi Ph             { 2 }  (D75-2) [CA2B] BcDe - - 424 13 Wild K2 V        
