@@ -1301,6 +1301,10 @@ class LocalMapWidget(QtWidgets.QWidget):
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         super().wheelEvent(event)
 
+        # The user is interacting with the view so stop any in progress
+        # transition animation or they will just end up fighting it
+        self._stopMoveAnimation()
+
         if self.isEnabled():
             self._zoomView(
                 step=LocalMapWidget._WheelZoomDelta if event.angleDelta().y() > 0 else -LocalMapWidget._WheelZoomDelta,
