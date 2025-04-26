@@ -331,33 +331,33 @@ class CargoManifestDialog(gui.DialogEx):
                 text=message,
                 exception=ex)
 
-    def _showJumpRouteInTravellerMap(
+    def _showJumpRouteOnMap(
             self,
             jumpRoute: logic.JumpRoute
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
             mapWindow.clearOverlays()
             mapWindow.setJumpRoute(jumpRoute=jumpRoute)
         except Exception as ex:
-            message = 'Failed to show jump route in Traveller Map'
+            message = 'Failed to show jump route on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
 
-    def _showWorldsInTravellerMap(
+    def _showWorldsOnMap(
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:
-            mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
             mapWindow.clearOverlays()
             mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -435,23 +435,23 @@ class CargoManifestDialog(gui.DialogEx):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Purchase World in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap([cargoManifest.purchaseWorld()]),
+                text='Show Purchase World on Map...',
+                callback=lambda: self._showWorldsOnMap([cargoManifest.purchaseWorld()]),
                 enabled=cargoManifest != None
             ),
             gui.MenuItem(
-                text='Show Sale World in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap([cargoManifest.saleWorld()]),
+                text='Show Sale World on Map...',
+                callback=lambda: self._showWorldsOnMap([cargoManifest.saleWorld()]),
                 enabled=cargoManifest != None
             ),
             gui.MenuItem(
-                text='Show Purchase && Sale Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap([cargoManifest.purchaseWorld(), cargoManifest.saleWorld()]),
+                text='Show Purchase && Sale Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap([cargoManifest.purchaseWorld(), cargoManifest.saleWorld()]),
                 enabled=cargoManifest != None
             ),
             gui.MenuItem(
-                text='Show Jump Route in Traveller Map...',
-                callback=lambda: self._showJumpRouteInTravellerMap(cargoManifest.jumpRoute()),
+                text='Show Jump Route on Map...',
+                callback=lambda: self._showJumpRouteOnMap(cargoManifest.jumpRoute()),
                 enabled=cargoManifest != None
             ),
             None, # Separator

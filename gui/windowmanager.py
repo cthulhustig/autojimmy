@@ -14,7 +14,7 @@ class WindowManager(object):
     _simulatorWindow = None
     _hexDetailsWindow = None
     _calculationWindow = None
-    _travellerMapWindow = None
+    _universeMapWindow = None
     _gunsmithWindow = None
     _robotBuilderWindow = None
     _diceRollerWindow = None
@@ -53,8 +53,8 @@ class WindowManager(object):
             self._hexDetailsWindow.close()
         if self._calculationWindow:
             self._calculationWindow.close()
-        if self._travellerMapWindow:
-            self._travellerMapWindow.close()
+        if self._universeMapWindow:
+            self._universeMapWindow.close()
         if self._gunsmithWindow:
             self._gunsmithWindow.close()
         if self._robotBuilderWindow:
@@ -122,11 +122,11 @@ class WindowManager(object):
         self._calculationWindow.bringToFront()
         return self._calculationWindow
 
-    def showTravellerMapWindow(self) -> 'gui.MapWindow':
-        if not self._travellerMapWindow:
-            self._travellerMapWindow = gui.MapWindow()
-        self._travellerMapWindow.bringToFront()
-        return self._travellerMapWindow
+    def showUniverseMapWindow(self) -> 'gui.MapWindow':
+        if not self._universeMapWindow:
+            self._universeMapWindow = gui.MapWindow()
+        self._universeMapWindow.bringToFront()
+        return self._universeMapWindow
 
     def showGunsmithWindow(self) -> 'gui.GunsmithWindow':
         if not self._gunsmithWindow:
