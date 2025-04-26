@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 class MapWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
-            title='Traveller Map',
+            title='Universe Map',
             configSection='MapWindow')
         self._mapWidget = gui.MapWidgetEx()
 

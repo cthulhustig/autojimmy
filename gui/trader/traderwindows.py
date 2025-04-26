@@ -334,33 +334,33 @@ class _BaseTraderWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showJumpRouteInTravellerMap(
+    def _showJumpRouteOnMap(
             self,
             jumpRoute: logic.JumpRoute
             ) -> None:
         try:
-            mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
             mapWindow.clearOverlays()
             mapWindow.setJumpRoute(jumpRoute=jumpRoute)
         except Exception as ex:
-            message = 'Failed to show jump route in Traveller Map'
+            message = 'Failed to show jump route on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
 
-    def _showWorldsInTravellerMap(
+    def _showWorldsOnMap(
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:
-            mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
             mapWindow.clearOverlays()
             mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -491,23 +491,23 @@ class _BaseTraderWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Purchase Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(selectedPurchaseWorlds),
+                text='Show Selected Purchase Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(selectedPurchaseWorlds),
                 enabled=selectedPurchaseWorlds != None
             ),
             gui.MenuItem(
-                text='Show Selected Sale Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(selectedSaleWorlds),
+                text='Show Selected Sale Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(selectedSaleWorlds),
                 enabled=selectedSaleWorlds != None
             ),
             gui.MenuItem(
-                text='Show Selected Sale && Purchase Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(selectedSaleAndPurchaseWorlds),
+                text='Show Selected Sale && Purchase Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(selectedSaleAndPurchaseWorlds),
                 enabled=selectedSaleAndPurchaseWorlds != None
             ),
             gui.MenuItem(
-                text='Show Jump Route in Traveller Map...',
-                callback=lambda: self._showJumpRouteInTravellerMap(clickedTradeOption.jumpRoute()),
+                text='Show Jump Route on Map...',
+                callback=lambda: self._showJumpRouteOnMap(clickedTradeOption.jumpRoute()),
                 enabled=clickedTradeOption != None
             ),
             None, # Separator
@@ -2336,13 +2336,13 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._purchaseWorldsWidget.selectedWorlds()),
+                text='Show Selected on Map...',
+                callback=lambda: self._showWorldsOnMap(self._purchaseWorldsWidget.selectedWorlds()),
                 enabled=self._purchaseWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._purchaseWorldsWidget.worlds()),
+                text='Show All on Map...',
+                callback=lambda: self._showWorldsOnMap(self._purchaseWorldsWidget.worlds()),
                 enabled=not self._purchaseWorldsWidget.isEmpty()
             )
         ]
@@ -2396,13 +2396,13 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._saleWorldsWidget.selectedWorlds()),
+                text='Show Selected on Map...',
+                callback=lambda: self._showWorldsOnMap(self._saleWorldsWidget.selectedWorlds()),
                 enabled=self._saleWorldsWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._saleWorldsWidget.worlds()),
+                text='Show All on Map...',
+                callback=lambda: self._showWorldsOnMap(self._saleWorldsWidget.worlds()),
                 enabled=not self._saleWorldsWidget.isEmpty()
             )
         ]

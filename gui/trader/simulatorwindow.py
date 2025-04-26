@@ -755,7 +755,7 @@ class SimulatorWindow(gui.WindowWidget):
         try:
             self._mapWidget.centerOnHex(hex=hex)
         except Exception as ex:
-            message = 'Failed to show location in Traveller Map'
+            message = 'Failed to show location on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
