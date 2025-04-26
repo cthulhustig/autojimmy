@@ -792,8 +792,31 @@ class LocalMapWidget(QtWidgets.QWidget):
             int], # MapOptions as an int
         QtGui.QImage](capacity=_TileCacheSize)
 
+    # PyQt5 has a limitation of 10 custom easing curve functions being
+    # registered over the lifetime of the application (i.e. setCustomType) and
+    # there doesn't seem to be a way to unregister them. As each instance of
+    # _MoveAnimationEasingCurve registers it's own callback this limit of 10 is
+    # reached after creating 10 instances of the class. I'm not sure if this is
+    # really a sign that I'm not implementing QEasingCurve correctly but I'm
+    # not sure how I should be doing it. For now I've come up with the hacky
+    # workaround of creating a shared cache of easing curve objects that can
+    # be used by instances of the widget as they need them. If no curve is
+    # available when a widget needs one it will skip the animation and do an
+    # immediate move.
+    _sharedEasingCurves: typing.List[_MoveAnimationEasingCurve] = None
+    # The number of curves needs to be kept low as it will limit the number
+    # of custom curves that could be used elsewhere in the app. It only makes
+    # sense for it to be a multiple of 2 as a widget uses 2 curves to animate
+    # a move.
+    _sharedEasingCurveMaxCount = 4
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+        if LocalMapWidget._sharedEasingCurves is None:
+            LocalMapWidget._sharedEasingCurves = []
+            for _ in range(LocalMapWidget._sharedEasingCurveMaxCount):
+                LocalMapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
 
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
@@ -888,27 +911,16 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._toolTipCallback = None
 
         # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
-        # objects for the entire app. I got this error after a bit when I
-        # was creating them dynamically
+        # objects for the entire app so need to create them when needed
+        # (which means creating the animations when needed) and make sure
+        # they're destroyed after use. I I didn't I would get this error
+        # after a bit:
         # ValueError: a maximum of 10 different easing functions are supported
-        self._viewCenterAnimationEasing = _MoveAnimationEasingCurve()
-        self._viewScaleAnimationEasing = _MoveAnimationEasingCurve()
-
-        self._viewCenterAnimation = QtCore.QPropertyAnimation(
-            self,
-            b"_viewCenterAnimationProp")
-        self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
-        self._viewCenterAnimation.setEasingCurve(self._viewCenterAnimationEasing)
-
-        self._viewScaleAnimation = QtCore.QPropertyAnimation(
-            self,
-            b"_viewScaleAnimationProp")
-        self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
-        self._viewScaleAnimation.setEasingCurve(self._viewScaleAnimationEasing)
-
-        self._viewAnimationGroup = QtCore.QParallelAnimationGroup()
-        self._viewAnimationGroup.addAnimation(self._viewCenterAnimation)
-        self._viewAnimationGroup.addAnimation(self._viewScaleAnimation)
+        self._viewCenterAnimationEasing = None
+        self._viewScaleAnimationEasing = None
+        self._viewCenterAnimation = None
+        self._viewScaleAnimation = None
+        self._viewAnimationGroup = None
 
         # This set keeps track of the move keys that are currently held
         # down. Movement is then processed on a timer. This is done to
@@ -941,7 +953,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             linearScale: typing.Optional[float] = 64, # None keeps current scale
             immediate: bool = False
             ) -> None:
-        self._viewAnimationGroup.stop()
+        self._stopMoveAnimation()
 
         center = QtCore.QPointF(*hex.worldCenter())
         logScale = \
@@ -959,7 +971,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._viewScale.log = logScale
             self._handleViewUpdate(forceAtomicRedraw=True)
         else:
-            self._animateViewTransition(
+            self._startMoveAnimation(
                 newViewCenter=center,
                 newViewLogScale=logScale)
 
@@ -968,7 +980,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             hexes: typing.Collection[travellermap.HexPosition],
             immediate: bool = False
             ) -> None:
-        self._viewAnimationGroup.stop()
+        self._stopMoveAnimation()
 
         if not hexes:
             return
@@ -1007,7 +1019,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._viewScale.log = logScale
             self._handleViewUpdate(forceAtomicRedraw=True)
         else:
-            self._animateViewTransition(
+            self._startMoveAnimation(
                 newViewCenter=center,
                 newViewLogScale=logScale)
 
@@ -1204,7 +1216,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         # The user is interacting with the view so stop any in progress
         # transition animation or they will just end up fighting it
-        self._viewAnimationGroup.stop()
+        self._stopMoveAnimation()
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self._pixelDragStart = event.pos()
@@ -1266,7 +1278,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         # The user is interacting with the view so stop any in progress
         # transition animation or they will just end up fighting it
-        self._viewAnimationGroup.stop()
+        self._stopMoveAnimation()
 
         if self._keyboardMovementTracker.keyDown(event):
             if not self._keyboardMovementTimer.isActive():
@@ -2111,35 +2123,70 @@ class LocalMapWidget(QtWidgets.QWidget):
         xyThreshold = travellermap.SectorHeight * 256 / self._viewScale.linear
         return xyDistance < xyThreshold
 
-    def _animateViewTransition(
+    def _startMoveAnimation(
             self,
             newViewCenter: QtCore.QPointF,
             newViewLogScale: float
             ) -> None:
-        self._viewCenterAnimation.setStartValue(self._worldCenterPos)
-        self._viewCenterAnimation.setEndValue(newViewCenter)
-        if newViewLogScale == self._viewScale.log:
-            self._viewCenterAnimationEasing.setPeriods(
+        self._stopMoveAnimation()
+
+        try:
+            if len(LocalMapWidget._sharedEasingCurves) >= 2:
+                self._viewCenterAnimationEasing = LocalMapWidget._sharedEasingCurves.pop()
+                self._viewScaleAnimationEasing = LocalMapWidget._sharedEasingCurves.pop()
+            else:
+                self._viewCenterAnimationEasing = self._viewScaleAnimationEasing = None
+
+                # Fall back to immediate move
+                self._worldCenterPos = newViewCenter
+                self._viewScale.log = newViewLogScale
+                self._handleViewUpdate(forceAtomicRedraw=True)
+                return
+
+            self._viewCenterAnimation = QtCore.QPropertyAnimation(
+                self,
+                b"_viewCenterAnimationProp")
+            self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
+            self._viewCenterAnimation.setEasingCurve(self._viewCenterAnimationEasing)
+            self._viewCenterAnimation.setStartValue(self._worldCenterPos)
+            self._viewCenterAnimation.setEndValue(newViewCenter)
+            if newViewLogScale == self._viewScale.log:
+                self._viewCenterAnimationEasing.setPeriods(
+                    normAccelPeriod=0.25,
+                    normDecelPeriod=0.25)
+            elif newViewLogScale < self._viewScale.log:
+                # Zooming out
+                self._viewCenterAnimationEasing.setPeriods(
+                    normAccelPeriod=0.75,
+                    normDecelPeriod=0)
+            else: # newViewLogScale > self._viewScale.log
+                # Zooming in
+                self._viewCenterAnimationEasing.setPeriods(
+                    normAccelPeriod=0.05,
+                    normDecelPeriod=0.75)
+
+            self._viewScaleAnimation = QtCore.QPropertyAnimation(
+                self,
+                b"_viewScaleAnimationProp")
+            self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
+            self._viewScaleAnimation.setEasingCurve(self._viewScaleAnimationEasing)
+            self._viewScaleAnimation.setStartValue(self._viewScale.log)
+            self._viewScaleAnimation.setEndValue(newViewLogScale)
+            self._viewScaleAnimationEasing.setPeriods(
                 normAccelPeriod=0.25,
                 normDecelPeriod=0.25)
-        elif newViewLogScale < self._viewScale.log:
-            # Zooming out
-            self._viewCenterAnimationEasing.setPeriods(
-                normAccelPeriod=0.75,
-                normDecelPeriod=0)
-        else: # newViewLogScale > self._viewScale.log
-            # Zooming in
-            self._viewCenterAnimationEasing.setPeriods(
-                normAccelPeriod=0.05,
-                normDecelPeriod=0.75)
 
-        self._viewScaleAnimation.setStartValue(self._viewScale.log)
-        self._viewScaleAnimation.setEndValue(newViewLogScale)
-        self._viewScaleAnimationEasing.setPeriods(
-            normAccelPeriod=0.25,
-            normDecelPeriod=0.25)
-
-        self._viewAnimationGroup.start()
+            self._viewAnimationGroup = QtCore.QParallelAnimationGroup()
+            self._viewAnimationGroup.addAnimation(self._viewCenterAnimation)
+            self._viewAnimationGroup.addAnimation(self._viewScaleAnimation)
+            self._viewAnimationGroup.finished.connect(self._handleMoveAnimationFinished)
+            self._viewAnimationGroup.start()
+        except:
+            # If any error occurs during setting up the animation make sure
+            # stop is called to make sure any assigned curves are returned to
+            # the shared cache
+            self._stopMoveAnimation()
+            raise
 
     def _animateViewScaleGetter(self) -> QtCore.QPointF:
         return self._viewScale.log
@@ -2147,6 +2194,35 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _animateViewScaleSetter(self, scale: float) -> None:
         self._viewScale.log = scale
         self._handleViewUpdate()
+
+    def _stopMoveAnimation(self):
+        if self._viewAnimationGroup:
+            self._viewAnimationGroup.stop()
+            if self._viewCenterAnimation:
+                self._viewAnimationGroup.removeAnimation(self._viewCenterAnimation)
+            if self._viewScaleAnimation:
+                self._viewAnimationGroup.removeAnimation(self._viewScaleAnimation)
+            self._viewAnimationGroup.deleteLater()
+            self._viewAnimationGroup = None
+
+        if self._viewCenterAnimation:
+            self._viewCenterAnimation.deleteLater()
+            self._viewCenterAnimation = None
+
+        if self._viewScaleAnimation:
+            self._viewScaleAnimation.deleteLater()
+            self._viewScaleAnimation = None
+
+        if self._viewCenterAnimationEasing:
+            LocalMapWidget._sharedEasingCurves.append(self._viewCenterAnimationEasing)
+            self._viewCenterAnimationEasing = None
+
+        if self._viewScaleAnimationEasing:
+            LocalMapWidget._sharedEasingCurves.append(self._viewScaleAnimationEasing)
+            self._viewScaleAnimationEasing = None
+
+    def _handleMoveAnimationFinished(self):
+        self._stopMoveAnimation()
 
     _viewScaleAnimationProp = QtCore.pyqtProperty(
         float,
