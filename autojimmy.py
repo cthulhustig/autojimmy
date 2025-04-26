@@ -32,12 +32,6 @@ _WelcomeMessage = """
     <h2><center>Welcome to {name} v{version}</center></h2>
     <p>{name} is a collection of tools for the Traveller RPG. It's primarily aimed at Mongoose
     Traveller, but much of the functionality can be used with other rule systems.</p>
-    <p>An internet connection is recommended when using {name} but not required. {name} comes with a
-    snapshot of the universe data from Traveller Map, this allows most functionality to work when
-    offline. An internet connection allows {name} to integrate with Traveller Map in order to allow
-    more advanced UI features.<br>
-    If you don't have an internet connection, it's recommended to disable the showing of world
-    images in tool tips (see Configuration dialog).<p>
     <p>{name} is not endorsed by the wonderful people at Traveller Map, Mongoose Publishing or Far
     Future Enterprises. However, a great deal of thanks goes to Joshua Bell from Traveller Map for
     his help with the integration and Geir Lanesskog for his clarification of rules from the

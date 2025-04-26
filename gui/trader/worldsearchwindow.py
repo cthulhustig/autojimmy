@@ -14,16 +14,12 @@ _WelcomeMessage = """
     Filters are used to control which worlds the search will match. Multiple filters can be
     combined to further refine the search (e.g. to find all worlds in the local are that have
     scout bases, a population over 1 million and a law level under 6).</p>
-    <p>The world information used is taken from Traveller Map and should be suitable for most
-    Traveller rule systems.</p>
     <p>For Mongoose Traveller players, {name} can calculate Sale and Purchase Trade Scores for
     the chosen worlds. These are calculated as the sum of the Sale and Purchase DMs for a given
     list of Trade Goods. These values are only aimed as a guide but in general the larger the value,
     the better the sale/purchase prices are likely to be. By selecting the Trade Goods the player
     has to sell or selecting the Trade Goods in their purchase range the Trade Score can help
     players quickly identify worlds which may be good options for trading.</p>
-    <p>{name} can integrate with Traveller Map in order to show the found worlds. This feature
-    requires an internet connection.</p>
     </html>
 """.format(name=app.AppName)
 
