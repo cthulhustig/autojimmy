@@ -355,7 +355,7 @@ class WorldSearchWindow(gui.WindowWidget):
             key='MapWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._travellerMapWidget.restoreState(storedValue)
+            self._mapWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -387,7 +387,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
         self._settings.setValue('WorldTableDisplayModeState', self._worldTableDisplayModeTabs.saveState())
         self._settings.setValue('WorldTableState', self._worldTable.saveState())
-        self._settings.setValue('MapWidgetState', self._travellerMapWidget.saveState())
+        self._settings.setValue('MapWidgetState', self._mapWidget.saveState())
         self._settings.setValue('ConfigSplitterState', self._configSplitter.saveState())
         self._settings.setValue('LeftRightSplitterState', self._leftRightSplitter.saveState())
 
@@ -523,8 +523,8 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget = QtWidgets.QTabWidget()
         tableLayoutWidget.setLayout(tableLayout)
 
-        self._travellerMapWidget = gui.MapWidgetEx()
-        self._travellerMapWidget.enableDeadSpaceSelection(enable=True)
+        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget.enableDeadSpaceSelection(enable=True)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -541,13 +541,13 @@ class WorldSearchWindow(gui.WindowWidget):
         # its original size.
         mapWrapperLayout = QtWidgets.QVBoxLayout()
         mapWrapperLayout.setContentsMargins(0, 0, 0, 0)
-        mapWrapperLayout.addWidget(self._travellerMapWidget)
-        mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
+        mapWrapperLayout.addWidget(self._mapWidget)
+        self._mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(tableLayoutWidget, 'World Details')
-        self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.addTab(self._mapWrapperWidget, 'Universe Map')
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._findWorldsButton)
@@ -565,10 +565,10 @@ class WorldSearchWindow(gui.WindowWidget):
     # TODO: This can be removed when I finally ditch the web map widget
     def _travellerMapInitFix(self) -> None:
         currentWidget = self._resultsDisplayModeTabView.currentWidget()
-        if currentWidget != self._travellerMapWidget:
+        if currentWidget != self._mapWidget:
             size = currentWidget.size()
-            self._travellerMapWidget.resize(size)
-            self._travellerMapWidget.show()
+            self._mapWidget.resize(size)
+            self._mapWidget.show()
 
     def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._worldTableDisplayModeTabs.currentDisplayMode()
@@ -623,7 +623,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.setTradeGoods(
             tradeGoods=self._tradeGoodTable.checkedTradeGoods())
         self._resultsCountLabel.setText(common.formatNumber(0))
-        self._travellerMapWidget.clearHexHighlights()
+        self._mapWidget.clearHexHighlights()
 
         foundWorlds = None
         try:
@@ -675,7 +675,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.addWorlds(worlds=foundWorlds)
         self._resultsCountLabel.setText(common.formatNumber(len(foundWorlds)))
 
-        self._showWorldsInTravellerMap(
+        self._showWorldsOnMap(
             worlds=foundWorlds,
             highlightWorlds=True,
             switchTab=False)
@@ -710,13 +710,13 @@ class WorldSearchWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._worldTable.selectedWorlds()),
+                text='Show Selected Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(self._worldTable.selectedWorlds()),
                 enabled=self._worldTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._worldTable.worlds()),
+                text='Show All Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(self._worldTable.worlds()),
                 enabled=not self._worldTable.isEmpty()
             ),
             None, # Separator
@@ -774,7 +774,7 @@ class WorldSearchWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showWorldsInTravellerMap(
+    def _showWorldsOnMap(
             self,
             worlds: typing.Iterable[traveller.World],
             highlightWorlds: bool = False,
@@ -783,16 +783,16 @@ class WorldSearchWindow(gui.WindowWidget):
         try:
             if switchTab:
                 self._resultsDisplayModeTabView.setCurrentWidget(
-                    self._travellerMapWidget)
+                    self._mapWrapperWidget)
 
             hexes = [world.hex() for world in worlds]
             if highlightWorlds:
                 # Clear old highlight when highlighting new worlds
-                self._travellerMapWidget.clearHexHighlights()
-                self._travellerMapWidget.highlightHexes(hexes=hexes)
-            self._travellerMapWidget.centerOnHexes(hexes=hexes)
+                self._mapWidget.clearHexHighlights()
+                self._mapWidget.highlightHexes(hexes=hexes)
+            self._mapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

@@ -472,7 +472,7 @@ class JumpRouteWindow(gui.WindowWidget):
             key='MapWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._travellerMapWidget.restoreState(storedValue)
+            self._mapWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -551,7 +551,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.setValue('AvoidFilterTableState', self._avoidFiltersWidget.saveState())
         self._settings.setValue('AvoidFilterTableContent', self._avoidFiltersWidget.saveContent())
         self._settings.setValue('AvoidTabBarState', self._avoidLocationsTabWidget.saveState())
-        self._settings.setValue('MapWidgetState', self._travellerMapWidget.saveState())
+        self._settings.setValue('MapWidgetState', self._mapWidget.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
         self._settings.setValue('JumpRouteTableState', self._jumpRouteTable.saveState())
         self._settings.setValue('JumpRouteDisplayModeState', self._jumpRouteDisplayModeTabBar.saveState())
@@ -611,17 +611,17 @@ class JumpRouteWindow(gui.WindowWidget):
     # TODO: This can be removed when I finally ditch the web map widget
     def _travellerMapInitFix(self) -> None:
         currentWidget = self._resultsDisplayModeTabView.currentWidget()
-        if currentWidget != self._travellerMapWidget:
+        if currentWidget != self._mapWidget:
             size = currentWidget.size()
-            self._travellerMapWidget.resize(size)
-            self._travellerMapWidget.show()
+            self._mapWidget.resize(size)
+            self._mapWidget.show()
 
     def _setupStartFinishControls(self) -> None:
         self._selectStartFinishWidget = _StartFinishSelectWidget()
         self._selectStartFinishWidget.enableDeadSpaceSelection(
             enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
         self._selectStartFinishWidget.selectionChanged.connect(self._startFinishChanged)
-        self._selectStartFinishWidget.showHexRequested.connect(self._showHexInTravellerMap)
+        self._selectStartFinishWidget.showHexRequested.connect(self._showHexOnMap)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._selectStartFinishWidget)
@@ -712,8 +712,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._waypointsWidget.enableDisplayModeChangedEvent(enable=True)
         self._waypointsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
-        self._waypointsWidget.enableShowInTravellerMapEvent(enable=True)
-        self._waypointsWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
+        self._waypointsWidget.enableShowOnMapEvent(enable=True)
+        self._waypointsWidget.showOnMapRequested.connect(self._showHexesOnMap)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._waypointsWidget)
@@ -730,8 +730,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
         self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._avoidHexesWidget.enableShowInTravellerMapEvent(enable=True)
-        self._avoidHexesWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
+        self._avoidHexesWidget.enableShowOnMapEvent(enable=True)
+        self._avoidHexesWidget.showOnMapRequested.connect(self._showHexesOnMap)
         self._avoidLocationsTabWidget.addTab(self._avoidHexesWidget, 'Hexes')
         self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidHexesWidget, 0)
         self._avoidHexesWidget.contentChanged.connect(
@@ -799,13 +799,13 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
 
-        self._travellerMapWidget = gui.MapWidgetEx()
-        self._travellerMapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._travellerMapWidget.setToolTipCallback(self._formatMapToolTip)
-        self._travellerMapWidget.enableDeadSpaceSelection(
+        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._mapWidget.setToolTipCallback(self._formatMapToolTip)
+        self._mapWidget.enableDeadSpaceSelection(
             enable=app.Config.instance().routingType() is logic.RoutingType.DeadSpace)
-        self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
-        self._travellerMapWidget.displayOptionsChanged.connect(self._updateJumpOverlays)
+        self._mapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
+        self._mapWidget.displayOptionsChanged.connect(self._updateJumpOverlays)
 
         self._jumpRatingOverlayToggle = gui.ToggleButton()
         self._jumpRatingOverlayToggle.setChecked(False)
@@ -820,7 +820,7 @@ class JumpRouteWindow(gui.WindowWidget):
         configLayout.addWidget(self._worldTaggingOverlayToggle, 1, 0)
         configLayout.addWidget(gui.MapOverlayLabel('World Tagging'), 1, 1)
 
-        self._travellerMapWidget.addConfigSection(
+        self._mapWidget.addConfigSection(
             section='Jump Overlays',
             content=configLayout)
 
@@ -839,15 +839,15 @@ class JumpRouteWindow(gui.WindowWidget):
         # its original size.
         mapWrapperLayout = QtWidgets.QVBoxLayout()
         mapWrapperLayout.setContentsMargins(0, 0, 0, 0)
-        mapWrapperLayout.addWidget(self._travellerMapWidget)
-        mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
+        mapWrapperLayout.addWidget(self._mapWidget)
+        self._mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(jumpRouteWidget, 'Jump Route')
         self._resultsDisplayModeTabView.addTab(self._refuellingPlanTable, 'Refuelling Plan')
-        self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
-        self._resultsDisplayModeTabView.setCurrentWidget(mapWrapperWidget)
+        self._resultsDisplayModeTabView.addTab(self._mapWrapperWidget, 'Universe Map')
+        self._resultsDisplayModeTabView.setCurrentWidget(self._mapWrapperWidget)
 
         routeLayout = QtWidgets.QVBoxLayout()
         routeLayout.addWidget(self._calculateRouteButton)
@@ -1152,13 +1152,13 @@ class JumpRouteWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selection in Traveller Map',
-                callback=lambda: self._showHexesInTravellerMap(self._jumpRouteTable.selectedHexes()),
+                text='Show Selection on Map',
+                callback=lambda: self._showHexesOnMap(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All in Traveller Map',
-                callback=lambda: self._showHexesInTravellerMap(self._jumpRouteTable.hexes()),
+                text='Show All on Map',
+                callback=lambda: self._showHexesOnMap(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             )
         ]
@@ -1196,13 +1196,13 @@ class JumpRouteWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selection in Traveller Map',
-                callback=lambda: self._showHexesInTravellerMap(self._refuellingPlanTable.selectedHexes()),
+                text='Show Selection on Map',
+                callback=lambda: self._showHexesOnMap(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All in Traveller Map',
-                callback=lambda: self._showHexesInTravellerMap(self._refuellingPlanTable.hexes()),
+                text='Show All on Map',
+                callback=lambda: self._showHexesOnMap(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
             None, # Separator
@@ -1285,13 +1285,13 @@ class JumpRouteWindow(gui.WindowWidget):
         menu = QtWidgets.QMenu('Zoom To', self)
         menuItems.append(menu)
         action = menu.addAction('Start Location')
-        action.triggered.connect(lambda: self._showHexInTravellerMap(hex=startHex))
+        action.triggered.connect(lambda: self._showHexOnMap(hex=startHex))
         action.setEnabled(startHex != None)
         action = menu.addAction('Finish Location')
-        action.triggered.connect(lambda: self._showHexInTravellerMap(hex=finishHex))
+        action.triggered.connect(lambda: self._showHexOnMap(hex=finishHex))
         action.setEnabled(finishHex != None)
         action = menu.addAction('Jump Route')
-        action.triggered.connect(lambda: self._showJumpRouteInTravellerMap())
+        action.triggered.connect(lambda: self._showJumpRouteOnMap())
         action.setEnabled(self._jumpRoute != None)
 
         menu = QtWidgets.QMenu('Export', self)
@@ -1423,7 +1423,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _exportMapScreenshot(self) -> None:
         try:
-            snapshot = self._travellerMapWidget.createSnapshot()
+            snapshot = self._mapWidget.createSnapshot()
         except Exception as ex:
             message = 'An exception occurred while generating the snapshot'
             logging.error(msg=message, exc_info=ex)
@@ -1489,15 +1489,15 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showHexInTravellerMap(
+    def _showHexOnMap(
             self,
             hex: travellermap.HexPosition
             ) -> None:
         try:
-            self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
-            self._travellerMapWidget.centerOnHex(hex=hex)
+            self._resultsDisplayModeTabView.setCurrentWidget(self._mapWrapperWidget)
+            self._mapWidget.centerOnHex(hex=hex)
         except Exception as ex:
-            message = 'Failed to show hex in Traveller Map'
+            message = 'Failed to show hex on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1506,22 +1506,22 @@ class JumpRouteWindow(gui.WindowWidget):
 
     # This moves/zooms the traveller map widget to show
     # the current jump route
-    def _showJumpRouteInTravellerMap(self) -> None:
+    def _showJumpRouteOnMap(self) -> None:
         if not self._jumpRoute:
             return
 
-        self._showHexesInTravellerMap(
+        self._showHexesOnMap(
             hexes=[hex for hex, _ in self._jumpRoute])
 
-    def _showHexesInTravellerMap(
+    def _showHexesOnMap(
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
         try:
-            self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
-            self._travellerMapWidget.centerOnHexes(hexes=hexes)
+            self._resultsDisplayModeTabView.setCurrentWidget(self._mapWrapperWidget)
+            self._mapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
-            message = 'Failed to show hexes(s) in Traveller Map'
+            message = 'Failed to show hexes(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1530,7 +1530,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _updateJumpOverlays(self) -> None:
         for handle in self._jumpOverlayHandles:
-            self._travellerMapWidget.removeOverlay(handle=handle)
+            self._mapWidget.removeOverlay(handle=handle)
         self._jumpOverlayHandles.clear()
 
         showJumpRatingOverlay = self._jumpRatingOverlayToggle.isChecked()
@@ -1547,7 +1547,7 @@ class JumpRouteWindow(gui.WindowWidget):
             colour = self._JumpRatingOverlayDarkStyleColour \
                 if isDarkMapStyle else \
                 self._JumpRatingOverlayLightStyleColour
-            handle = self._travellerMapWidget.createRadiusOverlay(
+            handle = self._mapWidget.createRadiusOverlay(
                 center=startHex,
                 radius=jumpRating,
                 lineColour=colour,
@@ -1585,7 +1585,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 colourMap[world.hex()] = tagColour
 
             if taggedHexes:
-                handle = self._travellerMapWidget.createHexOverlay(
+                handle = self._mapWidget.createHexOverlay(
                     hexes=taggedHexes,
                     primitive=gui.MapPrimitiveType.Hex,
                     fillMap=colourMap)
@@ -1616,26 +1616,26 @@ class JumpRouteWindow(gui.WindowWidget):
             self._maxRouteCostLabel.clear()
 
     def _updateTravellerMapOverlays(self) -> None:
-        self._travellerMapWidget.clearHexHighlights()
-        self._travellerMapWidget.clearJumpRoute()
+        self._mapWidget.clearHexHighlights()
+        self._mapWidget.clearJumpRoute()
         self._jumpRatingOverlayHandle = None
         self._reachableWorldsOverlayHandle = None
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
         if startHex:
-            self._travellerMapWidget.highlightHex(
+            self._mapWidget.highlightHex(
                 hex=startHex,
                 colour='#00FF00',
                 radius=0.5)
         if finishHex:
-            self._travellerMapWidget.highlightHex(
+            self._mapWidget.highlightHex(
                 hex=finishHex,
                 colour='#00FF00',
                 radius=0.5)
 
         waypointHexes = self._waypointsWidget.hexes()
         if waypointHexes:
-            self._travellerMapWidget.highlightHexes(
+            self._mapWidget.highlightHexes(
                 hexes=waypointHexes,
                 colour='#0066FF',
                 radius=0.3)
@@ -1645,20 +1645,20 @@ class JumpRouteWindow(gui.WindowWidget):
             if (hex != startHex) and (hex != finishHex) and (hex not in waypointHexes):
                 filteredAvoidHexes.append(hex)
         if filteredAvoidHexes:
-            self._travellerMapWidget.highlightHexes(
+            self._mapWidget.highlightHexes(
                 hexes=filteredAvoidHexes,
                 colour='#FF0000',
                 radius=0.3)
 
         if self._jumpRoute:
-            self._travellerMapWidget.setJumpRoute(
+            self._mapWidget.setJumpRoute(
                 jumpRoute=self._jumpRoute,
                 refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
             if self._zoomToJumpRoute:
                 # Only zoom to area if this is a 'new' route (i.e. the start/finish worlds have changed).
                 # Otherwise we assume this is an iteration of the existing jump route and the user wants
                 # to stay with their current view
-                self._travellerMapWidget.centerOnJumpRoute()
+                self._mapWidget.centerOnJumpRoute()
 
         self._updateJumpOverlays()
 
@@ -1669,7 +1669,7 @@ class JumpRouteWindow(gui.WindowWidget):
         isDeadSpaceRouting = self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace
         self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
         self._waypointsWidget.enableDeadSpace(enable=isDeadSpaceRouting)
-        self._travellerMapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
+        self._mapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
         self._enableDisableControls()
         self._updateTravellerMapOverlays()
 

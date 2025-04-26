@@ -113,7 +113,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             key='MapWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._travellerMapWidget.restoreState(storedValue)
+            self._mapWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -130,7 +130,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._settings.setValue('TradeGoodTableState', self._tradeGoodTable.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
         self._settings.setValue('WorldTableState', self._worldManagementWidget.saveState())
-        self._settings.setValue('MapWidgetState', self._travellerMapWidget.saveState())
+        self._settings.setValue('MapWidgetState', self._mapWidget.saveState())
         self._settings.setValue('LeftRightSplitter', self._leftRightSplitter.saveState())
 
         self._settings.endGroup()
@@ -175,10 +175,10 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
         self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
 
-        self._travellerMapWidget = gui.MapWidgetEx()
-        self._travellerMapWidget.setSelectionMode(
+        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
-        self._travellerMapWidget.selectionChanged.connect(self._mapSelectionChanged)
+        self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -195,13 +195,13 @@ class WorldComparisonWindow(gui.WindowWidget):
         # its original size.
         mapWrapperLayout = QtWidgets.QVBoxLayout()
         mapWrapperLayout.setContentsMargins(0, 0, 0, 0)
-        mapWrapperLayout.addWidget(self._travellerMapWidget)
-        mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
+        mapWrapperLayout.addWidget(self._mapWidget)
+        self._mapWrapperWidget = gui.LayoutWrapperWidget(mapWrapperLayout)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(self._worldManagementWidget, 'World Details')
-        self._resultsDisplayModeTabView.addTab(mapWrapperWidget, 'Traveller Map')
+        self._resultsDisplayModeTabView.addTab(self._mapWrapperWidget, 'Universe Map')
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._resultsDisplayModeTabView)
@@ -255,16 +255,16 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget.setActiveColumns(self._worldColumns())
 
     def _tableContentsChanged(self) -> None:
-        with gui.SignalBlocker(widget=self._travellerMapWidget):
-            self._travellerMapWidget.clearSelectedHexes()
+        with gui.SignalBlocker(widget=self._mapWidget):
+            self._mapWidget.clearSelectedHexes()
             for world in self._worldTable.worlds():
-                self._travellerMapWidget.selectHex(
+                self._mapWidget.selectHex(
                     hex=world.hex(),
                     setInfoHex=False)
 
     def _mapSelectionChanged(self) -> None:
         oldSelection = set(self._worldManagementWidget.hexes())
-        newSelection = set(self._travellerMapWidget.selectedHexes())
+        newSelection = set(self._mapWidget.selectedHexes())
 
         with gui.SignalBlocker(widget=self._worldManagementWidget):
             for hex in oldSelection:
@@ -325,13 +325,13 @@ class WorldComparisonWindow(gui.WindowWidget):
             ),
             None, # Separator
             gui.MenuItem(
-                text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._worldManagementWidget.selectedWorlds()),
+                text='Show Selected Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(self._worldManagementWidget.selectedWorlds()),
                 enabled=self._worldManagementWidget.hasSelection()
             ),
             gui.MenuItem(
-                text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._worldManagementWidget.worlds()),
+                text='Show All Worlds on Map...',
+                callback=lambda: self._showWorldsOnMap(self._worldManagementWidget.worlds()),
                 enabled=not self._worldManagementWidget.isEmpty()
             ),
             None, # Separator
@@ -388,17 +388,17 @@ class WorldComparisonWindow(gui.WindowWidget):
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
         infoWindow.addWorlds(worlds=worlds)
 
-    def _showWorldsInTravellerMap(
+    def _showWorldsOnMap(
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(
-                self._travellerMapWidget)
-            self._travellerMapWidget.centerOnHexes(hexes=hexes)
+                self._mapWrapperWidget)
+            self._mapWidget.centerOnHexes(hexes=hexes)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

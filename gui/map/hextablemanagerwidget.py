@@ -9,7 +9,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
     contextMenuRequested = QtCore.pyqtSignal(QtCore.QPoint)
     displayModeChanged = QtCore.pyqtSignal(gui.HexTableTabBar.DisplayMode)
-    showInTravellerMap = QtCore.pyqtSignal([list])
+    showOnMapRequested = QtCore.pyqtSignal([list])
 
     _StateVersion = 'HexTableManagerWidget_v1'
 
@@ -27,7 +27,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._relativeHex = None
         self._enableContextMenuEvent = False
         self._enableDisplayModeChangedEvent = False
-        self._enableShowInTravellerMapEvent = False
+        self._enableShowOnMapEvent = False
         self._enableDeadSpace = False
 
         # Instance of dialogs are created on demand then maintained. This is
@@ -336,11 +336,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def isDisplayModeChangedEventEnabled(self) -> bool:
         return self._enableDisplayModeChangedEvent
 
-    def enableShowInTravellerMapEvent(self, enable: bool = True) -> None:
-        self._enableShowInTravellerMapEvent = enable
+    def enableShowOnMapEvent(self, enable: bool = True) -> None:
+        self._enableShowOnMapEvent = enable
 
-    def isShowInTravellerMapEventEnabled(self) -> bool:
-        return self._enableShowInTravellerMapEvent
+    def isShowOnMapEventEnabled(self) -> bool:
+        return self._enableShowOnMapEvent
 
     def enableDeadSpace(self, enable: bool) -> None:
         self._enableDeadSpace = enable
@@ -471,20 +471,20 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
         detailsWindow.addHexes(hexes=hexes)
 
-    def _showInTravellerMap(
+    def _showOnMap(
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        if self._enableShowInTravellerMapEvent:
-            self.showInTravellerMap.emit(hexes)
+        if self._enableShowOnMapEvent:
+            self.showOnMapRequested.emit(hexes)
             return
 
         try:
-            mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
             mapWindow.clearOverlays()
             mapWindow.highlightHexes(hexes=hexes)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show world(s) on map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -535,12 +535,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         menuItems.append(None) # Separator
 
         menuItems.append(gui.MenuItem(
-            text='Show Selection in Traveller Map...',
-            callback=lambda: self._showInTravellerMap(self._hexTable.selectedHexes()),
+            text='Show Selection on Map...',
+            callback=lambda: self._showOnMap(self._hexTable.selectedHexes()),
             enabled=self._hexTable.hasSelection()))
         menuItems.append(gui.MenuItem(
-            text='Show All in Traveller Map...',
-            callback=lambda: self._showInTravellerMap(self._hexTable.hexes()),
+            text='Show All on Map...',
+            callback=lambda: self._showOnMap(self._hexTable.hexes()),
             enabled=not self._hexTable.isEmpty()))
 
         gui.displayMenu(

@@ -36,15 +36,15 @@ class HexRadiusSelectDialog(gui.DialogEx):
         selectionRadiusLayout.addWidget(self._includeDeadSpaceCheckBox)
         selectionRadiusLayout.addStretch()
 
-        self._travellerMapWidget = gui.MapWidgetEx()
-        self._travellerMapWidget.setSelectionMode(
+        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.SingleSelect)
         # Always enable dead space selection on the map as, even if dead space selection
         # is disabled at the dialog level, the user should be able to select a dead space
         # hex and have the worlds around it selected
-        self._travellerMapWidget.enableDeadSpaceSelection(enable=True)
-        self._travellerMapWidget.selectionChanged.connect(self._handleConfigChange)
-        self._travellerMapWidget.displayOptionsChanged.connect(self._handleConfigChange)
+        self._mapWidget.enableDeadSpaceSelection(enable=True)
+        self._mapWidget.selectionChanged.connect(self._handleConfigChange)
+        self._mapWidget.displayOptionsChanged.connect(self._handleConfigChange)
 
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDisabled(False)
@@ -62,7 +62,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addLayout(selectionRadiusLayout)
-        windowLayout.addWidget(self._travellerMapWidget)
+        windowLayout.addWidget(self._mapWidget)
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
@@ -82,7 +82,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             key='SelectHexState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._travellerMapWidget.restoreState(storedValue)
+            self._mapWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -104,21 +104,21 @@ class HexRadiusSelectDialog(gui.DialogEx):
         return list(self._selectedHexes)
 
     def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
-        selection = self._travellerMapWidget.selectedHexes()
+        selection = self._mapWidget.selectedHexes()
         return selection[0] if selection else None
 
     def setCenterHex(self, hex: typing.Optional[travellermap.HexPosition]) -> None:
         if hex == self.centerHex():
             return # Nothing to do
 
-        with gui.SignalBlocker(self._travellerMapWidget):
+        with gui.SignalBlocker(self._mapWidget):
             if hex:
-                self._travellerMapWidget.selectHex(hex=hex)
-                self._travellerMapWidget.centerOnHex(
+                self._mapWidget.selectHex(hex=hex)
+                self._mapWidget.centerOnHex(
                     hex=hex,
                     immediate=self.isHidden())
             else:
-                self._travellerMapWidget.clearSelectedHexes()
+                self._mapWidget.clearSelectedHexes()
 
         self._handleConfigChange()
 
@@ -129,7 +129,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         if radius == self.searchRadius():
             return # Nothing to do
 
-        with gui.SignalBlocker(self._travellerMapWidget):
+        with gui.SignalBlocker(self._mapWidget):
             self._radiusSpinBox.setValue(radius)
 
         self._handleConfigChange()
@@ -150,7 +150,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         app.HexHistory.instance().addHex(hex=hex)
 
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('SelectHexState', self._travellerMapWidget.saveState())
+        self._settings.setValue('SelectHexState', self._mapWidget.saveState())
         self._settings.setValue('SelectRadiusState', self._radiusSpinBox.saveState())
         self._settings.setValue('IncludeDeadSpaceState', self._includeDeadSpaceCheckBox.saveState())
         self._settings.endGroup()
@@ -160,7 +160,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
     def _handleConfigChange(self) -> None:
         self._selectedHexes.clear()
         for handle in self._overlays:
-            self._travellerMapWidget.removeOverlay(handle)
+            self._mapWidget.removeOverlay(handle)
         self._overlays.clear()
 
         centerHex = self.centerHex()
@@ -177,7 +177,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 for hex in centerHex.yieldRadiusHexes(radius=searchRadius):
                     self._selectedHexes.append(hex)
 
-                handle = self._travellerMapWidget.createRadiusOverlay(
+                handle = self._mapWidget.createRadiusOverlay(
                     center=centerHex,
                     radius=searchRadius,
                     fillColour=selectionColour)
@@ -198,13 +198,13 @@ class HexRadiusSelectDialog(gui.DialogEx):
                         exception=ex)
 
                 if self._selectedHexes:
-                    handle = self._travellerMapWidget.createHexOverlay(
+                    handle = self._mapWidget.createHexOverlay(
                         hexes=self._selectedHexes,
                         primitive=gui.MapPrimitiveType.Hex,
                         fillColour=selectionColour)
                     self._overlays.append(handle)
 
-            handle = self._travellerMapWidget.createRadiusOverlay(
+            handle = self._mapWidget.createRadiusOverlay(
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,
