@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore
 _AboutText = """
     <html>
     <h1 style="text-align: center">{name} v{version}</h1>
-    <p>Copyright (C) 2023 CthulhuStig</p>
+    <p>Copyright (C) 2025 CthulhuStig</p>
     <p>Universe Data Timestamp: {timestamp}</p>
     <p>Source Code: <a href="{url}">{url}</a></p>
     <p>This program is free software: you can redistribute it and/or modify<br>

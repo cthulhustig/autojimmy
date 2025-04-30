@@ -1,8 +1,9 @@
 [Setup]
 AppId={{f7ba1f01-27ad-49d4-87af-1848bbf9bc40}
 AppName={#ApplicationName}
+AppVerName={cm:NameAndVersion,#ApplicationName,#ApplicationVersion}
 AppVersion={#ApplicationVersion}
-AppVerName={#ApplicationName}
+VersionInfoVersion={#ApplicationVersion}
 WizardStyle=modern
 DefaultDirName={autopf}\{#ApplicationName}
 DefaultGroupName={#ApplicationName}

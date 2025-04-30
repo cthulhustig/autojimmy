@@ -15,19 +15,17 @@ _WelcomeMessage = """
     <p>The Jump Route Planner allows you to create complex jump routes between worlds. It also has
     experimental features to generate refuelling plans for the route and estimate the logistics
     costs based on average, worst and best case dice rolls.</p>
-    <p>The jump route generation is based on the logic used by Traveller Map, so should be compatible
+    <p>Jump route calculations are based on the logic used by Traveller Map, so should be compatible
     with most Traveller rule systems. The logistics cost calculations use Mongoose Traveller rules,
-    so compatibility with other rule systems will vary. If you're not using Mongoose Traveller
-    rules, cost values can simply be ignored as they don't affect the generated route (unless lowest
-    cost route optimisation is used).</p>
+    so compatibility with other rule systems will vary. If you're not using Mongoose Traveller rules,
+    cost values can simply be ignored as they don't affect the generated route (unless lowest cost
+    route optimisation is used).</p>
     <p>Waypoint worlds can be added to create a multipoint route. This includes the creation of
     circular routes.<p>
     <p>Avoid worlds can be added to, as the name suggests, avoid specific world. This can either
     be done by specifying specific worlds or by adding filters which allow worlds to be avoided
     based on their attributes (e.g. avoid worlds that have specific allegiances if you've made some
     enemies or worlds with an imperial bases or a law level over 5 if you're trying to lie low).</p>
-    <p>{name} can integrate with Traveller Map in order to display calculated jump routes. This
-    feature requires an internet connection.</p>
     </html>
 """.format(name=app.AppName)
 
