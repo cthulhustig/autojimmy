@@ -1835,7 +1835,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
             message = \
-                'Your ship has a very high jump rating. This can significantly increases ' \
+                'Your ship has a very high jump rating. This can significantly increase ' \
                 'the time it takes to calculate trade options.\n\n' \
                 'Do you want to continue?'
             answer = gui.AutoSelectMessageBox.question(
@@ -2481,7 +2481,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
             message = \
-                'Your ship has a very high jump rating. This can significantly increases ' \
+                'Your ship has a very high jump rating. This can significantly increase ' \
                 'the time it takes to calculate trade options.\n\n' \
                 'Do you want to continue?'
             answer = gui.AutoSelectMessageBox.question(

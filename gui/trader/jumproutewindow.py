@@ -920,7 +920,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
             message = \
-                'Your ship has a very high jump rating. This can significantly increases ' \
+                'Your ship has a very high jump rating. This can significantly increase ' \
                 'the number of possible routes that need to be processed, with the result ' \
                 'being route calculations can take a long time.\n\n' \
                 'Do you want to continue?'
