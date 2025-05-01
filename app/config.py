@@ -1266,8 +1266,8 @@ class Config(object):
         self._shipJumpRating = self._loadIntSetting(
             key=Config._ShipJumpRatingKeyName,
             default=2,
-            minValue=1,
-            maxValue=12)
+            minValue=app.MinPossibleJumpRating,
+            maxValue=app.MaxPossibleJumpRating)
         self._shipCargoCapacity = self._loadIntSetting(
             key=Config._ShipCargoCapacityKeyName,
             default=12,
