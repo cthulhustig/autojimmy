@@ -2,7 +2,9 @@ MinPossibleDm = -6
 MaxPossibleDm = 12
 
 MinPossibleJumpRating = 1
-MaxPossibleJumpRating = 12
+MaxPossibleJumpRating = 40
+
+ConsideredVeryHighJumpRating = 10
 
 MaxSearchRadius = 32 # Max search radius to allow in parsecs
 

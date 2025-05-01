@@ -918,6 +918,21 @@ class JumpRouteWindow(gui.WindowWidget):
             gui.MessageBoxEx.critical(parent=self, text=message)
             return
 
+        if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
+            message = \
+                'Your ship has a very high jump rating. This can significantly increases ' \
+                'the number of possible routes that need to be processed, with the result ' \
+                'being route calculations can take a long time.\n\n' \
+                'Do you want to continue?'
+            answer = gui.AutoSelectMessageBox.question(
+                parent=self,
+                text=message,
+                stateKey='JumpRouteHighJumpRatingWarning',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
+
         # Fuel based route calculation
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None

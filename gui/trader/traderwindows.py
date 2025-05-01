@@ -1833,6 +1833,20 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
+        if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
+            message = \
+                'Your ship has a very high jump rating. This can significantly increases ' \
+                'the time it takes to calculate trade options.\n\n' \
+                'Do you want to continue?'
+            answer = gui.AutoSelectMessageBox.question(
+                parent=self,
+                text=message,
+                stateKey='WorldTraderHighJumpRatingWarning',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
+
         if self._includeLogisticsCostsCheckBox.isChecked() and \
                 self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
             message = 'Using basic routing is not recommended when calculating trade options as the accuracy of logistics estimations is reduced.'
@@ -2464,6 +2478,20 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
+
+        if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
+            message = \
+                'Your ship has a very high jump rating. This can significantly increases ' \
+                'the time it takes to calculate trade options.\n\n' \
+                'Do you want to continue?'
+            answer = gui.AutoSelectMessageBox.question(
+                parent=self,
+                text=message,
+                stateKey='MultiTraderHighJumpRatingWarning',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
 
         if self._includeLogisticsCostsCheckBox.isChecked() and \
                 self._routingTypeComboBox.currentEnum() == logic.RoutingType.Basic:
