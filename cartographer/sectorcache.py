@@ -103,10 +103,12 @@ class SectorCache(object):
     def __init__(
             self,
             graphics: cartographer.AbstractGraphics,
-            styleCache: cartographer.StyleCache
+            styleCache: cartographer.StyleCache,
+            milieu: travellermap.Milieu = travellermap.Milieu.M1105
             ) -> None:
         self._graphics = graphics
         self._styleCache = styleCache
+        self._milieu = milieu
         self._worldsCache: typing.Dict[
             typing.Union[int, int], # Sector x/y
             cartographer.AbstractPointList
@@ -138,9 +140,15 @@ class SectorCache(object):
         if worlds is not None:
             return worlds
 
-        sector = traveller.WorldManager.instance().sectorBySectorIndex(index=key)
-        if not sector:
-            sector = traveller.WorldManager.instance().placeholderSectorBySectorIndex(index=key)
+        sector = traveller.WorldManager.instance().sectorBySectorIndex(
+            index=key,
+            milieu=self._milieu)
+        if not sector and self._milieu is not travellermap.Milieu.M1105:
+            # Use M1105 as placeholder data for locations that current
+            # milieu doesn't have data
+            sector = traveller.WorldManager.instance().sectorBySectorIndex(
+                index=key,
+                milieu=travellermap.Milieu.M1105)
             if not sector:
                 # Don't cache the fact the sector doesn't exist to avoid memory bloat
                 return None

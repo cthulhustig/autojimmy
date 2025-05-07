@@ -1560,7 +1560,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         if hex and self.isEnabled():
             if app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
-                main = traveller.WorldManager.instance().positionToMain(hex=hex)
+                main = traveller.WorldManager.instance().mainByPosition(hex=hex)
                 self._mainsOverlay.setMain(main)
                 self.update() # Trigger redraw
 

@@ -147,7 +147,7 @@ class Simulator(object):
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInRadius(
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
-                worldFilterCallback=worldFilterCallback)
+                filterCallback=worldFilterCallback)
 
             # Buy something
             self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')

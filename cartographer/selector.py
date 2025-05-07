@@ -9,11 +9,13 @@ class RectSelector(object):
             self,
             sectorSlop: int = 1, # Numbers of sectors
             subsectorSlop: int = 1, # Number of subsectors
-            worldSlop: int = 1 # Number of parsecs
+            worldSlop: int = 1, # Number of parsecs,
+            milieu: travellermap.Milieu = travellermap.Milieu.M1105
             ) -> None:
         self._sectorSlop = sectorSlop
         self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
+        self._milieu = milieu
         self._rect = cartographer.RectangleF()
 
         self._tightSectors: typing.Optional[typing.List[traveller.Sector]] = None
@@ -25,11 +27,11 @@ class RectSelector(object):
         self._tightWorlds: typing.Optional[typing.List[traveller.World]] = None
         self._sloppyWorlds: typing.Optional[typing.List[traveller.World]] = None
 
-        self._tightPlaceholderWorlds: typing.Optional[typing.List[traveller.PlaceholderWorld]] = None
-        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[traveller.PlaceholderWorld]] = None
+        self._tightPlaceholderWorlds: typing.Optional[typing.List[traveller.World]] = None
+        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[traveller.World]] = None
 
-        self._tightPlaceholderSectors: typing.Optional[typing.List[traveller.PlaceholderSector]] = None
-        self._sloppyPlaceholderSectors: typing.Optional[typing.List[traveller.PlaceholderSector]] = None
+        self._tightPlaceholderSectors: typing.Optional[typing.List[traveller.Sector]] = None
+        self._sloppyPlaceholderSectors: typing.Optional[typing.List[traveller.Sector]] = None
 
     def rect(self) -> cartographer.RectangleF:
         return cartographer.RectangleF(self._rect)
@@ -90,7 +92,7 @@ class RectSelector(object):
 
         return self._tightWorlds if tight else self._sloppyWorlds
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[traveller.PlaceholderSector]:
+    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[traveller.Sector]:
         sectors = self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
         if sectors is not None:
             return sectors
@@ -99,7 +101,7 @@ class RectSelector(object):
 
         return self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
 
-    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[traveller.PlaceholderWorld]:
+    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[traveller.World]:
         placeholders = self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
         if placeholders is not None:
             return placeholders
@@ -135,9 +137,20 @@ class RectSelector(object):
                 offsetY=0)
 
             if placeholders:
-                sloppySectors = traveller.WorldManager.instance().placeholderSectorsInArea(
-                    upperLeft=upperLeft,
-                    lowerRight=lowerRight)
+                if self._milieu is not travellermap.Milieu.M1105:
+                    # Use M1105 as placeholder data for locations that current
+                    # milieu doesn't have data
+                    # TODO: Need to test that this is working
+                    sectorFilter = lambda sector: traveller.WorldManager.instance().sectorBySectorIndex(
+                        index=(sector.x(), sector.y()),
+                        milieu=self._milieu) is None
+                    sloppySectors = traveller.WorldManager.instance().sectorsInArea(
+                        upperLeft=upperLeft,
+                        lowerRight=lowerRight,
+                        filter=sectorFilter)
+                else:
+                    # M1105 doesn't have any placeholders
+                    sloppySectors = []
                 self._sloppyPlaceholderSectors = sloppySectors
             else:
                 sloppySectors = traveller.WorldManager.instance().sectorsInArea(
@@ -225,9 +238,22 @@ class RectSelector(object):
                 absoluteY=int(math.ceil(rect.bottom())))
 
             if placeholders:
-                sloppyWorlds = traveller.WorldManager.instance().placeholderWorldsInArea(
-                    upperLeft=upperLeft,
-                    lowerRight=lowerRight)
+                if self._milieu is not travellermap.Milieu.M1105:
+                    # Use M1105 as placeholder data for locations that current
+                    # milieu doesn't have data
+                    # TODO: Need to check how fast this is. I suspect it could be improved
+                    # a lot over hwo it's currently done
+                    worldFilter = lambda world: traveller.WorldManager.instance().sectorByPosition(
+                        hex=world.hex(),
+                        milieu=self._milieu) is None
+                    sloppyWorlds = traveller.WorldManager.instance().worldsInArea(
+                        upperLeft=upperLeft,
+                        lowerRight=lowerRight,
+                        milieu=travellermap.Milieu.M1105,
+                        worldFilter=worldFilter)
+                else:
+                    # M1105 doesn't have any placeholders
+                    sloppyWorlds = []
                 self._sloppyPlaceholderWorlds = sloppyWorlds
             else:
                 sloppyWorlds = traveller.WorldManager.instance().worldsInArea(

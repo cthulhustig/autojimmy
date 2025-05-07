@@ -957,7 +957,7 @@ class WorldSearch(object):
         return traveller.WorldManager.instance().worldsInRadius(
             center=centerHex,
             searchRadius=searchRadius,
-            worldFilterCallback=self.checkWorld)
+            filterCallback=self.checkWorld)
 
     def _searchWorldList(
             self,
