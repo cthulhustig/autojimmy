@@ -198,8 +198,8 @@ class WaypointTable(gui.HexTable):
             hex = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(
-                hex=hex,
-                milieu=app.Config.instance().milieu())
+                milieu=app.Config.instance().milieu(),
+                hex=hex)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated

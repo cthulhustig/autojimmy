@@ -483,8 +483,8 @@ class HexTable(gui.FrozenColumnListTable):
                 hex = world.hex()
             else:
                 world = traveller.WorldManager.instance().worldByPosition(
-                    hex=hex,
-                    milieu=milieu)
+                    milieu=milieu,
+                    hex=hex)
             if world:
                 uwp = world.uwp()
                 economics = world.economics()
@@ -513,8 +513,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tagColour = worldTagColour
                     else:
                         sector = traveller.WorldManager.instance().sectorByPosition(
-                            hex=hex,
-                            milieu=milieu)
+                            milieu=milieu,
+                            hex=hex)
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
                             sector.name() if sector else 'Unknown')
@@ -527,8 +527,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tagColour = worldTagColour
                     else:
                         subsector = traveller.WorldManager.instance().subsectorByPosition(
-                            hex=hex,
-                            milieu=milieu)
+                            milieu=milieu,
+                            hex=hex)
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
                             subsector.name() if subsector else 'Unknown')
@@ -766,8 +766,8 @@ class HexTable(gui.FrozenColumnListTable):
                         if world.hasOwner():
                             try:
                                 ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
-                                    sectorHex=world.ownerSectorHex(),
-                                    milieu=milieu)
+                                    milieu=milieu,
+                                    sectorHex=world.ownerSectorHex())
                             except Exception:
                                 ownerWorld = None
 
@@ -788,8 +788,8 @@ class HexTable(gui.FrozenColumnListTable):
                         for colonySectorHex in world.colonySectorHexes():
                             try:
                                 colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
-                                    sectorHex=colonySectorHex,
-                                    milieu=milieu)
+                                    milieu=milieu,
+                                    sectorHex=colonySectorHex)
                             except Exception:
                                 colonyWorld = None
 
@@ -988,8 +988,8 @@ class HexTable(gui.FrozenColumnListTable):
             if world.hasOwner():
                 try:
                     ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
-                        sectorHex=world.ownerSectorHex(),
-                        milieu=milieu)
+                        milieu=milieu,
+                        sectorHex=world.ownerSectorHex())
                 except Exception:
                     ownerWorld = None
 
@@ -1004,8 +1004,8 @@ class HexTable(gui.FrozenColumnListTable):
                 for colonySectorHex in world.colonySectorHexes():
                     try:
                         colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
-                            sectorHex=colonySectorHex,
-                            milieu=milieu)
+                            milieu=milieu,
+                            sectorHex=colonySectorHex)
                     except Exception:
                         colonyWorld = None
 

@@ -185,9 +185,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
             else:
                 try:
                     worlds = traveller.WorldManager.instance().worldsInRadius(
+                        milieu=app.Config.instance().milieu(),
                         center=centerHex,
-                        searchRadius=searchRadius,
-                        milieu=app.Config.instance().milieu())
+                        searchRadius=searchRadius)
                     for world in worlds:
                         self._selectedHexes.append(world.hex())
                 except Exception as ex:

@@ -940,8 +940,8 @@ class WorldSearch(object):
             maxResults: int = 1000
             ) -> typing.Iterable[traveller.World]:
         sector = traveller.WorldManager.instance().sectorByName(
-            name=sectorName,
-            milieu=milieu)
+            milieu=milieu,
+            name=sectorName)
         if not sector:
             raise RuntimeError(f'Sector "{sectorName}" for found')
 
@@ -960,10 +960,10 @@ class WorldSearch(object):
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
         return traveller.WorldManager.instance().worldsInRadius(
+            milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
-            filterCallback=self.checkWorld,
-            milieu=milieu)
+            filterCallback=self.checkWorld)
 
     def _searchWorldList(
             self,

@@ -102,8 +102,8 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         if not hex:
             return None
         return traveller.WorldManager.instance().worldByPosition(
-            hex=hex,
-            milieu=app.Config.instance().milieu())
+            milieu=app.Config.instance().milieu(),
+            hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable

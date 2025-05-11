@@ -736,6 +736,12 @@ class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
             pd = tdec / ddec
             return r * (duration - dacc / 2 - ddec + tdec * (2 - pd) / 2)
 
+# TODO: This needs updated to handle the application wide milieu changing
+# - If Mains are enabled the mains overlay should be recreated as world positions may have changed
+# - Not sure what to do with currently configured jump route (probably just leave it)
+# - Update render context
+# - Clear tile cache
+# - Trigger a redraw
 class LocalMapWidget(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -1561,8 +1567,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         if hex and self.isEnabled():
             if app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
                 main = traveller.WorldManager.instance().mainByPosition(
-                    hex=hex,
-                    milieu=app.Config.instance().milieu())
+                    milieu=app.Config.instance().milieu(),
+                    hex=hex)
                 self._mainsOverlay.setMain(main)
                 self.update() # Trigger redraw
 

@@ -231,8 +231,8 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     jumpRoute = routeLogistics.jumpRoute()
     startHex, _ = jumpRoute.startNode()
     finishHex, _ = jumpRoute.finishNode()
-    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu))
-    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=finishHex, milieu=milieu))
+    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex))
+    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex))
 
     toolTip = '<html>'
 
@@ -296,7 +296,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     for index, (nodeHex, world) in enumerate(jumpRoute):
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(hex=nodeHex, milieu=milieu)))
+            name=traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodeHex)))
         tagColour = app.tagColour(
             app.calculateWorldTagLevel(world)
             if world else

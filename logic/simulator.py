@@ -139,8 +139,8 @@ class Simulator(object):
 
     def _stepSimulation(self) -> None:
         currentWorld = traveller.WorldManager.instance().worldByPosition(
-            hex=self._currentHex,
-            milieu=self._milieu)
+            milieu=self._milieu,
+            hex=self._currentHex)
 
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
@@ -149,10 +149,10 @@ class Simulator(object):
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInRadius(
+                milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
-                filterCallback=worldFilterCallback,
-                milieu=self._milieu)
+                filterCallback=worldFilterCallback)
 
             # Buy something
             self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')
@@ -222,11 +222,11 @@ class Simulator(object):
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
                 currentString = traveller.WorldManager.instance().canonicalHexName(
-                    hex=self._currentHex,
-                    milieu=self._milieu)
+                    milieu=self._milieu,
+                    hex=self._currentHex)
                 nextString = traveller.WorldManager.instance().canonicalHexName(
-                    hex=nextHex,
-                    milieu=self._milieu)
+                    milieu=self._milieu,
+                    hex=nextHex)
                 self._logMessage(
                     f'Travelling from {currentString} to {nextString}')
 

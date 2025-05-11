@@ -15,14 +15,14 @@ def _formatHexName(hex: travellermap.HexPosition) -> str:
     milieu = app.Config.instance().milieu()
 
     world = traveller.WorldManager.instance().worldByPosition(
-        hex=hex,
-        milieu=milieu)
+        milieu=milieu,
+        hex=hex)
     if world:
         return _formatWorldName(world=world)
 
     try:
-        sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex, milieu=milieu)
-        subsector = traveller.WorldManager.instance().subsectorByPosition(hex=hex, milieu=milieu)
+        sectorHex = traveller.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
+        subsector = traveller.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
         return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
     except:
         return f'{hex.absoluteX()},{hex.absoluteY()}'
@@ -35,8 +35,8 @@ def _formatWorldHtml(world: traveller.World) -> str:
 
 def _formatHexHtml(hex: travellermap.HexPosition) -> str:
     world = traveller.WorldManager.instance().worldByPosition(
-        hex=hex,
-        milieu=app.Config.instance().milieu())
+        milieu=app.Config.instance().milieu(),
+        hex=hex)
     if world:
         return _formatWorldHtml(world=world)
     return html.escape(_formatHexName(hex=hex))
@@ -190,8 +190,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             hex = self.currentHex()
             if hex:
                 world = traveller.WorldManager.instance().worldByPosition(
-                    hex=hex,
-                    milieu=app.Config.instance().milieu())
+                    milieu=app.Config.instance().milieu(),
+                    hex=hex)
                 if not world:
                     self.setCurrentHex(hex=None)
 
@@ -312,8 +312,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
                     world = traveller.WorldManager.instance().worldByPosition(
-                        hex=hex,
-                        milieu=milieu)
+                        milieu=milieu,
+                        hex=hex)
                     if not world:
                         # Ignore dead space in history
                         continue
@@ -485,8 +485,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # the completer should be done on the sorted list.
             try:
                 worlds = traveller.WorldManager.instance().searchForWorlds(
-                    searchString=searchString,
-                    milieu=milieu)
+                    milieu=milieu,
+                    searchString=searchString)
                 for world in worlds:
                     matches.append(world.hex())
             except Exception as ex:
@@ -498,8 +498,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             if self._enableDeadSpaceSelection:
                 try:
                     hex = traveller.WorldManager.instance().stringToPosition(
-                        string=searchString,
-                        milieu=milieu)
+                        milieu=milieu,
+                        string=searchString)
                     isDuplicate = False
                     for other in matches:
                         if hex == other:

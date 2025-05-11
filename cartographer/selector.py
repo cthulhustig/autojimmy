@@ -148,9 +148,9 @@ class RectSelector(object):
 
             usePlaceholders = self._milieu is not travellermap.Milieu.M1105
             sloppySectors = traveller.WorldManager.instance().sectorsInArea(
+                milieu=self._milieu,
                 upperLeft=upperLeft,
                 lowerRight=lowerRight,
-                milieu=self._milieu,
                 includePlaceholders=usePlaceholders)
             if not usePlaceholders:
                 self._sloppySectors = sloppySectors
@@ -206,9 +206,9 @@ class RectSelector(object):
                 absoluteY=int(math.ceil(sloppyRect.bottom())))
 
             self._sloppySubsectors = traveller.WorldManager.instance().subsectorsInArea(
+                milieu=self._milieu,
                 upperLeft=upperLeft,
-                lowerRight=lowerRight,
-                milieu=self._milieu)
+                lowerRight=lowerRight)
 
             if not self._subsectorSlop:
                 self._tightSubsectors = self._sloppySubsectors
@@ -243,9 +243,9 @@ class RectSelector(object):
 
             usePlaceholders = self._milieu is not travellermap.Milieu.M1105
             sloppyWorlds = traveller.WorldManager.instance().worldsInArea(
+                milieu=self._milieu,
                 upperLeft=upperLeft,
                 lowerRight=lowerRight,
-                milieu=self._milieu,
                 includePlaceholders=usePlaceholders)
             if not usePlaceholders:
                 self._sloppyWorlds = sloppyWorlds

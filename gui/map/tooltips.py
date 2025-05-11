@@ -22,8 +22,8 @@ def createHexToolTip(
         hex = world.hex()
     else:
         world = traveller.WorldManager.instance().worldByPosition(
-            hex=hex,
-            milieu=milieu)
+            milieu=milieu,
+            hex=hex)
     uwp = world.uwp() if world else None
 
     formatStyle = lambda tagColour: \
@@ -64,8 +64,8 @@ def createHexToolTip(
     #
 
     canonicalName = traveller.WorldManager.instance().canonicalHexName(
-        hex=hex,
-        milieu=milieu)
+        milieu=milieu,
+        hex=hex)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
 
     if world:
@@ -74,13 +74,13 @@ def createHexToolTip(
     else:
         try:
             sectorHex = traveller.WorldManager.instance().positionToSectorHex(
-                hex=hex,
-                milieu=milieu)
+                milieu=milieu,
+                hex=hex)
         except:
             sectorHex = 'Unknown'
         subsector = traveller.WorldManager.instance().subsectorByPosition(
-            hex=hex,
-            milieu=milieu)
+            milieu=milieu,
+            hex=hex)
         subsectorName = subsector.name() if subsector else 'Unknown'
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(subsectorName)}</li>'
@@ -133,8 +133,8 @@ def createHexToolTip(
         if world.hasOwner():
             try:
                 ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
-                    sectorHex=world.ownerSectorHex(),
-                    milieu=milieu)
+                    milieu=milieu,
+                    sectorHex=world.ownerSectorHex())
             except Exception:
                 ownerWorld = None
 
@@ -334,8 +334,8 @@ def createHexToolTip(
             for colonySectorHex in world.colonySectorHexes():
                 try:
                     colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
-                        sectorHex=colonySectorHex,
-                        milieu=milieu)
+                        milieu=milieu,
+                        sectorHex=colonySectorHex)
                 except Exception:
                     colonyWorld = None
 

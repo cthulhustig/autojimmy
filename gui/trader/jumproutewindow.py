@@ -171,8 +171,8 @@ class _RefuellingPlanTable(gui.HexTable):
             hex = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(
-                hex=hex,
-                milieu=app.Config.instance().milieu())
+                milieu=app.Config.instance().milieu(),
+                hex=hex)
 
         assert(world) # Pitstops should always have a world
 
@@ -957,8 +957,8 @@ class JumpRouteWindow(gui.WindowWidget):
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
             startWorld = traveller.WorldManager.instance().worldByPosition(
-                hex=startHex,
-                milieu=milieu)
+                milieu=milieu,
+                hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
@@ -992,8 +992,8 @@ class JumpRouteWindow(gui.WindowWidget):
             fuelIssueWorldStrings = []
             for waypointHex in self._waypointsWidget.hexes():
                 waypointWorld = traveller.WorldManager.instance().worldByPosition(
-                    hex=waypointHex,
-                    milieu=milieu)
+                    milieu=milieu,
+                    hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
@@ -1097,8 +1097,8 @@ class JumpRouteWindow(gui.WindowWidget):
         if isinstance(result, Exception):
             milieu = app.Config.instance().milieu()
             startHex, finishHex = self._selectStartFinishWidget.hexes()
-            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu)
-            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex, milieu=milieu)
+            startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+            finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1265,8 +1265,8 @@ class JumpRouteWindow(gui.WindowWidget):
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
             traveller.WorldManager.instance().worldByPosition(
-                hex=hex,
-                milieu=app.Config.instance().milieu()) != None
+                milieu=app.Config.instance().milieu(),
+                hex=hex) != None
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
@@ -1559,11 +1559,11 @@ class JumpRouteWindow(gui.WindowWidget):
             milieu = app.Config.instance().milieu()
             try:
                 worlds = traveller.WorldManager.instance().worldsInRadius(
+                    milieu=milieu,
                     center=startHex,
-                    searchRadius=jumpRating,
-                    milieu=milieu)
+                    searchRadius=jumpRating)
             except Exception as ex:
-                startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu)
+                startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
                 logging.warning(
                     f'An exception occurred while finding worlds reachable from {startString}',
                     exc_info=ex)
@@ -1743,8 +1743,8 @@ class JumpRouteWindow(gui.WindowWidget):
             milieu = app.Config.instance().milieu()
             startHex, _ = self._jumpRoute.startNode()
             finishHex, _ = self._jumpRoute.finishNode()
-            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu)
-            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex, milieu=milieu)
+            startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+            finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
             message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                 start=startString,
                 finish=finishString)

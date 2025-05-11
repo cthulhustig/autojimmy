@@ -93,8 +93,8 @@ class LabelCache(object):
                 if hex is None:
                     raise RuntimeError('Location element has no Hex attribute')
                 location = traveller.WorldManager.instance().sectorHexToPosition(
-                    sectorHex=f'{sector} {hex}',
-                    milieu=LabelCache._SectorHexMilieu)
+                    milieu=LabelCache._SectorHexMilieu,
+                    sectorHex=f'{sector} {hex}')
                 centerX, centerY = location.worldCenter()
                 location = cartographer.PointF(x=centerX, y=centerY)
 

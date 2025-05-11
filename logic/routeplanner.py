@@ -242,10 +242,10 @@ class RoutePlanner(object):
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = worldManager.worldByPosition(hex=startHex, milieu=milieu)
+        startWorld = worldManager.worldByPosition(milieu=milieu, hex=startHex)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = worldManager.worldByPosition(hex=finishHex, milieu=milieu)
+        finishWorld = worldManager.worldByPosition(milieu=milieu, hex=finishHex)
 
         startWorldFuelType = None
         if routingType is RoutingType.Basic:
@@ -577,9 +577,9 @@ class RoutePlanner(object):
             alreadyProcessed = set()
 
         worldList = worldManager.yieldWorldsInRadius(
+            milieu=milieu,
             center=currentHex,
-            radius=searchRadius,
-            milieu=milieu)
+            radius=searchRadius)
         for nearbyWorld in worldList:
             nearbyHex = nearbyWorld.hex()
 

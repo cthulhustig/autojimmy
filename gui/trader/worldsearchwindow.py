@@ -134,8 +134,8 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
         sector = traveller.WorldManager.instance().sectorByName(
-            name=self._sectorComboBox.currentText(),
-            milieu=app.Config.instance().milieu())
+            milieu=app.Config.instance().milieu(),
+            name=self._sectorComboBox.currentText())
         if not sector:
             return
 

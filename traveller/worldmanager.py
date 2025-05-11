@@ -192,7 +192,7 @@ class WorldManager(object):
 
     def sectorNames(
             self,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            milieu: travellermap.Milieu
             ) -> typing.Iterable[str]:
         milieuData = self._milieuDataMap[milieu]
 
@@ -203,84 +203,84 @@ class WorldManager(object):
 
     def sectorByName(
             self,
-            name: str,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            milieu: travellermap.Milieu,
+            name: str
             ) -> traveller.Sector:
         milieuData = self._milieuDataMap[milieu]
         return milieuData.canonicalNameMap.get(name.lower())
 
     def sectors(
             self,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            milieu: travellermap.Milieu
             ) -> typing.Iterable[traveller.Sector]:
         milieuData = self._milieuDataMap[milieu]
         return list(milieuData.sectorList)
 
     def worldBySectorHex(
             self,
+            milieu: travellermap.Milieu,
             sectorHex: str,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
             ) -> typing.Optional[traveller.World]:
         try:
-            hex = self.sectorHexToPosition(sectorHex=sectorHex, milieu=milieu)
+            hex = self.sectorHexToPosition(milieu=milieu, sectorHex=sectorHex)
         except Exception as ex:
             return None
-        return self.worldByPosition(hex=hex)
+        return self.worldByPosition(milieu=milieu, hex=hex)
 
     def worldByPosition(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Optional[traveller.World]:
         milieuData = self._milieuDataMap[milieu]
         world = milieuData.worldPositionMap.get(hex.absolute())
         if not world and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             world = self.worldByPosition(
-                hex=hex,
                 milieu=WorldManager._PlaceholderMilieu,
+                hex=hex,
                 includePlaceholders=False)
         return world
 
     def sectorByPosition(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Optional[traveller.Sector]:
         milieuData = self._milieuDataMap[milieu]
         sector = milieuData.sectorPositionMap.get((hex.sectorX(), hex.sectorY()))
         if not sector and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             sector = self.sectorByPosition(
-                hex=hex,
                 milieu=WorldManager._PlaceholderMilieu,
+                hex=hex,
                 includePlaceholders=False)
         return sector
 
     def sectorBySectorIndex(
             self,
+            milieu: travellermap.Milieu,
             index: typing.Tuple[int, int],
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Optional[traveller.Sector]:
         milieuData = self._milieuDataMap[milieu]
         sector = milieuData.sectorPositionMap.get(index)
         if not sector and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             sector = self.sectorBySectorIndex(
-                index=index,
                 milieu=WorldManager._PlaceholderMilieu,
+                index=index,
                 includePlaceholders=False)
         return sector
 
     def subsectorByPosition(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Optional[traveller.Subsector]:
         sector = self.sectorByPosition(
-            hex=hex,
             milieu=milieu,
+            hex=hex,
             includePlaceholders=includePlaceholders)
         if not sector:
             return None
@@ -298,81 +298,81 @@ class WorldManager(object):
 
     def sectorsInArea(
             self,
+            milieu: travellermap.Milieu,
             upperLeft: travellermap.HexPosition,
             lowerRight: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.Sector], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.List[traveller.Sector]:
         return list(self.yieldSectorsInArea(
+            milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
             filterCallback=filterCallback,
-            milieu=milieu,
             includePlaceholders=includePlaceholders))
 
     def subsectorsInArea(
             self,
+            milieu: travellermap.Milieu,
             upperLeft: travellermap.HexPosition,
             lowerRight: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.Subsector], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.List[traveller.Subsector]:
         return list(self.yieldSubsectorsInArea(
+            milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
             filterCallback=filterCallback,
-            milieu=milieu,
             includePlaceholders=includePlaceholders))
 
     def worldsInArea(
             self,
+            milieu: travellermap.Milieu,
             upperLeft: travellermap.HexPosition,
             lowerRight: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.World], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.List[traveller.World]:
         return list(self.yieldWorldsInArea(
+            milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
             filterCallback=filterCallback,
-            milieu=milieu,
             includePlaceholders=includePlaceholders))
 
     def worldsInRadius(
             self,
+            milieu: travellermap.Milieu,
             center: travellermap.HexPosition,
             searchRadius: int,
             filterCallback: typing.Callable[[traveller.World], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.List[traveller.World]:
         return list(self.yieldWorldsInRadius(
+            milieu=milieu,
             center=center,
             radius=searchRadius,
             filterCallback=filterCallback,
-            milieu=milieu,
             includePlaceholders=includePlaceholders))
 
     def worldsInFlood(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.World], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.List[traveller.World]:
         return list(self.yieldWorldsInFlood(
+            milieu=milieu,
             hex=hex,
             filterCallback=filterCallback,
-            milieu=milieu,
             includePlaceholders=includePlaceholders))
 
     def positionToSectorHex(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
             ) -> str:
         milieuData = self._milieuDataMap[milieu]
 
@@ -387,8 +387,8 @@ class WorldManager(object):
 
     def sectorHexToPosition(
             self,
-            sectorHex: str,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            milieu: travellermap.Milieu,
+            sectorHex: str
             ) -> travellermap.HexPosition:
         milieuData = self._milieuDataMap[milieu]
 
@@ -429,8 +429,8 @@ class WorldManager(object):
 
     def stringToPosition(
             self,
+            milieu: travellermap.Milieu,
             string: str,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
             ) -> travellermap.HexPosition:
         testString = string.strip()
         if not testString:
@@ -439,7 +439,7 @@ class WorldManager(object):
         result = self._SectorHexSearchPattern.match(testString)
         if result:
             try:
-                return self.sectorHexToPosition(sectorHex=testString, milieu=milieu)
+                return self.sectorHexToPosition(milieu=milieu, sectorHex=testString)
             except:
                 # Search string is not a valid sector hex. The search pattern
                 # regex was matched so it should have the correct format, most
@@ -470,15 +470,15 @@ class WorldManager(object):
 
     def canonicalHexName(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
             ) -> str:
-        world = self.worldByPosition(hex=hex, milieu=milieu)
+        world = self.worldByPosition(milieu=milieu, hex=hex)
         if world:
             return world.name(includeSubsector=True)
         try:
-            name = self.positionToSectorHex(hex=hex, milieu=milieu)
-            subsector = self.subsectorByPosition(hex=hex, milieu=milieu)
+            name = self.positionToSectorHex(milieu=milieu, hex=hex)
+            subsector = self.subsectorByPosition(milieu=milieu, hex=hex)
             if subsector:
                 name += f' ({subsector.name()})'
             return name
@@ -487,8 +487,8 @@ class WorldManager(object):
 
     def mainByPosition(
             self,
-            hex: travellermap.HexPosition,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            milieu: travellermap.Milieu,
+            hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.Main]:
         milieuData = self._milieuDataMap[milieu]
         main = milieuData.hexMainMap.get(hex)
@@ -510,10 +510,10 @@ class WorldManager(object):
 
     def yieldSectorsInArea(
             self,
+            milieu: travellermap.Milieu,
             upperLeft: travellermap.HexPosition,
             lowerRight: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.Sector], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Generator[traveller.Sector, None, None]:
         milieuData = self._milieuDataMap[milieu]
@@ -541,10 +541,10 @@ class WorldManager(object):
 
     def yieldSubsectorsInArea(
             self,
+            milieu: travellermap.Milieu,
             upperLeft: travellermap.HexPosition,
             lowerRight: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.Subsector], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Generator[traveller.Subsector, None, None]:
         milieuData = self._milieuDataMap[milieu]
@@ -576,10 +576,10 @@ class WorldManager(object):
 
     def yieldWorldsInArea(
             self,
+            milieu: travellermap.Milieu,
             upperLeft: travellermap.HexPosition,
             lowerRight: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.World], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Generator[traveller.World, None, None]:
         milieuData = self._milieuDataMap[milieu]
@@ -607,10 +607,10 @@ class WorldManager(object):
 
     def yieldWorldsInRadius(
             self,
+            milieu: travellermap.Milieu,
             center: travellermap.HexPosition,
             radius: int,
             filterCallback: typing.Callable[[traveller.World], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Generator[traveller.World, None, None]:
         milieuData = self._milieuDataMap[milieu]
@@ -659,15 +659,20 @@ class WorldManager(object):
 
     def yieldWorldsInFlood(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
             filterCallback: typing.Callable[[traveller.World], bool] = None,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105,
             includePlaceholders: bool = False
             ) -> typing.Generator[traveller.World, None, None]:
-        world = self.worldByPosition(
-            hex=hex,
-            milieu=milieu,
-            includePlaceholders=includePlaceholders)
+        milieuData = self._milieuDataMap[milieu]
+
+        placeholderData = None
+        if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
+            placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
+
+        world = milieuData.worldPositionMap.get(hex.absolute())
+        if not world and placeholderData:
+            world = placeholderData.worldPositionMap.get(hex.absolute())
         if not world:
             return
 
@@ -681,12 +686,10 @@ class WorldManager(object):
             hex = world.hex()
             for edge in travellermap.HexEdge:
                 adjacentHex = hex.neighbourHex(edge=edge)
-                # TODO: Calling world by position repeatedly in this loop is inefficient as it's
-                # repeatedly looking up the milieu data
-                adjacentWorld = self.worldByPosition(
-                    hex=adjacentHex,
-                    milieu=milieu,
-                    includePlaceholders=includePlaceholders)
+                adjacentWorld = milieuData.worldPositionMap.get(adjacentHex.absolute())
+                if not adjacentWorld and placeholderData:
+                    adjacentWorld = placeholderData.worldPositionMap.get(adjacentHex.absolute())
+
                 if adjacentWorld and (adjacentWorld not in seen):
                     todo.append(adjacentWorld)
                     seen.add(adjacentWorld)
@@ -696,9 +699,9 @@ class WorldManager(object):
 
     def searchForWorlds(
             self,
+            milieu: travellermap.Milieu,
             searchString: str,
-            maxResults: int = 0, # 0 means unlimited
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.World]:
         milieuData = self._milieuDataMap[milieu]
 
@@ -710,7 +713,7 @@ class WorldManager(object):
         # Check if the world string specifies a hex, if it does and there is
         # a world at that location then that is our only result
         try:
-            hex = self.stringToPosition(string=searchString, milieu=milieu)
+            hex = self.stringToPosition(milieu=milieu, string=searchString)
             foundWorld = milieuData.worldPositionMap.get(hex.absolute())
             if foundWorld:
                 return [foundWorld]
@@ -728,8 +731,8 @@ class WorldManager(object):
             worldString = result.group(1)
             hintString = result.group(2)
 
-            searchWorldLists = self.searchForSectors(searchString=hintString, milieu=milieu)
-            for subsector in self.searchForSubsectors(searchString=hintString, milieu=milieu):
+            searchWorldLists = self.searchForSectors(milieu=milieu, searchString=hintString)
+            for subsector in self.searchForSubsectors(milieu=milieu, searchString=hintString):
                 sector = milieuData.subsectorSectorMap.get(subsector)
                 if sector not in searchWorldLists:
                     searchWorldLists.append(subsector)
@@ -772,7 +775,7 @@ class WorldManager(object):
         # matches is important as sub sectors are more specific so matches
         # should be listed first in results
         subsectorMatches: typing.List[traveller.World] = []
-        for subsector in self.searchForSubsectors(searchString=searchString, milieu=milieu):
+        for subsector in self.searchForSubsectors(milieu=milieu, searchString=searchString):
             for world in subsector:
                 if world not in seen:
                     subsectorMatches.append(world)
@@ -788,7 +791,7 @@ class WorldManager(object):
         # If the search string matches any sectors add any worlds that
         # we've not already seen
         sectorMatches: typing.List[traveller.World] = []
-        for sector in self.searchForSectors(searchString=searchString, milieu=milieu):
+        for sector in self.searchForSectors(milieu=milieu, searchString=searchString):
             for world in sector:
                 if world not in seen:
                     sectorMatches.append(world)
@@ -805,9 +808,9 @@ class WorldManager(object):
 
     def searchForSubsectors(
             self,
+            milieu: travellermap.Milieu,
             searchString: str,
-            maxResults: int = 0, # 0 means unlimited
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.Subsector]:
         milieuData = self._milieuDataMap[milieu]
 
@@ -844,9 +847,9 @@ class WorldManager(object):
 
     def searchForSectors(
             self,
+            milieu: travellermap.Milieu,
             searchString: str,
-            maxResults: int = 0, # 0 means unlimited
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.Sector]:
         milieuData = self._milieuDataMap[milieu]
 

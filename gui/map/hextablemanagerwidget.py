@@ -362,8 +362,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(
-                    hex=self.hex(row=row),
-                    milieu=milieu)
+                    milieu=milieu,
+                    hex=self.hex(row=row))
                 if not world:
                     self._hexTable.removeRow(row=row)
                     contentChanged = True

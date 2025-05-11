@@ -793,6 +793,8 @@ class _ConfigSectionLayout(QtWidgets.QGridLayout):
         label = MapOverlayLabel(action.text())
         self.addWidget(label, row, 1)
 
+# TODO: This needs updated to handle the application wide milieu changing
+# - Info widget needs updated to display world info from the new milieu
 class MapWidgetEx(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
@@ -1214,8 +1216,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             return
 
         world = traveller.WorldManager.instance().worldByPosition(
-            hex=hex,
-            milieu=app.Config.instance().milieu())
+            milieu=app.Config.instance().milieu(),
+            hex=hex)
         if not world and not self._enableDeadSpaceSelection:
             return
 
@@ -1247,8 +1249,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             filtered = []
             for hex in hexes:
                 world = traveller.WorldManager.instance().worldByPosition(
-                    hex=hex,
-                    milieu=milieu)
+                    milieu=milieu,
+                    hex=hex)
                 if world:
                     filtered.append(hex)
             hexes = filtered
@@ -1338,8 +1340,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             selectionChanged = False
             for hex in list(self._selectedHexes.keys()):
                 world = traveller.WorldManager.instance().worldByPosition(
-                    hex=hex,
-                    milieu=milieu)
+                    milieu=milieu,
+                    hex=hex)
                 if not world:
                     self._removeSelectionHexOverlay(hex=hex)
                     selectionChanged = True
@@ -1675,8 +1677,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             shouldSelect = hex != None
         elif hex:
             shouldSelect = traveller.WorldManager.instance().worldByPosition(
-                hex=hex,
-                milieu=app.Config.instance().milieu()) != None
+                milieu=app.Config.instance().milieu(),
+                hex=hex) != None
 
         if shouldSelect:
             # Show info for the world the user clicked on or hide any current world info if there
@@ -1689,8 +1691,8 @@ class MapWidgetEx(QtWidgets.QWidget):
                 if self._selectionMode == MapWidgetEx.SelectionMode.MultiSelect and \
                         gui.isShiftKeyDown():
                     worlds = traveller.WorldManager.instance().worldsInFlood(
-                        hex=hex,
-                        milieu=app.Config.instance().milieu())
+                        milieu=app.Config.instance().milieu(),
+                        hex=hex)
                     self.selectHexes(hexes=[world.hex() for world in worlds])
                 elif hex not in self._selectedHexes:
                     self.selectHex(

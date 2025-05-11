@@ -99,8 +99,8 @@ class WorldTradeScoreTable(gui.HexTable):
             hex = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(
-                hex=hex,
-                milieu=app.Config.instance().milieu())
+                milieu=app.Config.instance().milieu(),
+                hex=hex)
 
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called
