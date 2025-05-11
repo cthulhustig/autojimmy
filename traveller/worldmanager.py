@@ -226,10 +226,12 @@ class WorldManager(object):
         milieuData = self._milieuDataMap[milieu]
         world = milieuData.worldPositionMap.get(hex.absolute())
         if not world and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
-            world = self.worldByPosition(
-                milieu=WorldManager._PlaceholderMilieu,
-                hex=hex,
-                includePlaceholders=False)
+            sectorPos = travellermap.absoluteSpaceToSectorPos(hex.absolute())
+            if sectorPos not in milieuData.sectorPositionMap:
+                world = self.worldByPosition(
+                    milieu=WorldManager._PlaceholderMilieu,
+                    hex=hex,
+                    includePlaceholders=False)
         return world
 
     def sectorByPosition(
@@ -588,7 +590,9 @@ class WorldManager(object):
                 key = (x, y)
                 world = milieuData.worldPositionMap.get(key)
                 if not world and placeholderData:
-                    world = placeholderData.worldPositionMap.get(key)
+                    sectorPos = travellermap.absoluteSpaceToSectorPos(key)
+                    if sectorPos not in milieuData.sectorPositionMap:
+                        world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
                     yield world
@@ -642,7 +646,9 @@ class WorldManager(object):
                 key = (x, y)
                 world = milieuData.worldPositionMap.get(key)
                 if not world and placeholderData:
-                    world = placeholderData.worldPositionMap.get(key)
+                    sectorPos = travellermap.absoluteSpaceToSectorPos(key)
+                    if sectorPos not in milieuData.sectorPositionMap:
+                        world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
                     yield world
@@ -660,9 +666,12 @@ class WorldManager(object):
         if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
 
-        world = milieuData.worldPositionMap.get(hex.absolute())
+        key = hex.absolute()
+        world = milieuData.worldPositionMap.get(key)
         if not world and placeholderData:
-            world = placeholderData.worldPositionMap.get(hex.absolute())
+            sectorPos = travellermap.absoluteSpaceToSectorPos(key)
+            if sectorPos not in milieuData.sectorPositionMap:
+                world = placeholderData.worldPositionMap.get(key)
         if not world:
             return
 
@@ -676,9 +685,13 @@ class WorldManager(object):
             hex = world.hex()
             for edge in travellermap.HexEdge:
                 adjacentHex = hex.neighbourHex(edge=edge)
-                adjacentWorld = milieuData.worldPositionMap.get(adjacentHex.absolute())
+
+                key = adjacentHex.absolute()
+                adjacentWorld = milieuData.worldPositionMap.get(key)
                 if not adjacentWorld and placeholderData:
-                    adjacentWorld = placeholderData.worldPositionMap.get(adjacentHex.absolute())
+                    sectorPos = travellermap.absoluteSpaceToSectorPos(key)
+                    if sectorPos not in milieuData.sectorPositionMap:
+                        adjacentWorld = placeholderData.worldPositionMap.get(key)
 
                 if adjacentWorld and (adjacentWorld not in seen):
                     todo.append(adjacentWorld)

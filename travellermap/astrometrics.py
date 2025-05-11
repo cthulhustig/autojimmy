@@ -54,6 +54,13 @@ def absoluteSpaceToRelativeSpace(
     offsetY = absoluteY - (sectorY * SectorHeight) + 1
     return (sectorX, sectorY, offsetX, offsetY)
 
+def absoluteSpaceToSectorPos(
+        pos: typing.Tuple[int, int]
+        ) -> typing.Tuple[int, int]:
+    absoluteX = pos[0] + (ReferenceHexX - 1)
+    absoluteY = pos[1] + (ReferenceHexY - 1)
+    return (absoluteX // SectorWidth, absoluteY // SectorHeight)
+
 def absoluteSpaceToMapSpace(
         pos: typing.Tuple[int, int]
         ) -> typing.Tuple[float, float]:
