@@ -5,6 +5,7 @@ import typing
 class Subsector(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             sectorX: int,
             sectorY: int,
             code: str,
@@ -13,6 +14,7 @@ class Subsector(object):
             sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
+        self._milieu = milieu
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._code = code
@@ -36,6 +38,9 @@ class Subsector(object):
             offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
             offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
         self._extent = (ulHex, brHex)
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def sectorX(self) -> int:
         return self._sectorX
@@ -87,12 +92,13 @@ class Subsector(object):
 class Sector(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            x: int,
+            y: int,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]],
             abbreviation: typing.Optional[str],
             sectorLabel: typing.Optional[str],
-            x: int,
-            y: int,
             # Subsectors should be ordered in subsector order (i.e. A-P)
             subsectors: typing.Iterable[Subsector],
             routes: typing.Iterable[traveller.Route],
@@ -102,12 +108,13 @@ class Sector(object):
             selected: bool,
             tags: typing.Iterable[str]
             ) -> None:
+        self._milieu = milieu
+        self._x = x
+        self._y = y
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
-        self._x = x
-        self._y = y
         self._routes = list(routes)
         self._borders = list(borders)
         self._regions = list(regions)
@@ -138,6 +145,15 @@ class Sector(object):
                 offsetX=travellermap.SectorWidth,
                 offsetY=travellermap.SectorHeight))
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def x(self) -> int:
+        return self._x
+
+    def y(self) -> int:
+        return self._y
+
     def name(self) -> str:
         return self._name
 
@@ -149,12 +165,6 @@ class Sector(object):
 
     def sectorLabel(self) -> typing.Optional[str]:
         return self._sectorLabel
-
-    def x(self) -> int:
-        return self._x
-
-    def y(self) -> int:
-        return self._y
 
     def worldCount(self) -> int:
         return len(self._worlds)

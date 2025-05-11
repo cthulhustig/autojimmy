@@ -142,16 +142,11 @@ class SectorCache(object):
         pos = (x, y)
         sector = traveller.WorldManager.instance().sectorBySectorIndex(
             index=pos,
-            milieu=milieu)
-        if not sector and milieu is not travellermap.Milieu.M1105:
-            # Use M1105 as placeholder data for locations that current
-            # milieu doesn't have data
-            sector = traveller.WorldManager.instance().sectorBySectorIndex(
-                index=pos,
-                milieu=travellermap.Milieu.M1105)
-            if not sector:
-                # Don't cache the fact the sector doesn't exist to avoid memory bloat
-                return None
+            milieu=milieu,
+            includePlaceholders=True)
+        if not sector:
+            # Don't cache the fact the sector doesn't exist to avoid memory bloat
+            return None
 
         points = []
         for world in sector:
