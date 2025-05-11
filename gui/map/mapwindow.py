@@ -1,5 +1,4 @@
 import gui
-import logging
 import logic
 import travellermap
 import typing
@@ -12,12 +11,8 @@ class MapWindow(gui.WindowWidget):
             configSection='MapWindow')
         self._mapWidget = gui.MapWidgetEx()
 
-        self._importJumpRouteButton = QtWidgets.QPushButton('Import Jump Route...')
-        self._importJumpRouteButton.clicked.connect(self._importJumpRoute)
-
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._mapWidget)
-        windowLayout.addWidget(self._importJumpRouteButton)
         self.resize(640, 480)
         self.setLayout(windowLayout)
 
@@ -102,25 +97,3 @@ class MapWindow(gui.WindowWidget):
         self._settings.endGroup()
 
         super().saveSettings()
-
-    def  _importJumpRoute(self) -> None:
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            'Open File',
-            QtCore.QDir.homePath(),
-            'JSON (*.json)')
-        if not path:
-            return
-
-        try:
-            jumpRoute = logic.readJumpRoute(path)
-        except Exception as ex:
-            message = f'Failed to import jump route from "{path}"'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        self.setJumpRoute(jumpRoute=jumpRoute)

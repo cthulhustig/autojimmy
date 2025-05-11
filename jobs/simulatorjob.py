@@ -16,6 +16,7 @@ class SimulatorJob(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
+            milieu: travellermap.Milieu,
             startHex: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
@@ -47,6 +48,7 @@ class SimulatorJob(QtCore.QThread):
         # to prevent issues if they are modified while the thread is running. The
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
+        self._milieu = milieu
         self._startHex = startHex
         self._startingFunds = startingFunds
         self._shipTonnage = shipTonnage
@@ -99,6 +101,7 @@ class SimulatorJob(QtCore.QThread):
     def run(self) -> None:
         try:
             self._simulator.run(
+                milieu=self._milieu,
                 startHex=self._startHex,
                 startingFunds=self._startingFunds,
                 shipTonnage=self._shipTonnage,

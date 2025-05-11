@@ -124,6 +124,7 @@ class RoutePlanner(object):
     def calculateDirectRoute(
             self,
             routingType: RoutingType,
+            milieu: travellermap.Milieu,
             startHex: travellermap.HexPosition,
             finishHex: travellermap.HexPosition,
             shipTonnage: typing.Union[int, common.ScalarCalculation],
@@ -139,6 +140,7 @@ class RoutePlanner(object):
             ) -> typing.Optional[logic.JumpRoute]:
         return self._calculateRoute(
             routingType=routingType,
+            milieu=milieu,
             hexSequence=[startHex, finishHex],
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
@@ -154,6 +156,7 @@ class RoutePlanner(object):
     def calculateSequenceRoute(
             self,
             routingType: RoutingType,
+            milieu: travellermap.Milieu,
             hexSequence: typing.Sequence[travellermap.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
@@ -168,6 +171,7 @@ class RoutePlanner(object):
             ) -> typing.Optional[logic.JumpRoute]:
         return self._calculateRoute(
             routingType=routingType,
+            milieu=milieu,
             hexSequence=hexSequence,
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
@@ -192,6 +196,7 @@ class RoutePlanner(object):
     def _calculateRoute(
             self,
             routingType: RoutingType,
+            milieu: travellermap.Milieu,
             hexSequence: typing.Sequence[travellermap.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
@@ -237,10 +242,10 @@ class RoutePlanner(object):
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = worldManager.worldByPosition(hex=startHex)
+        startWorld = worldManager.worldByPosition(hex=startHex, milieu=milieu)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = worldManager.worldByPosition(hex=finishHex)
+        finishWorld = worldManager.worldByPosition(hex=finishHex, milieu=milieu)
 
         startWorldFuelType = None
         if routingType is RoutingType.Basic:
@@ -423,6 +428,7 @@ class RoutePlanner(object):
 
             potentialsIterator = self._yieldPotentialHexes(
                 routingType=routingType,
+                milieu=milieu,
                 currentNode=currentNode,
                 targetHex=targetHex,
                 shipJumpRating=shipJumpRating,
@@ -503,6 +509,7 @@ class RoutePlanner(object):
     def _yieldPotentialHexes(
             self,
             routingType: RoutingType,
+            milieu: travellermap.Milieu,
             currentNode: _RouteNode,
             targetHex: travellermap.HexPosition,
             shipJumpRating: int,
@@ -569,7 +576,11 @@ class RoutePlanner(object):
         if routingType is RoutingType.DeadSpace:
             alreadyProcessed = set()
 
-        for nearbyWorld in worldManager.yieldWorldsInRadius(center=currentHex, radius=searchRadius):
+        worldList = worldManager.yieldWorldsInRadius(
+            center=currentHex,
+            radius=searchRadius,
+            milieu=milieu)
+        for nearbyWorld in worldList:
             nearbyHex = nearbyWorld.hex()
 
             if nearbyHex == currentHex:

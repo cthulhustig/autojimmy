@@ -1,3 +1,4 @@
+import app
 import gui
 import traveller
 import travellermap
@@ -81,7 +82,11 @@ class HexDetailsWindow(gui.WindowWidget):
                 self._hexDetails.setHex(hex)
                 return
 
-        tabName = traveller.WorldManager.instance().canonicalHexName(hex)
+        # TODO: Ideally this window would update if the system wide milieu changes.
+        # It could update the tab name and the details being displayed for the world
+        tabName = traveller.WorldManager.instance().canonicalHexName(
+            hex=hex,
+            milieu=app.Config.instance().milieu())
         self._hexes.append(hex)
         index = self._tabBar.addTab(tabName)
         self._tabBar.setCurrentIndex(index)

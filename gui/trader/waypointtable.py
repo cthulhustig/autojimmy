@@ -1,3 +1,4 @@
+import app
 import enum
 import gui
 import json
@@ -54,6 +55,10 @@ def _customWorldTableColumns(
     columns.insert(index, WaypointTableColumnType.BerthingRequired)
     return columns
 
+# TODO: Ideally this would update the content of the table if the milieu
+# changes. I think it (or at least something) would need to remove any
+# waypoints that no longer have a world at that location if dead space
+# routing is disabled
 class WaypointTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
@@ -62,11 +67,8 @@ class WaypointTable(gui.HexTable):
     CultureColumns = _customWorldTableColumns(gui.HexTable.CultureColumns)
     RefuellingColumns = _customWorldTableColumns(gui.HexTable.RefuellingColumns)
 
-    # Version 1 format used a world list rather than a hex list. I can't
-    # remember why this was just 'v1' rather than 'WorldTable_v1' as would
-    # be consistent with other widgets, possibly just because this was pretty
-    # much the first table I created way back when
-    _LegacyContentV1 = 'v1'
+    # Version 1 format used a world list rather than a hex list. Note that
+    # this just used 'v1' for the format string rather than 'WaypointTable_v1'
     # Version 2 format was added when the table was switched from using worlds
     # to hexes as part of support for dead space routing
     _ContentVersion = 'WaypointTable_v2'
@@ -169,55 +171,43 @@ class WaypointTable(gui.HexTable):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version == WaypointTable._LegacyContentV1:
-            try:
-                data = json.loads(stream.readQString())
-                items = data.get('worlds')
-                if items == None:
-                    raise RuntimeError('WaypointTable world list is missing worlds element')
-
-                for item in items:
-                    world = logic.deserialiseWorld(data=item)
-                    if not world:
-                        continue
-                    berthing = item.get('berthing')
-                    if berthing == None:
-                        raise RuntimeError('WaypointTable world list item is missing berthing element')
-
-                    row = self.addWorld(world)
-                    self.setBerthingChecked(row=row, checked=berthing)
-            except Exception as ex:
-                logging.warning(f'Failed to deserialise WorldTable world list', exc_info=ex)
-        elif version == WaypointTable._ContentVersion:
-            count = stream.readUInt32()
-            if count:
-                bytes = QtCore.QByteArray(stream.readRawData(count))
-                if not super().restoreContent(bytes):
-                    return False
-
-            count = stream.readUInt32()
-            for row in range(count):
-                self.setBerthingChecked(row=row, checked=stream.readBool())
-        else:
+        if version != WaypointTable._ContentVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore WaypointTable content (Unsupported version)')
             return False
+
+        count = stream.readUInt32()
+        if count:
+            bytes = QtCore.QByteArray(stream.readRawData(count))
+            if not super().restoreContent(bytes):
+                return False
+
+        count = stream.readUInt32()
+        for row in range(count):
+            self.setBerthingChecked(row=row, checked=stream.readBool())
 
         return True
 
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
+        if isinstance(hex, traveller.World):
+            world = hex
+            hex = world.hex()
+        else:
+            world = traveller.WorldManager.instance().worldByPosition(
+                hex=hex,
+                milieu=app.Config.instance().milieu())
+
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated
         sortingEnabled = self.isSortingEnabled()
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, hex, world)
+            super()._fillRow(row, hex)
 
             if world:
                 for column in range(self.columnCount()):

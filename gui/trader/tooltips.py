@@ -225,11 +225,14 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     escape=False)
 
 def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
+    # TODO: Would it make sense for the route logistics to know what milieu it was
+    # for? The same might be true for jump routes (probably worlds & sectors as well).
+    milieu = app.Config.instance().milieu()
     jumpRoute = routeLogistics.jumpRoute()
     startHex, _ = jumpRoute.startNode()
     finishHex, _ = jumpRoute.finishNode()
-    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=startHex))
-    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=finishHex))
+    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu))
+    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=finishHex, milieu=milieu))
 
     toolTip = '<html>'
 
@@ -293,7 +296,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     for index, (nodeHex, world) in enumerate(jumpRoute):
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(hex=nodeHex)))
+            name=traveller.WorldManager.instance().canonicalHexName(hex=nodeHex, milieu=milieu)))
         tagColour = app.tagColour(
             app.calculateWorldTagLevel(world)
             if world else

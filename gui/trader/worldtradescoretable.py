@@ -23,6 +23,8 @@ def _customWorldTableColumns(
     columns.insert(index, WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
+# TODO: Ideally this would update the content of the table if the milieu
+# changes.
 class WorldTradeScoreTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
@@ -54,7 +56,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
         try:
             for row in range(self.rowCount()):
-                self._fillRow(row, self.hex(row), self.world(row))
+                self._fillRow(row, self.hex(row))
         finally:
             self.setSortingEnabled(sortingEnabled)
 
@@ -90,9 +92,16 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
+        if isinstance(hex, traveller.World):
+            world = hex
+            hex = world.hex()
+        else:
+            world = traveller.WorldManager.instance().worldByPosition(
+                hex=hex,
+                milieu=app.Config.instance().milieu())
+
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
@@ -107,7 +116,7 @@ class WorldTradeScoreTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, hex, world)
+            super()._fillRow(row, hex)
 
             if world:
                 for column in range(self.columnCount()):

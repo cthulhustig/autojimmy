@@ -919,10 +919,11 @@ class WorldSearch(object):
 
     def search(
             self,
+            milieu: travellermap.Milieu,
             maxResults: int = 1000
             ) -> typing.Iterable[traveller.World]:
         results = []
-        for sector in traveller.WorldManager.instance().sectors():
+        for sector in traveller.WorldManager.instance().sectors(milieu=milieu):
             self._searchWorldList(
                 worldList=sector,
                 inPlaceResults=results,
@@ -933,11 +934,14 @@ class WorldSearch(object):
 
     def searchRegion(
             self,
+            milieu: travellermap.Milieu,
             sectorName: str,
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
             ) -> typing.Iterable[traveller.World]:
-        sector = traveller.WorldManager.instance().sectorByName(name=sectorName)
+        sector = traveller.WorldManager.instance().sectorByName(
+            name=sectorName,
+            milieu=milieu)
         if not sector:
             raise RuntimeError(f'Sector "{sectorName}" for found')
 
@@ -951,13 +955,15 @@ class WorldSearch(object):
 
     def searchArea(
             self,
+            milieu: travellermap.Milieu,
             centerHex: travellermap.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
         return traveller.WorldManager.instance().worldsInRadius(
             center=centerHex,
             searchRadius=searchRadius,
-            filterCallback=self.checkWorld)
+            filterCallback=self.checkWorld,
+            milieu=milieu)
 
     def _searchWorldList(
             self,

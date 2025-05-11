@@ -37,7 +37,11 @@ class LabelCache(object):
     _MajorLabelsPath = 'labels/mega_labels.tab'
     _WorldLabelPath = 'labels/Worlds.xml'
 
-    def __init__(self):
+    def __init__(
+            self,
+            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            ) -> None:
+        self._milieu = milieu
         self.minorLabels = self._parseMapLabels(
             travellermap.DataStore.instance().loadTextResource(
                 filePath=LabelCache._MinorLabelsPath))
@@ -88,7 +92,9 @@ class LabelCache(object):
                 hex = locationElement.attrib.get('Hex')
                 if hex is None:
                     raise RuntimeError('Location element has no Hex attribute')
-                location = traveller.WorldManager.instance().sectorHexToPosition(f'{sector} {hex}')
+                location = traveller.WorldManager.instance().sectorHexToPosition(
+                    sectorHex=f'{sector} {hex}',
+                    milieu=self._milieu)
                 centerX, centerY = location.worldCenter()
                 location = cartographer.PointF(x=centerX, y=centerY)
 

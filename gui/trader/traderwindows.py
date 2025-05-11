@@ -1918,6 +1918,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
+                milieu=app.Config.instance().milieu(),
                 purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 currentCargo=self._currentCargoTable.cargoRecords(),
@@ -2568,6 +2569,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.MultiWorldTraderJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
+                milieu=app.Config.instance().milieu(),
                 purchaseWorlds=self._purchaseWorldsWidget.worlds(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),

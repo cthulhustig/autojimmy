@@ -13,7 +13,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     # This state version intentionally doesn't match the class name. This
     # was done for backwards compatibility when the class was renamed as
     # part of the work for dead space routing
-    _StateVersion = 'WorldSelectWidget_v1'
+    # v2 - Switched to storing absolute hex rather than sector hex as part
+    # of making the milieu dynamically changeable
+    _StateVersion = 'WorldSelectWidget_v2'
 
     # The hex select combo box has a minimum width applied to stop it becoming
     # stupidly small. This min size isn't expected to be big enough for all
@@ -99,7 +101,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         hex = self.selectedHex()
         if not hex:
             return None
-        return traveller.WorldManager.instance().worldByPosition(hex=hex) if hex else None
+        return traveller.WorldManager.instance().worldByPosition(
+            hex=hex,
+            milieu=app.Config.instance().milieu())
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -138,15 +142,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         stream.writeQString(HexSelectToolWidget._StateVersion)
 
         hex = self.selectedHex()
-        sectorHex = ''
-        if hex:
-            try:
-                sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-            except Exception as ex:
-                logging.error(
-                    f'Failed to resolve hex {hex} to sector hex when saving HexSelectToolWidget state',
-                    exc_info=ex)
-        stream.writeQString(sectorHex)
+        stream.writeQString(f'{hex.absoluteX()}:{hex.absoluteY()}' if hex else '')
 
         return state
 
@@ -161,16 +157,21 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore HexSelectToolWidget state (Incorrect version)')
             return False
 
-        sectorHex = stream.readQString()
+        value = stream.readQString()
         hex = None
-        if sectorHex:
+        if value:
+            tokens = value.split(':')
+            if len(tokens) < 0:
+                logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}")')
+                return False
             try:
-                hex = traveller.WorldManager.instance().sectorHexToPosition(
-                    sectorHex=sectorHex)
+                hex = travellermap.HexPosition(
+                    absoluteX=int(tokens[0]),
+                    absoluteY=int(tokens[1]))
             except Exception as ex:
                 # This can happen if sector data has changed for whatever reason
                 # (e.g. map updates or custom sectors)
-                logging.warning(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
+                logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}"', exc_info=ex)
                 return False
 
         self.setSelectedHex(hex=hex, updateHistory=False)

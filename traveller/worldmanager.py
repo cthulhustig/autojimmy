@@ -180,6 +180,11 @@ class WorldManager(object):
                 # TODO: Is this the best decision????
                 self._milieuDataMap[milieu] = milieuData
 
+    # TODO: Do I actually need to pre-calculate the mains. Rather than do that could
+    # I find them at the point the user clicks on a world with mains enabled. I think
+    # code could just call worldsInFlood instead and it might not be to bad even for
+    # the largest mains. For this to work worldsInFlood would need a flag that allows
+    # it to include placeholder worlds (with it off by default)
     def calculateMains(
             self,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None

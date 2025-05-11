@@ -164,9 +164,16 @@ class _RefuellingPlanTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
+        if isinstance(hex, traveller.World):
+            world = hex
+            hex = world.hex()
+        else:
+            world = traveller.WorldManager.instance().worldByPosition(
+                hex=hex,
+                milieu=app.Config.instance().milieu())
+
         assert(world) # Pitstops should always have a world
 
         # Disable sorting while updating a row. We don't want any sorting to occur
@@ -175,7 +182,7 @@ class _RefuellingPlanTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, hex, world)
+            super()._fillRow(row, hex)
 
             pitStop = self._pitStops[row]
             for column in range(self.columnCount()):
@@ -907,6 +914,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._clearJumpRoute()
 
+        milieu = app.Config.instance().milieu()
+
         startHex, finishHex = self._selectStartFinishWidget.hexes()
         if not startHex or not finishHex:
             if not startHex and not finishHex:
@@ -947,7 +956,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            startWorld = traveller.WorldManager.instance().worldByPosition(hex=startHex)
+            startWorld = traveller.WorldManager.instance().worldByPosition(
+                hex=startHex,
+                milieu=milieu)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
@@ -980,7 +991,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
             fuelIssueWorldStrings = []
             for waypointHex in self._waypointsWidget.hexes():
-                waypointWorld = traveller.WorldManager.instance().worldByPosition(hex=waypointHex)
+                waypointWorld = traveller.WorldManager.instance().worldByPosition(
+                    hex=waypointHex,
+                    milieu=milieu)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
@@ -1032,6 +1045,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteJob = jobs.RoutePlannerJob(
                 parent=self,
                 routingType=routingType,
+                milieu=milieu,
                 hexSequence=hexSequence,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -1081,9 +1095,10 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _jumpRouteJobFinished(self, result: typing.Union[typing.Optional[logic.JumpRoute], Exception]) -> None:
         if isinstance(result, Exception):
+            milieu = app.Config.instance().milieu()
             startHex, finishHex = self._selectStartFinishWidget.hexes()
-            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
-            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex)
+            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu)
+            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex, milieu=milieu)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1249,7 +1264,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
-            traveller.WorldManager.instance().worldByPosition(hex) != None
+            traveller.WorldManager.instance().worldByPosition(
+                hex=hex,
+                milieu=app.Config.instance().milieu()) != None
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
@@ -1307,12 +1324,8 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(lambda: self._showJumpRouteOnMap())
         action.setEnabled(self._jumpRoute != None)
 
-        menu = QtWidgets.QMenu('Export', self)
-        menuItems.append(menu)
-        action = menu.addAction('Jump Route...')
-        action.triggered.connect(self._exportJumpRoute)
-        action.setEnabled(self._jumpRoute != None)
         action = menu.addAction('Screenshot...')
+        menuItems.append(action)
         action.setEnabled(True)
         action.triggered.connect(self._exportMapScreenshot)
 
@@ -1408,31 +1421,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         toolTip = f'<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">{toolTip}</ul>'
         return gui.createStringToolTip(toolTip, escape=False)
-
-    def _exportJumpRoute(self) -> None:
-        if not self._jumpRoute:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='No jump route to export')
-            return
-
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            parent=self,
-            caption='Export Jump Route',
-            directory=QtCore.QDir.homePath() + '/route.json',
-            filter='JSON Files (*.json)')
-        if not path:
-            return
-
-        try:
-            logic.writeJumpRoute(self._jumpRoute, path)
-        except Exception as ex:
-            message = f'Failed to write jump route to "{path}"'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
 
     def _exportMapScreenshot(self) -> None:
         try:
@@ -1568,12 +1556,14 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpOverlayHandles.add(handle)
 
         if startHex and showWorldTaggingOverlay:
+            milieu = app.Config.instance().milieu()
             try:
                 worlds = traveller.WorldManager.instance().worldsInRadius(
                     center=startHex,
-                    searchRadius=jumpRating)
+                    searchRadius=jumpRating,
+                    milieu=milieu)
             except Exception as ex:
-                startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
+                startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu)
                 logging.warning(
                     f'An exception occurred while finding worlds reachable from {startString}',
                     exc_info=ex)
@@ -1750,10 +1740,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 requiredBerthingIndices=self._generateRequiredBerthingIndices(),
                 includeLogisticsCosts=True) # Always include logistics costs
         except Exception as ex:
+            milieu = app.Config.instance().milieu()
             startHex, _ = self._jumpRoute.startNode()
             finishHex, _ = self._jumpRoute.finishNode()
-            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
-            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex)
+            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex, milieu=milieu)
+            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex, milieu=milieu)
             message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                 start=startString,
                 finish=finishString)

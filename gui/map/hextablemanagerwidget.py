@@ -1,3 +1,4 @@
+import app
 import gui
 import logging
 import traveller
@@ -357,10 +358,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
+            milieu = app.Config.instance().milieu()
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(
-                    hex=self.hex(row=row))
+                    hex=self.hex(row=row),
+                    milieu=milieu)
                 if not world:
                     self._hexTable.removeRow(row=row)
                     contentChanged = True

@@ -16,13 +16,14 @@ def createHexToolTip(
         ) -> str:
     global _DisableWorldToolTipImages
 
-    worldManager = traveller.WorldManager.instance()
-
+    milieu = app.Config.instance().milieu()
     if isinstance(hex, traveller.World):
         world = hex
         hex = world.hex()
     else:
-        world = worldManager.worldByPosition(hex=hex)
+        world = traveller.WorldManager.instance().worldByPosition(
+            hex=hex,
+            milieu=milieu)
     uwp = world.uwp() if world else None
 
     formatStyle = lambda tagColour: \
@@ -62,7 +63,9 @@ def createHexToolTip(
     # World
     #
 
-    canonicalName = traveller.WorldManager.instance().canonicalHexName(hex=hex)
+    canonicalName = traveller.WorldManager.instance().canonicalHexName(
+        hex=hex,
+        milieu=milieu)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
 
     if world:
@@ -70,10 +73,14 @@ def createHexToolTip(
         subsectorName = world.subsectorName()
     else:
         try:
-            sectorHex = worldManager.positionToSectorHex(hex=hex)
+            sectorHex = traveller.WorldManager.instance().positionToSectorHex(
+                hex=hex,
+                milieu=milieu)
         except:
             sectorHex = 'Unknown'
-        subsector = worldManager.subsectorByPosition(hex=hex)
+        subsector = traveller.WorldManager.instance().subsectorByPosition(
+            hex=hex,
+            milieu=milieu)
         subsectorName = subsector.name() if subsector else 'Unknown'
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(subsectorName)}</li>'
@@ -125,7 +132,9 @@ def createHexToolTip(
 
         if world.hasOwner():
             try:
-                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=world.ownerSectorHex())
+                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
+                    sectorHex=world.ownerSectorHex(),
+                    milieu=milieu)
             except Exception:
                 ownerWorld = None
 
@@ -324,7 +333,9 @@ def createHexToolTip(
             toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
             for colonySectorHex in world.colonySectorHexes():
                 try:
-                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=colonySectorHex)
+                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
+                        sectorHex=colonySectorHex,
+                        milieu=milieu)
                 except Exception:
                     colonyWorld = None
 

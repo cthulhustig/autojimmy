@@ -2,18 +2,21 @@ import common
 import logic
 import math
 import traveller
+import travellermap
 import typing
 
 class Trader(object):
     def __init__(
             self,
             rules: traveller.Rules,
+            milieu: travellermap.Milieu,
             tradeOptionCallback: typing.Callable[[logic.TradeOption], typing.Any],
             traderInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         self._rules = rules
+        self._milieu = milieu
         self._tradeOptionCallback = tradeOptionCallback
         self._traderInfoCallback = traderInfoCallback
         self._progressCallback = progressCallback
@@ -142,6 +145,7 @@ class Trader(object):
         self._currentProgress = 0
 
         self._calculateTradeOptions(
+            milieu=self._milieu,
             purchaseWorld=purchaseWorld,
             saleWorlds=saleWorlds,
             currentCargo=currentCargo,
@@ -331,6 +335,7 @@ class Trader(object):
                 continue
 
             self._calculateTradeOptions(
+                milieu=self._milieu,
                 purchaseWorld=purchaseWorld,
                 saleWorlds=saleWorlds,
                 possibleCargo=possibleCargo,
@@ -357,6 +362,7 @@ class Trader(object):
 
     def _calculateTradeOptions(
             self,
+            milieu: travellermap.Milieu,
             purchaseWorld: traveller.World,
             saleWorlds: typing.Iterable[traveller.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
@@ -386,6 +392,7 @@ class Trader(object):
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
                 routingType=routingType,
+                milieu=milieu,
                 startHex=purchaseWorld.hex(),
                 finishHex=saleWorld.hex(),
                 shipTonnage=shipTonnage,

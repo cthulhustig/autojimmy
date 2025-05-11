@@ -68,6 +68,7 @@ class Simulator(object):
 
     def run(
             self,
+            milieu: travellermap.Milieu,
             startHex: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
@@ -90,6 +91,7 @@ class Simulator(object):
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:
+        self._milieu = milieu
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
@@ -136,7 +138,9 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = traveller.WorldManager.instance().worldByPosition(hex=self._currentHex)
+        currentWorld = traveller.WorldManager.instance().worldByPosition(
+            hex=self._currentHex,
+            milieu=self._milieu)
 
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
@@ -147,7 +151,8 @@ class Simulator(object):
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInRadius(
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
-                filterCallback=worldFilterCallback)
+                filterCallback=worldFilterCallback,
+                milieu=self._milieu)
 
             # Buy something
             self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')
@@ -216,8 +221,12 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
-                currentString = traveller.WorldManager.instance().canonicalHexName(hex=self._currentHex)
-                nextString = traveller.WorldManager.instance().canonicalHexName(hex=nextHex)
+                currentString = traveller.WorldManager.instance().canonicalHexName(
+                    hex=self._currentHex,
+                    milieu=self._milieu)
+                nextString = traveller.WorldManager.instance().canonicalHexName(
+                    hex=nextHex,
+                    milieu=self._milieu)
                 self._logMessage(
                     f'Travelling from {currentString} to {nextString}')
 
@@ -323,6 +332,7 @@ class Simulator(object):
 
         trader = logic.Trader(
             rules=self._rules,
+            milieu=self._milieu,
             tradeOptionCallback=lambda tradeOption: tradeOptions.append(tradeOption),
             traderInfoCallback=lambda infoMessage: infoMessages.append(infoMessage),
             isCancelledCallback=self._isCancelledCallback)

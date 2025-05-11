@@ -147,7 +147,8 @@ class RectSelector(object):
                     sloppySectors = traveller.WorldManager.instance().sectorsInArea(
                         upperLeft=upperLeft,
                         lowerRight=lowerRight,
-                        filter=sectorFilter)
+                        filterCallback=sectorFilter,
+                        milieu=travellermap.Milieu.M1105)
                 else:
                     # M1105 doesn't have any placeholders
                     sloppySectors = []
@@ -155,7 +156,8 @@ class RectSelector(object):
             else:
                 sloppySectors = traveller.WorldManager.instance().sectorsInArea(
                     upperLeft=upperLeft,
-                    lowerRight=lowerRight)
+                    lowerRight=lowerRight,
+                    milieu=self._milieu)
                 self._sloppySectors = sloppySectors
 
             if not self._sectorSlop:
@@ -200,7 +202,8 @@ class RectSelector(object):
 
             self._sloppySubsectors = traveller.WorldManager.instance().subsectorsInArea(
                 upperLeft=upperLeft,
-                lowerRight=lowerRight)
+                lowerRight=lowerRight,
+                milieu=self._milieu)
 
             if not self._subsectorSlop:
                 self._tightSubsectors = self._sloppySubsectors
@@ -249,8 +252,8 @@ class RectSelector(object):
                     sloppyWorlds = traveller.WorldManager.instance().worldsInArea(
                         upperLeft=upperLeft,
                         lowerRight=lowerRight,
-                        milieu=travellermap.Milieu.M1105,
-                        worldFilter=worldFilter)
+                        filterCallback=worldFilter,
+                        milieu=travellermap.Milieu.M1105)
                 else:
                     # M1105 doesn't have any placeholders
                     sloppyWorlds = []
@@ -258,7 +261,8 @@ class RectSelector(object):
             else:
                 sloppyWorlds = traveller.WorldManager.instance().worldsInArea(
                     upperLeft=upperLeft,
-                    lowerRight=lowerRight)
+                    lowerRight=lowerRight,
+                    milieu=self._milieu)
                 self._sloppyWorlds = sloppyWorlds
 
             if not self._worldSlop:

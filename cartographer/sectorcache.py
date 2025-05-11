@@ -177,7 +177,8 @@ class SectorCache(object):
             return borders
 
         sector = traveller.WorldManager.instance().sectorByPosition(
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1),
+            milieu=self._milieu)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -199,7 +200,8 @@ class SectorCache(object):
             return regions
 
         sector = traveller.WorldManager.instance().sectorByPosition(
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1),
+            milieu=self._milieu)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -221,7 +223,8 @@ class SectorCache(object):
             return routes
 
         sector = traveller.WorldManager.instance().sectorByPosition(
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1),
+            milieu=self._milieu)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None

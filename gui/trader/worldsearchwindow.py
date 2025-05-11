@@ -57,6 +57,15 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
         hint.setWidth(width)
         return hint
 
+# TODO: This MUST be updated to refresh if the milieu changes.
+# The sector/subsector combo boxes should be updated to contain the
+# names of sectors/subsectors for the milieu and the comboboxes should
+# be resized so they're big enough for the names. If the currently
+# selected sector/subsector doesn't exist in the new milieu the selection
+# should be set to the 'default'. Filling the combo box drop down on
+# demand with the values for the milieu at the point it's displayed
+# isn't a great option as it means the combo box doesn't have the correct
+# size as it's empty when it's sizing is done.
 class _RegionSelectWidget(QtWidgets.QWidget):
     _StateVersion = '_RegionSelectWidget_v1'
     _AllSubsectorsText = '<All Subsectors>'
@@ -67,14 +76,16 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        sectorNames = list(traveller.WorldManager.instance().sectorNames())
-        sectorNames.sort(key=str.casefold)
+        milieu = app.Config.instance().milieu()
+        sectorNames = sorted(
+            traveller.WorldManager.instance().sectorNames(milieu=milieu),
+            key=str.casefold)
 
         self._sectorComboBox = QtWidgets.QComboBox()
         self._sectorComboBox.addItems(sectorNames)
-        self._sectorComboBox.currentIndexChanged.connect(self._updateSubsectorComboBox)
+        self._sectorComboBox.currentIndexChanged.connect(self._selectedSectorChanged)
         self._subsectorComboBox = QtWidgets.QComboBox()
-        self._updateSubsectorComboBox()
+        self._selectedSectorChanged()
 
         layout = gui.FormLayoutEx()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -118,16 +129,19 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         return True
 
-    def _updateSubsectorComboBox(self) -> None:
+    def _selectedSectorChanged(self) -> None:
         self._subsectorComboBox.clear()
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
-        sector = traveller.WorldManager.instance().sectorByName(self._sectorComboBox.currentText())
+        sector = traveller.WorldManager.instance().sectorByName(
+            name=self._sectorComboBox.currentText(),
+            milieu=app.Config.instance().milieu())
         if not sector:
             return
 
-        subsectorNames = list(sector.subsectorNames())
-        subsectorNames.sort(key=str.casefold)
+        subsectorNames = sorted(
+            sector.subsectorNames(),
+            key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
@@ -629,9 +643,11 @@ class WorldSearchWindow(gui.WindowWidget):
 
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
+                    milieu=app.Config.instance().milieu(),
                     maxResults=self._MaxSearchResults)
             elif self._regionSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.searchRegion(
+                    milieu=app.Config.instance().milieu(),
                     sectorName=self._regionSearchSelectWidget.sectorName(),
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
@@ -643,6 +659,7 @@ class WorldSearchWindow(gui.WindowWidget):
                         text='Select a hex to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchArea(
+                    milieu=app.Config.instance().milieu(),
                     centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
                 if len(foundWorlds) > self._MaxSearchResults:
