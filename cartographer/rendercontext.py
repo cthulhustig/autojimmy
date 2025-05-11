@@ -1,6 +1,5 @@
 import common
 import enum
-import logging
 import cartographer
 import math
 import traveller
@@ -69,6 +68,7 @@ class RenderContext(object):
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
+            milieu: travellermap.Milieu,
             style: travellermap.Style,
             options: cartographer.RenderOptions,
             imageCache: cartographer.ImageCache,
@@ -83,6 +83,7 @@ class RenderContext(object):
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
         self._options = options
+        self._milieu = milieu
         self._styleSheet = cartographer.StyleSheet(
             scale=self._scale,
             options=self._options,
@@ -103,7 +104,8 @@ class RenderContext(object):
             capacity=RenderContext._GridCacheCapacity)
         self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
-        self._selector = cartographer.RectSelector()
+        self._selector = cartographer.RectSelector(
+            milieu=self._milieu)
         self._worldViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
@@ -127,6 +129,14 @@ class RenderContext(object):
 
         self._createLayers()
         self._updateView()
+
+    def view(
+            self
+            ) -> typing.Tuple[
+                float, float, # World center x/y
+                float, # Scale (linear)
+                int, int]: # Pixel output x/y
+        return (self._worldCenterX, self._worldCenterY, self._scale, self._outputPixelX, self._outputPixelY)
 
     def setView(
             self,
@@ -153,6 +163,16 @@ class RenderContext(object):
 
         if scaleUpdated:
             self._updateLayerOrder()
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(
+            self,
+            milieu: travellermap.Milieu
+            ) -> None:
+        self._milieu = milieu
+        self._selector.setMilieu(milieu=milieu)
 
     def style(self) -> travellermap.Style:
         return self._styleSheet.style
@@ -598,7 +618,11 @@ class RenderContext(object):
             baseWidth = self._styleSheet.microRoutes.linePen.width()
 
             for sector in self._selector.sectors():
-                for route in self._sectorCache.routeLines(x=sector.x(), y=sector.y()):
+                sectorRoutes = self._sectorCache.routeLines(
+                    milieu=self._milieu,
+                    x=sector.x(),
+                    y=sector.y())
+                for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
@@ -1114,6 +1138,7 @@ class RenderContext(object):
 
                 for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
+                        milieu=self._milieu,
                         x=sector.x(),
                         y=sector.y())
                     if worlds:
@@ -1121,6 +1146,7 @@ class RenderContext(object):
 
                 for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
+                        milieu=self._milieu,
                         x=sector.x(),
                         y=sector.y())
                     if worlds:
@@ -1815,7 +1841,10 @@ class RenderContext(object):
             if not self._worldViewRect.intersects(sectorClipRect):
                 continue
 
-            sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
+            sectorRegions = self._sectorCache.regionPaths(
+                milieu=self._milieu,
+                x=sector.x(),
+                y=sector.y())
             regionOutlines: typing.List[cartographer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
@@ -1826,7 +1855,10 @@ class RenderContext(object):
                     if self._worldViewRect.intersects(outlineBounds):
                         regionOutlines.append(outline)
 
-            sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
+            sectorBorders = self._sectorCache.borderPaths(
+                milieu=self._milieu,
+                x=sector.x(),
+                y=sector.y())
             borderOutlines: typing.List[cartographer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:

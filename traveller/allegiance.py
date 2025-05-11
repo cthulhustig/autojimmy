@@ -147,6 +147,7 @@ class AllegianceManager(object):
                     cls._instance._loadAllegiances()
         return cls._instance
 
+    # TODO: Need to update AllegianceManager to handle all milieu
     @staticmethod
     def setMilieu(milieu: travellermap.Milieu) -> None:
         if AllegianceManager._instance:

@@ -1634,6 +1634,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height(),
+            milieu=app.Config.instance().milieu(),
             style=app.Config.instance().mapStyle(),
             options=cartographer.mapOptionsToRenderOptions(
                 app.Config.instance().mapOptions()),

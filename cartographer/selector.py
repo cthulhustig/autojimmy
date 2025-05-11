@@ -7,15 +7,15 @@ import typing
 class RectSelector(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             sectorSlop: int = 1, # Numbers of sectors
             subsectorSlop: int = 1, # Number of subsectors
-            worldSlop: int = 1, # Number of parsecs,
-            milieu: travellermap.Milieu = travellermap.Milieu.M1105
+            worldSlop: int = 1, # Number of parsecs
             ) -> None:
+        self._milieu = milieu
         self._sectorSlop = sectorSlop
         self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
-        self._milieu = milieu
         self._rect = cartographer.RectangleF()
 
         self._tightSectors: typing.Optional[typing.List[traveller.Sector]] = None
@@ -37,12 +37,19 @@ class RectSelector(object):
         return cartographer.RectangleF(self._rect)
 
     def setRect(self, rect: cartographer.RectangleF) -> None:
+        if rect == self._rect:
+            return
         self._rect = cartographer.RectangleF(rect)
-        self._tightSectors = self._sloppySectors = None
-        self._tightSubsectors = self._sloppySubsectors = None
-        self._tightWorlds = self._sloppyWorlds = None
-        self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds = None
-        self._tightPlaceholderSectors = self._sloppyPlaceholderSectors = None
+        self._invalidate()
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._invalidate()
 
     def sectorSlop(self) -> float:
         return self._sectorSlop
@@ -109,6 +116,13 @@ class RectSelector(object):
         self._cacheWorlds(tight=tight, placeholders=True)
 
         return self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
+
+    def _invalidate(self) -> None:
+        self._tightSectors = self._sloppySectors = None
+        self._tightSubsectors = self._sloppySubsectors = None
+        self._tightWorlds = self._sloppyWorlds = None
+        self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds = None
+        self._tightPlaceholderSectors = self._sloppyPlaceholderSectors = None
 
     def _cacheSectors(
             self,

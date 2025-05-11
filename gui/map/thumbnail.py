@@ -48,6 +48,7 @@ def generateThumbnail(
             scale=linearScale,
             outputPixelX=width,
             outputPixelY=height,
+            milieu=app.Config.instance().milieu(),
             style=app.Config.instance().mapStyle(),
             options=cartographer.mapOptionsToRenderOptions(
                 app.Config.instance().mapOptions()),

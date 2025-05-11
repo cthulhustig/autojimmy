@@ -60,7 +60,6 @@ class WorldManager(object):
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _milieu = travellermap.Milieu.M1105 # Same default as Traveller Map
     _milieuDataMap: typing.Dict[travellermap.Milieu, _MilieuData] = {}
 
     def __init__(self) -> None:
@@ -76,11 +75,12 @@ class WorldManager(object):
                     cls._instance = cls.__new__(cls)
         return cls._instance
 
+    # TODO: This shouldn't be needed but need to update AllegianceManager to make it
+    # handle all milieu
     @staticmethod
     def setMilieu(milieu: travellermap.Milieu) -> None:
         if WorldManager._instance:
             raise RuntimeError('You can\'t set the milieu after the singleton has been initialised')
-        WorldManager._milieu = milieu
 
         # Configure the allegiance manager to use the same milieu
         traveller.AllegianceManager.setMilieu(milieu=milieu)
