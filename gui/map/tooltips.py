@@ -121,7 +121,8 @@ def createHexToolTip(
 
     if world:
         allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(
-            allegianceCode=world.allegiance(),
+            milieu=world.milieu(),
+            code=world.allegiance(),
             sectorName=world.sectorName())
         tagLevel = app.calculateAllegianceTagLevel(world=world)
         style = formatStyle(app.tagColour(tagLevel))

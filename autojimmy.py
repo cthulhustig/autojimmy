@@ -507,8 +507,6 @@ def main() -> None:
             overlayDir=overlayMapsDir,
             customDir=customMapsDir)
 
-        traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
-
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))

@@ -1007,7 +1007,11 @@ class ConfigDialog(gui.DialogEx):
             table=self._nobilityTaggingTable)
 
     def _setupAllegianceTaggingTab(self) -> None:
-        allegiances = traveller.AllegianceManager.instance().allegiances()
+        # TODO: If the user changes the milieu on the main config pane, this
+        # config pane should probably update
+        # TODO: This probably shouldn't use app.Config
+        allegiances = traveller.AllegianceManager.instance().allegiances(
+            milieu=app.Config.instance().milieu())
 
         # Create a copy of the allegiances list and sort it by code
         allegiances = list(allegiances)

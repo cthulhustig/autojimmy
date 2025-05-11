@@ -84,16 +84,6 @@ class WorldManager(object):
                     cls._instance = cls.__new__(cls)
         return cls._instance
 
-    # TODO: This shouldn't be needed but need to update AllegianceManager to make it
-    # handle all milieu
-    @staticmethod
-    def setMilieu(milieu: travellermap.Milieu) -> None:
-        if WorldManager._instance:
-            raise RuntimeError('You can\'t set the milieu after the singleton has been initialised')
-
-        # Configure the allegiance manager to use the same milieu
-        traveller.AllegianceManager.setMilieu(milieu=milieu)
-
     def loadSectors(
             self,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
@@ -1023,6 +1013,7 @@ class WorldManager(object):
 
         # Add the allegiances for this sector to the allegiance manager
         traveller.AllegianceManager.instance().addSectorAllegiances(
+            milieu=milieu,
             sectorName=sectorName,
             allegiances=allegianceNameMap)
 
@@ -1180,7 +1171,8 @@ class WorldManager(object):
                     label = rawBorder.label()
                     if not label and rawBorder.allegiance():
                         label = traveller.AllegianceManager.instance().allegianceName(
-                            allegianceCode=rawBorder.allegiance(),
+                            milieu=milieu,
+                            code=rawBorder.allegiance(),
                             sectorName=sectorName)
                     if label and rawBorder.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)

@@ -200,7 +200,8 @@ def calculateNobilityTagLevel(nobilityType: traveller.NobilityType) -> app.TagLe
 
 def calculateAllegianceTagLevel(world: traveller.World) -> app.TagLevel:
     allegianceCode = traveller.AllegianceManager.instance().uniqueAllegianceCode(
-        allegianceCode=world.allegiance(),
+        milieu=world.milieu(),
+        code=world.allegiance(),
         sectorName=world.sectorName())
     return app.Config.instance().allegianceTagLevel(allegianceCode)
 

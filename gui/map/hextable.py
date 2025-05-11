@@ -663,7 +663,7 @@ class HexTable(gui.FrozenColumnListTable):
                     if world:
                         tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.allegiance())
-                        tagColour = app.tagColour(app.calculateAllegianceTagLevel(world))
+                        tagColour = app.tagColour(app.calculateAllegianceTagLevel(world=world))
                 elif columnType == self.ColumnType.Sophont:
                     if world:
                         tableItem = QtWidgets.QTableWidgetItem()
@@ -900,7 +900,8 @@ class HexTable(gui.FrozenColumnListTable):
                     stringColours=lineColours)
         elif columnType == self.ColumnType.Allegiance:
             allegiance = traveller.AllegianceManager.instance().allegianceName(
-                allegianceCode=world.allegiance(),
+                milieu=milieu,
+                code=world.allegiance(),
                 sectorName=world.sectorName())
             if allegiance:
                 return gui.createStringToolTip(allegiance)

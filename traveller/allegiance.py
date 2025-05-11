@@ -129,9 +129,12 @@ class AllegianceManager(object):
             ( 'CRAk', 'CA', None, 'Anakudnu Cultural Region' )]}
 
     _instance = None # Singleton instance
-    _allegianceMap: typing.Dict[str, AllegianceCodeInfo] = {}
     _lock = threading.Lock()
-    _milieu = travellermap.Milieu.M1105 # Same default as Traveller Map
+    _milieuDataMap: typing.Dict[
+        travellermap.Milieu,
+        typing.Dict[
+            str,
+            AllegianceCodeInfo]]
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -147,25 +150,25 @@ class AllegianceManager(object):
                     cls._instance._loadAllegiances()
         return cls._instance
 
-    # TODO: Need to update AllegianceManager to handle all milieu
-    @staticmethod
-    def setMilieu(milieu: travellermap.Milieu) -> None:
-        if AllegianceManager._instance:
-            raise RuntimeError('You can\'t set the milieu after the singleton has been initialised')
-        AllegianceManager._milieu = milieu
-
-    def allegiances(self) -> typing.Iterable[AllegianceCodeInfo]:
-        return self._allegianceMap.values()
+    def allegiances(
+            self,
+            milieu: travellermap.Milieu
+            ) -> typing.Iterable[AllegianceCodeInfo]:
+        milieuData = self._milieuDataMap[milieu]
+        return milieuData.values()
 
     def allegianceName(
             self,
-            allegianceCode: str,
+            milieu: travellermap.Milieu,
+            code: str,
             sectorName: str
             ) -> typing.Optional[str]:
-        if not allegianceCode:
+        milieuData = self._milieuDataMap[milieu]
+
+        if not code:
             return None
 
-        codeInfo = self._allegianceMap.get(allegianceCode)
+        codeInfo = milieuData.get(code)
         if not codeInfo:
             return None
 
@@ -173,12 +176,15 @@ class AllegianceManager(object):
 
     def legacyCode(
             self,
-            allegianceCode: str
+            milieu: travellermap.Milieu,
+            code: str
             ) -> typing.Optional[str]:
-        if not allegianceCode:
+        milieuData = self._milieuDataMap[milieu]
+
+        if not code:
             return None
 
-        codeInfo = self._allegianceMap.get(allegianceCode)
+        codeInfo = milieuData.get(code)
         if not codeInfo:
             return None
 
@@ -186,12 +192,15 @@ class AllegianceManager(object):
 
     def basesCode(
             self,
-            allegianceCode: str
+            milieu: travellermap.Milieu,
+            code: str
             ) -> typing.Optional[str]:
-        if not allegianceCode:
+        milieuData = self._milieuDataMap[milieu]
+
+        if not code:
             return None
 
-        codeInfo = self._allegianceMap.get(allegianceCode)
+        codeInfo = milieuData.get(code)
         if not codeInfo:
             return None
 
@@ -199,13 +208,16 @@ class AllegianceManager(object):
 
     def uniqueAllegianceCode(
             self,
-            allegianceCode: str,
+            milieu: travellermap.Milieu,
+            code: str,
             sectorName: str
             ) -> typing.Optional[str]:
-        if not allegianceCode:
+        milieuData = self._milieuDataMap[milieu]
+
+        if not code:
             return None
 
-        codeInfo = self._allegianceMap.get(allegianceCode)
+        codeInfo = milieuData.get(code)
         if not codeInfo:
             return None
 
@@ -213,34 +225,41 @@ class AllegianceManager(object):
 
     def formatAllegianceString(
             self,
-            allegianceCode: str,
+            milieu: travellermap.Milieu,
+            code: str,
             sectorName: str
             ) -> str:
-        if allegianceCode:
+        if code:
             allegianceName = self.allegianceName(
-                allegianceCode=allegianceCode,
+                milieu=milieu,
+                code=code,
                 sectorName=sectorName)
             if allegianceName:
-                allegianceString = f'{allegianceCode} - {allegianceName}'
+                allegianceString = f'{code} - {allegianceName}'
             else:
-                allegianceString = f'{allegianceCode} - Unknown'
+                allegianceString = f'{code} - Unknown'
         else:
             allegianceString = 'Unknown'
         return allegianceString
 
     def addSectorAllegiances(
             self,
+            milieu: travellermap.Milieu,
             sectorName: str,
             allegiances: typing.Mapping[str, str]
             ) -> None:
         with self._lock:
             for code, name in allegiances.items():
-                codeInfo = self._addAllegianceCode(code=code)
+                codeInfo = self._addAllegianceCode(milieu=milieu, code=code)
                 codeInfo.addLocalName(sectorName=sectorName, allegianceName=name)
 
     # This function assumes it's only called once when the singleton is created and that
     # the mutex is locked
     def _loadAllegiances(self) -> None:
+        self._milieuDataMap = {}
+        for milieu in travellermap.Milieu:
+            self._milieuDataMap[milieu] = {}
+
         # Load the T5 second survey allegiances pulled from Traveller Map
         _, results = travellermap.parseTabContent(
             content=travellermap.DataStore.instance().loadTextResource(
@@ -256,14 +275,6 @@ class AllegianceManager(object):
             else:
                 localAllegiances.append(allegiance)
 
-        # Generate a mapping of sector abbreviations to sector names
-        abbreviationMap = {}
-        for sectorInfo in travellermap.DataStore.instance().sectors(milieu=self._milieu):
-            abbreviation = sectorInfo.abbreviation()
-            if not abbreviation:
-                continue
-            abbreviationMap[abbreviation] = sectorInfo.canonicalName()
-
         # First the entries with no location or location of 'various' are added as global names
         for allegiance in globalAllegiances:
             code = allegiance['Code']
@@ -271,14 +282,28 @@ class AllegianceManager(object):
             baseCode = allegiance['BaseCode']
             globalName = allegiance['Name']
 
-            self._addAllegianceCode(
-                code=code,
-                legacyCode=legacyCode if legacyCode else None,
-                basesCode=baseCode if baseCode else None,
-                globalName=globalName if globalName else None)
+            for milieu in travellermap.Milieu:
+                self._addAllegianceCode(
+                    milieu=milieu,
+                    code=code,
+                    legacyCode=legacyCode if legacyCode else None,
+                    basesCode=baseCode if baseCode else None,
+                    globalName=globalName if globalName else None)
 
         # Now entries where the locations specify sectors are added as names for those
-        # sectors
+        # sectors. The locations are specified using abbreviations so a per-milieu map
+        # is generated for all abbreviations.
+        abbreviationMap: typing.Dict[
+            typing.Tuple[travellermap.Milieu, str], # Milieu & abbreviation
+            str # Canonical name
+            ] = {}
+        for milieu in travellermap.Milieu:
+            for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
+                abbreviation = sectorInfo.abbreviation()
+                if not abbreviation:
+                    continue
+                abbreviationMap[(milieu, abbreviation)] = sectorInfo.canonicalName()
+
         for allegiance in localAllegiances:
             code = allegiance['Code']
             legacyCode = allegiance['Legacy']
@@ -286,46 +311,53 @@ class AllegianceManager(object):
             localName = allegiance['Name']
             location = allegiance['Location']
 
-            codeInfo = self._addAllegianceCode(
-                code=code,
-                legacyCode=legacyCode if legacyCode else None,
-                basesCode=baseCode if baseCode else None)
-
             abbreviations = location.split('/')
-            for abbreviation in abbreviations:
-                sectorName = abbreviationMap.get(abbreviation)
-                if not sectorName:
-                    # Log this at debug as it occurs with the standard data
-                    logging.debug(f'Unable to resolve Allegiance location abbreviation {abbreviation} to a sector')
-                    continue
 
-                codeInfo.addLocalName(
-                    sectorName=sectorName,
-                    allegianceName=localName)
-
-        # Now unofficial global entries for the current milieu
-        unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(self._milieu)
-        if unofficialAllegiance:
-            for code, legacyCode, basesCode, globalName in unofficialAllegiance:
-                self._addAllegianceCode(
+            for milieu in travellermap.Milieu:
+                codeInfo = self._addAllegianceCode(
+                    milieu=milieu,
                     code=code,
                     legacyCode=legacyCode if legacyCode else None,
-                    basesCode=basesCode if baseCode else None,
-                    globalName=globalName if globalName else None)
+                    basesCode=baseCode if baseCode else None)
+
+                for abbreviation in abbreviations:
+                    sectorName = abbreviationMap.get((milieu, abbreviation))
+                    if not sectorName:
+                        # Log this at debug as it occurs with the standard data
+                        logging.debug(f'Unable to resolve Allegiance location abbreviation {abbreviation} to a sector')
+                        continue
+
+                    codeInfo.addLocalName(
+                        sectorName=sectorName,
+                        allegianceName=localName)
+
+        # Now unofficial global entries
+        for milieu in travellermap.Milieu:
+            unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(milieu)
+            if unofficialAllegiance:
+                for code, legacyCode, basesCode, globalName in unofficialAllegiance:
+                    self._addAllegianceCode(
+                        milieu=milieu,
+                        code=code,
+                        legacyCode=legacyCode if legacyCode else None,
+                        basesCode=basesCode if baseCode else None,
+                        globalName=globalName if globalName else None)
 
     def _addAllegianceCode(
             self,
+            milieu: travellermap.Milieu,
             code: str,
             legacyCode: typing.Optional[str] = None,
             basesCode: typing.Optional[str] = None,
             globalName: typing.Optional[str] = None,
             ) -> AllegianceCodeInfo:
-        codeInfo = self._allegianceMap.get(code)
+        milieuData = self._milieuDataMap[milieu]
+        codeInfo = milieuData.get(code)
         if not codeInfo:
             codeInfo = AllegianceCodeInfo(
                 code=code,
                 legacyCode=legacyCode,
                 basesCode=basesCode,
                 globalName=globalName)
-            self._allegianceMap[code] = codeInfo
+            milieuData[code] = codeInfo
         return codeInfo

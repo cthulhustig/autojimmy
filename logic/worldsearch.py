@@ -549,7 +549,8 @@ class AllegianceFilter(WorldFilter):
                 raise ValueError('Invalid allegiance filter operation')
 
             allegianceName = traveller.AllegianceManager.instance().allegianceName(
-                allegianceCode=world.allegiance(),
+                milieu=world.milieu(),
+                code=world.allegiance(),
                 sectorName=world.sectorName())
             if allegianceName:
                 if self._operation == StringFilterOperation.ContainsString:
