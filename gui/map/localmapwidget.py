@@ -565,9 +565,9 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _MainsOverlay(_MapOverlay):
-    _SmallMainColour = travellermap.HtmlColours.Pink
+    _SmallMainColour = common.HtmlColours.Pink
     _MediumMainColour = '#FFCC00'
-    _LargeMainColour = travellermap.HtmlColours.Cyan
+    _LargeMainColour = common.HtmlColours.Cyan
     _MainAlpha = 0.25
     _PointSize = 1.15
 
@@ -870,14 +870,14 @@ class LocalMapWidget(QtWidgets.QWidget):
             LocalMapWidget._DirectionTextFontSize)
         self._directionTextFont.setBold(True)
         self._directionTextPen = QtGui.QPen(
-            QtGui.QColor(travellermap.HtmlColours.TravellerRed),
+            QtGui.QColor(common.HtmlColours.TravellerRed),
             0)
 
         self._scaleFont = QtGui.QFont(
             LocalMapWidget._ScaleTextFontFamily,
             LocalMapWidget._ScaleTextFontSize)
         self._scalePen = QtGui.QPen(
-            QtGui.QColor(travellermap.HtmlColours.Black), # Colour will be updated when drawn
+            QtGui.QColor(common.HtmlColours.Black), # Colour will be updated when drawn
             LocalMapWidget._ScaleLineWidth,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.FlatCap)
@@ -1483,9 +1483,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         labelRect = fontMetrics.tightBoundingRect(label)
 
         self._scalePen.setColor(QtGui.QColor(
-            travellermap.HtmlColours.White
+            common.HtmlColours.White
             if travellermap.isDarkStyle(self._renderer.style()) else
-            travellermap.HtmlColours.Black))
+            common.HtmlColours.Black))
 
         with gui.PainterStateGuard(painter):
             painter.setPen(self._scalePen)

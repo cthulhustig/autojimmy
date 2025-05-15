@@ -44,7 +44,6 @@ class Config(object):
     _MapRenderingTypeKeyName = 'TravellerMap/MapRenderingType'
     _MapAnimationsKeyName = 'TravellerMap/MapAnimations'
 
-    _ProxyEnabledKeyName = 'Proxy/Enabled'
     _ProxyPortKeyName = 'Proxy/Port'
     _ProxyHostPoolSizeKeyName = 'Proxy/HostPoolSize'
     _ProxyMapUrlKeyName = 'Proxy/MapUrl'
@@ -1285,7 +1284,8 @@ class Config(object):
             default=False)
         self._shipFuelPerParsec = self._loadFloatSetting(
             key=Config._ShipFuelPerParsecKeyName,
-            default=self._shipTonnage * 0.1) # 10% of ship tonnage
+            default=self._shipTonnage * 0.1, # 10% of ship tonnage
+            minValue=0.01) # TODO: Not sure about this value, need to make sure it still allows hop-3
         self._perJumpOverheads = self._loadIntSetting(
             key=Config._PerJumpOverheadKeyName,
             default=0,
@@ -1761,7 +1761,7 @@ class Config(object):
             upperDefault: int,
             minValue: int,
             maxValue: int
-            ) -> int:
+            ) -> typing.Tuple[int, int]:
         minValue = self._loadIntSetting(
             key=minKey,
             default=lowerDefault,
