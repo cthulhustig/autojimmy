@@ -31,7 +31,10 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
         self._tradeGoodCombo = QtWidgets.QComboBox()
         if not editTradeGood:
             if not selectableTradeGoods:
-                selectableTradeGoods = traveller.tradeGoodList(rules=app.Config.instance().rules())
+                selectableTradeGoods = traveller.tradeGoodList(
+                    rules=app.ConfigEx.instance().asObject(
+                        option=app.ConfigOption.Rules,
+                        objectType=traveller.Rules))
             for tradeGood in selectableTradeGoods:
                 insertIndex = self._tradeGoodCombo.count()
                 self._tradeGoodCombo.addItem(f'{tradeGood.id()}: {tradeGood.name()}')
@@ -120,7 +123,9 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
     def _syncControls(self) -> None:
         tradeGood: traveller.TradeGood = self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         baseAvailability = traveller.calculateWorldTradeGoodQuantity(
-            rules=app.Config.instance().rules(),
+            rules=app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             world=self._world,
             tradeGood=tradeGood)
         basePrice = tradeGood.basePrice()

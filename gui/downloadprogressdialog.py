@@ -27,12 +27,14 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._progressBar)
         windowLayout.addWidget(self._cancelButton)
 
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         self.setWindowTitle('Update Universe Data')
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
-        self.setFixedWidth(int(300 * app.Config.instance().interfaceScale()))
+        self.setFixedWidth(int(300 * interfaceScale))
         self.setSizeGripEnabled(False)
 
         # Setting up the title bar needs to be done before the window is show to take effect. It

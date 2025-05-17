@@ -1,6 +1,8 @@
 import app
+import enum
 import logic
 import traveller
+import typing
 
 def calculateWorldTagLevel(world: traveller.World) -> app.TagLevel:
     # Always tag Anomalies at warning level as they're not necessarily a danger
@@ -122,96 +124,188 @@ def calculateJumpRouteTagLevel(jumpRoute: logic.JumpRoute) -> app.TagLevel:
 
     return routeTagLevel
 
-def calculateZoneTagLevel(world: traveller.World) -> app.TagLevel:
-    return app.Config.instance().zoneTagLevel(world.zone())
+def calculateZoneTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.ZoneTagging,
+        code=world.zone())
 
-def calculateStarPortTagLevel(world: traveller.World) -> app.TagLevel:
-    startPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
-    return app.Config.instance().starPortTagLevel(startPortCode)
+def calculateStarPortTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.StarPortTagging,
+        code=world.uwp().code(traveller.UWP.Element.StarPort))
 
-def calculateWorldSizeTagLevel(world: traveller.World) -> app.TagLevel:
-    worldSizeCode = world.uwp().code(traveller.UWP.Element.WorldSize)
-    return app.Config.instance().worldSizeTagLevel(worldSizeCode)
+def calculateWorldSizeTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.WorldSizeTagging,
+        code=world.uwp().code(traveller.UWP.Element.WorldSize))
 
-def calculateAtmosphereTagLevel(world: traveller.World) -> app.TagLevel:
-    atmosphereCode = world.uwp().code(traveller.UWP.Element.Atmosphere)
-    return app.Config.instance().atmosphereTagLevel(atmosphereCode)
+def calculateAtmosphereTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.AtmosphereTagging,
+        code=world.uwp().code(traveller.UWP.Element.Atmosphere))
 
-def calculateHydrographicsTagLevel(world: traveller.World) -> app.TagLevel:
-    hydrographicCode = world.uwp().code(traveller.UWP.Element.Hydrographics)
-    return app.Config.instance().hydrographicsTagLevel(hydrographicCode)
+def calculateHydrographicsTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.HydrographicsTagging,
+        code=world.uwp().code(traveller.UWP.Element.Hydrographics))
 
-def calculatePopulationTagLevel(world: traveller.World) -> app.TagLevel:
-    populationCode = world.uwp().code(traveller.UWP.Element.Population)
-    return app.Config.instance().populationTagLevel(populationCode)
+def calculatePopulationTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.PopulationTagging,
+        code=world.uwp().code(traveller.UWP.Element.Population))
 
-def calculateGovernmentTagLevel(world: traveller.World) -> app.TagLevel:
-    governmentCode = world.uwp().code(traveller.UWP.Element.Government)
-    return app.Config.instance().governmentTagLevel(governmentCode)
+def calculateGovernmentTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.GovernmentTagging,
+        code=world.uwp().code(traveller.UWP.Element.Government))
 
-def calculateLawLevelTagLevel(world: traveller.World) -> app.TagLevel:
-    lawLevelCode = world.uwp().code(traveller.UWP.Element.LawLevel)
-    return app.Config.instance().lawLevelTagLevel(lawLevelCode)
+def calculateLawLevelTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.LawLevelTagging,
+        code=world.uwp().code(traveller.UWP.Element.LawLevel))
 
-def calculateTechLevelTagLevel(world: traveller.World) -> app.TagLevel:
-    techLevelCode = world.uwp().code(traveller.UWP.Element.TechLevel)
-    return app.Config.instance().techLevelTagLevel(techLevelCode)
+def calculateTechLevelTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.TechLevelTagging,
+        code=world.uwp().code(traveller.UWP.Element.TechLevel))
 
-def calculateBaseTypeTagLevel(baseType: traveller.BaseType) -> app.TagLevel:
-    return app.Config.instance().baseTypeTagLevel(baseType)
+def calculateBaseTypeTagLevel(
+        baseType: traveller.BaseType
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.BaseTypeTagging,
+        code=baseType)
 
-def calculateTradeCodeTagLevel(tradeCode: traveller.TradeCode) -> app.TagLevel:
-    return app.Config.instance().tradeCodeTagLevel(tradeCode)
+def calculateTradeCodeTagLevel(
+        tradeCode: traveller.TradeCode
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.TradeCodeTagging,
+        code=tradeCode)
 
-def calculateResourcesTagLevel(world: traveller.World) -> app.TagLevel:
-    resourcesCode = world.economics().code(traveller.Economics.Element.Resources)
-    return app.Config.instance().resourcesTagLevel(resourcesCode)
+def calculateResourcesTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.ResourcesTagging,
+        code=world.economics().code(traveller.Economics.Element.Resources))
 
-def calculateLabourTagLevel(world: traveller.World) -> app.TagLevel:
-    labourCode = world.economics().code(traveller.Economics.Element.Labour)
-    return app.Config.instance().labourTagLevel(labourCode)
+def calculateLabourTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.LabourTagging,
+        code=world.economics().code(traveller.Economics.Element.Labour))
 
-def calculateInfrastructureTagLevel(world: traveller.World) -> app.TagLevel:
-    infrastructureCode = world.economics().code(traveller.Economics.Element.Infrastructure)
-    return app.Config.instance().infrastructureTagLevel(infrastructureCode)
+def calculateInfrastructureTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.InfrastructureTagging,
+        code=world.economics().code(traveller.Economics.Element.Infrastructure))
 
 def calculateEfficiencyTagLevel(world: traveller.World) -> app.TagLevel:
-    efficiencyCode = world.economics().code(traveller.Economics.Element.Efficiency)
-    return app.Config.instance().efficiencyTagLevel(efficiencyCode)
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.EfficiencyTagging,
+        code=world.economics().code(traveller.Economics.Element.Efficiency))
 
-def calculateHeterogeneityTagLevel(world: traveller.World) -> app.TagLevel:
-    heterogeneityCode = world.culture().code(traveller.Culture.Element.Heterogeneity)
-    return app.Config.instance().heterogeneityTagLevel(heterogeneityCode)
+def calculateHeterogeneityTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.HeterogeneityTagging,
+        code=world.culture().code(traveller.Culture.Element.Heterogeneity))
 
-def calculateAcceptanceTagLevel(world: traveller.World) -> app.TagLevel:
-    acceptanceCode = world.culture().code(traveller.Culture.Element.Acceptance)
-    return app.Config.instance().acceptanceTagLevel(acceptanceCode)
+def calculateAcceptanceTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.AcceptanceTagging,
+        code=world.culture().code(traveller.Culture.Element.Acceptance))
 
-def calculateStrangenessTagLevel(world: traveller.World) -> app.TagLevel:
-    strangenessCode = world.culture().code(traveller.Culture.Element.Strangeness)
-    return app.Config.instance().strangenessTagLevel(strangenessCode)
+def calculateStrangenessTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.StrangenessTagging,
+        code=world.culture().code(traveller.Culture.Element.Strangeness))
 
-def calculateSymbolsTagLevel(world: traveller.World) -> app.TagLevel:
-    symbolsCode = world.culture().code(traveller.Culture.Element.Symbols)
-    return app.Config.instance().symbolsTagLevel(symbolsCode)
+def calculateSymbolsTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.SymbolsTagging,
+        code=world.culture().code(traveller.Culture.Element.Symbols))
 
-def calculateNobilityTagLevel(nobilityType: traveller.NobilityType) -> app.TagLevel:
-    return app.Config.instance().nobilityTagLevel(nobilityType)
+def calculateNobilityTagLevel(
+        nobilityType: traveller.NobilityType
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.NobilityTagging,
+        code=nobilityType)
 
-def calculateAllegianceTagLevel(world: traveller.World) -> app.TagLevel:
+def calculateAllegianceTagLevel(
+        world: traveller.World
+        ) -> typing.Optional[app.TagLevel]:
     allegianceCode = traveller.AllegianceManager.instance().uniqueAllegianceCode(
         milieu=world.milieu(),
         code=world.allegiance(),
         sectorName=world.sectorName())
-    return app.Config.instance().allegianceTagLevel(allegianceCode)
+    if not allegianceCode:
+        return None
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.AllegianceTagging,
+        code=allegianceCode)
 
-def calculateSpectralTagLevel(star: traveller.Star) -> app.TagLevel:
-    spectralCode = star.code(traveller.Star.Element.SpectralClass)
-    return app.Config.instance().spectralTagLevel(spectralCode)
+def calculateSpectralTagLevel(
+        star: traveller.Star
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.SpectralTagging,
+        code=star.code(traveller.Star.Element.SpectralClass))
 
-def calculateLuminosityTagLevel(star: traveller.Star) -> app.TagLevel:
-    luminosityCode = star.code(traveller.Star.Element.LuminosityClass)
-    return app.Config.instance().luminosityTagLevel(luminosityCode)
+def calculateLuminosityTagLevel(
+        star: traveller.Star
+        ) -> typing.Optional[app.TagLevel]:
+    return _checkConfigTagLevel(
+        configOption=app.ConfigOption.LuminosityTagging,
+        code=star.code(traveller.Star.Element.LuminosityClass))
 
-def tagColour(tagLevel: app.TagLevel) -> str:
-    return app.Config.instance().tagColour(tagLevel)
+def tagColour(tagLevel: app.TagLevel) -> typing.Optional[str]:
+    if tagLevel is app.TagLevel.Desirable:
+        return app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.DesirableTagColour)
+    elif tagLevel is app.TagLevel.Warning:
+        return app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.WarningTagColour)
+    elif tagLevel is app.TagLevel.Danger:
+        return app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.DangerTagColour)
+    return None
+
+def _checkConfigTagLevel(
+        configOption: app.ConfigOption,
+        code: typing.Union[str, enum.Enum]
+        ) -> typing.Optional[app.TagLevel]:
+    tagMap = app.ConfigEx.instance().asTagMap(option=configOption)
+    if not tagMap:
+        return None
+    return tagMap.get(code)

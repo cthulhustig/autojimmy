@@ -203,8 +203,6 @@ class ConfigDialog(gui.DialogEx):
             configSection='ConfigDialog',
             parent=parent)
 
-        self._restartRequired = False
-
         self._tabWidget = gui.VerticalTabWidget()
 
         self._setupGeneralTab()
@@ -240,9 +238,6 @@ class ConfigDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
         self.showMaximizeButton()
-
-    def restartRequired(self) -> bool:
-        return self._restartRequired
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -458,14 +453,20 @@ class ConfigDialog(gui.DialogEx):
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
-            value=app.Config.instance().milieu(),
+            value=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu,
+                futureValue=True),
             textMap={milieu: travellermap.milieuDescription(milieu) for milieu in  travellermap.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
             '<p>The milieu to use when determining sector and world information</p>' +
             _RestartRequiredParagraph,
             escape=False))
 
-        rules = app.Config.instance().rules()
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules,
+            futureValue=True)
 
         self._rulesComboBox = gui.EnumComboBox(
             type=traveller.RuleSystem,
@@ -488,7 +489,10 @@ class ConfigDialog(gui.DialogEx):
 
         self._mapEngineComboBox = gui.EnumComboBox(
             type=app.MapEngine,
-            value=app.Config.instance().mapEngine())
+            value=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.MapEngine,
+                enumType=app.MapEngine,
+                futureValue=True))
         self._mapEngineComboBox.currentIndexChanged.connect(
             self._renderingTypeChanged)
         self._mapEngineComboBox.setToolTip(gui.createStringToolTip(
@@ -522,7 +526,9 @@ class ConfigDialog(gui.DialogEx):
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
-        self._proxyPortSpinBox.setValue(app.Config.instance().proxyPort())
+        self._proxyPortSpinBox.setValue(app.ConfigEx.instance().asInt(
+            option=app.ConfigOption.ProxyPort,
+            futureValue=True))
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the port the local Traveller Map proxy will listen '
@@ -534,7 +540,9 @@ class ConfigDialog(gui.DialogEx):
 
         self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
         self._proxyHostPoolSizeSpinBox.setRange(1, 10)
-        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
+        self._proxyHostPoolSizeSpinBox.setValue(app.ConfigEx.instance().asInt(
+            option=app.ConfigOption.ProxyHostPoolSize,
+            futureValue=True))
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the number of localhost addresses the proxy will '
@@ -557,7 +565,9 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         self._proxyMapUrlLineEdit = gui.LineEditEx()
-        self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
+        self._proxyMapUrlLineEdit.setText(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.ProxyMapUrl,
+            futureValue=True))
         self._proxyMapUrlLineEdit.setMaximumWidth(200)
         self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
@@ -575,7 +585,9 @@ class ConfigDialog(gui.DialogEx):
         self._proxyCompositionModeComboBox.addItem('Hybrid', False)
         self._proxyCompositionModeComboBox.addItem('SVG', True)
         self._proxyCompositionModeComboBox.setCurrentByUserData(
-            userData=app.Config.instance().proxySvgCompositionEnabled())
+            userData=app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.ProxySvgComposition,
+                futureValue=True))
         self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
         self._proxyCompositionModeComboBox.setHidden(
             not depschecker.DetectedCairoSvgState)
@@ -607,7 +619,9 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
         self._proxyTileCacheSizeSpinBox.setValue(
-            int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
+            int(app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.ProxyTileCacheSize,
+                futureValue=True) / (1000 * 1000)))
         self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the amount of disk space to use to cache tiles.</p>'
@@ -620,7 +634,9 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
         self._proxyTileCacheLifetimeSpinBox.setValue(
-            app.Config.instance().proxyTileCacheLifetime())
+            app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.ProxyTileCacheLifetime,
+                futureValue=True))
         self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the max time the proxy will cache a tile on disk.</p>'
@@ -653,7 +669,10 @@ class ConfigDialog(gui.DialogEx):
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
             type=app.ColourTheme,
-            value=app.Config.instance().colourTheme())
+            value=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.ColourTheme,
+                enumType=app.ColourTheme,
+                futureValue=True))
         self._colourThemeComboBox.setToolTip(gui.createStringToolTip(
             '<p>Select the colour theme.</p>' +
             _RestartRequiredParagraph,
@@ -663,14 +682,18 @@ class ConfigDialog(gui.DialogEx):
         # where 1.0 is 100%
         self._interfaceScaleSpinBox = gui.SpinBoxEx()
         self._interfaceScaleSpinBox.setRange(100, 400)
-        self._interfaceScaleSpinBox.setValue(int(app.Config.instance().interfaceScale() * 100))
+        self._interfaceScaleSpinBox.setValue(int(app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale,
+            futureValue=True) * 100))
         self._interfaceScaleSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Scale the UI up to make things easier to read</p>' +
             _RestartRequiredParagraph,
             escape=False))
 
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
-        self._showToolTipImagesCheckBox.setChecked(app.Config.instance().showToolTipImages())
+        self._showToolTipImagesCheckBox.setChecked(app.ConfigEx.instance().asBool(
+            option=app.ConfigOption.ShowToolTipImages,
+            futureValue=True))
         self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
             '<p>Display world images in tool tips</p>'
             '<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
@@ -679,17 +702,23 @@ class ConfigDialog(gui.DialogEx):
             'can cause the user interface to block temporarily while the image is downloaded.</p>',
             escape=False))
 
-        self._averageCaseColourButton = gui.ColourButton(app.Config.instance().averageCaseColour())
+        self._averageCaseColourButton = gui.ColourButton(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.AverageCaseColour,
+            futureValue=True))
         self._averageCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._averageCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using average dice rolls'))
 
-        self._worstCaseColourButton = gui.ColourButton(app.Config.instance().worstCaseColour())
+        self._worstCaseColourButton = gui.ColourButton(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.WorstCaseColour,
+            futureValue=True))
         self._worstCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._worstCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using worst case dice rolls'))
 
-        self._bestCaseColourButton = gui.ColourButton(app.Config.instance().bestCaseColour())
+        self._bestCaseColourButton = gui.ColourButton(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.BestCaseColour,
+            futureValue=True))
         self._bestCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._bestCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using best case dice rolls'))
@@ -706,17 +735,23 @@ class ConfigDialog(gui.DialogEx):
         guiGroupBox.setLayout(guiLayout)
 
         # Tagging widgets
-        self._desirableTagColourButton = gui.ColourButton(app.Config.instance().tagColour(app.TagLevel.Desirable))
+        self._desirableTagColourButton = gui.ColourButton(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.DesirableTagColour,
+            futureValue=True))
         self._desirableTagColourButton.setFixedWidth(ColourButtonWidth)
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
 
-        self._warningTagColourButton = gui.ColourButton(app.Config.instance().tagColour(app.TagLevel.Warning))
+        self._warningTagColourButton = gui.ColourButton(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.WarningTagColour,
+            futureValue=True))
         self._warningTagColourButton.setFixedWidth(ColourButtonWidth)
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
 
-        self._dangerTagColourButton = gui.ColourButton(app.Config.instance().tagColour(app.TagLevel.Danger))
+        self._dangerTagColourButton = gui.ColourButton(app.ConfigEx.instance().asStr(
+            option=app.ConfigOption.DangerTagColour,
+            futureValue=True))
         self._dangerTagColourButton.setFixedWidth(ColourButtonWidth)
         self._dangerTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight danger tagging'))
@@ -742,7 +777,10 @@ class ConfigDialog(gui.DialogEx):
         self._tabWidget.addTab(tab, 'General')
 
     def _setupRulesTab(self) -> None:
-        rules = app.Config.instance().rules()
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules,
+            futureValue=True)
 
         self._classAStarPortFuelType = gui.EnumComboBox(
             type=traveller.StarPortFuelType,
@@ -809,7 +847,9 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Zone',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().zoneTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.ZoneTagging,
+                futureValue=True))
         self._addTableTab(
             title='Zone Tagging',
             table=self._zoneTaggingTable)
@@ -818,7 +858,9 @@ class ConfigDialog(gui.DialogEx):
         self._starPortTaggingTable = self._createTaggingTable(
             keyTitle='Star Port',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.StarPort),
-            taggingMap=app.Config.instance().starPortTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.StarPortTagging,
+                futureValue=True))
         self._addTableTab(
             title='Star Port Tagging',
             table=self._starPortTaggingTable)
@@ -827,7 +869,9 @@ class ConfigDialog(gui.DialogEx):
         self._worldSizeTaggingTable = self._createTaggingTable(
             keyTitle='World Size',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.WorldSize),
-            taggingMap=app.Config.instance().worldSizeTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.WorldSizeTagging,
+                futureValue=True))
         self._addTableTab(
             title='World Size Tagging',
             table=self._worldSizeTaggingTable)
@@ -836,7 +880,9 @@ class ConfigDialog(gui.DialogEx):
         self._atmosphereTaggingTable = self._createTaggingTable(
             keyTitle='Atmosphere',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Atmosphere),
-            taggingMap=app.Config.instance().atmosphereTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.AtmosphereTagging,
+                futureValue=True))
         self._addTableTab(
             title='Atmosphere Tagging',
             table=self._atmosphereTaggingTable)
@@ -845,7 +891,9 @@ class ConfigDialog(gui.DialogEx):
         self._hydrographicsTaggingTable = self._createTaggingTable(
             keyTitle='Hydrographics',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Hydrographics),
-            taggingMap=app.Config.instance().hydrographicsTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.HydrographicsTagging,
+                futureValue=True))
         self._addTableTab(
             title='Hydrographics Tagging',
             table=self._hydrographicsTaggingTable)
@@ -854,7 +902,9 @@ class ConfigDialog(gui.DialogEx):
         self._populationTaggingTable = self._createTaggingTable(
             keyTitle='Population',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Population),
-            taggingMap=app.Config.instance().populationTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.PopulationTagging,
+                futureValue=True))
         self._addTableTab(
             title='Population Tagging',
             table=self._populationTaggingTable)
@@ -863,7 +913,9 @@ class ConfigDialog(gui.DialogEx):
         self._governmentTaggingTable = self._createTaggingTable(
             keyTitle='Government',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Government),
-            taggingMap=app.Config.instance().governmentTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.GovernmentTagging,
+                futureValue=True))
         self._addTableTab(
             title='Government Tagging',
             table=self._governmentTaggingTable)
@@ -872,7 +924,9 @@ class ConfigDialog(gui.DialogEx):
         self._lawLevelTaggingTable = self._createTaggingTable(
             keyTitle='Law Level',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.LawLevel),
-            taggingMap=app.Config.instance().lawLevelTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.LawLevelTagging,
+                futureValue=True))
         self._addTableTab(
             title='Law Level Tagging',
             table=self._lawLevelTaggingTable)
@@ -881,7 +935,9 @@ class ConfigDialog(gui.DialogEx):
         self._techLevelTaggingTable = self._createTaggingTable(
             keyTitle='Tech Level',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.TechLevel),
-            taggingMap=app.Config.instance().techLevelTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.TechLevelTagging,
+                futureValue=True))
         self._addTableTab(
             title='Tech Level Tagging',
             table=self._techLevelTaggingTable)
@@ -897,7 +953,9 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Base',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().baseTypeTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.BaseTypeTagging,
+                futureValue=True))
         self._addTableTab(
             title='Base Tagging',
             table=self._baseTypeTaggingTable)
@@ -913,7 +971,9 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Trade Code',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().tradeCodeTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.TradeCodeTagging,
+                futureValue=True))
         self._addTableTab(
             title='Trade Code Tagging',
             table=self._tradeCodeTaggingTable)
@@ -922,7 +982,9 @@ class ConfigDialog(gui.DialogEx):
         self._resourcesTaggingTable = self._createTaggingTable(
             keyTitle='Resources',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Resources),
-            taggingMap=app.Config.instance().resourceTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.ResourcesTagging,
+                futureValue=True))
         self._addTableTab(
             title='Resources Tagging',
             table=self._resourcesTaggingTable)
@@ -931,7 +993,9 @@ class ConfigDialog(gui.DialogEx):
         self._labourTaggingTable = self._createTaggingTable(
             keyTitle='Labour',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Labour),
-            taggingMap=app.Config.instance().labourTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.LabourTagging,
+                futureValue=True))
         self._addTableTab(
             title='Labour Tagging',
             table=self._labourTaggingTable)
@@ -940,7 +1004,9 @@ class ConfigDialog(gui.DialogEx):
         self._infrastructureTaggingTable = self._createTaggingTable(
             keyTitle='Infrastructure',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Infrastructure),
-            taggingMap=app.Config.instance().infrastructureTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.InfrastructureTagging,
+                futureValue=True))
         self._addTableTab(
             title='Infrastructure Tagging',
             table=self._infrastructureTaggingTable)
@@ -949,7 +1015,9 @@ class ConfigDialog(gui.DialogEx):
         self._efficiencyTaggingTable = self._createTaggingTable(
             keyTitle='Efficiency',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Efficiency),
-            taggingMap=app.Config.instance().efficiencyTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.EfficiencyTagging,
+                futureValue=True))
         self._addTableTab(
             title='Efficiency Tagging',
             table=self._efficiencyTaggingTable)
@@ -958,7 +1026,9 @@ class ConfigDialog(gui.DialogEx):
         self._heterogeneityTaggingTable = self._createTaggingTable(
             keyTitle='Heterogeneity',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Heterogeneity),
-            taggingMap=app.Config.instance().heterogeneityTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.HeterogeneityTagging,
+                futureValue=True))
         self._addTableTab(
             title='Heterogeneity Tagging',
             table=self._heterogeneityTaggingTable)
@@ -967,7 +1037,9 @@ class ConfigDialog(gui.DialogEx):
         self._acceptanceTaggingTable = self._createTaggingTable(
             keyTitle='Acceptance',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Acceptance),
-            taggingMap=app.Config.instance().acceptanceTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.AcceptanceTagging,
+                futureValue=True))
         self._addTableTab(
             title='Acceptance Tagging',
             table=self._acceptanceTaggingTable)
@@ -976,7 +1048,9 @@ class ConfigDialog(gui.DialogEx):
         self._strangenessTaggingTable = self._createTaggingTable(
             keyTitle='Strangeness',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Strangeness),
-            taggingMap=app.Config.instance().strangenessTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.StrangenessTagging,
+                futureValue=True))
         self._addTableTab(
             title='Strangeness Tagging',
             table=self._strangenessTaggingTable)
@@ -985,7 +1059,9 @@ class ConfigDialog(gui.DialogEx):
         self._symbolsTaggingTable = self._createTaggingTable(
             keyTitle='Symbols',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Symbols),
-            taggingMap=app.Config.instance().symbolsTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.SymbolsTagging,
+                futureValue=True))
         self._addTableTab(
             title='Symbols Tagging',
             table=self._symbolsTaggingTable)
@@ -1001,7 +1077,9 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Nobility',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().nobilityTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.NobilityTagging,
+                futureValue=True))
         self._addTableTab(
             title='Nobility Tagging',
             table=self._nobilityTaggingTable)
@@ -1011,7 +1089,10 @@ class ConfigDialog(gui.DialogEx):
         # config pane should probably update
         # TODO: This probably shouldn't use app.Config
         allegiances = traveller.AllegianceManager.instance().allegiances(
-            milieu=app.Config.instance().milieu())
+            milieu=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu,
+                futureValue=False)) # Use current value
 
         # Create a copy of the allegiances list and sort it by code
         allegiances = list(allegiances)
@@ -1026,7 +1107,9 @@ class ConfigDialog(gui.DialogEx):
         self._allegianceTaggingTable = self._createTaggingTable(
             keyTitle='Allegiance',
             keyDescriptions=keyDescriptions,
-            taggingMap=app.Config.instance().allegianceTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.AllegianceTagging,
+                futureValue=True))
         self._addTableTab(
             title='Allegiance Tagging',
             table=self._allegianceTaggingTable)
@@ -1035,7 +1118,9 @@ class ConfigDialog(gui.DialogEx):
         self._spectralTaggingTable = self._createTaggingTable(
             keyTitle='Spectral Class',
             keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.SpectralClass),
-            taggingMap=app.Config.instance().spectralTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.SpectralTagging,
+                futureValue=True))
         self._addTableTab(
             title='Spectral Class Tagging',
             table=self._spectralTaggingTable)
@@ -1044,7 +1129,9 @@ class ConfigDialog(gui.DialogEx):
         self._luminosityTaggingTable = self._createTaggingTable(
             keyTitle='Luminosity Class',
             keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.LuminosityClass),
-            taggingMap=app.Config.instance().luminosityTagLevels())
+            taggingMap=app.ConfigEx.instance().asTagMap(
+                option=app.ConfigOption.LuminosityTagging,
+                futureValue=True))
         self._addTableTab(
             title='Luminosity Class Tagging',
             table=self._luminosityTaggingTable)
@@ -1078,75 +1165,139 @@ class ConfigDialog(gui.DialogEx):
         return True
 
     def _saveConfig(self) -> None:
-        class RestartChecker(object):
-            def __init__(self) -> None:
-                self._needsRestart = False
-
-            def needsRestart(self) -> bool:
-                return self._needsRestart
-
-            def update(self, needsRestart: bool):
-                if needsRestart:
-                    self._needsRestart = True
-
-        checker = RestartChecker()
-
         try:
-            config = app.Config.instance()
-            checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
-            checker.update(config.setRules(traveller.Rules(
-                system=self._rulesComboBox.currentEnum(),
-                classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
-                classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
-                classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
-                classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
-                classEStarPortFuelType=self._classEStarPortFuelType.currentEnum())))
-            checker.update(config.setMapEngine(self._mapEngineComboBox.currentEnum()))
-            checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
-            checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
-            checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
-            checker.update(config.setProxyTileCacheSize(
-                self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000))) # Convert MB to bytes
-            checker.update(config.setProxyTileCacheLifetime(
-                self._proxyTileCacheLifetimeSpinBox.value()))
-            checker.update(config.setProxySvgCompositionEnabled(
-                self._proxyCompositionModeComboBox.currentUserData()))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.Milieu,
+                value=self._milieuComboBox.currentEnum())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.Rules,
+                value=traveller.Rules(
+                    system=self._rulesComboBox.currentEnum(),
+                    classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
+                    classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
+                    classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
+                    classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
+                    classEStarPortFuelType=self._classEStarPortFuelType.currentEnum()))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.MapEngine,
+                value=self._mapEngineComboBox.currentEnum())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ProxyPort,
+                value=self._proxyPortSpinBox.value())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ProxyHostPoolSize,
+                value=self._proxyHostPoolSizeSpinBox.value())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ProxyMapUrl,
+                value=self._proxyMapUrlLineEdit.text())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ProxyTileCacheSize,
+                value=self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000)) # Convert MB to bytes
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ProxyTileCacheLifetime,
+                value=self._proxyTileCacheLifetimeSpinBox.value())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ProxySvgComposition,
+                value=self._proxyCompositionModeComboBox.currentUserData())
 
-            checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
-            checker.update(config.setInterfaceScale(
-                self._interfaceScaleSpinBox.value() / 100)) # Convert percent to scale
-            checker.update(config.setShowToolTipImages(self._showToolTipImagesCheckBox.isChecked()))
-            checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
-            checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))
-            checker.update(config.setBestCaseColour(self._bestCaseColourButton.colour()))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ColourTheme,
+                value=self._colourThemeComboBox.currentEnum())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.InterfaceScale,
+                value=self._interfaceScaleSpinBox.value() / 100) # Convert percent to scale
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShowToolTipImages,
+                value=self._showToolTipImagesCheckBox.isChecked())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AverageCaseColour,
+                value=self._averageCaseColourButton.colour())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.WorstCaseColour,
+                value=self._worstCaseColourButton.colour())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.BestCaseColour,
+                value=self._bestCaseColourButton.colour())
 
-            checker.update(config.setTagColour(app.TagLevel.Desirable, self._desirableTagColourButton.colour()))
-            checker.update(config.setTagColour(app.TagLevel.Warning, self._warningTagColourButton.colour()))
-            checker.update(config.setTagColour(app.TagLevel.Danger, self._dangerTagColourButton.colour()))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.DesirableTagColour,
+                value=self._desirableTagColourButton.colour())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.WarningTagColour,
+                value=self._warningTagColourButton.colour())
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.DangerTagColour,
+                value=self._dangerTagColourButton.colour())
 
-            checker.update(config.setZoneTagLevels(self._taggingMapFromTable(self._zoneTaggingTable)))
-            checker.update(config.setStarPortTagLevels(self._taggingMapFromTable(self._starPortTaggingTable)))
-            checker.update(config.setWorldSizeTagLevels(self._taggingMapFromTable(self._worldSizeTaggingTable)))
-            checker.update(config.setAtmosphereTagLevels(self._taggingMapFromTable(self._atmosphereTaggingTable)))
-            checker.update(config.setHydrographicsTagLevels(self._taggingMapFromTable(self._hydrographicsTaggingTable)))
-            checker.update(config.setPopulationTagLevels(self._taggingMapFromTable(self._populationTaggingTable)))
-            checker.update(config.setGovernmentTagLevels(self._taggingMapFromTable(self._governmentTaggingTable)))
-            checker.update(config.setLawLevelTagLevels(self._taggingMapFromTable(self._lawLevelTaggingTable)))
-            checker.update(config.setTechLevelTagLevels(self._taggingMapFromTable(self._techLevelTaggingTable)))
-            checker.update(config.setBaseTypeTagLevels(self._taggingMapFromTable(self._baseTypeTaggingTable)))
-            checker.update(config.setTradeCodeTagLevels(self._taggingMapFromTable(self._tradeCodeTaggingTable)))
-            checker.update(config.setResourceTagLevels(self._taggingMapFromTable(self._resourcesTaggingTable)))
-            checker.update(config.setLabourTagLevels(self._taggingMapFromTable(self._labourTaggingTable)))
-            checker.update(config.setInfrastructureTagLevels(self._taggingMapFromTable(self._infrastructureTaggingTable)))
-            checker.update(config.setEfficiencyTagLevels(self._taggingMapFromTable(self._efficiencyTaggingTable)))
-            checker.update(config.setHeterogeneityTagLevels(self._taggingMapFromTable(self._heterogeneityTaggingTable)))
-            checker.update(config.setAcceptanceTagLevels(self._taggingMapFromTable(self._acceptanceTaggingTable)))
-            checker.update(config.setStrangenessTagLevels(self._taggingMapFromTable(self._strangenessTaggingTable)))
-            checker.update(config.setSymbolsTagLevels(self._taggingMapFromTable(self._symbolsTaggingTable)))
-            checker.update(config.setNobilityTagLevels(self._taggingMapFromTable(self._nobilityTaggingTable)))
-            checker.update(config.setAllegianceTagLevels(self._taggingMapFromTable(self._allegianceTaggingTable)))
-            checker.update(config.setSpectralTagLevels(self._taggingMapFromTable(self._spectralTaggingTable)))
-            checker.update(config.setLuminosityTagLevels(self._taggingMapFromTable(self._luminosityTaggingTable)))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ZoneTagging,
+                value=self._taggingMapFromTable(self._zoneTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.StarPortTagging,
+                value=self._taggingMapFromTable(self._starPortTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.WorldSizeTagging,
+                value=self._taggingMapFromTable(self._worldSizeTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AtmosphereTagging,
+                value=self._taggingMapFromTable(self._atmosphereTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.HydrographicsTagging,
+                value=self._taggingMapFromTable(self._hydrographicsTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.PopulationTagging,
+                value=self._taggingMapFromTable(self._populationTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.GovernmentTagging,
+                value=self._taggingMapFromTable(self._governmentTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.LawLevelTagging,
+                value=self._taggingMapFromTable(self._lawLevelTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.TechLevelTagging,
+                value=self._taggingMapFromTable(self._techLevelTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.BaseTypeTagging,
+                value=self._taggingMapFromTable(self._baseTypeTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.TradeCodeTagging,
+                value=self._taggingMapFromTable(self._tradeCodeTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ResourcesTagging,
+                value=self._taggingMapFromTable(self._resourcesTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.LabourTagging,
+                value=self._taggingMapFromTable(self._labourTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.InfrastructureTagging,
+                value=self._taggingMapFromTable(self._infrastructureTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.EfficiencyTagging,
+                value=self._taggingMapFromTable(self._efficiencyTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.HeterogeneityTagging,
+                value=self._taggingMapFromTable(self._heterogeneityTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AcceptanceTagging,
+                value=self._taggingMapFromTable(self._acceptanceTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.StrangenessTagging,
+                value=self._taggingMapFromTable(self._strangenessTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.SymbolsTagging,
+                value=self._taggingMapFromTable(self._symbolsTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.NobilityTagging,
+                value=self._taggingMapFromTable(self._nobilityTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AllegianceTagging,
+                value=self._taggingMapFromTable(self._allegianceTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.SpectralTagging,
+                value=self._taggingMapFromTable(self._spectralTaggingTable))
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.LuminosityTagging,
+                value=self._taggingMapFromTable(self._luminosityTaggingTable))
         except Exception as ex:
             message = 'Failed to save configuration'
             logging.error(message, exc_info=ex)
@@ -1155,8 +1306,6 @@ class ConfigDialog(gui.DialogEx):
                 text=message,
                 exception=ex)
             return
-
-        self._restartRequired = checker.needsRestart()
 
     def _createTaggingTable(
             self,
@@ -1249,8 +1398,7 @@ class ConfigDialog(gui.DialogEx):
             item = table.item(row, 0)
             key = item.data(QtCore.Qt.ItemDataRole.UserRole)
 
-            combo = table.cellWidget(row, 1)
-            assert(isinstance(combo, gui.TagLevelComboBox))
+            combo: gui.TagLevelComboBox = table.cellWidget(row, 1)
             tagLevel = combo.currentTagLevel()
             if not tagLevel:
                 continue # Ignore no tagging

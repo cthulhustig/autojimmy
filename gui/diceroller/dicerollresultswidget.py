@@ -23,7 +23,8 @@ class _SnakeEyesWidget(QtWidgets.QWidget):
         path = QtGui.QPainterPath()
         path.addText(0, 0, font, _SnakeEyesWidget._DisplayText)
 
-        interfaceScale = app.Config.instance().interfaceScale()
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
 
         pen = QtGui.QPen()
         pen.setWidthF(_SnakeEyesWidget._TextOutlineWidth * interfaceScale)

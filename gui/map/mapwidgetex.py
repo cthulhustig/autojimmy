@@ -61,8 +61,12 @@ class _MapStyleAction(QtWidgets.QAction):
 
         self._style = style
 
+        currentStyle = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+
         self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapStyle() is style)
+        self.setChecked(style is currentStyle)
 
         # It's important that this is connected to the trigger signal before any instances
         # of TravellerMapWidget. This call needs to made first as it will write the updated
@@ -72,7 +76,9 @@ class _MapStyleAction(QtWidgets.QAction):
 
     def _actionTriggered(self) -> None:
         if self.isChecked():
-            app.Config.instance().setMapStyle(style=self._style)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.MapStyle,
+                value=self._style)
 
 class _ToggleOptionAction(QtWidgets.QAction):
     def __init__(
@@ -84,8 +90,12 @@ class _ToggleOptionAction(QtWidgets.QAction):
 
         self._option = option
 
+        currentOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+
         self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapOption(option=option))
+        self.setChecked(option in currentOptions)
 
         # NOTE: The use of toggled here (rather than triggered) is important as
         # we want to be notified if the action has been changed programmatically
@@ -97,9 +107,18 @@ class _ToggleOptionAction(QtWidgets.QAction):
         self.toggled.connect(self._actionToggled)
 
     def _actionToggled(self, checked: bool) -> None:
-        app.Config.instance().setMapOption(
-            option=self._option,
-            enabled=checked)
+        currentOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+
+        if checked and self._option not in currentOptions:
+            currentOptions.append(self._option)
+        elif not checked and self._option in currentOptions:
+            currentOptions.remove(self._option)
+
+        app.ConfigEx.instance().setOption(
+            option=app.ConfigOption.MapOptions,
+            value=currentOptions)
 
 class _RenderTypeAction(QtWidgets.QAction):
     def __init__(
@@ -110,13 +129,19 @@ class _RenderTypeAction(QtWidgets.QAction):
         super().__init__(type.value, parent)
         self._type = type
 
+        currentType = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapRenderingType,
+            enumType=app.MapRenderingType)
+
         self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapRenderingType() is type)
+        self.setChecked(type is currentType)
 
         self.triggered.connect(self._actionTriggered)
 
     def _actionTriggered(self) -> None:
-        app.Config.instance().setMapRenderingType(self._type)
+        app.ConfigEx.instance().setOption(
+            option=app.ConfigOption.MapRenderingType,
+            value=self._type)
 
 class _MapAnimationsAction(QtWidgets.QAction):
     def __init__(
@@ -124,15 +149,17 @@ class _MapAnimationsAction(QtWidgets.QAction):
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__('Animations', parent)
-        self._type = type
 
         self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapAnimations())
+        self.setChecked(app.ConfigEx.instance().asBool(
+            option=app.ConfigOption.MapAnimations))
 
         self.triggered.connect(self._actionTriggered)
 
     def _actionTriggered(self) -> None:
-        app.Config.instance().setMapAnimations(self.isChecked())
+        app.ConfigEx.instance().setOption(
+            option=app.ConfigOption.MapAnimations,
+            value=self.isChecked())
 
 class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(self, *args, **kwargs):
@@ -166,7 +193,8 @@ class _CustomIconButton(gui.IconButton):
             ) -> None:
         super().__init__(icon=icon, parent=parent)
 
-        interfaceScaling = app.Config.instance().interfaceScale()
+        interfaceScaling = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         spacing = int(6 * interfaceScaling)
 
         self.setFixedSize(size)
@@ -439,7 +467,9 @@ class _LegendWidget(QtWidgets.QWidget):
     # with some details from Sectorsheet.cs. It's been modified heavily to
     # work around the fact QLabel only supports a limited html subset.
     def syncContent(self):
-        style = app.Config.instance().mapStyle()
+        style = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
 
         textStyle = 'color: #FFFFFF;'
         backgroundStyle = 'background-color: #000000;'
@@ -459,7 +489,9 @@ class _LegendWidget(QtWidgets.QWidget):
         amberZoneColour = '#FFCC00'
         redZoneColour = '#E32736'
 
-        worldGlyphSize = int(12 * app.Config.instance().interfaceScale())
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
+        worldGlyphSize = int(12 * interfaceScale)
 
         if style is travellermap.Style.Print:
             textStyle = 'color: black;'
@@ -508,8 +540,11 @@ class _LegendWidget(QtWidgets.QWidget):
             hasWaterOutlineColour = '#00FFFF'
             noWaterFillColour = '#00FFFF'
 
+        mapOptions = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
         characteristicItems = []
-        if app.Config.instance().mapOption(travellermap.Option.WorldColours) and \
+        if travellermap.Option.WorldColours in mapOptions and \
                 style is not travellermap.Style.Atlas:
             characteristicItems.extend([
                 ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
@@ -600,7 +635,7 @@ class _LegendWidget(QtWidgets.QWidget):
             self,
             imageFile: str
             ) -> typing.Optional[str]:
-        installDir = app.Config.instance().installDir()
+        installDir = app.ConfigEx.instance().installDir()
         imagePath = os.path.join(installDir, 'data', 'legend', imageFile)
         try:
             with open(imagePath, 'rb') as file:
@@ -873,7 +908,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        useInAppRendering = app.Config.instance().mapEngine() is app.MapEngine.InApp
+        mapEngine = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapEngine,
+            enumType=app.MapEngine)
+        useInAppRendering = mapEngine is app.MapEngine.InApp
 
         self._mapWidget = \
             gui.LocalMapWidget(parent=self) \
@@ -1216,7 +1254,9 @@ class MapWidgetEx(QtWidgets.QWidget):
             return
 
         world = traveller.WorldManager.instance().worldByPosition(
-            milieu=app.Config.instance().milieu(),
+            milieu=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
             hex=hex)
         if not world and not self._enableDeadSpaceSelection:
             return
@@ -1245,7 +1285,9 @@ class MapWidgetEx(QtWidgets.QWidget):
             return
 
         if not self._enableDeadSpaceSelection:
-            milieu = app.Config.instance().milieu()
+            milieu = app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu)
             filtered = []
             for hex in hexes:
                 world = traveller.WorldManager.instance().worldByPosition(
@@ -1336,7 +1378,9 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         if not self._enableDeadSpaceSelection:
             # Deselect any dead space
-            milieu = app.Config.instance().milieu()
+            milieu = app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu)
             selectionChanged = False
             for hex in list(self._selectedHexes.keys()):
                 world = traveller.WorldManager.instance().worldByPosition(
@@ -1507,18 +1551,14 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     @staticmethod
     def selectionFillColour() -> None:
-        isDarkStyle = travellermap.isDarkStyle(
-            style=app.Config.instance().mapStyle())
         return MapWidgetEx._SelectionFillDarkStyleColour \
-            if isDarkStyle else \
+            if MapWidgetEx._isCurrentMapStyleDark() else \
             MapWidgetEx._SelectionFillLightStyleColour
 
     @staticmethod
     def selectionOutlineColour() -> None:
-        isDarkStyle = travellermap.isDarkStyle(
-            style=app.Config.instance().mapStyle())
         return MapWidgetEx._SelectionOutlineDarkStyleColour \
-            if isDarkStyle else \
+            if MapWidgetEx._isCurrentMapStyleDark() else \
             MapWidgetEx._SelectionOutlineLightStyleColour
 
     @staticmethod
@@ -1677,7 +1717,9 @@ class MapWidgetEx(QtWidgets.QWidget):
             shouldSelect = hex != None
         elif hex:
             shouldSelect = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.Config.instance().milieu(),
+                milieu=app.ConfigEx.instance().asEnum(
+                    option=app.ConfigOption.Milieu,
+                    enumType=travellermap.Milieu),
                 hex=hex) != None
 
         if shouldSelect:
@@ -1691,7 +1733,9 @@ class MapWidgetEx(QtWidgets.QWidget):
                 if self._selectionMode == MapWidgetEx.SelectionMode.MultiSelect and \
                         gui.isShiftKeyDown():
                     worlds = traveller.WorldManager.instance().worldsInFlood(
-                        milieu=app.Config.instance().milieu(),
+                        milieu=app.ConfigEx.instance().asEnum(
+                            option=app.ConfigOption.Milieu,
+                            enumType=travellermap.Milieu),
                         hex=hex)
                     self.selectHexes(hexes=[world.hex() for world in worlds])
                 elif hex not in self._selectedHexes:
@@ -1932,3 +1976,10 @@ class MapWidgetEx(QtWidgets.QWidget):
             self.setWindowFlags(QtCore.Qt.WindowType.Widget)
             self.show()
             self.setFocus()
+
+    @staticmethod
+    def _isCurrentMapStyleDark() -> bool:
+        style = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        return travellermap.isDarkStyle(style=style)

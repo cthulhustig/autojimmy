@@ -184,9 +184,15 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
             saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().averageCaseColour())
-            worstCaseColour = QtGui.QColor(app.Config.instance().worstCaseColour())
-            bestCaseColour = QtGui.QColor(app.Config.instance().bestCaseColour())
+            averageCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.AverageCaseColour,
+                objectType=QtGui.QColor)
+            worstCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.WorstCaseColour,
+                objectType=QtGui.QColor)
+            bestCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.BestCaseColour,
+                objectType=QtGui.QColor)
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)

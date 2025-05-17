@@ -194,11 +194,11 @@ class WebMapWidget(QtWidgets.QWidget):
             WebMapWidget._sharedProfile.setHttpCacheType(
                 QtWebEngineWidgets.QWebEngineProfile.HttpCacheType.DiskHttpCache)
             WebMapWidget._sharedProfile.setCachePath(
-                os.path.join(app.Config.instance().appDir(), 'webwidget', 'cache'))
+                os.path.join(app.ConfigEx.instance().appDir(), 'webwidget', 'cache'))
             WebMapWidget._sharedProfile.setPersistentCookiesPolicy(
                 QtWebEngineWidgets.QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
             WebMapWidget._sharedProfile.setPersistentStoragePath(
-                os.path.join(app.Config.instance().appDir(), 'webwidget', 'persist'))
+                os.path.join(app.ConfigEx.instance().appDir(), 'webwidget', 'persist'))
 
         page = _CustomWebEnginePage(WebMapWidget._sharedProfile, self)
         self._mapWidget = QtWebEngineWidgets.QWebEngineView()
@@ -592,7 +592,7 @@ class WebMapWidget(QtWidgets.QWidget):
         currentPos = travellermap.parsePosFromMapUrl(url=currentUrl) if currentUrl else None
         currentScale = travellermap.parseScaleFromMapUrl(url=currentUrl) if currentUrl else None
 
-        installDir = app.Config.instance().installDir()
+        installDir = app.ConfigEx.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
         if proxy.MapProxy.instance().isRunning():
@@ -600,13 +600,21 @@ class WebMapWidget(QtWidgets.QWidget):
         else:
             indexUrl = f'file:///{rootPath}/data/web/'
 
-        options = set(app.Config.instance().mapOptions())
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        style = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        options: typing.Set[travellermap.Option] = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=set)
         options.add(travellermap.Option.HideUI) # Always hide the UI
 
         return QtCore.QUrl(travellermap.formatMapUrl(
             baseMapUrl=indexUrl,
-            milieu=app.Config.instance().milieu(),
-            style=app.Config.instance().mapStyle(),
+            milieu=milieu,
+            style=style,
             options=options,
             mapPosition=currentPos,
             linearScale=currentScale))

@@ -22,7 +22,8 @@ class ToggleButton(QtWidgets.QAbstractButton):
             QtWidgets.QSizePolicy.Policy.Fixed)
 
         # Scale control by interface scale
-        interface_scale = app.Config.instance().interfaceScale()
+        interface_scale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         self._track_radius = int(track_radius * interface_scale)
         self._thumb_radius = int(thumb_radius * interface_scale)
 

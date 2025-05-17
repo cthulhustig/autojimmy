@@ -20,33 +20,10 @@ class ConfigOption(enum.Enum):
     # Map
     Milieu = 200
     MapStyle = 201
-    MapEngine = 202
-    MapRenderingType = 203
-    MapAnimations = 204
-
-    # Map Options
-    GalacticDirectionsMapOption = 300
-    SectorGridMapOption = 301
-    SelectedSectorNamesMapOption = 302
-    AllSectorNamesMapOption = 303
-    BordersMapOption = 304
-    RoutesMapOption = 305
-    RegionNamesMapOption = 306
-    ImportantWorldsMapOption = 307
-    WorldColoursMapOption = 308
-    FilledBordersMapOption = 309
-    DimUnofficialMapOption = 310
-    ImportanceOverlayMapOption = 311
-    PopulationOverlayMapOption = 312
-    CapitalsOverlayMapOption = 313
-    MinorRaceOverlayMapOption = 314
-    DroyneWorldOverlayMapOption = 315
-    AncientSitesOverlayMapOption = 316
-    StellarOverlayMapOption = 317
-    EmpressWaveOverlayMapOption = 318
-    QrekrshaZoneOverlayMapOption = 319
-    AntaresSupernovaOverlayMapOption = 320
-    MainsOverlayMapOption = 321
+    MapOptions = 202
+    MapEngine = 203
+    MapRenderingType = 204
+    MapAnimations = 205
 
     # Proxy
     ProxyPort = 400
@@ -126,7 +103,7 @@ class ConfigOption(enum.Enum):
     SpectralTagging = 821
     LuminosityTagging = 822
 
-class ConfigOptionDetails(object):
+class ConfigItem(object):
     def __init__(
             self,
             option: ConfigOption,
@@ -139,19 +116,19 @@ class ConfigOptionDetails(object):
         return self._option
 
     def value(self, futureValue: bool = False) -> typing.Any:
-        raise RuntimeError(f'{type(self)} is derived from ConfigOptionDetails so must implement value')
+        raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement value')
 
     def setValue(self, value: typing.Any) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from ConfigOptionDetails so must implement setValue')
+        raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement setValue')
 
     def isRestartRequired(self) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from ConfigOptionDetails so must implement restartRequired')
+        raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement restartRequired')
 
     def read(self, settings: QtCore.QSettings) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from ConfigOptionDetails so must implement read')
+        raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement read')
 
     def write(self, settings: QtCore.QSettings) -> None:
-        raise RuntimeError(f'{type(self)} is derived from ConfigOptionDetails so must implement write')
+        raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement write')
 
     @staticmethod
     def loadConfigSetting(
@@ -175,7 +152,7 @@ class ConfigOptionDetails(object):
             logging.error(f'Failed to read "{key}" from "{settings.group()}" in "{settings.fileName()}"', exc_info=ex)
             return default
 
-class SimpleOptionDetails(ConfigOptionDetails):
+class SimpleConfigItem(ConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -218,13 +195,13 @@ class SimpleOptionDetails(ConfigOptionDetails):
             value = self._valueFromStringCb(self.loadConfigSetting(
                 settings=settings,
                 key=self._key,
-                default=self._valueToStringCb(self._currentValue),
+                default=self._valueToStringCb(self._default),
                 type=str))
         else:
             value = self.loadConfigSetting(
                 settings=settings,
                 key=self._key,
-                default=self._currentValue,
+                default=self._default,
                 type=self._type)
 
         oldValue = self._currentValue
@@ -237,7 +214,7 @@ class SimpleOptionDetails(ConfigOptionDetails):
         else:
             settings.setValue(self._key, self._futureValue)
 
-class StringOptionDetails(SimpleOptionDetails):
+class StringConfigItem(SimpleConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -267,7 +244,7 @@ class StringOptionDetails(SimpleOptionDetails):
             self._currentValue = self._futureValue = self._default
         return oldValue != self._currentValue
 
-class BoolOptionDetails(SimpleOptionDetails):
+class BoolConfigItem(SimpleConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -282,7 +259,7 @@ class BoolOptionDetails(SimpleOptionDetails):
             default=default,
             restart=restart)
 
-class IntOptionDetails(SimpleOptionDetails):
+class IntConfigItem(SimpleConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -321,7 +298,7 @@ class IntOptionDetails(SimpleOptionDetails):
             value = self._max
         return value
 
-class FloatOptionDetails(SimpleOptionDetails):
+class FloatConfigItem(SimpleConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -365,7 +342,7 @@ class FloatOptionDetails(SimpleOptionDetails):
 
         return value
 
-class EnumOptionDetails(SimpleOptionDetails):
+class EnumConfigItem(SimpleConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -383,7 +360,7 @@ class EnumOptionDetails(SimpleOptionDetails):
             valueToStringCb=lambda e: e.name,
             valueFromStringCb=lambda s: enumType.__members__[s] if s in enumType.__members__ else default)
 
-class MappedOptionDetails(SimpleOptionDetails):
+class MappedConfigItem(SimpleConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -410,7 +387,7 @@ class MappedOptionDetails(SimpleOptionDetails):
             value = self._default
         return super().setValue(value=value)
 
-class UrlOptionDetails(StringOptionDetails):
+class UrlConfigItem(StringConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -431,7 +408,7 @@ class UrlOptionDetails(StringOptionDetails):
             return False
         return True
 
-class ColourOptionDetails(StringOptionDetails):
+class ColourConfigItem(StringConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -446,7 +423,83 @@ class ColourOptionDetails(StringOptionDetails):
             restart=restart,
             validateCb=common.validateHtmlColour)
 
-class RulesOptionDetails(ConfigOptionDetails):
+class MapOptionsConfigItem(ConfigItem):
+    _MapOptionToSettingsKey = {
+        travellermap.Option.GalacticDirections: '/GalacticDirections',
+        travellermap.Option.SectorGrid: '/SectorGrid',
+        travellermap.Option.SelectedSectorNames: '/SelectedSectorNames',
+        travellermap.Option.SectorNames: '/AllSectorNames',
+        travellermap.Option.Borders: '/Borders',
+        travellermap.Option.Routes: '/Routes',
+        travellermap.Option.RegionNames: '/RegionNames',
+        travellermap.Option.ImportantWorlds: '/ImportantWorlds',
+        travellermap.Option.WorldColours: '/WorldColours',
+        travellermap.Option.FilledBorders: '/FilledBorders',
+        travellermap.Option.DimUnofficial: '/DimUnofficial',
+        travellermap.Option.ImportanceOverlay: '/ImportanceOverlay',
+        travellermap.Option.PopulationOverlay: '/PopulationOverlay',
+        travellermap.Option.CapitalsOverlay: '/CapitalsOverlay',
+        travellermap.Option.MinorRaceOverlay: '/MinorRaceOverlay',
+        travellermap.Option.DroyneWorldOverlay: '/DroyneWorldOverlay',
+        travellermap.Option.AncientSitesOverlay: '/AncientSitesOverlay',
+        travellermap.Option.StellarOverlay: '/StellarOverlay',
+        travellermap.Option.EmpressWaveOverlay: '/EmpressWaveOverlay',
+        travellermap.Option.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
+        travellermap.Option.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
+        travellermap.Option.MainsOverlay: '/MainsOverlay'
+    }
+
+    def __init__(
+            self,
+            option: ConfigOption,
+            section: str,
+            restart: bool,
+            default: typing.Iterable[travellermap.Option] = None
+            ) -> None:
+        super().__init__(option=option, restart=restart)
+        self._section = section
+        self._default = set(default) if default else set()
+        self._currentValue = self._futureValue = self._default
+
+    def value(self, futureValue: bool = False) -> typing.Iterable[travellermap.Option]:
+        return list(self._futureValue if futureValue else self._currentValue)
+
+    def setValue(self, value: typing.Iterable[travellermap.Option]) -> bool:
+        if value == self._futureValue:
+            return False
+
+        value = list(value)
+        if self._restart:
+            self._futureValue = value
+        else:
+            self._currentValue = self._futureValue = value
+
+        return True
+
+    def isRestartRequired(self) -> bool:
+        return self._currentValue != self._futureValue
+
+    def read(self, settings: QtCore.QSettings) -> bool:
+        values = set()
+        for option, settingKey in MapOptionsConfigItem._MapOptionToSettingsKey.items():
+            value = settings.value(
+                self._section + settingKey,
+                defaultValue=option in self._default,
+                type=bool)
+            if value:
+                values.add(option)
+
+        oldValue = self._currentValue
+        self._currentValue = self._futureValue = values
+        return self._currentValue != oldValue
+
+    def write(self, settings: QtCore.QSettings) -> None:
+        for option, settingKey in MapOptionsConfigItem._MapOptionToSettingsKey.items():
+            settings.setValue(
+                self._section + settingKey,
+                option in self._futureValue)
+
+class RulesConfigItem(ConfigItem):
     _DefaultSystem = traveller.RuleSystem.MGT2022
     _DefaultClassAFuelType = traveller.StarPortFuelType.AllTypes
     _DefaultClassBFuelType = traveller.StarPortFuelType.AllTypes
@@ -454,12 +507,12 @@ class RulesOptionDetails(ConfigOptionDetails):
     _DefaultClassDFuelType = traveller.StarPortFuelType.UnrefinedOnly
     _DefaultClassEFuelType = traveller.StarPortFuelType.NoFuel
 
-    _RuleSystemKey = 'Rules' # NOTE: This name isn't ideal but it is what it is for backwards compatibility
-    _ClassAFuelTypeKey = 'ClassAFuelTypeRule'
-    _ClassBFuelTypeKey = 'ClassBFuelTypeRule'
-    _ClassCFuelTypeKey = 'ClassCFuelTypeRule'
-    _ClassDFuelTypeKey = 'ClassDFuelTypeRule'
-    _ClassEFuelTypeKey = 'ClassEFuelTypeRule'
+    _RuleSystemKey = '/Rules' # NOTE: This name isn't ideal but it is what it is for backwards compatibility
+    _ClassAFuelTypeKey = '/ClassAFuelTypeRule'
+    _ClassBFuelTypeKey = '/ClassBFuelTypeRule'
+    _ClassCFuelTypeKey = '/ClassCFuelTypeRule'
+    _ClassDFuelTypeKey = '/ClassDFuelTypeRule'
+    _ClassEFuelTypeKey = '/ClassEFuelTypeRule'
 
     def __init__(
             self,
@@ -470,12 +523,12 @@ class RulesOptionDetails(ConfigOptionDetails):
         super().__init__(option=option, restart=restart)
         self._section = section
         self._currentValue = self._futureValue = traveller.Rules(
-            system=RulesOptionDetails._DefaultSystem,
-            classAStarPortFuelType=RulesOptionDetails._DefaultClassAFuelType,
-            classBStarPortFuelType=RulesOptionDetails._DefaultClassBFuelType,
-            classCStarPortFuelType=RulesOptionDetails._DefaultClassCFuelType,
-            classDStarPortFuelType=RulesOptionDetails._DefaultClassDFuelType,
-            classEStarPortFuelType=RulesOptionDetails._DefaultClassEFuelType)
+            system=RulesConfigItem._DefaultSystem,
+            classAStarPortFuelType=RulesConfigItem._DefaultClassAFuelType,
+            classBStarPortFuelType=RulesConfigItem._DefaultClassBFuelType,
+            classCStarPortFuelType=RulesConfigItem._DefaultClassCFuelType,
+            classDStarPortFuelType=RulesConfigItem._DefaultClassDFuelType,
+            classEStarPortFuelType=RulesConfigItem._DefaultClassEFuelType)
 
     def value(self, futureValue: bool = False) -> typing.Any:
         return traveller.Rules(self._futureValue if futureValue else self._currentValue)
@@ -498,63 +551,63 @@ class RulesOptionDetails(ConfigOptionDetails):
     def read(self, settings: QtCore.QSettings) -> bool:
         system = self.loadConfigSetting(
             settings=settings,
-            key=self._section + RulesOptionDetails._RuleSystemKey,
+            key=self._section + RulesConfigItem._RuleSystemKey,
             default=None,
             type=str)
         system = \
             traveller.RuleSystem.__members__[system] \
             if system in traveller.RuleSystem.__members__ else \
-            RulesOptionDetails._DefaultSystem
+            RulesConfigItem._DefaultSystem
 
         classAFuelType = self.loadConfigSetting(
             settings=settings,
-            key=self._section + RulesOptionDetails._ClassAFuelTypeKey,
+            key=self._section + RulesConfigItem._ClassAFuelTypeKey,
             default=None,
             type=str)
         classAFuelType = \
             traveller.StarPortFuelType.__members__[classAFuelType] \
             if classAFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesOptionDetails._DefaultClassAFuelType
+            RulesConfigItem._DefaultClassAFuelType
 
         classBFuelType = self.loadConfigSetting(
             settings=settings,
-            key=self._section + RulesOptionDetails._ClassBFuelTypeKey,
+            key=self._section + RulesConfigItem._ClassBFuelTypeKey,
             default=None,
             type=str)
         classBFuelType = \
             traveller.StarPortFuelType.__members__[classBFuelType] \
             if classBFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesOptionDetails._DefaultClassBFuelType
+            RulesConfigItem._DefaultClassBFuelType
 
         classCFuelType = self.loadConfigSetting(
             settings=settings,
-            key=self._section + RulesOptionDetails._ClassCFuelTypeKey,
+            key=self._section + RulesConfigItem._ClassCFuelTypeKey,
             default=None,
             type=str)
         classCFuelType = \
             traveller.StarPortFuelType.__members__[classCFuelType] \
             if classCFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesOptionDetails._DefaultClassCFuelType
+            RulesConfigItem._DefaultClassCFuelType
 
         classDFuelType = self.loadConfigSetting(
             settings=settings,
-            key=self._section + RulesOptionDetails._ClassDFuelTypeKey,
+            key=self._section + RulesConfigItem._ClassDFuelTypeKey,
             default=None,
             type=str)
         classDFuelType = \
             traveller.StarPortFuelType.__members__[classDFuelType] \
             if classDFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesOptionDetails._DefaultClassDFuelType
+            RulesConfigItem._DefaultClassDFuelType
 
         classEFuelType = self.loadConfigSetting(
             settings=settings,
-            key=self._section + RulesOptionDetails._ClassEFuelTypeKey,
+            key=self._section + RulesConfigItem._ClassEFuelTypeKey,
             default=None,
             type=str)
         classEFuelType = \
             traveller.StarPortFuelType.__members__[classEFuelType] \
             if classEFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesOptionDetails._DefaultClassEFuelType
+            RulesConfigItem._DefaultClassEFuelType
 
         oldValue = self._currentValue
         self._currentValue = self._futureValue = traveller.Rules(
@@ -568,25 +621,25 @@ class RulesOptionDetails(ConfigOptionDetails):
 
     def write(self, settings: QtCore.QSettings) -> None:
         settings.setValue(
-            self._section + RulesOptionDetails._RuleSystemKey,
+            self._section + RulesConfigItem._RuleSystemKey,
             self._futureValue.system().name)
         settings.setValue(
-            self._section + RulesOptionDetails._ClassAFuelTypeKey,
+            self._section + RulesConfigItem._ClassAFuelTypeKey,
             self._futureValue.starPortFuelType(code='A').name)
         settings.setValue(
-            self._section + RulesOptionDetails._ClassBFuelTypeKey,
+            self._section + RulesConfigItem._ClassBFuelTypeKey,
             self._futureValue.starPortFuelType(code='B').name)
         settings.setValue(
-            self._section + RulesOptionDetails._ClassCFuelTypeKey,
+            self._section + RulesConfigItem._ClassCFuelTypeKey,
             self._futureValue.starPortFuelType(code='C').name)
         settings.setValue(
-            self._section + RulesOptionDetails._ClassDFuelTypeKey,
+            self._section + RulesConfigItem._ClassDFuelTypeKey,
             self._futureValue.starPortFuelType(code='D').name)
         settings.setValue(
-            self._section + RulesOptionDetails._ClassEFuelTypeKey,
+            self._section + RulesConfigItem._ClassEFuelTypeKey,
             self._futureValue.starPortFuelType(code='E').name)
 
-class TaggingOptionDetails(ConfigOptionDetails):
+class TaggingConfigItem(ConfigItem):
     _SettingIndexFixPattern = re.compile('.*[\\/]')
 
     def __init__(
@@ -600,7 +653,8 @@ class TaggingOptionDetails(ConfigOptionDetails):
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
-        self._currentValue = self._futureValue = dict(default) if default else {}
+        self._default = dict(default) if default else {}
+        self._currentValue = self._futureValue = self._default
         self._keyToStringCb = keyToStringCb
         self._keyFromStringCb = keyFromStringCb
 
@@ -623,30 +677,37 @@ class TaggingOptionDetails(ConfigOptionDetails):
         return self._currentValue != self._futureValue
 
     def read(self, settings: QtCore.QSettings) -> bool:
-        values = {}
-        settings.beginReadArray(self._section)
-        try:
-            for settingKey in settings.allKeys():
-                if settingKey == 'size':
-                    continue
-
-                value = settings.value(settingKey, defaultValue=None, type=str)
-                if value:
-                    # Strip of the index that QSettings puts on array elements. For reasons I don't understand it's
-                    # not consistent with which separator it uses
-                    key = TaggingOptionDetails._SettingIndexFixPattern.sub('', settingKey)
-
-                    if value not in app.TagLevel.__members__:
-                        logging.warning(f'Ignoring tag map for "{key}" in section {self._section} as "{value}" is not a valid tag level')
+        # Check to see if there is a size element for this section. This is a hack
+        # to differentiate between there being no section and there being a section
+        # with no entries. The distinction is important as we want to use the
+        # default configuration if there is no section but not if there is a section
+        # with no entries as the user must have configured it like that.
+        if settings.contains(self._section + '/size'):
+            values = {}
+            settings.beginReadArray(self._section)
+            try:
+                for settingKey in settings.allKeys():
+                    if settingKey == 'size':
                         continue
 
-                    key = self._keyFromStringCb(key)
+                    # Strip of the index that QSettings puts on array elements. For reasons I don't understand it's
+                    # not consistent with which separator it uses
+                    key = self._keyFromStringCb(TaggingConfigItem._SettingIndexFixPattern.sub('', settingKey))
                     if key is None:
                         logging.warning(f'Ignoring tag map for "{key}" in section {self._section} as "{key}" is not a valid key')
                         continue
-                    values[key] = app.TagLevel.__members__[value]
-        finally:
-            settings.endArray()
+
+                    value = settings.value(settingKey, defaultValue=None, type=str)
+                    if value:
+                        if value not in app.TagLevel.__members__:
+                            logging.warning(f'Ignoring tag map for "{key}" in section {self._section} as "{value}" is not a valid tag level')
+                            continue
+                        values[key] = app.TagLevel.__members__[value]
+            finally:
+                settings.endArray()
+        else:
+            # There is no section preset so use default configuration.
+            values = self._default
 
         oldValue = self._currentValue
         self._currentValue = self._futureValue = values
@@ -664,7 +725,7 @@ class TaggingOptionDetails(ConfigOptionDetails):
         finally:
             settings.endArray()
 
-class StringTaggingOptionDetails(TaggingOptionDetails):
+class StringTaggingConfigItem(TaggingConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -680,7 +741,7 @@ class StringTaggingOptionDetails(TaggingOptionDetails):
             keyToStringCb=lambda s: s,
             keyFromStringCb=lambda s: s)
 
-class EnumTaggingOptionDetails(TaggingOptionDetails):
+class EnumTaggingConfigItem(TaggingConfigItem):
     def __init__(
             self,
             option: ConfigOption,
@@ -706,7 +767,7 @@ class ConfigEx(QtCore.QObject):
     _lock = threading.Lock()
     _appDir = '.\\'
     _installDir = '.\\'
-    _configDetails: typing.Dict[ConfigOption, ConfigOptionDetails] = {}
+    _configItems: typing.Dict[ConfigOption, ConfigItem] = {}
 
     @classmethod
     def instance(cls):
@@ -743,9 +804,9 @@ class ConfigEx(QtCore.QObject):
             filePath = os.path.join(self._appDir, self._ConfigFileName)
             self._settings = QtCore.QSettings(filePath, QtCore.QSettings.Format.IniFormat)
 
-        self._configDetails.clear()
+        self._configItems.clear()
 
-        self._addOptionDetails(MappedOptionDetails(
+        self._addConfigItem(MappedConfigItem(
             option=ConfigOption.LogLevel,
             key='Debug/LogLevel',
             restart=True,
@@ -769,191 +830,94 @@ class ConfigEx(QtCore.QObject):
                 'debug': logging.DEBUG,
                 'dbg': logging.DEBUG}))
 
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.Milieu,
             key='TravellerMap/Milieu',
             restart=True,
             enumType=travellermap.Milieu,
             default=travellermap.Milieu.M1105))
 
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapStyle,
             key='TravellerMap/MapStyle',
             restart=False,
             enumType=travellermap.Style,
             default=travellermap.Style.Poster))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.GalacticDirectionsMapOption,
-            key='TravellerMap/GalacticDirectionsMapOption',
+        self._addConfigItem(MapOptionsConfigItem(
+            option=ConfigOption.MapOptions,
+            section='TravellerMap',
             restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.SectorGridMapOption,
-            key='TravellerMap/SectorGridMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.SelectedSectorNamesMapOption,
-            key='TravellerMap/SelectedSectorNamesMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.AllSectorNamesMapOption,
-            key='TravellerMap/AllSectorNamesMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.BordersMapOption,
-            key='TravellerMap/BordersMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.RoutesMapOption,
-            key='TravellerMap/RoutesMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.RegionNamesMapOption,
-            key='TravellerMap/RegionNamesMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.ImportantWorldsMapOption,
-            key='TravellerMap/ImportantWorldsMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.WorldColoursMapOption,
-            key='TravellerMap/WorldColoursMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.FilledBordersMapOption,
-            key='TravellerMap/FilledBordersMapOption',
-            restart=False,
-            default=True))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.DimUnofficialMapOption,
-            key='TravellerMap/DimUnofficialMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.ImportanceOverlayMapOption,
-            key='TravellerMap/ImportanceOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.PopulationOverlayMapOption,
-            key='TravellerMap/PopulationOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.CapitalsOverlayMapOption,
-            key='TravellerMap/CapitalsOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.MinorRaceOverlayMapOption,
-            key='TravellerMap/MinorRaceOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.DroyneWorldOverlayMapOption,
-            key='TravellerMap/DroyneWorldOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.AncientSitesOverlayMapOption,
-            key='TravellerMap/AncientSitesOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.StellarOverlayMapOption,
-            key='TravellerMap/StellarOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.EmpressWaveOverlayMapOption,
-            key='TravellerMap/EmpressWaveOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.QrekrshaZoneOverlayMapOption,
-            key='TravellerMap/QrekrshaZoneOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.AntaresSupernovaOverlayMapOption,
-            key='TravellerMap/AntaresSupernovaOverlayMapOption',
-            restart=False,
-            default=False))
-        self._addOptionDetails(BoolOptionDetails(
-            option=ConfigOption.MainsOverlayMapOption,
-            key='TravellerMap/MainsOverlayMapOption',
-            restart=False,
-            default=False))
+            default=[
+                travellermap.Option.GalacticDirections,
+                travellermap.Option.SectorGrid,
+                travellermap.Option.SelectedSectorNames,
+                travellermap.Option.Borders,
+                travellermap.Option.Routes,
+                travellermap.Option.RegionNames,
+                travellermap.Option.ImportantWorlds,
+                travellermap.Option.FilledBorders]))
 
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapEngine,
             key='TravellerMap/MapEngine',
             restart=True,
             # TODO: The MapEngine should be moved to this .py file
             enumType=app.MapEngine,
             default=app.MapEngine.InApp))
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapRenderingType,
             key='TravellerMap/MapRenderingType',
             restart=False,
             enumType=app.MapRenderingType,
             default=app.MapRenderingType.Tiled))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.MapAnimations,
             key='TravellerMap/MapAnimations',
             restart=False,
             default=True))
 
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ProxyPort,
             key='Proxy/Port',
             restart=True,
             default=61977,
             min=1024, # Don't allow system ports
             max=65535))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ProxyHostPoolSize,
             key='Proxy/HostPoolSize',
             restart=True,
             default=1 if common.isMacOS() else 4,
             min=1,
             max=10))
-        self._addOptionDetails(UrlOptionDetails(
+        self._addConfigItem(UrlConfigItem(
             option=ConfigOption.ProxyMapUrl,
             key='Proxy/MapUrl',
             restart=True,
             default=travellermap.TravellerMapBaseUrl))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ProxyTileCacheSize,
             key='Proxy/TileCacheSize',
             restart=True,
             default=500 * 1000 * 1000, # 500MB
             min=0)) # 0 means disable cache
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ProxyTileCacheLifetime,
             key='Proxy/TileCacheLifetime',
             restart=True,
             default=14, # Days
             min=0)) # 0 means never expire
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.ProxySvgComposition,
             key='Proxy/SvgComposition',
             restart=True,
             default=False))
 
-        self._addOptionDetails(RulesOptionDetails(
+        self._addConfigItem(RulesConfigItem(
             option=ConfigOption.Rules,
-            section='Game/',
+            section='Game',
             restart=True))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.PlayerBrokerDM,
             key='Game/PlayerBrokerDM',
             restart=False,
@@ -961,43 +925,43 @@ class ConfigEx(QtCore.QObject):
             min=app.MinPossibleDm,
             max=app.MaxPossibleDm))
         # Default ship values are based on a standard Scout ship
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ShipTonnage,
             key='Game/ShipTonnage',
             restart=False,
             default=100,
             min=100))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ShipJumpRating,
             key='Game/ShipJumpRating',
             restart=False,
             default=2,
             min=app.MinPossibleJumpRating,
             max=app.MaxPossibleJumpRating))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ShipCargoCapacity,
             key='Game/ShipCargoCapacity',
             restart=False,
             default=12,
             min=0))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ShipFuelCapacity,
             key='Game/ShipFuelCapacity',
             restart=False,
             default=23,
             min=0))
-        self._addOptionDetails(FloatOptionDetails(
+        self._addConfigItem(FloatConfigItem(
             option=ConfigOption.ShipCurrentFuel,
             key='Game/ShipCurrentFuel',
             restart=False,
             default=0,
             min=0))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.UseShipFuelPerParsec,
             key='Game/UseShipFuelPerParsec',
             restart=False,
             default=False))
-        self._addOptionDetails(FloatOptionDetails(
+        self._addConfigItem(FloatConfigItem(
             option=ConfigOption.ShipFuelPerParsec,
             key='Game/ShipFuelPerParsec',
             restart=False,
@@ -1006,163 +970,163 @@ class ConfigEx(QtCore.QObject):
             default=self.asInt(option=ConfigOption.ShipTonnage) * 0.1, # 10% of ship tonnage
             # TODO: Not sure about this value, need to make sure it still allows hop-3
             min=0.01))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.PerJumpOverhead,
             key='Game/PerJumpOverhead',
             restart=False,
             default=0,
             min=0))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.AvailableFunds,
             key='Game/AvailableFunds',
             restart=False,
             default=10000,
             min=0))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.MinSellerDM,
             key='Game/MinSellerDM',
             restart=False,
             default=1,
             min=app.MinPossibleDm,
             max=app.MaxPossibleDm))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.MaxSellerDM,
             key='Game/MaxSellerDM',
             restart=False,
             default=3,
             min=app.MinPossibleDm,
             max=app.MaxPossibleDm))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.MinBuyerDM,
             key='Game/MinBuyerDM',
             restart=False,
             default=1,
             min=app.MinPossibleDm,
             max=app.MaxPossibleDm))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.MaxBuyerDM,
             key='Game/MaxBuyerDM',
             restart=False,
             default=3,
             min=app.MinPossibleDm,
             max=app.MaxPossibleDm))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.UsePurchaseBroker,
             key='Game/UsePurchaseBroker',
             restart=False,
             default=False))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.PurchaseBrokerDmBonus,
             key='Game/PurchaseBrokerDmBonus',
             restart=False,
             default=1))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.UseSaleBroker,
             key='Game/UseSaleBroker',
             restart=False,
             default=False))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.SaleBrokerDmBonus,
             key='Game/SaleBrokerDmBonus',
             restart=False,
             default=1))
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.RoutingType,
             key='Game/RoutingType',
             restart=False,
             enumType=logic.RoutingType,
             default=logic.RoutingType.FuelBased))
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.RouteOptimisation,
             key='Game/RouteOptimisation',
             restart=False,
             enumType=logic.RouteOptimisation,
             default=logic.RouteOptimisation.ShortestDistance))
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.RefuellingStrategy,
             key='Game/RefuellingStrategy',
             restart=False,
             enumType=logic.RefuellingStrategy,
             default=logic.RefuellingStrategy.WildernessPreferred))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.UseFuelCaches,
             key='Game/UseFuelCaches',
             restart=False,
             default=True))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.UseAnomalyRefuelling,
             key='Game/UseAnomalyRefuelling',
             restart=False,
             default=True))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.AnomalyFuelCost,
             key='Game/AnomalyFuelCost',
             restart=False,
             default=0,
             min=0))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.UseAnomalyBerthing,
             key='Game/UseAnomalyBerthing',
             restart=False,
             default=False))
-        self._addOptionDetails(IntOptionDetails(
+        self._addConfigItem(IntConfigItem(
             option=ConfigOption.AnomalyBerthingCost,
             key='Game/AnomalyBerthingCost',
             restart=False,
             default=0,
             min=0))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.IncludeStartBerthing,
             key='Game/IncludeStartBerthing',
             restart=False,
             default=False))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.IncludeFinishBerthing,
             key='Game/IncludeFinishBerthing',
             restart=False,
             default=True))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.IncludeLogisticsCosts,
             key='Game/IncludeLogisticsCosts',
             restart=False,
             default=True))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.IncludeUnprofitableTrades,
             key='Game/IncludeUnprofitableTrades',
             restart=False,
             default=False))
 
-        self._addOptionDetails(EnumOptionDetails(
+        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.ColourTheme,
             key='GUI/ColourTheme',
             restart=True,
             # TODO: The ColourTheme should be moved to this .py file
             enumType=app.ColourTheme,
             default=app.ColourTheme.DarkMode))
-        self._addOptionDetails(FloatOptionDetails(
+        self._addConfigItem(FloatConfigItem(
             option=ConfigOption.InterfaceScale,
             key='GUI/InterfaceScale',
             restart=True,
             default=1,
             min=1,
             max=4))
-        self._addOptionDetails(BoolOptionDetails(
+        self._addConfigItem(BoolConfigItem(
             option=ConfigOption.ShowToolTipImages,
             key='GUI/ShowToolTipImages',
             restart=False,
             default=True))
 
-        self._addOptionDetails(ColourOptionDetails(
+        self._addConfigItem(ColourConfigItem(
             option=ConfigOption.AverageCaseColour,
             key='GUI/AverageCaseColour',
             restart=False,
             default='#0A0000FF'))
-        self._addOptionDetails(ColourOptionDetails(
+        self._addConfigItem(ColourConfigItem(
             option=ConfigOption.WorstCaseColour,
             key='GUI/WorstCaseColour',
             restart=False,
             default='#0AFF0000'))
-        self._addOptionDetails(ColourOptionDetails(
+        self._addConfigItem(ColourConfigItem(
             option=ConfigOption.BestCaseColour,
             key='GUI/BestCaseColour',
             restart=False,
@@ -1173,23 +1137,23 @@ class ConfigEx(QtCore.QObject):
             enumType=app.ColourTheme)
         isDarkMode = colourTheme is app.ColourTheme.DarkMode or \
             (colourTheme is app.ColourTheme.UseOSSetting and darkdetect.isDark())
-        self._addOptionDetails(ColourOptionDetails(
+        self._addConfigItem(ColourConfigItem(
             option=ConfigOption.DesirableTagColour,
             key='Tagging/DesirableTagColour',
             restart=False,
             default='#8000AA00' if isDarkMode else '#808CD47E'))
-        self._addOptionDetails(ColourOptionDetails(
+        self._addConfigItem(ColourConfigItem(
             option=ConfigOption.WarningTagColour,
             key='Tagging/WarningTagColour',
             restart=False,
             default='#80FF7700' if isDarkMode else '#80994700'))
-        self._addOptionDetails(ColourOptionDetails(
+        self._addConfigItem(ColourConfigItem(
             option=ConfigOption.DangerTagColour,
             key='Tagging/DangerTagColour',
             restart=False,
             default='#80BC2023' if isDarkMode else '#80FF6961'))
 
-        self._addOptionDetails(EnumTaggingOptionDetails(
+        self._addConfigItem(EnumTaggingConfigItem(
             option=ConfigOption.ZoneTagging,
             section='ZoneTagging',
             restart=False,
@@ -1199,16 +1163,16 @@ class ConfigEx(QtCore.QObject):
                 traveller.ZoneType.RedZone: app.TagLevel.Danger,
                 traveller.ZoneType.Unabsorbed: app.TagLevel.Warning,
                 traveller.ZoneType.Forbidden: app.TagLevel.Danger}))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.StarPortTagging,
             section='StarPortTagging',
             restart=False,
             default={'X': app.TagLevel.Warning}))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.WorldSizeTagging,
             section='WorldSizeTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.AtmosphereTagging,
             section='AtmosphereTagging',
             restart=False,
@@ -1216,11 +1180,11 @@ class ConfigEx(QtCore.QObject):
                 # Tag corrosive and insidious atmospheres
                 'B': app.TagLevel.Danger,
                 'C': app.TagLevel.Danger}))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.HydrographicsTagging,
             section='HydrographicsTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.PopulationTagging,
             section='PopulationTagging',
             restart=False,
@@ -1229,25 +1193,25 @@ class ConfigEx(QtCore.QObject):
                 '0': app.TagLevel.Danger,
                 '1': app.TagLevel.Warning,
                 '2': app.TagLevel.Warning}))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.GovernmentTagging,
             section='GovernmentTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.LawLevelTagging,
             section='LawLevelTagging',
             restart=False,
             default={'0': app.TagLevel.Danger}))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.TechLevelTagging,
             section='TechLevelTagging',
             restart=False))
-        self._addOptionDetails(EnumTaggingOptionDetails(
+        self._addConfigItem(EnumTaggingConfigItem(
             option=ConfigOption.BaseTypeTagging,
             section='BaseTypeTagging',
             restart=False,
             enumType=traveller.BaseType))
-        self._addOptionDetails(EnumTaggingOptionDetails(
+        self._addConfigItem(EnumTaggingConfigItem(
             option=ConfigOption.TradeCodeTagging,
             section='TradeCodeTagging',
             restart=False,
@@ -1261,56 +1225,56 @@ class ConfigEx(QtCore.QObject):
                 traveller.TradeCode.Reserve: app.TagLevel.Danger,
                 traveller.TradeCode.DangerousWorld: app.TagLevel.Danger,
                 traveller.TradeCode.ForbiddenWorld: app.TagLevel.Danger}))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.ResourcesTagging,
             section='ResourcesTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.LabourTagging,
             section='LabourTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.InfrastructureTagging,
             section='InfrastructureTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.EfficiencyTagging,
             section='EfficiencyTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.HeterogeneityTagging,
             section='HeterogeneityTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.AcceptanceTagging,
             section='AcceptanceTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.StrangenessTagging,
             section='StrangenessTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.SymbolsTagging,
             section='SymbolsTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.SymbolsTagging,
             section='SymbolsTagging',
             restart=False))
-        self._addOptionDetails(EnumTaggingOptionDetails(
+        self._addConfigItem(EnumTaggingConfigItem(
             option=ConfigOption.NobilityTagging,
             section='NobilityTagging',
             restart=False,
             enumType=traveller.NobilityType))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.AllegianceTagging,
             section='AllegianceTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.SpectralTagging,
             section='SpectralTagging',
             restart=False))
-        self._addOptionDetails(StringTaggingOptionDetails(
+        self._addConfigItem(StringTaggingConfigItem(
             option=ConfigOption.LuminosityTagging,
             section='LuminosityTagging',
             restart=False))
@@ -1320,18 +1284,18 @@ class ConfigEx(QtCore.QObject):
             option: ConfigOption,
             futureValue: bool = False
             ) -> typing.Any:
-        optionDetails = self._configDetails[option]
-        return optionDetails.value(futureValue=futureValue)
+        item = self._configItems[option]
+        return item.value(futureValue=futureValue)
 
     def setOption(
             self,
             option: ConfigOption,
             value: typing.Any
             ) -> bool:
-        optionDetails = self._configDetails[option]
-        optionChanged = optionDetails.setValue(value=value)
+        item = self._configItems[option]
+        optionChanged = item.setValue(value=value)
         if optionChanged:
-            optionDetails.write(self._settings)
+            item.write(self._settings)
         return optionChanged
 
     def asBool(
@@ -1339,32 +1303,32 @@ class ConfigEx(QtCore.QObject):
             option: ConfigOption,
             futureValue: bool = False
             ) -> bool:
-        optionDetails = self._configDetails[option]
-        return bool(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return bool(item.value(futureValue=futureValue))
 
     def asStr(
             self,
             option: ConfigOption,
             futureValue: bool = False
             ) -> str:
-        optionDetails = self._configDetails[option]
-        return str(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return str(item.value(futureValue=futureValue))
 
     def asInt(
             self,
             option: ConfigOption,
             futureValue: bool = False
             ) -> int:
-        optionDetails = self._configDetails[option]
-        return int(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return int(item.value(futureValue=futureValue))
 
     def asFloat(
             self,
             option: ConfigOption,
             futureValue: bool = False
             ) -> int:
-        optionDetails = self._configDetails[option]
-        return float(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return float(item.value(futureValue=futureValue))
 
     def asEnum(
             self,
@@ -1372,8 +1336,8 @@ class ConfigEx(QtCore.QObject):
             enumType: typing.Type[enum.Enum],
             futureValue: bool = False
             ) -> enum.Enum:
-        optionDetails = self._configDetails[option]
-        return enumType(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return enumType(item.value(futureValue=futureValue))
 
     def asObject(
             self,
@@ -1381,26 +1345,26 @@ class ConfigEx(QtCore.QObject):
             objectType: typing.Type[typing.Any],
             futureValue: bool = False
             ) -> object:
-        optionDetails = self._configDetails[option]
-        return objectType(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return objectType(item.value(futureValue=futureValue))
 
     def asTagMap(
             self,
             option: ConfigOption,
             futureValue: bool = False
             ) -> typing.Mapping[typing.Any, app.TagLevel]:
-        optionDetails = self._configDetails[option]
-        return dict(optionDetails.value(futureValue=futureValue))
+        item = self._configItems[option]
+        return dict(item.value(futureValue=futureValue))
 
     def isRestartRequired(self) -> bool:
-        for optionDetails in self._configDetails.values():
-            if optionDetails.isRestartRequired():
+        for item in self._configItems.values():
+            if item.isRestartRequired():
                 return True
         return False
 
-    def _addOptionDetails(self, optionDetails: ConfigOptionDetails) -> None:
-        ConfigEx._configDetails[optionDetails.option()] = optionDetails
+    def _addConfigItem(self, item: ConfigItem) -> None:
+        ConfigEx._configItems[item.option()] = item
         try:
-            optionDetails.read(settings=self._settings)
+            item.read(settings=self._settings)
         except Exception as ex:
-            logging.warning(f'Failed to read config option {optionDetails.option().name}', exc_info=ex)
+            logging.warning(f'Failed to read config option {item.option().name}', exc_info=ex)

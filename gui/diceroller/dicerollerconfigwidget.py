@@ -124,8 +124,9 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         moveDownButton.setArrowType(QtCore.Qt.ArrowType.DownArrow)
         moveDownButton.clicked.connect(lambda: self._moveDownClicked(modifier))
 
-        itemSpacing = int(DiceModifierListWidget._ItemSpacing * \
-                          app.Config.instance().interfaceScale())
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
+        itemSpacing = int(DiceModifierListWidget._ItemSpacing * interfaceScale)
 
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, itemSpacing)

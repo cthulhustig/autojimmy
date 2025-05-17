@@ -736,9 +736,11 @@ class _StageWidget(QtWidgets.QWidget):
             self._removeAllButton = QtWidgets.QPushButton('Remove All')
             self._removeAllButton.clicked.connect(self._removeAllButtonClicked)
 
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         self._layout = QtWidgets.QVBoxLayout()
         self._layout.setSpacing(
-            int(_StageWidget._RowSpacing * app.Config.instance().interfaceScale()))
+            int(_StageWidget._RowSpacing * interfaceScale))
         self._layout.setContentsMargins(0, 0, 0, 0)
         if self._dynamic:
             buttonLayout = QtWidgets.QHBoxLayout()

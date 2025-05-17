@@ -119,7 +119,7 @@ def svgToIcon(
 
 def loadIcon(id: Icon) -> QtGui.QIcon:
     iconPath = os.path.join(
-        app.Config.instance().installDir(),
+        app.ConfigEx.instance().installDir(),
         'icons',
         id.value)
     icon = _IconMap.get(iconPath)

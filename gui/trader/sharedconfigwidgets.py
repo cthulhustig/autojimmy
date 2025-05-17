@@ -1,4 +1,5 @@
 import app
+import common
 import enum
 import gui
 import logic
@@ -405,10 +406,13 @@ class _SharedRangeWidget(gui.RangeSpinBoxWidget):
 class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().playerBrokerDm()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.PlayerBrokerDM)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setPlayerBrokerDm(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.PlayerBrokerDM,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -421,10 +425,13 @@ class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
 class SharedShipTonnageSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().shipTonnage()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.ShipTonnage)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setShipTonnage(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShipTonnage,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -437,10 +444,13 @@ class SharedShipTonnageSpinBox(_SharedSpinBox):
 class SharedJumpRatingSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().shipJumpRating()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.ShipJumpRating)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setShipJumpRating(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShipJumpRating,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -453,10 +463,13 @@ class SharedJumpRatingSpinBox(_SharedSpinBox):
 class SharedFuelCapacitySpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().shipFuelCapacity()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.ShipFuelCapacity)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setShipFuelCapacity(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShipFuelCapacity,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -469,10 +482,13 @@ class SharedFuelCapacitySpinBox(_SharedSpinBox):
 class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> float:
-            return app.Config.instance().shipCurrentFuel()
+            return app.ConfigEx.instance().asFloat(
+                option=app.ConfigOption.ShipCurrentFuel)
 
         def saveValue(self, value: float) -> None:
-            return app.Config.instance().setShipCurrentFuel(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShipCurrentFuel,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -485,12 +501,16 @@ class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
 class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def loadValue(self) -> typing.Tuple[bool, float]:
-            return (app.Config.instance().useShipFuelPerParsec(),
-                    app.Config.instance().shipFuelPerParsec())
+            return (app.ConfigEx.instance().asBool(option=app.ConfigOption.UseShipFuelPerParsec),
+                    app.ConfigEx.instance().asFloat(option=app.ConfigOption.ShipFuelPerParsec))
 
         def saveValue(self, enabled: bool, value: float) -> None:
-            app.Config.instance().setUseShipFuelPerParsec(enabled)
-            app.Config.instance().setShipFuelPerParsec(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.UseShipFuelPerParsec,
+                value=enabled)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShipFuelPerParsec,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -503,10 +523,13 @@ class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
 class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().shipCargoCapacity()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.ShipCargoCapacity)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setShipCargoCapacity(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.ShipCargoCapacity,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -519,10 +542,13 @@ class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
 class SharedJumpOverheadSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().perJumpOverheads()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.PerJumpOverhead)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setPerJumpOverheads(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.PerJumpOverhead,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -535,10 +561,13 @@ class SharedJumpOverheadSpinBox(_SharedSpinBox):
 class SharedAvailableFundsSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().availableFunds()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.AvailableFunds)
 
         def saveValue(self, value: int) -> None:
-            return app.Config.instance().setAvailableFunds(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AvailableFunds,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -551,10 +580,14 @@ class SharedAvailableFundsSpinBox(_SharedSpinBox):
 class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def loadValue(self) -> logic.RefuellingStrategy:
-            return app.Config.instance().refuellingStrategy()
+            return app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.RefuellingStrategy,
+                enumType=logic.RefuellingStrategy)
 
         def saveValue(self, value: logic.RefuellingStrategy) -> None:
-            return app.Config.instance().setRefuellingStrategy(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.RefuellingStrategy,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -566,10 +599,13 @@ class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
 class SharedUseFuelCachesCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().useFuelCaches()
+            return app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.UseFuelCaches)
 
         def saveValue(self, value: bool) -> None:
-            return app.Config.instance().setUseFuelCaches(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.UseFuelCaches,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -580,10 +616,13 @@ class SharedUseFuelCachesCheckBox(_SharedCheckBox):
 class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().useAnomalyRefuelling()
+            return app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.UseAnomalyRefuelling)
 
         def saveValue(self, value: bool) -> None:
-            return app.Config.instance().setUseAnomalyRefuelling(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.UseAnomalyRefuelling,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -594,10 +633,13 @@ class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
 class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().anomalyFuelCost()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.AnomalyFuelCost)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setAnomalyFuelCost(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AnomalyFuelCost,
+                value=value)
 
     def __init__(
             self,
@@ -613,10 +655,13 @@ class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
 class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().anomalyBerthingCost()
+            return app.ConfigEx.instance().asInt(
+                option=app.ConfigOption.AnomalyBerthingCost)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setAnomalyBerthingCost(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.AnomalyBerthingCost,
+                value=value)
 
     def __init__(
             self,
@@ -632,10 +677,14 @@ class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
 class SharedRoutingTypeComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def loadValue(self) -> logic.RoutingType:
-            return app.Config.instance().routingType()
+            return app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.RoutingType,
+                enumType=logic.RoutingType)
 
         def saveValue(self, value: logic.RoutingType) -> None:
-            return app.Config.instance().setRoutingType(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.RoutingType,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -647,10 +696,14 @@ class SharedRoutingTypeComboBox(_SharedEnumComboBox):
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def loadValue(self) -> logic.RouteOptimisation:
-            return app.Config.instance().routeOptimisation()
+            return app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.RouteOptimisation,
+                enumType=logic.RouteOptimisation)
 
         def saveValue(self, value: logic.RouteOptimisation) -> None:
-            return app.Config.instance().setRouteOptimisation(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.RouteOptimisation,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -662,10 +715,13 @@ class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
 class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().includeStartBerthing()
+            return app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.IncludeStartBerthing)
 
         def saveValue(self, value: bool) -> None:
-            return app.Config.instance().setIncludeStartBerthing(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.IncludeStartBerthing,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -676,10 +732,13 @@ class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):
 class SharedIncludeFinishBerthingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().includeFinishBerthing()
+            return app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.IncludeFinishBerthing)
 
         def saveValue(self, value: bool) -> None:
-            return app.Config.instance().setIncludeFinishBerthing(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.IncludeFinishBerthing,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -690,10 +749,13 @@ class SharedIncludeFinishBerthingCheckBox(_SharedCheckBox):
 class SharedIncludeLogisticsCostsCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().includeLogisticsCosts()
+            return app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.IncludeLogisticsCosts)
 
         def saveValue(self, value: bool) -> None:
-            return app.Config.instance().setIncludeLogisticsCosts(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.IncludeLogisticsCosts,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -704,10 +766,13 @@ class SharedIncludeLogisticsCostsCheckBox(_SharedCheckBox):
 class SharedIncludeUnprofitableCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().includeUnprofitableTrades()
+            return app.ConfigEx.instance().asBool(
+                option=app.ConfigOption.IncludeUnprofitableTrades)
 
         def saveValue(self, value: bool) -> None:
-            return app.Config.instance().setIncludeUnprofitableTrades(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.IncludeUnprofitableTrades,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -718,10 +783,17 @@ class SharedIncludeUnprofitableCheckBox(_SharedCheckBox):
 class SharedSellerDMRangeWidget(_SharedRangeWidget):
     class _SettingUpdater(_RangeUpdater):
         def loadValue(self) -> typing.Tuple[int, int]:
-            return app.Config.instance().sellerDmRange()
+            return (app.ConfigEx.instance().asInt(option=app.ConfigOption.MinSellerDM),
+                    app.ConfigEx.instance().asInt(option=app.ConfigOption.MaxSellerDM))
 
         def saveValue(self, lowerValue: int, upperValue: int) -> None:
-            return app.Config.instance().setSellerDmRange(lowerValue=lowerValue, upperValue=upperValue)
+            lowerValue, upperValue = common.minmax(lowerValue, upperValue)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.MinSellerDM,
+                value=lowerValue)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.MaxSellerDM,
+                value=upperValue)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -734,10 +806,17 @@ class SharedSellerDMRangeWidget(_SharedRangeWidget):
 class SharedBuyerDMRangeWidget(_SharedRangeWidget):
     class _SettingUpdater(_RangeUpdater):
         def loadValue(self) -> typing.Tuple[int, int]:
-            return app.Config.instance().buyerDmRange()
+            return (app.ConfigEx.instance().asInt(option=app.ConfigOption.MinBuyerDM),
+                    app.ConfigEx.instance().asInt(option=app.ConfigOption.MaxBuyerDM))
 
         def saveValue(self, lowerValue: int, upperValue: int) -> None:
-            return app.Config.instance().setBuyerDmRange(minValue=lowerValue, maxValue=upperValue)
+            lowerValue, upperValue = common.minmax(lowerValue, upperValue)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.MinBuyerDM,
+                value=lowerValue)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.MaxBuyerDM,
+                value=upperValue)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -753,7 +832,9 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
             updaterType: _TogglableSpinBoxUpdater,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        rules = app.Config.instance().rules()
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         super().__init__(
             updaterType=updaterType,
             minValue=traveller.minLocalBrokerDm(rules=rules),
@@ -765,7 +846,9 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
             self.hideSpinBox()
 
     def value(self, rawValue: bool = False) -> typing.Optional[int]:
-        rules = app.Config.instance().rules()
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         if rules.system() == traveller.RuleSystem.MGT2022:
             # HACK: For 2022 rules return a raw value of 0 to stop consumers barfing
             return 0 if rawValue else None
@@ -785,12 +868,16 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
 class SharedLocalPurchaseBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def loadValue(self) -> typing.Tuple[bool, int]:
-            return (app.Config.instance().usePurchaseBroker(),
-                    app.Config.instance().purchaseBrokerDmBonus())
+            return (app.ConfigEx.instance().asBool(option=app.ConfigOption.UsePurchaseBroker),
+                    app.ConfigEx.instance().asInt(option=app.ConfigOption.PurchaseBrokerDmBonus))
 
         def saveValue(self, enabled: bool, value: int) -> None:
-            app.Config.instance().setUsePurchaseBroker(enabled)
-            app.Config.instance().setPurchaseBrokerDmBonus(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.UsePurchaseBroker,
+                value=enabled)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.PurchaseBrokerDmBonus,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
@@ -800,12 +887,16 @@ class SharedLocalPurchaseBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
 class SharedLocalSaleBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def loadValue(self) -> typing.Tuple[bool, int]:
-            return (app.Config.instance().useSaleBroker(),
-                    app.Config.instance().saleBrokerDmBonus())
+            return (app.ConfigEx.instance().asBool(option=app.ConfigOption.UseSaleBroker),
+                    app.ConfigEx.instance().asInt(option=app.ConfigOption.SaleBrokerDmBonus))
 
         def saveValue(self, enabled: bool, value: int) -> None:
-            app.Config.instance().setUseSaleBroker(enabled)
-            app.Config.instance().setSaleBrokerDmBonus(value)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.UseSaleBroker,
+                value=enabled)
+            app.ConfigEx.instance().setOption(
+                option=app.ConfigOption.SaleBrokerDmBonus,
+                value=value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(

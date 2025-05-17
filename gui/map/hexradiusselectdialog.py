@@ -185,7 +185,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
             else:
                 try:
                     worlds = traveller.WorldManager.instance().worldsInRadius(
-                        milieu=app.Config.instance().milieu(),
+                        milieu=app.ConfigEx.instance().asEnum(
+                            option=app.ConfigOption.Milieu,
+                            enumType=travellermap.Milieu),
                         center=centerHex,
                         searchRadius=searchRadius)
                     for world in worlds:

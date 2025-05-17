@@ -12,7 +12,9 @@ def _formatWorldName(world: traveller.World) -> str:
     return world.name(includeSubsector=True)
 
 def _formatHexName(hex: travellermap.HexPosition) -> str:
-    milieu = app.Config.instance().milieu()
+    milieu = app.ConfigEx.instance().asEnum(
+        option=app.ConfigOption.Milieu,
+        enumType=travellermap.Milieu)
 
     world = traveller.WorldManager.instance().worldByPosition(
         milieu=milieu,
@@ -35,7 +37,9 @@ def _formatWorldHtml(world: traveller.World) -> str:
 
 def _formatHexHtml(hex: travellermap.HexPosition) -> str:
     world = traveller.WorldManager.instance().worldByPosition(
-        milieu=app.Config.instance().milieu(),
+        milieu=app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu),
         hex=hex)
     if world:
         return _formatWorldHtml(world=world)
@@ -190,7 +194,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
             hex = self.currentHex()
             if hex:
                 world = traveller.WorldManager.instance().worldByPosition(
-                    milieu=app.Config.instance().milieu(),
+                    milieu=app.ConfigEx.instance().asEnum(
+                        option=app.ConfigOption.Milieu,
+                        enumType=travellermap.Milieu),
                     hex=hex)
                 if not world:
                     self.setCurrentHex(hex=None)
@@ -308,7 +314,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
         with gui.SignalBlocker(widget=self):
             self.clear()
 
-            milieu = app.Config.instance().milieu()
+            milieu = app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu)
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
                     world = traveller.WorldManager.instance().worldByPosition(
@@ -474,7 +482,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completer.complete()
 
     def _findCompletionMatches(self) -> typing.Collection[travellermap.HexPosition]:
-        milieu = app.Config.instance().milieu()
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
         searchString = self.currentText().strip()
         matches: typing.List[travellermap.HexPosition] = []
 

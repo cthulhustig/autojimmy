@@ -448,7 +448,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         try:
             cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().rules(),
+                rules=app.ConfigEx.instance().asObject(
+                    option=app.ConfigOption.Rules,
+                    objectType=traveller.Rules),
                 filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
@@ -491,7 +493,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         exoticsTradeGood = traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            rules=app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             tradeGoodId=traveller.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
@@ -531,10 +535,14 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text='Ignored exotic cargo when importing.\nSale of exotic cargo requires role playing so can\'t be automated')
 
     def _addCargo(self) -> None:
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
         ignoreTradeGoods = [traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             tradeGoodId=traveller.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
@@ -543,7 +551,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -663,7 +671,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            rules=app.Config.instance().rules(),
+            rules=app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

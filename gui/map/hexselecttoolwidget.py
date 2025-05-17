@@ -34,11 +34,12 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
         self._hexSelectDialog = None
 
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         self._searchComboBox = gui.HexSelectComboBox()
         self._searchComboBox.enableAutoComplete(True)
-        self._searchComboBox.setMinimumWidth(int(
-            HexSelectToolWidget._MinWoldSelectWidth *
-            app.Config.instance().interfaceScale()))
+        self._searchComboBox.setMinimumWidth(
+            int(HexSelectToolWidget._MinWoldSelectWidth * interfaceScale))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
         self._mapSelectButton = gui.IconButton(
@@ -102,7 +103,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         if not hex:
             return None
         return traveller.WorldManager.instance().worldByPosition(
-            milieu=app.Config.instance().milieu(),
+            milieu=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
             hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:

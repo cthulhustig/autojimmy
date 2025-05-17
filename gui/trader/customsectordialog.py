@@ -612,8 +612,12 @@ class _NewSectorDialog(gui.DialogEx):
     # fall into this category). Other options are client side so don't need to be included (i.e.
     # mains)
     def _setupRenderOptionControls(self) -> None:
-        style = app.Config.instance().mapStyle()
-        options = app.Config.instance().mapOptions()
+        style = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        options: typing.Set[travellermap.Option] = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=set)
 
         supportedStyles = [s for s in travellermap.Style if s is not travellermap.Style.Candy]
         self._renderStyleComboBox = gui.EnumComboBox(
@@ -688,9 +692,11 @@ class _NewSectorDialog(gui.DialogEx):
             QtWidgets.QSizePolicy.Policy.Preferred,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addLayout(optionsLayout)
-        groupLayout.addSpacing(int(10 * app.Config.instance().interfaceScale()))
+        groupLayout.addSpacing(int(10 * interfaceScale))
         groupLayout.addWidget(infoLabel)
 
         self._renderOptionsGroupBox = QtWidgets.QGroupBox('Web Rendering Options*')
@@ -784,7 +790,7 @@ class _NewSectorDialog(gui.DialogEx):
         # Always send poster requests directly to the configured traveller map instance.
         # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
         # to add support for proxying multipart/form-data
-        mapUrl = app.Config.instance().proxyMapUrl()
+        mapUrl = app.ConfigEx.instance().asStr(option=app.ConfigOption.ProxyMapUrl)
 
         xmlMetadata = None
         try:
@@ -819,7 +825,9 @@ class _NewSectorDialog(gui.DialogEx):
                 sectorName=rawMetadata.canonicalName(),
                 sectorX=rawMetadata.x(),
                 sectorY=rawMetadata.y(),
-                milieu=app.Config.instance().milieu())
+                milieu=app.ConfigEx.instance().asEnum(
+                    option=app.ConfigOption.Milieu,
+                    enumType=travellermap.Milieu))
         except Exception as ex:
             message = 'Metadata validation failed.'
             logging.critical(message, exc_info=ex)
@@ -882,7 +890,9 @@ class _NewSectorDialog(gui.DialogEx):
 
         try:
             self._sector = travellermap.DataStore.instance().createCustomSector(
-                milieu=app.Config.instance().milieu(),
+                milieu=app.ConfigEx.instance().asEnum(
+                    option=app.ConfigOption.Milieu,
+                    enumType=travellermap.Milieu),
                 sectorContent=sectorData,
                 metadataContent=sectorMetadata, # Write the users metadata, not the xml metadata if it was converted
                 customMapStyle=renderStyle,
@@ -904,7 +914,7 @@ class _NewSectorDialog(gui.DialogEx):
             # Always send linter requests directly to the configured traveller map instance.
             # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
             # to add support for proxying multipart/form-data
-            mapUrl = app.Config.instance().proxyMapUrl()
+            mapUrl = app.ConfigEx.instance().asStr(option=app.ConfigOption.ProxyMapUrl)
 
             try:
                 sectorFilePath = self._sectorFileLineEdit.text()
@@ -1073,7 +1083,9 @@ class _CustomSectorTable(gui.ListTable):
 
     def synchronise(self) -> None:
         sectors = travellermap.DataStore.instance().sectors(
-            milieu=app.Config.instance().milieu())
+            milieu=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu))
 
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
@@ -1297,7 +1309,9 @@ class _MapImageView(gui.ImageView):
 
         mapImage = travellermap.DataStore.instance().sectorMapImage(
             sectorName=self._sectorInfo.canonicalName(),
-            milieu=app.Config.instance().milieu(),
+            milieu=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
             scale=scale)
         if not mapImage:
             return False
@@ -1476,7 +1490,9 @@ class CustomSectorDialog(gui.DialogEx):
             self._mapSelectComboBox.setSectorInfo(None)
             return
 
-        milieu = app.Config.instance().milieu()
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
 
         try:
             fileData = travellermap.DataStore.instance().sectorFileData(
@@ -1545,7 +1561,9 @@ class CustomSectorDialog(gui.DialogEx):
         try:
             travellermap.DataStore.instance().deleteCustomSector(
                 sectorName=sector.canonicalName(),
-                milieu=app.Config.instance().milieu())
+                milieu=app.ConfigEx.instance().asEnum(
+                    option=app.ConfigOption.Milieu,
+                    enumType=travellermap.Milieu))
         except Exception as ex:
             message = f'Failed to delete {sector.canonicalName()}'
             logging.critical(message, exc_info=ex)

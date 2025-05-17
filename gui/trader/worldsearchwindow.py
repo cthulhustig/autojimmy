@@ -31,10 +31,13 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
         # Don't include exotics in the table as they're not like other trade goods and don't
         # affect the trade score
+        rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             excludeTradeGoods=[traveller.tradeGoodFromId(
-                rules=app.Config.instance().rules(),
+                rules=rules,
                 tradeGoodId=traveller.TradeGoodIds.Exotics)])
         for tradeGood in tradeGoods:
             self.addTradeGood(tradeGood=tradeGood)
@@ -76,7 +79,9 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        milieu = app.Config.instance().milieu()
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
         sectorNames = sorted(
             traveller.WorldManager.instance().sectorNames(milieu=milieu),
             key=str.casefold)
@@ -134,7 +139,9 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
         sector = traveller.WorldManager.instance().sectorByName(
-            milieu=app.Config.instance().milieu(),
+            milieu=app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
             name=self._sectorComboBox.currentText())
         if not sector:
             return
@@ -155,6 +162,8 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        interfaceScale = app.ConfigEx.instance().asFloat(
+            option=app.ConfigOption.InterfaceScale)
         self._hexWidget = gui.HexSelectToolWidget(
             labelText='Center Hex:')
         self._hexWidget.enableMapSelectButton(True)
@@ -170,8 +179,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         # jump route planner window where the start/finish world combo boxes do
         # expand to fil available space.
         self._hexWidget.setMinimumWidth(
-            int(_HexSearchRadiusWidget._MinWorldWidgetWidth *
-                app.Config.instance().interfaceScale()))
+            int(_HexSearchRadiusWidget._MinWorldWidgetWidth * interfaceScale))
         # Enable dead space selection so the user can find things centred around
         # a dead space hex
         self._hexWidget.enableDeadSpaceSelection(enable=True)
@@ -641,13 +649,17 @@ class WorldSearchWindow(gui.WindowWidget):
             worldFilter.setLogic(filterLogic=self._filterWidget.filterLogic())
             worldFilter.setFilters(filters=self._filterWidget.filters())
 
+            milieu = app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu)
+
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
-                    milieu=app.Config.instance().milieu(),
+                    milieu=milieu,
                     maxResults=self._MaxSearchResults)
             elif self._regionSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.searchRegion(
-                    milieu=app.Config.instance().milieu(),
+                    milieu=milieu,
                     sectorName=self._regionSearchSelectWidget.sectorName(),
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
@@ -659,7 +671,7 @@ class WorldSearchWindow(gui.WindowWidget):
                         text='Select a hex to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchArea(
-                    milieu=app.Config.instance().milieu(),
+                    milieu=milieu,
                     centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
                 if len(foundWorlds) > self._MaxSearchResults:

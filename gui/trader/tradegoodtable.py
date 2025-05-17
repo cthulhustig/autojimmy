@@ -293,12 +293,15 @@ class TradeGoodTable(gui.ListTable):
         if not super().restoreState(baseState):
             return False
 
+        rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         checkedTradeGoods = set()
         count = stream.readUInt32()
         for _ in range(count):
             id = stream.readUInt32()
             tradeGood = traveller.tradeGoodFromId(
-                rules=app.Config.instance().rules(),
+                rules=rules,
                 tradeGoodId=id)
             if not tradeGood:
                 logging.warning(f'Failed to restore NearbyWorldWindow TradeGoodTable state (Unknown ID "{id}")')

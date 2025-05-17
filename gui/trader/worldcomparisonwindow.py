@@ -32,10 +32,13 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
         # Don't include exotics in the table as they're not like other trade goods and don't
         # affect the trade score
+        rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             excludeTradeGoods=[traveller.tradeGoodFromId(
-                rules=app.Config.instance().rules(),
+                rules=rules,
                 tradeGoodId=traveller.TradeGoodIds.Exotics)])
         for tradeGood in tradeGoods:
             self.addTradeGood(tradeGood=tradeGood)

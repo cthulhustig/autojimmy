@@ -16,7 +16,9 @@ def createHexToolTip(
         ) -> str:
     global _DisableWorldToolTipImages
 
-    milieu = app.Config.instance().milieu()
+    milieu = app.ConfigEx.instance().asEnum(
+        option=app.ConfigOption.Milieu,
+        enumType=travellermap.Milieu)
     if isinstance(hex, traveller.World):
         world = hex
         hex = world.hex()
@@ -26,9 +28,7 @@ def createHexToolTip(
             hex=hex)
     uwp = world.uwp() if world else None
 
-    formatStyle = lambda tagColour: \
-        '' if not tagColour \
-        else f'background-color:{tagColour}'
+    formatStyle = lambda tagColour: '' if not tagColour else f'background-color:{tagColour}'
 
     toolTip = '<html>'
 
@@ -38,9 +38,9 @@ def createHexToolTip(
     #
     # Image
     #
-    if not noThumbnail and \
-            app.Config.instance().showToolTipImages() and \
-            not _DisableWorldToolTipImages:
+    thumbnailsEnabled = app.ConfigEx.instance().asBool(
+        option=app.ConfigOption.ShowToolTipImages)
+    if not noThumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:
         try:
             tileBytes, tileFormat = gui.generateThumbnail(hex=hex, width=256, height=256)
             if tileBytes:
@@ -102,7 +102,10 @@ def createHexToolTip(
 
     refuellingTypes = []
     if world:
-        if world.hasStarPortRefuelling(rules=app.Config.instance().rules()):
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+        if world.hasStarPortRefuelling(rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
                 code=uwp.code(traveller.UWP.Element.StarPort)))
         if world.hasGasGiantRefuelling():

@@ -1216,10 +1216,13 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._removeAllSpeculativeCargo()
             return
 
+        rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         replacements = {}
         for currentCargoRecord in self._speculativeCargoTable.cargoRecords():
             cargoRecords = logic.generateSpeculativePurchaseCargo(
-                rules=app.Config.instance().rules(),
+                rules=rules,
                 world=world,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1265,7 +1268,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         try:
             cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().rules(),
+                rules=app.ConfigEx.instance().asObject(
+                    option=app.ConfigOption.Rules,
+                    objectType=traveller.Rules),
                 filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
@@ -1342,7 +1347,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             text='Include illegal trade goods?') == QtWidgets.QMessageBox.StandardButton.Yes
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            rules=app.Config.instance().rules(),
+            rules=app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1357,10 +1364,14 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._addSpeculativeCargo(cargoRecord)
 
     def _promptAddSpeculativeCargo(self) -> None:
+        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+
         # Don't list exotics. We can't generate speculate trade options for them so there's no
         # reason to add them here
         ignoreTradeGoods = [traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             tradeGoodId=traveller.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
@@ -1369,7 +1380,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -1385,7 +1396,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1476,7 +1487,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -1859,6 +1872,12 @@ class WorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
+        rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
         if routingType is not logic.RoutingType.Basic:
@@ -1868,7 +1887,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
                 anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-                rules=app.Config.instance().rules())
+                rules=rules)
 
             # Flag cases where the purchase world doesn't match the refuelling
             # strategy. No options will be generated unless the ship has enough
@@ -1917,8 +1936,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         try:
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
-                rules=app.Config.instance().rules(),
-                milieu=app.Config.instance().milieu(),
+                rules=rules,
+                milieu=milieu,
                 purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 currentCargo=self._currentCargoTable.cargoRecords(),
@@ -2506,6 +2525,12 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
+        rules = app.ConfigEx.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
         if routingType is not logic.RoutingType.Basic:
@@ -2515,7 +2540,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
                 anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-                rules=app.Config.instance().rules())
+                rules=rules)
 
             # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
             # generated for those worlds unless the ship has enough current fuel
@@ -2568,8 +2593,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         try:
             self._traderJob = jobs.MultiWorldTraderJob(
                 parent=self,
-                rules=app.Config.instance().rules(),
-                milieu=app.Config.instance().milieu(),
+                rules=rules,
+                milieu=milieu,
                 purchaseWorlds=self._purchaseWorldsWidget.worlds(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),

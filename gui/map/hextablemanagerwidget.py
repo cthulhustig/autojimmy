@@ -358,7 +358,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
-            milieu = app.Config.instance().milieu()
+            milieu = app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu)
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(

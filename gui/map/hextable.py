@@ -474,8 +474,12 @@ class HexTable(gui.FrozenColumnListTable):
         self.setSortingEnabled(False)
 
         try:
-            milieu = app.Config.instance().milieu()
-            rules = app.Config.instance().rules()
+            milieu = app.ConfigEx.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu)
+            rules = app.ConfigEx.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules)
             uwp = economics = culture = pbg = worldTagColour = None
 
             if isinstance(hex, traveller.World):
@@ -828,7 +832,9 @@ class HexTable(gui.FrozenColumnListTable):
         return sortItem.row() if sortItem else row
 
     def _createToolTip(self, item: QtWidgets.QTableWidgetItem) -> typing.Optional[str]:
-        milieu = app.Config.instance().milieu()
+        milieu = app.ConfigEx.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
 
         hex = self.hex(item.row())
         if not hex:

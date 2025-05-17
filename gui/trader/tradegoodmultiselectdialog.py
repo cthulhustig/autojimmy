@@ -18,7 +18,10 @@ class TradeGoodMultiSelectDialog(gui.DialogEx):
         self._table = gui.TradeGoodTable()
         self._table.setCheckable(enable=True)
         if not selectableTradeGoods:
-            selectableTradeGoods = traveller.tradeGoodList(rules=app.Config.instance().rules())
+            selectableTradeGoods = traveller.tradeGoodList(
+                rules=app.ConfigEx.instance().asObject(
+                    option=app.ConfigOption.Rules,
+                    objectType=traveller.Rules))
         for tradeGood in selectableTradeGoods:
             self._table.addTradeGood(tradeGood)
 
