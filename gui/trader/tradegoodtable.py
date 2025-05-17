@@ -293,7 +293,7 @@ class TradeGoodTable(gui.ListTable):
         if not super().restoreState(baseState):
             return False
 
-        rules = app.ConfigEx.instance().asObject(
+        rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
         checkedTradeGoods = set()

@@ -95,7 +95,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._exampleSection = self._sectionList.addSection(f'Example {self._constructableStore.typeString()}s')
         self._sectionList.currentChanged.connect(self._handleCurrentChanged)
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         iconSize = int(ConstructableManagerWidget._IconSize * interfaceScale)
         self._toolbar = QtWidgets.QToolBar('Toolbar')

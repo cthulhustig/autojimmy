@@ -194,11 +194,11 @@ class WebMapWidget(QtWidgets.QWidget):
             WebMapWidget._sharedProfile.setHttpCacheType(
                 QtWebEngineWidgets.QWebEngineProfile.HttpCacheType.DiskHttpCache)
             WebMapWidget._sharedProfile.setCachePath(
-                os.path.join(app.ConfigEx.instance().appDir(), 'webwidget', 'cache'))
+                os.path.join(app.Config.instance().appDir(), 'webwidget', 'cache'))
             WebMapWidget._sharedProfile.setPersistentCookiesPolicy(
                 QtWebEngineWidgets.QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
             WebMapWidget._sharedProfile.setPersistentStoragePath(
-                os.path.join(app.ConfigEx.instance().appDir(), 'webwidget', 'persist'))
+                os.path.join(app.Config.instance().appDir(), 'webwidget', 'persist'))
 
         page = _CustomWebEnginePage(WebMapWidget._sharedProfile, self)
         self._mapWidget = QtWebEngineWidgets.QWebEngineView()
@@ -592,7 +592,7 @@ class WebMapWidget(QtWidgets.QWidget):
         currentPos = travellermap.parsePosFromMapUrl(url=currentUrl) if currentUrl else None
         currentScale = travellermap.parseScaleFromMapUrl(url=currentUrl) if currentUrl else None
 
-        installDir = app.ConfigEx.instance().installDir()
+        installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
         if proxy.MapProxy.instance().isRunning():
@@ -600,13 +600,13 @@ class WebMapWidget(QtWidgets.QWidget):
         else:
             indexUrl = f'file:///{rootPath}/data/web/'
 
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
-        style = app.ConfigEx.instance().asEnum(
+        style = app.Config.instance().asEnum(
             option=app.ConfigOption.MapStyle,
             enumType=travellermap.Style)
-        options: typing.Set[travellermap.Option] = app.ConfigEx.instance().asObject(
+        options: typing.Set[travellermap.Option] = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=set)
         options.add(travellermap.Option.HideUI) # Always hide the UI

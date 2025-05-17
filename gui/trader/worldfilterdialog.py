@@ -286,7 +286,7 @@ class WorldFilterDialog(gui.DialogEx):
             return logic.RefuellingFilter(
                 operation=self._refuellingFilterOperationComboBox.currentEnum(),
                 value=self._refuellingFilterValuesList.checkedEnums(),
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules))
         elif filterType == _FilterType.AllegianceFilter:

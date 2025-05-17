@@ -218,7 +218,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         try:
             data = json.loads(stream.readQString())
             cargoRecords = logic.deserialiseCargoRecordList(
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules),
                 data=data)
@@ -246,13 +246,13 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             quantity = cargoRecord.quantity()
             totalPrice = cargoRecord.totalPrice()
 
-            averageCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+            averageCaseColour: QtGui.QColor = app.Config.instance().asObject(
                 option=app.ConfigOption.AverageCaseColour,
                 objectType=QtGui.QColor)
-            worstCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+            worstCaseColour: QtGui.QColor = app.Config.instance().asObject(
                 option=app.ConfigOption.WorstCaseColour,
                 objectType=QtGui.QColor)
-            bestCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+            bestCaseColour: QtGui.QColor = app.Config.instance().asObject(
                 option=app.ConfigOption.BestCaseColour,
                 objectType=QtGui.QColor)
 

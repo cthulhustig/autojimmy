@@ -26,7 +26,7 @@ class TradeGoodQuantityDialog(gui.DialogEx):
         if not editTradeGood:
             if not selectableTradeGoods:
                 selectableTradeGoods = traveller.tradeGoodList(
-                    rules=app.ConfigEx.instance().asObject(
+                    rules=app.Config.instance().asObject(
                         option=app.ConfigOption.Rules,
                         objectType=traveller.Rules))
             for tradeGood in selectableTradeGoods:

@@ -315,7 +315,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             world=purchaseWorld,
@@ -391,7 +391,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             excludeTradeGoods=ignoreTradeGoods)

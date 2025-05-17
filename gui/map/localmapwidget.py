@@ -453,13 +453,13 @@ class _EmpressWaveOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        mapOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+        mapOptions: typing.List[travellermap.Option] = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=list)
         if travellermap.Option.EmpressWaveOverlay not in mapOptions:
             return False
 
-        year = travellermap.milieuToYear(milieu=app.ConfigEx.instance().asEnum(
+        year = travellermap.milieuToYear(milieu=app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu))
 
@@ -505,7 +505,7 @@ class _QrekrshaZoneOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        mapOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+        mapOptions: typing.List[travellermap.Option] = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=list)
         if travellermap.Option.QrekrshaZoneOverlay not in mapOptions:
@@ -545,13 +545,13 @@ class _AntaresSupernovaOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        mapOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+        mapOptions: typing.List[travellermap.Option] = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=list)
         if travellermap.Option.AntaresSupernovaOverlay not in mapOptions:
             return False
 
-        year = travellermap.milieuToYear(milieu=app.ConfigEx.instance().asEnum(
+        year = travellermap.milieuToYear(milieu=app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu))
         yearRadius = (year - 1270) * _AntaresSupernovaOverlay._SupernovaVelocity
@@ -623,7 +623,7 @@ class _MainsOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        mapOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+        mapOptions: typing.List[travellermap.Option] = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=list)
         if not self._points or not self._pen or travellermap.Option.MainsOverlay not in mapOptions:
@@ -1174,7 +1174,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def createSnapshot(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
 
-        renderType = app.ConfigEx.instance().asEnum(
+        renderType = app.Config.instance().asEnum(
             option=app.ConfigOption.MapRenderingType,
             enumType=app.MapRenderingType)
         if renderType is app.MapRenderingType.Tiled:
@@ -1337,7 +1337,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
 
-        renderType = app.ConfigEx.instance().asEnum(
+        renderType = app.Config.instance().asEnum(
             option=app.ConfigOption.MapRenderingType,
             enumType=app.MapRenderingType)
         if renderType is app.MapRenderingType.Tiled and self._forceAtomicRedraw:
@@ -1536,7 +1536,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             painter: QtGui.QPainter
             ) -> None:
-        mapOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+        mapOptions: typing.List[travellermap.Option] = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=list)
         if not self._directionTextFont or travellermap.Option.GalacticDirections not in mapOptions:
@@ -1586,12 +1586,12 @@ class LocalMapWidget(QtWidgets.QWidget):
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
-            mapOptions: typing.List[travellermap.Option] = app.ConfigEx.instance().asObject(
+            mapOptions: typing.List[travellermap.Option] = app.Config.instance().asObject(
                 option=app.ConfigOption.MapOptions,
                 objectType=list)
             if travellermap.Option.MainsOverlay in mapOptions:
                 main = traveller.WorldManager.instance().mainByPosition(
-                    milieu=app.ConfigEx.instance().asEnum(
+                    milieu=app.Config.instance().asEnum(
                         option=app.ConfigOption.Milieu,
                         enumType=travellermap.Milieu),
                     hex=hex)
@@ -1659,13 +1659,13 @@ class LocalMapWidget(QtWidgets.QWidget):
             absoluteY=absoluteY)
 
     def _createRenderer(self) -> cartographer.RenderContext:
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
-        style = app.ConfigEx.instance().asEnum(
+        style = app.Config.instance().asEnum(
             option=app.ConfigOption.MapStyle,
             enumType=travellermap.Style)
-        options = app.ConfigEx.instance().asObject(
+        options = app.Config.instance().asObject(
             option=app.ConfigOption.MapOptions,
             objectType=list)
 
@@ -2158,7 +2158,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             newViewCenter: QtCore.QPointF,
             newViewLogScale: float
             ) -> bool:
-        isEnabled = app.ConfigEx.instance().asBool(
+        isEnabled = app.Config.instance().asBool(
             option=app.ConfigOption.MapAnimations)
         if self.isHidden() or not isEnabled:
             return False

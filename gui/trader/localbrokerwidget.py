@@ -12,7 +12,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             ) -> None:
         super().__init__(parent=parent)
 
-        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+        rules: traveller.Rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
         minLocalBrokerDm = traveller.minLocalBrokerDm(rules=rules)
@@ -32,7 +32,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             self.hideSpinBox()
 
     def value(self, rawValue: bool = False) -> typing.Optional[int]:
-        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+        rules: traveller.Rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
         if rules.system() == traveller.RuleSystem.MGT2022:

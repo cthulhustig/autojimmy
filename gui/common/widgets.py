@@ -1121,7 +1121,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             if styleSheet:
                 styleSheet += ' '
 
-            interfaceScale = app.ConfigEx.instance().asFloat(
+            interfaceScale = app.Config.instance().asFloat(
                 option=app.ConfigOption.InterfaceScale)
             styleSheet += TableWidgetEx._FocusRectStyle.format(
                 width=int(TableWidgetEx._FocusRectWidth * interfaceScale),

@@ -16,7 +16,7 @@ def createHexToolTip(
         ) -> str:
     global _DisableWorldToolTipImages
 
-    milieu = app.ConfigEx.instance().asEnum(
+    milieu = app.Config.instance().asEnum(
         option=app.ConfigOption.Milieu,
         enumType=travellermap.Milieu)
     if isinstance(hex, traveller.World):
@@ -38,7 +38,7 @@ def createHexToolTip(
     #
     # Image
     #
-    thumbnailsEnabled = app.ConfigEx.instance().asBool(
+    thumbnailsEnabled = app.Config.instance().asBool(
         option=app.ConfigOption.ShowToolTipImages)
     if not noThumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:
         try:
@@ -102,7 +102,7 @@ def createHexToolTip(
 
     refuellingTypes = []
     if world:
-        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+        rules: traveller.Rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
         if world.hasStarPortRefuelling(rules=rules):

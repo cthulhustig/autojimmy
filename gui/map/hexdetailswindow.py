@@ -85,7 +85,7 @@ class HexDetailsWindow(gui.WindowWidget):
         # TODO: Ideally this window would update if the system wide milieu changes.
         # It could update the tab name and the details being displayed for the world
         tabName = traveller.WorldManager.instance().canonicalHexName(
-            milieu=app.ConfigEx.instance().asEnum(
+            milieu=app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu),
             hex=hex)

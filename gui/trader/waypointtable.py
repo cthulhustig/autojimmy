@@ -198,7 +198,7 @@ class WaypointTable(gui.HexTable):
             hex = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.ConfigEx.instance().asEnum(
+                milieu=app.Config.instance().asEnum(
                     option=app.ConfigOption.Milieu,
                     enumType=travellermap.Milieu),
                 hex=hex)

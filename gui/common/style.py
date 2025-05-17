@@ -25,7 +25,7 @@ def _defaultWidgetSize(type: typing.Type[QtWidgets.QWidget]) -> QtCore.QSize:
 
 _CachedDarkDetectResult = None
 def isDarkModeEnabled() -> bool:
-    theme = app.ConfigEx.instance().asEnum(
+    theme = app.Config.instance().asEnum(
         option=app.ConfigOption.ColourTheme,
         enumType=app.ColourTheme)
     if theme == app.ColourTheme.DarkMode:
@@ -120,7 +120,7 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     style = ''
 
-    interfaceScale = app.ConfigEx.instance().asFloat(
+    interfaceScale = app.Config.instance().asFloat(
         option=app.ConfigOption.InterfaceScale)
     if interfaceScale != 1.0:
         # Scale radio buttons and check boxes as they don't auto scale with the font

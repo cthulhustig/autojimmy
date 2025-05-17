@@ -57,7 +57,7 @@ def _cairoSvgInstallCheck(
         return True # CairoSVG is working so app should continue
 
     svgCustomSectors = []
-    sectors = travellermap.DataStore.instance().sectors(app.ConfigEx.instance().asEnum(
+    sectors = travellermap.DataStore.instance().sectors(app.Config.instance().asEnum(
         option=app.ConfigOption.Milieu,
         enumType=travellermap.Milieu))
     for sector in sectors:
@@ -215,7 +215,7 @@ def _snapshotUpdateCheck(
 def _hostPoolSizeCheck(
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> int:
-    requestedHostCount = app.ConfigEx.instance().asInt(
+    requestedHostCount = app.Config.instance().asInt(
         option=app.ConfigOption.ProxyHostPoolSize)
     availableHostCount = 0
     for index in range(1, requestedHostCount + 1):
@@ -435,7 +435,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         result = configDialog.exec()
 
-        if result == QtWidgets.QDialog.DialogCode.Accepted and app.ConfigEx.instance().isRestartRequired():
+        if result == QtWidgets.QDialog.DialogCode.Accepted and app.Config.instance().isRestartRequired():
             self._showRestartRequiredStatus()
             gui.MessageBoxEx.information(
                 parent=self,
@@ -508,12 +508,12 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to set default locale', exc_info=ex)
 
-        app.ConfigEx.setDirs(
+        app.Config.setDirs(
             installDir=installDir,
             appDir=appDir)
 
         # Set configured log level immediately after configuration has been setup
-        logLevel = app.ConfigEx.instance().asInt(option=app.ConfigOption.LogLevel)
+        logLevel = app.Config.instance().asInt(option=app.ConfigOption.LogLevel)
         try:
             app.setLogLevel(logLevel)
         except Exception as ex:
@@ -540,7 +540,7 @@ def main() -> None:
 
         gui.configureAppStyle(application)
 
-        mapEngine = app.ConfigEx.instance().asEnum(
+        mapEngine = app.Config.instance().asEnum(
             option=app.ConfigOption.MapEngine,
             enumType=app.MapEngine)
         if mapEngine is app.MapEngine.WebProxy:
@@ -573,18 +573,18 @@ def main() -> None:
             hostPoolSize = _hostPoolSizeCheck()
             if hostPoolSize > 0:
                 proxy.MapProxy.configure(
-                    listenPort=app.ConfigEx.instance().asInt(
+                    listenPort=app.Config.instance().asInt(
                         option=app.ConfigOption.ProxyPort),
                     hostPoolSize=hostPoolSize,
-                    travellerMapUrl=app.ConfigEx.instance().asStr(
+                    travellerMapUrl=app.Config.instance().asStr(
                         option=app.ConfigOption.ProxyMapUrl),
-                    tileCacheSize=app.ConfigEx.instance().asInt(
+                    tileCacheSize=app.Config.instance().asInt(
                         option=app.ConfigOption.ProxyTileCacheSize),
-                    tileCacheLifetime=app.ConfigEx.instance().asInt(
+                    tileCacheLifetime=app.Config.instance().asInt(
                         option=app.ConfigOption.ProxyTileCacheLifetime),
-                    svgComposition=app.ConfigEx.instance().asInt(
+                    svgComposition=app.Config.instance().asInt(
                         option=app.ConfigOption.ProxySvgComposition),
-                    mainsMilieu=app.ConfigEx.instance().asEnum(
+                    mainsMilieu=app.Config.instance().asEnum(
                         option=app.ConfigOption.Milieu,
                         enumType=travellermap.Milieu),
                     installDir=installDir,

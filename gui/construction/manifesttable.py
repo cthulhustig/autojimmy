@@ -221,7 +221,7 @@ class ManifestTable(gui.ListTable):
         self.resizeRowToContents(row)
 
     def _fillSpacerRow(self, row: int) -> None:
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         height = int(10 * interfaceScale)
         for column in range(self.columnCount()):

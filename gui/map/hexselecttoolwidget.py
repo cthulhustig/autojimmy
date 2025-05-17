@@ -34,7 +34,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
         self._hexSelectDialog = None
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self._searchComboBox = gui.HexSelectComboBox()
         self._searchComboBox.enableAutoComplete(True)
@@ -103,7 +103,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         if not hex:
             return None
         return traveller.WorldManager.instance().worldByPosition(
-            milieu=app.ConfigEx.instance().asEnum(
+            milieu=app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu),
             hex=hex)

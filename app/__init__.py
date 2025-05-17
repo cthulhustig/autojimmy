@@ -3,7 +3,6 @@ from .appdetails import *
 from .logger import *
 from .taglevels import *
 from .config import *
-from .configex import *
 from .hexhistory import *
 from .tagging import *
 from .serialization import *

@@ -99,7 +99,7 @@ class WorldTradeScoreTable(gui.HexTable):
             hex = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.ConfigEx.instance().asEnum(
+                milieu=app.Config.instance().asEnum(
                     option=app.ConfigOption.Milieu,
                     enumType=travellermap.Milieu),
                 hex=hex)
@@ -108,7 +108,7 @@ class WorldTradeScoreTable(gui.HexTable):
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
             self._tradeScoreMap[hex] = logic.TradeScore(
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules),
                 world=world,
@@ -138,7 +138,7 @@ class WorldTradeScoreTable(gui.HexTable):
                             alwaysIncludeSign=True)
                         scoreValue = tradeScore.value()
                         if scoreValue > 0:
-                            tableItem.setBackground(app.ConfigEx.instance().asObject(
+                            tableItem.setBackground(app.Config.instance().asObject(
                                 option=app.ConfigOption.DesirableTagColour,
                                 objectType=QtGui.QColor))
 

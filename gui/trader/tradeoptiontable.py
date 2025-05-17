@@ -265,13 +265,13 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
             saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
 
-            averageCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+            averageCaseColour: QtGui.QColor = app.Config.instance().asObject(
                 option=app.ConfigOption.AverageCaseColour,
                 objectType=QtGui.QColor)
-            worstCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+            worstCaseColour: QtGui.QColor = app.Config.instance().asObject(
                 option=app.ConfigOption.WorstCaseColour,
                 objectType=QtGui.QColor)
-            bestCaseColour: QtGui.QColor = app.ConfigEx.instance().asObject(
+            bestCaseColour: QtGui.QColor = app.Config.instance().asObject(
                 option=app.ConfigOption.BestCaseColour,
                 objectType=QtGui.QColor)
 

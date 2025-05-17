@@ -71,7 +71,7 @@ class HexHistory(object):
 
     def load(self):
         if not self._settings:
-            filePath = os.path.join(app.ConfigEx.instance().appDir(), self._SearchFileName)
+            filePath = os.path.join(app.Config.instance().appDir(), self._SearchFileName)
             self._settings = QtCore.QSettings(filePath, QtCore.QSettings.Format.IniFormat)
 
         HexHistory._history.clear()

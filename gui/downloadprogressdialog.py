@@ -27,7 +27,7 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._progressBar)
         windowLayout.addWidget(self._cancelButton)
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self.setWindowTitle('Update Universe Data')
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)

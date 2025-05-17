@@ -358,7 +358,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
-            milieu = app.ConfigEx.instance().asEnum(
+            milieu = app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu)
             contentChanged = False

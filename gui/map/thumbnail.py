@@ -37,16 +37,16 @@ def generateThumbnail(
         ) -> typing.Tuple[
             typing.Optional[bytes],
             typing.Optional[travellermap.MapFormat]]:
-    milieu = app.ConfigEx.instance().asEnum(
+    milieu = app.Config.instance().asEnum(
         option=app.ConfigOption.Milieu,
         enumType=travellermap.Milieu)
-    mapEngine = app.ConfigEx.instance().asEnum(
+    mapEngine = app.Config.instance().asEnum(
         option=app.ConfigOption.MapEngine,
         enumType=app.MapEngine)
-    mapStyle = app.ConfigEx.instance().asEnum(
+    mapStyle = app.Config.instance().asEnum(
         option=app.ConfigOption.MapStyle,
         enumType=travellermap.Style)
-    mapOptions = app.ConfigEx.instance().asObject(
+    mapOptions = app.Config.instance().asObject(
         option=app.ConfigOption.MapOptions,
         objectType=list)
 

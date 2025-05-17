@@ -736,7 +736,7 @@ class _StageWidget(QtWidgets.QWidget):
             self._removeAllButton = QtWidgets.QPushButton('Remove All')
             self._removeAllButton.clicked.connect(self._removeAllButtonClicked)
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self._layout = QtWidgets.QVBoxLayout()
         self._layout.setSpacing(

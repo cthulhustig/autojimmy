@@ -33,7 +33,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._textLabel)
         windowLayout.addWidget(self._progressBar)
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self.setWindowTitle('Starting')
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)

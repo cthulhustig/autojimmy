@@ -115,7 +115,7 @@ class WorldFilterTable(gui.ListTable):
             data = json.loads(stream.readQString())
             self.addFilters(logic.deserialiseWorldFiltersList(
                 data=data,
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules)))
         except Exception as ex:

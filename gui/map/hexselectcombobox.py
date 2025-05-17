@@ -12,7 +12,7 @@ def _formatWorldName(world: traveller.World) -> str:
     return world.name(includeSubsector=True)
 
 def _formatHexName(hex: travellermap.HexPosition) -> str:
-    milieu = app.ConfigEx.instance().asEnum(
+    milieu = app.Config.instance().asEnum(
         option=app.ConfigOption.Milieu,
         enumType=travellermap.Milieu)
 
@@ -37,7 +37,7 @@ def _formatWorldHtml(world: traveller.World) -> str:
 
 def _formatHexHtml(hex: travellermap.HexPosition) -> str:
     world = traveller.WorldManager.instance().worldByPosition(
-        milieu=app.ConfigEx.instance().asEnum(
+        milieu=app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu),
         hex=hex)
@@ -194,7 +194,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             hex = self.currentHex()
             if hex:
                 world = traveller.WorldManager.instance().worldByPosition(
-                    milieu=app.ConfigEx.instance().asEnum(
+                    milieu=app.Config.instance().asEnum(
                         option=app.ConfigOption.Milieu,
                         enumType=travellermap.Milieu),
                     hex=hex)
@@ -314,7 +314,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
         with gui.SignalBlocker(widget=self):
             self.clear()
 
-            milieu = app.ConfigEx.instance().asEnum(
+            milieu = app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu)
             for hex in app.HexHistory.instance().hexes():
@@ -482,7 +482,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completer.complete()
 
     def _findCompletionMatches(self) -> typing.Collection[travellermap.HexPosition]:
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
         searchString = self.currentText().strip()

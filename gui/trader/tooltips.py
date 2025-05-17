@@ -228,7 +228,7 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
 def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     # TODO: Would it make sense for the route logistics to know what milieu it was
     # for? The same might be true for jump routes (probably worlds & sectors as well).
-    milieu = app.ConfigEx.instance().asEnum(
+    milieu = app.Config.instance().asEnum(
         option=app.ConfigOption.Milieu,
         enumType=travellermap.Milieu)
     jumpRoute = routeLogistics.jumpRoute()

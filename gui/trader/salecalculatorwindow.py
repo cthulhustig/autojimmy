@@ -448,7 +448,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         try:
             cargoRecords = logic.readCargoRecordList(
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules),
                 filePath=path)
@@ -493,7 +493,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         exoticsTradeGood = traveller.tradeGoodFromId(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             tradeGoodId=traveller.TradeGoodIds.Exotics)
@@ -535,7 +535,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text='Ignored exotic cargo when importing.\nSale of exotic cargo requires role playing so can\'t be automated')
 
     def _addCargo(self) -> None:
-        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+        rules: traveller.Rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
 
@@ -671,7 +671,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             world=saleWorld,

@@ -31,7 +31,7 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
         # Don't include exotics in the table as they're not like other trade goods and don't
         # affect the trade score
-        rules = app.ConfigEx.instance().asObject(
+        rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
         tradeGoods = traveller.tradeGoodList(
@@ -79,7 +79,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
         sectorNames = sorted(
@@ -139,7 +139,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
         sector = traveller.WorldManager.instance().sectorByName(
-            milieu=app.ConfigEx.instance().asEnum(
+            milieu=app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu),
             name=self._sectorComboBox.currentText())
@@ -162,7 +162,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self._hexWidget = gui.HexSelectToolWidget(
             labelText='Center Hex:')
@@ -649,7 +649,7 @@ class WorldSearchWindow(gui.WindowWidget):
             worldFilter.setLogic(filterLogic=self._filterWidget.filterLogic())
             worldFilter.setFilters(filters=self._filterWidget.filters())
 
-            milieu = app.ConfigEx.instance().asEnum(
+            milieu = app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu)
 

@@ -45,15 +45,15 @@ class TagLevelComboBox(QtWidgets.QComboBox):
             self.setItemData(itemIndex, tagLevel, QtCore.Qt.ItemDataRole.UserRole)
 
             if tagLevel is app.TagLevel.Desirable:
-                colour = app.ConfigEx.instance().asObject(
+                colour = app.Config.instance().asObject(
                     option=app.ConfigOption.DesirableTagColour,
                     objectType=QtGui.QColor)
             elif tagLevel is app.TagLevel.Warning:
-                colour = app.ConfigEx.instance().asObject(
+                colour = app.Config.instance().asObject(
                     option=app.ConfigOption.WarningTagColour,
                     objectType=QtGui.QColor)
             elif tagLevel is app.TagLevel.Danger:
-                colour = app.ConfigEx.instance().asObject(
+                colour = app.Config.instance().asObject(
                     option=app.ConfigOption.DangerTagColour,
                     objectType=QtGui.QColor)
             else:

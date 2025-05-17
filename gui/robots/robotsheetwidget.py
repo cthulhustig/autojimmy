@@ -69,7 +69,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._specialityGroupCountSpinBox.setToolTip(RobotSheetWidget._GroupSkillSpecialitiesToolTip)
         self._specialityGroupCountSpinBox.valueChanged.connect(self._specialityGroupCountChanged)
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         controlsLayout = QtWidgets.QHBoxLayout()
         controlsLayout.addWidget(self._applySkillModifiersCheckBox)

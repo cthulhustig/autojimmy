@@ -171,7 +171,7 @@ class _RefuellingPlanTable(gui.HexTable):
             hex = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.ConfigEx.instance().asEnum(
+                milieu=app.Config.instance().asEnum(
                     option=app.ConfigOption.Milieu,
                     enumType=travellermap.Milieu),
                 hex=hex)
@@ -203,17 +203,17 @@ class _RefuellingPlanTable(gui.HexTable):
                         _formatBerthingTypeString(pitStop) if pitStop and pitStop.hasBerthing() else '')
                 elif columnType == _RefuellingPlanTableColumnType.AverageCaseBerthingCost:
                     tableItem = gui.FormattedNumberTableWidgetItem(pitStop.berthingCost().averageCaseValue() if pitStop and pitStop.berthingCost() else None)
-                    tableItem.setBackground(app.ConfigEx.instance().asObject(
+                    tableItem.setBackground(app.Config.instance().asObject(
                         option=app.ConfigOption.AverageCaseColour,
                         objectType=QtGui.QColor))
                 elif columnType == _RefuellingPlanTableColumnType.WorstCaseBerthingCost:
                     tableItem = gui.FormattedNumberTableWidgetItem(pitStop.berthingCost().worstCaseValue() if pitStop and pitStop.berthingCost() else None)
-                    tableItem.setBackground(app.ConfigEx.instance().asObject(
+                    tableItem.setBackground(app.Config.instance().asObject(
                         option=app.ConfigOption.WorstCaseColour,
                         objectType=QtGui.QColor))
                 elif columnType == _RefuellingPlanTableColumnType.BestCaseBerthingCost:
                     tableItem = gui.FormattedNumberTableWidgetItem(pitStop.berthingCost().bestCaseValue() if pitStop and pitStop.berthingCost() else None)
-                    tableItem.setBackground(app.ConfigEx.instance().asObject(
+                    tableItem.setBackground(app.Config.instance().asObject(
                         option=app.ConfigOption.BestCaseColour,
                         objectType=QtGui.QColor))
 
@@ -630,7 +630,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._mapWidget.show()
 
     def _setupStartFinishControls(self) -> None:
-        routingType = app.ConfigEx.instance().asEnum(
+        routingType = app.Config.instance().asEnum(
             option=app.ConfigOption.RoutingType,
             enumType=logic.RoutingType)
 
@@ -720,7 +720,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupWaypointControls(self) -> None:
-        routingType = app.ConfigEx.instance().asEnum(
+        routingType = app.Config.instance().asEnum(
             option=app.ConfigOption.RoutingType,
             enumType=logic.RoutingType)
 
@@ -788,7 +788,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._minRouteCostLabel = gui.PrefixLabel(prefix='Min Cost: ')
         self._maxRouteCostLabel = gui.PrefixLabel(prefix='Max Cost: ')
 
-        interfaceScale = app.ConfigEx.instance().asFloat(
+        interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         labelLayout = QtWidgets.QHBoxLayout()
         labelLayout.setContentsMargins(0, 0, 0, 0)
@@ -822,7 +822,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
 
-        routingType = app.ConfigEx.instance().asEnum(
+        routingType = app.Config.instance().asEnum(
             option=app.ConfigOption.RoutingType,
             enumType=logic.RoutingType)
         self._mapWidget = gui.MapWidgetEx()
@@ -935,7 +935,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._clearJumpRoute()
 
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
 
@@ -975,7 +975,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
                 anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules))
 
@@ -1120,7 +1120,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _jumpRouteJobFinished(self, result: typing.Union[typing.Optional[logic.JumpRoute], Exception]) -> None:
         if isinstance(result, Exception):
-            milieu = app.ConfigEx.instance().asEnum(
+            milieu = app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu)
             startHex, finishHex = self._selectStartFinishWidget.hexes()
@@ -1292,7 +1292,7 @@ class JumpRouteWindow(gui.WindowWidget):
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
             traveller.WorldManager.instance().worldByPosition(
-                milieu=app.ConfigEx.instance().asEnum(
+                milieu=app.Config.instance().asEnum(
                     option=app.ConfigOption.Milieu,
                     enumType=travellermap.Milieu),
                 hex=hex) != None
@@ -1572,7 +1572,7 @@ class JumpRouteWindow(gui.WindowWidget):
         jumpRating = self._shipJumpRatingSpinBox.value()
 
         if startHex and showJumpRatingOverlay:
-            mapStyle = app.ConfigEx.instance().asEnum(
+            mapStyle = app.Config.instance().asEnum(
                 option=app.ConfigOption.MapStyle,
                 enumType=travellermap.Style)
             isDarkMapStyle = travellermap.isDarkStyle(style=mapStyle)
@@ -1587,7 +1587,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpOverlayHandles.add(handle)
 
         if startHex and showWorldTaggingOverlay:
-            milieu = app.ConfigEx.instance().asEnum(
+            milieu = app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu)
             try:
@@ -1759,7 +1759,7 @@ class JumpRouteWindow(gui.WindowWidget):
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
             anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
             anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules))
 
@@ -1775,7 +1775,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 requiredBerthingIndices=self._generateRequiredBerthingIndices(),
                 includeLogisticsCosts=True) # Always include logistics costs
         except Exception as ex:
-            milieu = app.ConfigEx.instance().asEnum(
+            milieu = app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu)
             startHex, _ = self._jumpRoute.startNode()

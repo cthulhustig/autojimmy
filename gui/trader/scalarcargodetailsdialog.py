@@ -32,7 +32,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
         if not editTradeGood:
             if not selectableTradeGoods:
                 selectableTradeGoods = traveller.tradeGoodList(
-                    rules=app.ConfigEx.instance().asObject(
+                    rules=app.Config.instance().asObject(
                         option=app.ConfigOption.Rules,
                         objectType=traveller.Rules))
             for tradeGood in selectableTradeGoods:
@@ -123,7 +123,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
     def _syncControls(self) -> None:
         tradeGood: traveller.TradeGood = self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         baseAvailability = traveller.calculateWorldTradeGoodQuantity(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             world=self._world,

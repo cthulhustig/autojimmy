@@ -605,10 +605,10 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
-        rules = app.ConfigEx.instance().asObject(
+        rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()

@@ -1216,7 +1216,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._removeAllSpeculativeCargo()
             return
 
-        rules = app.ConfigEx.instance().asObject(
+        rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
         replacements = {}
@@ -1268,7 +1268,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         try:
             cargoRecords = logic.readCargoRecordList(
-                rules=app.ConfigEx.instance().asObject(
+                rules=app.Config.instance().asObject(
                     option=app.ConfigOption.Rules,
                     objectType=traveller.Rules),
                 filePath=path)
@@ -1347,7 +1347,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             text='Include illegal trade goods?') == QtWidgets.QMessageBox.StandardButton.Yes
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             world=self._purchaseWorldWidget.selectedWorld(),
@@ -1364,7 +1364,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._addSpeculativeCargo(cargoRecord)
 
     def _promptAddSpeculativeCargo(self) -> None:
-        rules: traveller.Rules = app.ConfigEx.instance().asObject(
+        rules: traveller.Rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
 
@@ -1487,7 +1487,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.ConfigEx.instance().asObject(
+            rules=app.Config.instance().asObject(
                 option=app.ConfigOption.Rules,
                 objectType=traveller.Rules),
             excludeTradeGoods=ignoreTradeGoods)
@@ -1872,10 +1872,10 @@ class WorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
-        rules = app.ConfigEx.instance().asObject(
+        rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
         routingType = self._routingTypeComboBox.currentEnum()
@@ -2525,10 +2525,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
-        rules = app.ConfigEx.instance().asObject(
+        rules = app.Config.instance().asObject(
             option=app.ConfigOption.Rules,
             objectType=traveller.Rules)
-        milieu = app.ConfigEx.instance().asEnum(
+        milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
         routingType = self._routingTypeComboBox.currentEnum()
