@@ -30,27 +30,19 @@ def _initThumbnailRenderer():
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
+        milieu: travellermap.Milieu,
         hex: travellermap.HexPosition,
-        width: int = 256,
-        height: int = 256,
-        linearScale: float = 64
+        width: int,
+        height: int,
+        linearScale: float,
+        style: travellermap.Style,
+        options: typing.Collection[travellermap.Option],
+        engine: app.MapEngine = app.MapEngine.InApp
         ) -> typing.Tuple[
             typing.Optional[bytes],
             typing.Optional[travellermap.MapFormat]]:
-    milieu = app.Config.instance().asEnum(
-        option=app.ConfigOption.Milieu,
-        enumType=travellermap.Milieu)
-    mapEngine = app.Config.instance().asEnum(
-        option=app.ConfigOption.MapEngine,
-        enumType=app.MapEngine)
-    mapStyle = app.Config.instance().asEnum(
-        option=app.ConfigOption.MapStyle,
-        enumType=travellermap.Style)
-    mapOptions = app.Config.instance().asObject(
-        option=app.ConfigOption.MapOptions,
-        objectType=list)
 
-    if mapEngine is app.MapEngine.InApp:
+    if engine is app.MapEngine.InApp:
         _initThumbnailRenderer()
 
         centerX, centerY = hex.worldCenter()
@@ -62,8 +54,8 @@ def generateThumbnail(
             outputPixelX=width,
             outputPixelY=height,
             milieu=milieu,
-            style=mapStyle,
-            options=cartographer.mapOptionsToRenderOptions(mapOptions),
+            style=style,
+            options=cartographer.mapOptionsToRenderOptions(options),
             imageCache=_thumbnailImageCache,
             vectorCache=_thumbnailVectorCache,
             labelCache=_thumbnailLabelCache,
@@ -91,8 +83,8 @@ def generateThumbnail(
     else:
         return travellermap.TileClient.instance().tile(
             milieu=milieu,
-            style=mapStyle,
-            options=mapOptions,
+            style=style,
+            options=options,
             hex=hex,
             width=width,
             height=height,

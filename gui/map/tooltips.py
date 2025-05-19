@@ -10,22 +10,18 @@ import typing
 
 _DisableWorldToolTipImages = False
 def createHexToolTip(
-        hex: typing.Union[travellermap.HexPosition, traveller.World],
-        noThumbnail: bool = False,
-        width: int = 512 # 0 means no fixed width
+        hex: travellermap.HexPosition,
+        milieu: travellermap.Milieu,
+        thumbnail: bool = True,
+        width: int = 512, # 0 means no fixed width
+        thumbnailStyle: typing.Optional[travellermap.Style] = None,
+        thumbnailOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
         ) -> str:
     global _DisableWorldToolTipImages
 
-    milieu = app.Config.instance().asEnum(
-        option=app.ConfigOption.Milieu,
-        enumType=travellermap.Milieu)
-    if isinstance(hex, traveller.World):
-        world = hex
-        hex = world.hex()
-    else:
-        world = traveller.WorldManager.instance().worldByPosition(
-            milieu=milieu,
-            hex=hex)
+    world = traveller.WorldManager.instance().worldByPosition(
+        milieu=milieu,
+        hex=hex)
     uwp = world.uwp() if world else None
 
     formatStyle = lambda tagColour: '' if not tagColour else f'background-color:{tagColour}'
@@ -40,9 +36,20 @@ def createHexToolTip(
     #
     thumbnailsEnabled = app.Config.instance().asBool(
         option=app.ConfigOption.ShowToolTipImages)
-    if not noThumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:
+    if thumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:
+        mapEngine = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapEngine,
+            enumType=app.MapEngine)
         try:
-            tileBytes, tileFormat = gui.generateThumbnail(hex=hex, width=256, height=256)
+            tileBytes, tileFormat = gui.generateThumbnail(
+                milieu=milieu,
+                hex=hex,
+                width=256,
+                height=256,
+                linearScale=64,
+                style=thumbnailStyle,
+                options=thumbnailOptions,
+                engine=mapEngine)
             if tileBytes:
                 mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()

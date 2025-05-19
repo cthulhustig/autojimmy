@@ -1,8 +1,9 @@
+import app
 import gui
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexSelectDialog(gui.DialogEx):
     def __init__(
@@ -14,9 +15,34 @@ class HexSelectDialog(gui.DialogEx):
             configSection='HexSelectDialog',
             parent=parent)
 
-        self._mapWidget = gui.MapWidgetEx()
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations)
         self._mapWidget.setInfoEnabled(False) # Disable by default
         self._mapWidget.setSelectionMode(gui.MapWidgetEx.SelectionMode.MultiSelect)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         self._label = QtWidgets.QLabel()
 
@@ -102,6 +128,67 @@ class HexSelectDialog(gui.DialogEx):
         self._settings.endGroup()
 
         super().saveSettings()
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        self._mapWidget.mapStyleChanged.disconnect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.disconnect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.disconnect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.disconnect(self._mapAnimationChanged)
+
+        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
+
+        return super().closeEvent(event)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._mapWidget.setMilieu(milieu=newValue)
+            # TODO: If dead space selection is NOT enabled, some of the selection
+            # may now be invalid
+        elif option is app.ConfigOption.MapStyle:
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapWidget.setAnimation(enabled=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
 
     def _updateLabel(self) -> None:
         isWorld = not self._mapWidget.isDeadSpaceSelectionEnabled()

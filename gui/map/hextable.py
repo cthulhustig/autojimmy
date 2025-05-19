@@ -846,7 +846,15 @@ class HexTable(gui.FrozenColumnListTable):
         if columnType == self.ColumnType.Name or \
                 columnType == self.ColumnType.Sector or \
                 columnType == self.ColumnType.Subsector:
-            return gui.createHexToolTip(hex=hex)
+            return gui.createHexToolTip(
+                hex=hex,
+                milieu=milieu,
+                thumbnailStyle=app.Config.instance().asEnum(
+                    option=app.ConfigOption.MapStyle,
+                    enumType=travellermap.Style),
+                thumbnailOptions = app.Config.instance().asObject(
+                    option=app.ConfigOption.MapOptions,
+                    objectType=list))
 
         if world == None:
             return gui.createStringToolTip('Dead Space')
@@ -1001,7 +1009,15 @@ class HexTable(gui.FrozenColumnListTable):
                     ownerWorld = None
 
                 if ownerWorld:
-                    return gui.createHexToolTip(hex=ownerWorld)
+                    return gui.createHexToolTip(
+                        hex=ownerWorld.hex(),
+                        milieu=milieu,
+                        thumbnailStyle=app.Config.instance().asEnum(
+                            option=app.ConfigOption.MapStyle,
+                            enumType=travellermap.Style),
+                        thumbnailOptions = app.Config.instance().asObject(
+                            option=app.ConfigOption.MapOptions,
+                            objectType=list))
                 else:
                     return gui.createStringToolTip(f'Unknown world at {world.ownerSectorHex()}')
         elif columnType == self.ColumnType.ColonyWorlds:

@@ -147,6 +147,8 @@ class SimulatorWindow(gui.WindowWidget):
 
         self.setLayout(windowLayout)
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         super().firstShowEvent(e)
@@ -534,7 +536,31 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationFundsLabel)
         labelLayout.addWidget(self._simulationTravelledLabel)
 
-        self._mapWidget = gui.MapWidgetEx()
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         simulationLayout = QtWidgets.QVBoxLayout()
         simulationLayout.addWidget(self._runSimulationButton, 0)
@@ -568,6 +594,55 @@ class SimulatorWindow(gui.WindowWidget):
             self._mapWidget.centerOnHex(hex=startWorld.hex())
 
         self._enableDisableControls()
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapWidget.setAnimation(enabled=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
 
     def _runSimulation(self) -> None:
         if self._simulatorJob:

@@ -317,7 +317,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addHexes(hexes=worlds)
+        detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showTradeOptionCalculations(
             self,

@@ -81,6 +81,8 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         self.setLayout(windowLayout)
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         super().firstShowEvent(e)
@@ -178,10 +180,34 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
         self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
 
-        self._mapWidget = gui.MapWidgetEx()
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations)
         self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -277,6 +303,55 @@ class WorldComparisonWindow(gui.WindowWidget):
             for hex in newSelection:
                 if hex not in oldSelection:
                     self._worldManagementWidget.addHex(hex=hex)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapWidget.setAnimation(enabled=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
 
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedRow = self._worldManagementWidget.rowAt(y=point.y())
@@ -389,7 +464,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addWorlds(worlds=worlds)
+        infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showWorldsOnMap(
             self,

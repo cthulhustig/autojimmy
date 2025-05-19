@@ -161,9 +161,16 @@ class WebMapWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            style: travellermap.Style,
+            options: typing.Collection[travellermap.Option],
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
+
+        self._milieu = milieu
+        self._style = style
+        self._options = set(options)
 
         self._loaded = False
         self._scriptQueue: typing.List[str] = []
@@ -220,6 +227,28 @@ class WebMapWidget(QtWidgets.QWidget):
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
 
         self._loadMap()
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self.reload()
+
+    def setStyle(self, style: travellermap.Style) -> None:
+        if style is self._style:
+            return
+
+        self._style = style
+        self.reload()
+
+    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+        options = set(options)
+        if options == self._options:
+            return
+
+        self._options = options
+        self.reload()
 
     def reload(self) -> None:
         self._loaded = False
@@ -600,22 +629,15 @@ class WebMapWidget(QtWidgets.QWidget):
         else:
             indexUrl = f'file:///{rootPath}/data/web/'
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        style = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        options: typing.Set[travellermap.Option] = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=set)
-        options.add(travellermap.Option.HideUI) # Always hide the UI
+
+        masterOptions = set(self._options)
+        masterOptions.add(travellermap.Option.HideUI) # Always hide the UI
 
         return QtCore.QUrl(travellermap.formatMapUrl(
             baseMapUrl=indexUrl,
-            milieu=milieu,
-            style=style,
-            options=options,
+            milieu=self._milieu,
+            style=self._style,
+            options=masterOptions,
             mapPosition=currentPos,
             linearScale=currentScale))
 

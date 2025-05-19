@@ -1,3 +1,4 @@
+import app
 import gui
 import logic
 import travellermap
@@ -9,7 +10,32 @@ class MapWindow(gui.WindowWidget):
         super().__init__(
             title='Universe Map',
             configSection='MapWindow')
-        self._mapWidget = gui.MapWidgetEx()
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._mapWidget)
@@ -97,3 +123,52 @@ class MapWindow(gui.WindowWidget):
         self._settings.endGroup()
 
         super().saveSettings()
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapWidget.setAnimation(enabled=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)

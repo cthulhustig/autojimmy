@@ -2,6 +2,7 @@ import app
 import enum
 import gui
 import logic
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -303,16 +304,34 @@ class CargoManifestTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        thumbnailStyle=app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style),
+        thumbnailOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+
         if columnType == self.ColumnType.PurchaseWorld or \
                 columnType == self.ColumnType.PurchaseSector or \
                 columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
-            return gui.createHexToolTip(purchaseWorld)
+            return gui.createHexToolTip(
+                hex=purchaseWorld.hex(),
+                milieu=milieu,
+                thumbnailStyle=thumbnailStyle,
+                thumbnailOptions=thumbnailOptions)
         elif columnType == self.ColumnType.SaleWorld or \
                 columnType == self.ColumnType.SaleSector or \
                 columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
-            return gui.createHexToolTip(saleWorld)
+            return gui.createHexToolTip(
+                hex=saleWorld.hex(),
+                milieu=milieu,
+                thumbnailStyle=thumbnailStyle,
+                thumbnailOptions=thumbnailOptions)
         elif columnType == self.ColumnType.Logistics:
             return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
 

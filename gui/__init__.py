@@ -60,7 +60,6 @@ from .map.hexdetailswindow import *
 from .trader.tooltips import *
 from .trader.taglevelcombobox import *
 from .trader.probabilitycasecombobox import *
-from .trader.worldlabel import *
 from .trader.localbrokerwidget import *
 from .trader.tradegoodtable import *
 from .trader.tradegoodquantitydialog import *

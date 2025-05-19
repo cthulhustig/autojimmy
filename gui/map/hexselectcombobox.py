@@ -250,7 +250,17 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 assert(isinstance(event, QtGui.QHelpEvent))
                 toolTip = ''
                 if self._enableWorldToolTips and self._selectedHex:
-                    toolTip = gui.createHexToolTip(hex=self._selectedHex)
+                    toolTip = gui.createHexToolTip(
+                        hex=self._selectedHex,
+                        milieu=app.Config.instance().asEnum(
+                            option=app.ConfigOption.Milieu,
+                            enumType=travellermap.Milieu),
+                        thumbnailStyle=app.Config.instance().asEnum(
+                            option=app.ConfigOption.MapStyle,
+                            enumType=travellermap.Style),
+                        thumbnailOptions = app.Config.instance().asObject(
+                            option=app.ConfigOption.MapOptions,
+                            objectType=list))
                 if toolTip != self.toolTip():
                     self.setToolTip(toolTip)
 

@@ -29,7 +29,7 @@ class MapEngine(enum.Enum):
     WebProxy = 'Web (Proxy)'
     WebDirect = 'Web (Direct)'
 
-class MapRenderingType(enum.Enum):
+class MapRendering(enum.Enum):
     Tiled = 'Tiled' # Tiles rendered in background (i.e. the same as Traveller Map)
     Hybrid = 'Hybrid' # Tiles rendered in foreground
     Full = 'Full' # Entire frame rendered each redraw and no digital zoom between log zoom levels
@@ -43,7 +43,7 @@ class ConfigOption(enum.Enum):
     MapStyle = 201
     MapOptions = 202
     MapEngine = 203
-    MapRenderingType = 204
+    MapRendering = 204
     MapAnimations = 205
 
     # Proxy
@@ -139,13 +139,13 @@ class ConfigItem(object):
     def value(self, futureValue: bool = False) -> typing.Any:
         raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement value')
 
-    def setValue(self, value: typing.Any) -> bool:
+    def setValue(self, value: typing.Any) -> None:
         raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement setValue')
 
     def isRestartRequired(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement restartRequired')
 
-    def read(self, settings: QtCore.QSettings) -> bool:
+    def read(self, settings: QtCore.QSettings) -> None:
         raise RuntimeError(f'{type(self)} is derived from ConfigItem so must implement read')
 
     def write(self, settings: QtCore.QSettings) -> None:
@@ -196,9 +196,9 @@ class SimpleConfigItem(ConfigItem):
         value = self._futureValue if futureValue else self._currentValue
         return value
 
-    def setValue(self, value: typing.Any) -> bool:
+    def setValue(self, value: typing.Any) -> None:
         if value == self._futureValue:
-            return False
+            return
 
         value = self._type(value)
         if self._restart:
@@ -206,12 +206,10 @@ class SimpleConfigItem(ConfigItem):
         else:
             self._currentValue = self._futureValue = value
 
-        return True
-
     def isRestartRequired(self) -> bool:
         return self._currentValue != self._futureValue
 
-    def read(self, settings: QtCore.QSettings) -> bool:
+    def read(self, settings: QtCore.QSettings) -> None:
         if self._valueToStringCb and self._valueFromStringCb:
             value = self._valueFromStringCb(self.loadConfigSetting(
                 settings=settings,
@@ -225,9 +223,7 @@ class SimpleConfigItem(ConfigItem):
                 default=self._default,
                 type=self._type)
 
-        oldValue = self._currentValue
         self._currentValue = self._futureValue = value
-        return self._currentValue != oldValue
 
     def write(self, settings: QtCore.QSettings) -> None:
         if self._valueToStringCb and self._valueFromStringCb:
@@ -252,18 +248,15 @@ class StringConfigItem(SimpleConfigItem):
             restart=restart)
         self._validateCb = validateCb
 
-    def setValue(self, value: float) -> bool:
+    def setValue(self, value: float) -> None:
         if self._validateCb and not self._validateCb(value):
             value = self._default
-        return super().setValue(value=value)
+        super().setValue(value=value)
 
-    def read(self, settings) -> bool:
-        oldValue = self._currentValue
-        if not super().read(settings=settings):
-            return False
+    def read(self, settings) -> None:
+        super().read(settings=settings)
         if self._validateCb and not self._validateCb(self._currentValue):
             self._currentValue = self._futureValue = self._default
-        return oldValue != self._currentValue
 
 class BoolConfigItem(SimpleConfigItem):
     def __init__(
@@ -301,16 +294,12 @@ class IntConfigItem(SimpleConfigItem):
         if self._min is not None and self._max is not None:
             self._min, self._max = common.minmax(self._min, self._max)
 
-    def setValue(self, value: int) -> bool:
-        value = self._clamp(value=value)
-        return super().setValue(value=value)
+    def setValue(self, value: int) -> None:
+        return super().setValue(value=self._clamp(value=value))
 
-    def read(self, settings) -> bool:
-        oldValue = self._currentValue
-        if not super().read(settings=settings):
-            return False
+    def read(self, settings) -> None:
+        super().read(settings=settings)
         self._currentValue = self._futureValue = self._clamp(self._currentValue)
-        return oldValue != self._currentValue
 
     def _clamp(self, value: int) -> int:
         if self._min is not None and value < self._min:
@@ -340,16 +329,12 @@ class FloatConfigItem(SimpleConfigItem):
         if self._min is not None and self._max is not None:
             self._min, self._max = common.minmax(self._min, self._max)
 
-    def setValue(self, value: float) -> bool:
-        value = self._clamp(value=value)
-        return super().setValue(value=value)
+    def setValue(self, value: float) -> None:
+        super().setValue(value=self._clamp(value=value))
 
-    def read(self, settings) -> bool:
-        oldValue = self._currentValue
-        if not super().read(settings=settings):
-            return False
+    def read(self, settings) -> None:
+        super().read(settings=settings)
         self._currentValue = self._futureValue = self._clamp(self._currentValue)
-        return oldValue != self._currentValue
 
     def _clamp(self, value: float) -> float:
         oldValue = value
@@ -403,10 +388,10 @@ class MappedConfigItem(SimpleConfigItem):
         self._toStringMap = dict(toStringMap)
         self._fromStringMap = dict(fromStringMap)
 
-    def setValue(self, value: typing.Any) -> bool:
+    def setValue(self, value: typing.Any) -> None:
         if value not in self._toStringMap:
             value = self._default
-        return super().setValue(value=value)
+        super().setValue(value=value)
 
 class UrlConfigItem(StringConfigItem):
     def __init__(
@@ -485,9 +470,9 @@ class MapOptionsConfigItem(ConfigItem):
     def value(self, futureValue: bool = False) -> typing.Iterable[travellermap.Option]:
         return list(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: typing.Iterable[travellermap.Option]) -> bool:
+    def setValue(self, value: typing.Iterable[travellermap.Option]) -> None:
         if value == self._futureValue:
-            return False
+            return
 
         value = list(value)
         if self._restart:
@@ -495,12 +480,10 @@ class MapOptionsConfigItem(ConfigItem):
         else:
             self._currentValue = self._futureValue = value
 
-        return True
-
     def isRestartRequired(self) -> bool:
         return self._currentValue != self._futureValue
 
-    def read(self, settings: QtCore.QSettings) -> bool:
+    def read(self, settings: QtCore.QSettings) -> None:
         values = set()
         for option, settingKey in MapOptionsConfigItem._MapOptionToSettingsKey.items():
             value = settings.value(
@@ -510,9 +493,7 @@ class MapOptionsConfigItem(ConfigItem):
             if value:
                 values.add(option)
 
-        oldValue = self._currentValue
         self._currentValue = self._futureValue = values
-        return self._currentValue != oldValue
 
     def write(self, settings: QtCore.QSettings) -> None:
         for option, settingKey in MapOptionsConfigItem._MapOptionToSettingsKey.items():
@@ -554,9 +535,9 @@ class RulesConfigItem(ConfigItem):
     def value(self, futureValue: bool = False) -> typing.Any:
         return traveller.Rules(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: traveller.Rules) -> bool:
+    def setValue(self, value: traveller.Rules) -> None:
         if value == self._futureValue:
-            return False
+            return
 
         value = traveller.Rules(value)
         if self._restart:
@@ -564,12 +545,10 @@ class RulesConfigItem(ConfigItem):
         else:
             self._currentValue = self._futureValue = value
 
-        return True
-
     def isRestartRequired(self) -> bool:
         return self._currentValue != self._futureValue
 
-    def read(self, settings: QtCore.QSettings) -> bool:
+    def read(self, settings: QtCore.QSettings) -> None:
         system = self.loadConfigSetting(
             settings=settings,
             key=self._section + RulesConfigItem._RuleSystemKey,
@@ -630,7 +609,6 @@ class RulesConfigItem(ConfigItem):
             if classEFuelType in traveller.StarPortFuelType.__members__ else \
             RulesConfigItem._DefaultClassEFuelType
 
-        oldValue = self._currentValue
         self._currentValue = self._futureValue = traveller.Rules(
             system=system,
             classAStarPortFuelType=classAFuelType,
@@ -638,7 +616,6 @@ class RulesConfigItem(ConfigItem):
             classCStarPortFuelType=classCFuelType,
             classDStarPortFuelType=classDFuelType,
             classEStarPortFuelType=classEFuelType)
-        return self._currentValue != oldValue
 
     def write(self, settings: QtCore.QSettings) -> None:
         settings.setValue(
@@ -682,9 +659,9 @@ class TaggingConfigItem(ConfigItem):
     def value(self, futureValue: bool = False) -> typing.Any:
         return dict(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: typing.Mapping[typing.Any, app.TagLevel]) -> bool:
+    def setValue(self, value: typing.Mapping[typing.Any, app.TagLevel]) -> None:
         if value == self._futureValue:
-            return False
+            return
 
         value = dict(value)
         if self._restart:
@@ -692,12 +669,10 @@ class TaggingConfigItem(ConfigItem):
         else:
             self._currentValue = self._futureValue = value
 
-        return True
-
     def isRestartRequired(self) -> bool:
         return self._currentValue != self._futureValue
 
-    def read(self, settings: QtCore.QSettings) -> bool:
+    def read(self, settings: QtCore.QSettings) -> None:
         # Check to see if there is a size element for this section. This is a hack
         # to differentiate between there being no section and there being a section
         # with no entries. The distinction is important as we want to use the
@@ -730,9 +705,7 @@ class TaggingConfigItem(ConfigItem):
             # There is no section preset so use default configuration.
             values = self._default
 
-        oldValue = self._currentValue
         self._currentValue = self._futureValue = values
-        return self._currentValue != oldValue
 
     def write(self, settings: QtCore.QSettings) -> None:
         settings.remove(self._section)
@@ -780,7 +753,10 @@ class EnumTaggingConfigItem(TaggingConfigItem):
             keyFromStringCb=lambda s: enumType.__members__[s] if s in enumType.__members__ else None)
 
 class Config(QtCore.QObject):
-    configChanged = QtCore.pyqtSignal(str, object)
+    configChanged = QtCore.pyqtSignal(
+        ConfigOption, # Config option that has changed
+        object, # Old value
+        object) # New value
 
     _ConfigFileName = 'autojimmy.ini'
 
@@ -798,6 +774,7 @@ class Config(QtCore.QObject):
                 # first check adn the lock
                 if not cls._instance:
                     cls._instance = cls.__new__(cls)
+                    QtCore.QObject.__init__(cls._instance)
                     cls._instance._settings = None
                     cls._instance.load()
         return cls._instance
@@ -854,7 +831,7 @@ class Config(QtCore.QObject):
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.Milieu,
             key='TravellerMap/Milieu',
-            restart=True,
+            restart=False, # TODO: This being 'live' is a work in progress
             enumType=travellermap.Milieu,
             default=travellermap.Milieu.M1105))
 
@@ -886,11 +863,11 @@ class Config(QtCore.QObject):
             enumType=app.MapEngine,
             default=app.MapEngine.InApp))
         self._addConfigItem(EnumConfigItem(
-            option=ConfigOption.MapRenderingType,
+            option=ConfigOption.MapRendering,
             key='TravellerMap/MapRenderingType',
             restart=False,
-            enumType=app.MapRenderingType,
-            default=app.MapRenderingType.Tiled))
+            enumType=app.MapRendering,
+            default=app.MapRendering.Tiled))
         self._addConfigItem(BoolConfigItem(
             option=ConfigOption.MapAnimations,
             key='TravellerMap/MapAnimations',
@@ -1314,10 +1291,16 @@ class Config(QtCore.QObject):
             value: typing.Any
             ) -> bool:
         item = self._configItems[option]
-        optionChanged = item.setValue(value=value)
-        if optionChanged:
-            item.write(self._settings)
-        return optionChanged
+
+        oldValue = item.value()
+        item.setValue(value=value)
+        newValue = item.value()
+        if newValue == oldValue:
+            return False
+
+        item.write(self._settings)
+        self.configChanged.emit(option, oldValue, newValue)
+        return True
 
     def asBool(
             self,

@@ -270,7 +270,7 @@ class CargoManifestDialog(gui.DialogEx):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addHexes(hexes=worlds)
+        detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _cargoManifestColumns(self) -> typing.List[gui.CargoManifestTable.ColumnType]:
         calculationMode = self._cargoManifestDisplayModeTabs.currentCalculationMode()

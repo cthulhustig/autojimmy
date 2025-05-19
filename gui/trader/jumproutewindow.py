@@ -412,6 +412,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self.setLayout(windowLayout)
         self._enableDisableControls()
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def loadSettings(self) -> None:
         super().loadSettings()
 
@@ -822,16 +824,40 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
 
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+
         routingType = app.Config.instance().asEnum(
             option=app.ConfigOption.RoutingType,
             enumType=logic.RoutingType)
-        self._mapWidget = gui.MapWidgetEx()
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations)
         self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._mapWidget.setToolTipCallback(self._formatMapToolTip)
         self._mapWidget.enableDeadSpaceSelection(
             enable=routingType is logic.RoutingType.DeadSpace)
         self._mapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
-        self._mapWidget.displayOptionsChanged.connect(self._updateJumpOverlays)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         self._jumpRatingOverlayToggle = gui.ToggleButton()
         self._jumpRatingOverlayToggle.setChecked(False)
@@ -926,6 +952,61 @@ class JumpRouteWindow(gui.WindowWidget):
         else:
             assert(False) # I missed a case
         self._waypointsWidget.setActiveColumns(columns)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._milieu = newValue
+            self._mapWidget.setMilieu(milieu=self._milieu)
+            self._updateJumpOverlays()
+        elif option is app.ConfigOption.MapStyle:
+            self._mapStyle = newValue
+            self._mapWidget.setStyle(style=self._mapStyle)
+        elif option is app.ConfigOption.MapOptions:
+            self._mapOptions = set(newValue)
+            self._mapWidget.setOptions(options=self._mapOptions)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapRendering = newValue
+            self._mapWidget.setRendering(rendering=self._mapRendering)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapAnimations = newValue
+            self._mapWidget.setAnimation(enabled=self._mapAnimations)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setOption(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
 
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
