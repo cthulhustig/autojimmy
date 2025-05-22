@@ -1,7 +1,3 @@
-import logic
-import json
-import packaging
-import packaging.version
 import traveller
 import travellermap
 import typing
@@ -9,17 +5,22 @@ import typing
 class JumpRoute(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             nodes: typing.Sequence[typing.Tuple[
                 travellermap.HexPosition,
                 typing.Optional[traveller.World]]]
             ) -> None:
         if not nodes:
             raise ValueError('A jump route can\'t have an empty nodes list')
+        self._milieu = milieu
         self._nodes = list(nodes)
 
         # The total parsecs calculation is done on demand as it's not often used and is relatively
         # expensive to calculate
         self._totalParsecs = None
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def jumpCount(self) -> int:
         return len(self._nodes) - 1

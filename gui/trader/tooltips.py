@@ -226,16 +226,15 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     escape=False)
 
 def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
-    # TODO: Would it make sense for the route logistics to know what milieu it was
-    # for? The same might be true for jump routes (probably worlds & sectors as well).
-    milieu = app.Config.instance().asEnum(
-        option=app.ConfigOption.Milieu,
-        enumType=travellermap.Milieu)
     jumpRoute = routeLogistics.jumpRoute()
     startHex, _ = jumpRoute.startNode()
     finishHex, _ = jumpRoute.finishNode()
-    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex))
-    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex))
+    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(
+        milieu=jumpRoute.milieu(),
+        hex=startHex))
+    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(
+        milieu=jumpRoute.milieu(),
+        hex=finishHex))
 
     toolTip = '<html>'
 
@@ -267,7 +266,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
         berthingCosts = refuellingPlan.totalBerthingCosts()
         toolTip += f'<li><span>Berthing:</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Range: Cr{berthingCosts.worstCaseValue()} - Cr{berthingCosts.bestCaseValue()}</span></li>'
+        toolTip += f'<li><span>Range: Cr{berthingCosts.bestCaseValue()} - Cr{berthingCosts.worstCaseValue()}</span></li>'
         toolTip += f'<li><span>Average: Cr{berthingCosts.averageCaseValue()}</span></li>'
         toolTip += '</ul>'
 
@@ -275,14 +274,14 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     if overheads:
         toolTip += '<li><span>Overheads:</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Range: Cr{overheads.worstCaseValue()} - Cr{overheads.bestCaseValue()}</span></li>'
+        toolTip += f'<li><span>Range: Cr{overheads.bestCaseValue()} - Cr{overheads.worstCaseValue()}</span></li>'
         toolTip += f'<li><span>Average: Cr{overheads.averageCaseValue()}</span></li>'
         toolTip += '</ul>'
 
     totalCosts = routeLogistics.totalCosts()
     toolTip += '<li><span>Total:</span></li>'
     toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-    toolTip += f'<li><span>Range: Cr{totalCosts.worstCaseValue()} - Cr{totalCosts.bestCaseValue()}</span></li>'
+    toolTip += f'<li><span>Range: Cr{totalCosts.bestCaseValue()} - Cr{totalCosts.worstCaseValue()}</span></li>'
     toolTip += f'<li><span>Average: Cr{totalCosts.averageCaseValue()}</span></li>'
     toolTip += '</ul>'
 
@@ -299,7 +298,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     for index, (nodeHex, world) in enumerate(jumpRoute):
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodeHex)))
+            name=traveller.WorldManager.instance().canonicalHexName(milieu=jumpRoute.milieu(), hex=nodeHex)))
         tagColour = app.tagColour(
             app.calculateWorldTagLevel(world)
             if world else
@@ -339,7 +338,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
             if berthingCosts:
                 toolTip += f'<li><span>Berthing:</span></li>'
                 toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-                toolTip += f'<li><span>Range: Cr{berthingCosts.worstCaseValue()} - Cr{berthingCosts.bestCaseValue()}</span></li>'
+                toolTip += f'<li><span>Range: Cr{berthingCosts.bestCaseValue()} - Cr{berthingCosts.worstCaseValue()}</span></li>'
                 toolTip += f'<li><span>Average: Cr{berthingCosts.averageCaseValue()}</span></li>'
                 toolTip += '</ul>'
 
