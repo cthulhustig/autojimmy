@@ -181,8 +181,12 @@ class _RenderingTypeActionGroup(_EnumSelectActionGroup):
             parent=parent)
 
 class _SearchComboBox(gui.HexSelectComboBox):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            milieu: travellermap.Milieu,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ):
+        super().__init__(milieu=milieu, parent=parent)
 
         self.setStyleSheet(_SearchComboBox._formatComboStyle())
         self.view().setStyleSheet(_SearchComboBox._formatListStyle())
@@ -972,7 +976,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         # For reasons I don't understand this needs to be done after load has been called on the map.
         # If it's not then the search control is drawn under the map widget. Using stackUnder doesn't
         # seem to work either.
-        self._searchWidget = _SearchComboBox(self)
+        self._searchWidget = _SearchComboBox(milieu=self._milieu, parent=self)
         self._searchWidget.setFixedSize(searchWidth, controlHeights)
         self._searchWidget.installEventFilter(self)
         self._searchWidget.editTextChanged.connect(self._searchHexTextEdited)
@@ -1268,6 +1272,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._milieu = milieu
         self._mapWidget.setMilieu(milieu=self._milieu)
+        self._searchWidget.setMilieu(milieu=self._milieu)
         self._infoWidget.setMilieu(milieu=self._milieu)
 
     def setStyle(self, style: travellermap.Style) -> None:

@@ -6,7 +6,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This needs update to handle the milieu changing
 class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHex = QtCore.pyqtSignal(travellermap.HexPosition)
@@ -25,11 +24,13 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             labelText: typing.Optional[str] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
+        self._milieu = milieu
         self._enableMapSelectButton = False
         self._enableShowHexButton = False
         self._enableShowInfoButton = False
@@ -37,7 +38,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
         interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
-        self._searchComboBox = gui.HexSelectComboBox()
+        self._searchComboBox = gui.HexSelectComboBox(milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(
             int(HexSelectToolWidget._MinWoldSelectWidth * interfaceScale))
@@ -85,6 +86,19 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
         QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(
+            self,
+            milieu: travellermap.Milieu,
+            ) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._searchComboBox.setMilieu(milieu=self._milieu)
+
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._searchComboBox.currentHex()
 
@@ -104,9 +118,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         if not hex:
             return None
         return traveller.WorldManager.instance().worldByPosition(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
+            milieu=self._milieu,
             hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:

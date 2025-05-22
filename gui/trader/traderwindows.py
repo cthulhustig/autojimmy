@@ -883,7 +883,13 @@ class WorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupPurchaseWorldControls(self) -> None:
-        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            labelText='Select World:')
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -1361,11 +1367,12 @@ class WorldTraderWindow(_BaseTraderWindow):
         super()._appConfigChanged(option=option, oldValue=oldValue, newValue=newValue)
 
         if option is app.ConfigOption.Milieu:
+            self._purchaseWorldWidget.setMilieu(milieu=newValue)
+            self._saleWorldsWidget.setMilieu(milieu=newValue)
+
             # Changing milieu invalidates speculative cargo as there is a
             # good chance the worlds trade codes will have changed
             self._speculativeCargoTable.removeAllRows()
-
-            self._saleWorldsWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._saleWorldsWidget.setRules(rules=newValue)
 

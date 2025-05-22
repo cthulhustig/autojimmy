@@ -237,16 +237,20 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     # any previous configured start/finish world when they upgrade
     _StateVersion = '_StartFinishWorldsSelectWidget_v1'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(
+            self,
+            milieu: travellermap.Milieu,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
 
-        self._startWidget = gui.HexSelectToolWidget()
+        self._startWidget = gui.HexSelectToolWidget(milieu=milieu)
         self._startWidget.enableShowHexButton(True)
         self._startWidget.enableShowInfoButton(True)
         self._startWidget.selectionChanged.connect(self.selectionChanged.emit)
         self._startWidget.showHex.connect(self._handleShowHex)
 
-        self._finishWidget = gui.HexSelectToolWidget()
+        self._finishWidget = gui.HexSelectToolWidget(milieu=milieu)
         self._finishWidget.enableShowHexButton(True)
         self._finishWidget.enableShowInfoButton(True)
         self._finishWidget.selectionChanged.connect(self.selectionChanged.emit)
@@ -258,6 +262,13 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         widgetLayout.addRow('Finish:', self._finishWidget)
 
         self.setLayout(widgetLayout)
+
+    def setMilieu(
+            self,
+            milieu: travellermap.Milieu,
+            ) -> None:
+        self._startWidget.setMilieu(milieu=milieu)
+        self._finishWidget.setMilieu(milieu=milieu)
 
     def startHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._startWidget.selectedHex()
@@ -635,11 +646,14 @@ class JumpRouteWindow(gui.WindowWidget):
             self._mapWidget.show()
 
     def _setupStartFinishControls(self) -> None:
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
         routingType = app.Config.instance().asEnum(
             option=app.ConfigOption.RoutingType,
             enumType=logic.RoutingType)
 
-        self._selectStartFinishWidget = _StartFinishSelectWidget()
+        self._selectStartFinishWidget = _StartFinishSelectWidget(milieu=milieu)
         self._selectStartFinishWidget.enableDeadSpaceSelection(
             enable=routingType is logic.RoutingType.DeadSpace)
         self._selectStartFinishWidget.selectionChanged.connect(self._startFinishChanged)
@@ -994,6 +1008,7 @@ class JumpRouteWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._selectStartFinishWidget.setMilieu(milieu=newValue)
             self._waypointsWidget.setMilieu(milieu=newValue)
             self._avoidHexesWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)

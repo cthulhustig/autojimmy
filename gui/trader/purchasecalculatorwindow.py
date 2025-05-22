@@ -4,6 +4,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -50,6 +51,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._horizontalSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -175,7 +178,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            labelText='Select World:')
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -298,6 +307,19 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollGroupBox = QtWidgets.QGroupBox('Dice Rolls')
         self._diceRollGroupBox.setDisabled(True)
         self._diceRollGroupBox.setLayout(layout)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._purchaseWorldWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu invalidates any current cargo as there is a good
+            # chance the worlds trade codes will have changed
+            self._clearCargo()
 
     def _purchaseWorldChanged(self) -> None:
         disable = not self._purchaseWorldWidget.selectedWorld()
@@ -498,6 +520,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _clearCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+        self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())

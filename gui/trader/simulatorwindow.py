@@ -367,7 +367,12 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+
         self._startWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
             labelText='Start World:')
         self._startWorldWidget.enableShowHexButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
@@ -602,6 +607,7 @@ class SimulatorWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._startWorldWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
 
             # Changing milieu stops the current simulation

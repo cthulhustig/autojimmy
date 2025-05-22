@@ -5,6 +5,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -121,6 +122,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._leftRightSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -254,7 +257,13 @@ class SaleCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._saleWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+
+        self._saleWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            labelText='Select World:')
         self._saleWorldWidget.enableMapSelectButton(True)
         self._saleWorldWidget.enableShowInfoButton(True)
         self._saleWorldWidget.selectionChanged.connect(self._saleWorldChanged)
@@ -470,6 +479,19 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         return cargoRecords
 
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._saleWorldWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu invalidates any current cargo as there is a good
+            # chance the worlds trade codes will have changed
+            self._clearCargo()
+
     def _saleWorldChanged(self) -> None:
         disable = not self._saleWorldWidget.selectedWorld()
         self._configurationGroupBox.setDisabled(disable)
@@ -603,6 +625,11 @@ class SaleCalculatorWindow(gui.WindowWidget):
             quantity=dlg.quantity())
 
         self._cargoTable.setCargoRecord(row, cargoRecord)
+
+    def _clearCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+        self._diceRollTable.removeAllRows()
+        self._salePricesTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())

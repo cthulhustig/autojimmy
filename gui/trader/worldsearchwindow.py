@@ -75,22 +75,16 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        sectorNames = sorted(
-            traveller.WorldManager.instance().sectorNames(milieu=milieu),
-            key=str.casefold)
+        self._milieu = milieu
 
         self._sectorComboBox = QtWidgets.QComboBox()
-        self._sectorComboBox.addItems(sectorNames)
-        self._sectorComboBox.currentIndexChanged.connect(self._selectedSectorChanged)
+        self._sectorComboBox.currentIndexChanged.connect(self._loadSubsectorNames)
         self._subsectorComboBox = QtWidgets.QComboBox()
-        self._selectedSectorChanged()
 
         layout = gui.FormLayoutEx()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -98,6 +92,18 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         layout.addRow('Subsector:', self._subsectorComboBox)
 
         self.setLayout(layout)
+
+        self._loadSectorNames()
+        self._loadSubsectorNames()
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
 
     def sectorName(self) -> str:
         return self._sectorComboBox.currentText()
@@ -134,14 +140,21 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         return True
 
-    def _selectedSectorChanged(self) -> None:
+    def _loadSectorNames(self) -> None:
+        self._sectorComboBox.clear()
+
+        sectorNames = sorted(
+            traveller.WorldManager.instance().sectorNames(milieu=self._milieu),
+            key=str.casefold)
+
+        self._sectorComboBox.addItems(sectorNames)
+
+    def _loadSubsectorNames(self) -> None:
         self._subsectorComboBox.clear()
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
         sector = traveller.WorldManager.instance().sectorByName(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
+            milieu=self._milieu,
             name=self._sectorComboBox.currentText())
         if not sector:
             return
@@ -158,6 +171,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -165,6 +179,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self._hexWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
             labelText='Center Hex:')
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
@@ -198,6 +213,9 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         layout.addLayout(radiusLayout)
 
         self.setLayout(layout)
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        self._hexWidget.setMilieu(milieu=milieu)
 
     def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._hexWidget.selectedHex()
@@ -424,13 +442,17 @@ class WorldSearchWindow(gui.WindowWidget):
         return super().firstShowEvent(e)
 
     def _setupAreaControls(self) -> None:
-        self._worldRadiusSearchWidget = _HexSearchRadiusWidget()
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+
+        self._worldRadiusSearchWidget = _HexSearchRadiusWidget(milieu=milieu)
         self._worldRadiusSearchRadioButton = gui.RadioButtonEx()
         self._worldRadiusSearchRadioButton.setToolTip('Search for worlds in the area surrounding the specified world.')
         self._worldRadiusSearchRadioButton.toggled.connect(self._worldRadiusSearchToggled)
         self._worldRadiusSearchRadioButton.setChecked(True)
 
-        self._regionSearchSelectWidget = _RegionSelectWidget()
+        self._regionSearchSelectWidget = _RegionSelectWidget(milieu=milieu)
         self._regionSearchSelectWidget.setDisabled(True)
         self._regionSearchRadioButton = gui.RadioButtonEx()
         self._regionSearchRadioButton.setToolTip('Search for worlds in the selected sector/subsector.')
@@ -677,8 +699,13 @@ class WorldSearchWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._worldRadiusSearchWidget.setMilieu(milieu=newValue)
+            self._regionSearchSelectWidget.setMilieu(milieu=newValue)
             self._worldTable.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu invalidates an previous search results
+            self._clearResults()
         elif option is app.ConfigOption.Rules:
             self._worldTable.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
@@ -793,6 +820,11 @@ class WorldSearchWindow(gui.WindowWidget):
             worlds=foundWorlds,
             highlightWorlds=True,
             switchTab=False)
+
+    def _clearResults(self) -> None:
+        self._worldTable.removeAllRows()
+        self._resultsCountLabel.clear()
+        self._mapWidget.clearHexHighlights()
 
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
