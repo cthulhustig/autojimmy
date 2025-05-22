@@ -70,7 +70,7 @@ class HexSelectDialog(gui.DialogEx):
 
         self._updateLabel()
 
-    def selectedHexes(self) -> typing.Iterable[traveller.World]:
+    def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
         return self._mapWidget.selectedHexes()
 
     def selectHex(
@@ -129,6 +129,7 @@ class HexSelectDialog(gui.DialogEx):
 
         super().saveSettings()
 
+    # TODO: Is this actually getting hit.
     def closeEvent(self, event: QtGui.QCloseEvent):
         self._mapWidget.mapStyleChanged.disconnect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.disconnect(self._mapOptionsChanged)

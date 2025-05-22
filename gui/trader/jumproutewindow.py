@@ -117,6 +117,7 @@ class _RefuellingPlanTableColumnType(enum.Enum):
     WorstCaseBerthingCost = 'Worst Berthing Cost\n(Cr)'
     BestCaseBerthingCost = 'Best Berthing Cost\n(Cr)'
 
+# TODO: This needs updated to handle the milieu changing
 class _RefuellingPlanTable(gui.HexTable):
     AllColumns = [
         gui.HexTable.ColumnType.Name,
@@ -136,9 +137,11 @@ class _RefuellingPlanTable(gui.HexTable):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             columns: typing.Iterable[typing.Union[_RefuellingPlanTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(columns=columns)
+        super().__init__(milieu=milieu, rules=rules, columns=columns)
         self.setSortingEnabled(False)
         self._pitStops: typing.List[logic.PitStop] = []
 
@@ -153,7 +156,7 @@ class _RefuellingPlanTable(gui.HexTable):
             self._pitStops.clear()
 
         for pitStop in self._pitStops:
-            self.addWorld(pitStop.world())
+            self.addHex(hex=pitStop.hex())
 
     def pitStopAt(self, y: int) -> typing.Optional[logic.PitStop]:
         row = self.rowAt(y)
@@ -164,19 +167,11 @@ class _RefuellingPlanTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
-        if isinstance(hex, traveller.World):
-            world = hex
-            hex = world.hex()
-        else:
-            world = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.Config.instance().asEnum(
-                    option=app.ConfigOption.Milieu,
-                    enumType=travellermap.Milieu),
-                hex=hex)
-
-        assert(world) # Pitstops should always have a world
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
 
         # Disable sorting while updating a row. We don't want any sorting to occur
         # until all columns have been updated
@@ -381,6 +376,14 @@ class JumpRouteWindow(gui.WindowWidget):
         self._routeLogistics = None
         self._zoomToJumpRoute = False
         self._jumpOverlayHandles = set()
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            mapStyle=app.Config.instance().asEnum(
+                option=app.ConfigOption.MapStyle,
+                enumType=travellermap.Style),
+            mapOptions=app.Config.instance().asObject(
+                option=app.ConfigOption.MapOptions,
+                objectType=list))
 
         self._setupStartFinishControls()
         self._setupConfigurationControls()
@@ -722,14 +725,24 @@ class JumpRouteWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupWaypointControls(self) -> None:
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         routingType = app.Config.instance().asEnum(
             option=app.ConfigOption.RoutingType,
             enumType=logic.RoutingType)
 
-        self._waypointsTable = gui.WaypointTable()
+        self._waypointsTable = gui.WaypointTable(milieu=milieu, rules=rules)
         self._waypointsWidget = gui.HexTableManagerWidget(
+            milieu=milieu,
+            rules=rules,
             hexTable=self._waypointsTable,
             isOrderedList=True) # List order determines order waypoints are to be travelled to
+        self._waypointsWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._waypointsWidget.enableDeadSpace(
             enable=routingType is logic.RoutingType.DeadSpace)
         self._waypointsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
@@ -745,11 +758,22 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointsGroupBox.setLayout(layout)
 
     def _setupAvoidLocationsControls(self) -> None:
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+
         self._avoidLocationsTabWidget = gui.ItemCountTabWidget()
         self._avoidLocationsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
 
         self._avoidHexesWidget = gui.HexTableManagerWidget(
+            milieu=milieu,
+            rules=rules,
             allowHexCallback=self._allowAvoidHex)
+        self._avoidHexesWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
         self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
@@ -777,6 +801,27 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidLocationsGroupBox.setLayout(layout)
 
     def _setupJumpRouteControls(self) -> None:
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+        routingType = app.Config.instance().asEnum(
+            option=app.ConfigOption.RoutingType,
+            enumType=logic.RoutingType)
+
         self._calculateRouteButton = gui.DualTextPushButton(
             primaryText='Calculate Jump Route',
             secondaryText='Cancel')
@@ -805,7 +850,10 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteDisplayModeTabBar = gui.HexTableTabBar()
         self._jumpRouteDisplayModeTabBar.currentChanged.connect(self._updateJumpRouteTableColumns)
 
-        self._jumpRouteTable = gui.HexTable()
+        self._jumpRouteTable = gui.HexTable(
+            milieu=milieu,
+            rules=rules)
+        self._jumpRouteTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
         self._jumpRouteTable.setMinimumHeight(100)
         self._jumpRouteTable.setSortingEnabled(False) # Disable sorting as we only want to display in jump route order
@@ -820,28 +868,10 @@ class JumpRouteWindow(gui.WindowWidget):
         jumpRouteWidget = QtWidgets.QWidget()
         jumpRouteWidget.setLayout(jumpRouteLayout)
 
-        self._refuellingPlanTable = _RefuellingPlanTable()
+        self._refuellingPlanTable = _RefuellingPlanTable(milieu=milieu, rules=rules)
+        self._refuellingPlanTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
-
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        mapStyle = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        mapOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-        mapRendering = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapRendering,
-            enumType=app.MapRendering)
-        mapAnimations = app.Config.instance().asBool(
-            option=app.ConfigOption.MapAnimations)
-
-        routingType = app.Config.instance().asEnum(
-            option=app.ConfigOption.RoutingType,
-            enumType=logic.RoutingType)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -910,6 +940,10 @@ class JumpRouteWindow(gui.WindowWidget):
         self._plannedRouteGroupBox.setLayout(routeLayout)
 
     def _clearJumpRoute(self):
+        if self._jumpRouteJob:
+            self._jumpRouteJob.cancel()
+            self._jumpRouteJob = None
+
         self._jumpRouteTable.removeAllRows()
         self._refuellingPlanTable.removeAllRows()
         self._processedRoutesLabel.clear()
@@ -960,21 +994,26 @@ class JumpRouteWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
-            self._milieu = newValue
-            self._mapWidget.setMilieu(milieu=self._milieu)
-            self._updateJumpOverlays()
+            self._waypointsWidget.setMilieu(milieu=newValue)
+            self._avoidHexesWidget.setMilieu(milieu=newValue)
+            self._mapWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu invalidates any current jump route
+            self._clearJumpRoute()
+        elif option is app.ConfigOption.Rules:
+            self._waypointsWidget.setRules(rules=newValue)
+            self._avoidHexesWidget.setRules(rules=newValue)
+            self._refuellingPlanTable.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
-            self._mapStyle = newValue
-            self._mapWidget.setStyle(style=self._mapStyle)
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
-            self._mapOptions = set(newValue)
-            self._mapWidget.setOptions(options=self._mapOptions)
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
-            self._mapRendering = newValue
-            self._mapWidget.setRendering(rendering=self._mapRendering)
+            self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
-            self._mapAnimations = newValue
-            self._mapWidget.setAnimation(enabled=self._mapAnimations)
+            self._mapWidget.setAnimation(enabled=newValue)
 
     def _mapStyleChanged(
             self,

@@ -603,6 +603,9 @@ class SimulatorWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             self._mapWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu stops the current simulation
+            self._stopSimulator()
         elif option is app.ConfigOption.MapStyle:
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
@@ -647,7 +650,7 @@ class SimulatorWindow(gui.WindowWidget):
     def _runSimulation(self) -> None:
         if self._simulatorJob:
             # A trade option job is already running so cancel it
-            self._simulatorJob.cancel()
+            self._stopSimulator()
             return
 
         startWorld = self._startWorldWidget.selectedWorld()
@@ -829,6 +832,12 @@ class SimulatorWindow(gui.WindowWidget):
         self._simulatorJob = None
         self._runSimulationButton.showPrimaryText()
         self._enableDisableControls()
+
+    def _stopSimulator(self) -> None:
+        if self._simulatorJob:
+            self._simulatorJob.cancel()
+            self._simulatorJob = None
+        self._runSimulationButton.showPrimaryText()
 
     def _showOnMap(
             self,

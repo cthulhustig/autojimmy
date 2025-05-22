@@ -86,6 +86,7 @@ class _CustomCargoRecordTable(gui.CargoRecordTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
+# TODO: This needs updated to handle the rules changing
 class SaleCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(

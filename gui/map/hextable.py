@@ -1,9 +1,7 @@
 import app
 import enum
 import gui
-import json
 import logging
-import logic
 import traveller
 import travellermap
 import typing
@@ -72,8 +70,6 @@ class HexTableTabBar(gui.TabBarEx):
         self.setCurrentDisplayMode(self.DisplayMode.__members__[name])
         return True
 
-# TODO: Ideally this would update the content of the table if the milieu
-# changes.
 class HexTable(gui.FrozenColumnListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
@@ -246,9 +242,16 @@ class HexTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
-            columns: typing.Iterable[ColumnType] = AllColumns
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            columns: typing.Iterable[ColumnType] = AllColumns,
+            parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        super().__init__()
+        super().__init__(parent)
+
+        self._milieu = milieu
+        self._rules = traveller.Rules(rules)
+        self._hexTooltipProvider = None
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -261,6 +264,26 @@ class HexTable(gui.FrozenColumnListTable):
                     column == self.ColumnType.Sector or \
                     column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._syncContent()
+
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+
+        self._rules = traveller.Rules(rules)
+        self._syncContent()
 
     def hex(self, row: int) -> typing.Optional[travellermap.HexPosition]:
         tableItem = self.item(row, 0)
@@ -301,53 +324,36 @@ class HexTable(gui.FrozenColumnListTable):
     def insertHex(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
         self.insertRow(row)
         return self._fillRow(row, hex)
 
-    def insertWorld(self, row: int, world: traveller.World) -> int:
-        return self.insertHex(row, world)
-
     def setHex(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
         return self._fillRow(row, hex)
 
-    def setWorld(self, row: int, world: traveller.World) -> int:
-        return self.setHex(row, world)
-
     def setHexes(
             self,
-            hexes: typing.Iterator[
-                typing.Union[travellermap.HexPosition, traveller.World]
-            ]) -> None:
+            hexes: typing.Iterator[travellermap.HexPosition]
+            ) -> None:
         self.removeAllRows()
         for hex in hexes:
             self.addHex(hex)
 
-    def setWorlds(
-            self,
-            worlds: typing.Iterator[traveller.World]
-            ) -> None:
-        self.setHexes(worlds)
-
     def addHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
         return self.insertHex(self.rowCount(), hex)
 
-    def addWorld(self, world: traveller.World) -> int:
-        return self.addHex(world)
-
     def addHexes(
             self,
-            hexes: typing.Iterable[
-                typing.Union[travellermap.HexPosition, traveller.World]
-                ]) -> None:
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
         sortingEnabled = self.isSortingEnabled()
@@ -359,15 +365,10 @@ class HexTable(gui.FrozenColumnListTable):
         finally:
             self.setSortingEnabled(sortingEnabled)
 
-    def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        self.addHexes(worlds)
-
     def removeHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> bool:
-        if isinstance(hex, traveller.World):
-            hex = hex.hex()
         removed = False
         for row in range(self.rowCount() - 1, -1, -1):
             if hex == self.hex(row):
@@ -375,58 +376,49 @@ class HexTable(gui.FrozenColumnListTable):
                 removed = True
         return removed
 
-    def removeWorld(self, world: traveller.World) -> bool:
-        return self.removeHex(world)
-
     def currentHex(self) -> typing.Optional[travellermap.HexPosition]:
         row = self.currentRow()
         if row < 0:
             return None
         return self.hex(row)
 
-    def currentWorld(self) -> typing.Optional[traveller.World]:
-        row = self.currentRow()
-        if row < 0:
-            return None
-        return self.world(row)
-
     def containsHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> bool:
-        if isinstance(hex, traveller.World):
-            hex = hex.hex()
         for row in range(self.rowCount()):
             if hex == self.hex(row):
                 return True
         return False
 
-    def containsWorld(self, world: traveller.World) -> bool:
-        return self.containsHex(world)
-
     def selectedHexes(self) -> typing.List[travellermap.HexPosition]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         hexes = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
-                hexes.append(self.hex(index.row()))
+                hex = self.hex(index.row())
+                if hex:
+                    hexes.append(hex)
         return hexes
 
     # NOTE: Indexing into the list of returned worlds does not match table
     # selection indexing if the selection contains dead space hexes.
     def selectedWorlds(self) -> typing.List[traveller.World]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         worlds = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 world = self.world(index.row())
                 if world:
                     worlds.append(world)
         return worlds
+
+    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
+        return self._hexTooltipProvider
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -466,7 +458,7 @@ class HexTable(gui.FrozenColumnListTable):
     def _fillRow(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -474,21 +466,11 @@ class HexTable(gui.FrozenColumnListTable):
         self.setSortingEnabled(False)
 
         try:
-            milieu = app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu)
-            rules = app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules)
             uwp = economics = culture = pbg = worldTagColour = None
 
-            if isinstance(hex, traveller.World):
-                world = hex
-                hex = world.hex()
-            else:
-                world = traveller.WorldManager.instance().worldByPosition(
-                    milieu=milieu,
-                    hex=hex)
+            world = traveller.WorldManager.instance().worldByPosition(
+                milieu=self._milieu,
+                hex=hex)
             if world:
                 uwp = world.uwp()
                 economics = world.economics()
@@ -517,7 +499,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tagColour = worldTagColour
                     else:
                         sector = traveller.WorldManager.instance().sectorByPosition(
-                            milieu=milieu,
+                            milieu=self._milieu,
                             hex=hex)
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
@@ -531,7 +513,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tagColour = worldTagColour
                     else:
                         subsector = traveller.WorldManager.instance().subsectorByPosition(
-                            milieu=milieu,
+                            milieu=self._milieu,
                             hex=hex)
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
@@ -586,9 +568,9 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.StarPortRefuelling:
                     if world:
                         text = ''
-                        if world.hasStarPortRefuelling(rules=rules, includeUnrefined=False):
+                        if world.hasStarPortRefuelling(rules=self._rules, includeUnrefined=False):
                             text += 'refined'
-                        if world.hasStarPortRefuelling(rules=rules, includeRefined=False):
+                        if world.hasStarPortRefuelling(rules=self._rules, includeRefined=False):
                             if text:
                                 text += ' & '
                             text += 'unrefined'
@@ -770,7 +752,7 @@ class HexTable(gui.FrozenColumnListTable):
                         if world.hasOwner():
                             try:
                                 ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
-                                    milieu=milieu,
+                                    milieu=self._milieu,
                                     sectorHex=world.ownerSectorHex())
                             except Exception:
                                 ownerWorld = None
@@ -792,7 +774,7 @@ class HexTable(gui.FrozenColumnListTable):
                         for colonySectorHex in world.colonySectorHexes():
                             try:
                                 colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
-                                    milieu=milieu,
+                                    milieu=self._milieu,
                                     sectorHex=colonySectorHex)
                             except Exception:
                                 colonyWorld = None
@@ -832,10 +814,6 @@ class HexTable(gui.FrozenColumnListTable):
         return sortItem.row() if sortItem else row
 
     def _createToolTip(self, item: QtWidgets.QTableWidgetItem) -> typing.Optional[str]:
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-
         hex = self.hex(item.row())
         if not hex:
             return None
@@ -846,15 +824,10 @@ class HexTable(gui.FrozenColumnListTable):
         if columnType == self.ColumnType.Name or \
                 columnType == self.ColumnType.Sector or \
                 columnType == self.ColumnType.Subsector:
-            return gui.createHexToolTip(
-                hex=hex,
-                milieu=milieu,
-                thumbnailStyle=app.Config.instance().asEnum(
-                    option=app.ConfigOption.MapStyle,
-                    enumType=travellermap.Style),
-                thumbnailOptions = app.Config.instance().asObject(
-                    option=app.ConfigOption.MapOptions,
-                    objectType=list))
+            return \
+                self._hexTooltipProvider.tooltip(milieu=self._milieu, hex=hex) \
+                if self._hexTooltipProvider else \
+                traveller.WorldManager.instance().canonicalHexName(milieu=self._milieu, hex=hex)
 
         if world == None:
             return gui.createStringToolTip('Dead Space')
@@ -914,7 +887,7 @@ class HexTable(gui.FrozenColumnListTable):
                     stringColours=lineColours)
         elif columnType == self.ColumnType.Allegiance:
             allegiance = traveller.AllegianceManager.instance().allegianceName(
-                milieu=milieu,
+                milieu=self._milieu,
                 code=world.allegiance(),
                 sectorName=world.sectorName())
             if allegiance:
@@ -1003,21 +976,16 @@ class HexTable(gui.FrozenColumnListTable):
             if world.hasOwner():
                 try:
                     ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
-                        milieu=milieu,
+                        milieu=self._milieu,
                         sectorHex=world.ownerSectorHex())
                 except Exception:
                     ownerWorld = None
 
                 if ownerWorld:
-                    return gui.createHexToolTip(
-                        hex=ownerWorld.hex(),
-                        milieu=milieu,
-                        thumbnailStyle=app.Config.instance().asEnum(
-                            option=app.ConfigOption.MapStyle,
-                            enumType=travellermap.Style),
-                        thumbnailOptions = app.Config.instance().asObject(
-                            option=app.ConfigOption.MapOptions,
-                            objectType=list))
+                    return \
+                        self._hexTooltipProvider.tooltip(milieu=self._milieu, hex=ownerWorld.hex()) \
+                        if self._hexTooltipProvider else \
+                        traveller.WorldManager.instance().canonicalHexName(milieu=self._milieu, hex=ownerWorld.hex())
                 else:
                     return gui.createStringToolTip(f'Unknown world at {world.ownerSectorHex()}')
         elif columnType == self.ColumnType.ColonyWorlds:
@@ -1027,7 +995,7 @@ class HexTable(gui.FrozenColumnListTable):
                 for colonySectorHex in world.colonySectorHexes():
                     try:
                         colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
-                            milieu=milieu,
+                            milieu=self._milieu,
                             sectorHex=colonySectorHex)
                     except Exception:
                         colonyWorld = None
@@ -1050,3 +1018,7 @@ class HexTable(gui.FrozenColumnListTable):
             return gui.createStringToolTip(remarks.string())
 
         return None
+
+    def _syncContent(self) -> None:
+        for row in range(self.rowCount()):
+            self._fillRow(row=row, hex=self.hex(row))

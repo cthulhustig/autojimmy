@@ -6,6 +6,7 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This needs update to handle the milieu changing
 class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHex = QtCore.pyqtSignal(travellermap.HexPosition)
@@ -189,6 +190,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
+        # TODO: I'm not sure this method of caching the dialog works well with
+        # the app config changes. Will it have disconnected signals after the
+        # first use?
         if not self._hexSelectDialog:
             self._hexSelectDialog = gui.HexSelectDialog(parent=self)
             self._hexSelectDialog.configureSelection(

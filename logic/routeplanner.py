@@ -755,7 +755,7 @@ class RoutePlanner(object):
                         hexData.get(targetHex, (None, None, None))
                     isBetter = (nearbyHexBestFuelParsecs == None) or \
                         (fuelParsecs > nearbyHexBestFuelParsecs) or \
-                        (nearbyHex not in closedSet)
+                        (targetHex not in closedSet)
                     if isBetter:
                         yield (
                             targetHex,

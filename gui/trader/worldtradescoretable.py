@@ -23,8 +23,9 @@ def _customWorldTableColumns(
     columns.insert(index, WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
-# TODO: Ideally this would update the content of the table if the milieu
-# changes.
+# TODO: I think I need to move calculation of the trade score into the
+# table so the score can be updated if the milieu changes
+# TODO: This needs updated to handle the rules changing
 class WorldTradeScoreTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
@@ -35,9 +36,11 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(columns=columns)
+        super().__init__(milieu=milieu, rules=rules, columns=columns)
 
         self._tradeGoods = []
         self._tradeScoreMap = {}
@@ -92,17 +95,11 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
-        if isinstance(hex, traveller.World):
-            world = hex
-            hex = world.hex()
-        else:
-            world = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.Config.instance().asEnum(
-                    option=app.ConfigOption.Milieu,
-                    enumType=travellermap.Milieu),
-                hex=hex)
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
 
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called

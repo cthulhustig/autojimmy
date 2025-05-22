@@ -8,6 +8,7 @@ import travellermap
 import traveller
 import typing
 
+# TODO: This needs updated to handle the rules changing
 _DisableWorldToolTipImages = False
 def createHexToolTip(
         hex: travellermap.HexPosition,

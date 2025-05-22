@@ -170,19 +170,12 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(groupLayout)
 
     def _setupWorldControls(self) -> None:
-        self._worldTable = gui.WorldTradeScoreTable()
-        self._worldManagementWidget = gui.HexTableManagerWidget(
-            allowHexCallback=self._allowWorld,
-            hexTable=self._worldTable)
-        self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
-        self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
-        self._worldManagementWidget.enableContextMenuEvent(enable=True)
-        self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
-        self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
-
         milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         mapStyle = app.Config.instance().asEnum(
             option=app.ConfigOption.MapStyle,
             enumType=travellermap.Style)
@@ -194,6 +187,23 @@ class WorldComparisonWindow(gui.WindowWidget):
             enumType=app.MapRendering)
         mapAnimations = app.Config.instance().asBool(
             option=app.ConfigOption.MapAnimations)
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            mapStyle=mapStyle,
+            mapOptions=mapOptions)
+
+        self._worldTable = gui.WorldTradeScoreTable(milieu=milieu, rules=rules)
+        self._worldManagementWidget = gui.HexTableManagerWidget(
+            milieu=milieu,
+            rules=rules,
+            allowHexCallback=self._allowWorld,
+            hexTable=self._worldTable)
+        self._worldManagementWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
+        self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
+        self._worldManagementWidget.enableContextMenuEvent(enable=True)
+        self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
+        self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -311,10 +321,15 @@ class WorldComparisonWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._worldManagementWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._worldManagementWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
             self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._mapWidget.setRendering(rendering=newValue)

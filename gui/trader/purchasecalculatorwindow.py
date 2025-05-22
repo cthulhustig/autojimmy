@@ -18,6 +18,7 @@ _WelcomeMessage = """
     </html>
 """
 
+# TODO: This needs updated to handle the rules changing
 class PurchaseCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(

@@ -5,6 +5,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
+# TODO: This needs updated to handle the rules changing
 class LocalBrokerWidget(gui.TogglableSpinBox):
     def __init__(
             self,

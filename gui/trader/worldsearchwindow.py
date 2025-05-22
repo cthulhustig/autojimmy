@@ -521,6 +521,24 @@ class WorldSearchWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(layout)
 
     def _setupFoundWorldsControls(self) -> None:
+        milieu = app.Config.instance().asEnum(
+            option=app.ConfigOption.Milieu,
+            enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
+        mapStyle = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapStyle,
+            enumType=travellermap.Style)
+        mapOptions = app.Config.instance().asObject(
+            option=app.ConfigOption.MapOptions,
+            objectType=list)
+        mapRendering = app.Config.instance().asEnum(
+            option=app.ConfigOption.MapRendering,
+            enumType=app.MapRendering)
+        mapAnimations = app.Config.instance().asBool(
+            option=app.ConfigOption.MapAnimations)
+
         self._findWorldsButton = QtWidgets.QPushButton('Perform Search')
         self._findWorldsButton.clicked.connect(self._findWorlds)
 
@@ -529,7 +547,12 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTableDisplayModeTabs = gui.HexTableTabBar()
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
-        self._worldTable = gui.WorldTradeScoreTable()
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            mapStyle=mapStyle,
+            mapOptions=mapOptions)
+
+        self._worldTable = gui.WorldTradeScoreTable(milieu=milieu, rules=rules)
+        self._worldTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._worldTable.setActiveColumns(self._worldColumns())
         self._worldTable.setMinimumHeight(100)
         self._worldTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -542,21 +565,6 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayout.addWidget(self._worldTable)
         tableLayoutWidget = QtWidgets.QTabWidget()
         tableLayoutWidget.setLayout(tableLayout)
-
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        mapStyle = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        mapOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-        mapRendering = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapRendering,
-            enumType=app.MapRendering)
-        mapAnimations = app.Config.instance().asBool(
-            option=app.ConfigOption.MapAnimations)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -669,10 +677,15 @@ class WorldSearchWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._worldTable.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._worldTable.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
             self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._mapWidget.setRendering(rendering=newValue)
@@ -772,7 +785,8 @@ class WorldSearchWindow(gui.WindowWidget):
                 text=f'The number of search results has been limited to {self._MaxSearchResults}',
                 stateKey='WorldSearchResultCountCapped')
 
-        self._worldTable.addWorlds(worlds=foundWorlds)
+        for world in foundWorlds:
+            self._worldTable.addHex(hex=world.hex())
         self._resultsCountLabel.setText(common.formatNumber(len(foundWorlds)))
 
         self._showWorldsOnMap(

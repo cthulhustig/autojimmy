@@ -184,14 +184,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         return False
 
     def selectedCargoRecords(self) -> typing.List[logic.CargoRecord]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         cargoRecords = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 cargoRecord = self.cargoRecord(index.row())
-                cargoRecords.append(cargoRecord)
+                if cargoRecord:
+                    cargoRecords.append(cargoRecord)
         return cargoRecords
 
     def saveContent(self) -> QtCore.QByteArray:

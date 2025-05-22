@@ -1,8 +1,10 @@
+import app
 import common
 import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -76,17 +78,24 @@ class CargoManifestDialog(gui.DialogEx):
 
         self._generateCargoManifests()
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def isPurchaseSelectedChecked(self) -> bool:
         if not self._purchaseSelectedCheckBox:
             return False
         return self._purchaseSelectedCheckBox.isChecked()
 
     def selectedCargoManifest(self) -> logic.CargoManifest:
-        return self._cargoManifestsTable.currentCargoManifest()
+        return self._cargoManifestTable.currentCargoManifest()
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         super().firstShowEvent(e)
+
+    # TODO: Is this actually getting hit.
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
+        return super().closeEvent(event)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -119,7 +128,7 @@ class CargoManifestDialog(gui.DialogEx):
             key='CargoManifestTableState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._cargoManifestsTable.restoreState(storedValue)
+            self._cargoManifestTable.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -143,7 +152,7 @@ class CargoManifestDialog(gui.DialogEx):
         self._settings.setValue('PurchaseLogicState', self._purchaseLogicComboBox.saveState())
         self._settings.setValue('LogisticsLogicState', self._logisticsLogicComboBox.saveState())
         self._settings.setValue('CargoManifestDisplayModeState', self._cargoManifestDisplayModeTabs.saveState())
-        self._settings.setValue('CargoManifestTableState', self._cargoManifestsTable.saveState())
+        self._settings.setValue('CargoManifestTableState', self._cargoManifestTable.saveState())
         self._settings.setValue('CargoBreakdownTableState', self._cargoBreakdownTable.saveState())
         self._settings.setValue('CargoManifestSplitterState', self._cargoManifestSplitter.saveState())
 
@@ -209,21 +218,31 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoManifestDisplayModeTabs.currentChanged.connect(
             self._cargoManifestDisplayModeChanged)
 
-        self._cargoManifestsTable = gui.CargoManifestTable()
-        self._cargoManifestsTable.setActiveColumns(self._cargoManifestColumns())
-        self._cargoManifestsTable.sortByColumnHeader(
+        self._cargoManifestTable = gui.CargoManifestTable()
+        self._cargoManifestTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._cargoManifestTable.setActiveColumns(self._cargoManifestColumns())
+        self._cargoManifestTable.sortByColumnHeader(
             self._cargoManifestDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
-        self._cargoManifestsTable.setContextMenuPolicy(
+        self._cargoManifestTable.setContextMenuPolicy(
             QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._cargoManifestsTable.selectionModel().selectionChanged.connect(
+        self._cargoManifestTable.selectionModel().selectionChanged.connect(
             self._cargoManifestTableSelectionChanged)
-        self._cargoManifestsTable.customContextMenuRequested.connect(
+        self._cargoManifestTable.customContextMenuRequested.connect(
             self._showCargoManifestTableContextMenu)
-        self._cargoManifestsTable.setSelectionMode(
+        self._cargoManifestTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            mapStyle=app.Config.instance().asEnum(
+                option=app.ConfigOption.MapStyle,
+                enumType=travellermap.Style),
+            mapOptions=app.Config.instance().asObject(
+                option=app.ConfigOption.MapOptions,
+                objectType=list))
+
         self._cargoBreakdownTable = gui.TradeOptionsTable()
+        self._cargoBreakdownTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
         self._cargoBreakdownTable.sortByColumnHeader(
             self._cargoBreakdownDefaultSortColumn(),
@@ -235,7 +254,7 @@ class CargoManifestDialog(gui.DialogEx):
 
         self._cargoManifestSplitter = QtWidgets.QSplitter(
             QtCore.Qt.Orientation.Vertical)
-        self._cargoManifestSplitter.addWidget(self._cargoManifestsTable)
+        self._cargoManifestSplitter.addWidget(self._cargoManifestTable)
         self._cargoManifestSplitter.addWidget(self._cargoBreakdownTable)
 
         groupLayout = QtWidgets.QVBoxLayout()
@@ -264,6 +283,20 @@ class CargoManifestDialog(gui.DialogEx):
         self._buttonLayout.addStretch()
         self._buttonLayout.addWidget(self._purchaseSelectedCheckBox)
         self._buttonLayout.addWidget(self._closeButton)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            # Changing the milieu invalidates existing trade options
+            self._cargoBreakdownTable.removeAllRows()
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
 
     def _showWorldDetails(
             self,
@@ -365,7 +398,7 @@ class CargoManifestDialog(gui.DialogEx):
                 exception=ex)
 
     def _generateCargoManifests(self) -> None:
-        self._cargoManifestsTable.removeAllRows()
+        self._cargoManifestTable.removeAllRows()
 
         # If the purchase logic combo box isn't shown then it means we're using known
         # purchase price and availability. In this case just specify average purchase
@@ -395,19 +428,19 @@ class CargoManifestDialog(gui.DialogEx):
             return
 
         for cargoManifest in cargoManifests:
-            self._cargoManifestsTable.addCargoManifest(cargoManifest)
+            self._cargoManifestTable.addCargoManifest(cargoManifest)
 
     def _logicSelectionChanged(self, index: int) -> None:
         self._generateCargoManifests()
 
     def _cargoManifestDisplayModeChanged(self, index: int) -> None:
-        self._cargoManifestsTable.setActiveColumns(self._cargoManifestColumns())
+        self._cargoManifestTable.setActiveColumns(self._cargoManifestColumns())
         self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
 
     def _cargoManifestTableSelectionChanged(self) -> None:
         self._cargoBreakdownTable.removeAllRows()
 
-        cargoManifest = self._cargoManifestsTable.currentCargoManifest()
+        cargoManifest = self._cargoManifestTable.currentCargoManifest()
         if not cargoManifest:
             return
 
@@ -415,7 +448,7 @@ class CargoManifestDialog(gui.DialogEx):
             self._cargoBreakdownTable.addTradeOption(tradeOption)
 
     def _showCargoManifestTableContextMenu(self, point: QtCore.QPoint) -> None:
-        cargoManifest = self._cargoManifestsTable.cargoManifestAt(point.y())
+        cargoManifest = self._cargoManifestTable.cargoManifestAt(point.y())
 
         menuItems = [
             gui.MenuItem(
@@ -465,7 +498,7 @@ class CargoManifestDialog(gui.DialogEx):
         gui.displayMenu(
             self,
             menuItems,
-            self._cargoManifestsTable.viewport().mapToGlobal(point))
+            self._cargoManifestTable.viewport().mapToGlobal(point))
 
     def _showCargoBreakdownTableContextMenu(self, point: QtCore.QPoint) -> None:
         tradeOption = self._cargoBreakdownTable.tradeOptionAt(point.y())

@@ -181,6 +181,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         super().accept()
 
+    # TODO: Is this actually getting hit.
     def closeEvent(self, event: QtGui.QCloseEvent):
         self._mapWidget.selectionChanged.disconnect(self._updateOverlay)
         self._mapWidget.mapStyleChanged.disconnect(self._mapStyleChanged)

@@ -2,7 +2,7 @@ import app
 import enum
 import gui
 import logic
-import travellermap
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -115,6 +115,8 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
+        self._hexTooltipProvider = None
+
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
@@ -163,6 +165,15 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         if row < 0:
             return None
         return self.cargoManifest(row)
+
+    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
+        return self._hexTooltipProvider
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
 
     def _fillRow(
             self,
@@ -304,34 +315,22 @@ class CargoManifestTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        thumbnailStyle=app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style),
-        thumbnailOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-
         if columnType == self.ColumnType.PurchaseWorld or \
                 columnType == self.ColumnType.PurchaseSector or \
                 columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
-            return gui.createHexToolTip(
-                hex=purchaseWorld.hex(),
-                milieu=milieu,
-                thumbnailStyle=thumbnailStyle,
-                thumbnailOptions=thumbnailOptions)
+            return \
+                self._hexTooltipProvider.tooltip(milieu=purchaseWorld.milieu(), hex=purchaseWorld.hex()) \
+                if self._hexTooltipProvider else \
+                traveller.WorldManager.instance().canonicalHexName(milieu=purchaseWorld.milieu(), hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or \
                 columnType == self.ColumnType.SaleSector or \
                 columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
-            return gui.createHexToolTip(
-                hex=saleWorld.hex(),
-                milieu=milieu,
-                thumbnailStyle=thumbnailStyle,
-                thumbnailOptions=thumbnailOptions)
+            return \
+                self._hexTooltipProvider.tooltip(milieu=saleWorld.milieu(), hex=saleWorld.hex()) \
+                if self._hexTooltipProvider else \
+                traveller.WorldManager.instance().canonicalHexName(milieu=saleWorld.milieu(), hex=saleWorld.hex())
         elif columnType == self.ColumnType.Logistics:
             return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
 

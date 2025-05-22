@@ -16,6 +16,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
             isOrderedList: bool = False,
             hexTable: typing.Optional[gui.HexTable] = None,
@@ -23,6 +25,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__()
 
+        self._milieu = milieu
+        self._rules = traveller.Rules(rules)
         self._allowHexCallback = allowHexCallback
         self._isOrderedList = isOrderedList
         self._relativeHex = None
@@ -43,7 +47,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._hexTable = hexTable
         if not self._hexTable:
-            self._hexTable = gui.HexTable()
+            self._hexTable = gui.HexTable(
+                milieu=self._milieu,
+                rules=self._rules)
+        else:
+            self._hexTable.setMilieu(self._milieu)
+            self._hexTable.setRules(self._rules)
         self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -132,31 +141,42 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._hexTable.setMilieu(milieu=self._milieu)
+
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+
+        self._rules = traveller.Rules(rules)
+        self._hexTable.setRules(rules=self._rules)
+
     def addHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> None:
-        if isinstance(hex, traveller.World):
-            hex = hex.hex()
         if self._allowHexCallback:
             if not self._allowHexCallback(hex):
                 return
         self._hexTable.addHex(hex)
         self.contentChanged.emit()
 
-    def addWorld(self, world: traveller.World) -> None:
-        self.addHex(world)
-
     def addHexes(
             self,
-            hexes: typing.Iterable[
-                typing.Union[travellermap.HexPosition, traveller.World]
-                ]) -> None:
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
         if self._allowHexCallback:
-            filteredHexes = []
+            filteredHexes: typing.List[travellermap.HexPosition] = []
             for hex in hexes:
-                if isinstance(hex, traveller.World):
-                    hex = hex.hex()
                 if not self._allowHexCallback(hex):
                     continue
                 filteredHexes.append(hex)
@@ -168,20 +188,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.contentChanged.emit()
 
-    def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        self.addHexes(hexes=worlds)
-
     def removeHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> bool:
         removed = self._hexTable.removeHex(hex)
         if removed:
             self.contentChanged.emit()
         return removed
-
-    def removeWorld(self, world: traveller.World) -> bool:
-        return self.removeHex(world)
 
     def removeAllRows(self) -> None:
         if not self._hexTable.isEmpty():
@@ -193,12 +207,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def containsHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> bool:
         return self._hexTable.containsHex(hex)
-
-    def containsWorld(self, world: traveller.World) -> bool:
-        return self.containsHex(world)
 
     def rowCount(self) -> int:
         return self._hexTable.rowCount()
@@ -325,6 +336,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
         return result
 
+    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
+        return self._hexTable.hexTooltipProvider()
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTable.setHexTooltipProvider(provider=provider)
+
     def enableContextMenuEvent(self, enable: bool = True) -> None:
         self._enableContextMenuEvent = enable
 
@@ -358,13 +378,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
-            milieu = app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu)
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(
-                    milieu=milieu,
+                    milieu=self._milieu,
                     hex=self.hex(row=row))
                 if not world:
                     self._hexTable.removeRow(row=row)
@@ -378,6 +395,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def promptAddLocations(self) -> None:
         currentHexes = self.hexes()
 
+        # TODO: I'm not sure this method of caching the dialog works well with
+        # the app config changes. Will it have disconnected signals after the
+        # first use?
         if not self._locationSelectDialog:
             self._locationSelectDialog = gui.HexSelectDialog(parent=self)
             self._locationSelectDialog.configureSelection(
@@ -441,6 +461,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if isinstance(initialHex, traveller.World):
             initialHex = initialHex.hex()
 
+        # TODO: I'm not sure this method of caching the dialog works well with
+        # the app config changes. Will it have disconnected signals after the
+        # first use?
         if not self._radiusSelectDialog:
             self._radiusSelectDialog = gui.HexRadiusSelectDialog()
             self._radiusSelectDialog.enableDeadSpaceSelection(

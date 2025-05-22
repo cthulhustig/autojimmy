@@ -826,6 +826,7 @@ class SharedBuyerDMRangeWidget(_SharedRangeWidget):
             toolTip=gui.BuyerDmToolTip,
             parent=parent)
 
+# TODO: This needs updated to handle the rules changing
 class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
     def __init__(
             self,

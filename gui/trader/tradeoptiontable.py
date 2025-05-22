@@ -2,10 +2,12 @@ import app
 import enum
 import gui
 import logic
+import traveller
 import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: This needs updated to handle the milieu changing
 class TradeOptionsTable(gui.FrozenColumnListTable):
     # The indices of the ColumnId must match the table row
     class ColumnType(enum.Enum):
@@ -162,6 +164,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
+        self._hexTooltipProvider = None
+
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
@@ -229,15 +233,22 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         return self.selectionModel().hasSelection()
 
     def selectedTradeOptions(self) -> typing.Iterable[logic.TradeOption]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         tradeOptions = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 tradeOption = self.tradeOption(index.row())
-                tradeOptions.append(tradeOption)
+                if tradeOption:
+                    tradeOptions.append(tradeOption)
         return tradeOptions
+
+    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
+        return self._hexTooltipProvider
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
 
     def _fillRow(
             self,
@@ -441,34 +452,22 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        thumbnailStyle=app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style),
-        thumbnailOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-
         if columnType == self.ColumnType.PurchaseWorld or \
                 columnType == self.ColumnType.PurchaseSector or \
                 columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = tradeOption.purchaseWorld()
-            return gui.createHexToolTip(
-                hex=purchaseWorld.hex(),
-                milieu=milieu,
-                thumbnailStyle=thumbnailStyle,
-                thumbnailOptions=thumbnailOptions)
+            return \
+                self._hexTooltipProvider.tooltip(milieu=purchaseWorld.milieu(), hex=purchaseWorld.hex()) \
+                if self._hexTooltipProvider else \
+                traveller.WorldManager.instance().canonicalHexName(milieu=purchaseWorld.milieu(), hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or \
                 columnType == self.ColumnType.SaleSector or \
                 columnType == self.ColumnType.SaleSubsector:
             saleWorld = tradeOption.saleWorld()
-            return gui.createHexToolTip(
-                hex=saleWorld.hex(),
-                milieu=milieu,
-                thumbnailStyle=thumbnailStyle,
-                thumbnailOptions=thumbnailOptions)
+            return \
+                self._hexTooltipProvider.tooltip(milieu=saleWorld.milieu(), hex=saleWorld.hex()) \
+                if self._hexTooltipProvider else \
+                traveller.WorldManager.instance().canonicalHexName(milieu=saleWorld.milieu(), hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()
             if notes:

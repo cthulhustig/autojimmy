@@ -55,10 +55,10 @@ def _customWorldTableColumns(
     columns.insert(index, WaypointTableColumnType.BerthingRequired)
     return columns
 
-# TODO: Ideally this would update the content of the table if the milieu
-# changes. I think it (or at least something) would need to remove any
-# waypoints that no longer have a world at that location if dead space
-# routing is disabled
+# TODO: Not sure what to do about waypoints in dead space if dead space
+# is disabled. I suspect this code shouldn't be dead space aware and
+# it should be the owner that is responsible for removing hexes if the
+# should be removed
 class WaypointTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
@@ -82,9 +82,11 @@ class WaypointTable(gui.HexTable):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             columns: typing.Iterable[typing.Union[WaypointTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(columns=columns)
+        super().__init__(milieu=milieu, rules=rules, columns=columns)
         self._berthingStates: typing.List[WaypointTable._BerthingState] = []
 
     def isBerthingChecked(self, row: int) -> bool:
@@ -108,7 +110,7 @@ class WaypointTable(gui.HexTable):
     def insertHex(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
         self._berthingStates.insert(row, WaypointTable._BerthingState())
         return super().insertHex(row, hex)
@@ -116,7 +118,7 @@ class WaypointTable(gui.HexTable):
     def setHex(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
         self._berthingStates[row].checked = False
         return super().setHex(row, hex)
@@ -191,17 +193,11 @@ class WaypointTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
-        if isinstance(hex, traveller.World):
-            world = hex
-            hex = world.hex()
-        else:
-            world = traveller.WorldManager.instance().worldByPosition(
-                milieu=app.Config.instance().asEnum(
-                    option=app.ConfigOption.Milieu,
-                    enumType=travellermap.Milieu),
-                hex=hex)
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated
