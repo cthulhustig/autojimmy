@@ -7,6 +7,9 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: All this code should be deleted and places where it's currently used
+# switched over to new config update system
+
 class _SpinBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__(None)
