@@ -411,9 +411,6 @@ class HexTable(gui.FrozenColumnListTable):
                     worlds.append(world)
         return worlds
 
-    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
-        return self._hexTooltipProvider
-
     def setHexTooltipProvider(
             self,
             provider: typing.Optional[gui.HexTooltipProvider]
@@ -821,13 +818,14 @@ class HexTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        if columnType == self.ColumnType.Name or \
-                columnType == self.ColumnType.Sector or \
-                columnType == self.ColumnType.Subsector:
-            return \
-                self._hexTooltipProvider.tooltip(milieu=self._milieu, hex=hex) \
-                if self._hexTooltipProvider else \
-                traveller.WorldManager.instance().canonicalHexName(milieu=self._milieu, hex=hex)
+        if columnType == self.ColumnType.Name or columnType == self.ColumnType.Sector or \
+            columnType == self.ColumnType.Subsector:
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=hex)
+            elif world:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=world.milieu(),
+                    hex=world.hex())
 
         if world == None:
             return gui.createStringToolTip('Dead Space')
@@ -982,10 +980,12 @@ class HexTable(gui.FrozenColumnListTable):
                     ownerWorld = None
 
                 if ownerWorld:
-                    return \
-                        self._hexTooltipProvider.tooltip(milieu=self._milieu, hex=ownerWorld.hex()) \
-                        if self._hexTooltipProvider else \
-                        traveller.WorldManager.instance().canonicalHexName(milieu=self._milieu, hex=ownerWorld.hex())
+                    if self._hexTooltipProvider:
+                        return self._hexTooltipProvider.tooltip(hex=ownerWorld.hex())
+                    else:
+                        return traveller.WorldManager.instance().canonicalHexName(
+                            milieu=ownerWorld.milieu(),
+                            hex=ownerWorld.hex())
                 else:
                     return gui.createStringToolTip(f'Unknown world at {world.ownerSectorHex()}')
         elif columnType == self.ColumnType.ColonyWorlds:

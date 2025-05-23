@@ -19,6 +19,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
         milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         mapStyle = app.Config.instance().asEnum(
             option=app.ConfigOption.MapStyle,
             enumType=travellermap.Style)
@@ -54,6 +57,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
+            rules=rules,
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
@@ -202,6 +206,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
         if option is app.ConfigOption.Milieu:
             self._mapWidget.setMilieu(milieu=newValue)
             self._updateOverlay()
+        if option is app.ConfigOption.Rules:
+            self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:

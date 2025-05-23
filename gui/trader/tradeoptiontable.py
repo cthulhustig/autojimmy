@@ -241,9 +241,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tradeOptions.append(tradeOption)
         return tradeOptions
 
-    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
-        return self._hexTooltipProvider
-
     def setHexTooltipProvider(
             self,
             provider: typing.Optional[gui.HexTooltipProvider]
@@ -452,22 +449,24 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector or \
-                columnType == self.ColumnType.PurchaseSubsector:
+        if columnType == self.ColumnType.PurchaseWorld or columnType == self.ColumnType.PurchaseSector or \
+            columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = tradeOption.purchaseWorld()
-            return \
-                self._hexTooltipProvider.tooltip(milieu=purchaseWorld.milieu(), hex=purchaseWorld.hex()) \
-                if self._hexTooltipProvider else \
-                traveller.WorldManager.instance().canonicalHexName(milieu=purchaseWorld.milieu(), hex=purchaseWorld.hex())
-        elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector or \
-                columnType == self.ColumnType.SaleSubsector:
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=purchaseWorld.milieu(),
+                    hex=purchaseWorld.hex())
+        elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
+            columnType == self.ColumnType.SaleSubsector:
             saleWorld = tradeOption.saleWorld()
-            return \
-                self._hexTooltipProvider.tooltip(milieu=saleWorld.milieu(), hex=saleWorld.hex()) \
-                if self._hexTooltipProvider else \
-                traveller.WorldManager.instance().canonicalHexName(milieu=saleWorld.milieu(), hex=saleWorld.hex())
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=saleWorld.milieu(),
+                    hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()
             if notes:

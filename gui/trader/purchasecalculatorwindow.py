@@ -28,6 +28,20 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         self._randomGenerator = common.RandomGenerator()
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
+            mapStyle=app.Config.instance().asEnum(
+                option=app.ConfigOption.MapStyle,
+                enumType=travellermap.Style),
+            mapOptions=app.Config.instance().asObject(
+                option=app.ConfigOption.MapOptions,
+                objectType=list))
+
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
         self._setupAvailableCargoControls()
@@ -185,6 +199,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
             labelText='Select World:')
+        self._purchaseWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -315,11 +331,18 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._purchaseWorldWidget.setMilieu(milieu=newValue)
 
             # Changing milieu invalidates any current cargo as there is a good
             # chance the worlds trade codes will have changed
             self._clearCargo()
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
 
     def _purchaseWorldChanged(self) -> None:
         disable = not self._purchaseWorldWidget.selectedWorld()

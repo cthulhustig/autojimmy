@@ -248,9 +248,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._enableDeadSpaceSelection
 
-    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
-        return self._hexTooltipProvider
-
     def setHexTooltipProvider(
             self,
             provider: typing.Optional[gui.HexTooltipProvider]
@@ -303,9 +300,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 assert(isinstance(event, QtGui.QHelpEvent))
                 toolTip = ''
                 if self._hexTooltipProvider and self._selectedHex:
-                    toolTip = self._hexTooltipProvider.tooltip(
-                        milieu=self._milieu,
-                        hex=self._selectedHex)
+                    toolTip = self._hexTooltipProvider.tooltip(hex=self._selectedHex)
                 if toolTip != self.toolTip():
                     self.setToolTip(toolTip)
 

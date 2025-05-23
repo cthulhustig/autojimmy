@@ -9,6 +9,7 @@ class _CustomTextEdit(gui.TextEditEx):
     def __init__(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             mapStyle: travellermap.Style,
             mapOptions: typing.Collection[travellermap.Option],
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -16,6 +17,7 @@ class _CustomTextEdit(gui.TextEditEx):
         super().__init__(parent)
 
         self._milieu = milieu
+        self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
         self._hex = None
@@ -34,6 +36,13 @@ class _CustomTextEdit(gui.TextEditEx):
             return
 
         self._milieu = milieu
+        self._updateContent()
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+
+        self._rules = traveller.Rules(rules)
         self._updateContent()
 
     def setMapStyle(self, style: travellermap.Style) -> None:
@@ -81,6 +90,7 @@ class _CustomTextEdit(gui.TextEditEx):
             self.setHtml(gui.createHexToolTip(
                 hex=self._hex,
                 milieu=self._milieu,
+                rules=self._rules,
                 thumbnailStyle=self._mapStyle,
                 thumbnailOptions=self._mapOptions))
         else:
@@ -105,6 +115,9 @@ class HexDetailsWindow(gui.WindowWidget):
             milieu=app.Config.instance().asEnum(
                 option=app.ConfigOption.Milieu,
                 enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             mapStyle=app.Config.instance().asEnum(
                 option=app.ConfigOption.MapStyle,
                 enumType=travellermap.Style),
@@ -194,6 +207,8 @@ class HexDetailsWindow(gui.WindowWidget):
                     hex=hex)
                 self._tabBar.setTabText(index, tabName)
             self._hexDetails.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._hexDetails.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexDetails.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:

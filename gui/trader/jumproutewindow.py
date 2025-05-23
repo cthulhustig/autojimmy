@@ -323,6 +323,13 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._startWidget.isDeadSpaceSelectionEnabled()
 
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._startWidget.setHexTooltipProvider(provider=provider)
+        self._finishWidget.setHexTooltipProvider(provider=provider)
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
@@ -389,6 +396,12 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpOverlayHandles = set()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             mapStyle=app.Config.instance().asEnum(
                 option=app.ConfigOption.MapStyle,
                 enumType=travellermap.Style),
@@ -654,6 +667,8 @@ class JumpRouteWindow(gui.WindowWidget):
             enumType=logic.RoutingType)
 
         self._selectStartFinishWidget = _StartFinishSelectWidget(milieu=milieu)
+        self._selectStartFinishWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._selectStartFinishWidget.enableDeadSpaceSelection(
             enable=routingType is logic.RoutingType.DeadSpace)
         self._selectStartFinishWidget.selectionChanged.connect(self._startFinishChanged)
@@ -867,7 +882,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteTable = gui.HexTable(
             milieu=milieu,
             rules=rules)
-        self._jumpRouteTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._jumpRouteTable.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
         self._jumpRouteTable.setMinimumHeight(100)
         self._jumpRouteTable.setSortingEnabled(False) # Disable sorting as we only want to display in jump route order
@@ -889,6 +905,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
+            rules=rules,
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
@@ -1008,6 +1025,7 @@ class JumpRouteWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._selectStartFinishWidget.setMilieu(milieu=newValue)
             self._waypointsWidget.setMilieu(milieu=newValue)
             self._avoidHexesWidget.setMilieu(milieu=newValue)
@@ -1016,9 +1034,11 @@ class JumpRouteWindow(gui.WindowWidget):
             # Changing milieu invalidates any current jump route
             self._clearJumpRoute()
         elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
             self._waypointsWidget.setRules(rules=newValue)
             self._avoidHexesWidget.setRules(rules=newValue)
             self._refuellingPlanTable.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)

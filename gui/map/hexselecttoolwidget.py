@@ -152,6 +152,12 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._searchComboBox.isDeadSpaceSelectionEnabled()
 
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._searchComboBox.setHexTooltipProvider(provider=provider)
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)

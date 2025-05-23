@@ -4,8 +4,8 @@ import common
 import gui
 import html
 import logging
-import travellermap
 import traveller
+import travellermap
 import typing
 
 # TODO: This needs updated to handle the rules changing
@@ -13,6 +13,7 @@ _DisableWorldToolTipImages = False
 def createHexToolTip(
         hex: travellermap.HexPosition,
         milieu: travellermap.Milieu,
+        rules: traveller.Rules,
         thumbnail: bool = True,
         width: int = 512, # 0 means no fixed width
         thumbnailStyle: typing.Optional[travellermap.Style] = None,
@@ -110,9 +111,6 @@ def createHexToolTip(
 
     refuellingTypes = []
     if world:
-        rules: traveller.Rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
         if world.hasStarPortRefuelling(rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
                 code=uwp.code(traveller.UWP.Element.StarPort)))

@@ -336,9 +336,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
         return result
 
-    def hexTooltipProvider(self) -> typing.Optional[gui.HexTooltipProvider]:
-        return self._hexTable.hexTooltipProvider()
-
     def setHexTooltipProvider(
             self,
             provider: typing.Optional[gui.HexTooltipProvider]

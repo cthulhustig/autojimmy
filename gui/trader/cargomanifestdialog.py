@@ -63,6 +63,20 @@ class CargoManifestDialog(gui.DialogEx):
         self._freeCargoSpace = freeCargoSpace
         self._tradeOptions = tradeOptions
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
+            mapStyle=app.Config.instance().asEnum(
+                option=app.ConfigOption.MapStyle,
+                enumType=travellermap.Style),
+            mapOptions=app.Config.instance().asObject(
+                option=app.ConfigOption.MapOptions,
+                objectType=list))
+
         self._setupConfigurationControls(speculativePurchase)
         self._setupManifestControls()
         self._setupActionControls(speculativePurchase)
@@ -219,7 +233,8 @@ class CargoManifestDialog(gui.DialogEx):
             self._cargoManifestDisplayModeChanged)
 
         self._cargoManifestTable = gui.CargoManifestTable()
-        self._cargoManifestTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._cargoManifestTable.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._cargoManifestTable.setActiveColumns(self._cargoManifestColumns())
         self._cargoManifestTable.sortByColumnHeader(
             self._cargoManifestDefaultSortColumn(),
@@ -233,16 +248,9 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoManifestTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
-        self._hexTooltipProvider = gui.HexTooltipProvider(
-            mapStyle=app.Config.instance().asEnum(
-                option=app.ConfigOption.MapStyle,
-                enumType=travellermap.Style),
-            mapOptions=app.Config.instance().asObject(
-                option=app.ConfigOption.MapOptions,
-                objectType=list))
-
         self._cargoBreakdownTable = gui.TradeOptionsTable()
-        self._cargoBreakdownTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._cargoBreakdownTable.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
         self._cargoBreakdownTable.sortByColumnHeader(
             self._cargoBreakdownDefaultSortColumn(),
@@ -291,8 +299,11 @@ class CargoManifestDialog(gui.DialogEx):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             # Changing the milieu invalidates existing trade options
             self._cargoBreakdownTable.removeAllRows()
+        if option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:

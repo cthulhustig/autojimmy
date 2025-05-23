@@ -119,6 +119,20 @@ class SimulatorWindow(gui.WindowWidget):
         self._parsecsTravelled = 0
         self._simulatorJob = None
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
+            mapStyle=app.Config.instance().asEnum(
+                option=app.ConfigOption.MapStyle,
+                enumType=travellermap.Style),
+            mapOptions=app.Config.instance().asObject(
+                option=app.ConfigOption.MapOptions,
+                objectType=list))
+
         self._setupConfigControls()
         self._setupSimulationControls()
         self._setupMessageControls()
@@ -374,6 +388,8 @@ class SimulatorWindow(gui.WindowWidget):
         self._startWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
             labelText='Start World:')
+        self._startWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._startWorldWidget.enableShowHexButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self._startWorldChanged)
@@ -544,6 +560,9 @@ class SimulatorWindow(gui.WindowWidget):
         milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         mapStyle = app.Config.instance().asEnum(
             option=app.ConfigOption.MapStyle,
             enumType=travellermap.Style)
@@ -558,6 +577,7 @@ class SimulatorWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
+            rules=rules,
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
@@ -607,14 +627,20 @@ class SimulatorWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._startWorldWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
 
             # Changing milieu stops the current simulation
             self._stopSimulator()
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=option)
             self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._mapWidget.setRendering(rendering=newValue)

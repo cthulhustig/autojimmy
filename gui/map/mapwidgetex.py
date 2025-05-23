@@ -298,11 +298,13 @@ class _InfoWidget(QtWidgets.QWidget):
     def __init__(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self._milieu = milieu
+        self._rules = traveller.Rules(rules)
 
         self._resizeAnchor = None
         self._resizeBaseWidth = None
@@ -352,6 +354,15 @@ class _InfoWidget(QtWidgets.QWidget):
         if milieu is self._milieu:
             return
         self._milieu = milieu
+        self._updateContent(self._label.width())
+
+    def setRules(
+            self,
+            rules: traveller.Rules,
+            ) -> None:
+        if rules == self._rules:
+            return
+        self._rules = traveller.Rules(rules)
         self._updateContent(self._label.width())
 
     def setHex(
@@ -446,6 +457,7 @@ class _InfoWidget(QtWidgets.QWidget):
             text = gui.createHexToolTip(
                 hex=self._hex,
                 milieu=self._milieu,
+                rules=self._rules,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
                 thumbnail=False,
                 width=width - _InfoWidget._ContentRightMargin,
@@ -923,6 +935,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     def __init__(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             style: travellermap.Style,
             options: typing.Collection[travellermap.Option],
             rendering: app.MapRendering,
@@ -932,6 +945,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._milieu = milieu
+        self._rules = traveller.Rules(rules)
         self._style = style
         self._options = set(options)
         self._rendering = rendering
@@ -998,7 +1012,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._infoButton.setChecked(True)
         self._infoButton.toggled.connect(self._showInfoToggled)
 
-        self._infoWidget = _InfoWidget(milieu=milieu, parent=self)
+        self._infoWidget = _InfoWidget(
+            milieu=self._milieu,
+            rules=self._rules,
+            parent=self)
         self._infoWidget.setMinimumWidth(200)
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
@@ -1274,6 +1291,13 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._mapWidget.setMilieu(milieu=self._milieu)
         self._searchWidget.setMilieu(milieu=self._milieu)
         self._infoWidget.setMilieu(milieu=self._milieu)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+
+        self._rules = traveller.Rules(rules)
+        self._infoWidget.setRules(rules=self._rules)
 
     def setStyle(self, style: travellermap.Style) -> None:
         if style is self._style:

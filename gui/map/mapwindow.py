@@ -1,6 +1,7 @@
 import app
 import gui
 import logic
+import traveller
 import travellermap
 import typing
 from PyQt5 import QtCore, QtWidgets
@@ -10,9 +11,13 @@ class MapWindow(gui.WindowWidget):
         super().__init__(
             title='Universe Map',
             configSection='MapWindow')
+
         milieu = app.Config.instance().asEnum(
             option=app.ConfigOption.Milieu,
             enumType=travellermap.Milieu)
+        rules = app.Config.instance().asObject(
+            option=app.ConfigOption.Rules,
+            objectType=traveller.Rules)
         mapStyle = app.Config.instance().asEnum(
             option=app.ConfigOption.MapStyle,
             enumType=travellermap.Style)
@@ -28,6 +33,7 @@ class MapWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
+            rules=rules,
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
@@ -132,6 +138,8 @@ class MapWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:

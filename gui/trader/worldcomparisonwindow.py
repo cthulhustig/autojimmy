@@ -189,6 +189,8 @@ class WorldComparisonWindow(gui.WindowWidget):
             option=app.ConfigOption.MapAnimations)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=milieu,
+            rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions)
 
@@ -207,6 +209,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
+            rules=rules,
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
@@ -321,10 +324,13 @@ class WorldComparisonWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._worldManagementWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
             self._worldManagementWidget.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)

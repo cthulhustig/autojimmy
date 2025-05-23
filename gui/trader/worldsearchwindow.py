@@ -176,11 +176,27 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
+            mapStyle=app.Config.instance().asEnum(
+                option=app.ConfigOption.MapStyle,
+                enumType=travellermap.Style),
+            mapOptions=app.Config.instance().asObject(
+                option=app.ConfigOption.MapOptions,
+                objectType=list))
+
         interfaceScale = app.Config.instance().asFloat(
             option=app.ConfigOption.InterfaceScale)
         self._hexWidget = gui.HexSelectToolWidget(
             milieu=milieu,
             labelText='Center Hex:')
+        self._hexWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
         # Setting this to a fixed size is horrible, but no mater what I try I
@@ -570,6 +586,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=milieu,
+            rules=rules,
             mapStyle=mapStyle,
             mapOptions=mapOptions)
 
@@ -590,6 +608,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
+            rules=rules,
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
@@ -699,6 +718,7 @@ class WorldSearchWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._worldRadiusSearchWidget.setMilieu(milieu=newValue)
             self._regionSearchSelectWidget.setMilieu(milieu=newValue)
             self._worldTable.setMilieu(milieu=newValue)
@@ -707,7 +727,9 @@ class WorldSearchWindow(gui.WindowWidget):
             # Changing milieu invalidates an previous search results
             self._clearResults()
         elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._worldTable.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)

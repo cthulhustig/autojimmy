@@ -51,6 +51,12 @@ class _BaseTraderWindow(gui.WindowWidget):
         super().__init__(title=title, configSection=configSection)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().asEnum(
+                option=app.ConfigOption.Milieu,
+                enumType=travellermap.Milieu),
+            rules=app.Config.instance().asObject(
+                option=app.ConfigOption.Rules,
+                objectType=traveller.Rules),
             mapStyle=app.Config.instance().asEnum(
                 option=app.ConfigOption.MapStyle,
                 enumType=travellermap.Style),
@@ -234,7 +240,8 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable()
-        self._tradeOptionsTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._tradeOptionsTable.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
         self._tradeOptionsTable.sortByColumnHeader(
             self._tradeOptionDefaultSortColumn(),
@@ -271,8 +278,11 @@ class _BaseTraderWindow(gui.WindowWidget):
             newValue: typing.Any
             ) -> None:
         if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
             # Changing milieu invalidates existing trade options
             self._clearTradeOptions()
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
@@ -890,6 +900,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
             labelText='Select World:')
+        self._purchaseWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
