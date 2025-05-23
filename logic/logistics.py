@@ -120,7 +120,9 @@ def calculateRouteLogistics(
                         tonsOfFuel=None,
                         fuelCost=None,
                         berthingCost=berthingCost)
-                    refuellingPlan = logic.RefuellingPlan([pitStop])
+                    refuellingPlan = logic.RefuellingPlan(
+                        milieu=jumpRoute.milieu(),
+                        pitStops=[pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads
     if reportedPerJumpOverheads and not includeLogisticsCosts:

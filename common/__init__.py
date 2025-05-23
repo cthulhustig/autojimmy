@@ -5,3 +5,4 @@ from .dice import *
 from .downloader import *
 from .stringfilter import *
 from .lrucache import *
+from .colour import *

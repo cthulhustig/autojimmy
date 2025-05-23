@@ -4,6 +4,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
+# TODO: This needs update to handle rules changing
 class TradeGoodMultiSelectDialog(gui.DialogEx):
     def __init__(
             self,
@@ -18,7 +19,8 @@ class TradeGoodMultiSelectDialog(gui.DialogEx):
         self._table = gui.TradeGoodTable()
         self._table.setCheckable(enable=True)
         if not selectableTradeGoods:
-            selectableTradeGoods = traveller.tradeGoodList(rules=app.Config.instance().rules())
+            selectableTradeGoods = traveller.tradeGoodList(
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         for tradeGood in selectableTradeGoods:
             self._table.addTradeGood(tradeGood)
 

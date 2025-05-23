@@ -57,7 +57,8 @@ def _cairoSvgInstallCheck(
         return True # CairoSVG is working so app should continue
 
     svgCustomSectors = []
-    sectors = travellermap.DataStore.instance().sectors(app.Config.instance().milieu())
+    sectors = travellermap.DataStore.instance().sectors(
+        milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
     for sector in sectors:
         mapLevels = sector.customMapLevels()
         if not mapLevels:
@@ -213,7 +214,8 @@ def _snapshotUpdateCheck(
 def _hostPoolSizeCheck(
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> int:
-    requestedHostCount = app.Config.instance().proxyHostPoolSize()
+    requestedHostCount = app.Config.instance().value(
+        option=app.ConfigOption.ProxyHostPoolSize)
     availableHostCount = 0
     for index in range(1, requestedHostCount + 1):
         testSocket = None
@@ -405,7 +407,14 @@ class MainWindow(QtWidgets.QMainWindow):
         message.exec()
 
     def _showCustomSectorsWindow(self) -> None:
-        sectorDialog = gui.CustomSectorDialog(parent=self)
+        try:
+            sectorDialog = gui.CustomSectorDialog(parent=self)
+        except Exception as ex:
+            message = 'Failed to open custom sector dialog'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
+            return
+
         sectorDialog.exec()
 
         if sectorDialog.modified():
@@ -415,10 +424,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 text=f'{app.AppName} will load changes to custom sectors when next started.')
 
     def _showConfiguration(self) -> None:
-        configDialog = gui.ConfigDialog(parent=self)
-        configDialog.exec()
+        try:
+            configDialog = gui.ConfigDialog(parent=self)
+        except Exception as ex:
+            message = 'Failed to open configuration dialog'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
+            return
 
-        if configDialog.restartRequired():
+        result = configDialog.exec()
+
+        if result == QtWidgets.QDialog.DialogCode.Accepted and app.Config.instance().isRestartRequired():
             self._showRestartRequiredStatus()
             gui.MessageBoxEx.information(
                 parent=self,
@@ -442,10 +458,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 text='Failed to update universe data', exception=ex)
 
     def _showAbout(self) -> None:
-        licenseDir = os.path.join(_installDirectory(), 'licenses')
-        aboutDialog = gui.AboutDialog(
-            parent=self,
-            licenseDir=licenseDir)
+        try:
+            aboutDialog = gui.AboutDialog(
+                parent=self,
+                licenseDir=os.path.join(_installDirectory(), 'licenses'))
+        except Exception as ex:
+            message = 'Failed to open about dialog'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
+            return
+
         aboutDialog.exec()
 
     def _showRestartRequiredStatus(self) -> None:
@@ -490,7 +512,7 @@ def main() -> None:
             appDir=appDir)
 
         # Set configured log level immediately after configuration has been setup
-        logLevel = app.Config.instance().logLevel()
+        logLevel = app.Config.instance().value(option=app.ConfigOption.LogLevel)
         try:
             app.setLogLevel(logLevel)
         except Exception as ex:
@@ -507,8 +529,6 @@ def main() -> None:
             overlayDir=overlayMapsDir,
             customDir=customMapsDir)
 
-        traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
-
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
@@ -517,9 +537,13 @@ def main() -> None:
             userDir=os.path.join(appDir, 'robots'),
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))
 
-        gui.configureAppStyle(application)
+        gui.configureAppStyle(
+            application=application,
+            interfaceTheme=app.Config.instance().value(option=app.ConfigOption.ColourTheme),
+            interfaceScale=app.Config.instance().value(option=app.ConfigOption.InterfaceScale))
 
-        if app.Config.instance().mapEngine() is app.MapEngine.WebProxy:
+        mapEngine = app.Config.instance().value(option=app.ConfigOption.MapEngine)
+        if mapEngine is app.MapEngine.WebProxy:
             # Check if CairoSVG is working, possibly prompting the user if it's
             # not. This needs to be done after the DataStore singleton has been
             # set up so it can check if there are any existing SVG custom
@@ -545,17 +569,23 @@ def main() -> None:
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
         startProxy = False
-        if app.Config.instance().mapEngine() is app.MapEngine.WebProxy:
+        if mapEngine is app.MapEngine.WebProxy:
             hostPoolSize = _hostPoolSizeCheck()
             if hostPoolSize > 0:
                 proxy.MapProxy.configure(
-                    listenPort=app.Config.instance().proxyPort(),
+                    listenPort=app.Config.instance().value(
+                        option=app.ConfigOption.ProxyPort),
                     hostPoolSize=hostPoolSize,
-                    travellerMapUrl=app.Config.instance().proxyMapUrl(),
-                    tileCacheSize=app.Config.instance().proxyTileCacheSize(),
-                    tileCacheLifetime=app.Config.instance().proxyTileCacheLifetime(),
-                    svgComposition=app.Config.instance().proxySvgCompositionEnabled(),
-                    mainsMilieu=app.Config.instance().milieu(),
+                    travellerMapUrl=app.Config.instance().value(
+                        option=app.ConfigOption.ProxyMapUrl),
+                    tileCacheSize=app.Config.instance().value(
+                        option=app.ConfigOption.ProxyTileCacheSize),
+                    tileCacheLifetime=app.Config.instance().value(
+                        option=app.ConfigOption.ProxyTileCacheLifetime),
+                    svgComposition=app.Config.instance().value(
+                        option=app.ConfigOption.ProxySvgComposition),
+                    mainsMilieu=app.Config.instance().value(
+                        option=app.ConfigOption.Milieu),
                     installDir=installDir,
                     appDir=appDir,
                     logDir=logDirectory,

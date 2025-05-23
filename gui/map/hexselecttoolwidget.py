@@ -13,7 +13,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     # This state version intentionally doesn't match the class name. This
     # was done for backwards compatibility when the class was renamed as
     # part of the work for dead space routing
-    _StateVersion = 'WorldSelectWidget_v1'
+    # v2 - Switched to storing absolute hex rather than sector hex as part
+    # of making the milieu dynamically changeable
+    _StateVersion = 'WorldSelectWidget_v2'
 
     # The hex select combo box has a minimum width applied to stop it becoming
     # stupidly small. This min size isn't expected to be big enough for all
@@ -22,21 +24,22 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             labelText: typing.Optional[str] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
+        self._milieu = milieu
         self._enableMapSelectButton = False
         self._enableShowHexButton = False
         self._enableShowInfoButton = False
         self._hexSelectDialog = None
 
-        self._searchComboBox = gui.HexSelectComboBox()
+        self._searchComboBox = gui.HexSelectComboBox(milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
-        self._searchComboBox.setMinimumWidth(int(
-            HexSelectToolWidget._MinWoldSelectWidth *
-            app.Config.instance().interfaceScale()))
+        self._searchComboBox.setMinimumWidth(
+            int(HexSelectToolWidget._MinWoldSelectWidth * gui.interfaceScale()))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
         self._mapSelectButton = gui.IconButton(
@@ -81,6 +84,19 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
         QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(
+            self,
+            milieu: travellermap.Milieu,
+            ) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._searchComboBox.setMilieu(milieu=self._milieu)
+
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._searchComboBox.currentHex()
 
@@ -99,7 +115,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         hex = self.selectedHex()
         if not hex:
             return None
-        return traveller.WorldManager.instance().worldByPosition(hex=hex) if hex else None
+        return traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -132,21 +150,19 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._searchComboBox.isDeadSpaceSelectionEnabled()
 
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._searchComboBox.setHexTooltipProvider(provider=provider)
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(HexSelectToolWidget._StateVersion)
 
         hex = self.selectedHex()
-        sectorHex = ''
-        if hex:
-            try:
-                sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-            except Exception as ex:
-                logging.error(
-                    f'Failed to resolve hex {hex} to sector hex when saving HexSelectToolWidget state',
-                    exc_info=ex)
-        stream.writeQString(sectorHex)
+        stream.writeQString(f'{hex.absoluteX()}:{hex.absoluteY()}' if hex else '')
 
         return state
 
@@ -161,16 +177,21 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore HexSelectToolWidget state (Incorrect version)')
             return False
 
-        sectorHex = stream.readQString()
+        value = stream.readQString()
         hex = None
-        if sectorHex:
+        if value:
+            tokens = value.split(':')
+            if len(tokens) < 0:
+                logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}")')
+                return False
             try:
-                hex = traveller.WorldManager.instance().sectorHexToPosition(
-                    sectorHex=sectorHex)
+                hex = travellermap.HexPosition(
+                    absoluteX=int(tokens[0]),
+                    absoluteY=int(tokens[1]))
             except Exception as ex:
                 # This can happen if sector data has changed for whatever reason
                 # (e.g. map updates or custom sectors)
-                logging.warning(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
+                logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}"', exc_info=ex)
                 return False
 
         self.setSelectedHex(hex=hex, updateHistory=False)
@@ -185,6 +206,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
+        # TODO: I'm not sure this method of caching the dialog works well with
+        # the app config changes. Will it have disconnected signals after the
+        # first use?
         if not self._hexSelectDialog:
             self._hexSelectDialog = gui.HexSelectDialog(parent=self)
             self._hexSelectDialog.configureSelection(

@@ -184,14 +184,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         return False
 
     def selectedCargoRecords(self) -> typing.List[logic.CargoRecord]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         cargoRecords = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 cargoRecord = self.cargoRecord(index.row())
-                cargoRecords.append(cargoRecord)
+                if cargoRecord:
+                    cargoRecords.append(cargoRecord)
         return cargoRecords
 
     def saveContent(self) -> QtCore.QByteArray:
@@ -218,7 +216,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         try:
             data = json.loads(stream.readQString())
             cargoRecords = logic.deserialiseCargoRecordList(
-                rules=app.Config.instance().rules(),
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
                 data=data)
             for cargoRecord in cargoRecords:
                 self.addCargoRecord(cargoRecord)
@@ -244,9 +242,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             quantity = cargoRecord.quantity()
             totalPrice = cargoRecord.totalPrice()
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().averageCaseColour())
-            worstCaseColour = QtGui.QColor(app.Config.instance().worstCaseColour())
-            bestCaseColour = QtGui.QColor(app.Config.instance().bestCaseColour())
+            averageCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.AverageCaseColour))
+            worstCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.WorstCaseColour))
+            bestCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.BestCaseColour))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)

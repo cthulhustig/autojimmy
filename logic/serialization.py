@@ -5,42 +5,6 @@ import logic
 import traveller
 import typing
 
-def serialiseWorld(
-        world: traveller.World
-        ) -> typing.Mapping[str, typing.Any]:
-    return {'sectorHex': world.sectorHex()}
-
-def deserialiseWorld(
-        data: typing.Mapping[str, typing.Any]
-        ) -> traveller.World:
-    sectorHex = data.get('sectorHex')
-    if sectorHex == None:
-        raise RuntimeError('World data is missing the sectorHex property')
-    world = traveller.WorldManager.instance().worldBySectorHex(sectorHex=sectorHex)
-    if not world:
-        raise RuntimeError(f'Unable to resolve sector hex {sectorHex} to world')
-    return world
-
-def serialiseWorldList(
-        worlds: typing.Iterable[traveller.World]
-        ) -> typing.Mapping[str, typing.Any]:
-    items = []
-    for world in worlds:
-        items.append(serialiseWorld(world=world))
-    return {'worlds': items}
-
-def deserialiseWorldList(
-        data: typing.Mapping[str, typing.Any]
-        ) -> typing.Iterable[traveller.World]:
-    items = data.get('worlds')
-    if items == None:
-        raise RuntimeError('World list is missing the worlds property')
-
-    worlds = []
-    for item in items:
-        worlds.append(deserialiseWorld(data=item))
-    return worlds
-
 def serialiseCalculation(
         calculation: common.Calculation
         ) -> typing.Mapping[str, typing.Any]:

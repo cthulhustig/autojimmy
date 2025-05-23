@@ -46,6 +46,7 @@ from .map.primitives import *
 from .map.mapgraphics import *
 from .map.thumbnail import *
 from .map.tooltips import *
+from .map.hextooltipprovider import *
 from .map.hexselectcombobox import *
 from .map.localmapwidget import *
 from .map.webmapwidget import *
@@ -60,7 +61,6 @@ from .map.hexdetailswindow import *
 from .trader.tooltips import *
 from .trader.taglevelcombobox import *
 from .trader.probabilitycasecombobox import *
-from .trader.worldlabel import *
 from .trader.localbrokerwidget import *
 from .trader.tradegoodtable import *
 from .trader.tradegoodquantitydialog import *

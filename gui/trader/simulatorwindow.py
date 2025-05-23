@@ -119,6 +119,13 @@ class SimulatorWindow(gui.WindowWidget):
         self._parsecsTravelled = 0
         self._simulatorJob = None
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+
         self._setupConfigControls()
         self._setupSimulationControls()
         self._setupMessageControls()
@@ -146,6 +153,8 @@ class SimulatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._topBottomSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -365,8 +374,13 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
         self._startWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
             labelText='Start World:')
+        self._startWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._startWorldWidget.enableShowHexButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self._startWorldChanged)
@@ -534,7 +548,24 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationFundsLabel)
         labelLayout.addWidget(self._simulationTravelledLabel)
 
-        self._mapWidget = gui.MapWidgetEx()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            rules=rules,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         simulationLayout = QtWidgets.QVBoxLayout()
         simulationLayout.addWidget(self._runSimulationButton, 0)
@@ -569,10 +600,74 @@ class SimulatorWindow(gui.WindowWidget):
 
         self._enableDisableControls()
 
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._startWorldWidget.setMilieu(milieu=newValue)
+            self._mapWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu stops the current simulation
+            self._stopSimulator()
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
+
+            # Changing rules stops the current simulation
+            self._stopSimulator()
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=option)
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapWidget.setAnimation(enabled=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
+
     def _runSimulation(self) -> None:
         if self._simulatorJob:
             # A trade option job is already running so cancel it
-            self._simulatorJob.cancel()
+            self._stopSimulator()
             return
 
         startWorld = self._startWorldWidget.selectedWorld()
@@ -605,13 +700,15 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
             anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
             anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().rules())
+            rules=rules)
         if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
             gui.MessageBoxEx.information(
                 parent=self,
@@ -647,7 +744,8 @@ class SimulatorWindow(gui.WindowWidget):
         try:
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
-                rules=app.Config.instance().rules(),
+                rules=rules,
+                milieu=milieu,
                 startHex=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),
@@ -747,6 +845,12 @@ class SimulatorWindow(gui.WindowWidget):
         self._simulatorJob = None
         self._runSimulationButton.showPrimaryText()
         self._enableDisableControls()
+
+    def _stopSimulator(self) -> None:
+        if self._simulatorJob:
+            self._simulatorJob.cancel()
+            self._simulatorJob = None
+        self._runSimulationButton.showPrimaryText()
 
     def _showOnMap(
             self,

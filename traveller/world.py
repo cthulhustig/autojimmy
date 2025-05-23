@@ -6,6 +6,7 @@ import typing
 class World(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
             worldName: str,
             isNameGenerated: bool,
@@ -23,6 +24,7 @@ class World(object):
             systemWorlds: str,
             bases: str
             ) -> None:
+        self._milieu = milieu
         self._hex = hex
         self._name = worldName
         self._isNameGenerated = isNameGenerated
@@ -48,6 +50,9 @@ class World(object):
 
         # Importance is calculated on demand
         self._importance = None
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def hex(self) -> travellermap.HexPosition:
         return self._hex

@@ -300,9 +300,11 @@ class PitStop(object):
 class RefuellingPlan(object):
     def __init__(
             self,
-            pitStops: typing.List[PitStop]
+            milieu: travellermap.Milieu,
+            pitStops: typing.Sequence[PitStop]
             ) -> None:
-        self._pitStops = pitStops
+        self._milieu = milieu
+        self._pitStops = list(pitStops)
         self._jumpIndexMap = {}
         for pitStop in self._pitStops:
             self._jumpIndexMap[pitStop.jumpIndex()] = pitStop
@@ -342,6 +344,9 @@ class RefuellingPlan(object):
             lhs=self._totalFuelCost,
             rhs=self._totalBerthingCosts,
             name='Total Refuelling Plan Cost')
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def pitStop(self, jumpIndex: int) -> typing.Optional[PitStop]:
         if jumpIndex not in self._jumpIndexMap:
@@ -607,6 +612,7 @@ def calculateRefuellingPlan(
         return None
 
     return _createRefuellingPlan(
+        milieu=jumpRoute.milieu(),
         calculationContext=calculationContext,
         pitCostCalculator=pitCostCalculator,
         includeRefuellingCosts=includeRefuellingCosts,
@@ -816,6 +822,7 @@ def _processNode(
     return bestFinalCost
 
 def _createRefuellingPlan(
+        milieu: travellermap.Milieu,
         calculationContext: _CalculationContext,
         pitCostCalculator: PitStopCostCalculator,
         includeRefuellingCosts: bool,
@@ -897,4 +904,6 @@ def _createRefuellingPlan(
                 fuelCost=fuelCost,
                 berthingCost=berthingCost))
 
-    return RefuellingPlan(pitStops)
+    return RefuellingPlan(
+        milieu=milieu,
+        pitStops=pitStops)

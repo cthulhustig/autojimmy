@@ -5,6 +5,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This needs update to handle rules changing
 class TradeGoodQuantityDialog(gui.DialogEx):
     def __init__(
             self,
@@ -25,7 +26,8 @@ class TradeGoodQuantityDialog(gui.DialogEx):
         self._tradeGoodCombo = QtWidgets.QComboBox()
         if not editTradeGood:
             if not selectableTradeGoods:
-                selectableTradeGoods = traveller.tradeGoodList(rules=app.Config.instance().rules())
+                selectableTradeGoods = traveller.tradeGoodList(
+                    rules=app.Config.instance().value(option=app.ConfigOption.Rules))
             for tradeGood in selectableTradeGoods:
                 insertIndex = self._tradeGoodCombo.count()
                 self._tradeGoodCombo.addItem(f'{tradeGood.id()}: {tradeGood.name()}')

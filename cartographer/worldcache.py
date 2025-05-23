@@ -105,13 +105,17 @@ class WorldInfo(object):
         self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
 
         self.t5Allegiance = world.allegiance()
-        self.legacyAllegiance = traveller.AllegianceManager.instance().legacyCode(self.t5Allegiance)
+        self.legacyAllegiance = traveller.AllegianceManager.instance().legacyCode(
+            milieu=world.milieu(),
+            code=self.t5Allegiance)
         if not self.legacyAllegiance:
             # Using the T5 allegiance if there is no legacy one seems odd
             # but it's consistent with the Traveller Map implementation of
             # T5AllegianceCodeToLegacyCode
             self.legacyAllegiance = self.t5Allegiance
-        self.basesAllegiance = traveller.AllegianceManager.instance().basesCode(self.t5Allegiance)
+        self.basesAllegiance = traveller.AllegianceManager.instance().basesCode(
+            milieu=world.milieu(),
+            code=self.t5Allegiance)
         if not self.basesAllegiance:
             # Using the T5 allegiance if there is no bases one seems odd
             # but it's consistent with the Traveller Map implementation of

@@ -2,6 +2,7 @@ import app
 import enum
 import gui
 import logic
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -114,6 +115,8 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
+        self._hexTooltipProvider = None
+
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
@@ -163,6 +166,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             return None
         return self.cargoManifest(row)
 
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
+
     def _fillRow(
             self,
             row: int,
@@ -184,9 +193,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
             saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().averageCaseColour())
-            worstCaseColour = QtGui.QColor(app.Config.instance().worstCaseColour())
-            bestCaseColour = QtGui.QColor(app.Config.instance().bestCaseColour())
+            averageCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.AverageCaseColour))
+            worstCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.WorstCaseColour))
+            bestCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.BestCaseColour))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -297,16 +309,24 @@ class CargoManifestTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector or \
-                columnType == self.ColumnType.PurchaseSubsector:
+        if columnType == self.ColumnType.PurchaseWorld or columnType == self.ColumnType.PurchaseSector or \
+            columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
-            return gui.createHexToolTip(purchaseWorld)
-        elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector or \
-                columnType == self.ColumnType.SaleSubsector:
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=purchaseWorld.milieu(),
+                    hex=purchaseWorld.hex())
+        elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
+            columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
-            return gui.createHexToolTip(saleWorld)
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=saleWorld.milieu(),
+                    hex=saleWorld.hex())
         elif columnType == self.ColumnType.Logistics:
             return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
 

@@ -3,6 +3,7 @@ import datetime
 import logic
 import time
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore
 
@@ -16,6 +17,7 @@ class TraderJobBase(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
+            milieu: travellermap.Milieu,
             tradeOptionCallback: typing.Callable[[typing.List[logic.TradeOption]], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             tradeInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
@@ -28,6 +30,7 @@ class TraderJobBase(QtCore.QThread):
 
         self._trader = logic.Trader(
             rules=rules,
+            milieu=milieu,
             tradeOptionCallback=self._handleTradeOption,
             traderInfoCallback=self._handleTradeInfo,
             progressCallback=self._handleProgress,
@@ -100,6 +103,7 @@ class SingleWorldTraderJob(TraderJobBase):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
+            milieu: travellermap.Milieu,
             purchaseWorld: traveller.World,
             saleWorlds: typing.Iterable[traveller.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
@@ -161,6 +165,7 @@ class SingleWorldTraderJob(TraderJobBase):
         super().__init__(
             parent=parent,
             rules=rules,
+            milieu=milieu,
             tradeOptionCallback=tradeOptionCallback,
             finishedCallback=finishedCallback,
             tradeInfoCallback=tradeInfoCallback,
@@ -207,6 +212,7 @@ class MultiWorldTraderJob(TraderJobBase):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
+            milieu: travellermap.Milieu,
             purchaseWorlds: typing.Iterable[traveller.World],
             saleWorlds: typing.Iterable[traveller.World],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
@@ -272,6 +278,7 @@ class MultiWorldTraderJob(TraderJobBase):
         super().__init__(
             parent=parent,
             rules=rules,
+            milieu=milieu,
             tradeOptionCallback=tradeOptionCallback,
             finishedCallback=finishedCallback,
             tradeInfoCallback=tradeInfoCallback,

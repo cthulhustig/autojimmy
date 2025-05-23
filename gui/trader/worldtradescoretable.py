@@ -23,6 +23,9 @@ def _customWorldTableColumns(
     columns.insert(index, WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
+# TODO: I think I need to move calculation of the trade score into the
+# table so the score can be updated if the milieu changes
+# TODO: This needs updated to handle the rules and desirable tag colour changing
 class WorldTradeScoreTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
@@ -33,9 +36,11 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(columns=columns)
+        super().__init__(milieu=milieu, rules=rules, columns=columns)
 
         self._tradeGoods = []
         self._tradeScoreMap = {}
@@ -54,7 +59,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
         try:
             for row in range(self.rowCount()):
-                self._fillRow(row, self.hex(row), self.world(row))
+                self._fillRow(row, self.hex(row))
         finally:
             self.setSortingEnabled(sortingEnabled)
 
@@ -90,14 +95,17 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
+
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
             self._tradeScoreMap[hex] = logic.TradeScore(
-                rules=app.Config.instance().rules(),
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
                 world=world,
                 tradeGoods=self._tradeGoods)
 
@@ -107,7 +115,7 @@ class WorldTradeScoreTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, hex, world)
+            super()._fillRow(row, hex)
 
             if world:
                 for column in range(self.columnCount()):
@@ -125,11 +133,8 @@ class WorldTradeScoreTable(gui.HexTable):
                             alwaysIncludeSign=True)
                         scoreValue = tradeScore.value()
                         if scoreValue > 0:
-                            tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Desirable)))
-                        """
-                        elif scoreValue < 0:
-                            tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Warning)))
-                        """
+                            tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
+                                option=app.ConfigOption.DesirableTagColour)))
 
                     if tableItem:
                         self.setItem(row, column, tableItem)

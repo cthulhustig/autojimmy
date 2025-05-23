@@ -5,6 +5,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -86,6 +87,7 @@ class _CustomCargoRecordTable(gui.CargoRecordTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
+# TODO: This needs updated to handle the rules changing
 class SaleCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -93,6 +95,13 @@ class SaleCalculatorWindow(gui.WindowWidget):
             configSection='SaleCalculatorWindow')
 
         self._randomGenerator = common.RandomGenerator()
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
@@ -120,6 +129,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._leftRightSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -253,7 +264,13 @@ class SaleCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._saleWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        self._saleWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            labelText='Select World:')
+        self._saleWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._saleWorldWidget.enableMapSelectButton(True)
         self._saleWorldWidget.enableShowInfoButton(True)
         self._saleWorldWidget.selectionChanged.connect(self._saleWorldChanged)
@@ -448,7 +465,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         try:
             cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().rules(),
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
                 filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
@@ -466,6 +483,28 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return None
 
         return cargoRecords
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._saleWorldWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu invalidates any current cargo as there is a good
+            # chance the worlds trade codes will have changed
+            self._clearCargo()
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
 
     def _saleWorldChanged(self) -> None:
         disable = not self._saleWorldWidget.selectedWorld()
@@ -491,7 +530,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         exoticsTradeGood = traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             tradeGoodId=traveller.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
@@ -531,10 +570,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text='Ignored exotic cargo when importing.\nSale of exotic cargo requires role playing so can\'t be automated')
 
     def _addCargo(self) -> None:
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
         ignoreTradeGoods = [traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             tradeGoodId=traveller.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
@@ -543,7 +584,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=rules,
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -594,6 +635,11 @@ class SaleCalculatorWindow(gui.WindowWidget):
             quantity=dlg.quantity())
 
         self._cargoTable.setCargoRecord(row, cargoRecord)
+
+    def _clearCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+        self._diceRollTable.removeAllRows()
+        self._salePricesTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())
@@ -663,7 +709,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            rules=app.Config.instance().rules(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

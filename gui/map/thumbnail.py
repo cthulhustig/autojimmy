@@ -30,14 +30,19 @@ def _initThumbnailRenderer():
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
+        milieu: travellermap.Milieu,
         hex: travellermap.HexPosition,
-        width: int = 256,
-        height: int = 256,
-        linearScale: float = 64
+        width: int,
+        height: int,
+        linearScale: float,
+        style: travellermap.Style,
+        options: typing.Collection[travellermap.Option],
+        engine: app.MapEngine = app.MapEngine.InApp
         ) -> typing.Tuple[
             typing.Optional[bytes],
             typing.Optional[travellermap.MapFormat]]:
-    if app.Config.instance().mapEngine() is app.MapEngine.InApp:
+
+    if engine is app.MapEngine.InApp:
         _initThumbnailRenderer()
 
         centerX, centerY = hex.worldCenter()
@@ -48,9 +53,9 @@ def generateThumbnail(
             scale=linearScale,
             outputPixelX=width,
             outputPixelY=height,
-            style=app.Config.instance().mapStyle(),
-            options=cartographer.mapOptionsToRenderOptions(
-                app.Config.instance().mapOptions()),
+            milieu=milieu,
+            style=style,
+            options=cartographer.mapOptionsToRenderOptions(options),
             imageCache=_thumbnailImageCache,
             vectorCache=_thumbnailVectorCache,
             labelCache=_thumbnailLabelCache,
@@ -77,9 +82,9 @@ def generateThumbnail(
         return (byteArray.data(), travellermap.MapFormat.PNG)
     else:
         return travellermap.TileClient.instance().tile(
-            milieu=app.Config.instance().milieu(),
-            style=app.Config.instance().mapStyle(),
-            options=app.Config.instance().mapOptions(),
+            milieu=milieu,
+            style=style,
+            options=options,
             hex=hex,
             width=width,
             height=height,

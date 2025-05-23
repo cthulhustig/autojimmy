@@ -1,4 +1,5 @@
 import cartographer
+import common
 import travellermap
 import typing
 
@@ -7,7 +8,7 @@ def makeAlphaColour(
         colour: str,
         isNormalised: bool = False
         ) -> str:
-    red, green, blue, _ = travellermap.parseHtmlColour(htmlColour=colour)
+    red, green, blue, _ = common.parseHtmlColour(htmlColour=colour)
 
     if isNormalised:
         alpha *= 255

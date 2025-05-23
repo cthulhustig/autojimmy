@@ -2,9 +2,12 @@ import app
 import enum
 import gui
 import logic
+import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: This needs updated to handle the avg/worst/best colour changing
 class TradeOptionsTable(gui.FrozenColumnListTable):
     # The indices of the ColumnId must match the table row
     class ColumnType(enum.Enum):
@@ -161,6 +164,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             ) -> None:
         super().__init__()
 
+        self._hexTooltipProvider = None
+
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
@@ -228,15 +233,19 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         return self.selectionModel().hasSelection()
 
     def selectedTradeOptions(self) -> typing.Iterable[logic.TradeOption]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         tradeOptions = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 tradeOption = self.tradeOption(index.row())
-                tradeOptions.append(tradeOption)
+                if tradeOption:
+                    tradeOptions.append(tradeOption)
         return tradeOptions
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
 
     def _fillRow(
             self,
@@ -265,9 +274,12 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
             saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().averageCaseColour())
-            worstCaseColour = QtGui.QColor(app.Config.instance().worstCaseColour())
-            bestCaseColour = QtGui.QColor(app.Config.instance().bestCaseColour())
+            averageCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.AverageCaseColour))
+            worstCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.WorstCaseColour))
+            bestCaseColour = QtGui.QColor(app.Config.instance().value(
+                option=app.ConfigOption.BestCaseColour))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -434,16 +446,24 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector or \
-                columnType == self.ColumnType.PurchaseSubsector:
+        if columnType == self.ColumnType.PurchaseWorld or columnType == self.ColumnType.PurchaseSector or \
+            columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = tradeOption.purchaseWorld()
-            return gui.createHexToolTip(purchaseWorld)
-        elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector or \
-                columnType == self.ColumnType.SaleSubsector:
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=purchaseWorld.milieu(),
+                    hex=purchaseWorld.hex())
+        elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
+            columnType == self.ColumnType.SaleSubsector:
             saleWorld = tradeOption.saleWorld()
-            return gui.createHexToolTip(saleWorld)
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=saleWorld.milieu(),
+                    hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()
             if notes:

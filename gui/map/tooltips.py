@@ -4,30 +4,28 @@ import common
 import gui
 import html
 import logging
-import travellermap
 import traveller
+import travellermap
 import typing
 
-_DisableWorldToolTipImages = False
+_DisableHexToolTipImages = False
 def createHexToolTip(
-        hex: typing.Union[travellermap.HexPosition, traveller.World],
-        noThumbnail: bool = False,
-        width: int = 512 # 0 means no fixed width
+        hex: travellermap.HexPosition,
+        milieu: travellermap.Milieu,
+        rules: traveller.Rules,
+        width: int = 512, # 0 means no fixed width
+        hexImage: bool = True,
+        hexImageStyle: typing.Optional[travellermap.Style] = None,
+        hexImageOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
         ) -> str:
-    global _DisableWorldToolTipImages
+    global _DisableHexToolTipImages
 
-    worldManager = traveller.WorldManager.instance()
-
-    if isinstance(hex, traveller.World):
-        world = hex
-        hex = world.hex()
-    else:
-        world = worldManager.worldByPosition(hex=hex)
+    world = traveller.WorldManager.instance().worldByPosition(
+        milieu=milieu,
+        hex=hex)
     uwp = world.uwp() if world else None
 
-    formatStyle = lambda tagColour: \
-        '' if not tagColour \
-        else f'background-color:{tagColour}'
+    formatStyle = lambda tagColour: '' if not tagColour else f'background-color:{tagColour}'
 
     toolTip = '<html>'
 
@@ -37,11 +35,19 @@ def createHexToolTip(
     #
     # Image
     #
-    if not noThumbnail and \
-            app.Config.instance().showToolTipImages() and \
-            not _DisableWorldToolTipImages:
+    if hexImage and not _DisableHexToolTipImages:
+        mapEngine = app.Config.instance().value(
+            option=app.ConfigOption.MapEngine)
         try:
-            tileBytes, tileFormat = gui.generateThumbnail(hex=hex, width=256, height=256)
+            tileBytes, tileFormat = gui.generateThumbnail(
+                milieu=milieu,
+                hex=hex,
+                width=256,
+                height=256,
+                linearScale=64,
+                style=hexImageStyle,
+                options=hexImageOptions,
+                engine=mapEngine)
             if tileBytes:
                 mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()
@@ -53,7 +59,7 @@ def createHexToolTip(
             logging.error(f'Failed to retrieve tool tip image for hex {hex}', exc_info=ex)
             if isinstance(ex, TimeoutError):
                 logging.warning(f'Showing world images in tool tips has been temporarily disabled')
-                _DisableWorldToolTipImages = True
+                _DisableHexToolTipImages = True
 
     widthString = '' if not width else f'width="{width}"'
     toolTip += f'<td style="padding-left:10" {widthString}>'
@@ -62,7 +68,9 @@ def createHexToolTip(
     # World
     #
 
-    canonicalName = traveller.WorldManager.instance().canonicalHexName(hex=hex)
+    canonicalName = traveller.WorldManager.instance().canonicalHexName(
+        milieu=milieu,
+        hex=hex)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
 
     if world:
@@ -70,10 +78,14 @@ def createHexToolTip(
         subsectorName = world.subsectorName()
     else:
         try:
-            sectorHex = worldManager.positionToSectorHex(hex=hex)
+            sectorHex = traveller.WorldManager.instance().positionToSectorHex(
+                milieu=milieu,
+                hex=hex)
         except:
             sectorHex = 'Unknown'
-        subsector = worldManager.subsectorByPosition(hex=hex)
+        subsector = traveller.WorldManager.instance().subsectorByPosition(
+            milieu=milieu,
+            hex=hex)
         subsectorName = subsector.name() if subsector else 'Unknown'
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(subsectorName)}</li>'
@@ -95,7 +107,7 @@ def createHexToolTip(
 
     refuellingTypes = []
     if world:
-        if world.hasStarPortRefuelling(rules=app.Config.instance().rules()):
+        if world.hasStarPortRefuelling(rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
                 code=uwp.code(traveller.UWP.Element.StarPort)))
         if world.hasGasGiantRefuelling():
@@ -114,7 +126,8 @@ def createHexToolTip(
 
     if world:
         allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(
-            allegianceCode=world.allegiance(),
+            milieu=world.milieu(),
+            code=world.allegiance(),
             sectorName=world.sectorName())
         tagLevel = app.calculateAllegianceTagLevel(world=world)
         style = formatStyle(app.tagColour(tagLevel))
@@ -125,7 +138,9 @@ def createHexToolTip(
 
         if world.hasOwner():
             try:
-                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=world.ownerSectorHex())
+                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
+                    milieu=milieu,
+                    sectorHex=world.ownerSectorHex())
             except Exception:
                 ownerWorld = None
 
@@ -324,7 +339,9 @@ def createHexToolTip(
             toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
             for colonySectorHex in world.colonySectorHexes():
                 try:
-                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(sectorHex=colonySectorHex)
+                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
+                        milieu=milieu,
+                        sectorHex=colonySectorHex)
                 except Exception:
                     colonyWorld = None
 

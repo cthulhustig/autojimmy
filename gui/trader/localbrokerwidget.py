@@ -5,6 +5,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
+# TODO: This needs updated to handle the rules changing
 class LocalBrokerWidget(gui.TogglableSpinBox):
     def __init__(
             self,
@@ -12,7 +13,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             ) -> None:
         super().__init__(parent=parent)
 
-        rules = app.Config.instance().rules()
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         minLocalBrokerDm = traveller.minLocalBrokerDm(rules=rules)
         maxLocalBrokerDm = traveller.maxLocalBrokerDm(rules=rules)
 
@@ -30,7 +31,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             self.hideSpinBox()
 
     def value(self, rawValue: bool = False) -> typing.Optional[int]:
-        rules = app.Config.instance().rules()
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         if rules.system() == traveller.RuleSystem.MGT2022:
             # HACK: For 2022 rules return a raw value of 0 to stop consumers barfing
             return 0 if rawValue else None

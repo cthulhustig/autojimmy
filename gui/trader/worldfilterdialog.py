@@ -203,6 +203,7 @@ class _EnumOptionWidget(QtWidgets.QWidget):
         for checkBox in self._optionMap.values():
             checkBox.setChecked(False)
 
+# TODO: This needs update to handle rules changing
 class WorldFilterDialog(gui.DialogEx):
     def __init__(
             self,
@@ -286,7 +287,7 @@ class WorldFilterDialog(gui.DialogEx):
             return logic.RefuellingFilter(
                 operation=self._refuellingFilterOperationComboBox.currentEnum(),
                 value=self._refuellingFilterValuesList.checkedEnums(),
-                rules=app.Config.instance().rules())
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         elif filterType == _FilterType.AllegianceFilter:
             return logic.AllegianceFilter(
                 operation=self._allegianceFilterOperationCombo.currentEnum(),

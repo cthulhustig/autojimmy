@@ -6,6 +6,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: This needs updated to handle the rules changing
 class TradeGoodTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
@@ -88,14 +89,12 @@ class TradeGoodTable(gui.ListTable):
         return self.tradeGood(row)
 
     def selectedTradeGoods(self) -> typing.List[traveller.TradeGood]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         tradeGoods = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 tradeGood = self.tradeGood(index.row())
-                tradeGoods.append(tradeGood)
+                if tradeGood:
+                    tradeGoods.append(tradeGood)
         return tradeGoods
 
     def setCheckable(
@@ -293,12 +292,13 @@ class TradeGoodTable(gui.ListTable):
         if not super().restoreState(baseState):
             return False
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         checkedTradeGoods = set()
         count = stream.readUInt32()
         for _ in range(count):
             id = stream.readUInt32()
             tradeGood = traveller.tradeGoodFromId(
-                rules=app.Config.instance().rules(),
+                rules=rules,
                 tradeGoodId=id)
             if not tradeGood:
                 logging.warning(f'Failed to restore NearbyWorldWindow TradeGoodTable state (Unknown ID "{id}")')

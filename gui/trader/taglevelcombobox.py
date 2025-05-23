@@ -4,6 +4,7 @@ import gui
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+# TODO: This needs update to handle tagging changing
 class TagLevelComboBox(QtWidgets.QComboBox):
     class _ItemStyleDelegate(QtWidgets.QStyledItemDelegate):
         def __init__(
@@ -44,8 +45,15 @@ class TagLevelComboBox(QtWidgets.QComboBox):
             self.addItem(text)
             self.setItemData(itemIndex, tagLevel, QtCore.Qt.ItemDataRole.UserRole)
 
-            if tagLevel:
-                colour = QtGui.QColor(app.Config.instance().tagColour(tagLevel))
+            if tagLevel is app.TagLevel.Desirable:
+                colour = QtGui.QColor(app.Config.instance().value(
+                    option=app.ConfigOption.DesirableTagColour))
+            elif tagLevel is app.TagLevel.Warning:
+                colour = QtGui.QColor(app.Config.instance().value(
+                    option=app.ConfigOption.WarningTagColour))
+            elif tagLevel is app.TagLevel.Danger:
+                colour = QtGui.QColor(app.Config.instance().value(
+                    option=app.ConfigOption.DangerTagColour))
             else:
                 colour = QtWidgets.QApplication.palette().color(self.backgroundRole())
 

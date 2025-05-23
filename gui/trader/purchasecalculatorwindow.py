@@ -4,6 +4,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -18,6 +19,7 @@ _WelcomeMessage = """
     </html>
 """
 
+# TODO: This needs updated to handle the rules changing
 class PurchaseCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -25,6 +27,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             configSection='PurchaseCalculatorWindow')
 
         self._randomGenerator = common.RandomGenerator()
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
@@ -49,6 +58,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._horizontalSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -174,7 +185,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            labelText='Select World:')
+        self._purchaseWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -298,6 +315,28 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollGroupBox.setDisabled(True)
         self._diceRollGroupBox.setLayout(layout)
 
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._purchaseWorldWidget.setMilieu(milieu=newValue)
+
+            # Changing milieu invalidates any current cargo as there is a good
+            # chance the worlds trade codes will have changed
+            self._clearCargo()
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
+
     def _purchaseWorldChanged(self) -> None:
         disable = not self._purchaseWorldWidget.selectedWorld()
         self._configurationGroupBox.setDisabled(disable)
@@ -315,7 +354,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            rules=app.Config.instance().rules(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerWidget.isChecked(),
@@ -389,7 +428,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -493,6 +532,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _clearCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+        self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())
