@@ -26,9 +26,7 @@ class TradeGoodQuantityDialog(gui.DialogEx):
         if not editTradeGood:
             if not selectableTradeGoods:
                 selectableTradeGoods = traveller.tradeGoodList(
-                    rules=app.Config.instance().asObject(
-                        option=app.ConfigOption.Rules,
-                        objectType=traveller.Rules))
+                    rules=app.Config.instance().value(option=app.ConfigOption.Rules))
             for tradeGood in selectableTradeGoods:
                 insertIndex = self._tradeGoodCombo.count()
                 self._tradeGoodCombo.addItem(f'{tradeGood.id()}: {tradeGood.name()}')

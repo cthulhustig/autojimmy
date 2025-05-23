@@ -406,11 +406,11 @@ class _SharedRangeWidget(gui.RangeSpinBoxWidget):
 class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.PlayerBrokerDM)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.PlayerBrokerDM,
                 value=value)
 
@@ -425,11 +425,11 @@ class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
 class SharedShipTonnageSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.ShipTonnage)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShipTonnage,
                 value=value)
 
@@ -444,11 +444,11 @@ class SharedShipTonnageSpinBox(_SharedSpinBox):
 class SharedJumpRatingSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.ShipJumpRating)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShipJumpRating,
                 value=value)
 
@@ -463,11 +463,11 @@ class SharedJumpRatingSpinBox(_SharedSpinBox):
 class SharedFuelCapacitySpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.ShipFuelCapacity)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShipFuelCapacity,
                 value=value)
 
@@ -482,11 +482,11 @@ class SharedFuelCapacitySpinBox(_SharedSpinBox):
 class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> float:
-            return app.Config.instance().asFloat(
+            return app.Config.instance().value(
                 option=app.ConfigOption.ShipCurrentFuel)
 
         def saveValue(self, value: float) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShipCurrentFuel,
                 value=value)
 
@@ -501,14 +501,14 @@ class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
 class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def loadValue(self) -> typing.Tuple[bool, float]:
-            return (app.Config.instance().asBool(option=app.ConfigOption.UseShipFuelPerParsec),
-                    app.Config.instance().asFloat(option=app.ConfigOption.ShipFuelPerParsec))
+            return (app.Config.instance().value(option=app.ConfigOption.UseShipFuelPerParsec),
+                    app.Config.instance().value(option=app.ConfigOption.ShipFuelPerParsec))
 
         def saveValue(self, enabled: bool, value: float) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.UseShipFuelPerParsec,
                 value=enabled)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShipFuelPerParsec,
                 value=value)
 
@@ -523,11 +523,11 @@ class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
 class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.ShipCargoCapacity)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShipCargoCapacity,
                 value=value)
 
@@ -542,11 +542,11 @@ class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
 class SharedJumpOverheadSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.PerJumpOverhead)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.PerJumpOverhead,
                 value=value)
 
@@ -561,11 +561,11 @@ class SharedJumpOverheadSpinBox(_SharedSpinBox):
 class SharedAvailableFundsSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.AvailableFunds)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AvailableFunds,
                 value=value)
 
@@ -580,12 +580,11 @@ class SharedAvailableFundsSpinBox(_SharedSpinBox):
 class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def loadValue(self) -> logic.RefuellingStrategy:
-            return app.Config.instance().asEnum(
-                option=app.ConfigOption.RefuellingStrategy,
-                enumType=logic.RefuellingStrategy)
+            return app.Config.instance().value(
+                option=app.ConfigOption.RefuellingStrategy)
 
         def saveValue(self, value: logic.RefuellingStrategy) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.RefuellingStrategy,
                 value=value)
 
@@ -599,11 +598,11 @@ class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
 class SharedUseFuelCachesCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().asBool(
+            return app.Config.instance().value(
                 option=app.ConfigOption.UseFuelCaches)
 
         def saveValue(self, value: bool) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.UseFuelCaches,
                 value=value)
 
@@ -616,11 +615,11 @@ class SharedUseFuelCachesCheckBox(_SharedCheckBox):
 class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().asBool(
+            return app.Config.instance().value(
                 option=app.ConfigOption.UseAnomalyRefuelling)
 
         def saveValue(self, value: bool) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.UseAnomalyRefuelling,
                 value=value)
 
@@ -633,11 +632,11 @@ class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
 class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.AnomalyFuelCost)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AnomalyFuelCost,
                 value=value)
 
@@ -655,11 +654,11 @@ class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
 class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def loadValue(self) -> int:
-            return app.Config.instance().asInt(
+            return app.Config.instance().value(
                 option=app.ConfigOption.AnomalyBerthingCost)
 
         def saveValue(self, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AnomalyBerthingCost,
                 value=value)
 
@@ -677,12 +676,11 @@ class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
 class SharedRoutingTypeComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def loadValue(self) -> logic.RoutingType:
-            return app.Config.instance().asEnum(
-                option=app.ConfigOption.RoutingType,
-                enumType=logic.RoutingType)
+            return app.Config.instance().value(
+                option=app.ConfigOption.RoutingType)
 
         def saveValue(self, value: logic.RoutingType) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.RoutingType,
                 value=value)
 
@@ -696,12 +694,11 @@ class SharedRoutingTypeComboBox(_SharedEnumComboBox):
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def loadValue(self) -> logic.RouteOptimisation:
-            return app.Config.instance().asEnum(
-                option=app.ConfigOption.RouteOptimisation,
-                enumType=logic.RouteOptimisation)
+            return app.Config.instance().value(
+                option=app.ConfigOption.RouteOptimisation)
 
         def saveValue(self, value: logic.RouteOptimisation) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.RouteOptimisation,
                 value=value)
 
@@ -715,11 +712,11 @@ class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
 class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().asBool(
+            return app.Config.instance().value(
                 option=app.ConfigOption.IncludeStartBerthing)
 
         def saveValue(self, value: bool) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.IncludeStartBerthing,
                 value=value)
 
@@ -732,11 +729,11 @@ class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):
 class SharedIncludeFinishBerthingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().asBool(
+            return app.Config.instance().value(
                 option=app.ConfigOption.IncludeFinishBerthing)
 
         def saveValue(self, value: bool) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.IncludeFinishBerthing,
                 value=value)
 
@@ -749,11 +746,11 @@ class SharedIncludeFinishBerthingCheckBox(_SharedCheckBox):
 class SharedIncludeLogisticsCostsCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().asBool(
+            return app.Config.instance().value(
                 option=app.ConfigOption.IncludeLogisticsCosts)
 
         def saveValue(self, value: bool) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.IncludeLogisticsCosts,
                 value=value)
 
@@ -766,11 +763,11 @@ class SharedIncludeLogisticsCostsCheckBox(_SharedCheckBox):
 class SharedIncludeUnprofitableCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def loadValue(self) -> bool:
-            return app.Config.instance().asBool(
+            return app.Config.instance().value(
                 option=app.ConfigOption.IncludeUnprofitableTrades)
 
         def saveValue(self, value: bool) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.IncludeUnprofitableTrades,
                 value=value)
 
@@ -783,15 +780,15 @@ class SharedIncludeUnprofitableCheckBox(_SharedCheckBox):
 class SharedSellerDMRangeWidget(_SharedRangeWidget):
     class _SettingUpdater(_RangeUpdater):
         def loadValue(self) -> typing.Tuple[int, int]:
-            return (app.Config.instance().asInt(option=app.ConfigOption.MinSellerDM),
-                    app.Config.instance().asInt(option=app.ConfigOption.MaxSellerDM))
+            return (app.Config.instance().value(option=app.ConfigOption.MinSellerDM),
+                    app.Config.instance().value(option=app.ConfigOption.MaxSellerDM))
 
         def saveValue(self, lowerValue: int, upperValue: int) -> None:
             lowerValue, upperValue = common.minmax(lowerValue, upperValue)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.MinSellerDM,
                 value=lowerValue)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.MaxSellerDM,
                 value=upperValue)
 
@@ -806,15 +803,15 @@ class SharedSellerDMRangeWidget(_SharedRangeWidget):
 class SharedBuyerDMRangeWidget(_SharedRangeWidget):
     class _SettingUpdater(_RangeUpdater):
         def loadValue(self) -> typing.Tuple[int, int]:
-            return (app.Config.instance().asInt(option=app.ConfigOption.MinBuyerDM),
-                    app.Config.instance().asInt(option=app.ConfigOption.MaxBuyerDM))
+            return (app.Config.instance().value(option=app.ConfigOption.MinBuyerDM),
+                    app.Config.instance().value(option=app.ConfigOption.MaxBuyerDM))
 
         def saveValue(self, lowerValue: int, upperValue: int) -> None:
             lowerValue, upperValue = common.minmax(lowerValue, upperValue)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.MinBuyerDM,
                 value=lowerValue)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.MaxBuyerDM,
                 value=upperValue)
 
@@ -833,9 +830,7 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
             updaterType: _TogglableSpinBoxUpdater,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        rules: traveller.Rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         super().__init__(
             updaterType=updaterType,
             minValue=traveller.minLocalBrokerDm(rules=rules),
@@ -847,9 +842,7 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
             self.hideSpinBox()
 
     def value(self, rawValue: bool = False) -> typing.Optional[int]:
-        rules: traveller.Rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         if rules.system() == traveller.RuleSystem.MGT2022:
             # HACK: For 2022 rules return a raw value of 0 to stop consumers barfing
             return 0 if rawValue else None
@@ -869,14 +862,14 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
 class SharedLocalPurchaseBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def loadValue(self) -> typing.Tuple[bool, int]:
-            return (app.Config.instance().asBool(option=app.ConfigOption.UsePurchaseBroker),
-                    app.Config.instance().asInt(option=app.ConfigOption.PurchaseBrokerDmBonus))
+            return (app.Config.instance().value(option=app.ConfigOption.UsePurchaseBroker),
+                    app.Config.instance().value(option=app.ConfigOption.PurchaseBrokerDmBonus))
 
         def saveValue(self, enabled: bool, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.UsePurchaseBroker,
                 value=enabled)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.PurchaseBrokerDmBonus,
                 value=value)
 
@@ -888,14 +881,14 @@ class SharedLocalPurchaseBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
 class SharedLocalSaleBrokerSpinBox(_SharedLocalBrokerSpinBoxBase):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def loadValue(self) -> typing.Tuple[bool, int]:
-            return (app.Config.instance().asBool(option=app.ConfigOption.UseSaleBroker),
-                    app.Config.instance().asInt(option=app.ConfigOption.SaleBrokerDmBonus))
+            return (app.Config.instance().value(option=app.ConfigOption.UseSaleBroker),
+                    app.Config.instance().value(option=app.ConfigOption.SaleBrokerDmBonus))
 
         def saveValue(self, enabled: bool, value: int) -> None:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.UseSaleBroker,
                 value=enabled)
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.SaleBrokerDmBonus,
                 value=value)
 

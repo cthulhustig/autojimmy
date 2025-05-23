@@ -13,9 +13,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             ) -> None:
         super().__init__(parent=parent)
 
-        rules: traveller.Rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         minLocalBrokerDm = traveller.minLocalBrokerDm(rules=rules)
         maxLocalBrokerDm = traveller.maxLocalBrokerDm(rules=rules)
 
@@ -33,9 +31,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             self.hideSpinBox()
 
     def value(self, rawValue: bool = False) -> typing.Optional[int]:
-        rules: traveller.Rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         if rules.system() == traveller.RuleSystem.MGT2022:
             # HACK: For 2022 rules return a raw value of 0 to stop consumers barfing
             return 0 if rawValue else None

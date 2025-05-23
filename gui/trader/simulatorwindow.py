@@ -120,18 +120,10 @@ class SimulatorWindow(gui.WindowWidget):
         self._simulatorJob = None
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
-            mapStyle=app.Config.instance().asEnum(
-                option=app.ConfigOption.MapStyle,
-                enumType=travellermap.Style),
-            mapOptions=app.Config.instance().asObject(
-                option=app.ConfigOption.MapOptions,
-                objectType=list))
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         self._setupConfigControls()
         self._setupSimulationControls()
@@ -381,9 +373,7 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         self._startWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
@@ -557,23 +547,12 @@ class SimulatorWindow(gui.WindowWidget):
         labelLayout.addWidget(self._simulationFundsLabel)
         labelLayout.addWidget(self._simulationTravelledLabel)
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
-        mapStyle = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        mapOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-        mapRendering = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapRendering,
-            enumType=app.MapRendering)
-        mapAnimations = app.Config.instance().asBool(
-            option=app.ConfigOption.MapAnimations)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -651,7 +630,7 @@ class SimulatorWindow(gui.WindowWidget):
             self,
             style: travellermap.Style
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
             value=style)
 
@@ -659,7 +638,7 @@ class SimulatorWindow(gui.WindowWidget):
             self,
             options: typing.Iterable[travellermap.Option]
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
             value=options)
 
@@ -667,7 +646,7 @@ class SimulatorWindow(gui.WindowWidget):
             self,
             renderingType: app.MapRendering,
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapRendering,
             value=renderingType)
 
@@ -675,7 +654,7 @@ class SimulatorWindow(gui.WindowWidget):
             self,
             animations: bool
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapAnimations,
             value=animations)
 
@@ -715,12 +694,8 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),

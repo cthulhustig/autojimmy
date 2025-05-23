@@ -961,9 +961,8 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        mapEngine = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapEngine,
-            enumType=app.MapEngine)
+        mapEngine = app.Config.instance().value(
+            option=app.ConfigOption.MapEngine)
         useInAppRendering = mapEngine is app.MapEngine.InApp
 
         if useInAppRendering:

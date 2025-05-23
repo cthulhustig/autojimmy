@@ -100,6 +100,10 @@ class ConfigOption(enum.Enum):
     WarningTagColour = 701
     DangerTagColour = 702
 
+    # TODO: I'm thinking I might just want one Tagging config option
+    # that covers all the tagging as having so many will mean consumers
+    # need to check for a lot of different types. The same could also
+    # be true for tagging colours and avg/worst/best colours
     ZoneTagging = 800
     StarPortTagging = 801
     WorldSizeTagging = 802
@@ -865,14 +869,14 @@ class Config(QtCore.QObject):
             key='TravellerMap/MapEngine',
             restart=True,
             # TODO: The MapEngine should be moved to this .py file
-            enumType=app.MapEngine,
-            default=app.MapEngine.InApp))
+            enumType=MapEngine,
+            default=MapEngine.InApp))
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapRendering,
             key='TravellerMap/MapRenderingType',
             restart=False,
-            enumType=app.MapRendering,
-            default=app.MapRendering.Tiled))
+            enumType=MapRendering,
+            default=MapRendering.Tiled))
         self._addConfigItem(BoolConfigItem(
             option=ConfigOption.MapAnimations,
             key='TravellerMap/MapAnimations',
@@ -970,7 +974,7 @@ class Config(QtCore.QObject):
             restart=False,
             # NOTE: Setting the default like this assumes the ShitTonnage option
             # has already been added
-            default=self.asInt(option=ConfigOption.ShipTonnage) * 0.1, # 10% of ship tonnage
+            default=self.value(option=ConfigOption.ShipTonnage) * 0.1, # 10% of ship tonnage
             # TODO: Not sure about this value, need to make sure it still allows hop-3
             min=0.01))
         self._addConfigItem(IntConfigItem(
@@ -1104,8 +1108,8 @@ class Config(QtCore.QObject):
             key='GUI/ColourTheme',
             restart=True,
             # TODO: The ColourTheme should be moved to this .py file
-            enumType=app.ColourTheme,
-            default=app.ColourTheme.DarkMode))
+            enumType=ColourTheme,
+            default=ColourTheme.DarkMode))
         self._addConfigItem(FloatConfigItem(
             option=ConfigOption.InterfaceScale,
             key='GUI/InterfaceScale',
@@ -1135,11 +1139,9 @@ class Config(QtCore.QObject):
             restart=False,
             default='#0A00FF00'))
 
-        colourTheme = self.asEnum(
-            option=ConfigOption.ColourTheme,
-            enumType=app.ColourTheme)
-        isDarkMode = colourTheme is app.ColourTheme.DarkMode or \
-            (colourTheme is app.ColourTheme.UseOSSetting and darkdetect.isDark())
+        colourTheme = self.value(option=ConfigOption.ColourTheme)
+        isDarkMode = colourTheme is ColourTheme.DarkMode or \
+            (colourTheme is ColourTheme.UseOSSetting and darkdetect.isDark())
         self._addConfigItem(ColourConfigItem(
             option=ConfigOption.DesirableTagColour,
             key='Tagging/DesirableTagColour',
@@ -1282,7 +1284,160 @@ class Config(QtCore.QObject):
             section='LuminosityTagging',
             restart=False))
 
-    def option(
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> travellermap.Milieu: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> travellermap.Style: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[travellermap.Option]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MapEngine], futureValue: bool = False) -> MapEngine: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MapRendering], futureValue: bool = False) -> MapRendering: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MapAnimations], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ProxyPort], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ProxyHostPoolSize], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ProxyMapUrl], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ProxyTileCacheSize], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ProxyTileCacheLifetime], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ProxyTileCacheLifetime], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.Rules], futureValue: bool = False) -> traveller.Rules: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.PlayerBrokerDM], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShipTonnage], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShipJumpRating], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShipCargoCapacity], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShipFuelCapacity], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShipCurrentFuel], futureValue: bool = False) -> float: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UseShipFuelPerParsec], futureValue: bool = False) -> float: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UseShipFuelPerParsec], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShipFuelPerParsec], futureValue: bool = False) -> float: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.PerJumpOverhead], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AvailableFunds], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MinSellerDM], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MaxSellerDM], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MinBuyerDM], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.MaxBuyerDM], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UsePurchaseBroker], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.PurchaseBrokerDmBonus], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UseSaleBroker], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.SaleBrokerDmBonus], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.RoutingType], futureValue: bool = False) -> logic.RoutingType: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.RouteOptimisation], futureValue: bool = False) -> logic.RouteOptimisation: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.RefuellingStrategy], futureValue: bool = False) -> logic.RefuellingStrategy: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UseFuelCaches], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UseAnomalyRefuelling], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AnomalyFuelCost], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.UseAnomalyBerthing], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AnomalyBerthingCost], futureValue: bool = False) -> int: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.IncludeStartBerthing], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.IncludeFinishBerthing], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.IncludeLogisticsCosts], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.IncludeUnprofitableTrades], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ColourTheme], futureValue: bool = False) -> ColourTheme: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.InterfaceScale], futureValue: bool = False) -> float: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ShowToolTipImages], futureValue: bool = False) -> bool: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AverageCaseColour], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.WorstCaseColour], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.BestCaseColour], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.DesirableTagColour], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.WarningTagColour], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.DangerTagColour], futureValue: bool = False) -> str: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ZoneTagging], futureValue: bool = False) -> typing.Mapping[traveller.ZoneType, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.StarPortTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AtmosphereTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.HydrographicsTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.PopulationTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.GovernmentTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.LawLevelTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.TechLevelTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.BaseTypeTagging], futureValue: bool = False) -> typing.Mapping[traveller.BaseType, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.TradeCodeTagging], futureValue: bool = False) -> typing.Mapping[traveller.TradeCode, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.ResourcesTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.LabourTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.InfrastructureTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.EfficiencyTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.HeterogeneityTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AcceptanceTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.StrangenessTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.SymbolsTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.SymbolsTagging], futureValue: bool = False) -> typing.Mapping[traveller.NobilityType, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.AllegianceTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.SpectralTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    @typing.overload
+    def value(self, option: typing.Literal[ConfigOption.LuminosityTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+
+    def value(
             self,
             option: ConfigOption,
             futureValue: bool = False
@@ -1290,7 +1445,7 @@ class Config(QtCore.QObject):
         item = self._configItems[option]
         return item.value(futureValue=futureValue)
 
-    def setOption(
+    def setValue(
             self,
             option: ConfigOption,
             value: typing.Any
@@ -1311,64 +1466,6 @@ class Config(QtCore.QObject):
 
         self.configChanged.emit(option, oldValue, newValue)
         return True
-
-    def asBool(
-            self,
-            option: ConfigOption,
-            futureValue: bool = False
-            ) -> bool:
-        item = self._configItems[option]
-        return bool(item.value(futureValue=futureValue))
-
-    def asStr(
-            self,
-            option: ConfigOption,
-            futureValue: bool = False
-            ) -> str:
-        item = self._configItems[option]
-        return str(item.value(futureValue=futureValue))
-
-    def asInt(
-            self,
-            option: ConfigOption,
-            futureValue: bool = False
-            ) -> int:
-        item = self._configItems[option]
-        return int(item.value(futureValue=futureValue))
-
-    def asFloat(
-            self,
-            option: ConfigOption,
-            futureValue: bool = False
-            ) -> int:
-        item = self._configItems[option]
-        return float(item.value(futureValue=futureValue))
-
-    def asEnum(
-            self,
-            option: ConfigOption,
-            enumType: typing.Type[enum.Enum],
-            futureValue: bool = False
-            ) -> enum.Enum:
-        item = self._configItems[option]
-        return enumType(item.value(futureValue=futureValue))
-
-    def asObject(
-            self,
-            option: ConfigOption,
-            objectType: typing.Type[typing.Any],
-            futureValue: bool = False
-            ) -> object:
-        item = self._configItems[option]
-        return objectType(item.value(futureValue=futureValue))
-
-    def asTagMap(
-            self,
-            option: ConfigOption,
-            futureValue: bool = False
-            ) -> typing.Mapping[typing.Any, app.TagLevel]:
-        item = self._configItems[option]
-        return dict(item.value(futureValue=futureValue))
 
     def isRestartRequired(self) -> bool:
         for item in self._configItems.values():

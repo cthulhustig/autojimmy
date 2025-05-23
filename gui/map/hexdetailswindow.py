@@ -112,18 +112,10 @@ class HexDetailsWindow(gui.WindowWidget):
         self._tabBar.selectionChanged.connect(self._tabChanged)
 
         self._hexDetails = _CustomTextEdit(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
-            mapStyle=app.Config.instance().asEnum(
-                option=app.ConfigOption.MapStyle,
-                enumType=travellermap.Style),
-            mapOptions=app.Config.instance().asObject(
-                option=app.ConfigOption.MapOptions,
-                objectType=list))
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self._tabBar, 0)
@@ -145,9 +137,7 @@ class HexDetailsWindow(gui.WindowWidget):
                 return
 
         tabName = traveller.WorldManager.instance().canonicalHexName(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             hex=hex)
         self._hexes.append(hex)
         index = self._tabBar.addTab(tabName)

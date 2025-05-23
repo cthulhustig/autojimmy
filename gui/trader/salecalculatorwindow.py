@@ -97,18 +97,10 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._randomGenerator = common.RandomGenerator()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
-            mapStyle=app.Config.instance().asEnum(
-                option=app.ConfigOption.MapStyle,
-                enumType=travellermap.Style),
-            mapOptions=app.Config.instance().asObject(
-                option=app.ConfigOption.MapOptions,
-                objectType=list))
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
@@ -271,9 +263,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         self._saleWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
@@ -474,9 +464,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         try:
             cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().asObject(
-                    option=app.ConfigOption.Rules,
-                    objectType=traveller.Rules),
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
                 filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
@@ -539,9 +527,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         exoticsTradeGood = traveller.tradeGoodFromId(
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             tradeGoodId=traveller.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
@@ -581,9 +567,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text='Ignored exotic cargo when importing.\nSale of exotic cargo requires role playing so can\'t be automated')
 
     def _addCargo(self) -> None:
-        rules: traveller.Rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
@@ -722,9 +706,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

@@ -291,13 +291,13 @@ def calculateLuminosityTagLevel(
 
 def tagColour(tagLevel: app.TagLevel) -> typing.Optional[str]:
     if tagLevel is app.TagLevel.Desirable:
-        return app.Config.instance().asStr(
+        return app.Config.instance().value(
             option=app.ConfigOption.DesirableTagColour)
     elif tagLevel is app.TagLevel.Warning:
-        return app.Config.instance().asStr(
+        return app.Config.instance().value(
             option=app.ConfigOption.WarningTagColour)
     elif tagLevel is app.TagLevel.Danger:
-        return app.Config.instance().asStr(
+        return app.Config.instance().value(
             option=app.ConfigOption.DangerTagColour)
     return None
 
@@ -305,7 +305,8 @@ def _checkConfigTagLevel(
         configOption: app.ConfigOption,
         code: typing.Union[str, enum.Enum]
         ) -> typing.Optional[app.TagLevel]:
-    tagMap = app.Config.instance().asTagMap(option=configOption)
+    # TODO: Need to fix the typing here so it knows what the return type is
+    tagMap = app.Config.instance().value(option=configOption)
     if not tagMap:
         return None
     return tagMap.get(code)

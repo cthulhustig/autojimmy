@@ -16,23 +16,12 @@ class HexRadiusSelectDialog(gui.DialogEx):
             configSection='HexRadiusSelectDialog',
             parent=parent)
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
-        mapStyle = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        mapOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=set)
-        mapRendering = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapRendering,
-            enumType=app.MapRendering)
-        mapAnimations = app.Config.instance().asBool(
-            option=app.ConfigOption.MapAnimations)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(app.ConfigOption.MapStyle)
+        mapOptions = set(app.Config.instance().value(option=app.ConfigOption.MapOptions)) # Convert to set for speed
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._overlays: typing.List[str] = []
@@ -221,7 +210,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self,
             style: travellermap.Style
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
             value=style)
 
@@ -229,7 +218,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self,
             options: typing.Iterable[travellermap.Option]
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
             value=options)
 
@@ -237,7 +226,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self,
             renderingType: app.MapRendering,
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapRendering,
             value=renderingType)
 
@@ -245,7 +234,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self,
             animations: bool
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapAnimations,
             value=animations)
 
@@ -275,11 +264,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._overlays.append(handle)
             else:
                 try:
-                    milieu = app.Config.instance().asEnum(
-                        option=app.ConfigOption.Milieu,
-                        enumType=travellermap.Milieu)
                     worlds = traveller.WorldManager.instance().worldsInRadius(
-                        milieu=milieu,
+                        milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                         center=centerHex,
                         searchRadius=searchRadius)
                     for world in worlds:

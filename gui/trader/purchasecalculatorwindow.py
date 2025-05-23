@@ -29,18 +29,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._randomGenerator = common.RandomGenerator()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().asEnum(
-                option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu),
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
-            mapStyle=app.Config.instance().asEnum(
-                option=app.ConfigOption.MapStyle,
-                enumType=travellermap.Style),
-            mapOptions=app.Config.instance().asObject(
-                option=app.ConfigOption.MapOptions,
-                objectType=list))
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
@@ -192,9 +184,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
@@ -361,9 +351,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             randomGenerator=self._randomGenerator)
 
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerWidget.isChecked(),
@@ -437,9 +425,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().asObject(
-                option=app.ConfigOption.Rules,
-                objectType=traveller.Rules),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:

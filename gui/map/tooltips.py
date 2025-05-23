@@ -36,12 +36,11 @@ def createHexToolTip(
     #
     # Image
     #
-    thumbnailsEnabled = app.Config.instance().asBool(
+    thumbnailsEnabled = app.Config.instance().value(
         option=app.ConfigOption.ShowToolTipImages)
     if thumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:
-        mapEngine = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapEngine,
-            enumType=app.MapEngine)
+        mapEngine = app.Config.instance().value(
+            option=app.ConfigOption.MapEngine)
         try:
             tileBytes, tileFormat = gui.generateThumbnail(
                 milieu=milieu,

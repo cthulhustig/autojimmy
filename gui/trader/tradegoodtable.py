@@ -292,9 +292,7 @@ class TradeGoodTable(gui.ListTable):
         if not super().restoreState(baseState):
             return False
 
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         checkedTradeGoods = set()
         count = stream.readUInt32()
         for _ in range(count):

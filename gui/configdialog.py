@@ -453,9 +453,8 @@ class ConfigDialog(gui.DialogEx):
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
-            value=app.Config.instance().asEnum(
+            value=app.Config.instance().value(
                 option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu,
                 futureValue=True),
             textMap={milieu: travellermap.milieuDescription(milieu) for milieu in  travellermap.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
@@ -463,9 +462,8 @@ class ConfigDialog(gui.DialogEx):
             _RestartRequiredParagraph,
             escape=False))
 
-        rules: traveller.Rules = app.Config.instance().asObject(
+        rules = app.Config.instance().value(
             option=app.ConfigOption.Rules,
-            objectType=traveller.Rules,
             futureValue=True)
 
         self._rulesComboBox = gui.EnumComboBox(
@@ -489,9 +487,8 @@ class ConfigDialog(gui.DialogEx):
 
         self._mapEngineComboBox = gui.EnumComboBox(
             type=app.MapEngine,
-            value=app.Config.instance().asEnum(
+            value=app.Config.instance().value(
                 option=app.ConfigOption.MapEngine,
-                enumType=app.MapEngine,
                 futureValue=True))
         self._mapEngineComboBox.currentIndexChanged.connect(
             self._renderingTypeChanged)
@@ -526,7 +523,7 @@ class ConfigDialog(gui.DialogEx):
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
-        self._proxyPortSpinBox.setValue(app.Config.instance().asInt(
+        self._proxyPortSpinBox.setValue(app.Config.instance().value(
             option=app.ConfigOption.ProxyPort,
             futureValue=True))
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
@@ -540,7 +537,7 @@ class ConfigDialog(gui.DialogEx):
 
         self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
         self._proxyHostPoolSizeSpinBox.setRange(1, 10)
-        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().asInt(
+        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().value(
             option=app.ConfigOption.ProxyHostPoolSize,
             futureValue=True))
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
@@ -565,7 +562,7 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         self._proxyMapUrlLineEdit = gui.LineEditEx()
-        self._proxyMapUrlLineEdit.setText(app.Config.instance().asStr(
+        self._proxyMapUrlLineEdit.setText(app.Config.instance().value(
             option=app.ConfigOption.ProxyMapUrl,
             futureValue=True))
         self._proxyMapUrlLineEdit.setMaximumWidth(200)
@@ -585,7 +582,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyCompositionModeComboBox.addItem('Hybrid', False)
         self._proxyCompositionModeComboBox.addItem('SVG', True)
         self._proxyCompositionModeComboBox.setCurrentByUserData(
-            userData=app.Config.instance().asBool(
+            userData=app.Config.instance().value(
                 option=app.ConfigOption.ProxySvgComposition,
                 futureValue=True))
         self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
@@ -619,7 +616,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
         self._proxyTileCacheSizeSpinBox.setValue(
-            int(app.Config.instance().asInt(
+            int(app.Config.instance().value(
                 option=app.ConfigOption.ProxyTileCacheSize,
                 futureValue=True) / (1000 * 1000)))
         self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
@@ -634,7 +631,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
         self._proxyTileCacheLifetimeSpinBox.setValue(
-            app.Config.instance().asInt(
+            app.Config.instance().value(
                 option=app.ConfigOption.ProxyTileCacheLifetime,
                 futureValue=True))
         self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
@@ -669,9 +666,8 @@ class ConfigDialog(gui.DialogEx):
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
             type=app.ColourTheme,
-            value=app.Config.instance().asEnum(
+            value=app.Config.instance().value(
                 option=app.ConfigOption.ColourTheme,
-                enumType=app.ColourTheme,
                 futureValue=True))
         self._colourThemeComboBox.setToolTip(gui.createStringToolTip(
             '<p>Select the colour theme.</p>' +
@@ -682,7 +678,7 @@ class ConfigDialog(gui.DialogEx):
         # where 1.0 is 100%
         self._interfaceScaleSpinBox = gui.SpinBoxEx()
         self._interfaceScaleSpinBox.setRange(100, 400)
-        self._interfaceScaleSpinBox.setValue(int(app.Config.instance().asFloat(
+        self._interfaceScaleSpinBox.setValue(int(app.Config.instance().value(
             option=app.ConfigOption.InterfaceScale,
             futureValue=True) * 100))
         self._interfaceScaleSpinBox.setToolTip(gui.createStringToolTip(
@@ -691,7 +687,7 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
-        self._showToolTipImagesCheckBox.setChecked(app.Config.instance().asBool(
+        self._showToolTipImagesCheckBox.setChecked(app.Config.instance().value(
             option=app.ConfigOption.ShowToolTipImages,
             futureValue=True))
         self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
@@ -702,21 +698,21 @@ class ConfigDialog(gui.DialogEx):
             'can cause the user interface to block temporarily while the image is downloaded.</p>',
             escape=False))
 
-        self._averageCaseColourButton = gui.ColourButton(app.Config.instance().asStr(
+        self._averageCaseColourButton = gui.ColourButton(app.Config.instance().value(
             option=app.ConfigOption.AverageCaseColour,
             futureValue=True))
         self._averageCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._averageCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using average dice rolls'))
 
-        self._worstCaseColourButton = gui.ColourButton(app.Config.instance().asStr(
+        self._worstCaseColourButton = gui.ColourButton(app.Config.instance().value(
             option=app.ConfigOption.WorstCaseColour,
             futureValue=True))
         self._worstCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._worstCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using worst case dice rolls'))
 
-        self._bestCaseColourButton = gui.ColourButton(app.Config.instance().asStr(
+        self._bestCaseColourButton = gui.ColourButton(app.Config.instance().value(
             option=app.ConfigOption.BestCaseColour,
             futureValue=True))
         self._bestCaseColourButton.setFixedWidth(ColourButtonWidth)
@@ -735,21 +731,21 @@ class ConfigDialog(gui.DialogEx):
         guiGroupBox.setLayout(guiLayout)
 
         # Tagging widgets
-        self._desirableTagColourButton = gui.ColourButton(app.Config.instance().asStr(
+        self._desirableTagColourButton = gui.ColourButton(app.Config.instance().value(
             option=app.ConfigOption.DesirableTagColour,
             futureValue=True))
         self._desirableTagColourButton.setFixedWidth(ColourButtonWidth)
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
 
-        self._warningTagColourButton = gui.ColourButton(app.Config.instance().asStr(
+        self._warningTagColourButton = gui.ColourButton(app.Config.instance().value(
             option=app.ConfigOption.WarningTagColour,
             futureValue=True))
         self._warningTagColourButton.setFixedWidth(ColourButtonWidth)
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
 
-        self._dangerTagColourButton = gui.ColourButton(app.Config.instance().asStr(
+        self._dangerTagColourButton = gui.ColourButton(app.Config.instance().value(
             option=app.ConfigOption.DangerTagColour,
             futureValue=True))
         self._dangerTagColourButton.setFixedWidth(ColourButtonWidth)
@@ -777,9 +773,8 @@ class ConfigDialog(gui.DialogEx):
         self._tabWidget.addTab(tab, 'General')
 
     def _setupRulesTab(self) -> None:
-        rules: traveller.Rules = app.Config.instance().asObject(
+        rules = app.Config.instance().value(
             option=app.ConfigOption.Rules,
-            objectType=traveller.Rules,
             futureValue=True)
 
         self._classAStarPortFuelType = gui.EnumComboBox(
@@ -847,7 +842,7 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Zone',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.ZoneTagging,
                 futureValue=True))
         self._addTableTab(
@@ -858,7 +853,7 @@ class ConfigDialog(gui.DialogEx):
         self._starPortTaggingTable = self._createTaggingTable(
             keyTitle='Star Port',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.StarPort),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.StarPortTagging,
                 futureValue=True))
         self._addTableTab(
@@ -869,7 +864,7 @@ class ConfigDialog(gui.DialogEx):
         self._worldSizeTaggingTable = self._createTaggingTable(
             keyTitle='World Size',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.WorldSize),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.WorldSizeTagging,
                 futureValue=True))
         self._addTableTab(
@@ -880,7 +875,7 @@ class ConfigDialog(gui.DialogEx):
         self._atmosphereTaggingTable = self._createTaggingTable(
             keyTitle='Atmosphere',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Atmosphere),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.AtmosphereTagging,
                 futureValue=True))
         self._addTableTab(
@@ -891,7 +886,7 @@ class ConfigDialog(gui.DialogEx):
         self._hydrographicsTaggingTable = self._createTaggingTable(
             keyTitle='Hydrographics',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Hydrographics),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.HydrographicsTagging,
                 futureValue=True))
         self._addTableTab(
@@ -902,7 +897,7 @@ class ConfigDialog(gui.DialogEx):
         self._populationTaggingTable = self._createTaggingTable(
             keyTitle='Population',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Population),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.PopulationTagging,
                 futureValue=True))
         self._addTableTab(
@@ -913,7 +908,7 @@ class ConfigDialog(gui.DialogEx):
         self._governmentTaggingTable = self._createTaggingTable(
             keyTitle='Government',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Government),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.GovernmentTagging,
                 futureValue=True))
         self._addTableTab(
@@ -924,7 +919,7 @@ class ConfigDialog(gui.DialogEx):
         self._lawLevelTaggingTable = self._createTaggingTable(
             keyTitle='Law Level',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.LawLevel),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.LawLevelTagging,
                 futureValue=True))
         self._addTableTab(
@@ -935,7 +930,7 @@ class ConfigDialog(gui.DialogEx):
         self._techLevelTaggingTable = self._createTaggingTable(
             keyTitle='Tech Level',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.TechLevel),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.TechLevelTagging,
                 futureValue=True))
         self._addTableTab(
@@ -953,7 +948,7 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Base',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.BaseTypeTagging,
                 futureValue=True))
         self._addTableTab(
@@ -971,7 +966,7 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Trade Code',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.TradeCodeTagging,
                 futureValue=True))
         self._addTableTab(
@@ -982,7 +977,7 @@ class ConfigDialog(gui.DialogEx):
         self._resourcesTaggingTable = self._createTaggingTable(
             keyTitle='Resources',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Resources),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.ResourcesTagging,
                 futureValue=True))
         self._addTableTab(
@@ -993,7 +988,7 @@ class ConfigDialog(gui.DialogEx):
         self._labourTaggingTable = self._createTaggingTable(
             keyTitle='Labour',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Labour),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.LabourTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1004,7 +999,7 @@ class ConfigDialog(gui.DialogEx):
         self._infrastructureTaggingTable = self._createTaggingTable(
             keyTitle='Infrastructure',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Infrastructure),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.InfrastructureTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1015,7 +1010,7 @@ class ConfigDialog(gui.DialogEx):
         self._efficiencyTaggingTable = self._createTaggingTable(
             keyTitle='Efficiency',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Efficiency),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.EfficiencyTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1026,7 +1021,7 @@ class ConfigDialog(gui.DialogEx):
         self._heterogeneityTaggingTable = self._createTaggingTable(
             keyTitle='Heterogeneity',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Heterogeneity),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.HeterogeneityTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1037,7 +1032,7 @@ class ConfigDialog(gui.DialogEx):
         self._acceptanceTaggingTable = self._createTaggingTable(
             keyTitle='Acceptance',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Acceptance),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.AcceptanceTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1048,7 +1043,7 @@ class ConfigDialog(gui.DialogEx):
         self._strangenessTaggingTable = self._createTaggingTable(
             keyTitle='Strangeness',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Strangeness),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.StrangenessTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1059,7 +1054,7 @@ class ConfigDialog(gui.DialogEx):
         self._symbolsTaggingTable = self._createTaggingTable(
             keyTitle='Symbols',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Symbols),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.SymbolsTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1077,7 +1072,7 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Nobility',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.NobilityTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1089,9 +1084,8 @@ class ConfigDialog(gui.DialogEx):
         # config pane should probably update
         # TODO: This probably shouldn't use app.Config
         allegiances = traveller.AllegianceManager.instance().allegiances(
-            milieu=app.Config.instance().asEnum(
+            milieu=app.Config.instance().value(
                 option=app.ConfigOption.Milieu,
-                enumType=travellermap.Milieu,
                 futureValue=False)) # Use current value
 
         # Create a copy of the allegiances list and sort it by code
@@ -1107,7 +1101,7 @@ class ConfigDialog(gui.DialogEx):
         self._allegianceTaggingTable = self._createTaggingTable(
             keyTitle='Allegiance',
             keyDescriptions=keyDescriptions,
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.AllegianceTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1118,7 +1112,7 @@ class ConfigDialog(gui.DialogEx):
         self._spectralTaggingTable = self._createTaggingTable(
             keyTitle='Spectral Class',
             keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.SpectralClass),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.SpectralTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1129,7 +1123,7 @@ class ConfigDialog(gui.DialogEx):
         self._luminosityTaggingTable = self._createTaggingTable(
             keyTitle='Luminosity Class',
             keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.LuminosityClass),
-            taggingMap=app.Config.instance().asTagMap(
+            taggingMap=app.Config.instance().value(
                 option=app.ConfigOption.LuminosityTagging,
                 futureValue=True))
         self._addTableTab(
@@ -1166,10 +1160,10 @@ class ConfigDialog(gui.DialogEx):
 
     def _saveConfig(self) -> None:
         try:
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.Milieu,
                 value=self._milieuComboBox.currentEnum())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.Rules,
                 value=traveller.Rules(
                     system=self._rulesComboBox.currentEnum(),
@@ -1178,124 +1172,124 @@ class ConfigDialog(gui.DialogEx):
                     classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                     classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
                     classEStarPortFuelType=self._classEStarPortFuelType.currentEnum()))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.MapEngine,
                 value=self._mapEngineComboBox.currentEnum())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ProxyPort,
                 value=self._proxyPortSpinBox.value())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ProxyHostPoolSize,
                 value=self._proxyHostPoolSizeSpinBox.value())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ProxyMapUrl,
                 value=self._proxyMapUrlLineEdit.text())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ProxyTileCacheSize,
                 value=self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000)) # Convert MB to bytes
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ProxyTileCacheLifetime,
                 value=self._proxyTileCacheLifetimeSpinBox.value())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ProxySvgComposition,
                 value=self._proxyCompositionModeComboBox.currentUserData())
 
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ColourTheme,
                 value=self._colourThemeComboBox.currentEnum())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.InterfaceScale,
                 value=self._interfaceScaleSpinBox.value() / 100) # Convert percent to scale
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ShowToolTipImages,
                 value=self._showToolTipImagesCheckBox.isChecked())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AverageCaseColour,
                 value=self._averageCaseColourButton.colour())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.WorstCaseColour,
                 value=self._worstCaseColourButton.colour())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.BestCaseColour,
                 value=self._bestCaseColourButton.colour())
 
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.DesirableTagColour,
                 value=self._desirableTagColourButton.colour())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.WarningTagColour,
                 value=self._warningTagColourButton.colour())
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.DangerTagColour,
                 value=self._dangerTagColourButton.colour())
 
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ZoneTagging,
                 value=self._taggingMapFromTable(self._zoneTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.StarPortTagging,
                 value=self._taggingMapFromTable(self._starPortTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.WorldSizeTagging,
                 value=self._taggingMapFromTable(self._worldSizeTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AtmosphereTagging,
                 value=self._taggingMapFromTable(self._atmosphereTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.HydrographicsTagging,
                 value=self._taggingMapFromTable(self._hydrographicsTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.PopulationTagging,
                 value=self._taggingMapFromTable(self._populationTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.GovernmentTagging,
                 value=self._taggingMapFromTable(self._governmentTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.LawLevelTagging,
                 value=self._taggingMapFromTable(self._lawLevelTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.TechLevelTagging,
                 value=self._taggingMapFromTable(self._techLevelTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.BaseTypeTagging,
                 value=self._taggingMapFromTable(self._baseTypeTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.TradeCodeTagging,
                 value=self._taggingMapFromTable(self._tradeCodeTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.ResourcesTagging,
                 value=self._taggingMapFromTable(self._resourcesTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.LabourTagging,
                 value=self._taggingMapFromTable(self._labourTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.InfrastructureTagging,
                 value=self._taggingMapFromTable(self._infrastructureTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.EfficiencyTagging,
                 value=self._taggingMapFromTable(self._efficiencyTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.HeterogeneityTagging,
                 value=self._taggingMapFromTable(self._heterogeneityTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AcceptanceTagging,
                 value=self._taggingMapFromTable(self._acceptanceTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.StrangenessTagging,
                 value=self._taggingMapFromTable(self._strangenessTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.SymbolsTagging,
                 value=self._taggingMapFromTable(self._symbolsTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.NobilityTagging,
                 value=self._taggingMapFromTable(self._nobilityTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.AllegianceTagging,
                 value=self._taggingMapFromTable(self._allegianceTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.SpectralTagging,
                 value=self._taggingMapFromTable(self._spectralTaggingTable))
-            app.Config.instance().setOption(
+            app.Config.instance().setValue(
                 option=app.ConfigOption.LuminosityTagging,
                 value=self._taggingMapFromTable(self._luminosityTaggingTable))
         except Exception as ex:

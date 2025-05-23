@@ -12,23 +12,12 @@ class MapWindow(gui.WindowWidget):
             title='Universe Map',
             configSection='MapWindow')
 
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
-        mapStyle = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        mapOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-        mapRendering = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapRendering,
-            enumType=app.MapRendering)
-        mapAnimations = app.Config.instance().asBool(
-            option=app.ConfigOption.MapAnimations)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
@@ -153,7 +142,7 @@ class MapWindow(gui.WindowWidget):
             self,
             style: travellermap.Style
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
             value=style)
 
@@ -161,7 +150,7 @@ class MapWindow(gui.WindowWidget):
             self,
             options: typing.Iterable[travellermap.Option]
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
             value=options)
 
@@ -169,7 +158,7 @@ class MapWindow(gui.WindowWidget):
             self,
             renderingType: app.MapRendering,
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapRendering,
             value=renderingType)
 
@@ -177,6 +166,6 @@ class MapWindow(gui.WindowWidget):
             self,
             animations: bool
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapAnimations,
             value=animations)

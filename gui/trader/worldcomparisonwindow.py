@@ -32,9 +32,7 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
         # Don't include exotics in the table as they're not like other trade goods and don't
         # affect the trade score
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         tradeGoods = traveller.tradeGoodList(
             rules=rules,
             excludeTradeGoods=[traveller.tradeGoodFromId(
@@ -170,23 +168,12 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(groupLayout)
 
     def _setupWorldControls(self) -> None:
-        milieu = app.Config.instance().asEnum(
-            option=app.ConfigOption.Milieu,
-            enumType=travellermap.Milieu)
-        rules = app.Config.instance().asObject(
-            option=app.ConfigOption.Rules,
-            objectType=traveller.Rules)
-        mapStyle = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapStyle,
-            enumType=travellermap.Style)
-        mapOptions = app.Config.instance().asObject(
-            option=app.ConfigOption.MapOptions,
-            objectType=list)
-        mapRendering = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapRendering,
-            enumType=app.MapRendering)
-        mapAnimations = app.Config.instance().asBool(
-            option=app.ConfigOption.MapAnimations)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=milieu,
@@ -346,7 +333,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self,
             style: travellermap.Style
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
             value=style)
 
@@ -354,7 +341,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self,
             options: typing.Iterable[travellermap.Option]
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
             value=options)
 
@@ -362,7 +349,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self,
             renderingType: app.MapRendering,
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapRendering,
             value=renderingType)
 
@@ -370,7 +357,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self,
             animations: bool
             ) -> None:
-        app.Config.instance().setOption(
+        app.Config.instance().setValue(
             option=app.ConfigOption.MapAnimations,
             value=animations)
 

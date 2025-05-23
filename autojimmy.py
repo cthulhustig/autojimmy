@@ -57,9 +57,8 @@ def _cairoSvgInstallCheck(
         return True # CairoSVG is working so app should continue
 
     svgCustomSectors = []
-    sectors = travellermap.DataStore.instance().sectors(app.Config.instance().asEnum(
-        option=app.ConfigOption.Milieu,
-        enumType=travellermap.Milieu))
+    sectors = travellermap.DataStore.instance().sectors(
+        milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
     for sector in sectors:
         mapLevels = sector.customMapLevels()
         if not mapLevels:
@@ -215,7 +214,7 @@ def _snapshotUpdateCheck(
 def _hostPoolSizeCheck(
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> int:
-    requestedHostCount = app.Config.instance().asInt(
+    requestedHostCount = app.Config.instance().value(
         option=app.ConfigOption.ProxyHostPoolSize)
     availableHostCount = 0
     for index in range(1, requestedHostCount + 1):
@@ -513,7 +512,7 @@ def main() -> None:
             appDir=appDir)
 
         # Set configured log level immediately after configuration has been setup
-        logLevel = app.Config.instance().asInt(option=app.ConfigOption.LogLevel)
+        logLevel = app.Config.instance().value(option=app.ConfigOption.LogLevel)
         try:
             app.setLogLevel(logLevel)
         except Exception as ex:
@@ -540,15 +539,10 @@ def main() -> None:
 
         gui.configureAppStyle(
             application=application,
-            interfaceTheme=app.Config.instance().asEnum(
-                option=app.ConfigOption.ColourTheme,
-                enumType=app.ColourTheme),
-            interfaceScale=app.Config.instance().asFloat(
-                option=app.ConfigOption.InterfaceScale))
+            interfaceTheme=app.Config.instance().value(option=app.ConfigOption.ColourTheme),
+            interfaceScale=app.Config.instance().value(option=app.ConfigOption.InterfaceScale))
 
-        mapEngine = app.Config.instance().asEnum(
-            option=app.ConfigOption.MapEngine,
-            enumType=app.MapEngine)
+        mapEngine = app.Config.instance().value(option=app.ConfigOption.MapEngine)
         if mapEngine is app.MapEngine.WebProxy:
             # Check if CairoSVG is working, possibly prompting the user if it's
             # not. This needs to be done after the DataStore singleton has been
@@ -579,20 +573,19 @@ def main() -> None:
             hostPoolSize = _hostPoolSizeCheck()
             if hostPoolSize > 0:
                 proxy.MapProxy.configure(
-                    listenPort=app.Config.instance().asInt(
+                    listenPort=app.Config.instance().value(
                         option=app.ConfigOption.ProxyPort),
                     hostPoolSize=hostPoolSize,
-                    travellerMapUrl=app.Config.instance().asStr(
+                    travellerMapUrl=app.Config.instance().value(
                         option=app.ConfigOption.ProxyMapUrl),
-                    tileCacheSize=app.Config.instance().asInt(
+                    tileCacheSize=app.Config.instance().value(
                         option=app.ConfigOption.ProxyTileCacheSize),
-                    tileCacheLifetime=app.Config.instance().asInt(
+                    tileCacheLifetime=app.Config.instance().value(
                         option=app.ConfigOption.ProxyTileCacheLifetime),
-                    svgComposition=app.Config.instance().asInt(
+                    svgComposition=app.Config.instance().value(
                         option=app.ConfigOption.ProxySvgComposition),
-                    mainsMilieu=app.Config.instance().asEnum(
-                        option=app.ConfigOption.Milieu,
-                        enumType=travellermap.Milieu),
+                    mainsMilieu=app.Config.instance().value(
+                        option=app.ConfigOption.Milieu),
                     installDir=installDir,
                     appDir=appDir,
                     logDir=logDirectory,
