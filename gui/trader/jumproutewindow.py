@@ -864,11 +864,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._minRouteCostLabel = gui.PrefixLabel(prefix='Min Cost: ')
         self._maxRouteCostLabel = gui.PrefixLabel(prefix='Max Cost: ')
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
         labelLayout = QtWidgets.QHBoxLayout()
         labelLayout.setContentsMargins(0, 0, 0, 0)
-        labelLayout.setSpacing(int(15 * interfaceScale))
+        labelLayout.setSpacing(int(15 * gui.interfaceScale()))
         labelLayout.addWidget(self._processedRoutesLabel)
         labelLayout.addWidget(self._jumpCountLabel)
         labelLayout.addWidget(self._routeLengthLabel)

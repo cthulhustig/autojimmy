@@ -190,8 +190,6 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
                 option=app.ConfigOption.MapOptions,
                 objectType=list))
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
         self._hexWidget = gui.HexSelectToolWidget(
             milieu=milieu,
             labelText='Center Hex:')
@@ -210,7 +208,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         # jump route planner window where the start/finish world combo boxes do
         # expand to fil available space.
         self._hexWidget.setMinimumWidth(
-            int(_HexSearchRadiusWidget._MinWorldWidgetWidth * interfaceScale))
+            int(_HexSearchRadiusWidget._MinWorldWidgetWidth * gui.interfaceScale()))
         # Enable dead space selection so the user can find things centred around
         # a dead space hex
         self._hexWidget.enableDeadSpaceSelection(enable=True)

@@ -302,10 +302,15 @@ class IntConfigItem(SimpleConfigItem):
         self._currentValue = self._futureValue = self._clamp(self._currentValue)
 
     def _clamp(self, value: int) -> int:
+        oldValue = value
         if self._min is not None and value < self._min:
             value = self._min
         if self._max is not None and value > self._max:
             value = self._max
+
+        if value != oldValue:
+            logging.warning(f'Clamped config option {self._key} to range {self._min} - {self._max}')
+
         return value
 
 class FloatConfigItem(SimpleConfigItem):
@@ -1295,10 +1300,15 @@ class Config(QtCore.QObject):
         oldValue = item.value()
         item.setValue(value=value)
         newValue = item.value()
+
+        # Do a write even if the value "hasn't changed" as the change
+        # comparison is based on the current value but it's the future
+        # value that will be written
+        item.write(self._settings)
+
         if newValue == oldValue:
             return False
 
-        item.write(self._settings)
         self.configChanged.emit(option, oldValue, newValue)
         return True
 

@@ -538,7 +538,13 @@ def main() -> None:
             userDir=os.path.join(appDir, 'robots'),
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))
 
-        gui.configureAppStyle(application)
+        gui.configureAppStyle(
+            application=application,
+            interfaceTheme=app.Config.instance().asEnum(
+                option=app.ConfigOption.ColourTheme,
+                enumType=app.ColourTheme),
+            interfaceScale=app.Config.instance().asFloat(
+                option=app.ConfigOption.InterfaceScale))
 
         mapEngine = app.Config.instance().asEnum(
             option=app.ConfigOption.MapEngine,

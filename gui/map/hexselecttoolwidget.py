@@ -36,12 +36,10 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
         self._hexSelectDialog = None
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
         self._searchComboBox = gui.HexSelectComboBox(milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(
-            int(HexSelectToolWidget._MinWoldSelectWidth * interfaceScale))
+            int(HexSelectToolWidget._MinWoldSelectWidth * gui.interfaceScale()))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
         self._mapSelectButton = gui.IconButton(

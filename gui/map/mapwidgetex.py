@@ -216,9 +216,7 @@ class _CustomIconButton(gui.IconButton):
             ) -> None:
         super().__init__(icon=icon, parent=parent)
 
-        interfaceScaling = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        spacing = int(6 * interfaceScaling)
+        spacing = int(6 * gui.interfaceScale())
 
         self.setFixedSize(size)
         self.setIconSize(QtCore.QSize(size.width() - spacing, size.height() - spacing))
@@ -559,9 +557,7 @@ class _LegendWidget(QtWidgets.QWidget):
         amberZoneColour = '#FFCC00'
         redZoneColour = '#E32736'
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        worldGlyphSize = int(12 * interfaceScale)
+        worldGlyphSize = int(12 * gui.interfaceScale())
 
         if self._style is travellermap.Style.Print:
             textStyle = 'color: black;'

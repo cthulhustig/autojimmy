@@ -692,11 +692,9 @@ class _NewSectorDialog(gui.DialogEx):
             QtWidgets.QSizePolicy.Policy.Preferred,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addLayout(optionsLayout)
-        groupLayout.addSpacing(int(10 * interfaceScale))
+        groupLayout.addSpacing(int(10 * gui.interfaceScale()))
         groupLayout.addWidget(infoLabel)
 
         self._renderOptionsGroupBox = QtWidgets.QGroupBox('Web Rendering Options*')

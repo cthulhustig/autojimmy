@@ -41,9 +41,7 @@ class _DropdownButton(QtWidgets.QToolButton):
         option = QtWidgets.QStyleOptionToolButton()
         self.initStyleOption(option)
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        dpi = gui.QStyleHelper.dpi(option) * interfaceScale
+        dpi = gui.QStyleHelper.dpi(option) * gui.interfaceScale()
         arrowWidth = int(gui.QStyleHelper.dpiScaled(14, dpi))
         arrowHeight = int(gui.QStyleHelper.dpiScaled(8, dpi))
         arrowMax = min(arrowWidth, arrowHeight)
@@ -88,9 +86,7 @@ class _DropdownWidgetAction(gui.WidgetActionEx):
             self,
             parent: typing.Optional[QtWidgets.QWidget]
             ) -> QtWidgets.QWidget:
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        width = int(_DropdownWidgetAction._WidgetWidth * interfaceScale)
+        width = int(_DropdownWidgetAction._WidgetWidth * gui.interfaceScale())
         widget = _DropdownButton(parent=parent)
         widget.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
         widget.setMenu(self._menu)
@@ -261,9 +257,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.orderChanged.connect(
             self._rollerTreeOrderChanged)
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        iconSize = int(DiceRollerWindow._IconSize * interfaceScale)
+        iconSize = int(DiceRollerWindow._IconSize * gui.interfaceScale())
         self._rollerToolbar = QtWidgets.QToolBar()
         self._rollerToolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
         self._rollerToolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)

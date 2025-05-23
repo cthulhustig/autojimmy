@@ -221,9 +221,7 @@ class ManifestTable(gui.ListTable):
         self.resizeRowToContents(row)
 
     def _fillSpacerRow(self, row: int) -> None:
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        height = int(10 * interfaceScale)
+        height = int(10 * gui.interfaceScale())
         for column in range(self.columnCount()):
             tableItem = QtWidgets.QTableWidgetItem()
             tableItem.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)

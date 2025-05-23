@@ -23,22 +23,27 @@ def _defaultWidgetSize(type: typing.Type[QtWidgets.QWidget]) -> QtCore.QSize:
     return sizeHint
 
 
+_InterfaceTheme = app.ColourTheme.DarkMode
 _CachedDarkDetectResult = None
 def isDarkModeEnabled() -> bool:
-    theme = app.Config.instance().asEnum(
-        option=app.ConfigOption.ColourTheme,
-        enumType=app.ColourTheme)
-    if theme == app.ColourTheme.DarkMode:
+    global _InterfaceTheme
+
+    if _InterfaceTheme is app.ColourTheme.DarkMode:
         return True
-    elif theme == app.ColourTheme.LightMode:
+    elif _InterfaceTheme is app.ColourTheme.LightMode:
         return False
-    elif theme == app.ColourTheme.UseOSSetting:
+    elif _InterfaceTheme is app.ColourTheme.UseOSSetting:
         global _CachedDarkDetectResult
         if _CachedDarkDetectResult == None:
             _CachedDarkDetectResult = darkdetect.isDark()
         return _CachedDarkDetectResult
 
     return True # In case of error default to dark mode
+
+_InterfaceScale = 1.0
+def interfaceScale() -> float:
+    global _InterfaceScale
+    return _InterfaceScale
 
 # This function can be called on any platform but only has an effect on Windows
 # This MUST be called before the a window is shown. It has no effect if the window is already displayed.
@@ -68,7 +73,15 @@ def configureWindowTitleBar(widget: QtWidgets.QWidget) -> bool:
         logging.warning('Failed to set Windows ImmersionDarkMode attribute', exc_info=ex)
         return False
 
-def configureAppStyle(application: QtWidgets.QApplication):
+def configureAppStyle(
+        application: QtWidgets.QApplication,
+        interfaceTheme: app.ColourTheme = app.ColourTheme.DarkMode,
+        interfaceScale: float = 1.0
+        ) -> None:
+    global _InterfaceTheme, _InterfaceScale
+    _InterfaceTheme = interfaceTheme
+    _InterfaceScale = interfaceScale
+
     darkModeEnabled = isDarkModeEnabled()
 
     # Enable Fusion no mater what for a consistent look
@@ -120,8 +133,6 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     style = ''
 
-    interfaceScale = app.Config.instance().asFloat(
-        option=app.ConfigOption.InterfaceScale)
     if interfaceScale != 1.0:
         # Scale radio buttons and check boxes as they don't auto scale with the font
         size = _defaultWidgetSize(QtWidgets.QRadioButton)

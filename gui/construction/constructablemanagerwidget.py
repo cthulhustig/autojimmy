@@ -95,9 +95,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._exampleSection = self._sectionList.addSection(f'Example {self._constructableStore.typeString()}s')
         self._sectionList.currentChanged.connect(self._handleCurrentChanged)
 
-        interfaceScale = app.Config.instance().asFloat(
-            option=app.ConfigOption.InterfaceScale)
-        iconSize = int(ConstructableManagerWidget._IconSize * interfaceScale)
+        iconSize = int(ConstructableManagerWidget._IconSize * gui.interfaceScale())
         self._toolbar = QtWidgets.QToolBar('Toolbar')
         self._toolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
         self._toolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
