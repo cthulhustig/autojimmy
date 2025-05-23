@@ -53,6 +53,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
@@ -279,6 +280,8 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
 
     def _enableDisableControls(self) -> None:
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
@@ -1358,7 +1361,10 @@ class WorldTraderWindow(_BaseTraderWindow):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        super()._appConfigChanged(option=option, oldValue=oldValue, newValue=newValue)
+        super()._appConfigChanged(
+            option=option,
+            oldValue=oldValue,
+            newValue=newValue)
 
         if option is app.ConfigOption.Milieu:
             self._purchaseWorldWidget.setMilieu(milieu=newValue)
@@ -2377,7 +2383,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             oldValue: typing.Any,
             newValue: typing.Any
             ) -> None:
-        super()._appConfigChanged(option=option, oldValue=oldValue, newValue=newValue)
+        super()._appConfigChanged(
+            option=option,
+            oldValue=oldValue,
+            newValue=newValue)
 
         if option is app.ConfigOption.Milieu:
             self._purchaseWorldsWidget.setMilieu(milieu=newValue)

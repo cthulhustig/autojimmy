@@ -180,6 +180,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
@@ -554,6 +555,7 @@ class WorldSearchWindow(gui.WindowWidget):
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        showTooltipImages = app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages)
 
         self._findWorldsButton = QtWidgets.QPushButton('Perform Search')
         self._findWorldsButton.clicked.connect(self._findWorlds)
@@ -566,6 +568,7 @@ class WorldSearchWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=milieu,
             rules=rules,
+            showImages=showTooltipImages,
             mapStyle=mapStyle,
             mapOptions=mapOptions)
 
@@ -705,7 +708,7 @@ class WorldSearchWindow(gui.WindowWidget):
             # Changing milieu invalidates an previous search results
             self._clearResults()
         elif option is app.ConfigOption.Rules:
-            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._hexTooltipProvider.setRules(rules=newValue)
             self._worldTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
@@ -718,6 +721,8 @@ class WorldSearchWindow(gui.WindowWidget):
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._mapWidget.setAnimation(enabled=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
 
     def _mapStyleChanged(
             self,

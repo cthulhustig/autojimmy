@@ -91,8 +91,9 @@ class _CustomTextEdit(gui.TextEditEx):
                 hex=self._hex,
                 milieu=self._milieu,
                 rules=self._rules,
-                thumbnailStyle=self._mapStyle,
-                thumbnailOptions=self._mapOptions))
+                hexImage=True, # Always show image of the hex in hex detail window
+                hexImageStyle=self._mapStyle,
+                hexImageOptions=self._mapOptions))
         else:
             self.clear()
 

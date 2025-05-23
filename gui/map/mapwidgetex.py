@@ -456,11 +456,11 @@ class _InfoWidget(QtWidgets.QWidget):
                 hex=self._hex,
                 milieu=self._milieu,
                 rules=self._rules,
-                # Don't display the thumbnail as the the user is already looking at the map so no point
-                thumbnail=False,
                 width=width - _InfoWidget._ContentRightMargin,
-                thumbnailStyle=None,
-                thumbnailOptions=None)
+                # Don't display the thumbnail as the the user is already looking at the map so no point
+                hexImage=False,
+                hexImageStyle=None,
+                hexImageOptions=None)
             self._label.setText(text)
         else:
             self._label.setText('')

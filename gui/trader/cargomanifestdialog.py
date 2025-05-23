@@ -66,6 +66,7 @@ class CargoManifestDialog(gui.DialogEx):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
@@ -294,12 +295,14 @@ class CargoManifestDialog(gui.DialogEx):
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             # Changing the milieu invalidates existing trade options
             self._cargoBreakdownTable.removeAllRows()
-        if option is app.ConfigOption.Rules:
+        elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
 
     def _showWorldDetails(
             self,

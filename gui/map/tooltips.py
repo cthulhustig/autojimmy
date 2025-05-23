@@ -8,17 +8,17 @@ import traveller
 import travellermap
 import typing
 
-_DisableWorldToolTipImages = False
+_DisableHexToolTipImages = False
 def createHexToolTip(
         hex: travellermap.HexPosition,
         milieu: travellermap.Milieu,
         rules: traveller.Rules,
-        thumbnail: bool = True,
         width: int = 512, # 0 means no fixed width
-        thumbnailStyle: typing.Optional[travellermap.Style] = None,
-        thumbnailOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
+        hexImage: bool = True,
+        hexImageStyle: typing.Optional[travellermap.Style] = None,
+        hexImageOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
         ) -> str:
-    global _DisableWorldToolTipImages
+    global _DisableHexToolTipImages
 
     world = traveller.WorldManager.instance().worldByPosition(
         milieu=milieu,
@@ -35,10 +35,7 @@ def createHexToolTip(
     #
     # Image
     #
-    # TODO: This should be passed in by the caller as the thumbnail flag
-    thumbnailsEnabled = app.Config.instance().value(
-        option=app.ConfigOption.ShowToolTipImages)
-    if thumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:
+    if hexImage and not _DisableHexToolTipImages:
         mapEngine = app.Config.instance().value(
             option=app.ConfigOption.MapEngine)
         try:
@@ -48,8 +45,8 @@ def createHexToolTip(
                 width=256,
                 height=256,
                 linearScale=64,
-                style=thumbnailStyle,
-                options=thumbnailOptions,
+                style=hexImageStyle,
+                options=hexImageOptions,
                 engine=mapEngine)
             if tileBytes:
                 mineType = travellermap.mapFormatToMimeType(tileFormat)
@@ -62,7 +59,7 @@ def createHexToolTip(
             logging.error(f'Failed to retrieve tool tip image for hex {hex}', exc_info=ex)
             if isinstance(ex, TimeoutError):
                 logging.warning(f'Showing world images in tool tips has been temporarily disabled')
-                _DisableWorldToolTipImages = True
+                _DisableHexToolTipImages = True
 
     widthString = '' if not width else f'width="{width}"'
     toolTip += f'<td style="padding-left:10" {widthString}>'

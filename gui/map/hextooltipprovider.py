@@ -8,6 +8,7 @@ class HexTooltipProvider(object):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            showImages: bool,
             mapStyle: travellermap.Style,
             mapOptions: typing.Collection[travellermap.Option]
             ) -> None:
@@ -15,6 +16,7 @@ class HexTooltipProvider(object):
 
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
+        self._showImages = showImages
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
 
@@ -30,6 +32,12 @@ class HexTooltipProvider(object):
     def setRules(self, rules: traveller.Rules) -> None:
         self._rules = traveller.Rules(rules)
 
+    def showImages(self) -> bool:
+        return self._showImages
+
+    def setShowImages(self, show: bool) -> None:
+        self._showImages = show
+
     def mapStyle(self) -> travellermap.Style:
         return self._mapStyle
 
@@ -42,15 +50,11 @@ class HexTooltipProvider(object):
     def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         self._mapOptions = set(options)
 
-    def tooltip(
-            self,
-            hex: travellermap.HexPosition,
-            thumbnail: bool = True
-            ) -> str:
+    def tooltip(self, hex: travellermap.HexPosition) -> str:
         return gui.createHexToolTip(
             hex=hex,
             milieu=self._milieu,
             rules=self._rules,
-            thumbnail=thumbnail,
-            thumbnailStyle=self._mapStyle,
-            thumbnailOptions=self._mapOptions)
+            hexImage=self._showImages,
+            hexImageStyle=self._mapStyle,
+            hexImageOptions=self._mapOptions)

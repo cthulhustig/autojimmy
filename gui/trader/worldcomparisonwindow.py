@@ -175,10 +175,12 @@ class WorldComparisonWindow(gui.WindowWidget):
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        showTooltipImages = app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=milieu,
             rules=rules,
+            showImages=showTooltipImages,
             mapStyle=mapStyle,
             mapOptions=mapOptions)
 
@@ -329,6 +331,8 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._mapWidget.setAnimation(enabled=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
 
     def _mapStyleChanged(
             self,
