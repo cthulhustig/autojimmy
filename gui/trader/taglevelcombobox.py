@@ -4,6 +4,7 @@ import gui
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+# TODO: This needs update to handle tagging changing
 class TagLevelComboBox(QtWidgets.QComboBox):
     class _ItemStyleDelegate(QtWidgets.QStyledItemDelegate):
         def __init__(

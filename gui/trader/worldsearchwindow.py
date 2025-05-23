@@ -23,6 +23,7 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
+# TODO: This needs updated to handle rules changing
 class _CustomTradeGoodTable(gui.TradeGoodTable):
     def __init__(self):
         super().__init__()
@@ -162,6 +163,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
+# TODO: This needs updated to handle config changing
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
@@ -174,6 +176,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        # TODO: This should be created by the dialog and passed to this widget
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),

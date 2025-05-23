@@ -1,7 +1,6 @@
 import app
 import gui
 import logic
-import traveller
 import travellermap
 import typing
 from PyQt5 import QtCore, QtWidgets

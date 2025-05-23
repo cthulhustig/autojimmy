@@ -8,7 +8,6 @@ import traveller
 import travellermap
 import typing
 
-# TODO: This needs updated to handle the rules changing
 _DisableWorldToolTipImages = False
 def createHexToolTip(
         hex: travellermap.HexPosition,
@@ -36,6 +35,7 @@ def createHexToolTip(
     #
     # Image
     #
+    # TODO: This should be passed in by the caller as the thumbnail flag
     thumbnailsEnabled = app.Config.instance().value(
         option=app.ConfigOption.ShowToolTipImages)
     if thumbnail and thumbnailsEnabled and not _DisableWorldToolTipImages:

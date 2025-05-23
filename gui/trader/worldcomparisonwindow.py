@@ -24,6 +24,7 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
+# TODO: This needs updated to handle rules changing
 class _CustomTradeGoodTable(gui.TradeGoodTable):
     def __init__(self):
         super().__init__()

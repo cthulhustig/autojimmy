@@ -203,6 +203,7 @@ class _EnumOptionWidget(QtWidgets.QWidget):
         for checkBox in self._optionMap.values():
             checkBox.setChecked(False)
 
+# TODO: This needs update to handle rules changing
 class WorldFilterDialog(gui.DialogEx):
     def __init__(
             self,

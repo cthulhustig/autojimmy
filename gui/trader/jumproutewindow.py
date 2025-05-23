@@ -117,7 +117,7 @@ class _RefuellingPlanTableColumnType(enum.Enum):
     WorstCaseBerthingCost = 'Worst Berthing Cost\n(Cr)'
     BestCaseBerthingCost = 'Best Berthing Cost\n(Cr)'
 
-# TODO: This needs updated to handle the milieu changing
+# TODO: This needs updated to handle the avg/worst/best colour changing
 class _RefuellingPlanTable(gui.HexTable):
     AllColumns = [
         gui.HexTable.ColumnType.Name,

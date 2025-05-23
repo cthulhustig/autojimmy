@@ -25,7 +25,7 @@ def _customWorldTableColumns(
 
 # TODO: I think I need to move calculation of the trade score into the
 # table so the score can be updated if the milieu changes
-# TODO: This needs updated to handle the rules changing
+# TODO: This needs updated to handle the rules and desirable tag colour changing
 class WorldTradeScoreTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)

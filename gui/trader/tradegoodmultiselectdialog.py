@@ -4,6 +4,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
+# TODO: This needs update to handle rules changing
 class TradeGoodMultiSelectDialog(gui.DialogEx):
     def __init__(
             self,
