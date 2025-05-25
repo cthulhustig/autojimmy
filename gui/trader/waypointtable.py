@@ -106,26 +106,6 @@ class WaypointTable(gui.HexTable):
         if checkBox:
             checkBox.setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
 
-    def insertHex(
-            self,
-            row: int,
-            hex: travellermap.HexPosition
-            ) -> int:
-        return super().insertHex(row, hex)
-
-    def setHex(
-            self,
-            row: int,
-            hex: travellermap.HexPosition
-            ) -> int:
-        return super().setHex(row, hex)
-
-    def removeRow(self, row: int) -> None:
-        return super().removeRow(row)
-
-    def removeAllRows(self) -> None:
-        return super().removeAllRows()
-
     def moveSelectionUp(self) -> typing.Iterable[typing.Tuple[int, int]]:
         swappedRows = super().moveSelectionUp()
         self._swapBerthingChecks(swappedRows)

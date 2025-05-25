@@ -475,6 +475,13 @@ class HexTable(gui.FrozenColumnListTable):
                 pbg = world.pbg()
                 worldTagColour = app.tagColour(app.calculateWorldTagLevel(world))
 
+            # NOTE: It's important that an item is always created for each of the
+            # cells in the row, even if it has no text. If you don't and you use
+            # the move selection up/down functions, it doesn't move the selection
+            # highlight for the cells that have no items. This appears to be a Qt
+            # bug as it's it that is implementing the full row selection and, as
+            # far as I can see, the api only allows user code to manipulate the
+            # selection if there is an item in the cell
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
                 tableItem = None
