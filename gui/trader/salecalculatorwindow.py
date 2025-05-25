@@ -282,12 +282,14 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._worldGroupBox.setLayout(layout)
 
     def _setupConfigurationControls(self) -> None:
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+
         self._playerBrokerDmSpinBox = gui.SpinBoxEx()
         self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
         self._playerBrokerDmSpinBox.setValue(1)
         self._playerBrokerDmSpinBox.setToolTip(gui.PlayerBrokerDmToolTip)
 
-        self._localBrokerWidget = gui.LocalBrokerWidget()
+        self._localBrokerWidget = gui.LocalBrokerWidget(rules=rules)
 
         self._buyerDmSpinBox = gui.SpinBoxEx()
         self._buyerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
@@ -464,9 +466,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return None
 
         try:
-            cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-                filePath=path)
+            cargoRecords = logic.readCargoRecordList(filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
             logging.error(message, exc_info=ex)
@@ -494,11 +494,16 @@ class SaleCalculatorWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._saleWorldWidget.setMilieu(milieu=newValue)
 
-            # Changing milieu invalidates any current cargo as there is a good
-            # chance the worlds trade codes will have changed
+            # Changing milieu invalidates speculative cargo as world trade
+            # data has changed
             self._clearCargo()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._localBrokerWidget.setRules(rules=newValue)
+
+            # Changing rules invalidates any current cargo as cargo records
+            # are tied to a rule system
+            self._clearCargo()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
@@ -513,6 +518,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePriceGroupBox.setDisabled(disable)
         self._diceRollGroupBox.setDisabled(disable)
 
+    # TODO: Need to test this still works
     def _importCargo(self) -> None:
         if not self._cargoTable.isEmpty():
             answer = gui.AutoSelectMessageBox.question(
@@ -529,8 +535,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             # The user cancelled the load at the file dialog
             return
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         exoticsTradeGood = traveller.tradeGoodFromId(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            ruleSystem=rules.system(),
             tradeGoodId=traveller.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
@@ -575,7 +582,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
         ignoreTradeGoods = [traveller.tradeGoodFromId(
-            rules=rules,
+            ruleSystem=rules.system(),
             tradeGoodId=traveller.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
@@ -584,7 +591,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=rules,
+            ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -708,8 +715,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
         diceRoller = common.DiceRoller(
             randomGenerator=self._randomGenerator)
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            ruleSystem=rules.system(),
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

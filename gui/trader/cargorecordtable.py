@@ -68,7 +68,10 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         ColumnType.SetQuantity
     ]
 
-    _ContentVersion = 'v1'
+    # v1: Initial version
+    # v2: Updated cargo record (de)serialization to include rule system
+    # as part of config overhaul that made rules changeable at runtime
+    _ContentVersion = 'v2'
 
     def __init__(
             self,
@@ -215,9 +218,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
         try:
             data = json.loads(stream.readQString())
-            cargoRecords = logic.deserialiseCargoRecordList(
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-                data=data)
+            cargoRecords = logic.deserialiseCargoRecordList(data=data)
             for cargoRecord in cargoRecords:
                 self.addCargoRecord(cargoRecord)
         except Exception as ex:

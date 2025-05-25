@@ -26,8 +26,8 @@ class TradeGoodQuantityDialog(gui.DialogEx):
         self._tradeGoodCombo = QtWidgets.QComboBox()
         if not editTradeGood:
             if not selectableTradeGoods:
-                selectableTradeGoods = traveller.tradeGoodList(
-                    rules=app.Config.instance().value(option=app.ConfigOption.Rules))
+                rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+                selectableTradeGoods = traveller.tradeGoodList(ruleSystem=rules.system())
             for tradeGood in selectableTradeGoods:
                 insertIndex = self._tradeGoodCombo.count()
                 self._tradeGoodCombo.addItem(f'{tradeGood.id()}: {tradeGood.name()}')

@@ -272,10 +272,17 @@ class _BaseTraderWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
-            # Changing milieu invalidates existing trade options
+            # Changing milieu invalidates existing trade options as the world
+            # data they were generated from has changed
             self._clearTradeOptions()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+
+            # Changing the rules invalidates existing trade options as the
+            # trade goods they use are tied to a rule system and the starport
+            # refuelling type configuration may have been used when generating
+            # them
+            self._clearTradeOptions()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
@@ -1276,7 +1283,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         replacements = {}
         for currentCargoRecord in self._speculativeCargoTable.cargoRecords():
             cargoRecords = logic.generateSpeculativePurchaseCargo(
-                rules=rules,
+                ruleSystem=rules.system(),
                 world=world,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1321,9 +1328,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return None
 
         try:
-            cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-                filePath=path)
+            cargoRecords = logic.readCargoRecordList(filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
             logging.error(message, exc_info=ex)
@@ -1370,11 +1375,19 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._purchaseWorldWidget.setMilieu(milieu=newValue)
             self._saleWorldsWidget.setMilieu(milieu=newValue)
 
-            # Changing milieu invalidates speculative cargo as there is a
-            # good chance the worlds trade codes will have changed
+            # Changing milieu invalidates speculative cargo as world trade
+            # data has changed
             self._speculativeCargoTable.removeAllRows()
         elif option is app.ConfigOption.Rules:
             self._saleWorldsWidget.setRules(rules=newValue)
+
+            # Changing rules invalidates any current cargo as cargo records
+            # are tied to a rule system
+            # TODO: Technically they're only invalidated if the rule system
+            # changes
+            self._speculativeCargoTable.removeAllRows()
+            self._availableCargoTable.removeAllRows()
+            self._currentCargoTable.removeAllRows()
 
     def _playerBrokerDmChanged(
             self,
@@ -1419,8 +1432,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             parent=self,
             text='Include illegal trade goods?') == QtWidgets.QMessageBox.StandardButton.Yes
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            ruleSystem=rules.system(),
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1440,7 +1454,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         # Don't list exotics. We can't generate speculate trade options for them so there's no
         # reason to add them here
         ignoreTradeGoods = [traveller.tradeGoodFromId(
-            rules=rules,
+            ruleSystem=rules.system(),
             tradeGoodId=traveller.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
@@ -1449,7 +1463,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=rules,
+            ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -1458,14 +1472,15 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Cargo records for all trade goods have already been added')
             return
 
-        dlg = gui.TradeGoodMultiSelectDialog(
-            parent=self,
-            selectableTradeGoods=tradeGoods)
+        tradeGoods = set(tradeGoods) # Convert to a set for fast lookup in callback
+        dlg = gui.TradeGoodSelectDialog(
+            filterCallback=lambda tradeGood: tradeGood in tradeGoods,
+            parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            rules=rules,
+            ruleSystem=rules.system(),
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1555,8 +1570,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             cargoRecord = self._availableCargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:

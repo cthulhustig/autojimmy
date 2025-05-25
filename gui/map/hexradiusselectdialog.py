@@ -195,7 +195,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         if option is app.ConfigOption.Milieu:
             self._mapWidget.setMilieu(milieu=newValue)
             self._updateOverlay()
-        if option is app.ConfigOption.Rules:
+        elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._mapWidget.setStyle(style=newValue)

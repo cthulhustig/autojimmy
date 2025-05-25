@@ -308,7 +308,7 @@ class Trader(object):
         purchaseWorldPossibleCargo = []
         for purchaseWorld in purchaseWorlds:
             possibleCargo = logic.generateSpeculativePurchaseCargo(
-                rules=self._rules,
+                ruleSystem=self._rules.system(),
                 world=purchaseWorld,
                 playerBrokerDm=playerBrokerDm,
                 useLocalBroker=useLocalPurchaseBroker,
@@ -575,7 +575,7 @@ class Trader(object):
             # thing to make the trader ignore exotics as speculating them doesn't really make sense
             # as they're sale will most likely be role playing based
             localBrokerDm, localBrokerCutPercentage, _ = traveller.calculateLocalBrokerDetails(
-                rules=self._rules,
+                ruleSystem=self._rules.system(),
                 brokerDm=localSaleBrokerDm,
                 blackMarket=tradeGood.isIllegal(saleWorld))
 

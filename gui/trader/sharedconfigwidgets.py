@@ -836,8 +836,8 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         super().__init__(
             updaterType=updaterType,
-            minValue=traveller.minLocalBrokerDm(rules=rules),
-            maxValue=traveller.maxLocalBrokerDm(rules=rules),
+            minValue=traveller.minLocalBrokerDm(ruleSystem=rules.system()),
+            maxValue=traveller.maxLocalBrokerDm(ruleSystem=rules.system()),
             toolTip=self._ruleSpecificToolTip(rules=rules),
             parent=parent)
 

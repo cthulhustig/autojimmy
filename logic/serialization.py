@@ -222,8 +222,7 @@ def serialiseWorldFilter(
     raise RuntimeError('Unknown world filter type')
 
 def deserialiseWorldFilter(
-        data: typing.Mapping[str, typing.Any],
-        rules: traveller.Rules
+        data: typing.Mapping[str, typing.Any]
         ) -> logic.WorldFilter:
     filterType = data.get('filterType')
     if filterType == None:
@@ -332,8 +331,7 @@ def deserialiseWorldFilter(
 
         return logic.RefuellingFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=logic.RefuellingFilter.Type, data=value),
-            rules=rules)
+            value=deserialiseEnumList(type=logic.RefuellingFilter.Type, data=value))
     elif filterType == 'allegiance':
         operation = data.get('operation')
         if not operation:
@@ -435,8 +433,7 @@ def serialiseWorldFilterList(
     return {'worldFilters': items}
 
 def deserialiseWorldFiltersList(
-        data: typing.Mapping[str, typing.Any],
-        rules: traveller.Rules
+        data: typing.Mapping[str, typing.Any]
         ) -> typing.Iterable[logic.WorldFilter]:
     items = data.get('worldFilters')
     if items == None:
@@ -444,5 +441,5 @@ def deserialiseWorldFiltersList(
 
     worldFilters = []
     for item in items:
-        worldFilters.append(deserialiseWorldFilter(data=item, rules=rules))
+        worldFilters.append(deserialiseWorldFilter(data=item))
     return worldFilters

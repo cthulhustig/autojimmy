@@ -81,7 +81,8 @@ class _HexFilter(logic.HexFilterInterface):
             self,
             avoidHexes: typing.List[travellermap.HexPosition],
             avoidFilters: typing.List[logic.WorldFilter],
-            avoidFilterLogic: logic.FilterLogic
+            avoidFilterLogic: logic.FilterLogic,
+            rules: traveller.Rules
             ) -> None:
         self._avoidHexes = set(avoidHexes) if avoidHexes else None
 
@@ -91,6 +92,8 @@ class _HexFilter(logic.HexFilterInterface):
             self._avoidFilter.setFilters(filters=avoidFilters)
         else:
             self._avoidFilter = None
+
+        self._rules = traveller.Rules(rules)
 
     # IMPORTANT: This will be called from the route planner job thread
     def match(
@@ -102,7 +105,7 @@ class _HexFilter(logic.HexFilterInterface):
             # Filter out worlds on the avoid list
             return False
 
-        if self._avoidFilter and world and self._avoidFilter.checkWorld(world=world):
+        if self._avoidFilter and world and self._avoidFilter.checkWorld(world=world, rules=self._rules):
             # Filter out worlds that MATCH the avoid filter
             return False
 
@@ -1095,6 +1098,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Fuel based route calculation
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         routingType = self._routingTypeComboBox.currentEnum()
         pitCostCalculator = None
         if routingType is not logic.RoutingType.Basic:
@@ -1104,7 +1108,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
                 anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
+                rules=rules)
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
@@ -1191,7 +1195,8 @@ class JumpRouteWindow(gui.WindowWidget):
         hexFilter = _HexFilter(
             avoidHexes=self._avoidHexesWidget.hexes(),
             avoidFilters=self._avoidFiltersWidget.filters(),
-            avoidFilterLogic=self._avoidFiltersWidget.filterLogic())
+            avoidFilterLogic=self._avoidFiltersWidget.filterLogic(),
+            rules=rules)
 
         try:
             self._jumpRouteJob = jobs.RoutePlannerJob(

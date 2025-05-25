@@ -203,12 +203,14 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._worldGroupBox.setLayout(layout)
 
     def _setupConfigurationControls(self) -> None:
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+
         self._playerBrokerDmSpinBox = gui.SpinBoxEx()
         self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
         self._playerBrokerDmSpinBox.setValue(1)
         self._playerBrokerDmSpinBox.setToolTip(gui.PlayerBrokerDmToolTip)
 
-        self._localBrokerWidget = gui.LocalBrokerWidget()
+        self._localBrokerWidget = gui.LocalBrokerWidget(rules=rules)
 
         self._sellerDmSpinBox = gui.SpinBoxEx()
         self._sellerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
@@ -325,11 +327,16 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._purchaseWorldWidget.setMilieu(milieu=newValue)
 
-            # Changing milieu invalidates any current cargo as there is a good
-            # chance the worlds trade codes will have changed
+            # Changing milieu invalidates speculative cargo as world trade
+            # data has changed
             self._clearCargo()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._localBrokerWidget.setRules(rules=newValue)
+
+            # Changing rules invalidates any current cargo as the cargo records
+            # are tied to a rule system
+            self._clearCargo()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
@@ -353,8 +360,9 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         diceRoller = common.DiceRoller(
             randomGenerator=self._randomGenerator)
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            ruleSystem=rules.system(),
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerWidget.isChecked(),
@@ -427,8 +435,9 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             cargoRecord = self._cargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:

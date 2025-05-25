@@ -25,22 +25,15 @@ _WelcomeMessage = """
 
 # TODO: This needs updated to handle rules changing
 class _CustomTradeGoodTable(gui.TradeGoodTable):
-    def __init__(self):
-        super().__init__()
+    def __init__(
+            self,
+            rules: traveller.Rules
+            ) -> None:
+        super().__init__(
+            rules=rules,
+            filterCallback=self._filterTradeGoods)
 
         self.setCheckable(enable=True)
-
-        # Don't include exotics in the table as they're not like other trade goods and don't
-        # affect the trade score
-        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
-            rules=rules,
-            excludeTradeGoods=[traveller.tradeGoodFromId(
-                rules=rules,
-                tradeGoodId=traveller.TradeGoodIds.Exotics)])
-        for tradeGood in tradeGoods:
-            self.addTradeGood(tradeGood=tradeGood)
-
         self.resizeColumnsToContents()
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -58,6 +51,17 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
         hint = super().minimumSizeHint()
         hint.setWidth(width)
         return hint
+
+    def _filterTradeGoods(
+            self,
+            tradeGood: traveller.TradeGood
+            ) -> bool:
+        # Don't include exotics in the table as they're not like other trade
+        # goods and don't affect the trade score
+        exotics = traveller.tradeGoodFromId(
+            ruleSystem=self._rules.system(),
+            tradeGoodId=traveller.TradeGoodIds.Exotics)
+        return tradeGood is not exotics
 
 # TODO: This MUST be updated to refresh if the milieu changes.
 # The sector/subsector combo boxes should be updated to contain the
@@ -163,8 +167,9 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
-# TODO: This needs updated to handle config changing
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
+    showCenterHex = QtCore.pyqtSignal(travellermap.HexPosition)
+
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
     _MinWorldWidgetWidth = 350
@@ -176,21 +181,13 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        # TODO: This should be created by the dialog and passed to this widget
-        self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
-            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
-
         self._hexWidget = gui.HexSelectToolWidget(
             milieu=milieu,
             labelText='Center Hex:')
-        self._hexWidget.setHexTooltipProvider(
-            provider=self._hexTooltipProvider)
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
+        self._hexWidget.enableShowHexButton(True)
+        self._hexWidget.showHex.connect(self.showCenterHex.emit)
         # Setting this to a fixed size is horrible, but no mater what I try I
         # can't get this f*cking thing to expand to fill available space. I
         # suspect it might be something to do with one of layers of widgets or
@@ -230,6 +227,9 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
     def searchRadius(self) -> int:
         return self._radiusSpinBox.value()
+
+    def setHexTooltipProvider(self, provider: gui.HexTooltipProvider) -> None:
+        self._hexWidget.setHexTooltipProvider(provider=provider)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -284,6 +284,13 @@ class WorldSearchWindow(gui.WindowWidget):
             configSection='WorldSearchWindow')
 
         self._scoreRecalculationTimer = None
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
 
         self._setupAreaControls()
         self._setupFilterControls()
@@ -453,6 +460,8 @@ class WorldSearchWindow(gui.WindowWidget):
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         self._worldRadiusSearchWidget = _HexSearchRadiusWidget(milieu=milieu)
+        self._worldRadiusSearchWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._worldRadiusSearchWidget.showCenterHex.connect(self._showCenterHexOnMapClicked)
         self._worldRadiusSearchRadioButton = gui.RadioButtonEx()
         self._worldRadiusSearchRadioButton.setToolTip('Search for worlds in the area surrounding the specified world.')
         self._worldRadiusSearchRadioButton.toggled.connect(self._worldRadiusSearchToggled)
@@ -522,7 +531,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._configGroupBox.setLayout(layout)
 
     def _setupTradeGoodsControls(self) -> None:
-        self._tradeGoodTable = _CustomTradeGoodTable()
+        self._tradeGoodTable = _CustomTradeGoodTable(
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         self._tradeGoodTable.itemChanged.connect(self._tradeGoodTableItemChanged)
 
         self._checkAllTradeGoodsButton = QtWidgets.QPushButton()
@@ -555,7 +565,6 @@ class WorldSearchWindow(gui.WindowWidget):
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
-        showTooltipImages = app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages)
 
         self._findWorldsButton = QtWidgets.QPushButton('Perform Search')
         self._findWorldsButton.clicked.connect(self._findWorlds)
@@ -564,13 +573,6 @@ class WorldSearchWindow(gui.WindowWidget):
 
         self._worldTableDisplayModeTabs = gui.HexTableTabBar()
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
-
-        self._hexTooltipProvider = gui.HexTooltipProvider(
-            milieu=milieu,
-            rules=rules,
-            showImages=showTooltipImages,
-            mapStyle=mapStyle,
-            mapOptions=mapOptions)
 
         self._worldTable = gui.WorldTradeScoreTable(milieu=milieu, rules=rules)
         self._worldTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
@@ -686,6 +688,19 @@ class WorldSearchWindow(gui.WindowWidget):
     def _worldRadiusSearchToggled(self, selected: bool) -> None:
         self._worldRadiusSearchWidget.setDisabled(not selected)
 
+    def _showCenterHexOnMapClicked(self, hex: travellermap.HexPosition) -> None:
+        try:
+            self._resultsDisplayModeTabView.setCurrentWidget(
+                self._mapWrapperWidget)
+            self._mapWidget.centerOnHex(hex=hex)
+        except Exception as ex:
+            message = 'Failed to show hex on map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
     def _scoreRecalculationTimerFired(self) -> None:
         if not self._worldTable:
             # This should never happen but handle it just in case
@@ -706,11 +721,16 @@ class WorldSearchWindow(gui.WindowWidget):
             self._mapWidget.setMilieu(milieu=newValue)
 
             # Changing milieu invalidates an previous search results
+            # as the world data has changed
             self._clearResults()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._tradeGoodTable.setRules(rules=newValue)
             self._worldTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
+
+            # Changing rules invalidates as matching can be rule dependant
+            self._clearResults()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
@@ -770,14 +790,17 @@ class WorldSearchWindow(gui.WindowWidget):
             worldFilter.setFilters(filters=self._filterWidget.filters())
 
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
                     milieu=milieu,
+                    rules=rules,
                     maxResults=self._MaxSearchResults)
             elif self._regionSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.searchRegion(
                     milieu=milieu,
+                    rules=rules,
                     sectorName=self._regionSearchSelectWidget.sectorName(),
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
@@ -788,8 +811,9 @@ class WorldSearchWindow(gui.WindowWidget):
                         parent=self,
                         text='Select a hex to center the search radius around')
                     return
-                foundWorlds = worldFilter.searchArea(
+                foundWorlds = worldFilter.searchRadius(
                     milieu=milieu,
+                    rules=rules,
                     centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
                 if len(foundWorlds) > self._MaxSearchResults:

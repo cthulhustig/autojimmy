@@ -58,7 +58,7 @@ class Simulator(object):
             nextStepDelayCallback: typing.Optional[typing.Callable[[], float]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
-        self._rules = rules
+        self._rules = traveller.Rules(rules)
         self._eventCallback = eventCallback
         self._nextStepDelayCallback = nextStepDelayCallback
         self._isCancelledCallback = isCancelledCallback
@@ -316,7 +316,7 @@ class Simulator(object):
 
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
-            rules=self._rules,
+            ruleSystem=self._rules.system(),
             world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
@@ -418,7 +418,7 @@ class Simulator(object):
 
         purchaseCargoRecords = self._cargoManifest.cargoRecords()
         saleCargoRecords, _ = logic.generateRandomSaleCargo(
-            rules=self._rules,
+            ruleSystem=self._rules.system(),
             world=world,
             currentCargo=purchaseCargoRecords,
             playerBrokerDm=self._playerBrokerDm,

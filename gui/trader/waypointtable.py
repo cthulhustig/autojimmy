@@ -1,9 +1,6 @@
-import app
 import enum
 import gui
-import json
 import logging
-import logic
 import traveller
 import travellermap
 import typing
@@ -73,13 +70,6 @@ class WaypointTable(gui.HexTable):
     # to hexes as part of support for dead space routing
     _ContentVersion = 'WaypointTable_v2'
 
-    # Store checked state as an object rather than just a bool so the check
-    # box widget callbacks can be configured to update the object so they
-    # don't need updated if the associated row changes
-    class _BerthingState(object):
-        def __init__(self):
-            self.checked = False
-
     def __init__(
             self,
             milieu: travellermap.Milieu,
@@ -87,32 +77,40 @@ class WaypointTable(gui.HexTable):
             columns: typing.Iterable[typing.Union[WaypointTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
         super().__init__(milieu=milieu, rules=rules, columns=columns)
-        self._berthingStates: typing.List[WaypointTable._BerthingState] = []
+
+        # Disable sorting as it doesn't make sense for a list of waypoint as
+        # they're listed in order of travel. It would also break the way rows
+        # are being mapped to check boxes
+        self.setSortingEnabled(False)
 
     def isBerthingChecked(self, row: int) -> bool:
-        return self._berthingStates[row].checked
+        if row < 0 or row >= self.rowCount():
+            return False
+
+        column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        checkBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(row, column)
+        if not checkBox:
+            return False
+        return checkBox.checkState() == QtCore.Qt.CheckState.Checked
 
     def setBerthingChecked(
             self,
             row: int,
             checked: bool
             ) -> None:
-        self._berthingStates[row].checked = checked
-        for column in range(self.columnCount()):
-            columnType = self.columnHeader(column)
-            if columnType == WaypointTableColumnType.BerthingRequired:
-                widget = self.cellWidget(row, column)
-                if widget:
-                    assert(isinstance(widget, _CentredCheckBoxWidget))
-                    widget.setCheckState(
-                        QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
+        if row < 0 or row >= self.rowCount():
+            return
+
+        column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        checkBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(row, column)
+        if checkBox:
+            checkBox.setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
 
     def insertHex(
             self,
             row: int,
             hex: travellermap.HexPosition
             ) -> int:
-        self._berthingStates.insert(row, WaypointTable._BerthingState())
         return super().insertHex(row, hex)
 
     def setHex(
@@ -120,15 +118,12 @@ class WaypointTable(gui.HexTable):
             row: int,
             hex: travellermap.HexPosition
             ) -> int:
-        self._berthingStates[row].checked = False
         return super().setHex(row, hex)
 
     def removeRow(self, row: int) -> None:
-        self._berthingStates.pop(row)
         return super().removeRow(row)
 
     def removeAllRows(self) -> None:
-        self._berthingStates.clear()
         return super().removeAllRows()
 
     def moveSelectionUp(self) -> typing.Iterable[typing.Tuple[int, int]]:
@@ -141,14 +136,31 @@ class WaypointTable(gui.HexTable):
         self._swapBerthingChecks(swappedRows)
         return swappedRows
 
+    # NOTE: Switching the berthing column between frozen/unfrozen causes
+    # the berthing check boxes to be removed. This function works around
+    # this by forcing the removal of the check boxes and re-adding them.
+    # If the frozen/unfrozen state of the berthing column has changed,
+    # this will result in them being removed from the frozen/unfrozen table
+    # and added to the other table.
     def setFrozenColumnVisualIndex(
             self,
             visualIndex: typing.Optional[int]
             ) -> None:
-        self._removeBerthingCheckBoxes()
-        result = super().setFrozenColumnVisualIndex(visualIndex)
-        self._restoreBerthingCheckBoxes()
-        return result
+        column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        checkedRows = set()
+
+        for row in range(self.rowCount()):
+            if self.isBerthingChecked(row):
+                checkedRows.add(row)
+            self.removeCellWidget(row, column)
+
+        super().setFrozenColumnVisualIndex(visualIndex)
+
+        for row in range(self.rowCount()):
+            self._createBerthingCheckBox(
+                row=row,
+                column=column,
+                checked=row in checkedRows)
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -207,14 +219,13 @@ class WaypointTable(gui.HexTable):
         try:
             super()._fillRow(row, hex)
 
-            if world:
-                for column in range(self.columnCount()):
-                    columnType = self.columnHeader(column)
-                    if columnType == WaypointTableColumnType.BerthingRequired:
-                        tableItem = QtWidgets.QTableWidgetItem()
-                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
-                        self.setItem(row, column, tableItem)
-                        self._createBerthingCheckBox(row=row, column=column)
+            for column in range(self.columnCount()):
+                columnType = self.columnHeader(column)
+                if columnType == WaypointTableColumnType.BerthingRequired:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
+                    self.setItem(row, column, tableItem)
+                    self._createBerthingCheckBox(row=row, column=column, checked=False)
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted
@@ -243,46 +254,46 @@ class WaypointTable(gui.HexTable):
     def _createBerthingCheckBox(
             self,
             row: int,
-            column: int
-            ) -> _CentredCheckBoxWidget:
-        berthingState = self._berthingStates[row]
+            column: int,
+            checked: bool
+            ) -> None:
+        world = self.world(row)
+        if not world:
+            return # Don't create check box for dead space
+
         checkBox = _CentredCheckBoxWidget()
-        checkBox.stateChanged.connect(lambda checkedState: self._berthingCheckChanged(berthingState, checkedState))
-        checkBox.setCheckState(QtCore.Qt.CheckState.Checked if berthingState.checked else QtCore.Qt.CheckState.Unchecked)
+        checkBox.setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
         self.setCellWidget(row, column, checkBox)
 
-    def _removeBerthingCheckBoxes(self) -> None:
-        for column in range(self.columnCount()):
-            columnType = self.columnHeader(column)
-            if columnType == WaypointTableColumnType.BerthingRequired:
-                for row in range(self.rowCount()):
-                    self.removeCellWidget(row, column)
-
-    def _restoreBerthingCheckBoxes(self) -> None:
-        for column in range(self.columnCount()):
-            columnType = self.columnHeader(column)
-            if columnType == WaypointTableColumnType.BerthingRequired:
-                for row in range(self.rowCount()):
-                    self._createBerthingCheckBox(row=row, column=column)
-
-    def _swapBerthingChecks(self, swappedRows: typing.Iterable[typing.Tuple[int, int]]) -> None:
-        berthingColumn = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
-        if berthingColumn < 0:
+    def _swapBerthingChecks(
+            self,
+            swappedRows: typing.Iterable[typing.Tuple[int, int]]
+            ) -> None:
+        column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        if column < 0:
             return
 
         for oldRow, newRow in swappedRows:
-            oldCheckBox = self.cellWidget(oldRow, berthingColumn)
-            assert(isinstance(oldCheckBox, _CentredCheckBoxWidget))
-            newCheckBox = self.cellWidget(newRow, berthingColumn)
-            assert(isinstance(newCheckBox, _CentredCheckBoxWidget))
-            oldCheckState = oldCheckBox.checkState()
-            newCheckState = newCheckBox.checkState()
-            oldCheckBox.setCheckState(newCheckState)
-            newCheckBox.setCheckState(oldCheckState)
+            newRowCheckBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(newRow, column)
+            oldRowCheckBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(oldRow, column)
 
-    def _berthingCheckChanged(
-            self,
-            berthingState: 'WaypointTable._BerthingState',
-            checkedState: int
-            ) -> None:
-        berthingState.checked = QtCore.Qt.CheckState(checkedState) == QtCore.Qt.CheckState.Checked
+            newRowState = oldRowCheckBox.checkState() if oldRowCheckBox else QtCore.Qt.CheckState.Unchecked
+            oldRowState = newRowCheckBox.checkState() if newRowCheckBox else QtCore.Qt.CheckState.Unchecked
+
+            newRowWorld = self.world(newRow)
+            if newRowWorld:
+                if newRowCheckBox:
+                    newRowCheckBox.setCheckState(newRowState)
+                else:
+                    self._createBerthingCheckBox(newRow, column, checked=newRowState == QtCore.Qt.CheckState.Checked)
+            elif newRowCheckBox:
+                self.removeCellWidget(newRow, column)
+
+            oldRowWorld = self.world(oldRow)
+            if oldRowWorld:
+                if oldRowCheckBox:
+                    oldRowCheckBox.setCheckState(oldRowState)
+                else:
+                    self._createBerthingCheckBox(oldRow, column, checked=oldRowState == QtCore.Qt.CheckState.Checked)
+            elif oldRowCheckBox:
+                self.removeCellWidget(oldRow, column)

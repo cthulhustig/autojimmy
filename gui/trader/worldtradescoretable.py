@@ -105,8 +105,8 @@ class WorldTradeScoreTable(gui.HexTable):
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
             self._tradeScoreMap[hex] = logic.TradeScore(
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules),
                 world=world,
+                ruleSystem=self._rules.system(),
                 tradeGoods=self._tradeGoods)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
@@ -117,28 +117,27 @@ class WorldTradeScoreTable(gui.HexTable):
         try:
             super()._fillRow(row, hex)
 
-            if world:
-                for column in range(self.columnCount()):
-                    columnType = self.columnHeader(column)
-                    tableItem = None
-                    if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
-                            columnType == WorldTradeScoreTableColumnType.SaleScore:
-                        tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
-                        if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-                            tradeScore = tradeScore.totalPurchaseScore()
-                        else:
-                            tradeScore = tradeScore.totalSaleScore()
-                        tableItem = gui.FormattedNumberTableWidgetItem(
-                            value=tradeScore,
-                            alwaysIncludeSign=True)
-                        scoreValue = tradeScore.value()
-                        if scoreValue > 0:
-                            tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
-                                option=app.ConfigOption.DesirableTagColour)))
+            for column in range(self.columnCount()):
+                columnType = self.columnHeader(column)
+                tableItem = None
+                if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
+                        columnType == WorldTradeScoreTableColumnType.SaleScore:
+                    tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
+                    if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
+                        tradeScore = tradeScore.totalPurchaseScore()
+                    else:
+                        tradeScore = tradeScore.totalSaleScore()
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        value=tradeScore,
+                        alwaysIncludeSign=True)
+                    scoreValue = tradeScore.value()
+                    if scoreValue > 0:
+                        tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
+                            option=app.ConfigOption.DesirableTagColour)))
 
-                    if tableItem:
-                        self.setItem(row, column, tableItem)
-                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
+                if tableItem:
+                    self.setItem(row, column, tableItem)
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted

@@ -523,46 +523,47 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, traveller.zoneTypeCode(world.zone()))
                         tagColour = app.tagColour(app.calculateZoneTagLevel(world))
                 elif columnType == self.ColumnType.StarPort:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.StarPort))
                         tagColour = app.tagColour(app.calculateStarPortTagLevel(world))
                 elif columnType == self.ColumnType.TechLevel:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.TechLevel))
                         tagColour = app.tagColour(app.calculateTechLevelTagLevel(world))
                 elif columnType == self.ColumnType.LawLevel:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.LawLevel))
                         tagColour = app.tagColour(app.calculateLawLevelTagLevel(world))
                 elif columnType == self.ColumnType.Population:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.Population))
                         tagColour = app.tagColour(app.calculatePopulationTagLevel(world))
                 elif columnType == self.ColumnType.Government:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.Government))
                         tagColour = app.tagColour(app.calculateGovernmentTagLevel(world))
                 elif columnType == self.ColumnType.WorldSize:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.WorldSize))
                         tagColour = app.tagColour(app.calculateWorldSizeTagLevel(world))
                 elif columnType == self.ColumnType.Atmosphere:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.Atmosphere))
                         tagColour = app.tagColour(app.calculateAtmosphereTagLevel(world))
                 elif columnType == self.ColumnType.Hydrographics:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.Hydrographics))
                         tagColour = app.tagColour(app.calculateHydrographicsTagLevel(world))
                 elif columnType == self.ColumnType.StarPortRefuelling:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         text = ''
                         if world.hasStarPortRefuelling(rules=self._rules, includeUnrefined=False):
@@ -573,65 +574,65 @@ class HexTable(gui.FrozenColumnListTable):
                             text += 'unrefined'
                         if not text:
                             text = 'none'
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setText(text)
                 elif columnType == self.ColumnType.GasGiantRefuelling:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setText('yes' if world.hasGasGiantRefuelling() else 'no' )
                 elif columnType == self.ColumnType.WaterRefuelling:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setText('yes' if world.hasWaterRefuelling() else 'no' )
                 elif columnType == self.ColumnType.FuelCache:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setText('yes' if world.isFuelCache() else 'no' )
                 elif columnType == self.ColumnType.Anomaly:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setText('yes' if world.isAnomaly() else 'no' )
                 elif columnType == self.ColumnType.Resources:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(traveller.Economics.Element.Resources))
                         tagColour = app.tagColour(app.calculateResourcesTagLevel(world))
                 elif columnType == self.ColumnType.Labour:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(traveller.Economics.Element.Labour))
                         tagColour = app.tagColour(app.calculateLabourTagLevel(world))
                 elif columnType == self.ColumnType.Infrastructure:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(traveller.Economics.Element.Infrastructure))
                         tagColour = app.tagColour(app.calculateInfrastructureTagLevel(world))
                 elif columnType == self.ColumnType.Efficiency:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(traveller.Economics.Element.Efficiency))
                         tagColour = app.tagColour(app.calculateEfficiencyTagLevel(world))
                 elif columnType == self.ColumnType.Heterogeneity:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(traveller.Culture.Element.Heterogeneity))
                         tagColour = app.tagColour(app.calculateHeterogeneityTagLevel(world))
                 elif columnType == self.ColumnType.Acceptance:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(traveller.Culture.Element.Acceptance))
                         tagColour = app.tagColour(app.calculateAcceptanceTagLevel(world))
                 elif columnType == self.ColumnType.Strangeness:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(traveller.Culture.Element.Strangeness))
                         tagColour = app.tagColour(app.calculateStrangenessTagLevel(world))
                 elif columnType == self.ColumnType.Symbols:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, culture.code(traveller.Culture.Element.Symbols))
                         tagColour = app.tagColour(app.calculateSymbolsTagLevel(world))
                 elif columnType == self.ColumnType.Nobilities:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         nobilities = world.nobilities()
                         highestTagLevel = None
@@ -639,17 +640,17 @@ class HexTable(gui.FrozenColumnListTable):
                             tagLevel = app.calculateNobilityTagLevel(nobility)
                             if tagLevel and (not highestTagLevel or highestTagLevel < tagLevel):
                                 highestTagLevel = tagLevel
-                        tableItem = QtWidgets.QTableWidgetItem(nobilities.string())
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, nobilities.string())
                         if highestTagLevel:
                             tagColour = app.tagColour(highestTagLevel)
                 elif columnType == self.ColumnType.Allegiance:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.allegiance())
                         tagColour = app.tagColour(app.calculateAllegianceTagLevel(world=world))
                 elif columnType == self.ColumnType.Sophont:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         displayText = ''
                         remarks = world.remarks()
                         for sophont in remarks.sophonts():
@@ -658,8 +659,8 @@ class HexTable(gui.FrozenColumnListTable):
                             displayText += f' ({percentage}%)'
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
                 elif columnType == self.ColumnType.TradeCodes:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         displayText = ''
                         for tradeCode in world.tradeCodes():
                             tradeCodeString = traveller.tradeCodeString(tradeCode)
@@ -672,6 +673,8 @@ class HexTable(gui.FrozenColumnListTable):
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
                         else:
                             tableItem = QtWidgets.QTableWidgetItem('?')
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.PopulationMultiplier:
                     if world:
                         count = traveller.ehexToInteger(
@@ -681,6 +684,8 @@ class HexTable(gui.FrozenColumnListTable):
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
                         else:
                             tableItem = QtWidgets.QTableWidgetItem('?')
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.PlanetoidBeltCount:
                     if world:
                         count = traveller.ehexToInteger(
@@ -690,6 +695,8 @@ class HexTable(gui.FrozenColumnListTable):
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
                         else:
                             tableItem = QtWidgets.QTableWidgetItem('?')
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.GasGiantCount:
                     if world:
                         count = traveller.ehexToInteger(
@@ -699,13 +706,20 @@ class HexTable(gui.FrozenColumnListTable):
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
                         else:
                             tableItem = QtWidgets.QTableWidgetItem('?')
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.StarCount:
                     if world:
                         tableItem = gui.FormattedNumberTableWidgetItem(world.numberOfStars())
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.SystemWorldCount:
                     if world:
                         tableItem = gui.FormattedNumberTableWidgetItem(world.numberOfSystemWorlds())
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.Bases:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         bases = world.bases()
                         highestTagLevel = None
@@ -713,10 +727,11 @@ class HexTable(gui.FrozenColumnListTable):
                             tagLevel = app.calculateBaseTypeTagLevel(base)
                             if tagLevel and (not highestTagLevel or highestTagLevel < tagLevel):
                                 highestTagLevel = tagLevel
-                        tableItem = QtWidgets.QTableWidgetItem(bases.string())
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, bases.string())
                         if highestTagLevel:
                             tagColour = app.tagColour(highestTagLevel)
                 elif columnType == self.ColumnType.ScoutBase:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         bases = world.bases()
                         scoutBases = bases.scoutBases()
@@ -726,10 +741,11 @@ class HexTable(gui.FrozenColumnListTable):
                                 tagLevel = app.calculateBaseTypeTagLevel(base)
                                 if tagLevel and (not highestTagLevel or highestTagLevel < tagLevel):
                                     highestTagLevel = tagLevel
-                        tableItem = QtWidgets.QTableWidgetItem('yes' if scoutBases else 'no')
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, 'yes' if scoutBases else 'no')
                         if highestTagLevel:
                             tagColour = app.tagColour(highestTagLevel)
                 elif columnType == self.ColumnType.MilitaryBase:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         bases = world.bases()
                         militaryBases = bases.militaryBases()
@@ -739,10 +755,11 @@ class HexTable(gui.FrozenColumnListTable):
                                 tagLevel = app.calculateBaseTypeTagLevel(base)
                                 if tagLevel and (not highestTagLevel or highestTagLevel < tagLevel):
                                     highestTagLevel = tagLevel
-                        tableItem = QtWidgets.QTableWidgetItem('yes' if militaryBases else 'no')
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, 'yes' if militaryBases else 'no')
                         if highestTagLevel:
                             tagColour = app.tagColour(highestTagLevel)
                 elif columnType == self.ColumnType.OwnerWorld:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         ownerString = None
                         tagLevel = None
@@ -761,8 +778,7 @@ class HexTable(gui.FrozenColumnListTable):
                                 # We don't know about this world so just display the sector hex and tag it as danger
                                 ownerString = world.ownerSectorHex()
                                 tagLevel = app.TagLevel.Danger
-                        tableItem = QtWidgets.QTableWidgetItem()
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, ownerString)
+                            tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, ownerString)
                         if tagLevel:
                             tagColour = app.tagColour(tagLevel)
                 elif columnType == self.ColumnType.ColonyWorlds:
@@ -787,11 +803,13 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = gui.FormattedNumberTableWidgetItem(world.colonyCount())
                         if highestTagLevel:
                             tagColour = app.tagColour(highestTagLevel)
+                    else:
+                        tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.Remarks:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         remarks = world.remarks()
-                        tableItem = QtWidgets.QTableWidgetItem()
-                        tableItem.setText(remarks.string())
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, remarks.string())
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -1020,5 +1038,13 @@ class HexTable(gui.FrozenColumnListTable):
         return None
 
     def _syncContent(self) -> None:
-        for row in range(self.rowCount()):
-            self._fillRow(row=row, hex=self.hex(row))
+        # Disable sorting during sync then re-enable after so sort is
+        # only performed once rather than per row
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for row in range(self.rowCount()):
+                self._fillRow(row=row, hex=self.hex(row))
+        finally:
+            self.setSortingEnabled(sortingEnabled)

@@ -5,6 +5,9 @@ import traveller
 import typing
 from PyQt5 import QtCore, QtWidgets
 
+# TODO: This probably needs updated to handle the rules changing as it
+# invalidates an current cargo records. I'm not sure what the correct
+# thing to do is
 class PurchaseCargoDialog(gui.DialogEx):
     _CargoRecordColumns = [
         gui.CargoRecordTable.ColumnType.TradeGood,

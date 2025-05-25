@@ -1,4 +1,3 @@
-import app
 import enum
 import gui
 import logging
@@ -6,7 +5,6 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: This needs updated to handle the rules changing
 class TradeGoodTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
@@ -21,10 +19,14 @@ class TradeGoodTable(gui.ListTable):
 
     def __init__(
             self,
+            rules: traveller.Rules,
+            filterCallback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]] = None,
             columns: typing.Iterable[ColumnType] = AllColumns
             ) -> None:
         super().__init__()
 
+        self._rules = traveller.Rules(rules)
+        self._filterCallback = filterCallback
         self._checkable = False
 
         self.setColumnHeaders(columns)
@@ -35,6 +37,30 @@ class TradeGoodTable(gui.ListTable):
         for column, columnType in enumerate(columns):
             if columnType == self.ColumnType.Name:
                 self.setColumnWidth(column, 200)
+        self._updateContent()
+
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
+    def setRules(
+            self,
+            rules: traveller.Rules
+            ) -> None:
+        if rules == self._rules:
+            return
+
+        self._rules = traveller.Rules(rules)
+        self._updateContent()
+
+    def filterCallback(self) ->typing.Optional[typing.Callable[[traveller.TradeGood], bool]]:
+        return self._filterCallback
+
+    def setFilterCallback(
+            self,
+            callback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]]
+            ) -> None:
+        self._filterCallback = callback
+        self._updateContent()
 
     def tradeGood(self, row: int) -> typing.Optional[traveller.TradeGood]:
         tableItem = self.item(row, 0)
@@ -61,27 +87,6 @@ class TradeGoodTable(gui.ListTable):
         row = self.itemAt(y)
         return self.tradeGood(row) if row >= 0 else None
 
-    def insertTradeGood(
-            self,
-            row: int,
-            tradeGood: traveller.TradeGood
-            ) -> int:
-        self.insertRow(row)
-        return self._fillRow(row, tradeGood)
-
-    def setTradeGood(
-            self,
-            row: int,
-            tradeGood: traveller.TradeGood
-            ) -> int:
-        return self._fillRow(row, tradeGood)
-
-    def addTradeGood(
-            self,
-            tradeGood: traveller.TradeGood
-            ) -> int:
-        return self.insertTradeGood(self.rowCount(), tradeGood)
-
     def currentTradeGood(self) -> typing.Optional[traveller.TradeGood]:
         row = self.currentRow()
         if row < 0:
@@ -106,6 +111,10 @@ class TradeGoodTable(gui.ListTable):
             item = self.item(row, 0)
             if enable:
                 item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+                # NOTE: You need to explicitly set the check state for the check boxes to
+                # be displayed. I think there is a requirement that the CheckStateRole
+                # data must be set for it to be shown
+                item.setCheckState(QtCore.Qt.CheckState.Unchecked)
             else:
                 item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsUserCheckable)
 
@@ -292,14 +301,11 @@ class TradeGoodTable(gui.ListTable):
         if not super().restoreState(baseState):
             return False
 
-        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         checkedTradeGoods = set()
         count = stream.readUInt32()
         for _ in range(count):
             id = stream.readUInt32()
-            tradeGood = traveller.tradeGoodFromId(
-                rules=rules,
-                tradeGoodId=id)
+            tradeGood = traveller.tradeGoodFromId(ruleSystem=self._rules.system(), tradeGoodId=id)
             if not tradeGood:
                 logging.warning(f'Failed to restore NearbyWorldWindow TradeGoodTable state (Unknown ID "{id}")')
                 continue
@@ -311,6 +317,35 @@ class TradeGoodTable(gui.ListTable):
                 checkState=tradeGood in checkedTradeGoods)
 
         return True
+
+    def _updateContent(self) -> None:
+        newGoods = traveller.tradeGoodList(ruleSystem=self._rules.system())
+        if self._filterCallback:
+            newGoods = [tradeGood for tradeGood in newGoods if self._filterCallback(tradeGood)]
+        newGoods = set(newGoods)
+        currentGoods = set()
+
+        # Remove any rows for goods not in the new list
+        for row in range(self.rowCount() - 1, -1, -1):
+            tradeGood = self.tradeGood(row)
+            if tradeGood not in newGoods:
+                self.removeRow(row)
+            else:
+                currentGoods.add(tradeGood)
+
+        # Add rows for goods new goods. Sorting is turned off then
+        # re-enabled at the end so it's only performed once
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for tradeGood in newGoods:
+                if tradeGood not in currentGoods:
+                    row = self.rowCount()
+                    self.insertRow(row)
+                    self._fillRow(row, tradeGood)
+        finally:
+            self.setSortingEnabled(sortingEnabled)
 
     def _fillRow(
             self,

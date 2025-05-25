@@ -4,25 +4,23 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
-# TODO: This needs update to handle rules changing
-class TradeGoodMultiSelectDialog(gui.DialogEx):
+class TradeGoodSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            selectableTradeGoods: typing.Iterable[traveller.TradeGood] = None,
+            filterCallback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
             title='Select Trade Goods',
+            # NOTE: The config section name differs from the class name for
+            # backwards compatibility
             configSection='TradeGoodMultiSelectDialog',
             parent=parent)
 
-        self._table = gui.TradeGoodTable()
+        self._table = gui.TradeGoodTable(
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            filterCallback=filterCallback)
         self._table.setCheckable(enable=True)
-        if not selectableTradeGoods:
-            selectableTradeGoods = traveller.tradeGoodList(
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
-        for tradeGood in selectableTradeGoods:
-            self._table.addTradeGood(tradeGood)
 
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDefault(True)
@@ -51,5 +49,16 @@ class TradeGoodMultiSelectDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def selectedTradeGoods(self) -> None:
         return self._table.checkedTradeGoods()
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Rules:
+            self._table.setRules(rules=newValue)

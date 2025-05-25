@@ -1,6 +1,9 @@
 import enum
 import typing
 
+# NOTE: If I ever change the names of these enums I'll need to add some kind of
+# mapping to CargoRecord serialization/deserialization as the names are store
+# in the file files
 class RuleSystem(enum.Enum):
     MGT = 'Mongoose Traveller'
     MGT2 = 'Mongoose Traveller 2e'

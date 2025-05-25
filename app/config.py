@@ -923,7 +923,7 @@ class Config(QtCore.QObject):
         self._addConfigItem(RulesConfigItem(
             option=ConfigOption.Rules,
             section='Game',
-            restart=True))
+            restart=False))
         self._addConfigItem(IntConfigItem(
             option=ConfigOption.PlayerBrokerDM,
             key='Game/PlayerBrokerDM',

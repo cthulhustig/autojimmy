@@ -201,10 +201,25 @@ class WorldManager(object):
 
     def sectors(
             self,
-            milieu: travellermap.Milieu
-            ) -> typing.Iterable[traveller.Sector]:
-        milieuData = self._milieuDataMap[milieu]
-        return list(milieuData.sectorList)
+            milieu: travellermap.Milieu,
+            filterCallback: typing.Callable[[traveller.Sector], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.List[traveller.Sector]:
+        return list(self.yieldSectors(
+            milieu=milieu,
+            filterCallback=filterCallback,
+            includePlaceholders=includePlaceholders))
+
+    def subsectors(
+            self,
+            milieu: travellermap.Milieu,
+            filterCallback: typing.Callable[[traveller.Subsector], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.List[traveller.Subsector]:
+        return list(self.yieldSubsectors(
+            milieu=milieu,
+            filterCallback=filterCallback,
+            includePlaceholders=includePlaceholders))
 
     def worldBySectorHex(
             self,
@@ -315,6 +330,17 @@ class WorldManager(object):
             milieu=milieu,
             upperLeft=upperLeft,
             lowerRight=lowerRight,
+            filterCallback=filterCallback,
+            includePlaceholders=includePlaceholders))
+
+    def worlds(
+            self,
+            milieu: travellermap.Milieu,
+            filterCallback: typing.Callable[[traveller.World], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.List[traveller.World]:
+        return list(self.yieldWorlds(
+            milieu=milieu,
             filterCallback=filterCallback,
             includePlaceholders=includePlaceholders))
 
@@ -500,6 +526,25 @@ class WorldManager(object):
 
         return main
 
+    def yieldSectors(
+            self,
+            milieu: travellermap.Milieu,
+            filterCallback: typing.Callable[[traveller.Sector], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.Generator[traveller.Sector, None, None]:
+        milieuData = self._milieuDataMap[milieu]
+        for sector in milieuData.sectorList:
+            if not filterCallback or filterCallback(sector):
+                yield sector
+
+        if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
+            placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
+            for sector in placeholderData.sectorList:
+                sectorPos = (sector.x(), sector.y())
+                if sectorPos not in milieuData.sectorPositionMap:
+                    if not filterCallback or filterCallback(sector):
+                        yield sector
+
     def yieldSectorsInArea(
             self,
             milieu: travellermap.Milieu,
@@ -530,6 +575,27 @@ class WorldManager(object):
                     yield sector
                 y += 1
             x += 1
+
+    def yieldSubsectors(
+            self,
+            milieu: travellermap.Milieu,
+            filterCallback: typing.Callable[[traveller.Subsector], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.Generator[traveller.Subsector, None, None]:
+        milieuData = self._milieuDataMap[milieu]
+        for sector in milieuData.sectorList:
+            for subsector in sector.yieldSubsectors():
+                if not filterCallback or filterCallback(subsector):
+                    yield subsector
+
+        if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
+            placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
+            for sector in placeholderData.sectorList:
+                sectorPos = (sector.x(), sector.y())
+                if sectorPos not in milieuData.sectorPositionMap:
+                    for subsector in sector.yieldSubsectors():
+                        if not filterCallback or filterCallback(subsector):
+                            yield subsector
 
     def yieldSubsectorsInArea(
             self,
@@ -565,6 +631,26 @@ class WorldManager(object):
                     indexY=(offsetY - 1) // WorldManager._SubsectorHexHeight)
                 if subsector and (not filterCallback or filterCallback(subsector)):
                     yield subsector
+
+    def yieldWorlds(
+            self,
+            milieu: travellermap.Milieu,
+            filterCallback: typing.Callable[[traveller.World], bool] = None,
+            includePlaceholders: bool = False
+            ) -> typing.Generator[traveller.World, None, None]:
+        milieuData = self._milieuDataMap[milieu]
+        for world in milieuData.worldPositionMap.keys():
+            if not filterCallback or filterCallback(world):
+                yield world
+
+        if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
+            placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
+            for sector in placeholderData.sectorList:
+                sectorPos = (sector.x(), sector.y())
+                if sectorPos not in milieuData.sectorPositionMap:
+                    for world in sector.yieldWorlds():
+                        if not filterCallback or filterCallback(world):
+                            yield world
 
     def yieldWorldsInArea(
             self,

@@ -4,11 +4,9 @@ import gui
 import json
 import logic
 import logging
-import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This needs updated to handle the rules changing
 class WorldFilterTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Type = 'Type'
@@ -112,9 +110,7 @@ class WorldFilterTable(gui.ListTable):
 
         try:
             data = json.loads(stream.readQString())
-            self.addFilters(logic.deserialiseWorldFiltersList(
-                data=data,
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules)))
+            self.addFilters(logic.deserialiseWorldFiltersList(data=data))
         except Exception as ex:
             logging.warning(f'Failed to deserialise WorldFilterTable filter list', exc_info=ex)
             return False

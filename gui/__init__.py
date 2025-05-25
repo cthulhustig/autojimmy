@@ -64,7 +64,7 @@ from .trader.probabilitycasecombobox import *
 from .trader.localbrokerwidget import *
 from .trader.tradegoodtable import *
 from .trader.tradegoodquantitydialog import *
-from .trader.tradegoodmultiselectdialog import *
+from .trader.tradegoodselectdialog import *
 from .trader.worldfilterdialog import *
 from .trader.worldfiltertable import *
 from .trader.worldfiltertablemanagerwidget import *

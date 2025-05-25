@@ -26,22 +26,15 @@ _WelcomeMessage = """
 
 # TODO: This needs updated to handle rules changing
 class _CustomTradeGoodTable(gui.TradeGoodTable):
-    def __init__(self):
-        super().__init__()
+    def __init__(
+            self,
+            rules: traveller.Rules
+            ) -> None:
+        super().__init__(
+            rules=rules,
+            filterCallback=self._filterTradeGoods)
 
         self.setCheckable(True)
-
-        # Don't include exotics in the table as they're not like other trade goods and don't
-        # affect the trade score
-        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
-            rules=rules,
-            excludeTradeGoods=[traveller.tradeGoodFromId(
-                rules=rules,
-                tradeGoodId=traveller.TradeGoodIds.Exotics)])
-        for tradeGood in tradeGoods:
-            self.addTradeGood(tradeGood=tradeGood)
-
         self.resizeColumnsToContents()
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -59,6 +52,17 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
         hint = super().minimumSizeHint()
         hint.setWidth(width)
         return hint
+
+    def _filterTradeGoods(
+            self,
+            tradeGood: traveller.TradeGood
+            ) -> bool:
+        # Don't include exotics in the table as they're not like other trade
+        # goods and don't affect the trade score
+        exotics = traveller.tradeGoodFromId(
+            ruleSystem=self._rules.system(),
+            tradeGoodId=traveller.TradeGoodIds.Exotics)
+        return tradeGood is not exotics
 
 class WorldComparisonWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -142,7 +146,8 @@ class WorldComparisonWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupTradeGoodsControls(self) -> None:
-        self._tradeGoodTable = _CustomTradeGoodTable()
+        self._tradeGoodTable = _CustomTradeGoodTable(
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         self._tradeGoodTable.itemChanged.connect(self._tradeGoodTableItemChanged)
 
         self._checkAllTradeGoodsButton = QtWidgets.QPushButton()
@@ -318,6 +323,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._worldManagementWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
+            self._tradeGoodTable.setRules(rules=newValue)
             self._hexTooltipProvider.setRules(rules=newValue)
             self._worldManagementWidget.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)

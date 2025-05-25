@@ -87,7 +87,11 @@ class WorldFilter(object):
     def description(self) -> str:
         raise RuntimeError('The description method should be implemented by the derived class')
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         raise RuntimeError('The match method should be implemented by the derived class')
 
 class NameFiler(WorldFilter):
@@ -135,7 +139,11 @@ class NameFiler(WorldFilter):
 
         return f'{typeString} {operationString} "{self._value}"'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         if self._operation == StringFilterOperation.ContainsString:
             if self._type == NameFiler.Type.WorldName:
                 return self._regex.search(world.name()) != None
@@ -186,7 +194,11 @@ class TagLevelFiler(WorldFilter):
 
         return f'Tag Level {operationString} {self._value.name}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
             worldValue=TagLevelFiler._tagLevelToInt(app.calculateWorldTagLevel(world)),
@@ -224,7 +236,11 @@ class ZoneFiler(WorldFilter):
 
         return f'Zone {operationString} {traveller.zoneTypeName(self._value)}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
             worldValue=ZoneFiler._zoneToInt(world.zone()),
@@ -298,7 +314,11 @@ class UWPFilter(WorldFilter):
 
         return f'{elementString} {operationString} {self._value}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
             worldValue=traveller.ehexToInteger(
@@ -350,7 +370,11 @@ class EconomicsFilter(WorldFilter):
 
         return f'{elementString} {operationString} {self._value}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         code = world.economics().code(self._element)
         if self._element == traveller.Economics.Element.Efficiency:
             worldValue = int(code) if code != '?' else None
@@ -404,7 +428,11 @@ class CultureFilter(WorldFilter):
 
         return f'{elementString} {operationString} {self._value}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
             worldValue=traveller.ehexToInteger(
@@ -424,13 +452,11 @@ class RefuellingFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[Type],
-            rules: traveller.Rules
+            value: typing.Iterable[Type]
             ) -> None:
         super().__init__()
         self._operation = operation
         self._value = set(value)
-        self._rules = rules
 
     def operation(self) -> ListFilterOperation:
         return self._operation
@@ -474,18 +500,22 @@ class RefuellingFilter(WorldFilter):
                 listString += f', {typeString}'
         return f'Refuelling options {operationString} {listString}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         checkList = RefuellingFilter.Type if self._operation == ListFilterOperation.ContainsOnly else self._value
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
                 match = world.hasStarPortRefuelling(
                     includeUnrefined=False,
-                    rules=self._rules)
+                    rules=rules)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
                 match = world.hasStarPortRefuelling(
                     includeRefined=False,
-                    rules=self._rules)
+                    rules=rules)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
                 match = world.hasGasGiantRefuelling()
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:
@@ -536,7 +566,11 @@ class AllegianceFilter(WorldFilter):
 
         return f'Allegiance {operationString} "{self._value}"'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         allegianceCode = world.allegiance()
         if allegianceCode:
             if self._operation == StringFilterOperation.ContainsString:
@@ -587,7 +621,11 @@ class SophontFilter(WorldFilter):
 
         return f'Sophont {operationString} "{self._value}"'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         remarks = world.remarks()
         if remarks:
             sophonts = remarks.sophonts()
@@ -642,7 +680,11 @@ class BaseFilter(WorldFilter):
                 listString += f', {typeString}'
         return f'Bases {operationString} {listString}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         checkList = traveller.BaseType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldBases = world.bases()
         for base in checkList:
@@ -701,7 +743,11 @@ class NobilityFilter(WorldFilter):
                 listString += f', {typeString}'
         return f'Nobilities {operationString} {listString}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         checkList = traveller.NobilityType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldNobilities = world.nobilities()
         for nobility in checkList:
@@ -745,7 +791,11 @@ class RemarksFilter(WorldFilter):
 
         return f'Remarks {operationString} "{self._value}"'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         remarks = world.remarks()
         if remarks:
             if self._operation == StringFilterOperation.ContainsString:
@@ -797,7 +847,11 @@ class TradeCodeFilter(WorldFilter):
                 listString += f', {typeString}'
         return f'Trade Codes {operationString} {listString}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         checkList = traveller.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
         for tradeCode in checkList:
             match = world.hasTradeCode(tradeCode)
@@ -854,7 +908,11 @@ class PBGFilter(WorldFilter):
 
         return f'{elementString} {operationString} {self._value}'
 
-    def match(self, world: traveller.World) -> bool:
+    def match(
+            self,
+            world: traveller.World,
+            rules: traveller.Rules
+            ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
             worldValue=traveller.ehexToInteger(
@@ -897,13 +955,14 @@ class WorldSearch(object):
 
     def checkWorld(
             self,
-            world: traveller.World
+            world: traveller.World,
+            rules: traveller.Rules,
             ) -> bool: # # True if matched, False if ignored
         if not self._filters:
             return True # No filter always matches the world
 
         for filter in self._filters:
-            matched = filter.match(world)
+            matched = filter.match(world=world, rules=rules)
             if self._logic == FilterLogic.MatchesAll:
                 if not matched:
                     return False
@@ -921,12 +980,14 @@ class WorldSearch(object):
     def search(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             maxResults: int = 1000
             ) -> typing.Iterable[traveller.World]:
         results = []
-        for sector in traveller.WorldManager.instance().sectors(milieu=milieu):
-            self._searchWorldList(
-                worldList=sector,
+        for sector in traveller.WorldManager.instance().yieldSectors(milieu=milieu):
+            self._searchWorlds(
+                rules=rules,
+                worlds=sector.yieldWorlds(),
                 inPlaceResults=results,
                 maxResults=maxResults)
             if maxResults and len(results) >= maxResults:
@@ -936,6 +997,7 @@ class WorldSearch(object):
     def searchRegion(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             sectorName: str,
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
@@ -947,16 +1009,23 @@ class WorldSearch(object):
             raise RuntimeError(f'Sector "{sectorName}" for found')
 
         if not subsectorName:
-            return self._searchWorldList(worldList=sector, maxResults=maxResults)
+            return self._searchWorlds(
+                rules=rules,
+                worlds=sector.yieldWorlds(),
+                maxResults=maxResults)
         else:
             subsector = sector.subsectorByName(name=subsectorName)
             if not subsector:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
-            return self._searchWorldList(worldList=subsector, maxResults=maxResults)
+            return self._searchWorlds(
+                rules=rules,
+                worlds=subsector.yieldWorlds(),
+                maxResults=maxResults)
 
-    def searchArea(
+    def searchRadius(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
             centerHex: travellermap.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
@@ -964,11 +1033,12 @@ class WorldSearch(object):
             milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
-            filterCallback=self.checkWorld)
+            filterCallback=lambda world: self.checkWorld(world=world, rules=rules))
 
-    def _searchWorldList(
+    def _searchWorlds(
             self,
-            worldList: typing.Iterable[traveller.World],
+            rules: traveller.Rules,
+            worlds: typing.Iterable[traveller.World],
             maxResults: int,
             inPlaceResults: typing.Optional[typing.Iterable[traveller.World]] = None
             ) -> typing.Iterable[traveller.World]:
@@ -977,8 +1047,8 @@ class WorldSearch(object):
         else:
             results = []
 
-        for world in worldList:
-            if self.checkWorld(world):
+        for world in worlds:
+            if self.checkWorld(world=world, rules=rules):
                 results.append(world)
                 if maxResults and len(results) >= maxResults:
                     return results
