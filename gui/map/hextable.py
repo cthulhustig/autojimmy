@@ -568,8 +568,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.LawLevel))
                         tagColour = app.tagColour(app.calculateLawLevelTagLevel(world))
                 elif columnType == self.ColumnType.Population:
+                    tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem = QtWidgets.QTableWidgetItem()
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.Population))
                         tagColour = app.tagColour(app.calculatePopulationTagLevel(world))
                 elif columnType == self.ColumnType.Government:
