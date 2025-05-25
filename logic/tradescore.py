@@ -2,6 +2,13 @@ import common
 import traveller
 import typing
 
+# TODO: I'm not a fan of the fact the trade score has 2 values.
+# I think I could convert it to a single value that is more
+# useful for comparing worlds. If, rather than just selecting
+# the list of goods they are interested in, they specify a list
+# of sale goods and purchase goods. This would let me calculate
+# a sale score and purchase score based on the relevant goods,
+# then simply sum them to get the final score.
 class TradeScore(object):
     def __init__(
             self,
