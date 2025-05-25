@@ -130,10 +130,6 @@ class WorldTradeScoreTable(gui.HexTable):
                     tableItem = gui.FormattedNumberTableWidgetItem(
                         value=tradeScore,
                         alwaysIncludeSign=True)
-                    scoreValue = tradeScore.value()
-                    if scoreValue > 0:
-                        tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
-                            option=app.ConfigOption.DesirableTagColour)))
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
