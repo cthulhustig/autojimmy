@@ -12,6 +12,8 @@ import typing
 import urllib.parse
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: Need to update this so it's not so slow to open
+
 _WelcomeMessage = """
     <html>
     <p>The Configuration window, as you might expect, allows you to configure {name}. The majority

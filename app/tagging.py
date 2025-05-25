@@ -289,6 +289,9 @@ def calculateLuminosityTagLevel(
         configOption=app.ConfigOption.LuminosityTagging,
         code=star.code(traveller.Star.Element.LuminosityClass))
 
+# TODO: Even if I leave it so this code is reading the config. I need
+# widgets to update if the config changes so this function gets called
+# again to get the new values
 def tagColour(tagLevel: app.TagLevel) -> typing.Optional[str]:
     if tagLevel is app.TagLevel.Desirable:
         return app.Config.instance().value(
@@ -301,6 +304,9 @@ def tagColour(tagLevel: app.TagLevel) -> typing.Optional[str]:
             option=app.ConfigOption.DangerTagColour)
     return None
 
+# TODO: Even if I leave it so this code is reading the config. I need
+# widgets to update if the config changes so this function gets called
+# again to get the new values
 def _checkConfigTagLevel(
         configOption: app.ConfigOption,
         code: typing.Union[str, enum.Enum]
