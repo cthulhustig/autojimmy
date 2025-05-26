@@ -171,8 +171,8 @@ class CargoManifestDialog(gui.DialogEx):
             self,
             speculativePurchase: bool
             ) -> None:
-        self._purchaseLogicComboBox = gui.ProbabilityCaseComboBox(
-            value=logic.ProbabilityCase.AverageCase)
+        self._purchaseLogicComboBox = gui.RollOutcomeComboBox(
+            value=logic.RollOutcome.AverageCase)
         self._purchaseLogicComboBox.activated.connect(self._logicSelectionChanged)
         self._purchaseLogicComboBox.setToolTip(
             gui.createStringToolTip(
@@ -192,8 +192,8 @@ class CargoManifestDialog(gui.DialogEx):
 
         # Defaulting logistics logic to worst case is the safe option as it avoids purchasing so
         # much you risk running out of funds on route
-        self._logisticsLogicComboBox = gui.ProbabilityCaseComboBox(
-            value=logic.ProbabilityCase.WorstCase)
+        self._logisticsLogicComboBox = gui.RollOutcomeComboBox(
+            value=logic.RollOutcome.WorstCase)
         self._logisticsLogicComboBox.activated.connect(self._logicSelectionChanged)
         self._logisticsLogicComboBox.setToolTip(
             gui.createStringToolTip(
@@ -221,11 +221,15 @@ class CargoManifestDialog(gui.DialogEx):
         self._configurationGroupBox.setLayout(groupLayout)
 
     def _setupManifestControls(self):
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._cargoManifestDisplayModeTabs = gui.CalculationModeTabBar()
         self._cargoManifestDisplayModeTabs.currentChanged.connect(
             self._cargoManifestDisplayModeChanged)
 
-        self._cargoManifestTable = gui.CargoManifestTable()
+        self._cargoManifestTable = gui.CargoManifestTable(
+            outcomeColours=outcomeColours)
         self._cargoManifestTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._cargoManifestTable.setActiveColumns(self._cargoManifestColumns())
@@ -241,7 +245,8 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoManifestTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
-        self._cargoBreakdownTable = gui.TradeOptionsTable()
+        self._cargoBreakdownTable = gui.TradeOptionsTable(
+            outcomeColours=outcomeColours)
         self._cargoBreakdownTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
@@ -303,6 +308,9 @@ class CargoManifestDialog(gui.DialogEx):
             self._hexTooltipProvider.setMapOptions(options=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._cargoManifestTable.setOutcomeColours(colours=newValue)
+            self._cargoBreakdownTable.setOutcomeColours(colours=newValue)
 
     def _showWorldDetails(
             self,
@@ -409,7 +417,7 @@ class CargoManifestDialog(gui.DialogEx):
         # If the purchase logic combo box isn't shown then it means we're using known
         # purchase price and availability. In this case just specify average purchase
         # logic but it shouldn't matter
-        probabilityLogic = self._purchaseLogicComboBox.currentCase() if self._purchaseLogicComboBox.isEnabled() else logic.ProbabilityCase.AverageCase
+        probabilityLogic = self._purchaseLogicComboBox.currentCase() if self._purchaseLogicComboBox.isEnabled() else logic.RollOutcome.AverageCase
 
         try:
             cargoManifests = logic.generateCargoManifests(

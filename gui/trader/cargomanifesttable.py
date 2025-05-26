@@ -111,10 +111,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
+            outcomeColours: app.OutcomeColours,
             columns: typing.Iterable[ColumnType] = AllColumns
             ) -> None:
         super().__init__()
 
+        self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._hexTooltipProvider = None
 
         self.setColumnHeaders(columns)
@@ -130,6 +132,15 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                     columnType == self.ColumnType.SaleSector or \
                     columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
+
+    def outcomeColours(self) -> app.OutcomeColours:
+        return app.OutcomeColours(self._outcomeColours)
+
+    def setOutcomeColours(self, colours: app.OutcomeColours) -> None:
+        if colours == self._outcomeColours:
+            return
+        self._outcomeColours = app.OutcomeColours(colours)
+        self._syncContent()
 
     def cargoManifest(self, row: int) -> typing.Optional[logic.CargoManifest]:
         tableItem = self.item(row, 0)
@@ -193,12 +204,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
             saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().value(
-                option=app.ConfigOption.AverageCaseColour))
-            worstCaseColour = QtGui.QColor(app.Config.instance().value(
-                option=app.ConfigOption.WorstCaseColour))
-            bestCaseColour = QtGui.QColor(app.Config.instance().value(
-                option=app.ConfigOption.BestCaseColour))
+            averageCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.AverageCase))
+            worstCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.WorstCase))
+            bestCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.BestCase))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -331,3 +342,15 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
 
         return None
+
+    def _syncContent(self) -> None:
+        # Disable sorting during sync then re-enable after so sort is
+        # only performed once rather than per row
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for row in range(self.rowCount()):
+                self._fillRow(row=row, cargoManifest=self.cargoManifest(row=row))
+        finally:
+            self.setSortingEnabled(sortingEnabled)

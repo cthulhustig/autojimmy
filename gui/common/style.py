@@ -56,7 +56,7 @@ def configureWindowTitleBar(widget: QtWidgets.QWidget) -> bool:
         return False
 
     # For some mad reason Microsoft change this attribute for Windows 10 20h1. We try to set it
-    # using the new value, if that doesn't the older value is tried. This is what the Qt
+    # using the new value, if that doesn't work the older value is tried. This is what the Qt
     # implementation does internally
     # https://github.com/qt/qtbase/blob/dev/src/plugins/platforms/windows/qwindowswindow.cpp#L3082
     DwmwaUseImmersiveDarkMode = 20

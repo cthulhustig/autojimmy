@@ -41,8 +41,14 @@ _SalePriceColumns = [
 ]
 
 class _CustomCargoRecordTable(gui.CargoRecordTable):
-    def __init__(self, columns: typing.Iterable[typing.Union[_CustomColumns, gui.CargoRecordTable.ColumnType]]) -> None:
-        super().__init__(columns=columns)
+    def __init__(
+            self,
+            outcomeColours: app.OutcomeColours,
+            columns: typing.Iterable[typing.Union[_CustomColumns, gui.CargoRecordTable.ColumnType]]
+            ) -> None:
+        super().__init__(
+            outcomeColours=outcomeColours,
+            columns=columns)
 
     def _fillRow(
             self,
@@ -318,7 +324,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(layout)
 
     def _setupCargoControls(self) -> None:
-        self._cargoTable = _CustomCargoRecordTable(columns=_SaleCargoColumns)
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
+        self._cargoTable = _CustomCargoRecordTable(
+            outcomeColours=outcomeColours,
+            columns=_SaleCargoColumns)
         self._cargoTable.setMinimumHeight(200)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
@@ -373,12 +384,17 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._cargoGroupBox.setLayout(mainLayout)
 
     def _setupSalePriceControls(self) -> None:
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._generateButton = QtWidgets.QPushButton('Generate Sale Prices')
         self._generateButton.clicked.connect(self._generateSalePrices)
 
         self._totalSalePriceLabel = gui.PrefixLabel('Total Sale Price: ')
 
-        self._salePricesTable = _CustomCargoRecordTable(columns=_SalePriceColumns)
+        self._salePricesTable = _CustomCargoRecordTable(
+            outcomeColours=outcomeColours,
+            columns=_SalePriceColumns)
         self._salePricesTable.setMinimumHeight(200)
         self._salePricesTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._salePricesTable.customContextMenuRequested.connect(self._showSalePricesTableContextMenu)
@@ -510,6 +526,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMapOptions(options=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._cargoTable.setOutcomeColours(colours=newValue)
+            self._salePricesTable.setOutcomeColours(colours=newValue)
 
     def _saleWorldChanged(self) -> None:
         disable = not self._saleWorldWidget.selectedWorld()

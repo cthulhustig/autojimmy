@@ -248,10 +248,14 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(layout)
 
     def _setupAvailableCargoControls(self) -> None:
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._generateButton = QtWidgets.QPushButton('Generate Available Cargo')
         self._generateButton.clicked.connect(self._generateAvailableCargo)
 
         self._cargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.KnownValueColumns)
         self._cargoTable.setMinimumHeight(200)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -343,6 +347,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMapOptions(options=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._cargoTable.setOutcomeColours(colours=newValue)
 
     def _purchaseWorldChanged(self) -> None:
         disable = not self._purchaseWorldWidget.selectedWorld()

@@ -91,9 +91,7 @@ class ConfigOption(enum.Enum):
     ColourTheme = 600
     InterfaceScale = 601
     ShowToolTipImages = 602
-    AverageCaseColour = 603
-    WorstCaseColour = 604
-    BestCaseColour = 605
+    OutcomeColours = 603
 
     # Tagging
     DesirableTagColour = 700
@@ -646,6 +644,79 @@ class RulesConfigItem(ConfigItem):
             self._section + RulesConfigItem._ClassEFuelTypeKey,
             self._futureValue.starPortFuelType(code='E').name)
 
+class OutcomeColoursConfigItem(ConfigItem):
+    _DefaultAverageCaseColour = '#0A0000FF'
+    _DefaultWorstCaseColour = '#0AFF0000'
+    _DefaultBestCaseColour = '#0A00FF00'
+
+    _AverageCaseKey = '/AverageCaseColour'
+    _WorstCaseKey = '/WorstCaseColour'
+    _BestCaseKey = '/BestCaseColour'
+
+    def __init__(
+            self,
+            option: ConfigOption,
+            section: str,
+            restart: bool
+            ) -> None:
+        super().__init__(option=option, restart=restart)
+        self._section = section
+        self._currentValue = self._futureValue = app.OutcomeColours(
+            averageCaseColour=OutcomeColoursConfigItem._DefaultAverageCaseColour,
+            worstCaseColour=OutcomeColoursConfigItem._DefaultWorstCaseColour,
+            bestCaseColour=OutcomeColoursConfigItem._DefaultBestCaseColour)
+
+    def value(self, futureValue: bool = False) -> typing.Any:
+        return app.OutcomeColours(self._futureValue if futureValue else self._currentValue)
+
+    def setValue(self, value: app.OutcomeColours) -> None:
+        if value == self._futureValue:
+            return
+
+        value = app.OutcomeColours(value)
+        if self._restart:
+            self._futureValue = value
+        else:
+            self._currentValue = self._futureValue = value
+
+    def isRestartRequired(self) -> bool:
+        return self._currentValue != self._futureValue
+
+    def read(self, settings: QtCore.QSettings) -> None:
+        averageCaseColour = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + OutcomeColoursConfigItem._AverageCaseKey,
+            default=OutcomeColoursConfigItem._DefaultAverageCaseColour,
+            type=str)
+
+        worstCaseColour = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + OutcomeColoursConfigItem._WorstCaseKey,
+            default=OutcomeColoursConfigItem._DefaultWorstCaseColour,
+            type=str)
+
+        bestCaseColour = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + OutcomeColoursConfigItem._BestCaseKey,
+            default=OutcomeColoursConfigItem._DefaultBestCaseColour,
+            type=str)
+
+        self._currentValue = self._futureValue = app.OutcomeColours(
+            averageCaseColour=averageCaseColour,
+            worstCaseColour=worstCaseColour,
+            bestCaseColour=bestCaseColour)
+
+    def write(self, settings: QtCore.QSettings) -> None:
+        settings.setValue(
+            self._section + OutcomeColoursConfigItem._AverageCaseKey,
+            self._futureValue.colour(logic.RollOutcome.AverageCase))
+        settings.setValue(
+            self._section + OutcomeColoursConfigItem._WorstCaseKey,
+            self._futureValue.colour(logic.RollOutcome.WorstCase))
+        settings.setValue(
+            self._section + OutcomeColoursConfigItem._BestCaseKey,
+            self._futureValue.colour(logic.RollOutcome.BestCase))
+
 class TaggingConfigItem(ConfigItem):
     _SettingIndexFixPattern = re.compile('.*[\\/]')
 
@@ -1122,22 +1193,10 @@ class Config(QtCore.QObject):
             key='GUI/ShowToolTipImages',
             restart=False,
             default=True))
-
-        self._addConfigItem(ColourConfigItem(
-            option=ConfigOption.AverageCaseColour,
-            key='GUI/AverageCaseColour',
-            restart=False,
-            default='#0A0000FF'))
-        self._addConfigItem(ColourConfigItem(
-            option=ConfigOption.WorstCaseColour,
-            key='GUI/WorstCaseColour',
-            restart=False,
-            default='#0AFF0000'))
-        self._addConfigItem(ColourConfigItem(
-            option=ConfigOption.BestCaseColour,
-            key='GUI/BestCaseColour',
-            restart=False,
-            default='#0A00FF00'))
+        self._addConfigItem(OutcomeColoursConfigItem(
+            option=ConfigOption.OutcomeColours,
+            section='GUI',
+            restart=False))
 
         colourTheme = self.value(option=ConfigOption.ColourTheme)
         isDarkMode = colourTheme is ColourTheme.DarkMode or \
@@ -1381,11 +1440,7 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.ShowToolTipImages], futureValue: bool = False) -> bool: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.AverageCaseColour], futureValue: bool = False) -> str: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.WorstCaseColour], futureValue: bool = False) -> str: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.BestCaseColour], futureValue: bool = False) -> str: ...
+    def value(self, option: typing.Literal[ConfigOption.OutcomeColours], futureValue: bool = False) -> app.OutcomeColours: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.DesirableTagColour], futureValue: bool = False) -> str: ...
     @typing.overload

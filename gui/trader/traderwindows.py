@@ -216,6 +216,9 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._calculateTradeOptionsButton = gui.DualTextPushButton(
             primaryText='Calculate Trade Options',
             secondaryText='Cancel')
@@ -232,7 +235,8 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs = gui.CalculationModeTabBar()
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
-        self._tradeOptionsTable = gui.TradeOptionsTable()
+        self._tradeOptionsTable = gui.TradeOptionsTable(
+            outcomeColours=outcomeColours)
         self._tradeOptionsTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
@@ -289,6 +293,8 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMapOptions(options=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._tradeOptionsTable.setOutcomeColours(colours=newValue)
 
     def _enableDisableControls(self) -> None:
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
@@ -934,11 +940,15 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._saleWorldsGroupBox.setLayout(layout)
 
     def _setupCargoControls(self) -> None:
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._cargoRecordDisplayModeTabView = gui.ItemCountTabWidget()
         self._cargoRecordDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
 
         # Speculative cargo controls
         self._speculativeCargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.AllCaseColumns)
         self._speculativeCargoTable.setMinimumHeight(100)
         self._speculativeCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -1009,6 +1019,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         # Available cargo controls
         self._availableCargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
             columns=[
                 gui.CargoRecordTable.ColumnType.TradeGood,
                 gui.CargoRecordTable.ColumnType.BasePricePerTon,
@@ -1098,6 +1109,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         # Current cargo controls
         self._currentCargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
             columns=[
                 gui.CargoRecordTable.ColumnType.TradeGood,
                 gui.CargoRecordTable.ColumnType.SetTotalPrice,
@@ -1388,6 +1400,10 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._speculativeCargoTable.removeAllRows()
             self._availableCargoTable.removeAllRows()
             self._currentCargoTable.removeAllRows()
+        elif option is app.ConfigOption.OutcomeColours:
+            self._speculativeCargoTable.setOutcomeColours(colours=newValue)
+            self._availableCargoTable.setOutcomeColours(colours=newValue)
+            self._currentCargoTable.setOutcomeColours(colours=newValue)
 
     def _playerBrokerDmChanged(
             self,

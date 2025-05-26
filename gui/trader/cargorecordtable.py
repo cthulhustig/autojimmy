@@ -75,9 +75,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
+            outcomeColours: app.OutcomeColours,
             columns: typing.Iterable[ColumnType] = AllCaseColumns
             ) -> None:
         super().__init__()
+
+        self._outcomeColours = app.OutcomeColours(outcomeColours)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -87,6 +90,15 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         for column, columnType in enumerate(columns):
             if columnType == self.ColumnType.TradeGood:
                 self.setColumnWidth(column, 200)
+
+    def outcomeColours(self) -> app.OutcomeColours:
+        return app.OutcomeColours(self._outcomeColours)
+
+    def setOutcomeColours(self, colours: app.OutcomeColours) -> None:
+        if colours == self._outcomeColours:
+            return
+        self._outcomeColours = app.OutcomeColours(colours)
+        self._syncContent()
 
     def cargoRecord(self, row: int) -> typing.Optional[logic.CargoRecord]:
         tableItem = self.item(row, 0)
@@ -243,12 +255,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             quantity = cargoRecord.quantity()
             totalPrice = cargoRecord.totalPrice()
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().value(
-                option=app.ConfigOption.AverageCaseColour))
-            worstCaseColour = QtGui.QColor(app.Config.instance().value(
-                option=app.ConfigOption.WorstCaseColour))
-            bestCaseColour = QtGui.QColor(app.Config.instance().value(
-                option=app.ConfigOption.BestCaseColour))
+            averageCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.AverageCase))
+            worstCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.WorstCase))
+            bestCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.BestCase))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -309,3 +321,15 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         # columns and the table is currently sorted by one of those columns. In this the expectation is
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
+
+    def _syncContent(self) -> None:
+        # Disable sorting during sync then re-enable after so sort is
+        # only performed once rather than per row
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for row in range(self.rowCount()):
+                self._fillRow(row=row, cargoRecord=self.cargoRecord(row=row))
+        finally:
+            self.setSortingEnabled(sortingEnabled)

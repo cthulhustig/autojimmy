@@ -1052,6 +1052,6 @@ class HexTable(gui.FrozenColumnListTable):
 
         try:
             for row in range(self.rowCount()):
-                self._fillRow(row=row, hex=self.hex(row))
+                self._fillRow(row=row, hex=self.hex(row=row))
         finally:
             self.setSortingEnabled(sortingEnabled)

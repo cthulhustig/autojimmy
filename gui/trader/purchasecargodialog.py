@@ -1,3 +1,4 @@
+import app
 import common
 import gui
 import logic
@@ -50,9 +51,16 @@ class PurchaseCargoDialog(gui.DialogEx):
                 number=self._availableFunds.value(),
                 infix='Cr'))
 
-        self._availableCargoTable = gui.CargoRecordTable(columns=PurchaseCargoDialog._CargoRecordColumns)
-        self._availableCargoTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self._availableCargoTable.selectionModel().selectionChanged.connect(self._availableSelectionChanged)
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
+        self._availableCargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
+            columns=PurchaseCargoDialog._CargoRecordColumns)
+        self._availableCargoTable.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self._availableCargoTable.selectionModel().selectionChanged.connect(
+            self._availableSelectionChanged)
         if availableCargo:
             self._availableCargoTable.addCargoRecords(cargoRecords=availableCargo)
 
@@ -68,9 +76,13 @@ class PurchaseCargoDialog(gui.DialogEx):
                 number=self._totalCost.value(),
                 infix='Cr'))
 
-        self._purchaseCargoTable = gui.CargoRecordTable(columns=PurchaseCargoDialog._CargoRecordColumns)
-        self._purchaseCargoTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self._purchaseCargoTable.selectionModel().selectionChanged.connect(self._purchaseSelectionChanged)
+        self._purchaseCargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
+            columns=PurchaseCargoDialog._CargoRecordColumns)
+        self._purchaseCargoTable.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self._purchaseCargoTable.selectionModel().selectionChanged.connect(
+            self._purchaseSelectionChanged)
 
         purchaseLayout = QtWidgets.QVBoxLayout()
         purchaseLayout.addWidget(self._totalCostLabel)
@@ -123,11 +135,23 @@ class PurchaseCargoDialog(gui.DialogEx):
 
         self.setLayout(layout)
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def purchasedCargo(self) -> typing.Iterable[logic.CargoRecord]:
         return self._purchaseCargoTable.cargoRecords()
 
     def remainingCargo(self) -> typing.Iterable[logic.CargoRecord]:
         return self._availableCargoTable.cargoRecords()
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.OutcomeColours:
+            self._availableCargoTable.setOutcomeColours(colours=newValue)
+            self._purchaseCargoTable.setOutcomeColours(colours=newValue)
 
     def _availableSelectionChanged(self) -> None:
         enable = self._availableFunds.value() > 0 and \

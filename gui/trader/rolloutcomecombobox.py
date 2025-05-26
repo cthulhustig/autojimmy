@@ -3,23 +3,23 @@ import logging
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-class ProbabilityCaseComboBox(QtWidgets.QComboBox):
+class RollOutcomeComboBox(QtWidgets.QComboBox):
     _OptionTextMap = {
-        logic.ProbabilityCase.AverageCase: 'Average Case',
-        logic.ProbabilityCase.WorstCase: 'Worst Case',
-        logic.ProbabilityCase.BestCase: 'Best Case'
+        logic.RollOutcome.AverageCase: 'Average Case',
+        logic.RollOutcome.WorstCase: 'Worst Case',
+        logic.RollOutcome.BestCase: 'Best Case'
     }
 
-    _StateVersion = 'ProbabilityCaseComboBox_v1'
+    _StateVersion = 'RollOutcomeComboBox_v1'
 
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            value: typing.Optional[logic.ProbabilityCase] = None
+            value: typing.Optional[logic.RollOutcome] = None
             ) -> None:
         super().__init__(parent=parent)
-        for option in logic.ProbabilityCase:
-            self.addItem(ProbabilityCaseComboBox._OptionTextMap[option], option)
+        for option in logic.RollOutcome:
+            self.addItem(RollOutcomeComboBox._OptionTextMap[option], option)
 
         if value:
             self.setCurrentCase(value)
@@ -27,10 +27,10 @@ class ProbabilityCaseComboBox(QtWidgets.QComboBox):
     def currentCase(self) -> logic.RefuellingStrategy:
         return self.currentData(QtCore.Qt.ItemDataRole.UserRole)
 
-    def setCurrentCase(self, probabilityCase: logic.RefuellingStrategy) -> None:
+    def setCurrentCase(self, rollOutcome: logic.RefuellingStrategy) -> None:
         for index in range(self.count()):
-            itemProbabilityCase = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
-            if probabilityCase == itemProbabilityCase:
+            itemRollOutcome = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
+            if rollOutcome == itemRollOutcome:
                 self.setCurrentIndex(index)
                 return
 
@@ -38,7 +38,7 @@ class ProbabilityCaseComboBox(QtWidgets.QComboBox):
         case = self.currentCase()
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(ProbabilityCaseComboBox._StateVersion)
+        stream.writeQString(RollOutcomeComboBox._StateVersion)
         stream.writeQString(case.name)
         return state
 
@@ -48,14 +48,14 @@ class ProbabilityCaseComboBox(QtWidgets.QComboBox):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != ProbabilityCaseComboBox._StateVersion:
+        if version != RollOutcomeComboBox._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore ProbabilityCaseComboBox state (Incorrect version)')
+            logging.debug(f'Failed to restore RollOutcomeComboBox state (Incorrect version)')
             return False
 
         name = stream.readQString()
-        if name not in logic.ProbabilityCase.__members__:
-            logging.warning(f'Failed to restore ProbabilityCaseComboBox state (Unknown case "{name}")')
+        if name not in logic.RollOutcome.__members__:
+            logging.warning(f'Failed to restore RollOutcomeComboBox state (Unknown case "{name}")')
             return False
-        self.setCurrentCase(logic.ProbabilityCase.__members__[name])
+        self.setCurrentCase(logic.RollOutcome.__members__[name])
         return True

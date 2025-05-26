@@ -5,6 +5,7 @@ import enum
 import gui
 import json
 import logging
+import logic
 import proxy
 import traveller
 import travellermap
@@ -700,23 +701,24 @@ class ConfigDialog(gui.DialogEx):
             'can cause the user interface to block temporarily while the image is downloaded.</p>',
             escape=False))
 
-        self._averageCaseColourButton = gui.ColourButton(app.Config.instance().value(
-            option=app.ConfigOption.AverageCaseColour,
-            futureValue=True))
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours,
+            futureValue=True)
+
+        self._averageCaseColourButton = gui.ColourButton(
+            colour=outcomeColours.colour(outcome=logic.RollOutcome.AverageCase))
         self._averageCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._averageCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using average dice rolls'))
 
-        self._worstCaseColourButton = gui.ColourButton(app.Config.instance().value(
-            option=app.ConfigOption.WorstCaseColour,
-            futureValue=True))
+        self._worstCaseColourButton = gui.ColourButton(
+            colour=outcomeColours.colour(outcome=logic.RollOutcome.WorstCase))
         self._worstCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._worstCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using worst case dice rolls'))
 
-        self._bestCaseColourButton = gui.ColourButton(app.Config.instance().value(
-            option=app.ConfigOption.BestCaseColour,
-            futureValue=True))
+        self._bestCaseColourButton = gui.ColourButton(
+            colour=outcomeColours.colour(outcome=logic.RollOutcome.BestCase))
         self._bestCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._bestCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using best case dice rolls'))
@@ -1206,24 +1208,21 @@ class ConfigDialog(gui.DialogEx):
                 option=app.ConfigOption.ShowToolTipImages,
                 value=self._showToolTipImagesCheckBox.isChecked())
             app.Config.instance().setValue(
-                option=app.ConfigOption.AverageCaseColour,
-                value=self._averageCaseColourButton.colour())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.WorstCaseColour,
-                value=self._worstCaseColourButton.colour())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.BestCaseColour,
-                value=self._bestCaseColourButton.colour())
+                option=app.ConfigOption.OutcomeColours,
+                value=app.OutcomeColours(
+                    averageCaseColour=gui.colourToString(self._averageCaseColourButton.colour()),
+                    worstCaseColour=gui.colourToString(self._worstCaseColourButton.colour()),
+                    bestCaseColour=gui.colourToString(self._bestCaseColourButton.colour())))
 
             app.Config.instance().setValue(
                 option=app.ConfigOption.DesirableTagColour,
-                value=self._desirableTagColourButton.colour())
+                value=gui.colourToString(self._desirableTagColourButton.colour()))
             app.Config.instance().setValue(
                 option=app.ConfigOption.WarningTagColour,
-                value=self._warningTagColourButton.colour())
+                value=gui.colourToString(self._warningTagColourButton.colour()))
             app.Config.instance().setValue(
                 option=app.ConfigOption.DangerTagColour,
-                value=self._dangerTagColourButton.colour())
+                value=gui.colourToString(self._dangerTagColourButton.colour()))
 
             app.Config.instance().setValue(
                 option=app.ConfigOption.ZoneTagging,

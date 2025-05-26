@@ -2,6 +2,7 @@ from .constants import *
 from .appdetails import *
 from .logger import *
 from .taglevels import *
+from .outcomecolours import *
 from .config import *
 from .hexhistory import *
 from .tagging import *

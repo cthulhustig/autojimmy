@@ -142,11 +142,24 @@ class _RefuellingPlanTable(gui.HexTable):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            outcomeColours: app.OutcomeColours,
             columns: typing.Iterable[typing.Union[_RefuellingPlanTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
         super().__init__(milieu=milieu, rules=rules, columns=columns)
-        self.setSortingEnabled(False)
+
+        self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._pitStops: typing.List[logic.PitStop] = []
+
+        self.setSortingEnabled(False)
+
+    def outcomeColours(self) -> app.OutcomeColours:
+        return app.OutcomeColours(self._outcomeColours)
+
+    def setOutcomeColours(self, colours: app.OutcomeColours) -> None:
+        if colours == self._outcomeColours:
+            return
+        self._outcomeColours = app.OutcomeColours(colours)
+        self._syncContent()
 
     def setPitStops(
             self,
@@ -200,17 +213,20 @@ class _RefuellingPlanTable(gui.HexTable):
                     tableItem = QtWidgets.QTableWidgetItem(
                         _formatBerthingTypeString(pitStop) if pitStop and pitStop.hasBerthing() else '')
                 elif columnType == _RefuellingPlanTableColumnType.AverageCaseBerthingCost:
-                    tableItem = gui.FormattedNumberTableWidgetItem(pitStop.berthingCost().averageCaseValue() if pitStop and pitStop.berthingCost() else None)
-                    tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
-                        option=app.ConfigOption.AverageCaseColour)))
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        pitStop.berthingCost().averageCaseValue() if pitStop and pitStop.berthingCost() else None)
+                    tableItem.setBackground(QtGui.QColor(self._outcomeColours.colour(
+                        outcome=logic.RollOutcome.AverageCase)))
                 elif columnType == _RefuellingPlanTableColumnType.WorstCaseBerthingCost:
-                    tableItem = gui.FormattedNumberTableWidgetItem(pitStop.berthingCost().worstCaseValue() if pitStop and pitStop.berthingCost() else None)
-                    tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
-                        option=app.ConfigOption.WorstCaseColour)))
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        pitStop.berthingCost().worstCaseValue() if pitStop and pitStop.berthingCost() else None)
+                    tableItem.setBackground(QtGui.QColor(self._outcomeColours.colour(
+                        outcome=logic.RollOutcome.WorstCase)))
                 elif columnType == _RefuellingPlanTableColumnType.BestCaseBerthingCost:
-                    tableItem = gui.FormattedNumberTableWidgetItem(pitStop.berthingCost().bestCaseValue() if pitStop and pitStop.berthingCost() else None)
-                    tableItem.setBackground(QtGui.QColor(app.Config.instance().value(
-                        option=app.ConfigOption.BestCaseColour)))
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        pitStop.berthingCost().bestCaseValue() if pitStop and pitStop.berthingCost() else None)
+                    tableItem.setBackground(QtGui.QColor(self._outcomeColours.colour(
+                        outcome=logic.RollOutcome.BestCase)))
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -830,6 +846,8 @@ class JumpRouteWindow(gui.WindowWidget):
             option=app.ConfigOption.MapAnimations)
         routingType = app.Config.instance().value(
             option=app.ConfigOption.RoutingType)
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
 
         self._calculateRouteButton = gui.DualTextPushButton(
             primaryText='Calculate Jump Route',
@@ -876,7 +894,10 @@ class JumpRouteWindow(gui.WindowWidget):
         jumpRouteWidget = QtWidgets.QWidget()
         jumpRouteWidget.setLayout(jumpRouteLayout)
 
-        self._refuellingPlanTable = _RefuellingPlanTable(milieu=milieu, rules=rules)
+        self._refuellingPlanTable = _RefuellingPlanTable(
+            milieu=milieu,
+            rules=rules,
+            outcomeColours=outcomeColours)
         self._refuellingPlanTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
@@ -1029,6 +1050,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._mapWidget.setAnimation(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._refuellingPlanTable.setOutcomeColours(colours=newValue)
 
     def _mapStyleChanged(
             self,
