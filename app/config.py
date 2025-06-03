@@ -1102,7 +1102,7 @@ class Config(QtCore.QObject):
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.Milieu,
             key='TravellerMap/Milieu',
-            restart=False, # TODO: This being 'live' is a work in progress
+            restart=False,
             enumType=travellermap.Milieu,
             default=travellermap.Milieu.M1105))
 
@@ -1130,7 +1130,6 @@ class Config(QtCore.QObject):
             option=ConfigOption.MapEngine,
             key='TravellerMap/MapEngine',
             restart=True,
-            # TODO: The MapEngine should be moved to this .py file
             enumType=MapEngine,
             default=MapEngine.InApp))
         self._addConfigItem(EnumConfigItem(
@@ -1237,7 +1236,10 @@ class Config(QtCore.QObject):
             # NOTE: Setting the default like this assumes the ShitTonnage option
             # has already been added
             default=self.value(option=ConfigOption.ShipTonnage) * 0.1, # 10% of ship tonnage
-            # TODO: Not sure about this value, need to make sure it still allows hop-3
+            # NOTE: The min value is pretty arbitrary, it needs to allow the user to
+            # fake "hop-3" by setting the jump rating to 10 times a normal jump
+            # drive and setting the fuel per parsec to 1/10th of the fuel per parsec
+            # that the ship with that jump rating would normal use
             min=0.01))
         self._addConfigItem(IntConfigItem(
             option=ConfigOption.PerJumpOverhead,
@@ -1369,7 +1371,6 @@ class Config(QtCore.QObject):
             option=ConfigOption.ColourTheme,
             key='GUI/ColourTheme',
             restart=True,
-            # TODO: The ColourTheme should be moved to this .py file
             enumType=ColourTheme,
             default=ColourTheme.DarkMode))
         self._addConfigItem(FloatConfigItem(
