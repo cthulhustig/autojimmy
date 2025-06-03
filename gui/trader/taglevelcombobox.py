@@ -111,8 +111,7 @@ class TagLevelComboBox(QtWidgets.QComboBox):
             self.addItem(text)
             self.setItemData(itemIndex, tagLevel, QtCore.Qt.ItemDataRole.UserRole)
 
-        if value:
-            self.setCurrentTagLevel(value)
+        self.setCurrentTagLevel(value)
 
     def colours(self) -> app.TaggingColours:
         return app.TaggingColours(self._colours)
@@ -137,11 +136,14 @@ class TagLevelComboBox(QtWidgets.QComboBox):
         self.setItemDelegate(self._itemDelegate)
         super().resizeEvent(e)
 
-    def currentTagLevel(self) -> app.TagLevel:
+    def currentTagLevel(self) -> typing.Optional[app.TagLevel]:
         index = self.currentIndex()
         return self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
 
-    def setCurrentTagLevel(self, tagLevel: app.TagLevel) -> None:
+    def setCurrentTagLevel(
+            self,
+            tagLevel: typing.Optional[app.TagLevel]
+            ) -> None:
         for index in range(self.count()):
             itemTagLevel = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
             if tagLevel == itemTagLevel:
