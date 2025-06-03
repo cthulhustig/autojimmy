@@ -225,7 +225,11 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     'broker you hired is some kind of informant and hilarity ensues.</p>',
     escape=False)
 
-def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
+def createLogisticsToolTip(
+        routeLogistics: logic.RouteLogistics,
+        worldTagging: typing.Optional[logic.WorldTagging] = None,
+        taggingColours: typing.Optional[app.TaggingColours] = None
+        ) -> str:
     jumpRoute = routeLogistics.jumpRoute()
     startHex, _ = jumpRoute.startNode()
     finishHex, _ = jumpRoute.finishNode()
@@ -299,13 +303,13 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
             name=traveller.WorldManager.instance().canonicalHexName(milieu=jumpRoute.milieu(), hex=nodeHex)))
-        tagColour = app.tagColour(
-            app.calculateWorldTagLevel(world)
-            if world else
-            app.TagLevel.Danger) # Dead space is tagged as danger
-        style = ""
-        if tagColour:
-            style = f'background-color:#{tagColour}'
+
+        tagLevel = app.TagLevel.Danger # Dead space is tagged as danger
+        if world and worldTagging:
+            tagLevel = worldTagging.calculateWorldTagLevel(world)
+        tagColour = taggingColours.colour(level=tagLevel) if tagLevel and taggingColours else None
+
+        style = f'background-color:#{tagColour}' if tagColour else ''
         toolTip += f'<li><span style="{style}">{hexString}<span></li>'
 
         if index in pitStopMap:
@@ -426,7 +430,9 @@ def _createTradeScoreToolTip(
 
 def createBasesToolTip(
         world: traveller.World,
-        includeBaseTypes: typing.Optional[typing.Iterable[traveller.BaseType]] = None
+        includeBaseTypes: typing.Optional[typing.Iterable[traveller.BaseType]] = None,
+        worldTagging: typing.Optional[logic.WorldTagging] = None,
+        taggingColours: typing.Optional[app.TaggingColours] = None
         ) -> str:
     baseStrings = []
     baseColours = {}
@@ -437,9 +443,9 @@ def createBasesToolTip(
         baseString = traveller.Bases.description(baseType=baseType)
         baseStrings.append(baseString)
 
-        tagLevel = app.calculateBaseTypeTagLevel(baseType=baseType)
-        if tagLevel:
-            baseColours[baseString] = app.tagColour(tagLevel=tagLevel)
+        tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None
+        if tagLevel and taggingColours:
+            baseColours[baseString] = taggingColours.colour(level=tagLevel)
     if not baseStrings:
         return ''
 

@@ -17,6 +17,8 @@ class MapWindow(gui.WindowWidget):
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
@@ -25,7 +27,9 @@ class MapWindow(gui.WindowWidget):
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
-            animated=mapAnimations)
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
@@ -136,6 +140,10 @@ class MapWindow(gui.WindowWidget):
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._mapWidget.setAnimation(enabled=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(
             self,

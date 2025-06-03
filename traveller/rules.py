@@ -82,6 +82,6 @@ class Rules(object):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Rules):
-            raise NotImplementedError()
+            return False
         return self._system == other._system and \
             self._starPortFuelTypes == other._starPortFuelTypes

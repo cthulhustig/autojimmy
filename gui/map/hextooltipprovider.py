@@ -1,4 +1,6 @@
+import app
 import gui
+import logic
 import traveller
 import travellermap
 import typing
@@ -10,7 +12,9 @@ class HexTooltipProvider(object):
             rules: traveller.Rules,
             showImages: bool,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Collection[travellermap.Option]
+            mapOptions: typing.Collection[travellermap.Option],
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None
             ) -> None:
         super().__init__()
 
@@ -19,6 +23,8 @@ class HexTooltipProvider(object):
         self._showImages = showImages
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -50,6 +56,12 @@ class HexTooltipProvider(object):
     def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         self._mapOptions = set(options)
 
+    def setWorldTagging(self, tagging: typing.Optional[logic.WorldTagging]) -> None:
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+
+    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+
     def tooltip(self, hex: travellermap.HexPosition) -> str:
         return gui.createHexToolTip(
             hex=hex,
@@ -57,4 +69,6 @@ class HexTooltipProvider(object):
             rules=self._rules,
             hexImage=self._showImages,
             hexImageStyle=self._mapStyle,
-            hexImageOptions=self._mapOptions)
+            hexImageOptions=self._mapOptions,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours)

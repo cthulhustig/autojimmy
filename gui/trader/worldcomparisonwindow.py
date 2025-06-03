@@ -181,18 +181,28 @@ class WorldComparisonWindow(gui.WindowWidget):
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
         showTooltipImages = app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=milieu,
             rules=rules,
             showImages=showTooltipImages,
             mapStyle=mapStyle,
-            mapOptions=mapOptions)
+            mapOptions=mapOptions,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
 
-        self._worldTable = gui.WorldTradeScoreTable(milieu=milieu, rules=rules)
+        self._worldTable = gui.WorldTradeScoreTable(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._worldManagementWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             allowHexCallback=self._allowWorld,
             hexTable=self._worldTable)
         self._worldManagementWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
@@ -208,7 +218,9 @@ class WorldComparisonWindow(gui.WindowWidget):
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
-            animated=mapAnimations)
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
@@ -339,6 +351,14 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._mapWidget.setAnimation(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._worldManagementWidget.setWorldTagging(tagging=newValue)
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._worldManagementWidget.setTaggingColours(colours=newValue)
+            self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(
             self,

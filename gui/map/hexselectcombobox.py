@@ -75,6 +75,7 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         options = QtWidgets.QStyleOptionViewItem(option)
         self.initStyleOption(options, index)
         if options.widget:
+            assert(isinstance(options.widget, QtWidgets.QWidget))
             style = options.widget.style()
         else:
             style = QtWidgets.QApplication.style()

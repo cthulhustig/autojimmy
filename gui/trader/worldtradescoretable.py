@@ -38,9 +38,16 @@ class WorldTradeScoreTable(gui.HexTable):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(milieu=milieu, rules=rules, columns=columns)
+        super().__init__(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            columns=columns)
 
         self._tradeGoods = []
         self._tradeScoreMap = {}

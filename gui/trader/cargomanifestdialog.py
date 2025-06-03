@@ -68,7 +68,9 @@ class CargoManifestDialog(gui.DialogEx):
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         self._setupConfigurationControls(speculativePurchase)
         self._setupManifestControls()
@@ -223,13 +225,19 @@ class CargoManifestDialog(gui.DialogEx):
     def _setupManifestControls(self):
         outcomeColours = app.Config.instance().value(
             option=app.ConfigOption.OutcomeColours)
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
 
         self._cargoManifestDisplayModeTabs = gui.CalculationModeTabBar()
         self._cargoManifestDisplayModeTabs.currentChanged.connect(
             self._cargoManifestDisplayModeChanged)
 
         self._cargoManifestTable = gui.CargoManifestTable(
-            outcomeColours=outcomeColours)
+            outcomeColours=outcomeColours,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._cargoManifestTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._cargoManifestTable.setActiveColumns(self._cargoManifestColumns())
@@ -311,6 +319,12 @@ class CargoManifestDialog(gui.DialogEx):
         elif option is app.ConfigOption.OutcomeColours:
             self._cargoManifestTable.setOutcomeColours(colours=newValue)
             self._cargoBreakdownTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._cargoManifestTable.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._cargoManifestTable.setTaggingColours(colours=newValue)
 
     def _showWorldDetails(
             self,

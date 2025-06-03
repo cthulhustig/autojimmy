@@ -1,6 +1,7 @@
 import app
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
@@ -18,6 +19,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
             isOrderedList: bool = False,
             hexTable: typing.Optional[gui.HexTable] = None,
@@ -27,6 +30,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._allowHexCallback = allowHexCallback
         self._isOrderedList = isOrderedList
         self._relativeHex = None
@@ -49,10 +54,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if not self._hexTable:
             self._hexTable = gui.HexTable(
                 milieu=self._milieu,
-                rules=self._rules)
+                rules=self._rules,
+                worldTagging=self._worldTagging,
+                taggingColours=self._taggingColours)
         else:
-            self._hexTable.setMilieu(self._milieu)
-            self._hexTable.setRules(self._rules)
+            self._hexTable.setMilieu(milieu=self._milieu)
+            self._hexTable.setRules(rules=self._rules)
+            self._hexTable.setWorldTagging(tagging=self._worldTagging)
+            self._hexTable.setTaggingColours(colours=self._taggingColours)
         self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -159,6 +168,30 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._rules = traveller.Rules(rules)
         self._hexTable.setRules(rules=self._rules)
+
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._hexTable.setWorldTagging(tagging=self._worldTagging)
+
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+        self._hexTable.setTaggingColours(colours=self._taggingColours)
 
     def addHex(
             self,

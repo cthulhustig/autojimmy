@@ -1,5 +1,6 @@
 from .rolloutcome import *
 from .tradescore import *
+from .worldtagging import *
 from .worldsearch import *
 from .serialization import *
 from .cargorecord import *

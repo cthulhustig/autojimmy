@@ -107,7 +107,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
@@ -529,6 +531,10 @@ class SaleCalculatorWindow(gui.WindowWidget):
         elif option is app.ConfigOption.OutcomeColours:
             self._cargoTable.setOutcomeColours(colours=newValue)
             self._salePricesTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
 
     def _saleWorldChanged(self) -> None:
         disable = not self._saleWorldWidget.selectedWorld()

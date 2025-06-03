@@ -1,5 +1,6 @@
 import app
 import gui
+import logic
 import traveller
 import travellermap
 import typing
@@ -12,6 +13,8 @@ class _CustomTextEdit(gui.TextEditEx):
             rules: traveller.Rules,
             mapStyle: travellermap.Style,
             mapOptions: typing.Collection[travellermap.Option],
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -20,6 +23,8 @@ class _CustomTextEdit(gui.TextEditEx):
         self._rules = traveller.Rules(rules)
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
+        self._worldTagging = logic.WorldTagging(worldTagging)
+        self._taggingColours = app.TaggingColours(taggingColours)
         self._hex = None
 
         self.setReadOnly(True)
@@ -60,6 +65,24 @@ class _CustomTextEdit(gui.TextEditEx):
         self._mapOptions = options
         self._updateContent()
 
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._updateContent()
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+        self._updateContent()
+
     def setHex(
             self,
             hex: typing.Optional[travellermap.HexPosition]
@@ -91,6 +114,8 @@ class _CustomTextEdit(gui.TextEditEx):
                 hex=self._hex,
                 milieu=self._milieu,
                 rules=self._rules,
+                worldTagging=self._worldTagging,
+                taggingColours=self._taggingColours,
                 hexImage=True, # Always show image of the hex in hex detail window
                 hexImageStyle=self._mapStyle,
                 hexImageOptions=self._mapOptions))
@@ -116,7 +141,9 @@ class HexDetailsWindow(gui.WindowWidget):
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self._tabBar, 0)
@@ -204,3 +231,8 @@ class HexDetailsWindow(gui.WindowWidget):
             self._hexDetails.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexDetails.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexDetails.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexDetails.setTaggingColours(colours=newValue)
+

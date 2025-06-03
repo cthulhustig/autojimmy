@@ -290,7 +290,9 @@ class WorldSearchWindow(gui.WindowWidget):
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         self._setupAreaControls()
         self._setupFilterControls()
@@ -565,6 +567,8 @@ class WorldSearchWindow(gui.WindowWidget):
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._findWorldsButton = QtWidgets.QPushButton('Perform Search')
         self._findWorldsButton.clicked.connect(self._findWorlds)
@@ -574,7 +578,11 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTableDisplayModeTabs = gui.HexTableTabBar()
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
-        self._worldTable = gui.WorldTradeScoreTable(milieu=milieu, rules=rules)
+        self._worldTable = gui.WorldTradeScoreTable(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._worldTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._worldTable.setActiveColumns(self._worldColumns())
         self._worldTable.setMinimumHeight(100)
@@ -595,7 +603,9 @@ class WorldSearchWindow(gui.WindowWidget):
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
-            animated=mapAnimations)
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.enableDeadSpaceSelection(enable=True)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
@@ -743,6 +753,14 @@ class WorldSearchWindow(gui.WindowWidget):
             self._mapWidget.setAnimation(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._worldTable.setWorldTagging(tagging=newValue)
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._worldTable.setTaggingColours(colours=newValue)
+            self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(
             self,
@@ -786,21 +804,25 @@ class WorldSearchWindow(gui.WindowWidget):
         foundWorlds = None
         try:
             worldFilter = logic.WorldSearch()
-            worldFilter.setLogic(filterLogic=self._filterWidget.filterLogic())
+            worldFilter.setFilterLogic(filterLogic=self._filterWidget.filterLogic())
             worldFilter.setFilters(filters=self._filterWidget.filters())
 
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+            tagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+
 
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
                     milieu=milieu,
                     rules=rules,
+                    tagging=tagging,
                     maxResults=self._MaxSearchResults)
             elif self._regionSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.searchRegion(
                     milieu=milieu,
                     rules=rules,
+                    tagging=tagging,
                     sectorName=self._regionSearchSelectWidget.sectorName(),
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
@@ -814,6 +836,7 @@ class WorldSearchWindow(gui.WindowWidget):
                 foundWorlds = worldFilter.searchRadius(
                     milieu=milieu,
                     rules=rules,
+                    tagging=tagging,
                     centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
                 if len(foundWorlds) > self._MaxSearchResults:

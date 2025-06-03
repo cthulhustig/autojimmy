@@ -161,11 +161,15 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
     def __init__(
             self,
             outcomeColours: app.OutcomeColours,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[ColumnType] = AllColumns
             ) -> None:
         super().__init__()
 
         self._outcomeColours = app.OutcomeColours(outcomeColours)
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
         self.setColumnHeaders(columns)
@@ -191,6 +195,30 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         if colours == self._outcomeColours:
             return
         self._outcomeColours = app.OutcomeColours(colours)
+        self._syncContent()
+
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._syncContent()
+
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
         self._syncContent()
 
     def tradeOption(self, row: int) -> typing.Optional[logic.TradeOption]:
@@ -282,8 +310,15 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             grossProfit = tradeOption.grossProfit()
             returnOnInvestment = tradeOption.returnOnInvestment()
 
-            purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
-            saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
+            purchaseWorldTagColour = saleWorldTagColour = None
+            if self._worldTagging and self._taggingColours:
+                tagLevel = self._worldTagging.calculateWorldTagLevel(purchaseWorld)
+                if tagLevel:
+                    purchaseWorldTagColour = self._taggingColours.colour(level=tagLevel)
+
+                tagLevel = self._worldTagging.calculateWorldTagLevel(saleWorld)
+                if tagLevel:
+                    saleWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
             averageCaseColour = QtGui.QColor(self._outcomeColours.colour(
                 outcome=logic.RollOutcome.AverageCase))
@@ -334,8 +369,8 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     if notes:
                         noteCount = len(notes) if notes else None
                     tableItem = gui.FormattedNumberTableWidgetItem(noteCount)
-                    if noteCount:
-                        tableItem.setBackground(QtGui.QColor(app.tagColour(app.TagLevel.Warning)))
+                    if noteCount and self._taggingColours:
+                        tableItem.setBackground(QtGui.QColor(self._taggingColours.colour(app.TagLevel.Warning)))
                 elif columnType == self.ColumnType.Jumps:
                     tableItem = gui.FormattedNumberTableWidgetItem(tradeOption.jumpCount())
                 elif columnType == self.ColumnType.Owned:
@@ -482,7 +517,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             else:
                 return gui.createStringToolTip('No notes')
         elif columnType == self.ColumnType.Jumps:
-            return gui.createLogisticsToolTip(routeLogistics=tradeOption.routeLogistics())
+            return gui.createLogisticsToolTip(
+                routeLogistics=tradeOption.routeLogistics(),
+                worldTagging=self._worldTagging,
+                taggingColours=self._taggingColours)
 
         return None
 

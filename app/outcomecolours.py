@@ -29,5 +29,5 @@ class OutcomeColours(object):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, OutcomeColours):
-            raise NotImplementedError()
+            return False
         return self._colourMap == other._colourMap

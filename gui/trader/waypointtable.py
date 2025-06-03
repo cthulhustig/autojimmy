@@ -1,6 +1,8 @@
+import app
 import enum
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
@@ -74,9 +76,16 @@ class WaypointTable(gui.HexTable):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
-            columns: typing.Iterable[typing.Union[WaypointTableColumnType, gui.HexTable.ColumnType]] = AllColumns
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
+            columns: typing.Iterable[typing.Union[WaypointTableColumnType, gui.HexTable.ColumnType]] = AllColumns,
             ) -> None:
-        super().__init__(milieu=milieu, rules=rules, columns=columns)
+        super().__init__(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            columns=columns)
 
         # Disable sorting as it doesn't make sense for a list of waypoint as
         # they're listed in order of travel. It would also break the way rows

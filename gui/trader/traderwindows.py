@@ -29,8 +29,15 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[typing.Union[gui.WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns) -> None:
-        super().__init__(milieu=milieu, rules=rules, columns=columns)
+        super().__init__(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            columns=columns)
 
 
 # ███████████                                ███████████                         █████
@@ -55,7 +62,9 @@ class _BaseTraderWindow(gui.WindowWidget):
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         self._traderJob: typing.Optional[jobs.TraderJobBase] = None
 
@@ -295,6 +304,10 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._tradeOptionsTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
 
     def _enableDisableControls(self) -> None:
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
@@ -921,13 +934,19 @@ class WorldTraderWindow(_BaseTraderWindow):
     def _setupSaleWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldsTable = _WorldSaleScoreTable(
             milieu=milieu,
-            rules=rules)
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             hexTable=self._saleWorldsTable,
             allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.setHexTooltipProvider(
@@ -1404,6 +1423,10 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._speculativeCargoTable.setOutcomeColours(colours=newValue)
             self._availableCargoTable.setOutcomeColours(colours=newValue)
             self._currentCargoTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._saleWorldsWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._saleWorldsWidget.setTaggingColours(colours=newValue)
 
     def _playerBrokerDmChanged(
             self,
@@ -2374,10 +2397,14 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
     def _setupSaleWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
@@ -2393,10 +2420,14 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
     def _setupPurchaseWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             allowHexCallback=self._allowPurchaseWorld)
         self._purchaseWorldsWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
@@ -2426,6 +2457,12 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldsWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._purchaseWorldsWidget.setWorldTagging(tagging=newValue)
+            self._saleWorldsWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._purchaseWorldsWidget.setTaggingColours(colours=newValue)
+            self._saleWorldsWidget.setTaggingColours(colours=newValue)
 
     def _enableDisableControls(self) -> None:
         super()._enableDisableControls()

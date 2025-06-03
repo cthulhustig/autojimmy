@@ -93,38 +93,8 @@ class ConfigOption(enum.Enum):
     ShowToolTipImages = 602
     OutcomeColours = 603
 
-    # Tagging
-    DesirableTagColour = 700
-    WarningTagColour = 701
-    DangerTagColour = 702
-
-    # TODO: I'm thinking I might just want one Tagging config option
-    # that covers all the tagging as having so many will mean consumers
-    # need to check for a lot of different types. The same could also
-    # be true for tagging colours and avg/worst/best colours
-    ZoneTagging = 800
-    StarPortTagging = 801
-    WorldSizeTagging = 802
-    AtmosphereTagging = 803
-    HydrographicsTagging = 804
-    PopulationTagging = 805
-    GovernmentTagging = 806
-    LawLevelTagging = 807
-    TechLevelTagging = 808
-    BaseTypeTagging = 809
-    TradeCodeTagging = 810
-    ResourcesTagging = 811
-    LabourTagging = 812
-    InfrastructureTagging = 813
-    EfficiencyTagging = 814
-    HeterogeneityTagging = 815
-    AcceptanceTagging = 816
-    StrangenessTagging = 817
-    SymbolsTagging = 818
-    NobilityTagging = 819
-    AllegianceTagging = 820
-    SpectralTagging = 821
-    LuminosityTagging = 822
+    WorldTagging = 700
+    TaggingColours = 701
 
 class ConfigItem(object):
     def __init__(
@@ -657,14 +627,13 @@ class OutcomeColoursConfigItem(ConfigItem):
             self,
             option: ConfigOption,
             section: str,
+            default: app.OutcomeColours,
             restart: bool
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
-        self._currentValue = self._futureValue = app.OutcomeColours(
-            averageCaseColour=OutcomeColoursConfigItem._DefaultAverageCaseColour,
-            worstCaseColour=OutcomeColoursConfigItem._DefaultWorstCaseColour,
-            bestCaseColour=OutcomeColoursConfigItem._DefaultBestCaseColour)
+        self._default = app.OutcomeColours(default)
+        self._currentValue = self._futureValue = self._default
 
     def value(self, futureValue: bool = False) -> typing.Any:
         return app.OutcomeColours(self._futureValue if futureValue else self._currentValue)
@@ -831,6 +800,228 @@ class EnumTaggingConfigItem(TaggingConfigItem):
             default=default,
             keyToStringCb=lambda e: e.name,
             keyFromStringCb=lambda s: enumType.__members__[s] if s in enumType.__members__ else None)
+
+class TaggingColoursConfigItem(ConfigItem):
+    _DesirableKey = '/AverageCaseColour'
+    _WarningKey = '/WorstCaseColour'
+    _DangerKey = '/BestCaseColour'
+
+    def __init__(
+            self,
+            option: ConfigOption,
+            section: str,
+            default: app.TaggingColours,
+            restart: bool
+            ) -> None:
+        super().__init__(option=option, restart=restart)
+        self._section = section
+        self._default = app.TaggingColours(default)
+        self._currentValue = self._futureValue = self._default
+
+    def value(self, futureValue: bool = False) -> typing.Any:
+        return app.TaggingColours(self._futureValue if futureValue else self._currentValue)
+
+    def setValue(self, value: app.TaggingColours) -> None:
+        if value == self._futureValue:
+            return
+
+        value = app.TaggingColours(value)
+        if self._restart:
+            self._futureValue = value
+        else:
+            self._currentValue = self._futureValue = value
+
+    def isRestartRequired(self) -> bool:
+        return self._currentValue != self._futureValue
+
+    def read(self, settings: QtCore.QSettings) -> None:
+        desirableColour = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + TaggingColoursConfigItem._DesirableKey,
+            default=self._default.colour(level=app.TagLevel.Desirable),
+            type=str)
+
+        warningColour = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + TaggingColoursConfigItem._WarningKey,
+            default=self._default.colour(level=app.TagLevel.Warning),
+            type=str)
+
+        dangerColour = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + TaggingColoursConfigItem._DangerKey,
+            default=self._default.colour(level=app.TagLevel.Danger),
+            type=str)
+
+        self._currentValue = self._futureValue = app.TaggingColours(
+            desirableColour=desirableColour,
+            warningColour=warningColour,
+            dangerColour=dangerColour)
+
+    def write(self, settings: QtCore.QSettings) -> None:
+        settings.setValue(
+            self._section + TaggingColoursConfigItem._DesirableKey,
+            self._futureValue.colour(app.TagLevel.Desirable))
+        settings.setValue(
+            self._section + TaggingColoursConfigItem._WarningKey,
+            self._futureValue.colour(app.TagLevel.Warning))
+        settings.setValue(
+            self._section + TaggingColoursConfigItem._DangerKey,
+            self._futureValue.colour(app.TagLevel.Danger))
+
+class WorldTaggingConfigItem(ConfigItem):
+    _PropertyConfig = [
+        ('ZoneTagging', traveller.ZoneType, logic.TaggingProperty.Zone),
+        ('StarPortTagging', str, logic.TaggingProperty.StarPort),
+        ('WorldSizeTagging', str, logic.TaggingProperty.WorldSize),
+        ('AtmosphereTagging', str, logic.TaggingProperty.Atmosphere),
+        ('HydrographicsTagging', str, logic.TaggingProperty.Hydrographics),
+        ('PopulationTagging', str, logic.TaggingProperty.Population),
+        ('GovernmentTagging', str, logic.TaggingProperty.Government),
+        ('LawLevelTagging', str, logic.TaggingProperty.LawLevel),
+        ('TechLevelTagging', str, logic.TaggingProperty.TechLevel),
+        ('BaseTypeTagging', traveller.BaseType, logic.TaggingProperty.BaseType),
+        ('TradeCodeTagging', traveller.TradeCode, logic.TaggingProperty.TradeCode),
+        ('ResourcesTagging', str, logic.TaggingProperty.Resources),
+        ('LabourTagging', str, logic.TaggingProperty.Labour),
+        ('InfrastructureTagging', str, logic.TaggingProperty.Infrastructure),
+        ('EfficiencyTagging', str, logic.TaggingProperty.Efficiency),
+        ('HeterogeneityTagging', str, logic.TaggingProperty.Heterogeneity),
+        ('AcceptanceTagging', str, logic.TaggingProperty.Acceptance),
+        ('StrangenessTagging', str, logic.TaggingProperty.Strangeness),
+        ('SymbolsTagging', str, logic.TaggingProperty.Symbols),
+        ('NobilityTagging', traveller.NobilityType, logic.TaggingProperty.Nobility),
+        ('AllegianceTagging', str, logic.TaggingProperty.Allegiance),
+        ('SpectralTagging', str, logic.TaggingProperty.Spectral),
+        ('LuminosityTagging', str, logic.TaggingProperty.Luminosity)]
+
+    _SettingIndexFixPattern = re.compile('.*[\\/]')
+
+    def __init__(
+            self,
+            option: ConfigOption,
+            restart: bool,
+            default: typing.Optional[logic.WorldTagging]
+            ) -> None:
+        super().__init__(option=option, restart=restart)
+        self._default = logic.WorldTagging(default) if default else logic.WorldTagging()
+        self._currentValue = self._futureValue = self._default
+
+    def value(self, futureValue: bool = False) -> typing.Any:
+        return logic.WorldTagging(self._futureValue if futureValue else self._currentValue)
+
+    def setValue(self, value: logic.WorldTagging) -> None:
+        if value == self._futureValue:
+            return
+
+        value = logic.WorldTagging(value)
+        if self._restart:
+            self._futureValue = value
+        else:
+            self._currentValue = self._futureValue = value
+
+    def isRestartRequired(self) -> bool:
+        return self._currentValue != self._futureValue
+
+    def read(self, settings):
+        config = {}
+        useDefault = True
+        for section, type, property in WorldTaggingConfigItem._PropertyConfig:
+            if issubclass(type, enum.Enum):
+                keyFromStringCb = lambda s: type.__members__[s] if s in type.__members__ else None
+            else:
+                keyFromStringCb = lambda s: s
+
+            propertyConfig = self._readProperty(
+                settings=settings,
+                section=section,
+                keyFromStringCb=keyFromStringCb)
+            if propertyConfig is not None:
+                # There was a section present in the settings. This doesn't necessarily
+                # mean it has an have any tag values set, but it does mean the config
+                # has been changed so we shouldn't use the default
+                useDefault = False
+
+            if propertyConfig:
+                config[property] = propertyConfig
+
+        self._currentValue = self._futureValue = self._default if useDefault else logic.WorldTagging(config=config)
+
+    def write(self, settings):
+        config = self._futureValue.config()
+        for section, type, property in WorldTaggingConfigItem._PropertyConfig:
+            if issubclass(type, enum.Enum):
+                keyToStringCb = lambda e: e.name
+            else:
+                keyToStringCb = lambda s: s
+
+            propertyConfig = config.get(property)
+
+            self._writeProperty(
+                settings=settings,
+                section=section,
+                values=propertyConfig,
+                keyToStringCb=keyToStringCb)
+
+    def _readProperty(
+            self,
+            settings: QtCore.QSettings,
+            section: str,
+            keyFromStringCb: typing.Callable[[str], typing.Optional[typing.Any]]
+            ) -> typing.Optional[typing.Dict[typing.Any, app.TagLevel]]:
+        # Check to see if there is a size element for this section. This is a hack
+        # to differentiate between there being no section and there being a section
+        # with no entries. The distinction is important as we want to use the
+        # default configuration if there is no section but not if there is a section
+        # with no entries as the user must have configured it like that.
+        if not settings.contains(section + '/size'):
+            return None
+
+        values = {}
+        settings.beginReadArray(section)
+        try:
+            for settingKey in settings.allKeys():
+                if settingKey == 'size':
+                    continue
+
+                # Strip of the index that QSettings puts on array elements. For reasons I don't understand it's
+                # not consistent with which separator it uses
+                key = keyFromStringCb(TaggingConfigItem._SettingIndexFixPattern.sub('', settingKey))
+                if key is None:
+                    logging.warning(f'Ignoring tag map for "{key}" in section {section} as "{key}" is not a valid key')
+                    continue
+
+                value = settings.value(settingKey, defaultValue=None, type=str)
+                if value:
+                    if value not in app.TagLevel.__members__:
+                        logging.warning(f'Ignoring tag map for "{key}" in section {section} as "{value}" is not a valid tag level')
+                        continue
+                    values[key] = app.TagLevel.__members__[value]
+        finally:
+            settings.endArray()
+
+        return values
+
+    def _writeProperty(
+            self,
+            settings: QtCore.QSettings,
+            section: str,
+            values: typing.Optional[typing.Dict[typing.Any, app.TagLevel]],
+            keyToStringCb: typing.Callable[[typing.Any], str]
+            ) -> None:
+        settings.remove(section)
+        # Always write the array even if there are no values, otherwise it's not possible
+        # to completely remove all tagging as it will revert to the default
+        settings.beginWriteArray(section)
+        try:
+            if values:
+                for index, (key, tagLevel) in enumerate(values.items()):
+                    if tagLevel == None:
+                        continue
+                    settings.setArrayIndex(index)
+                    settings.setValue(keyToStringCb(key), tagLevel.name)
+        finally:
+            settings.endArray()
 
 class Config(QtCore.QObject):
     configChanged = QtCore.pyqtSignal(
@@ -1196,152 +1387,57 @@ class Config(QtCore.QObject):
         self._addConfigItem(OutcomeColoursConfigItem(
             option=ConfigOption.OutcomeColours,
             section='GUI',
+            default=app.OutcomeColours(
+                averageCaseColour='#0A0000FF',
+                worstCaseColour='#0AFF0000',
+                bestCaseColour='#0A00FF00'),
             restart=False))
 
         colourTheme = self.value(option=ConfigOption.ColourTheme)
         isDarkMode = colourTheme is ColourTheme.DarkMode or \
             (colourTheme is ColourTheme.UseOSSetting and darkdetect.isDark())
-        self._addConfigItem(ColourConfigItem(
-            option=ConfigOption.DesirableTagColour,
-            key='Tagging/DesirableTagColour',
-            restart=False,
-            default='#8000AA00' if isDarkMode else '#808CD47E'))
-        self._addConfigItem(ColourConfigItem(
-            option=ConfigOption.WarningTagColour,
-            key='Tagging/WarningTagColour',
-            restart=False,
-            default='#80FF7700' if isDarkMode else '#80994700'))
-        self._addConfigItem(ColourConfigItem(
-            option=ConfigOption.DangerTagColour,
-            key='Tagging/DangerTagColour',
-            restart=False,
-            default='#80BC2023' if isDarkMode else '#80FF6961'))
 
-        self._addConfigItem(EnumTaggingConfigItem(
-            option=ConfigOption.ZoneTagging,
-            section='ZoneTagging',
+        self._addConfigItem(TaggingColoursConfigItem(
+            option=ConfigOption.TaggingColours,
+            section='Tagging',
+            default=app.TaggingColours(
+                desirableColour='#80007A00' if isDarkMode else '#808CD47E',
+                warningColour='#808F4F00' if isDarkMode else '#80994700',
+                dangerColour='#8087171A' if isDarkMode else '#80FF6961'),
+            restart=False))
+        self._addConfigItem(WorldTaggingConfigItem(
+            option=ConfigOption.WorldTagging,
             restart=False,
-            enumType=traveller.ZoneType,
-            default={
-                traveller.ZoneType.AmberZone: app.TagLevel.Warning,
-                traveller.ZoneType.RedZone: app.TagLevel.Danger,
-                traveller.ZoneType.Unabsorbed: app.TagLevel.Warning,
-                traveller.ZoneType.Forbidden: app.TagLevel.Danger}))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.StarPortTagging,
-            section='StarPortTagging',
-            restart=False,
-            default={'X': app.TagLevel.Warning}))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.WorldSizeTagging,
-            section='WorldSizeTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.AtmosphereTagging,
-            section='AtmosphereTagging',
-            restart=False,
-            default={
-                # Tag corrosive and insidious atmospheres
-                'B': app.TagLevel.Danger,
-                'C': app.TagLevel.Danger}))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.HydrographicsTagging,
-            section='HydrographicsTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.PopulationTagging,
-            section='PopulationTagging',
-            restart=False,
-            default={
-                # Tag worlds with less than 100 people
-                '0': app.TagLevel.Danger,
-                '1': app.TagLevel.Warning,
-                '2': app.TagLevel.Warning}))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.GovernmentTagging,
-            section='GovernmentTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.LawLevelTagging,
-            section='LawLevelTagging',
-            restart=False,
-            default={'0': app.TagLevel.Danger}))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.TechLevelTagging,
-            section='TechLevelTagging',
-            restart=False))
-        self._addConfigItem(EnumTaggingConfigItem(
-            option=ConfigOption.BaseTypeTagging,
-            section='BaseTypeTagging',
-            restart=False,
-            enumType=traveller.BaseType))
-        self._addConfigItem(EnumTaggingConfigItem(
-            option=ConfigOption.TradeCodeTagging,
-            section='TradeCodeTagging',
-            restart=False,
-            enumType=traveller.TradeCode,
-            default={
-                traveller.TradeCode.AmberZone: app.TagLevel.Warning,
-                traveller.TradeCode.RedZone: app.TagLevel.Danger,
-                traveller.TradeCode.HellWorld: app.TagLevel.Danger,
-                traveller.TradeCode.PenalColony: app.TagLevel.Danger,
-                traveller.TradeCode.PrisonCamp: app.TagLevel.Danger,
-                traveller.TradeCode.Reserve: app.TagLevel.Danger,
-                traveller.TradeCode.DangerousWorld: app.TagLevel.Danger,
-                traveller.TradeCode.ForbiddenWorld: app.TagLevel.Danger}))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.ResourcesTagging,
-            section='ResourcesTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.LabourTagging,
-            section='LabourTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.InfrastructureTagging,
-            section='InfrastructureTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.EfficiencyTagging,
-            section='EfficiencyTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.HeterogeneityTagging,
-            section='HeterogeneityTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.AcceptanceTagging,
-            section='AcceptanceTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.StrangenessTagging,
-            section='StrangenessTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.SymbolsTagging,
-            section='SymbolsTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.SymbolsTagging,
-            section='SymbolsTagging',
-            restart=False))
-        self._addConfigItem(EnumTaggingConfigItem(
-            option=ConfigOption.NobilityTagging,
-            section='NobilityTagging',
-            restart=False,
-            enumType=traveller.NobilityType))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.AllegianceTagging,
-            section='AllegianceTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.SpectralTagging,
-            section='SpectralTagging',
-            restart=False))
-        self._addConfigItem(StringTaggingConfigItem(
-            option=ConfigOption.LuminosityTagging,
-            section='LuminosityTagging',
-            restart=False))
+            default=logic.WorldTagging(
+                config={
+                    logic.TaggingProperty.Zone: {
+                        traveller.ZoneType.AmberZone: app.TagLevel.Warning,
+                        traveller.ZoneType.RedZone: app.TagLevel.Danger,
+                        traveller.ZoneType.Unabsorbed: app.TagLevel.Warning,
+                        traveller.ZoneType.Forbidden: app.TagLevel.Danger},
+                    logic.TaggingProperty.StarPort: {
+                        'X': app.TagLevel.Warning},
+                    logic.TaggingProperty.Atmosphere: {
+                        # Tag corrosive and insidious atmospheres
+                        'B': app.TagLevel.Danger,
+                        'C': app.TagLevel.Danger},
+                    logic.TaggingProperty.Population: {
+                        # Tag worlds with less than 100 people
+                        '0': app.TagLevel.Warning,
+                        '1': app.TagLevel.Warning,
+                        '2': app.TagLevel.Warning},
+                    logic.TaggingProperty.LawLevel: {
+                        '0': app.TagLevel.Danger},
+                    logic.TaggingProperty.TradeCode: {
+                        traveller.TradeCode.AmberZone: app.TagLevel.Warning,
+                        traveller.TradeCode.RedZone: app.TagLevel.Danger,
+                        traveller.TradeCode.HellWorld: app.TagLevel.Danger,
+                        traveller.TradeCode.PenalColony: app.TagLevel.Danger,
+                        traveller.TradeCode.PrisonCamp: app.TagLevel.Danger,
+                        traveller.TradeCode.Reserve: app.TagLevel.Danger,
+                        traveller.TradeCode.DangerousWorld: app.TagLevel.Danger,
+                        traveller.TradeCode.ForbiddenWorld: app.TagLevel.Danger}
+                })))
 
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
@@ -1442,55 +1538,9 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.OutcomeColours], futureValue: bool = False) -> app.OutcomeColours: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.DesirableTagColour], futureValue: bool = False) -> str: ...
+    def value(self, option: typing.Literal[ConfigOption.TaggingColours], futureValue: bool = False) -> app.TaggingColours: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.WarningTagColour], futureValue: bool = False) -> str: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.DangerTagColour], futureValue: bool = False) -> str: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ZoneTagging], futureValue: bool = False) -> typing.Mapping[traveller.ZoneType, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.StarPortTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.AtmosphereTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.HydrographicsTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.PopulationTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.GovernmentTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.LawLevelTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.TechLevelTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.BaseTypeTagging], futureValue: bool = False) -> typing.Mapping[traveller.BaseType, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.TradeCodeTagging], futureValue: bool = False) -> typing.Mapping[traveller.TradeCode, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ResourcesTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.LabourTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.InfrastructureTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.EfficiencyTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.HeterogeneityTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.AcceptanceTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.StrangenessTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.SymbolsTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.SymbolsTagging], futureValue: bool = False) -> typing.Mapping[traveller.NobilityType, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.AllegianceTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.SpectralTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.LuminosityTagging], futureValue: bool = False) -> typing.Mapping[str, app.TagLevel]: ...
+    def value(self, option: typing.Literal[ConfigOption.WorldTagging], futureValue: bool = False) -> logic.WorldTagging: ...
 
     def value(
             self,

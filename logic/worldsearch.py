@@ -1,5 +1,6 @@
 import app
 import enum
+import logic
 import re
 import traveller
 import travellermap
@@ -90,7 +91,8 @@ class WorldFilter(object):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         raise RuntimeError('The match method should be implemented by the derived class')
 
@@ -142,7 +144,8 @@ class NameFiler(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         if self._operation == StringFilterOperation.ContainsString:
             if self._type == NameFiler.Type.WorldName:
@@ -161,14 +164,6 @@ class NameFiler(WorldFilter):
                 return self._regex.match(world.subsectorName()) != None
             raise ValueError('Invalid name filter type')
         raise ValueError('Invalid name filter operation')
-
-    @staticmethod
-    def _tagLevelToInt(level: str) -> int:
-        if level == app.TagLevel.Danger:
-            return 2
-        elif level == app.TagLevel.Warning:
-            return 1
-        return 0
 
 class TagLevelFiler(WorldFilter):
     def __init__(
@@ -197,11 +192,12 @@ class TagLevelFiler(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=TagLevelFiler._tagLevelToInt(app.calculateWorldTagLevel(world)),
+            worldValue=TagLevelFiler._tagLevelToInt(tagging.calculateWorldTagLevel(world)),
             compareValue=self._integer)
 
     @staticmethod
@@ -239,7 +235,8 @@ class ZoneFiler(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
@@ -317,7 +314,8 @@ class UWPFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
@@ -373,7 +371,8 @@ class EconomicsFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         code = world.economics().code(self._element)
         if self._element == traveller.Economics.Element.Efficiency:
@@ -431,7 +430,8 @@ class CultureFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
@@ -503,7 +503,8 @@ class RefuellingFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         checkList = RefuellingFilter.Type if self._operation == ListFilterOperation.ContainsOnly else self._value
         for refuelling in checkList:
@@ -569,7 +570,8 @@ class AllegianceFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         allegianceCode = world.allegiance()
         if allegianceCode:
@@ -624,7 +626,8 @@ class SophontFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         remarks = world.remarks()
         if remarks:
@@ -683,7 +686,8 @@ class BaseFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         checkList = traveller.BaseType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldBases = world.bases()
@@ -746,7 +750,8 @@ class NobilityFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         checkList = traveller.NobilityType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldNobilities = world.nobilities()
@@ -794,7 +799,8 @@ class RemarksFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         remarks = world.remarks()
         if remarks:
@@ -850,7 +856,8 @@ class TradeCodeFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         checkList = traveller.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
         for tradeCode in checkList:
@@ -911,7 +918,8 @@ class PBGFilter(WorldFilter):
     def match(
             self,
             world: traveller.World,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
@@ -926,10 +934,10 @@ class WorldSearch(object):
         self._logic = FilterLogic.MatchesAll
         self._filters: typing.List[WorldFilter] = []
 
-    def logic(self) -> FilterLogic:
+    def filterLogic(self) -> FilterLogic:
         return self._logic
 
-    def setLogic(self, filterLogic: FilterLogic) -> None:
+    def setFilterLogic(self, filterLogic: FilterLogic) -> None:
         self._logic = filterLogic
 
     def filters(self) -> typing.Iterable[WorldFilter]:
@@ -957,12 +965,13 @@ class WorldSearch(object):
             self,
             world: traveller.World,
             rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> bool: # # True if matched, False if ignored
         if not self._filters:
             return True # No filter always matches the world
 
         for filter in self._filters:
-            matched = filter.match(world=world, rules=rules)
+            matched = filter.match(world=world, rules=rules, tagging=tagging)
             if self._logic == FilterLogic.MatchesAll:
                 if not matched:
                     return False
@@ -981,13 +990,15 @@ class WorldSearch(object):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            tagging: logic.WorldTagging,
             maxResults: int = 1000
             ) -> typing.Iterable[traveller.World]:
         results = []
         for sector in traveller.WorldManager.instance().yieldSectors(milieu=milieu):
             self._searchWorlds(
-                rules=rules,
                 worlds=sector.yieldWorlds(),
+                rules=rules,
+                tagging=tagging,
                 inPlaceResults=results,
                 maxResults=maxResults)
             if maxResults and len(results) >= maxResults:
@@ -998,6 +1009,7 @@ class WorldSearch(object):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            tagging: logic.WorldTagging,
             sectorName: str,
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
@@ -1010,22 +1022,25 @@ class WorldSearch(object):
 
         if not subsectorName:
             return self._searchWorlds(
-                rules=rules,
                 worlds=sector.yieldWorlds(),
+                rules=rules,
+                tagging=tagging,
                 maxResults=maxResults)
         else:
             subsector = sector.subsectorByName(name=subsectorName)
             if not subsector:
                 raise RuntimeError(f'Subsector "{subsectorName}" not found in sector "{sectorName}"')
             return self._searchWorlds(
-                rules=rules,
                 worlds=subsector.yieldWorlds(),
+                rules=rules,
+                tagging=tagging,
                 maxResults=maxResults)
 
     def searchRadius(
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            tagging: logic.WorldTagging,
             centerHex: travellermap.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
@@ -1033,12 +1048,13 @@ class WorldSearch(object):
             milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
-            filterCallback=lambda world: self.checkWorld(world=world, rules=rules))
+            filterCallback=lambda world: self.checkWorld(world=world, rules=rules, tagging=tagging))
 
     def _searchWorlds(
             self,
-            rules: traveller.Rules,
             worlds: typing.Iterable[traveller.World],
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging,
             maxResults: int,
             inPlaceResults: typing.Optional[typing.Iterable[traveller.World]] = None
             ) -> typing.Iterable[traveller.World]:
@@ -1048,7 +1064,7 @@ class WorldSearch(object):
             results = []
 
         for world in worlds:
-            if self.checkWorld(world=world, rules=rules):
+            if self.checkWorld(world=world, rules=rules, tagging=tagging):
                 results.append(world)
                 if maxResults and len(results) >= maxResults:
                     return results

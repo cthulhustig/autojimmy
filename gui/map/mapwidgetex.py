@@ -297,12 +297,16 @@ class _InfoWidget(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
 
         self._resizeAnchor = None
         self._resizeBaseWidth = None
@@ -361,6 +365,24 @@ class _InfoWidget(QtWidgets.QWidget):
         if rules == self._rules:
             return
         self._rules = traveller.Rules(rules)
+        self._updateContent(self._label.width())
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._updateContent(self._label.width())
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
         self._updateContent(self._label.width())
 
     def setHex(
@@ -457,6 +479,8 @@ class _InfoWidget(QtWidgets.QWidget):
                 milieu=self._milieu,
                 rules=self._rules,
                 width=width - _InfoWidget._ContentRightMargin,
+                worldTagging=self._worldTagging,
+                taggingColours=self._taggingColours,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
                 hexImage=False,
                 hexImageStyle=None,
@@ -936,6 +960,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             options: typing.Collection[travellermap.Option],
             rendering: app.MapRendering,
             animated: bool,
+            worldTagging: logic.WorldTagging,
+            taggingColours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -946,6 +972,8 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._options = set(options)
         self._rendering = rendering
         self._animated = animated
+        self._worldTagging = logic.WorldTagging(worldTagging)
+        self._taggingColours = app.TaggingColours(taggingColours)
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
@@ -1010,6 +1038,8 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._infoWidget = _InfoWidget(
             milieu=self._milieu,
             rules=self._rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             parent=self)
         self._infoWidget.setMinimumWidth(200)
         self._infoWidget.setFixedWidth(300)
@@ -1343,6 +1373,18 @@ class MapWidgetEx(QtWidgets.QWidget):
             self._animatedAction.setChecked(self._animated)
 
         self.mapAnimationChanged.emit(self._animated)
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        self._infoWidget.setWorldTagging(tagging=tagging)
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        self._infoWidget.setTaggingColours(colours=colours)
 
     def reload(self) -> None:
         self._mapWidget.reload()

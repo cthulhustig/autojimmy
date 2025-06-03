@@ -22,6 +22,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
         mapOptions = set(app.Config.instance().value(option=app.ConfigOption.MapOptions)) # Convert to set for speed
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._overlays: typing.List[str] = []
@@ -50,7 +52,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
-            animated=mapAnimations)
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.SingleSelect)
         # Always enable dead space selection on the map as, even if dead space selection
@@ -205,6 +209,10 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._mapWidget.setAnimation(enabled=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(
             self,

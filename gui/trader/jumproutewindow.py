@@ -82,18 +82,20 @@ class _HexFilter(logic.HexFilterInterface):
             avoidHexes: typing.List[travellermap.HexPosition],
             avoidFilters: typing.List[logic.WorldFilter],
             avoidFilterLogic: logic.FilterLogic,
-            rules: traveller.Rules
+            rules: traveller.Rules,
+            tagging: logic.WorldTagging
             ) -> None:
         self._avoidHexes = set(avoidHexes) if avoidHexes else None
 
         if avoidFilters:
             self._avoidFilter = logic.WorldSearch()
-            self._avoidFilter.setLogic(filterLogic=avoidFilterLogic)
+            self._avoidFilter.setFilterLogic(filterLogic=avoidFilterLogic)
             self._avoidFilter.setFilters(filters=avoidFilters)
         else:
             self._avoidFilter = None
 
         self._rules = traveller.Rules(rules)
+        self._tagging = logic.WorldTagging(tagging)
 
     # IMPORTANT: This will be called from the route planner job thread
     def match(
@@ -105,9 +107,12 @@ class _HexFilter(logic.HexFilterInterface):
             # Filter out worlds on the avoid list
             return False
 
-        if self._avoidFilter and world and self._avoidFilter.checkWorld(world=world, rules=self._rules):
+        if self._avoidFilter and world:
             # Filter out worlds that MATCH the avoid filter
-            return False
+            return not self._avoidFilter.checkWorld(
+                world=world,
+                rules=self._rules,
+                tagging=self._tagging)
 
         return True
 
@@ -143,9 +148,16 @@ class _RefuellingPlanTable(gui.HexTable):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             outcomeColours: app.OutcomeColours,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[typing.Union[_RefuellingPlanTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(milieu=milieu, rules=rules, columns=columns)
+        super().__init__(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            columns=columns)
 
         self._outcomeColours = app.OutcomeColours(outcomeColours)
         self._pitStops: typing.List[logic.PitStop] = []
@@ -416,7 +428,9 @@ class JumpRouteWindow(gui.WindowWidget):
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
-            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions))
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         self._setupStartFinishControls()
         self._setupConfigurationControls()
@@ -767,11 +781,21 @@ class JumpRouteWindow(gui.WindowWidget):
             option=app.ConfigOption.Rules)
         routingType = app.Config.instance().value(
             option=app.ConfigOption.RoutingType)
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
 
-        self._waypointsTable = gui.WaypointTable(milieu=milieu, rules=rules)
+        self._waypointsTable = gui.WaypointTable(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._waypointsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             hexTable=self._waypointsTable,
             isOrderedList=True) # List order determines order waypoints are to be travelled to
         self._waypointsWidget.setHexTooltipProvider(
@@ -795,6 +819,10 @@ class JumpRouteWindow(gui.WindowWidget):
             option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(
             option=app.ConfigOption.Rules)
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
 
         self._avoidLocationsTabWidget = gui.ItemCountTabWidget()
         self._avoidLocationsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
@@ -802,6 +830,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidHexesWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             allowHexCallback=self._allowAvoidHex)
         self._avoidHexesWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
@@ -848,6 +878,10 @@ class JumpRouteWindow(gui.WindowWidget):
             option=app.ConfigOption.RoutingType)
         outcomeColours = app.Config.instance().value(
             option=app.ConfigOption.OutcomeColours)
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
 
         self._calculateRouteButton = gui.DualTextPushButton(
             primaryText='Calculate Jump Route',
@@ -877,7 +911,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._jumpRouteTable = gui.HexTable(
             milieu=milieu,
-            rules=rules)
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._jumpRouteTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
@@ -897,7 +933,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable = _RefuellingPlanTable(
             milieu=milieu,
             rules=rules,
-            outcomeColours=outcomeColours)
+            outcomeColours=outcomeColours,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._refuellingPlanTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
@@ -908,7 +946,9 @@ class JumpRouteWindow(gui.WindowWidget):
             style=mapStyle,
             options=mapOptions,
             rendering=mapRendering,
-            animated=mapAnimations)
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._mapWidget.setToolTipCallback(self._formatMapToolTip)
         self._mapWidget.enableDeadSpaceSelection(
@@ -1028,6 +1068,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._selectStartFinishWidget.setMilieu(milieu=newValue)
             self._waypointsWidget.setMilieu(milieu=newValue)
             self._avoidHexesWidget.setMilieu(milieu=newValue)
+            self._jumpRouteTable.setMilieu(milieu=newValue)
+            self._refuellingPlanTable.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
 
             # Changing milieu invalidates any current jump route
@@ -1036,6 +1078,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._hexTooltipProvider.setRules(rules=newValue)
             self._waypointsWidget.setRules(rules=newValue)
             self._avoidHexesWidget.setRules(rules=newValue)
+            self._jumpRouteTable.setRules(rules=newValue)
             self._refuellingPlanTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
@@ -1052,6 +1095,22 @@ class JumpRouteWindow(gui.WindowWidget):
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._refuellingPlanTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._waypointsWidget.setWorldTagging(tagging=newValue)
+            self._avoidHexesWidget.setWorldTagging(tagging=newValue)
+            self._jumpRouteTable.setWorldTagging(tagging=newValue)
+            self._refuellingPlanTable.setWorldTagging(tagging=newValue)
+            self._mapWidget.setWorldTagging(tagging=newValue)
+            self._updateJumpOverlays()
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._waypointsWidget.setTaggingColours(colours=newValue)
+            self._avoidHexesWidget.setTaggingColours(colours=newValue)
+            self._jumpRouteTable.setTaggingColours(colours=newValue)
+            self._refuellingPlanTable.setTaggingColours(colours=newValue)
+            self._mapWidget.setTaggingColours(colours=newValue)
+            self._updateJumpOverlays()
 
     def _mapStyleChanged(
             self,
@@ -1215,11 +1274,14 @@ class JumpRouteWindow(gui.WindowWidget):
         else:
             assert(False) # I've missed an enum
 
+        tagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+
         hexFilter = _HexFilter(
             avoidHexes=self._avoidHexesWidget.hexes(),
             avoidFilters=self._avoidFiltersWidget.filters(),
             avoidFilterLogic=self._avoidFiltersWidget.filterLogic(),
-            rules=rules)
+            rules=rules,
+            tagging=tagging)
 
         try:
             self._jumpRouteJob = jobs.RoutePlannerJob(
@@ -1738,6 +1800,11 @@ class JumpRouteWindow(gui.WindowWidget):
         if startHex and showWorldTaggingOverlay:
             milieu = app.Config.instance().value(
                 option=app.ConfigOption.Milieu)
+            worldTagging = app.Config.instance().value(
+                option=app.ConfigOption.WorldTagging)
+            taggingColours = app.Config.instance().value(
+                option=app.ConfigOption.TaggingColours)
+
             try:
                 worlds = traveller.WorldManager.instance().worldsInRadius(
                     milieu=milieu,
@@ -1756,15 +1823,14 @@ class JumpRouteWindow(gui.WindowWidget):
                 worldHex = world.hex()
                 if (worldHex == startHex) or (worldHex == finishHex):
                     continue # Don't highlight start/finish worlds
-                tagLevel = app.calculateWorldTagLevel(world=world)
+                tagLevel = worldTagging.calculateWorldTagLevel(world=world)
                 if not tagLevel:
                     continue
 
-                colour = QtGui.QColor(app.tagColour(
-                    tagLevel=tagLevel))
+                colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
                 tagColour = gui.colourToString(
                     colour=colour,
-                    includeAlpha=False)
+                    includeAlpha=False) # Remove alpha from colour
                 taggedHexes.append(world.hex())
                 colourMap[world.hex()] = tagColour
 

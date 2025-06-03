@@ -4,7 +4,7 @@ import gui
 import logic
 import traveller
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _FilterType(enum.Enum):
     NameFilter = 'Name'
@@ -252,6 +252,8 @@ class WorldFilterDialog(gui.DialogEx):
 
         self._checkValidity()
 
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
     def filter(self) -> logic.WorldFilter:
         filterType = self._filterTypeComboBox.currentEnum()
         if filterType == _FilterType.NameFilter:
@@ -382,6 +384,12 @@ class WorldFilterDialog(gui.DialogEx):
         else:
             raise TypeError(f'Invalid filter type {type(filter)}')
 
+    # TODO: Is this actually getting hit.
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
+
+        return super().closeEvent(event)
+
     def _setupFilterComboBox(self) -> None:
         self._filterTypeComboBox = gui.EnumComboBox(type=_FilterType)
         self._filterTypeComboBox.currentIndexChanged.connect(self._filterTypeChanged)
@@ -415,11 +423,15 @@ class WorldFilterDialog(gui.DialogEx):
             layout=layout)
 
     def _setupTagLevelFilterLayout(self) -> None:
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
+
         self._tagLevelFilterOperationComboBox = gui.EnumComboBox(
             type=logic.ComparisonFilterOperation,
             textMap=_ComparisonFilterOperationTextMap)
 
-        self._tagLevelFilterValueComboBox = gui.TagLevelComboBox()
+        self._tagLevelFilterValueComboBox = gui.TagLevelComboBox(
+            colours=taggingColours)
 
         layout = gui.FormLayoutEx()
         layout.addRow('Operation:', self._tagLevelFilterOperationComboBox)
@@ -730,6 +742,15 @@ class WorldFilterDialog(gui.DialogEx):
                         widgets.append(widget)
 
         return widgets
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.TaggingColours:
+            self._tagLevelFilterValueComboBox.setColours(colours=newValue)
 
     def _filterTypeChanged(self) -> None:
         currentFilter = self._filterTypeComboBox.currentEnum()

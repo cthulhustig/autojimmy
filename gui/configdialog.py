@@ -735,23 +735,23 @@ class ConfigDialog(gui.DialogEx):
         guiGroupBox.setLayout(guiLayout)
 
         # Tagging widgets
-        self._desirableTagColourButton = gui.ColourButton(app.Config.instance().value(
-            option=app.ConfigOption.DesirableTagColour,
-            futureValue=True))
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours,
+            futureValue=True)
+        self._desirableTagColourButton = gui.ColourButton(QtGui.QColor(
+            taggingColours.colour(level=app.TagLevel.Desirable)))
         self._desirableTagColourButton.setFixedWidth(ColourButtonWidth)
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
 
-        self._warningTagColourButton = gui.ColourButton(app.Config.instance().value(
-            option=app.ConfigOption.WarningTagColour,
-            futureValue=True))
+        self._warningTagColourButton = gui.ColourButton(QtGui.QColor(
+            taggingColours.colour(level=app.TagLevel.Warning)))
         self._warningTagColourButton.setFixedWidth(ColourButtonWidth)
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
 
-        self._dangerTagColourButton = gui.ColourButton(app.Config.instance().value(
-            option=app.ConfigOption.DangerTagColour,
-            futureValue=True))
+        self._dangerTagColourButton = gui.ColourButton(QtGui.QColor(
+            taggingColours.colour(level=app.TagLevel.Danger)))
         self._dangerTagColourButton.setFixedWidth(ColourButtonWidth)
         self._dangerTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight danger tagging'))
@@ -835,7 +835,13 @@ class ConfigDialog(gui.DialogEx):
         tab.setLayout(tabLayout)
         self._tabWidget.addTab(tab, 'Rules')
 
+    # TODO: There is a LOT of duplicated code setting up these table, it
+    # should really be a loop that iterates over logic.TaggingProperty
     def _setupZoneTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         keyDescriptions = {}
         keyAliases = {}
         for zoneType in traveller.ZoneType:
@@ -846,102 +852,120 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Zone',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.ZoneTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Zone))
         self._addTableTab(
             title='Zone Tagging',
             table=self._zoneTaggingTable)
 
     def _setupStarPortTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._starPortTaggingTable = self._createTaggingTable(
             keyTitle='Star Port',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.StarPort),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.StarPortTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.StarPort))
         self._addTableTab(
             title='Star Port Tagging',
             table=self._starPortTaggingTable)
 
     def _setupWorldSizeTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._worldSizeTaggingTable = self._createTaggingTable(
             keyTitle='World Size',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.WorldSize),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.WorldSizeTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.WorldSize))
         self._addTableTab(
             title='World Size Tagging',
             table=self._worldSizeTaggingTable)
 
     def _setupAtmosphereTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._atmosphereTaggingTable = self._createTaggingTable(
             keyTitle='Atmosphere',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Atmosphere),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.AtmosphereTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Atmosphere))
         self._addTableTab(
             title='Atmosphere Tagging',
             table=self._atmosphereTaggingTable)
 
     def _setupHydrographicsTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._hydrographicsTaggingTable = self._createTaggingTable(
             keyTitle='Hydrographics',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Hydrographics),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.HydrographicsTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Hydrographics))
         self._addTableTab(
             title='Hydrographics Tagging',
             table=self._hydrographicsTaggingTable)
 
     def _setupPopulationTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._populationTaggingTable = self._createTaggingTable(
             keyTitle='Population',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Population),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.PopulationTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Population))
         self._addTableTab(
             title='Population Tagging',
             table=self._populationTaggingTable)
 
     def _setupGovernmentTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._governmentTaggingTable = self._createTaggingTable(
             keyTitle='Government',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Government),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.GovernmentTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Government))
         self._addTableTab(
             title='Government Tagging',
             table=self._governmentTaggingTable)
 
     def _setupLawLevelTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._lawLevelTaggingTable = self._createTaggingTable(
             keyTitle='Law Level',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.LawLevel),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.LawLevelTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.LawLevel))
         self._addTableTab(
             title='Law Level Tagging',
             table=self._lawLevelTaggingTable)
 
     def _setupTechLevelTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._techLevelTaggingTable = self._createTaggingTable(
             keyTitle='Tech Level',
             keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.TechLevel),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.TechLevelTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.TechLevel))
         self._addTableTab(
             title='Tech Level Tagging',
             table=self._techLevelTaggingTable)
 
     def _setupBaseTypeTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         keyDescriptions = {}
         keyAliases = {}
         for baseType in traveller.BaseType:
@@ -952,14 +976,16 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Base',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.BaseTypeTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.BaseType))
         self._addTableTab(
             title='Base Tagging',
             table=self._baseTypeTaggingTable)
 
     def _setupTradeCodeTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         keyDescriptions = {}
         keyAliases = {}
         for tradeCode in traveller.TradeCode:
@@ -970,102 +996,120 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Trade Code',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.TradeCodeTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.TradeCode))
         self._addTableTab(
             title='Trade Code Tagging',
             table=self._tradeCodeTaggingTable)
 
     def _setupResourcesTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._resourcesTaggingTable = self._createTaggingTable(
             keyTitle='Resources',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Resources),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.ResourcesTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Resources))
         self._addTableTab(
             title='Resources Tagging',
             table=self._resourcesTaggingTable)
 
     def _setupLabourTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._labourTaggingTable = self._createTaggingTable(
             keyTitle='Labour',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Labour),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.LabourTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Labour))
         self._addTableTab(
             title='Labour Tagging',
             table=self._labourTaggingTable)
 
     def _setupInfrastructureTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._infrastructureTaggingTable = self._createTaggingTable(
             keyTitle='Infrastructure',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Infrastructure),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.InfrastructureTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Infrastructure))
         self._addTableTab(
             title='Infrastructure Tagging',
             table=self._infrastructureTaggingTable)
 
     def _setupEfficiencyTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._efficiencyTaggingTable = self._createTaggingTable(
             keyTitle='Efficiency',
             keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Efficiency),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.EfficiencyTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Efficiency))
         self._addTableTab(
             title='Efficiency Tagging',
             table=self._efficiencyTaggingTable)
 
     def _setupHeterogeneityTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._heterogeneityTaggingTable = self._createTaggingTable(
             keyTitle='Heterogeneity',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Heterogeneity),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.HeterogeneityTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Heterogeneity))
         self._addTableTab(
             title='Heterogeneity Tagging',
             table=self._heterogeneityTaggingTable)
 
     def _setupAcceptanceTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._acceptanceTaggingTable = self._createTaggingTable(
             keyTitle='Acceptance',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Acceptance),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.AcceptanceTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Acceptance))
         self._addTableTab(
             title='Acceptance Tagging',
             table=self._acceptanceTaggingTable)
 
     def _setupStrangenessTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._strangenessTaggingTable = self._createTaggingTable(
             keyTitle='Strangeness',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Strangeness),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.StrangenessTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Strangeness))
         self._addTableTab(
             title='Strangeness Tagging',
             table=self._strangenessTaggingTable)
 
     def _setupSymbolsTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._symbolsTaggingTable = self._createTaggingTable(
             keyTitle='Symbols',
             keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Symbols),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.SymbolsTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Symbols))
         self._addTableTab(
             title='Symbols Tagging',
             table=self._symbolsTaggingTable)
 
     def _setupNobilityTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         keyDescriptions = {}
         keyAliases = {}
         for nobilityType in traveller.NobilityType:
@@ -1076,14 +1120,16 @@ class ConfigDialog(gui.DialogEx):
             keyTitle='Nobility',
             keyDescriptions=keyDescriptions,
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.NobilityTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Nobility))
         self._addTableTab(
             title='Nobility Tagging',
             table=self._nobilityTaggingTable)
 
     def _setupAllegianceTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         # TODO: If the user changes the milieu on the main config pane, this
         # config pane should probably update
         # TODO: This probably shouldn't use app.Config
@@ -1105,31 +1151,33 @@ class ConfigDialog(gui.DialogEx):
         self._allegianceTaggingTable = self._createTaggingTable(
             keyTitle='Allegiance',
             keyDescriptions=keyDescriptions,
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.AllegianceTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Allegiance))
         self._addTableTab(
             title='Allegiance Tagging',
             table=self._allegianceTaggingTable)
 
     def _setupSpectralTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._spectralTaggingTable = self._createTaggingTable(
             keyTitle='Spectral Class',
             keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.SpectralClass),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.SpectralTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Spectral))
         self._addTableTab(
             title='Spectral Class Tagging',
             table=self._spectralTaggingTable)
 
     def _setupLuminosityTaggingTab(self) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+
         self._luminosityTaggingTable = self._createTaggingTable(
             keyTitle='Luminosity Class',
             keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.LuminosityClass),
-            taggingMap=app.Config.instance().value(
-                option=app.ConfigOption.LuminosityTagging,
-                futureValue=True))
+            taggingMap=worldTagging.propertyConfig(property=logic.TaggingProperty.Luminosity))
         self._addTableTab(
             title='Luminosity Class Tagging',
             table=self._luminosityTaggingTable)
@@ -1215,84 +1263,88 @@ class ConfigDialog(gui.DialogEx):
                     bestCaseColour=gui.colourToString(self._bestCaseColourButton.colour())))
 
             app.Config.instance().setValue(
-                option=app.ConfigOption.DesirableTagColour,
-                value=gui.colourToString(self._desirableTagColourButton.colour()))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.WarningTagColour,
-                value=gui.colourToString(self._warningTagColourButton.colour()))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.DangerTagColour,
-                value=gui.colourToString(self._dangerTagColourButton.colour()))
+                option=app.ConfigOption.TaggingColours,
+                value=app.TaggingColours(
+                    desirableColour=gui.colourToString(self._desirableTagColourButton.colour()),
+                    warningColour=gui.colourToString(self._warningTagColourButton.colour()),
+                    dangerColour=gui.colourToString(self._dangerTagColourButton.colour())))
 
+            # TODO: This should be in some kind of loop rather than handling
+            # each property independently. It's related to the fact there
+            # is so much duplicated code setting the tables up
+            tagging = logic.WorldTagging()
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Zone,
+                config=self._taggingMapFromTable(self._zoneTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.StarPort,
+                config=self._taggingMapFromTable(self._starPortTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.WorldSize,
+                config=self._taggingMapFromTable(self._worldSizeTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Atmosphere,
+                config=self._taggingMapFromTable(self._atmosphereTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Hydrographics,
+                config=self._taggingMapFromTable(self._hydrographicsTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Population,
+                config=self._taggingMapFromTable(self._populationTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Government,
+                config=self._taggingMapFromTable(self._governmentTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.LawLevel,
+                config=self._taggingMapFromTable(self._lawLevelTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.TechLevel,
+                config=self._taggingMapFromTable(self._techLevelTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.BaseType,
+                config=self._taggingMapFromTable(self._baseTypeTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.TradeCode,
+                config=self._taggingMapFromTable(self._tradeCodeTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Resources,
+                config=self._taggingMapFromTable(self._resourcesTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Labour,
+                config=self._taggingMapFromTable(self._labourTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Infrastructure,
+                config=self._taggingMapFromTable(self._infrastructureTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Efficiency,
+                config=self._taggingMapFromTable(self._efficiencyTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Heterogeneity,
+                config=self._taggingMapFromTable(self._heterogeneityTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Acceptance,
+                config=self._taggingMapFromTable(self._acceptanceTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Strangeness,
+                config=self._taggingMapFromTable(self._strangenessTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Symbols,
+                config=self._taggingMapFromTable(self._symbolsTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Nobility,
+                config=self._taggingMapFromTable(self._nobilityTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Allegiance,
+                config=self._taggingMapFromTable(self._allegianceTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Spectral,
+                config=self._taggingMapFromTable(self._spectralTaggingTable))
+            tagging.setPropertyConfig(
+                property=logic.TaggingProperty.Luminosity,
+                config=self._taggingMapFromTable(self._luminosityTaggingTable))
             app.Config.instance().setValue(
-                option=app.ConfigOption.ZoneTagging,
-                value=self._taggingMapFromTable(self._zoneTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.StarPortTagging,
-                value=self._taggingMapFromTable(self._starPortTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.WorldSizeTagging,
-                value=self._taggingMapFromTable(self._worldSizeTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.AtmosphereTagging,
-                value=self._taggingMapFromTable(self._atmosphereTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.HydrographicsTagging,
-                value=self._taggingMapFromTable(self._hydrographicsTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.PopulationTagging,
-                value=self._taggingMapFromTable(self._populationTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.GovernmentTagging,
-                value=self._taggingMapFromTable(self._governmentTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.LawLevelTagging,
-                value=self._taggingMapFromTable(self._lawLevelTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.TechLevelTagging,
-                value=self._taggingMapFromTable(self._techLevelTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.BaseTypeTagging,
-                value=self._taggingMapFromTable(self._baseTypeTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.TradeCodeTagging,
-                value=self._taggingMapFromTable(self._tradeCodeTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ResourcesTagging,
-                value=self._taggingMapFromTable(self._resourcesTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.LabourTagging,
-                value=self._taggingMapFromTable(self._labourTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.InfrastructureTagging,
-                value=self._taggingMapFromTable(self._infrastructureTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.EfficiencyTagging,
-                value=self._taggingMapFromTable(self._efficiencyTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.HeterogeneityTagging,
-                value=self._taggingMapFromTable(self._heterogeneityTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.AcceptanceTagging,
-                value=self._taggingMapFromTable(self._acceptanceTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.StrangenessTagging,
-                value=self._taggingMapFromTable(self._strangenessTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.SymbolsTagging,
-                value=self._taggingMapFromTable(self._symbolsTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.NobilityTagging,
-                value=self._taggingMapFromTable(self._nobilityTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.AllegianceTagging,
-                value=self._taggingMapFromTable(self._allegianceTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.SpectralTagging,
-                value=self._taggingMapFromTable(self._spectralTaggingTable))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.LuminosityTagging,
-                value=self._taggingMapFromTable(self._luminosityTaggingTable))
+                option=app.ConfigOption.WorldTagging,
+                value=tagging)
         except Exception as ex:
             message = 'Failed to save configuration'
             logging.error(message, exc_info=ex)
@@ -1306,10 +1358,15 @@ class ConfigDialog(gui.DialogEx):
             self,
             keyTitle: str,
             keyDescriptions: typing.Union[typing.Dict[str, str], typing.Dict[enum.Enum, str]],
-            taggingMap: typing.Union[typing.Dict[str, app.TagLevel], typing.Dict[enum.Enum, app.TagLevel]],
+            taggingMap: typing.Optional[typing.Union[typing.Dict[str, app.TagLevel], typing.Dict[enum.Enum, app.TagLevel]]],
             keyAliases: typing.Optional[typing.Union[typing.Dict[str, str], typing.Dict[enum.Enum, str]]] = None
             ) -> gui.ListTable:
         columnNames = [keyTitle, 'Tag Level', 'Description']
+
+        # TODO: This pane should update if the user changes the tagging colours on
+        # the main pane
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
 
         table = gui.ListTable()
         table.setColumnHeaders(columnNames)
@@ -1347,13 +1404,15 @@ class ConfigDialog(gui.DialogEx):
             table.setItem(row, 0, item)
 
             tagLevel = None
-            if key in taggingMap:
+            if taggingMap and key in taggingMap:
                 tagLevel = taggingMap[key]
 
             item = QtWidgets.QTableWidgetItem()
             item.setToolTip(toolTip)
             table.setItem(row, 1, item)
-            comboBox = gui.TagLevelComboBox(value=tagLevel)
+            comboBox = gui.TagLevelComboBox(
+                value=tagLevel,
+                colours=taggingColours)
             # Set the background role of the combo box to the same background role that will be used
             # for the alternating rows in the table. This makes sure the combo boxes have the same
             # colour as the rest of the row (when no tag level is selected). Note that this will most
