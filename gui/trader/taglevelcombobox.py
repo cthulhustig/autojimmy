@@ -122,6 +122,12 @@ class TagLevelComboBox(QtWidgets.QComboBox):
 
         self._colours = app.TaggingColours(colours)
         self._itemDelegate.setColours(colours)
+
+        tagLevel = self.currentTagLevel()
+        if tagLevel:
+            self._updateBackgroundColour(
+                colour=colours.colour(level=tagLevel))
+
         self.update() # Force redraw
 
     def resizeEvent(self, e: QtGui.QResizeEvent) -> None:
@@ -155,14 +161,8 @@ class TagLevelComboBox(QtWidgets.QComboBox):
         colour = \
             QtGui.QColor(self._colours.colour(level=tagLevel)) \
             if tagLevel else \
-            self._defaultBackgroundColour()
+            self.palette().color(QtGui.QPalette.ColorRole.Background)
         self._updateBackgroundColour(colour=colour)
-
-    def _defaultBackgroundColour(self) -> QtGui.QColor:
-        colour = self.palette().color(self.backgroundRole())
-        if not colour:
-            colour = self.palette().color(QtGui.QPalette.ColorRole.Background)
-        return colour
 
     def _updateBackgroundColour(
             self,
@@ -170,7 +170,7 @@ class TagLevelComboBox(QtWidgets.QComboBox):
             ) -> None:
         if gui.isDarkModeEnabled():
             colour = _blendColor(
-                baseColour=self._defaultBackgroundColour(),
+                baseColour=self.palette().color(QtGui.QPalette.ColorRole.Background),
                 topColour=colour)
 
         palette = self.palette()

@@ -3,6 +3,8 @@ import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 class ColourButton(QtWidgets.QPushButton):
+    colourChanged = QtCore.pyqtSignal(QtGui.QColor)
+
     _ColourBoxMargin = 4
     _ColourBoxOutlineWidth = 1
 
@@ -22,6 +24,7 @@ class ColourButton(QtWidgets.QPushButton):
             return
 
         self._colour = QtGui.QColor(colour)
+        self.colourChanged.emit(QtGui.QColor(self._colour))
         self.update() # Force redraw
 
     def paintEvent(
@@ -51,5 +54,4 @@ class ColourButton(QtWidgets.QPushButton):
         if not colour.isValid():
             return # Dialog cancelled
 
-        self._colour = colour
-        self.update() # Force redraw
+        self.setColour(colour=colour)

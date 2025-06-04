@@ -194,8 +194,6 @@ class _ClearTileCacheDialog(QtWidgets.QDialog):
         text += '.'
         self._workingLabel.setText(text)
 
-# TODO: This pane should update if the user changes the tagging colours on
-# the main pane
 class _TaggingTable(gui.ListTable):
     def __init__(
             self,
@@ -861,18 +859,24 @@ class ConfigDialog(gui.DialogEx):
         self._desirableTagColourButton.setFixedWidth(ColourButtonWidth)
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
+        self._desirableTagColourButton.colourChanged.connect(
+                self._taggingColourChanged)
 
         self._warningTagColourButton = gui.ColourButton(QtGui.QColor(
             taggingColours.colour(level=app.TagLevel.Warning)))
         self._warningTagColourButton.setFixedWidth(ColourButtonWidth)
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
+        self._warningTagColourButton.colourChanged.connect(
+                self._taggingColourChanged)
 
         self._dangerTagColourButton = gui.ColourButton(QtGui.QColor(
             taggingColours.colour(level=app.TagLevel.Danger)))
         self._dangerTagColourButton.setFixedWidth(ColourButtonWidth)
         self._dangerTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight danger tagging'))
+        self._dangerTagColourButton.colourChanged.connect(
+                self._taggingColourChanged)
 
         taggingLayout = gui.FormLayoutEx()
         taggingLayout.addRow('Desirable Tagging Colour:', self._desirableTagColourButton)
@@ -1606,3 +1610,33 @@ class ConfigDialog(gui.DialogEx):
     def _clearTileCacheClicked(self) -> None:
         dlg = _ClearTileCacheDialog(parent=self)
         dlg.exec()
+
+    def _taggingColourChanged(self) -> None:
+        colours = app.TaggingColours(
+            desirableColour=self._desirableTagColourButton.colour(),
+            warningColour=self._warningTagColourButton.colour(),
+            dangerColour=self._dangerTagColourButton.colour())
+
+        self._zoneTaggingTable.setTaggingColours(colours=colours)
+        self._starPortTaggingTable.setTaggingColours(colours=colours)
+        self._worldSizeTaggingTable.setTaggingColours(colours=colours)
+        self._atmosphereTaggingTable.setTaggingColours(colours=colours)
+        self._hydrographicsTaggingTable.setTaggingColours(colours=colours)
+        self._populationTaggingTable.setTaggingColours(colours=colours)
+        self._governmentTaggingTable.setTaggingColours(colours=colours)
+        self._lawLevelTaggingTable.setTaggingColours(colours=colours)
+        self._techLevelTaggingTable.setTaggingColours(colours=colours)
+        self._baseTypeTaggingTable.setTaggingColours(colours=colours)
+        self._tradeCodeTaggingTable.setTaggingColours(colours=colours)
+        self._resourcesTaggingTable.setTaggingColours(colours=colours)
+        self._labourTaggingTable.setTaggingColours(colours=colours)
+        self._infrastructureTaggingTable.setTaggingColours(colours=colours)
+        self._efficiencyTaggingTable.setTaggingColours(colours=colours)
+        self._heterogeneityTaggingTable.setTaggingColours(colours=colours)
+        self._acceptanceTaggingTable.setTaggingColours(colours=colours)
+        self._strangenessTaggingTable.setTaggingColours(colours=colours)
+        self._symbolsTaggingTable.setTaggingColours(colours=colours)
+        self._nobilityTaggingTable.setTaggingColours(colours=colours)
+        self._allegianceTaggingTable.setTaggingColours(colours=colours)
+        self._spectralTaggingTable.setTaggingColours(colours=colours)
+        self._luminosityTaggingTable.setTaggingColours(colours=colours)
