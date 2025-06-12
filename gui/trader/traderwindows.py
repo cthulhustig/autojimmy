@@ -225,8 +225,9 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
-        outcomeColours = app.Config.instance().value(
-            option=app.ConfigOption.OutcomeColours)
+        outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._calculateTradeOptionsButton = gui.DualTextPushButton(
             primaryText='Calculate Trade Options',
@@ -245,7 +246,9 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
-            outcomeColours=outcomeColours)
+            outcomeColours=outcomeColours,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._tradeOptionsTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
@@ -306,8 +309,10 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._tradeOptionsTable.setOutcomeColours(colours=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._tradeOptionsTable.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._tradeOptionsTable.setTaggingColours(colours=newValue)
 
     def _enableDisableControls(self) -> None:
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
@@ -915,9 +920,23 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _setupPurchaseWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             labelText='Select World:')
         self._purchaseWorldWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
@@ -934,6 +953,10 @@ class WorldTraderWindow(_BaseTraderWindow):
     def _setupSaleWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
@@ -945,6 +968,10 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
             hexTable=self._saleWorldsTable,
@@ -1410,6 +1437,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             # data has changed
             self._speculativeCargoTable.removeAllRows()
         elif option is app.ConfigOption.Rules:
+            self._purchaseWorldWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
 
             # Changing rules invalidates any current cargo as cargo records
@@ -1419,13 +1447,27 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._speculativeCargoTable.removeAllRows()
             self._availableCargoTable.removeAllRows()
             self._currentCargoTable.removeAllRows()
+        elif option is app.ConfigOption.MapStyle:
+            self._purchaseWorldWidget.setMapStyle(style=newValue)
+            self._saleWorldsWidget.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._purchaseWorldWidget.setMapOptions(options=newValue)
+            self._saleWorldsWidget.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._purchaseWorldWidget.setMapRendering(rendering=newValue)
+            self._saleWorldsWidget.setMapRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._purchaseWorldWidget.setMapAnimations(enabled=newValue)
+            self._saleWorldsWidget.setMapAnimations(enabled=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._speculativeCargoTable.setOutcomeColours(colours=newValue)
             self._availableCargoTable.setOutcomeColours(colours=newValue)
             self._currentCargoTable.setOutcomeColours(colours=newValue)
         elif option is app.ConfigOption.WorldTagging:
+            self._purchaseWorldWidget.setWorldTagging(tagging=newValue)
             self._saleWorldsWidget.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
+            self._purchaseWorldWidget.setTaggingColours(colours=newValue)
             self._saleWorldsWidget.setTaggingColours(colours=newValue)
 
     def _playerBrokerDmChanged(
@@ -2397,12 +2439,20 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
     def _setupSaleWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._saleWorldsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
             allowHexCallback=self._allowSaleWorld)
@@ -2420,12 +2470,20 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
     def _setupPurchaseWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldsWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
             allowHexCallback=self._allowPurchaseWorld)
@@ -2457,6 +2515,18 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldsWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._purchaseWorldsWidget.setMapStyle(style=newValue)
+            self._saleWorldsWidget.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._purchaseWorldsWidget.setMapOptions(options=newValue)
+            self._saleWorldsWidget.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._purchaseWorldsWidget.setMapRendering(rendering=newValue)
+            self._saleWorldsWidget.setMapRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._purchaseWorldsWidget.setMapAnimations(enabled=newValue)
+            self._saleWorldsWidget.setMapAnimations(enabled=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._purchaseWorldsWidget.setWorldTagging(tagging=newValue)
             self._saleWorldsWidget.setWorldTagging(tagging=newValue)

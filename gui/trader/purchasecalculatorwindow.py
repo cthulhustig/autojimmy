@@ -19,7 +19,10 @@ _WelcomeMessage = """
     </html>
 """
 
-# TODO: This needs updated to handle the rules changing
+# TODO: There is a problem here. If the dialog hasn't been shown at the point
+# the rules are changed, the cargo options etc won't be cleared. This is a more
+# general problem anywhere I'm clearing state that is saved (and will be loaded
+# when the dialog is shown) in response to config changes.
 class PurchaseCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -188,9 +191,23 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
     def _setupWorldSelectControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._purchaseWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             labelText='Select World:')
         self._purchaseWorldWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
@@ -338,6 +355,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self._clearCargo()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._purchaseWorldWidget.setRules(rules=newValue)
             self._localBrokerWidget.setRules(rules=newValue)
 
             # Changing rules invalidates any current cargo as the cargo records
@@ -345,16 +363,24 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self._clearCargo()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._purchaseWorldWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._purchaseWorldWidget.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._purchaseWorldWidget.setMapRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._purchaseWorldWidget.setMapAnimations(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._cargoTable.setOutcomeColours(colours=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._purchaseWorldWidget.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._purchaseWorldWidget.setTaggingColours(colours=newValue)
 
     def _purchaseWorldChanged(self) -> None:
         disable = not self._purchaseWorldWidget.selectedWorld()

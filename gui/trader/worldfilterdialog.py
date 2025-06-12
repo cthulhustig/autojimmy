@@ -203,6 +203,8 @@ class _EnumOptionWidget(QtWidgets.QWidget):
         for checkBox in self._optionMap.values():
             checkBox.setChecked(False)
 
+# TODO: Rather than registering for config updates the dialog should
+# have the values passed to it by its creator
 class WorldFilterDialog(gui.DialogEx):
     def __init__(
             self,

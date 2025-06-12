@@ -23,7 +23,6 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
-# TODO: This needs updated to handle rules changing
 class _CustomTradeGoodTable(gui.TradeGoodTable):
     def __init__(
             self,
@@ -177,12 +176,26 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def __init__(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self._hexWidget = gui.HexSelectToolWidget(
             milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             labelText='Center Hex:')
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
@@ -221,6 +234,27 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
     def setMilieu(self, milieu: travellermap.Milieu) -> None:
         self._hexWidget.setMilieu(milieu=milieu)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        self._hexWidget.setRules(rules=rules)
+
+    def setMapStyle(self, style: travellermap.Style) -> None:
+        self._hexWidget.setMapStyle(style=style)
+
+    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        self._hexWidget.setMapOptions(options=options)
+
+    def setMapRendering(self, rendering: app.MapRendering) -> None:
+        self._hexWidget.setMapRendering(rendering=rendering)
+
+    def setMapAnimations(self, enabled: bool) -> None:
+        self._hexWidget.setMapAnimations(enabled=enabled)
+
+    def setWorldTagging(self, tagging: logic.WorldTagging) -> None:
+        self._hexWidget.setWorldTagging(tagging=tagging)
+
+    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+        self._hexWidget.setTaggingColours(colours=colours)
 
     def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._hexWidget.selectedHex()
@@ -460,8 +494,23 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _setupAreaControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
-        self._worldRadiusSearchWidget = _HexSearchRadiusWidget(milieu=milieu)
+        self._worldRadiusSearchWidget = _HexSearchRadiusWidget(
+            milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._worldRadiusSearchWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._worldRadiusSearchWidget.showCenterHex.connect(self._showCenterHexOnMapClicked)
         self._worldRadiusSearchRadioButton = gui.RadioButtonEx()
@@ -735,6 +784,7 @@ class WorldSearchWindow(gui.WindowWidget):
             self._clearResults()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._worldRadiusSearchWidget.setRules(rules=newValue)
             self._tradeGoodTable.setRules(rules=newValue)
             self._worldTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
@@ -743,22 +793,28 @@ class WorldSearchWindow(gui.WindowWidget):
             self._clearResults()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._worldRadiusSearchWidget.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._worldRadiusSearchWidget.setMapOptions(options=newValue)
             self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
+            self._worldRadiusSearchWidget.setMapRendering(rendering=newValue)
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
+            self._worldRadiusSearchWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimation(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._worldRadiusSearchWidget.setWorldTagging(tagging=newValue)
             self._worldTable.setWorldTagging(tagging=newValue)
             self._mapWidget.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._worldRadiusSearchWidget.setTaggingColours(colours=newValue)
             self._worldTable.setTaggingColours(colours=newValue)
             self._mapWidget.setTaggingColours(colours=newValue)
 

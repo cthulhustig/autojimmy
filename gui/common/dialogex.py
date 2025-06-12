@@ -15,7 +15,7 @@ class DialogEx(QtWidgets.QDialog):
             self.setWindowTitle(title)
         self.setWindowFlag(QtCore.Qt.WindowType.WindowContextHelpButtonHint, False)
         self._configSection = configSection
-        self._settings = None
+        self._settings = gui.globalWindowSettings()
         self._hasBeenShown = False
 
     def showMaximizeButton(self, show: bool = True) -> None:
@@ -36,9 +36,7 @@ class DialogEx(QtWidgets.QDialog):
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         # Trigger loading the settings the first time the window is shown
-        if not self._settings:
-            self._settings = gui.globalWindowSettings()
-            self.loadSettings()
+        self.loadSettings()
 
     def done(self, result: int):
         self.saveSettings()

@@ -7,7 +7,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: This needs updated to handle the avg/worst/best colour changing
 class TradeOptionsTable(gui.FrozenColumnListTable):
     # The indices of the ColumnId must match the table row
     class ColumnType(enum.Enum):

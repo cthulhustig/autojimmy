@@ -20,6 +20,8 @@ _WelcomeMessage = """
     </html>
 """
 
+# TODO: Rather than registering for config updates the dialog should
+# have the values passed to it by its creator
 class CargoManifestDialog(gui.DialogEx):
     _AverageCaseTradeOptionColumns = [
         gui.TradeOptionsTable.ColumnType.TradeGood,
@@ -223,12 +225,9 @@ class CargoManifestDialog(gui.DialogEx):
         self._configurationGroupBox.setLayout(groupLayout)
 
     def _setupManifestControls(self):
-        outcomeColours = app.Config.instance().value(
-            option=app.ConfigOption.OutcomeColours)
-        worldTagging = app.Config.instance().value(
-            option=app.ConfigOption.WorldTagging)
-        taggingColours = app.Config.instance().value(
-            option=app.ConfigOption.TaggingColours)
+        outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._cargoManifestDisplayModeTabs = gui.CalculationModeTabBar()
         self._cargoManifestDisplayModeTabs.currentChanged.connect(
@@ -254,7 +253,9 @@ class CargoManifestDialog(gui.DialogEx):
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
         self._cargoBreakdownTable = gui.TradeOptionsTable(
-            outcomeColours=outcomeColours)
+            outcomeColours=outcomeColours,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._cargoBreakdownTable.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
         self._cargoBreakdownTable.setActiveColumns(self._cargoBreakdownColumns())
@@ -322,9 +323,11 @@ class CargoManifestDialog(gui.DialogEx):
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
             self._cargoManifestTable.setWorldTagging(tagging=newValue)
+            self._cargoBreakdownTable.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
             self._cargoManifestTable.setTaggingColours(colours=newValue)
+            self._cargoBreakdownTable.setTaggingColours(colours=newValue)
 
     def _showWorldDetails(
             self,

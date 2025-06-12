@@ -1,6 +1,7 @@
 import app
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
@@ -25,16 +26,29 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     def __init__(
             self,
             milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             labelText: typing.Optional[str] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self._milieu = milieu
+        self._rules = traveller.Rules(rules)
+        self._mapStyle = mapStyle
+        self._mapOptions = set(mapOptions) # Use a set for easy checking for differences
+        self._mapRendering = mapRendering
+        self._mapAnimations = mapAnimations
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._enableMapSelectButton = False
         self._enableShowHexButton = False
         self._enableShowInfoButton = False
-        self._hexSelectDialog = None
 
         self._searchComboBox = gui.HexSelectComboBox(milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
@@ -97,6 +111,68 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._milieu = milieu
         self._searchComboBox.setMilieu(milieu=self._milieu)
 
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+        self._rules = traveller.Rules(rules)
+
+    def mapStyle(self) -> travellermap.Style:
+        return self._mapStyle
+
+    def setMapStyle(self, style: travellermap.Style) -> None:
+        if style == self._mapStyle:
+            return
+        self._mapStyle = style
+
+    def mapOptions(self) -> typing.Iterable[travellermap.Option]:
+        return list(self._mapStyle)
+
+    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        if options == self._mapOptions:
+            return
+        self._mapOptions = set(options)
+
+    def mapRendering(self) -> app.MapRendering:
+        return self._mapRendering
+
+    def setMapRendering(self, rendering: app.MapRendering):
+        if rendering == self._mapRendering:
+            return
+        self._mapRendering = rendering
+
+    def mapAnimations(self) -> bool:
+        return self._mapAnimations
+
+    def setMapAnimations(self, enabled: bool) -> None:
+        if enabled == self._mapAnimations:
+            return
+        self._mapAnimations = enabled
+
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._searchComboBox.currentHex()
 
@@ -142,10 +218,6 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._searchComboBox.enableDeadSpaceSelection(enable=enable)
-        if self._hexSelectDialog:
-            self._hexSelectDialog.configureSelection(
-                singleSelect=True,
-                includeDeadSpace=enable)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._searchComboBox.isDeadSpaceSelectionEnabled()
@@ -206,23 +278,26 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
-        # TODO: I'm not sure this method of caching the dialog works well with
-        # the app config changes. Will it have disconnected signals after the
-        # first use?
-        if not self._hexSelectDialog:
-            self._hexSelectDialog = gui.HexSelectDialog(parent=self)
-            self._hexSelectDialog.configureSelection(
-                singleSelect=True,
-                includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
+        dlg = gui.HexSelectDialog(
+            milieu=self._milieu,
+            rules=self._rules,
+            mapStyle=self._mapStyle,
+            mapOptions=self._mapOptions,
+            mapRendering=self._mapRendering,
+            mapAnimations=self._mapAnimations,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours,
+            parent=self)
+        dlg.configureSelection(
+            singleSelect=True,
+            includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
 
         hex = self.selectedHex()
         if hex:
-            self._hexSelectDialog.selectHex(hex=hex)
-        else:
-            self._hexSelectDialog.clearSelectedHexes()
-        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            dlg.selectHex(hex=hex)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        newSelection = self._hexSelectDialog.selectedHexes()
+        newSelection = dlg.selectedHexes()
         if len(newSelection) != 1:
             return
 

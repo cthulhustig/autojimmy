@@ -127,7 +127,7 @@ def createHexToolTip(
     else:
         refuellingTypes.append('None (Dead Space)')
     toolTip += '<li><span style="{style}">Refuelling: {types}</span></li>'.format(
-        style=formatTaggingStyle(level=app.TagLevel.Warning if world else app.TagLevel.Danger),
+        style=formatTaggingStyle(level=None if refuellingTypes else app.TagLevel.Danger),
         types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
     toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
         count=world.numberOfSystemWorlds() if world else 0)

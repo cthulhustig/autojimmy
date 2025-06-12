@@ -4,6 +4,8 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
+# TODO: Rather than registering for config updates the dialog should
+# have the values passed to it by its creator
 class TradeGoodSelectDialog(gui.DialogEx):
     def __init__(
             self,

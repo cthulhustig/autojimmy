@@ -915,8 +915,6 @@ class _ConfigSectionLayout(QtWidgets.QGridLayout):
         label = MapOverlayLabel(action.text())
         self.addWidget(label, row, 1)
 
-# TODO: This needs updated to handle the application wide milieu changing
-# - Info widget needs updated to display world info from the new milieu
 class MapWidgetEx(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])

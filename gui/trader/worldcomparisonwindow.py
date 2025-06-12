@@ -24,7 +24,6 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
-# TODO: This needs updated to handle rules changing
 class _CustomTradeGoodTable(gui.TradeGoodTable):
     def __init__(
             self,
@@ -201,6 +200,10 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldManagementWidget = gui.HexTableManagerWidget(
             milieu=milieu,
             rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours,
             allowHexCallback=self._allowWorld,
@@ -341,13 +344,17 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._worldManagementWidget.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._worldManagementWidget.setMapOptions(options=newValue)
             self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
+            self._worldManagementWidget.setMapRendering(rendering=newValue)
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
+            self._worldManagementWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimation(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)

@@ -40,6 +40,8 @@ class ConfigOption(enum.Enum):
 
     # Map
     Milieu = 200
+    # TODO: Map config should be a single config item to save having to
+    # pass so many arguments around the place.
     MapStyle = 201
     MapOptions = 202
     MapEngine = 203

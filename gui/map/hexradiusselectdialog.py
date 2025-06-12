@@ -1,6 +1,7 @@
 import app
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
@@ -9,22 +10,20 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: logic.WorldTagging,
+            taggingColours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
             title='Radius Select',
             configSection='HexRadiusSelectDialog',
             parent=parent)
-
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        mapStyle = app.Config.instance().value(app.ConfigOption.MapStyle)
-        mapOptions = set(app.Config.instance().value(option=app.ConfigOption.MapOptions)) # Convert to set for speed
-        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
-        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
-        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
-        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
-        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._overlays: typing.List[str] = []
         self._selectedHexes: typing.List[travellermap.HexPosition] = []
@@ -90,36 +89,22 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self.resize(640, 480)
         self.showMaximizeButton()
 
-        self._updateOverlay()
-
-    # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
-    def loadSettings(self) -> None:
-        super().loadSettings()
-
+        # Load settings at initialisation rather than in loadSettings so the code
+        # that created the dialog can specify the configuration it requires without
+        # having it overridden
         self._settings.beginGroup(self._configSection)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SelectHexState',
-            type=QtCore.QByteArray)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='SelectHexState', type=QtCore.QByteArray)
         if storedValue:
             self._mapWidget.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SelectRadiusState',
-            type=QtCore.QByteArray)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='SelectRadiusState', type=QtCore.QByteArray)
         if storedValue:
             self._radiusSpinBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='IncludeDeadSpaceState',
-            type=QtCore.QByteArray)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='IncludeDeadSpaceState', type=QtCore.QByteArray)
         if storedValue:
             self._includeDeadSpaceCheckBox.restoreState(storedValue)
-
         self._settings.endGroup()
+
+        self._updateOverlay()
 
     def selectedHexes(self) -> typing.Collection[travellermap.HexPosition]:
         return list(self._selectedHexes)
@@ -178,6 +163,15 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         super().accept()
 
+    def firstShowEvent(self, e):
+        super().firstShowEvent(e)
+
+        selection = self.selectedHexes()
+        if selection:
+            self._mapWidget.centerOnHexes(
+                hexes=selection,
+                immediate=True)
+
     # TODO: Is this actually getting hit.
     def closeEvent(self, event: QtGui.QCloseEvent):
         self._mapWidget.selectionChanged.disconnect(self._updateOverlay)
@@ -186,33 +180,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self._mapWidget.mapRenderingChanged.disconnect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.disconnect(self._mapAnimationChanged)
 
-        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
-
         return super().closeEvent(event)
-
-    def _appConfigChanged(
-            self,
-            option: app.ConfigOption,
-            oldValue: typing.Any,
-            newValue: typing.Any
-            ) -> None:
-        if option is app.ConfigOption.Milieu:
-            self._mapWidget.setMilieu(milieu=newValue)
-            self._updateOverlay()
-        elif option is app.ConfigOption.Rules:
-            self._mapWidget.setRules(rules=newValue)
-        elif option is app.ConfigOption.MapStyle:
-            self._mapWidget.setStyle(style=newValue)
-        elif option is app.ConfigOption.MapOptions:
-            self._mapWidget.setOptions(options=newValue)
-        elif option is app.ConfigOption.MapRendering:
-            self._mapWidget.setRendering(rendering=newValue)
-        elif option is app.ConfigOption.MapAnimations:
-            self._mapWidget.setAnimation(enabled=newValue)
-        elif option is app.ConfigOption.WorldTagging:
-            self._mapWidget.setWorldTagging(tagging=newValue)
-        elif option is app.ConfigOption.TaggingColours:
-            self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(
             self,

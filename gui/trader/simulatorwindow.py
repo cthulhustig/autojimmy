@@ -377,9 +377,23 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _setupConfigControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._startWorldWidget = gui.HexSelectToolWidget(
             milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             labelText='Start World:')
         self._startWorldWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
@@ -621,27 +635,34 @@ class SimulatorWindow(gui.WindowWidget):
             self._stopSimulator()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._startWorldWidget.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
 
             # Changing rules stops the current simulation
             self._stopSimulator()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._startWorldWidget.setMapStyle(style=newValue)
             self._mapWidget.setStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=option)
+            self._startWorldWidget.setMapOptions(options=newValue)
             self._mapWidget.setOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
+            self._startWorldWidget.setMapRendering(rendering=newValue)
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
+            self._startWorldWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimation(enabled=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._startWorldWidget.setWorldTagging(tagging=newValue)
             self._mapWidget.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._startWorldWidget.setTaggingColours(colours=newValue)
             self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(

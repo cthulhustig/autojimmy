@@ -1,5 +1,6 @@
 import app
 import gui
+import logic
 import traveller
 import travellermap
 import typing
@@ -8,22 +9,20 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: logic.WorldTagging,
+            taggingColours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
             title='Hex Select',
             configSection='HexSelectDialog',
             parent=parent)
-
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
-        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
-        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
-        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
-        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
-        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
-        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -65,6 +64,15 @@ class HexSelectDialog(gui.DialogEx):
         self.resize(640, 480)
         self.showMaximizeButton()
 
+        # Load settings now rather than in loadSettings so code that created
+        # the dialog can specify the state without it being overwritten on
+        # first show
+        self._settings.beginGroup(self._configSection)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='MapWidgetState', type=QtCore.QByteArray)
+        if storedValue:
+            self._mapWidget.restoreState(storedValue)
+        self._settings.endGroup()
+
         self._updateLabel()
 
     def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
@@ -73,22 +81,33 @@ class HexSelectDialog(gui.DialogEx):
     def selectHex(
             self,
             hex: travellermap.HexPosition,
-            centerOnHex: bool = True,
             setInfoHex: bool = True
             ) -> None:
         self._mapWidget.selectHex(
             hex=hex,
             setInfoHex=setInfoHex)
-        if centerOnHex:
-            self._mapWidget.centerOnHex(
-                hex=hex,
-                immediate=self.isHidden())
 
     def deselectHex(
             self,
             hex: travellermap.HexPosition
             ) -> None:
         self._mapWidget.deselectHex(hex=hex)
+
+    def selectHexes(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
+        self._mapWidget.selectHexes(hexes=hexes)
+
+    def centerOnHex(
+            self,
+            hex: travellermap.HexPosition,
+            linearScale: typing.Optional[float] = 64
+            ) -> None:
+        self._mapWidget.centerOnHex(
+            hex=hex,
+            linearScale=linearScale,
+            immediate=self.isHidden())
 
     def clearSelectedHexes(self) -> None:
         self._mapWidget.clearSelectedHexes()
@@ -105,26 +124,29 @@ class HexSelectDialog(gui.DialogEx):
         self._mapWidget.enableDeadSpaceSelection(enable=includeDeadSpace)
         self._updateLabel()
 
-    def loadSettings(self) -> None:
-        super().loadSettings()
-
-        self._settings.beginGroup(self._configSection)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='MapWidgetState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._mapWidget.restoreState(storedValue)
-
-        self._settings.endGroup()
-
-    def saveSettings(self) -> None:
+    def accept(self) -> None:
+        # Only8 update saved state if ok is clicked
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('MapWidgetState', self._mapWidget.saveState())
         self._settings.endGroup()
 
-        super().saveSettings()
+        super().accept()
+
+    def firstShowEvent(self, e):
+        super().firstShowEvent(e)
+
+        selection = self.selectedHexes()
+        if selection:
+            # The different handling for single selection is to avoid
+            # zooming to far in
+            if self._mapWidget.selectionMode() is gui.MapWidgetEx.SelectionMode.SingleSelect:
+                self._mapWidget.centerOnHex(
+                    hex=selection[0],
+                    immediate=True)
+            else:
+                self._mapWidget.centerOnHexes(
+                    hexes=selection,
+                    immediate=True)
 
     # TODO: Is this actually getting hit.
     def closeEvent(self, event: QtGui.QCloseEvent):
@@ -133,34 +155,7 @@ class HexSelectDialog(gui.DialogEx):
         self._mapWidget.mapRenderingChanged.disconnect(self._mapRenderingChanged)
         self._mapWidget.mapAnimationChanged.disconnect(self._mapAnimationChanged)
 
-        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
-
         return super().closeEvent(event)
-
-    def _appConfigChanged(
-            self,
-            option: app.ConfigOption,
-            oldValue: typing.Any,
-            newValue: typing.Any
-            ) -> None:
-        if option is app.ConfigOption.Milieu:
-            self._mapWidget.setMilieu(milieu=newValue)
-            # TODO: If dead space selection is NOT enabled, some of the selection
-            # may now be invalid
-        elif option is app.ConfigOption.Rules:
-            self._mapWidget.setRules(rules=newValue)
-        elif option is app.ConfigOption.MapStyle:
-            self._mapWidget.setStyle(style=newValue)
-        elif option is app.ConfigOption.MapOptions:
-            self._mapWidget.setOptions(options=newValue)
-        elif option is app.ConfigOption.MapRendering:
-            self._mapWidget.setRendering(rendering=newValue)
-        elif option is app.ConfigOption.MapAnimations:
-            self._mapWidget.setAnimation(enabled=newValue)
-        elif option is app.ConfigOption.WorldTagging:
-            self._mapWidget.setWorldTagging(tagging=newValue)
-        elif option is app.ConfigOption.TaggingColours:
-            self._mapWidget.setTaggingColours(colours=newValue)
 
     def _mapStyleChanged(
             self,

@@ -19,6 +19,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
             allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
@@ -30,6 +34,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
+        self._mapStyle = mapStyle
+        self._mapOptions = set(mapOptions) # Use a set for easy checking for differences
+        self._mapRendering = mapRendering
+        self._mapAnimations = mapAnimations
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._allowHexCallback = allowHexCallback
@@ -39,11 +47,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._enableDisplayModeChangedEvent = False
         self._enableShowOnMapEvent = False
         self._enableDeadSpace = False
-
-        # Instance of dialogs are created on demand then maintained. This is
-        # done to prevent the web widget being recreated
-        self._locationSelectDialog: typing.Optional[gui.HexSelectDialog] = None
-        self._radiusSelectDialog: typing.Optional[gui.HexRadiusSelectDialog] = None
 
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
@@ -168,6 +171,38 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._rules = traveller.Rules(rules)
         self._hexTable.setRules(rules=self._rules)
+
+    def mapStyle(self) -> travellermap.Style:
+        return self._mapStyle
+
+    def setMapStyle(self, style: travellermap.Style) -> None:
+        if style == self._mapStyle:
+            return
+        self._mapStyle = style
+
+    def mapOptions(self) -> typing.Iterable[travellermap.Option]:
+        return list(self._mapStyle)
+
+    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        if options == self._mapOptions:
+            return
+        self._mapOptions = set(options)
+
+    def mapRendering(self) -> app.MapRendering:
+        return self._mapRendering
+
+    def setMapRendering(self, rendering: app.MapRendering):
+        if rendering == self._mapRendering:
+            return
+        self._mapRendering = rendering
+
+    def mapAnimations(self) -> bool:
+        return self._mapAnimations
+
+    def setMapAnimations(self, enabled: bool) -> None:
+        if enabled == self._mapAnimations:
+            return
+        self._mapAnimations = enabled
 
     def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
         return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
@@ -396,15 +431,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def enableDeadSpace(self, enable: bool) -> None:
         self._enableDeadSpace = enable
 
-        if self._radiusSelectDialog:
-            self._radiusSelectDialog.enableDeadSpaceSelection(
-                enable=enable)
-
-        if self._locationSelectDialog:
-            self._locationSelectDialog.configureSelection(
-                singleSelect=self._isOrderedList,
-                includeDeadSpace=enable)
-
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
             # the table
@@ -425,16 +451,19 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def promptAddLocations(self) -> None:
         currentHexes = self.hexes()
 
-        # TODO: I'm not sure this method of caching the dialog works well with
-        # the app config changes. Will it have disconnected signals after the
-        # first use?
-        if not self._locationSelectDialog:
-            self._locationSelectDialog = gui.HexSelectDialog(parent=self)
-            self._locationSelectDialog.configureSelection(
-                singleSelect=self._isOrderedList,
-                includeDeadSpace=self._enableDeadSpace)
-
-        self._locationSelectDialog.clearSelectedHexes()
+        dlg = gui.HexSelectDialog(
+            milieu=self._milieu,
+            rules=self._rules,
+            mapStyle=self._mapStyle,
+            mapOptions=self._mapOptions,
+            mapRendering=self._mapRendering,
+            mapAnimations=self._mapAnimations,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours,
+            parent=self)
+        dlg.configureSelection(
+            singleSelect=self._isOrderedList,
+            includeDeadSpace=self._enableDeadSpace)
 
         # If it's not an ordered list that is being managed then the dialog should
         # show the current table contents and allow the user to select more hexes or
@@ -443,13 +472,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         # new world that should be added to the table, in which case the current
         # table contents are not shown.
         if not self._isOrderedList:
-            for hex in currentHexes:
-                self._locationSelectDialog.selectHex(hex=hex, centerOnHex=False)
+            dlg.selectHexes(hexes=currentHexes)
 
-        if self._locationSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        newHexes = self._locationSelectDialog.selectedHexes()
+        newHexes = dlg.selectedHexes()
         updated = False
 
         sortingEnabled = self._hexTable.isSortingEnabled()
@@ -488,22 +516,27 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 traveller.World
                 ]] = None
             ) -> None:
-        if isinstance(initialHex, traveller.World):
-            initialHex = initialHex.hex()
+        centerHex = initialHex.hex() if isinstance(initialHex, traveller.World) else initialHex
+        if not centerHex and self._relativeHex:
+            centerHex = self._relativeHex
 
-        # TODO: I'm not sure this method of caching the dialog works well with
-        # the app config changes. Will it have disconnected signals after the
-        # first use?
-        if not self._radiusSelectDialog:
-            self._radiusSelectDialog = gui.HexRadiusSelectDialog()
-            self._radiusSelectDialog.enableDeadSpaceSelection(
-                enable=self._enableDeadSpace)
-        self._radiusSelectDialog.setCenterHex(
-            hex=initialHex if initialHex else self._relativeHex)
-        if self._radiusSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        dlg = gui.HexRadiusSelectDialog(
+            milieu=self._milieu,
+            rules=self._rules,
+            mapStyle=self._mapStyle,
+            mapOptions=self._mapOptions,
+            mapRendering=self._mapRendering,
+            mapAnimations=self._mapAnimations,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours,
+            parent=self)
+        dlg.enableDeadSpaceSelection(enable=self._enableDeadSpace)
+        if centerHex:
+            dlg.setCenterHex(hex=centerHex)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
+        self.addHexes(hexes=dlg.selectedHexes())
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()
