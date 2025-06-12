@@ -21,8 +21,8 @@ class TaggingColours(object):
         else:
             self._colourMap = {
                 app.TagLevel.Desirable: args[0] if len(args) > 0 else kwargs['desirableColour'],
-                app.TagLevel.Warning: args[0] if len(args) > 0 else kwargs['warningColour'],
-                app.TagLevel.Danger: args[0] if len(args) > 0 else kwargs['dangerColour']}
+                app.TagLevel.Warning: args[1] if len(args) > 1 else kwargs['warningColour'],
+                app.TagLevel.Danger: args[2] if len(args) > 2 else kwargs['dangerColour']}
 
     def colour(self, level: app.TagLevel) -> str:
         return self._colourMap[level]

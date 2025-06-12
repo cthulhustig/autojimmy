@@ -21,8 +21,8 @@ class OutcomeColours(object):
         else:
             self._colourMap = {
                 logic.RollOutcome.AverageCase: args[0] if len(args) > 0 else kwargs['averageCaseColour'],
-                logic.RollOutcome.WorstCase: args[0] if len(args) > 0 else kwargs['worstCaseColour'],
-                logic.RollOutcome.BestCase: args[0] if len(args) > 0 else kwargs['bestCaseColour']}
+                logic.RollOutcome.WorstCase: args[1] if len(args) > 1 else kwargs['worstCaseColour'],
+                logic.RollOutcome.BestCase: args[2] if len(args) > 2 else kwargs['bestCaseColour']}
 
     def colour(self, outcome: logic.RollOutcome) -> str:
         return self._colourMap[outcome]
