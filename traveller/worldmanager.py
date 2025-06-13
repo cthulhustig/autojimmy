@@ -391,17 +391,22 @@ class WorldManager(object):
             self,
             milieu: travellermap.Milieu,
             hex: travellermap.HexPosition,
+            includePlaceholders: bool = False
             ) -> str:
         milieuData = self._milieuDataMap[milieu]
 
         sectorX, sectorY, offsetX, offsetY = hex.relative()
-        sector = milieuData.sectorPositionMap.get((sectorX, sectorY))
-        if not sector:
-            raise KeyError('No sector located at {sectorX}, {sectorY}')
+        sectorPos = (sectorX, sectorY)
+        sector = milieuData.sectorPositionMap.get(sectorPos)
+
+        if not sector and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
+            placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
+            sector = placeholderData.sectorPositionMap.get(sectorPos)
+
         return traveller.formatSectorHex(
-            sectorName=sector.name(),
-            worldX=offsetX,
-            worldY=offsetY)
+            sectorName=sector.name() if sector else f'{sectorX}:{sectorY}',
+            offsetX=offsetX,
+            offsetY=offsetY)
 
     def sectorHexToPosition(
             self,
@@ -436,14 +441,31 @@ class WorldManager(object):
                     # Subsector name match
                     sector = milieuData.subsectorSectorMap.get(subsectors[0])
 
+        if sector:
+            return travellermap.HexPosition(
+                sectorX=sector.x(),
+                sectorY=sector.y(),
+                offsetX=offsetX,
+                offsetY=offsetY)
+
+        # Check to see if the sector name is a sector x/y separated by a colon.
+        # This is the format used by positionToSectorHex if there is no sector
+        # at the specified hex
+        tokens = sectorName.split(':')
+        if len(tokens) == 2:
+            try:
+                sectorX = int(tokens[0])
+                sectorY = int(tokens[1])
+                return travellermap.HexPosition(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    offsetX=offsetX,
+                    offsetY=offsetY)
+            except:
+                pass
+
         if not sector:
             raise KeyError(f'Failed to resolve sector {sectorName} for sector hex {sectorHex}')
-
-        return travellermap.HexPosition(
-            sectorX=sector.x(),
-            sectorY=sector.y(),
-            offsetX=offsetX,
-            offsetY=offsetY)
 
     def stringToPosition(
             self,

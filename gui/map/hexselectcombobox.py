@@ -8,9 +8,6 @@ import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-# TODO: If the world isn't known this ends up with absolute coordinates as the
-# string. It should probably be relative instead
-
 def _formatWorldName(world: traveller.World) -> str:
     return world.name(includeSubsector=True)
 
@@ -24,12 +21,9 @@ def _formatHexName(
     if world:
         return _formatWorldName(world=world)
 
-    try:
-        sectorHex = traveller.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
-        subsector = traveller.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
-        return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
-    except:
-        return f'{hex.absoluteX()},{hex.absoluteY()}'
+    sectorHex = traveller.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
+    subsector = traveller.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
+    return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
 
 def _formatWorldHtml(world: traveller.World) -> str:
     return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
@@ -114,11 +108,6 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
-# TODO: Ideally this class would update if the milieu changes to show
-# the name of the world in the new milieu. It would also need to handle
-# the case there is no world at the selected hex in the new milieu. If
-# dead space routing is not enabled then it should clear the current
-# selected hex
 class HexSelectComboBox(gui.ComboBoxEx):
     hexChanged = QtCore.pyqtSignal(object)
 

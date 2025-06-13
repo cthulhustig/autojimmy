@@ -80,12 +80,9 @@ def createHexToolTip(
         sectorHex = world.sectorHex()
         subsectorName = world.subsectorName()
     else:
-        try:
-            sectorHex = traveller.WorldManager.instance().positionToSectorHex(
-                milieu=milieu,
-                hex=hex)
-        except:
-            sectorHex = 'Unknown'
+        sectorHex = traveller.WorldManager.instance().positionToSectorHex(
+            milieu=milieu,
+            hex=hex)
         subsector = traveller.WorldManager.instance().subsectorByPosition(
             milieu=milieu,
             hex=hex)

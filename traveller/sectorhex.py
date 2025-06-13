@@ -14,7 +14,7 @@ def splitSectorHex(
 
 def formatSectorHex(
         sectorName: str,
-        worldX: typing.Union[int, str],
-        worldY: typing.Union[int, str]
+        offsetX: typing.Union[int, str],
+        offsetY: typing.Union[int, str]
         ) -> str:
-    return f'{sectorName} {int(worldX):02d}{int(worldY):02d}'
+    return f'{sectorName} {int(offsetX):02d}{int(offsetY):02d}'

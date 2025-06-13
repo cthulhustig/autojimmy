@@ -75,8 +75,10 @@ class World(object):
         return self._subsectorName
 
     def sectorHex(self) -> str:
-        _, _, offsetX, offsetY = self._hex.relative()
-        return f'{self._sectorName} {int(offsetX):02d}{int(offsetY):02d}'
+        return traveller.formatSectorHex(
+            sectorName=self._sectorName,
+            offsetX=self._hex.offsetX(),
+            offsetY=self._hex.offsetY())
 
     def allegiance(self) -> str:
         return self._allegiance

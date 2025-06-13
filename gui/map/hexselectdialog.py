@@ -148,15 +148,6 @@ class HexSelectDialog(gui.DialogEx):
                     hexes=selection,
                     immediate=True)
 
-    # TODO: Is this actually getting hit.
-    def closeEvent(self, event: QtGui.QCloseEvent):
-        self._mapWidget.mapStyleChanged.disconnect(self._mapStyleChanged)
-        self._mapWidget.mapOptionsChanged.disconnect(self._mapOptionsChanged)
-        self._mapWidget.mapRenderingChanged.disconnect(self._mapRenderingChanged)
-        self._mapWidget.mapAnimationChanged.disconnect(self._mapAnimationChanged)
-
-        return super().closeEvent(event)
-
     def _mapStyleChanged(
             self,
             style: travellermap.Style
