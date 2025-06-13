@@ -208,20 +208,20 @@ class _InPlaceTagLevelComboBox(gui.TagLevelComboBox):
 class _TaggingTable(gui.ListTable):
     def __init__(
             self,
-            taggingConfig: typing.Mapping[typing.Union[str, enum.Enum], app.TagLevel],
-            taggingColours: app.TaggingColours,
             keyColumnName: str,
             keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
+            taggingColours: app.TaggingColours,
+            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], app.TagLevel]] = None,
             keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        self._taggingMap = dict(taggingConfig)
-        self._taggingColours = app.TaggingColours(taggingColours)
         self._keyColumnName = keyColumnName
         self._keyDescriptions = dict(keyDescriptions)
+        self._keyTagging = dict(keyTagging) if keyTagging else {}
         self._keyAliases = dict(keyAliases) if keyAliases else {}
+        self._taggingColours = app.TaggingColours(taggingColours)
         self._tableFilled = False
 
         columnNames = [keyColumnName, 'Tag Level', 'Description']
@@ -248,9 +248,28 @@ class _TaggingTable(gui.ListTable):
         self.setColumnWidth(1, 100)
         self.horizontalHeader().setStretchLastSection(True)
 
+    def setContent(
+            self,
+            keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
+            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], app.TagLevel]] = None,
+            keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None
+            ) -> None:
+        self._keyDescriptions = dict(keyDescriptions)
+        self._keyTagging = dict(keyTagging) if keyTagging else {}
+        self._keyAliases = dict(keyAliases) if keyAliases else {}
+        if self._tableFilled:
+            self._fillTable()
+
+    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+        if colours == self._taggingColours:
+            return
+
+        self._taggingColours = app.TaggingColours(colours)
+        self._syncToTagging()
+
     def taggingConfig(self) -> typing.Dict[typing.Union[str, enum.Enum], typing.Optional[app.TagLevel]]:
         if not self._tableFilled:
-            return dict(self._taggingMap)
+            return dict(self._keyTagging)
 
         tagging = {}
         for row in range(self.rowCount()):
@@ -267,22 +286,14 @@ class _TaggingTable(gui.ListTable):
             tagging[key] = tagLevel
         return tagging
 
-    def setTaggingColours(self, colours: app.TaggingColours) -> None:
-        if colours == self._taggingColours:
-            return
-
-        self._taggingColours = app.TaggingColours(colours)
-        self._syncToTagging()
-
     def showEvent(self, event: typing.Optional[QtGui.QShowEvent]) -> None:
-        self._fillTable()
+        if not self._tableFilled:
+            self._fillTable()
+            self._tableFilled = True
         return super().showEvent(event)
 
     def _fillTable(self) -> None:
-        if self._tableFilled:
-            return # Nothing to do
-
-        self._tableFilled = True
+        self.removeAllRows()
 
         for row, (key, description) in enumerate(self._keyDescriptions.items()):
             self.insertRow(row)
@@ -298,7 +309,7 @@ class _TaggingTable(gui.ListTable):
             item.setToolTip(toolTip)
             self.setItem(row, 0, item)
 
-            tagLevel = self._taggingMap.get(key)
+            tagLevel = self._keyTagging.get(key)
 
             item = QtWidgets.QTableWidgetItem()
             item.setToolTip(toolTip)
@@ -429,6 +440,7 @@ class ConfigDialog(gui.DialogEx):
             '<p>The milieu to use when determining sector and world information</p>' +
             _RestartRequiredParagraph,
             escape=False))
+        self._milieuComboBox.currentIndexChanged.connect(self._milieuChanged)
 
         rules = app.Config.instance().value(
             option=app.ConfigOption.Rules,
@@ -911,27 +923,10 @@ class ConfigDialog(gui.DialogEx):
             keyDescriptions={nobility: traveller.Nobilities.description(nobility) for nobility in traveller.NobilityType},
             keyAliases={nobility: traveller.Nobilities.code(nobility) for nobility in traveller.NobilityType})
 
-        # TODO: If the user changes the milieu on the main config pane, this
-        # config pane should probably update
-        # TODO: This probably shouldn't use app.Config
-        allegiances = traveller.AllegianceManager.instance().allegiances(
-            milieu=app.Config.instance().value(
-                option=app.ConfigOption.Milieu,
-                futureValue=False)) # Use current value
-
-        # Create a copy of the allegiances list and sort it by code
-        allegiances = list(allegiances)
-        allegiances.sort(key=lambda x: x.code())
-
-        allegiancesDescriptions = {}
-        for allegiance in allegiances:
-            nameMap = allegiance.uniqueNameMap()
-            for code, name in nameMap.items():
-                allegiancesDescriptions[code] = name
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Allegiance,
             displayName='Allegiance',
-            keyDescriptions=allegiancesDescriptions)
+            keyDescriptions=self._generateAllegianceDescriptions())
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Spectral,
@@ -958,11 +953,11 @@ class ConfigDialog(gui.DialogEx):
             futureValue=True)
 
         table = _TaggingTable(
-            taggingConfig=worldTagging.propertyConfig(property=taggingProperty),
-            taggingColours=taggingColours,
             keyColumnName=displayName,
             keyDescriptions=keyDescriptions,
-            keyAliases=keyAliases)
+            keyTagging=worldTagging.propertyConfig(property=taggingProperty),
+            keyAliases=keyAliases,
+            taggingColours=taggingColours)
         self._taggingTables[taggingProperty] = table
         self._addTableTab(
             title=displayName + ' Tagging',
@@ -1093,6 +1088,17 @@ class ConfigDialog(gui.DialogEx):
             noShowAgainId='ConfigWelcome')
         message.exec()
 
+    def _milieuChanged(self) -> None:
+        # Update allegiance tagging table as allegiances are milieu dependant.
+        # This will clear any tagging set for the previously selected milieu.
+        # This seems like the sensible thing to do as there is no guarantee that
+        # the code that was tagged for the previous milieu has any relation to
+        # the allegiance that is using that code in the new milieu.
+        table = self._taggingTables.get(logic.TaggingProperty.Allegiance)
+        if table:
+            table.setContent(
+                keyDescriptions=self._generateAllegianceDescriptions())
+
     def _renderingTypeChanged(self) -> None:
         isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
@@ -1123,3 +1129,19 @@ class ConfigDialog(gui.DialogEx):
 
         for table in self._taggingTables.values():
             table.setTaggingColours(colours=colours)
+
+    def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
+        allegiances = traveller.AllegianceManager.instance().allegiances(
+            milieu=self._milieuComboBox.currentEnum())
+
+        # Create a copy of the allegiances list and sort it by code
+        allegiances = list(allegiances)
+        allegiances.sort(key=lambda x: x.code())
+
+        descriptions: typing.Mapping[str, str] = {}
+        for allegiance in allegiances:
+            nameMap = allegiance.uniqueNameMap()
+            for code, name in nameMap.items():
+                descriptions[code] = name
+
+        return descriptions
