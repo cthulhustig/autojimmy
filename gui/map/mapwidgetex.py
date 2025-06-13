@@ -157,11 +157,17 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.setExclusionPolicy(
                 QtWidgets.QActionGroup.ExclusionPolicy.ExclusiveOptional)
 
+        self._optionActions: typing.Dict[travellermap.Option, _MapOptionAction] = {}
         for option in options:
             action = _MapOptionAction(option=option)
             action.setChecked(option is current)
             action.optionChanged.connect(self._optionChanged)
             self.addAction(action)
+            self._optionActions[option] = action
+
+    def setSelection(self, option: typing.Optional[travellermap.Option]) -> None:
+        for actionOption, action in self._optionActions.items():
+            action.setChecked(option is actionOption)
 
     def _optionChanged(
             self,
@@ -919,12 +925,6 @@ class MapWidgetEx(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
 
-    # TODO: This widget should have non-shared controls for setting
-    # rendering type, style & options. When the the controls are
-    # changed it should push them to its map then generate the
-    # relevant event. Top level windows & dialogs should subscribe
-    # to those events and it should be them that pushes the settings
-    # changes to the config
     mapStyleChanged = QtCore.pyqtSignal([travellermap.Style])
     mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of travellermap.Options
     mapRenderingChanged = QtCore.pyqtSignal([app.MapRendering])
@@ -1111,6 +1111,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 renderingConfigLayout.rowCount(), 0, 1, 2)
 
             self._animatedAction = QtWidgets.QAction('Animations')
+            self._animatedAction.setCheckable(True)
             self._animatedAction.setChecked(self._animated)
             self._animatedAction.toggled.connect(self._animatedChanged)
             renderingConfigLayout.addToggleAction(self._animatedAction)
@@ -1341,7 +1342,52 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._options = options
         self._mapWidget.setOptions(options=self._options)
         self._legendWidget.setOptions(options=self._options)
-        # TODO: Need to push new option values to actions
+        self._galacticDirectionsAction.setChecked(
+            travellermap.Option.GalacticDirections in self._options)
+        self._sectorGridAction.setChecked(
+            travellermap.Option.SectorGrid in self._options)
+        if travellermap.Option.SelectedSectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(travellermap.Option.SelectedSectorNames)
+        elif travellermap.Option.SectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(travellermap.Option.SectorNames)
+        else:
+            self._sectorNamesActionGroup.setSelection(None)
+        self._bordersAction.setChecked(
+            travellermap.Option.Borders in self._options)
+        self._routesAction.setChecked(
+            travellermap.Option.Routes in self._options)
+        self._regionNamesAction.setChecked(
+            travellermap.Option.RegionNames in self._options)
+        self._importantWorldsAction.setChecked(
+            travellermap.Option.ImportantWorlds in self._options)
+        self._worldColoursAction.setChecked(
+            travellermap.Option.WorldColours in self._options)
+        self._filledBordersAction.setChecked(
+            travellermap.Option.FilledBorders in self._options)
+        self._dmUnofficialAction.setChecked(
+            travellermap.Option.DimUnofficial in self._options)
+        self._mainsOverlayAction.setChecked(
+            travellermap.Option.MainsOverlay in self._options)
+        self._importanceOverlayAction.setChecked(
+            travellermap.Option.ImportanceOverlay in self._options)
+        self._populationOverlayAction.setChecked(
+            travellermap.Option.PopulationOverlay in self._options)
+        self._capitalsOverlayAction.setChecked(
+            travellermap.Option.CapitalsOverlay in self._options)
+        self._minorRaceOverlayAction.setChecked(
+            travellermap.Option.MinorRaceOverlay in self._options)
+        self._droyneWorldOverlayAction.setChecked(
+            travellermap.Option.DroyneWorldOverlay in self._options)
+        self._ancientSitesOverlayAction.setChecked(
+            travellermap.Option.AncientSitesOverlay in self._options)
+        self._stellarOverlayAction.setChecked(
+            travellermap.Option.StellarOverlay in self._options)
+        self._empressWaveOverlayAction.setChecked(
+            travellermap.Option.EmpressWaveOverlay in self._options)
+        self._qrekrshaZoneOverlayAction.setChecked(
+            travellermap.Option.QrekrshaZoneOverlay in self._options)
+        self._antaresSupernovaOverlayAction.setChecked(
+            travellermap.Option.AntaresSupernovaOverlay in self._options)
 
         self.mapOptionsChanged.emit(self._options)
 
@@ -1365,8 +1411,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._animated = enabled
         if isinstance(self._mapWidget, gui.LocalMapWidget):
-            self._mapWidget.setAnimation(
-                animate=self._animated)
+            self._mapWidget.setAnimation(enabled=self._animated)
         if self._animatedAction:
             self._animatedAction.setChecked(self._animated)
 
@@ -1376,13 +1421,21 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             tagging: typing.Optional[logic.WorldTagging],
             ) -> None:
-        self._infoWidget.setWorldTagging(tagging=tagging)
+        if tagging == self._worldTagging:
+            return
+
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._infoWidget.setWorldTagging(tagging=self._worldTagging)
 
     def setTaggingColours(
             self,
             colours: typing.Optional[app.TaggingColours]
             ) -> None:
-        self._infoWidget.setTaggingColours(colours=colours)
+        if colours == self._taggingColours:
+            return
+
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+        self._infoWidget.setTaggingColours(colours=self._taggingColours)
 
     def reload(self) -> None:
         self._mapWidget.reload()
