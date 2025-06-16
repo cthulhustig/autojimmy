@@ -554,7 +554,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePriceGroupBox.setDisabled(disable)
         self._diceRollGroupBox.setDisabled(disable)
 
-    # TODO: Need to test this still works
     def _importCargo(self) -> None:
         if not self._cargoTable.isEmpty():
             answer = gui.AutoSelectMessageBox.question(
@@ -818,6 +817,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             parent=self,
             title='Edit Sale Details',
             world=saleWorld,
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=salePrice.tradeGood(),
             editPricePerTon=salePrice.pricePerTon(),
             editQuantity=salePrice.quantity(),

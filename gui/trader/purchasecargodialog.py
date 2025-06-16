@@ -6,11 +6,6 @@ import traveller
 import typing
 from PyQt5 import QtCore, QtWidgets
 
-# TODO: Rather than registering for config updates the dialog should
-# have the values passed to it by its creator
-# TODO: This probably needs updated to handle the rules changing as it
-# invalidates an current cargo records. I'm not sure what the correct
-# thing to do is
 class PurchaseCargoDialog(gui.DialogEx):
     _CargoRecordColumns = [
         gui.CargoRecordTable.ColumnType.TradeGood,
@@ -20,9 +15,11 @@ class PurchaseCargoDialog(gui.DialogEx):
     def __init__(
             self,
             world: traveller.World,
+            rules: traveller.Rules,
             availableCargo: typing.Iterable[logic.CargoRecord],
             availableFunds: typing.Union[int, float, common.ScalarCalculation],
             freeCargoCapacity: typing.Union[int, common.ScalarCalculation],
+            outcomeColours: app.OutcomeColours,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
@@ -31,6 +28,7 @@ class PurchaseCargoDialog(gui.DialogEx):
             parent=parent)
 
         self._world = world
+        self._rules = traveller.Rules(rules)
 
         self._availableFunds = availableFunds
         if not isinstance(self._availableFunds, common.ScalarCalculation):
@@ -52,9 +50,6 @@ class PurchaseCargoDialog(gui.DialogEx):
             text=common.formatNumber(
                 number=self._availableFunds.value(),
                 infix='Cr'))
-
-        outcomeColours = app.Config.instance().value(
-            option=app.ConfigOption.OutcomeColours)
 
         self._availableCargoTable = gui.CargoRecordTable(
             outcomeColours=outcomeColours,
@@ -137,23 +132,11 @@ class PurchaseCargoDialog(gui.DialogEx):
 
         self.setLayout(layout)
 
-        app.Config.instance().configChanged.connect(self._appConfigChanged)
-
     def purchasedCargo(self) -> typing.Iterable[logic.CargoRecord]:
         return self._purchaseCargoTable.cargoRecords()
 
     def remainingCargo(self) -> typing.Iterable[logic.CargoRecord]:
         return self._availableCargoTable.cargoRecords()
-
-    def _appConfigChanged(
-            self,
-            option: app.ConfigOption,
-            oldValue: typing.Any,
-            newValue: typing.Any
-            ) -> None:
-        if option is app.ConfigOption.OutcomeColours:
-            self._availableCargoTable.setOutcomeColours(colours=newValue)
-            self._purchaseCargoTable.setOutcomeColours(colours=newValue)
 
     def _availableSelectionChanged(self) -> None:
         enable = self._availableFunds.value() > 0 and \
@@ -216,6 +199,7 @@ class PurchaseCargoDialog(gui.DialogEx):
             parent=self,
             title='Cargo Quantity',
             world=self._world,
+            rules=self._rules,
             editTradeGood=originalCargoRecord.tradeGood(),
             editPricePerTon=originalPricePerTon,
             lockPrice=True,

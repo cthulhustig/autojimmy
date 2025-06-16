@@ -1654,6 +1654,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             parent=self,
             title='Add Available Cargo',
             world=self._purchaseWorldWidget.selectedWorld(),
+            rules=rules,
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -1683,6 +1684,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             parent=self,
             title='Edit Available Cargo',
             world=self._purchaseWorldWidget.selectedWorld(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1725,9 +1727,11 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.PurchaseCargoDialog(
             parent=self,
             world=self._purchaseWorldWidget.selectedWorld(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             availableCargo=affordableCargo,
             availableFunds=self._availableFundsSpinBox.value(),
-            freeCargoCapacity=self._freeCargoSpaceSpinBox.value())
+            freeCargoCapacity=self._freeCargoSpaceSpinBox.value(),
+            outcomeColours=app.Config.instance().value(option=app.ConfigOption.OutcomeColours))
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1861,7 +1865,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Current Cargo',
-            world=self._purchaseWorldWidget.selectedWorld())
+            world=self._purchaseWorldWidget.selectedWorld(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1890,6 +1895,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             parent=self,
             title='Edit Current Cargo',
             world=self._purchaseWorldWidget.selectedWorld(),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)

@@ -474,6 +474,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             parent=self,
             title='Add Available Cargo',
             world=purchaseWorld,
+            rules=rules,
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -502,6 +503,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             parent=self,
             title='Edit Available Cargo',
             world=purchaseWorld,
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=cargoRecord.pricePerTon(),
             editQuantity=cargoRecord.quantity())
