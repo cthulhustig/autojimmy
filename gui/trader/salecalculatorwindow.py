@@ -93,10 +93,6 @@ class _CustomCargoRecordTable(gui.CargoRecordTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
-# TODO: There is a problem here. If the dialog hasn't been shown at the point
-# the rules are changed, the cargo options etc won't be cleared. This is a more
-# general problem anywhere I'm clearing state that is saved (and will be loaded
-# when the dialog is shown) in response to config changes.
 class SaleCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -262,11 +258,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
         self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
         self._settings.setValue('CargoTableState', self._cargoTable.saveState())
-        self._settings.setValue('CargoTableContent', self._cargoTable.saveContent())
         self._settings.setValue('SalePriceTableState', self._salePricesTable.saveState())
-        self._settings.setValue('SalePriceTableContent', self._salePricesTable.saveContent())
         self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
-        self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
         self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
         self._settings.setValue('LeftRightsSplitterState', self._leftRightSplitter.saveState())
 

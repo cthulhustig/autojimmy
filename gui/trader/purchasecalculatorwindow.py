@@ -19,10 +19,6 @@ _WelcomeMessage = """
     </html>
 """
 
-# TODO: There is a problem here. If the dialog hasn't been shown at the point
-# the rules are changed, the cargo options etc won't be cleared. This is a more
-# general problem anywhere I'm clearing state that is saved (and will be loaded
-# when the dialog is shown) in response to config changes.
 class PurchaseCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -179,9 +175,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._settings.setValue('AvailabilityScaleState', self._availabilityScaleSpinBox.saveState())
         self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
         self._settings.setValue('CargoTableState', self._cargoTable.saveState())
-        self._settings.setValue('CargoTableContent', self._cargoTable.saveContent())
         self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
-        self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
         self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
         self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
 
