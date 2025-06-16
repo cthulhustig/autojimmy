@@ -437,7 +437,6 @@ class _LintJobResultsDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
         self.showMaximizeButton(True)
 
-# TODO: This needs update to handle config changing
 class _NewSectorDialog(gui.DialogEx):
     _SectorFileFilter = 'Sector (*.sec *.tab *.t5 *.t5col *.t5tab)'
     _MetadataFileFilter = 'Metadata (*.xml *.json)'
@@ -1012,7 +1011,6 @@ class _NewSectorDialog(gui.DialogEx):
 
         return renderOptions
 
-# TODO: This needs update to handle milieu changing
 class _CustomSectorTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
@@ -1272,7 +1270,6 @@ class _MapComboBox(gui.ComboBoxEx):
         self.setCurrentScale(value if value > 0 else None)
         return True
 
-# TODO: This needs update to handle milieu changing
 class _MapImageView(gui.ImageView):
     def __init__(
             self,

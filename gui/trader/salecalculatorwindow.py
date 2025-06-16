@@ -528,18 +528,10 @@ class SaleCalculatorWindow(gui.WindowWidget):
         if option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._saleWorldWidget.setMilieu(milieu=newValue)
-
-            # Changing milieu invalidates speculative cargo as world trade
-            # data has changed
-            self._clearCargo()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._saleWorldWidget.setRules(rules=newValue)
             self._localBrokerWidget.setRules(rules=newValue)
-
-            # Changing rules invalidates any current cargo as cargo records
-            # are tied to a rule system
-            self._clearCargo()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._saleWorldWidget.setMapStyle(style=newValue)

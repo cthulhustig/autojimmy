@@ -1432,21 +1432,9 @@ class WorldTraderWindow(_BaseTraderWindow):
         if option is app.ConfigOption.Milieu:
             self._purchaseWorldWidget.setMilieu(milieu=newValue)
             self._saleWorldsWidget.setMilieu(milieu=newValue)
-
-            # Changing milieu invalidates speculative cargo as world trade
-            # data has changed
-            self._speculativeCargoTable.removeAllRows()
         elif option is app.ConfigOption.Rules:
             self._purchaseWorldWidget.setRules(rules=newValue)
             self._saleWorldsWidget.setRules(rules=newValue)
-
-            # Changing rules invalidates any current cargo as cargo records
-            # are tied to a rule system
-            # TODO: Technically they're only invalidated if the rule system
-            # changes
-            self._speculativeCargoTable.removeAllRows()
-            self._availableCargoTable.removeAllRows()
-            self._currentCargoTable.removeAllRows()
         elif option is app.ConfigOption.MapStyle:
             self._purchaseWorldWidget.setMapStyle(style=newValue)
             self._saleWorldsWidget.setMapStyle(style=newValue)

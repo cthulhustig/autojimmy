@@ -778,19 +778,12 @@ class WorldSearchWindow(gui.WindowWidget):
             self._regionSearchSelectWidget.setMilieu(milieu=newValue)
             self._worldTable.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
-
-            # Changing milieu invalidates an previous search results
-            # as the world data has changed
-            self._clearResults()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._worldRadiusSearchWidget.setRules(rules=newValue)
             self._tradeGoodTable.setRules(rules=newValue)
             self._worldTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
-
-            # Changing rules invalidates as matching can be rule dependant
-            self._clearResults()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._worldRadiusSearchWidget.setMapStyle(style=newValue)

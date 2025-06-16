@@ -349,18 +349,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         if option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._purchaseWorldWidget.setMilieu(milieu=newValue)
-
-            # Changing milieu invalidates speculative cargo as world trade
-            # data has changed
-            self._clearCargo()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._purchaseWorldWidget.setRules(rules=newValue)
             self._localBrokerWidget.setRules(rules=newValue)
-
-            # Changing rules invalidates any current cargo as the cargo records
-            # are tied to a rule system
-            self._clearCargo()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._purchaseWorldWidget.setMapStyle(style=newValue)

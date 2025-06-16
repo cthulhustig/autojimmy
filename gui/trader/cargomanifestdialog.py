@@ -20,8 +20,6 @@ _WelcomeMessage = """
     </html>
 """
 
-# TODO: Rather than registering for config updates the dialog should
-# have the values passed to it by its creator
 class CargoManifestDialog(gui.DialogEx):
     _AverageCaseTradeOptionColumns = [
         gui.TradeOptionsTable.ColumnType.TradeGood,
@@ -103,7 +101,6 @@ class CargoManifestDialog(gui.DialogEx):
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         super().firstShowEvent(e)
 
-    # TODO: Is this actually getting hit.
     def closeEvent(self, event: QtGui.QCloseEvent):
         app.Config.instance().configChanged.disconnect(self._appConfigChanged)
         return super().closeEvent(event)
@@ -307,8 +304,6 @@ class CargoManifestDialog(gui.DialogEx):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             self._hexTooltipProvider.setMilieu(milieu=newValue)
-            # Changing the milieu invalidates existing trade options
-            self._cargoBreakdownTable.removeAllRows()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:

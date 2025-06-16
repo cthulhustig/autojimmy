@@ -630,16 +630,10 @@ class SimulatorWindow(gui.WindowWidget):
             self._hexTooltipProvider.setMilieu(milieu=newValue)
             self._startWorldWidget.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
-
-            # Changing milieu stops the current simulation
-            self._stopSimulator()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._startWorldWidget.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
-
-            # Changing rules stops the current simulation
-            self._stopSimulator()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._startWorldWidget.setMapStyle(style=newValue)

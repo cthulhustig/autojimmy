@@ -1138,9 +1138,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteTable.setMilieu(milieu=newValue)
             self._refuellingPlanTable.setMilieu(milieu=newValue)
             self._mapWidget.setMilieu(milieu=newValue)
-
-            # Changing milieu invalidates any current jump route
-            self._clearJumpRoute()
+            self._updateJumpOverlays()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._selectStartFinishWidget.setRules(rules=newValue)
@@ -1149,6 +1147,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteTable.setRules(rules=newValue)
             self._refuellingPlanTable.setRules(rules=newValue)
             self._mapWidget.setRules(rules=newValue)
+            self._updateJumpOverlays()
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._selectStartFinishWidget.setMapStyle(style=newValue)
