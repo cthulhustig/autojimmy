@@ -802,12 +802,26 @@ class JumpRouteWindow(gui.WindowWidget):
         #
         # Ship Configuration
         #
-        self._shipTonnageSpinBox = gui.SharedShipTonnageSpinBox()
-        self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
+        self._shipTonnageSpinBox = gui.ShipTonnageSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipTonnage))
+        self._shipTonnageSpinBox.valueChanged.connect(self._shipTonnageChanged)
+
+        self._shipJumpRatingSpinBox = gui.JumpRatingSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipJumpRating))
         self._shipJumpRatingSpinBox.valueChanged.connect(self._shipJumpRatingChanged)
-        self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
-        self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
-        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
+
+        self._shipFuelCapacitySpinBox = gui.FuelCapacitySpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipFuelCapacity))
+        self._shipFuelCapacitySpinBox.valueChanged.connect(self._shipFuelCapacityChanged)
+
+        self._shipCurrentFuelSpinBox = gui.CurrentFuelSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipCurrentFuel))
+        self._shipCurrentFuelSpinBox.valueChanged.connect(self._shipCurrentFuelChanged)
+
+        self._shipFuelPerParsecSpinBox = gui.FuelPerParsecSpinBox(
+            enabled=app.Config.instance().value(option=app.ConfigOption.UseShipFuelPerParsec),
+            value=app.Config.instance().value(option=app.ConfigOption.ShipFuelPerParsec))
+        self._shipFuelPerParsecSpinBox.valueChanged.connect(self._shipFuelPerParsecChanged)
 
         shipLayout = gui.FormLayoutEx()
         shipLayout.setContentsMargins(0, 0, 0, 0)
@@ -1192,6 +1206,20 @@ class JumpRouteWindow(gui.WindowWidget):
             self._refuellingPlanTable.setTaggingColours(colours=newValue)
             self._mapWidget.setTaggingColours(colours=newValue)
             self._updateJumpOverlays()
+        elif option is app.ConfigOption.ShipTonnage:
+            self._shipTonnageSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.ShipJumpRating:
+            self._shipJumpRatingSpinBox.setValue(newValue)
+            self._updateJumpOverlays()
+        elif option is app.ConfigOption.ShipFuelCapacity:
+            self._shipFuelCapacitySpinBox.setValue(newValue)
+        elif option is app.ConfigOption.ShipCurrentFuel:
+            self._shipCurrentFuelSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.UseShipFuelPerParsec:
+            self._shipFuelPerParsecSpinBox.setChecked(newValue)
+        elif option is app.ConfigOption.ShipFuelPerParsec:
+            self._shipFuelPerParsecSpinBox.setValue(newValue)
+
 
     def _mapStyleChanged(
             self,
@@ -1993,8 +2021,40 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._updateJumpOverlays()
 
-    def _shipJumpRatingChanged(self) -> None:
-        self._updateJumpOverlays()
+    def _shipTonnageChanged(self, shipTonnage: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipTonnage,
+            value=shipTonnage)
+
+    def _shipJumpRatingChanged(self, jumpRating: int) -> None:
+        # NOTE: Jump overlays aren't updated directly, they will be updated
+        # when the window processes the config update
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipJumpRating,
+            value=jumpRating)
+
+    def _shipFuelCapacityChanged(self, fuelCapacity: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipFuelCapacity,
+            value=fuelCapacity)
+
+    def _shipCurrentFuelChanged(self, currentFuel: float) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipCurrentFuel,
+            value=currentFuel)
+
+    def _shipFuelPerParsecChanged(
+            self,
+            fuelPerParsec: typing.Optional[float]
+            ) -> None:
+        useFuelPerParsec = fuelPerParsec is not None
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseShipFuelPerParsec,
+            value=useFuelPerParsec)
+        if useFuelPerParsec:
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ShipFuelPerParsec,
+                value=fuelPerParsec)
 
     def _routingTypeChanged(self) -> None:
         isDeadSpaceRouting = self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace

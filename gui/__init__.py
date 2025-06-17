@@ -59,6 +59,9 @@ from .map.hextable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
 from .trader.tooltips import *
+from .trader.skillspinbox import *
+from .trader.shipcontrols import *
+from .trader.tradercontrols import *
 from .trader.taglevelcombobox import *
 from .trader.rolloutcomecombobox import *
 from .trader.localbrokerwidget import *

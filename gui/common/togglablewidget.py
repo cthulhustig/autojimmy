@@ -44,7 +44,8 @@ class TogglableWidget(QtWidgets.QWidget):
         self.checkToggled.emit(enabled)
 
 class TogglableSpinBox(TogglableWidget):
-    # Signal argument is int or None, object is used as pyqtSignal can't handle None
+    # Signal argument is int if checked or None if unchecked, object is used
+    # as pyqtSignal can't handle None
     valueChanged = QtCore.pyqtSignal([object])
 
     _StateVersion = 'TogglableSpinBox_v1'
@@ -149,7 +150,8 @@ class TogglableSpinBox(TogglableWidget):
         self.valueChanged.emit(self.value())
 
 class TogglableDoubleSpinBox(TogglableWidget):
-    # Signal argument is float or None, object is used as pyqtSignal can't handle None
+    # Signal argument is float if checked or None if unchecked, object is used
+    # as pyqtSignal can't handle None
     valueChanged = QtCore.pyqtSignal([object])
 
     _StateVersion = 'TogglableDoubleSpinBox_v1'

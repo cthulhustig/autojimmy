@@ -117,9 +117,12 @@ class _BaseTraderWindow(gui.WindowWidget):
         #
         self._availableFundsSpinBox = gui.SharedAvailableFundsSpinBox()
 
-        self._freeCargoSpaceSpinBox = gui.SharedFreeCargoSpaceSpinBox()
+        self._maxCargoTonnageSpinBox = gui.MaxCargoTonnageSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.MaxCargoTonnage))
+        self._maxCargoTonnageSpinBox.valueChanged.connect(self._maxCargoTonnageChanged)
 
-        self._playerBrokerDmSpinBox = gui.SharedPlayerBrokerDMSpinBox()
+        self._playerBrokerDmSpinBox = gui.SkillSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.PlayerBrokerDM))
         self._playerBrokerDmSpinBox.valueChanged.connect(self._playerBrokerDmChanged)
 
         self._sellerDmRangeWidget = gui.SharedSellerDMRangeWidget()
@@ -137,7 +140,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
         leftLayout.addRow('Available Funds:', self._availableFundsSpinBox)
-        leftLayout.addRow('Free Cargo Space:', self._freeCargoSpaceSpinBox)
+        leftLayout.addRow('Max Cargo Tonnage:', self._maxCargoTonnageSpinBox)
         leftLayout.addRow('Player\'s Broker DM:', self._playerBrokerDmSpinBox)
         leftLayout.addRow('Seller DM Range:', self._sellerDmRangeWidget)
         leftLayout.addRow('Buyer DM Range:', self._buyerDmRangeWidget)
@@ -188,11 +191,26 @@ class _BaseTraderWindow(gui.WindowWidget):
         #
         # Ship Configuration
         #
-        self._shipTonnageSpinBox = gui.SharedShipTonnageSpinBox()
-        self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
-        self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
-        self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
-        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
+        self._shipTonnageSpinBox = gui.ShipTonnageSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipTonnage))
+        self._shipTonnageSpinBox.valueChanged.connect(self._shipTonnageChanged)
+
+        self._shipJumpRatingSpinBox = gui.JumpRatingSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipJumpRating))
+        self._shipJumpRatingSpinBox.valueChanged.connect(self._shipJumpRatingChanged)
+
+        self._shipFuelCapacitySpinBox = gui.FuelCapacitySpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipFuelCapacity))
+        self._shipFuelCapacitySpinBox.valueChanged.connect(self._shipFuelCapacityChanged)
+
+        self._shipCurrentFuelSpinBox = gui.CurrentFuelSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShipCurrentFuel))
+        self._shipCurrentFuelSpinBox.valueChanged.connect(self._shipCurrentFuelChanged)
+
+        self._shipFuelPerParsecSpinBox = gui.FuelPerParsecSpinBox(
+            enabled=app.Config.instance().value(option=app.ConfigOption.UseShipFuelPerParsec),
+            value=app.Config.instance().value(option=app.ConfigOption.ShipFuelPerParsec))
+        self._shipFuelPerParsecSpinBox.valueChanged.connect(self._shipFuelPerParsecChanged)
 
         shipLayout = gui.FormLayoutEx()
         shipLayout.setContentsMargins(0, 0, 0, 0)
@@ -201,11 +219,6 @@ class _BaseTraderWindow(gui.WindowWidget):
         shipLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
         shipLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
         shipLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
-        # Add a second copy of the free cargo capacity so the user can set it in
-        # both panes (it's logically a ship setting). We don't need to hold onto
-        # this second instance as they're shared controls so all changes should
-        # be reflected in the instance we are holding onto
-        shipLayout.addRow('Free Cargo Space:', gui.SharedFreeCargoSpaceSpinBox())
 
         #
         # Configuration Stack
@@ -313,6 +326,22 @@ class _BaseTraderWindow(gui.WindowWidget):
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
             self._tradeOptionsTable.setTaggingColours(colours=newValue)
+        elif option is app.ConfigOption.PlayerBrokerDM:
+            self._playerBrokerDmSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.ShipTonnage:
+            self._shipTonnageSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.ShipJumpRating:
+            self._shipJumpRatingSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.ShipFuelCapacity:
+            self._shipFuelCapacitySpinBox.setValue(newValue)
+        elif option is app.ConfigOption.ShipCurrentFuel:
+            self._shipCurrentFuelSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.UseShipFuelPerParsec:
+            self._shipFuelPerParsecSpinBox.setChecked(newValue)
+        elif option is app.ConfigOption.ShipFuelPerParsec:
+            self._shipFuelPerParsecSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.MaxCargoTonnage:
+            self._maxCargoTonnageSpinBox.setValue(newValue)
 
     def _enableDisableControls(self) -> None:
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
@@ -443,7 +472,9 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             brokerSkill: int
             ) -> None:
-        pass
+        app.Config.instance().setValue(
+            option=app.ConfigOption.PlayerBrokerDM,
+            value=brokerSkill)
 
     def _localPurchaseBrokerDmChanged(
             self,
@@ -475,6 +506,47 @@ class _BaseTraderWindow(gui.WindowWidget):
 
     def _anomalyRefuellingToggled(self) -> None:
         self._enableDisableControls()
+
+    def _shipTonnageChanged(self, shipTonnage: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipTonnage,
+            value=shipTonnage)
+
+    def _shipJumpRatingChanged(self, jumpRating: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipJumpRating,
+            value=jumpRating)
+
+    def _shipFuelCapacityChanged(self, fuelCapacity: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipFuelCapacity,
+            value=fuelCapacity)
+
+    def _shipCurrentFuelChanged(self, currentFuel: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShipCurrentFuel,
+            value=currentFuel)
+
+    def _shipFuelPerParsecChanged(
+            self,
+            fuelPerParsec: typing.Optional[float]
+            ) -> None:
+        useFuelPerParsec = fuelPerParsec is not None
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseShipFuelPerParsec,
+            value=useFuelPerParsec)
+        if useFuelPerParsec:
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ShipFuelPerParsec,
+                value=fuelPerParsec)
+
+    def _maxCargoTonnageChanged(
+            self,
+            cargoCapacity: int
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MaxCargoTonnage,
+            value=cargoCapacity)
 
     # This should be implemented by the derived class
     def _calculateTradeOptions(self) -> None:
@@ -716,9 +788,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             minBuyerDm: typing.Optional[int] = None,
             maxBuyerDm: typing.Optional[int] = None,
             availableFunds: typing.Optional[int] = None,
+            maxCargoTonnage: typing.Optional[int] = None,
             shipTonnage: typing.Optional[int] = None,
             shipJumpRating: typing.Optional[int] = None,
-            freeCargoSpace: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
             shipCurrentFuel: typing.Optional[float] = None,
             perJumpOverheads: typing.Optional[int] = None,
@@ -766,8 +838,8 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
             self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
-        if freeCargoSpace != None:
-            self._freeCargoSpaceSpinBox.setValue(int(freeCargoSpace))
+        if maxCargoTonnage != None:
+            self._maxCargoTonnageSpinBox.setValue(int(maxCargoTonnage))
         if refuellingStrategy != None:
             self._refuellingStrategyComboBox.setCurrentEnum(refuellingStrategy)
         if perJumpOverheads != None:
@@ -1718,19 +1790,13 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='You can\'t afford any of the available cargo')
             return
 
-        if not self._freeCargoSpaceSpinBox.value():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='You have no free cargo space')
-            return
-
         dlg = gui.PurchaseCargoDialog(
             parent=self,
             world=self._purchaseWorldWidget.selectedWorld(),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             availableCargo=affordableCargo,
             availableFunds=self._availableFundsSpinBox.value(),
-            freeCargoCapacity=self._freeCargoSpaceSpinBox.value(),
+            freeCargoCapacity=self._maxCargoTonnageSpinBox.value(),
             outcomeColours=app.Config.instance().value(option=app.ConfigOption.OutcomeColours))
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -1755,8 +1821,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         # Update available funds and cargo capacity
         self._availableFundsSpinBox.setValue(
             self._availableFundsSpinBox.value() - int(totalCost))
-        self._freeCargoSpaceSpinBox.setValue(
-            self._freeCargoSpaceSpinBox.value() - int(totalQuantity))
 
     def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
@@ -1970,10 +2034,10 @@ class WorldTraderWindow(_BaseTraderWindow):
                     parent=self,
                     text='Available funds can\'t be zero when calculating trade options for speculative and available cargo')
                 return
-            if self._freeCargoSpaceSpinBox.value() <= 0:
+            if self._maxCargoTonnageSpinBox.value() <= 0:
                 gui.MessageBoxEx.information(
                     parent=self,
-                    text='Free cargo can\'t be zero when calculating trade options for speculative and available cargo')
+                    text='Max cargo tonnage can\'t be zero when calculating trade options for speculative and available cargo')
                 return
 
         if self._saleWorldsWidget.isEmpty():
@@ -1992,16 +2056,16 @@ class WorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s current fuel can\'t be larger than its fuel capacity')
             return
-        if self._freeCargoSpaceSpinBox.value() > self._shipTonnageSpinBox.value():
+        if self._maxCargoTonnageSpinBox.value() > self._shipTonnageSpinBox.value():
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Ship\'s free cargo capacity can\'t be larger than its total tonnage')
+                text='Max cargo tonnage can\'t be larger than the total ship tonnage')
             return
-        if (self._shipFuelCapacitySpinBox.value() + self._freeCargoSpaceSpinBox.value()) > \
+        if (self._shipFuelCapacitySpinBox.value() + self._maxCargoTonnageSpinBox.value()) > \
                 self._shipTonnageSpinBox.value():
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
+                text='Max cargo tonnage plus ship\'s fuel capacity can\'t be larger than the total ship tonnage')
             return
 
         if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
@@ -2107,7 +2171,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
+                shipCargoCapacity=self._maxCargoTonnageSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 routingType=routingType,
                 jumpCostCalculator=jumpCostCalculator,
@@ -2161,7 +2225,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         dlg = gui.CargoManifestDialog(
             availableFunds=self._availableFundsSpinBox.value(),
-            freeCargoSpace=self._freeCargoSpaceSpinBox.value(),
+            freeCargoSpace=self._maxCargoTonnageSpinBox.value(),
             tradeOptions=availableCargoTrades if availableCargoTrades else speculativeCargoTrades,
             speculativePurchase=not availableCargoTrades,
             parent=self)
@@ -2199,8 +2263,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         # Update available funds and cargo capacity
         self._availableFundsSpinBox.setValue(
             self._availableFundsSpinBox.value() - int(cargoManifest.cargoCost().value()))
-        self._freeCargoSpaceSpinBox.setValue(
-            self._freeCargoSpaceSpinBox.value() - int(cargoManifest.cargoQuantity().value()))
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
@@ -2309,7 +2371,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             availableFunds: typing.Optional[int] = None,
             shipTonnage: typing.Optional[int] = None,
             shipJumpRating: typing.Optional[int] = None,
-            freeCargoSpace: typing.Optional[int] = None,
+            maxCargoTonnage: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
             shipCurrentFuel: typing.Optional[float] = None,
             perJumpOverheads: typing.Optional[int] = None,
@@ -2338,8 +2400,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
             self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
-        if freeCargoSpace != None:
-            self._freeCargoSpaceSpinBox.setValue(int(freeCargoSpace))
+        if maxCargoTonnage != None:
+            self._maxCargoTonnageSpinBox.setValue(int(maxCargoTonnage))
         if refuellingStrategy != None:
             self._refuellingStrategyComboBox.setCurrentEnum(refuellingStrategy)
         if perJumpOverheads != None:
@@ -2701,12 +2763,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='No sale worlds selected')
             return
 
-        if self._freeCargoSpaceSpinBox.value() <= 0:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='No free cargo space')
-            return
-
         if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
             gui.MessageBoxEx.information(
                 parent=self,
@@ -2717,16 +2773,16 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s current fuel can\'t be larger than its fuel capacity')
             return
-        if self._freeCargoSpaceSpinBox.value() > self._shipTonnageSpinBox.value():
+        if self._maxCargoTonnageSpinBox.value() > self._shipTonnageSpinBox.value():
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Ship\'s free cargo capacity can\'t be larger than its total tonnage')
+                text='Max cargo tonnage can\'t be larger than the total ship tonnage')
             return
-        if (self._shipFuelCapacitySpinBox.value() + self._freeCargoSpaceSpinBox.value()) > \
+        if (self._shipFuelCapacitySpinBox.value() + self._maxCargoTonnageSpinBox.value()) > \
                 self._shipTonnageSpinBox.value():
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
+                text='Max cargo tonnage plus ship\'s fuel capacity can\'t be larger than the total ship tonnage')
             return
 
         if self._shipJumpRatingSpinBox.value() >= app.ConsideredVeryHighJumpRating:
@@ -2838,7 +2894,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
+                shipCargoCapacity=self._maxCargoTonnageSpinBox.value(),
                 routingType=routingType,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
@@ -2877,7 +2933,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         dlg = gui.CargoManifestDialog(
             parent=self,
             availableFunds=self._availableFundsSpinBox.value(),
-            freeCargoSpace=self._freeCargoSpaceSpinBox.value(),
+            freeCargoSpace=self._maxCargoTonnageSpinBox.value(),
             tradeOptions=self._tradeOptionsTable.tradeOptions(),
             speculativePurchase=True) # Multi world trade option calculations are always speculative
         dlg.exec()

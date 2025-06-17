@@ -59,13 +59,13 @@ class ConfigOption(enum.Enum):
     PlayerBrokerDM = 501
     ShipTonnage = 502
     ShipJumpRating = 503
-    ShipCargoCapacity = 504
-    ShipFuelCapacity = 505
-    ShipCurrentFuel = 506
-    UseShipFuelPerParsec = 507
-    ShipFuelPerParsec = 508
-    PerJumpOverhead = 509
-    AvailableFunds = 510
+    ShipFuelCapacity = 504
+    ShipCurrentFuel = 505
+    UseShipFuelPerParsec = 506
+    ShipFuelPerParsec = 507
+    PerJumpOverhead = 508
+    AvailableFunds = 509
+    MaxCargoTonnage = 510
     MinSellerDM = 511
     MaxSellerDM = 512
     MinBuyerDM = 513
@@ -1207,12 +1207,6 @@ class Config(QtCore.QObject):
             min=app.MinPossibleJumpRating,
             max=app.MaxPossibleJumpRating))
         self._addConfigItem(IntConfigItem(
-            option=ConfigOption.ShipCargoCapacity,
-            key='Game/ShipCargoCapacity',
-            restart=False,
-            default=12,
-            min=0))
-        self._addConfigItem(IntConfigItem(
             option=ConfigOption.ShipFuelCapacity,
             key='Game/ShipFuelCapacity',
             restart=False,
@@ -1253,6 +1247,12 @@ class Config(QtCore.QObject):
             restart=False,
             default=10000,
             min=0))
+        self._addConfigItem(IntConfigItem(
+            option=ConfigOption.MaxCargoTonnage,
+            key='Game/MaxCargoTonnage',
+            restart=False,
+            default=1,
+            min=1))
         self._addConfigItem(IntConfigItem(
             option=ConfigOption.MinSellerDM,
             key='Game/MinSellerDM',
@@ -1475,7 +1475,7 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.ShipJumpRating], futureValue: bool = False) -> int: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ShipCargoCapacity], futureValue: bool = False) -> int: ...
+    def value(self, option: typing.Literal[ConfigOption.MaxCargoTonnage], futureValue: bool = False) -> int: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.ShipFuelCapacity], futureValue: bool = False) -> int: ...
     @typing.overload

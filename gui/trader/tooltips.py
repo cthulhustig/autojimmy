@@ -32,9 +32,6 @@ ShipFuelPerParsecToolTip = gui.createStringToolTip(
     '<p>Enabling this option allows the specified value to be used instead of the default of 10% '
     'of total ship tonnage.</p>',
     escape=False)
-FreeCargoSpaceToolTip = gui.createStringToolTip(
-    '<p>Free cargo space available for purchased trade cargo</p>',
-    escape=False)
 RoutingTypeToolTip = gui.createStringToolTip(
     '<p>Type of routing algorithm to use</p>'
     '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
@@ -176,6 +173,9 @@ PerJumpOverheadsToolTip = gui.createStringToolTip(
     escape=False)
 AvailableFundsToolTip = gui.createStringToolTip(
     'Funds available for trading (including logistics costs if applied).',
+    escape=False)
+MaxCargoTonnageToolTip = gui.createStringToolTip(
+    '<p>The max tonnage of cargo you want to purchase.</p>',
     escape=False)
 PlayerBrokerDmToolTip = gui.createStringToolTip('<p>Player\'s broker skill with all modifiers</p>',
                                                 escape=False)
