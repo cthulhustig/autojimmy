@@ -1802,6 +1802,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         tradeGoods = set(tradeGoods) # Convert to a set for fast lookup in callback
         dlg = gui.TradeGoodSelectDialog(
+            rules=rules,
             filterCallback=lambda tradeGood: tradeGood in tradeGoods,
             parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:

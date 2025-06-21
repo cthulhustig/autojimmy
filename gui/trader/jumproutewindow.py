@@ -1210,7 +1210,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._selectStartFinishWidget.setMapAnimations(enabled=newValue)
             self._waypointsWidget.setMapAnimations(enabled=newValue)
             self._avoidHexesWidget.setMapAnimations(enabled=newValue)
-            self._mapWidget.setAnimation(enabled=newValue)
+            self._mapWidget.setAnimated(animated=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:

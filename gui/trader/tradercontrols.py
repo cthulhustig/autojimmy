@@ -5,8 +5,6 @@ import traveller
 import typing
 from PyQt5 import QtWidgets
 
-# TODO: Need to check tooltips are correct for all these controls (and ones I added in other files)
-
 class AvailableFundsSpinBox(gui.SpinBoxEx):
     def __init__(
             self,

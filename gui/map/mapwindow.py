@@ -139,7 +139,7 @@ class MapWindow(gui.WindowWidget):
         elif option is app.ConfigOption.MapRendering:
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
-            self._mapWidget.setAnimation(enabled=newValue)
+            self._mapWidget.setAnimated(animated=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._mapWidget.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:

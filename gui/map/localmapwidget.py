@@ -985,6 +985,9 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._handleViewUpdate()
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
     def setMilieu(self, milieu: travellermap.Milieu) -> None:
         if milieu is self._milieu:
             return
@@ -1001,6 +1004,9 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
+    def style(self) -> travellermap.Style:
+        return self._style
+
     def setStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
@@ -1009,6 +1015,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._renderer = self._newRenderer()
 
         self.update() # Force redraw
+
+    def options(self) -> typing.List[travellermap.Option]:
+        return list(self._options)
 
     def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
@@ -1029,6 +1038,9 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
+    def rendering(self) -> app.MapRendering:
+        return self._renderer
+
     def setRendering(self, rendering: app.MapRendering) -> None:
         if rendering == self._rendering:
             return
@@ -1037,11 +1049,14 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def setAnimation(self, enabled: bool) -> None:
-        if enabled == self._animated:
+    def isAnimated(self) -> bool:
+        return self._animated
+
+    def setAnimated(self, animated: bool) -> None:
+        if animated == self._animated:
             return
 
-        self._animated = enabled
+        self._animated = animated
 
     # TODO: When I finally remove WebMapWidget I should rework how
     # reloading work as it doesn't make conceptual sense whe there

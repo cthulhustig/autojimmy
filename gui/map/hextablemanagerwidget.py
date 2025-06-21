@@ -429,6 +429,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         return self._enableShowOnMapEvent
 
     def enableDeadSpace(self, enable: bool) -> None:
+        if enable == self._enableDeadSpace:
+            return
+
         self._enableDeadSpace = enable
 
         if not enable:

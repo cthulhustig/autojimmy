@@ -1,14 +1,12 @@
-import app
 import gui
 import traveller
 import typing
 from PyQt5 import QtWidgets
 
-# TODO: Rather than registering for config updates the dialog should
-# have the values passed to it by its creator
 class TradeGoodSelectDialog(gui.DialogEx):
     def __init__(
             self,
+            rules: traveller.Rules,
             filterCallback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -20,7 +18,7 @@ class TradeGoodSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._table = gui.TradeGoodTable(
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            rules=rules,
             filterCallback=filterCallback)
         self._table.setCheckable(enable=True)
 
@@ -51,16 +49,5 @@ class TradeGoodSelectDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
 
-        app.Config.instance().configChanged.connect(self._appConfigChanged)
-
     def selectedTradeGoods(self) -> None:
         return self._table.checkedTradeGoods()
-
-    def _appConfigChanged(
-            self,
-            option: app.ConfigOption,
-            oldValue: typing.Any,
-            newValue: typing.Any
-            ) -> None:
-        if option is app.ConfigOption.Rules:
-            self._table.setRules(rules=newValue)

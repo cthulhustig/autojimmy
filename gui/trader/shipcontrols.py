@@ -25,7 +25,6 @@ class JumpRatingSpinBox(gui.SpinBoxEx):
         self.setValue(int(value))
         self.setToolTip(gui.ShipJumpRatingToolTip)
 
-# TODO: Should this be a float?
 class FuelCapacitySpinBox(gui.SpinBoxEx):
     def __init__(
             self,

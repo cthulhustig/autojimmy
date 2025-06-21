@@ -1307,6 +1307,9 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._configureOverlayControls()
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
     def setMilieu(self, milieu: travellermap.Milieu) -> None:
         if milieu is self._milieu:
             return
@@ -1316,12 +1319,18 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._searchWidget.setMilieu(milieu=self._milieu)
         self._infoWidget.setMilieu(milieu=self._milieu)
 
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
     def setRules(self, rules: traveller.Rules) -> None:
         if rules == self._rules:
             return
 
         self._rules = traveller.Rules(rules)
         self._infoWidget.setRules(rules=self._rules)
+
+    def style(self) -> travellermap.Style:
+        return self._style
 
     def setStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
@@ -1333,6 +1342,9 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._styleActionGroup.setCurrent(current=self._style)
 
         self.mapStyleChanged.emit(self._style)
+
+    def options(self) -> typing.List[travellermap.Option]:
+        return list(self._options)
 
     def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
@@ -1391,6 +1403,9 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self.mapOptionsChanged.emit(self._options)
 
+    def rendering(self) -> app.MapRendering:
+        return self._rendering
+
     def setRendering(self, rendering: app.MapRendering) -> None:
         if rendering is self._rendering:
             return False
@@ -1405,13 +1420,16 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self.mapRenderingChanged.emit(self._rendering)
 
-    def setAnimation(self, enabled: bool) -> None:
-        if enabled == self._animated:
+    def isAnimated(self) -> bool:
+        return self._animated
+
+    def setAnimated(self, animated: bool) -> None:
+        if animated == self._animated:
             return
 
-        self._animated = enabled
+        self._animated = animated
         if isinstance(self._mapWidget, gui.LocalMapWidget):
-            self._mapWidget.setAnimation(enabled=self._animated)
+            self._mapWidget.setAnimated(animated=self._animated)
         if self._animatedAction:
             self._animatedAction.setChecked(self._animated)
 
@@ -1966,7 +1984,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self.setRendering(rendering=rendering)
 
     def _animatedChanged(self, animate: bool) -> None:
-        self.setAnimation(enabled=animate)
+        self.setAnimated(animated=animate)
 
     def _configureOverlayControls(self) -> None:
         self._resizeOverlayWidgets()

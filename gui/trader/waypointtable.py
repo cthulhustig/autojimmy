@@ -54,10 +54,6 @@ def _customWorldTableColumns(
     columns.insert(index, WaypointTableColumnType.BerthingRequired)
     return columns
 
-# TODO: Not sure what to do about waypoints in dead space if dead space
-# is disabled. I suspect this code shouldn't be dead space aware and
-# it should be the owner that is responsible for removing hexes if the
-# should be removed
 class WaypointTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)

@@ -647,7 +647,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._startWorldWidget.setMapAnimations(enabled=newValue)
-            self._mapWidget.setAnimation(enabled=newValue)
+            self._mapWidget.setAnimated(animated=newValue)
         elif option is app.ConfigOption.ShowToolTipImages:
             self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.WorldTagging:
