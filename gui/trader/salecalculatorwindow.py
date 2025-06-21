@@ -167,7 +167,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             key='LocalBrokerState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._localBrokerWidget.restoreState(storedValue)
+            self._localBrokerSpinBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -253,7 +253,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._settings.setValue('SaleWorldState', self._saleWorldWidget.saveState())
         self._settings.setValue('PlayerBrokerDMState', self._playerBrokerDmSpinBox.saveState())
-        self._settings.setValue('LocalBrokerState', self._localBrokerWidget.saveState())
+        self._settings.setValue('LocalBrokerState', self._localBrokerSpinBox.saveState())
         self._settings.setValue('BuyerDmState', self._buyerDmSpinBox.saveState())
         self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
         self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
@@ -302,17 +302,18 @@ class SaleCalculatorWindow(gui.WindowWidget):
     def _setupConfigurationControls(self) -> None:
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
-        self._playerBrokerDmSpinBox = gui.SpinBoxEx()
-        self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._playerBrokerDmSpinBox.setValue(1)
-        self._playerBrokerDmSpinBox.setToolTip(gui.PlayerBrokerDmToolTip)
+        self._playerBrokerDmSpinBox = gui.SkillSpinBox(
+            value=1,
+            toolTip=gui.PlayerBrokerDmToolTip)
 
-        self._localBrokerWidget = gui.LocalBrokerWidget(rules=rules)
+        self._localBrokerSpinBox = gui.LocalBrokerSpinBox(
+            enabled=False,
+            value=0,
+            rules=rules)
 
-        self._buyerDmSpinBox = gui.SpinBoxEx()
-        self._buyerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._buyerDmSpinBox.setValue(2) # Default for MGT 2022 so just use as default for everything
-        self._buyerDmSpinBox.setToolTip(gui.createStringToolTip('Buyer\'s DM bonus'))
+        self._buyerDmSpinBox = gui.SkillSpinBox(
+            value=2, # Default for MGT 2022 so just use as default for everything
+            toolTip=gui.createStringToolTip('Buyer\'s DM bonus'))
 
         self._blackMarketCheckBox = gui.CheckBoxEx()
 
@@ -326,7 +327,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         layout = gui.FormLayoutEx()
         layout.addRow('Player\'s Broker DM:', self._playerBrokerDmSpinBox)
-        layout.addRow('Local Sale Broker:', self._localBrokerWidget)
+        layout.addRow('Local Sale Broker:', self._localBrokerSpinBox)
         layout.addRow('Buyer DM:', self._buyerDmSpinBox)
         layout.addRow('Black Market Buyer:', self._blackMarketCheckBox)
         layout.addRow('Price Scale (%):', self._priceScaleSpinBox)
@@ -524,7 +525,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._saleWorldWidget.setRules(rules=newValue)
-            self._localBrokerWidget.setRules(rules=newValue)
+            self._localBrokerSpinBox.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._saleWorldWidget.setMapStyle(style=newValue)
@@ -756,8 +757,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
-            useLocalBroker=self._localBrokerWidget.isChecked(),
-            localBrokerDm=self._localBrokerWidget.value(),
+            useLocalBroker=self._localBrokerSpinBox.isChecked(),
+            localBrokerDm=self._localBrokerSpinBox.value(),
             buyerDm=self._buyerDmSpinBox.value(),
             blackMarket=blackMarket,
             diceRoller=diceRoller)

@@ -64,7 +64,6 @@ from .trader.shipcontrols import *
 from .trader.tradercontrols import *
 from .trader.taglevelcombobox import *
 from .trader.rolloutcomecombobox import *
-from .trader.localbrokerwidget import *
 from .trader.tradegoodtable import *
 from .trader.tradegoodquantitydialog import *
 from .trader.tradegoodselectdialog import *
@@ -78,7 +77,6 @@ from .trader.cargomanifesttable import *
 from .trader.waypointtable import *
 from .trader.worldtradescoretable import *
 from .trader.dicerolltable import *
-from .trader.sharedconfigwidgets import *
 from .trader.calculationmodetabbar import *
 from .trader.worldcomparisonwindow import *
 from .trader.worldsearchwindow import *

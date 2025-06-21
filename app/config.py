@@ -85,7 +85,7 @@ class ConfigOption(enum.Enum):
     IncludeStartBerthing = 527
     IncludeFinishBerthing = 528
     IncludeLogisticsCosts = 529
-    IncludeUnprofitableTrades = 530
+    ShowUnprofitableTrades = 530
 
     # UI
     ColourTheme = 600
@@ -1362,8 +1362,8 @@ class Config(QtCore.QObject):
             restart=False,
             default=True))
         self._addConfigItem(BoolConfigItem(
-            option=ConfigOption.IncludeUnprofitableTrades,
-            key='Game/IncludeUnprofitableTrades',
+            option=ConfigOption.ShowUnprofitableTrades,
+            key='Game/ShowUnprofitableTrades',
             restart=False,
             default=False))
 
@@ -1529,7 +1529,7 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.IncludeLogisticsCosts], futureValue: bool = False) -> bool: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.IncludeUnprofitableTrades], futureValue: bool = False) -> bool: ...
+    def value(self, option: typing.Literal[ConfigOption.ShowUnprofitableTrades], futureValue: bool = False) -> bool: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.ColourTheme], futureValue: bool = False) -> ColourTheme: ...
     @typing.overload

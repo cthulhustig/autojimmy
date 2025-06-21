@@ -112,10 +112,9 @@ class _BaseTraderWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigurationControls(self) -> None:
-        #
-        # Trade Configuration
-        #
-        self._availableFundsSpinBox = gui.SharedAvailableFundsSpinBox()
+        self._availableFundsSpinBox = gui.AvailableFundsSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.AvailableFunds))
+        self._availableFundsSpinBox.valueChanged.connect(self._availableFundsChanged)
 
         self._maxCargoTonnageSpinBox = gui.MaxCargoTonnageSpinBox(
             value=app.Config.instance().value(option=app.ConfigOption.MaxCargoTonnage))
@@ -125,16 +124,26 @@ class _BaseTraderWindow(gui.WindowWidget):
             value=app.Config.instance().value(option=app.ConfigOption.PlayerBrokerDM))
         self._playerBrokerDmSpinBox.valueChanged.connect(self._playerBrokerDmChanged)
 
-        self._sellerDmRangeWidget = gui.SharedSellerDMRangeWidget()
+        self._sellerDmRangeWidget = gui.SellerDMRangeWidget(
+            lowerValue=app.Config.instance().value(option=app.ConfigOption.MinSellerDM),
+            upperValue=app.Config.instance().value(option=app.ConfigOption.MaxSellerDM))
         self._sellerDmRangeWidget.rangeChanged.connect(self._sellerDmChanged)
 
-        self._buyerDmRangeWidget = gui.SharedBuyerDMRangeWidget()
+        self._buyerDmRangeWidget = gui.BuyerDMRangeWidget(
+            lowerValue=app.Config.instance().value(option=app.ConfigOption.MinBuyerDM),
+            upperValue=app.Config.instance().value(option=app.ConfigOption.MaxBuyerDM))
         self._buyerDmRangeWidget.rangeChanged.connect(self._buyerDmChanged)
 
-        self._localPurchaseBrokerWidget = gui.SharedLocalPurchaseBrokerSpinBox()
+        self._localPurchaseBrokerWidget = gui.LocalBrokerSpinBox(
+            enabled=app.Config.instance().value(option=app.ConfigOption.UsePurchaseBroker),
+            value=app.Config.instance().value(option=app.ConfigOption.PurchaseBrokerDmBonus),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         self._localPurchaseBrokerWidget.valueChanged.connect(self._localPurchaseBrokerDmChanged)
 
-        self._localSaleBrokerWidget = gui.SharedLocalSaleBrokerSpinBox()
+        self._localSaleBrokerWidget = gui.LocalBrokerSpinBox(
+            enabled=app.Config.instance().value(option=app.ConfigOption.UseSaleBroker),
+            value=app.Config.instance().value(option=app.ConfigOption.SaleBrokerDmBonus),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         self._localSaleBrokerWidget.valueChanged.connect(self._localSaleBrokerDmChanged)
 
         leftLayout = gui.FormLayoutEx()
@@ -147,19 +156,45 @@ class _BaseTraderWindow(gui.WindowWidget):
         leftLayout.addRow('Local Purchase Broker:', self._localPurchaseBrokerWidget)
         leftLayout.addRow('Local Sale Broker:', self._localSaleBrokerWidget)
 
-        # Right column of controls
-        self._routingTypeComboBox = gui.SharedRoutingTypeComboBox()
-        self._routingTypeComboBox.currentIndexChanged.connect(self._routingTypeChanged)
-        self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
-        self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
-        self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
-        self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
-        self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
-        self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
-        self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
+        self._routingTypeComboBox = gui.RoutingTypeComboBox(
+            value=app.Config.instance().value(option=app.ConfigOption.RoutingType))
+        self._routingTypeComboBox.currentEnumChanged.connect(self._routingTypeChanged)
+
+        self._routeOptimisationComboBox = gui.RouteOptimisationComboBox(
+            value=app.Config.instance().value(option=app.ConfigOption.RouteOptimisation))
+        self._routeOptimisationComboBox.currentEnumChanged.connect(self._routeOptimisationChanged)
+
+        self._perJumpOverheadsSpinBox = gui.JumpOverheadsSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.PerJumpOverhead))
+        self._perJumpOverheadsSpinBox.valueChanged.connect(self._perJumpOverheadsChanged)
+
+        self._includeStartWorldBerthingCheckBox = gui.IncludeStartBerthingCheckBox(
+           value=app.Config.instance().value(option=app.ConfigOption.IncludeStartBerthing))
+        self._includeStartWorldBerthingCheckBox.stateChanged.connect(self._includeStartWorldBerthingToggled)
+
+        self._includeFinishWorldBerthingCheckBox = gui.IncludeFinishBerthingCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.IncludeFinishBerthing))
+        self._includeFinishWorldBerthingCheckBox.stateChanged.connect(self._includeFinishWorldBerthingToggled)
+
+        self._refuellingStrategyComboBox = gui.RefuellingStrategyComboBox(
+            value=app.Config.instance().value(option=app.ConfigOption.RefuellingStrategy))
+        self._refuellingStrategyComboBox.currentEnumChanged.connect(self._refuellingStrategyChanged)
+
+        self._useFuelCachesCheckBox = gui.UseFuelCachesCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.UseFuelCaches))
+        self._useFuelCachesCheckBox.stateChanged.connect(self._useFuelCachesToggled)
+
+        self._useAnomalyRefuellingCheckBox = gui.UseAnomalyRefuellingCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.UseAnomalyRefuelling))
         self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
-        self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
-        self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
+
+        self._anomalyFuelCostSpinBox = gui.AnomalyFuelCostSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.AnomalyFuelCost))
+        self._anomalyFuelCostSpinBox.valueChanged.connect(self._anomalyFuelCostChanged)
+
+        self._anomalyBerthingCostSpinBox = gui.AnomalyBerthingCostSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.AnomalyBerthingCost))
+        self._anomalyBerthingCostSpinBox.valueChanged.connect(self._anomalyBerthingCostChanged)
 
         centerLayout = gui.FormLayoutEx()
         centerLayout.setContentsMargins(0, 0, 0, 0)
@@ -168,19 +203,24 @@ class _BaseTraderWindow(gui.WindowWidget):
         centerLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         centerLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         centerLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
-        centerLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
 
-        self._includeLogisticsCostsCheckBox = gui.SharedIncludeLogisticsCostsCheckBox()
-        self._includeUnprofitableTradesCheckBox = gui.SharedIncludeUnprofitableCheckBox()
+        self._includeLogisticsCostsCheckBox = gui.IncludeLogisticsCostsCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.IncludeLogisticsCosts))
+        self._includeLogisticsCostsCheckBox.stateChanged.connect(self._includeLogisticsCostsToggled)
+
+        self._showUnprofitableTradesCheckBox = gui.ShowUnprofitableTradesCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.ShowUnprofitableTrades))
+        self._showUnprofitableTradesCheckBox.stateChanged.connect(self._showUnprofitableTradesToggled)
 
         rightLayout = gui.FormLayoutEx()
         rightLayout.setContentsMargins(0, 0, 0, 0)
+        rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
         rightLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
         rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
         rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Include Logistics Costs:', self._includeLogisticsCostsCheckBox)
-        rightLayout.addRow('Include Unprofitable Trades:', self._includeUnprofitableTradesCheckBox)
+        rightLayout.addRow('Show Unprofitable Trades:', self._showUnprofitableTradesCheckBox)
 
         traderLayout = QtWidgets.QHBoxLayout()
         traderLayout.addLayout(leftLayout)
@@ -306,6 +346,8 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._clearTradeOptions()
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._localPurchaseBrokerWidget.setRules(rules=newValue)
+            self._localSaleBrokerWidget.setRules(rules=newValue)
 
             # Changing the rules invalidates existing trade options as the
             # trade goods they use are tied to a rule system and the starport
@@ -326,8 +368,54 @@ class _BaseTraderWindow(gui.WindowWidget):
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
             self._tradeOptionsTable.setTaggingColours(colours=newValue)
+        elif option is app.ConfigOption.AvailableFunds:
+            self._availableFundsSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.MaxCargoTonnage:
+            self._maxCargoTonnageSpinBox.setValue(newValue)
         elif option is app.ConfigOption.PlayerBrokerDM:
             self._playerBrokerDmSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.MinSellerDM:
+            self._sellerDmRangeWidget.setLowerValue(newValue)
+        elif option is app.ConfigOption.MaxSellerDM:
+            self._sellerDmRangeWidget.setUpperValue(newValue)
+        elif option is app.ConfigOption.MinBuyerDM:
+            self._buyerDmRangeWidget.setLowerValue(newValue)
+        elif option is app.ConfigOption.MaxBuyerDM:
+            self._buyerDmRangeWidget.setUpperValue(newValue)
+        elif option is app.ConfigOption.UsePurchaseBroker:
+            self._localPurchaseBrokerWidget.setChecked(newValue)
+        elif option is app.ConfigOption.PurchaseBrokerDmBonus:
+            self._localPurchaseBrokerWidget.setValue(newValue)
+        elif option is app.ConfigOption.UseSaleBroker:
+            self._localSaleBrokerWidget.setChecked(newValue)
+        elif option is app.ConfigOption.SaleBrokerDmBonus:
+            self._localSaleBrokerWidget.setValue(newValue)
+        elif option is app.ConfigOption.RoutingType:
+            self._routingTypeComboBox.setCurrentEnum(newValue)
+            self._enableDisableControls()
+        elif option is app.ConfigOption.RouteOptimisation:
+            self._routeOptimisationComboBox.setCurrentEnum(newValue)
+        elif option is app.ConfigOption.PerJumpOverhead:
+            self._perJumpOverheadsSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.IncludeStartBerthing:
+            self._includeStartWorldBerthingCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.IncludeFinishBerthing:
+            self._includeFinishWorldBerthingCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.RefuellingStrategy:
+            self._refuellingStrategyComboBox.setCurrentEnum(newValue)
+        elif option is app.ConfigOption.UseFuelCaches:
+            self._useFuelCachesCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.UseAnomalyRefuelling:
+            self._useAnomalyRefuellingCheckBox.setChecked(newValue)
+            self._enableDisableControls()
+        elif option is app.ConfigOption.AnomalyFuelCost:
+            self._anomalyFuelCostSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.AnomalyBerthingCost:
+            self._anomalyBerthingCostSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.IncludeLogisticsCosts:
+            self._includeLogisticsCostsCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.ShowUnprofitableTrades:
+            self._showUnprofitableTradesCheckBox.setChecked(newValue)
         elif option is app.ConfigOption.ShipTonnage:
             self._shipTonnageSpinBox.setValue(newValue)
         elif option is app.ConfigOption.ShipJumpRating:
@@ -340,8 +428,6 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._shipFuelPerParsecSpinBox.setChecked(newValue)
         elif option is app.ConfigOption.ShipFuelPerParsec:
             self._shipFuelPerParsecSpinBox.setValue(newValue)
-        elif option is app.ConfigOption.MaxCargoTonnage:
-            self._maxCargoTonnageSpinBox.setValue(newValue)
 
     def _enableDisableControls(self) -> None:
         isFuelAwareRouting = self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic
@@ -480,32 +566,141 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             brokerSkill: typing.Optional[int]
             ) -> None:
-        pass
+        useBroker = brokerSkill is not None
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UsePurchaseBroker,
+            value=useBroker)
+        if useBroker:
+            app.Config.instance().setValue(
+                option=app.ConfigOption.PurchaseBrokerDmBonus,
+                value=brokerSkill)
 
     def _localSaleBrokerDmChanged(
             self,
             brokerSkill: typing.Optional[int]
             ) -> None:
-        pass
+        useBroker = brokerSkill is not None
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseSaleBroker,
+            value=useBroker)
+        if useBroker:
+            app.Config.instance().setValue(
+                option=app.ConfigOption.SaleBrokerDmBonus,
+                value=brokerSkill)
 
     def _sellerDmChanged(
             self,
             minValue: int,
             maxValue: int
             ) -> None:
-        pass
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MinSellerDM,
+            value=minValue)
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MaxSellerDM,
+            value=maxValue)
 
     def _buyerDmChanged(
             self,
             minValue: int,
             maxValue: int) -> None:
-        pass
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MinBuyerDM,
+            value=minValue)
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MaxBuyerDM,
+            value=maxValue)
 
-    def _routingTypeChanged(self) -> None:
-        self._enableDisableControls()
+    def _availableFundsChanged(self, availableFunds: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.AvailableFunds,
+            value=availableFunds)
 
-    def _anomalyRefuellingToggled(self) -> None:
-        self._enableDisableControls()
+    def _maxCargoTonnageChanged(self, cargoCapacity: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MaxCargoTonnage,
+            value=cargoCapacity)
+
+    def _routingTypeChanged(
+            self,
+            routingType: typing.Optional[logic.RoutingType]
+            ) -> None:
+        if not routingType:
+            return
+        app.Config.instance().setValue(
+            option=app.ConfigOption.RoutingType,
+            value=routingType)
+
+    def _routeOptimisationChanged(
+            self,
+            routeOptimisation: typing.Optional[logic.RouteOptimisation]
+            ) -> None:
+        if not routeOptimisation:
+            return
+        app.Config.instance().setValue(
+            option=app.ConfigOption.RouteOptimisation,
+            value=routeOptimisation)
+
+    def _perJumpOverheadsChanged(self, jumpOverheads: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.PerJumpOverhead,
+            value=jumpOverheads)
+
+    def _includeStartWorldBerthingToggled(
+            self,
+            checkedState: QtCore.Qt.CheckState
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.IncludeStartBerthing,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _includeFinishWorldBerthingToggled(
+            self,
+            checkedState: QtCore.Qt.CheckState
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.IncludeFinishBerthing,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _refuellingStrategyChanged(
+            self,
+            strategy: typing.Optional[logic.RefuellingStrategy]
+            ) -> None:
+        if not strategy:
+            return
+        app.Config.instance().setValue(
+            option=app.ConfigOption.RefuellingStrategy,
+            value=strategy)
+
+    def _useFuelCachesToggled(self, checkedState: QtCore.Qt.CheckState) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseFuelCaches,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _anomalyRefuellingToggled(self, checkedState: QtCore.Qt.CheckState) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseAnomalyRefuelling,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _anomalyFuelCostChanged(self, fuelCost: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.AnomalyFuelCost,
+            value=fuelCost)
+
+    def _anomalyBerthingCostChanged(self, berthingCost: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.AnomalyBerthingCost,
+            value=berthingCost)
+
+    def _includeLogisticsCostsToggled(self, checkedState: QtCore.Qt.CheckState) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.IncludeLogisticsCosts,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _showUnprofitableTradesToggled(self, checkedState: QtCore.Qt.CheckState) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.ShowUnprofitableTrades,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
 
     def _shipTonnageChanged(self, shipTonnage: int) -> None:
         app.Config.instance().setValue(
@@ -539,14 +734,6 @@ class _BaseTraderWindow(gui.WindowWidget):
             app.Config.instance().setValue(
                 option=app.ConfigOption.ShipFuelPerParsec,
                 value=fuelPerParsec)
-
-    def _maxCargoTonnageChanged(
-            self,
-            cargoCapacity: int
-            ) -> None:
-        app.Config.instance().setValue(
-            option=app.ConfigOption.MaxCargoTonnage,
-            value=cargoCapacity)
 
     # This should be implemented by the derived class
     def _calculateTradeOptions(self) -> None:
@@ -2178,7 +2365,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 pitCostCalculator=pitCostCalculator,
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
-                includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
+                includeUnprofitableTrades=self._showUnprofitableTradesCheckBox.isChecked(),
                 includeLogisticsCosts=self._includeLogisticsCostsCheckBox.isChecked(),
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
@@ -2902,7 +3089,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 includeIllegal=True, # Always include illegal trade options for multi-world
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
-                includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
+                includeUnprofitableTrades=self._showUnprofitableTradesCheckBox.isChecked(),
                 includeLogisticsCosts=self._includeLogisticsCostsCheckBox.isChecked(),
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,

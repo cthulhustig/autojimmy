@@ -90,7 +90,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             key='LocalBrokerState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._localBrokerWidget.restoreState(storedValue)
+            self._localBrokerSpinBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -169,7 +169,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
         self._settings.setValue('PlayerBrokerDMState', self._playerBrokerDmSpinBox.saveState())
-        self._settings.setValue('LocalBrokerState', self._localBrokerWidget.saveState())
+        self._settings.setValue('LocalBrokerState', self._localBrokerSpinBox.saveState())
         self._settings.setValue('SellerDmState', self._sellerDmSpinBox.saveState())
         self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
         self._settings.setValue('AvailabilityScaleState', self._availabilityScaleSpinBox.saveState())
@@ -218,17 +218,18 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
     def _setupConfigurationControls(self) -> None:
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
-        self._playerBrokerDmSpinBox = gui.SpinBoxEx()
-        self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._playerBrokerDmSpinBox.setValue(1)
-        self._playerBrokerDmSpinBox.setToolTip(gui.PlayerBrokerDmToolTip)
+        self._playerBrokerDmSpinBox = gui.SkillSpinBox(
+            value=1,
+            toolTip=gui.PlayerBrokerDmToolTip)
 
-        self._localBrokerWidget = gui.LocalBrokerWidget(rules=rules)
+        self._localBrokerSpinBox = gui.LocalBrokerSpinBox(
+            enabled=False,
+            value=0,
+            rules=rules)
 
-        self._sellerDmSpinBox = gui.SpinBoxEx()
-        self._sellerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._sellerDmSpinBox.setValue(2) # Default for MGT 2022 so just use as default for everything
-        self._sellerDmSpinBox.setToolTip(gui.createStringToolTip('Seller\'s DM bonus'))
+        self._sellerDmSpinBox = gui.SkillSpinBox(
+            value=2, # Default for MGT 2022 so just use as default for everything
+            toolTip=gui.createStringToolTip('Seller\'s DM bonus'))
 
         self._blackMarketCheckBox = gui.CheckBoxEx()
 
@@ -250,7 +251,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         layout = gui.FormLayoutEx()
         layout.addRow('Player\'s broker DM:', self._playerBrokerDmSpinBox)
-        layout.addRow('Local Purchase Broker:', self._localBrokerWidget)
+        layout.addRow('Local Purchase Broker:', self._localBrokerSpinBox)
         layout.addRow('Seller DM:', self._sellerDmSpinBox)
         layout.addRow('Black Market Seller:', self._blackMarketCheckBox)
         layout.addRow('Price Scale (%):', self._priceScaleSpinBox)
@@ -346,7 +347,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
             self._purchaseWorldWidget.setRules(rules=newValue)
-            self._localBrokerWidget.setRules(rules=newValue)
+            self._localBrokerSpinBox.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._purchaseWorldWidget.setMapStyle(style=newValue)
@@ -389,8 +390,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             ruleSystem=rules.system(),
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
-            useLocalBroker=self._localBrokerWidget.isChecked(),
-            localBrokerDm=self._localBrokerWidget.value(),
+            useLocalBroker=self._localBrokerSpinBox.isChecked(),
+            localBrokerDm=self._localBrokerSpinBox.value(),
             sellerDm=self._sellerDmSpinBox.value(),
             blackMarket=self._blackMarketCheckBox.isChecked(),
             diceRoller=diceRoller)

@@ -765,18 +765,45 @@ class JumpRouteWindow(gui.WindowWidget):
         #
         # Route Configuration
         #
-        self._routingTypeComboBox = gui.SharedRoutingTypeComboBox()
-        self._routingTypeComboBox.currentIndexChanged.connect(self._routingTypeChanged)
-        self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
-        self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
-        self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
-        self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
+        self._routingTypeComboBox = gui.RoutingTypeComboBox(
+            value=app.Config.instance().value(option=app.ConfigOption.RoutingType))
+        self._routingTypeComboBox.currentEnumChanged.connect(self._routingTypeChanged)
+
+        self._routeOptimisationComboBox = gui.RouteOptimisationComboBox(
+            value=app.Config.instance().value(option=app.ConfigOption.RouteOptimisation))
+        self._routeOptimisationComboBox.currentEnumChanged.connect(self._routeOptimisationChanged)
+
+        self._refuellingStrategyComboBox = gui.RefuellingStrategyComboBox(
+            value=app.Config.instance().value(option=app.ConfigOption.RefuellingStrategy))
+        self._refuellingStrategyComboBox.currentEnumChanged.connect(self._refuellingStrategyChanged)
+
+        self._useFuelCachesCheckBox = gui.UseFuelCachesCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.UseFuelCaches))
+        self._useFuelCachesCheckBox.stateChanged.connect(self._useFuelCachesToggled)
+
+        self._useAnomalyRefuellingCheckBox = gui.UseAnomalyRefuellingCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.UseAnomalyRefuelling))
         self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
-        self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
-        self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
-        self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
-        self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
-        self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
+
+        self._anomalyFuelCostSpinBox = gui.AnomalyFuelCostSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.AnomalyFuelCost))
+        self._anomalyFuelCostSpinBox.valueChanged.connect(self._anomalyFuelCostChanged)
+
+        self._anomalyBerthingCostSpinBox = gui.AnomalyBerthingCostSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.AnomalyBerthingCost))
+        self._anomalyBerthingCostSpinBox.valueChanged.connect(self._anomalyBerthingCostChanged)
+
+        self._perJumpOverheadsSpinBox = gui.JumpOverheadsSpinBox(
+            value=app.Config.instance().value(option=app.ConfigOption.PerJumpOverhead))
+        self._perJumpOverheadsSpinBox.valueChanged.connect(self._perJumpOverheadsChanged)
+
+        self._includeStartWorldBerthingCheckBox = gui.IncludeStartBerthingCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.IncludeStartBerthing))
+        self._includeStartWorldBerthingCheckBox.stateChanged.connect(self._includeStartWorldBerthingToggled)
+
+        self._includeFinishWorldBerthingCheckBox = gui.IncludeFinishBerthingCheckBox(
+            value=app.Config.instance().value(option=app.ConfigOption.IncludeFinishBerthing))
+        self._includeFinishWorldBerthingCheckBox.stateChanged.connect(self._includeFinishWorldBerthingToggled)
 
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
@@ -1206,6 +1233,34 @@ class JumpRouteWindow(gui.WindowWidget):
             self._refuellingPlanTable.setTaggingColours(colours=newValue)
             self._mapWidget.setTaggingColours(colours=newValue)
             self._updateJumpOverlays()
+        elif option is app.ConfigOption.RoutingType:
+            self._routingTypeComboBox.setCurrentEnum(newValue)
+
+            isDeadSpaceRouting = newValue is logic.RoutingType.DeadSpace
+            self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
+            self._waypointsWidget.enableDeadSpace(enable=isDeadSpaceRouting)
+            self._mapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
+            self._enableDisableControls()
+            self._updateTravellerMapOverlays()
+        elif option is app.ConfigOption.PerJumpOverhead:
+            self._perJumpOverheadsSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.IncludeStartBerthing:
+            self._includeStartWorldBerthingCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.IncludeFinishBerthing:
+            self._includeFinishWorldBerthingCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.RefuellingStrategy:
+            self._refuellingStrategyComboBox.setCurrentEnum(newValue)
+        elif option is app.ConfigOption.RouteOptimisation:
+            self._routeOptimisationComboBox.setCurrentEnum(newValue)
+        elif option is app.ConfigOption.UseFuelCaches:
+            self._useFuelCachesCheckBox.setChecked(newValue)
+        elif option is app.ConfigOption.UseAnomalyRefuelling:
+            self._useAnomalyRefuellingCheckBox.setChecked(newValue)
+            self._enableDisableControls()
+        elif option is app.ConfigOption.AnomalyFuelCost:
+            self._anomalyFuelCostSpinBox.setValue(newValue)
+        elif option is app.ConfigOption.AnomalyBerthingCost:
+            self._anomalyBerthingCostSpinBox.setValue(newValue)
         elif option is app.ConfigOption.ShipTonnage:
             self._shipTonnageSpinBox.setValue(newValue)
         elif option is app.ConfigOption.ShipJumpRating:
@@ -2021,6 +2076,77 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._updateJumpOverlays()
 
+    def _perJumpOverheadsChanged(self, jumpOverheads: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.PerJumpOverhead,
+            value=jumpOverheads)
+
+    def _includeStartWorldBerthingToggled(
+            self,
+            checkedState: QtCore.Qt.CheckState
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.IncludeStartBerthing,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _includeFinishWorldBerthingToggled(
+            self,
+            checkedState: QtCore.Qt.CheckState
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.IncludeFinishBerthing,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _routingTypeChanged(
+            self,
+            routingType: typing.Optional[logic.RoutingType]
+            ) -> None:
+        if not routingType:
+            return
+        app.Config.instance().setValue(
+            option=app.ConfigOption.RoutingType,
+            value=routingType)
+
+    def _routeOptimisationChanged(
+            self,
+            routeOptimisation: typing.Optional[logic.RouteOptimisation]
+            ) -> None:
+        if not routeOptimisation:
+            return
+        app.Config.instance().setValue(
+            option=app.ConfigOption.RouteOptimisation,
+            value=routeOptimisation)
+
+    def _refuellingStrategyChanged(
+            self,
+            strategy: typing.Optional[logic.RefuellingStrategy]
+            ) -> None:
+        if not strategy:
+            return
+        app.Config.instance().setValue(
+            option=app.ConfigOption.RefuellingStrategy,
+            value=strategy)
+
+    def _useFuelCachesToggled(self, checkedState: QtCore.Qt.CheckState) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseFuelCaches,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _anomalyRefuellingToggled(self, checkedState: QtCore.Qt.CheckState) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.UseAnomalyRefuelling,
+            value=checkedState == QtCore.Qt.CheckState.Checked)
+
+    def _anomalyFuelCostChanged(self, fuelCost: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.AnomalyFuelCost,
+            value=fuelCost)
+
+    def _anomalyBerthingCostChanged(self, berthingCost: int) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.AnomalyBerthingCost,
+            value=berthingCost)
+
     def _shipTonnageChanged(self, shipTonnage: int) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.ShipTonnage,
@@ -2056,16 +2182,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 option=app.ConfigOption.ShipFuelPerParsec,
                 value=fuelPerParsec)
 
-    def _routingTypeChanged(self) -> None:
-        isDeadSpaceRouting = self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace
-        self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
-        self._waypointsWidget.enableDeadSpace(enable=isDeadSpaceRouting)
-        self._mapWidget.enableDeadSpaceSelection(enable=isDeadSpaceRouting)
-        self._enableDisableControls()
-        self._updateTravellerMapOverlays()
-
-    def _anomalyRefuellingToggled(self) -> None:
-        self._enableDisableControls()
 
     def _enableDisableControls(self) -> None:
         # Disable configuration controls while jump route job is running

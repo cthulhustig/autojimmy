@@ -162,8 +162,8 @@ IncludeLogisticsCostsToolTip = gui.createStringToolTip(
     'The logistics costs will still be taken into account when calculating the refuelling plan for '
     'the route.</p>',
     escape=False)
-IncludeUnprofitableTradesToolTip = gui.createStringToolTip(
-    '<p>Include trade options where average dice rolls will result in no profit or a loss</p>',
+ShowUnprofitableTradesToolTip = gui.createStringToolTip(
+    '<p>Show trade options where average dice rolls will result in no profit or a loss</p>',
     escape=False)
 PerJumpOverheadsToolTip = gui.createStringToolTip(
     '<p>The overheads accrued each jump</p>' \
