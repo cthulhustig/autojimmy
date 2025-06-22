@@ -955,7 +955,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 self._avoidHexesWidget,
                 self._avoidHexesWidget.rowCount()))
 
-        self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget()
+        self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget(
+            taggingColours=taggingColours)
         self._avoidLocationsTabWidget.addTab(self._avoidFiltersWidget, 'Filters')
         self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidFiltersWidget, 0)
         self._avoidFiltersWidget.contentChanged.connect(
@@ -1229,6 +1230,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._selectStartFinishWidget.setTaggingColours(colours=newValue)
             self._waypointsWidget.setTaggingColours(colours=newValue)
             self._avoidHexesWidget.setTaggingColours(colours=newValue)
+            self._avoidFiltersWidget.setTaggingColours(colours=newValue)
             self._jumpRouteTable.setTaggingColours(colours=newValue)
             self._refuellingPlanTable.setTaggingColours(colours=newValue)
             self._mapWidget.setTaggingColours(colours=newValue)

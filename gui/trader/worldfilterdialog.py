@@ -203,12 +203,11 @@ class _EnumOptionWidget(QtWidgets.QWidget):
         for checkBox in self._optionMap.values():
             checkBox.setChecked(False)
 
-# TODO: Rather than registering for config updates the dialog should
-# have the values passed to it by its creator
 class WorldFilterDialog(gui.DialogEx):
     def __init__(
             self,
             title: str,
+            taggingColours: app.TaggingColours,
             editFilter: typing.Optional[logic.WorldFilter] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -216,6 +215,8 @@ class WorldFilterDialog(gui.DialogEx):
             title=title,
             configSection='WorldFilterDialog',
             parent=parent)
+
+        self._taggingColours = app.TaggingColours(taggingColours)
 
         self._setupFilterComboBox()
         self._setupLayoutStack()
@@ -253,8 +254,6 @@ class WorldFilterDialog(gui.DialogEx):
             self.setFilter(editFilter)
 
         self._checkValidity()
-
-        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def filter(self) -> logic.WorldFilter:
         filterType = self._filterTypeComboBox.currentEnum()
@@ -386,12 +385,6 @@ class WorldFilterDialog(gui.DialogEx):
         else:
             raise TypeError(f'Invalid filter type {type(filter)}')
 
-    # TODO: Is this actually getting hit.
-    def closeEvent(self, event: QtGui.QCloseEvent):
-        app.Config.instance().configChanged.disconnect(self._appConfigChanged)
-
-        return super().closeEvent(event)
-
     def _setupFilterComboBox(self) -> None:
         self._filterTypeComboBox = gui.EnumComboBox(type=_FilterType)
         self._filterTypeComboBox.currentIndexChanged.connect(self._filterTypeChanged)
@@ -425,15 +418,12 @@ class WorldFilterDialog(gui.DialogEx):
             layout=layout)
 
     def _setupTagLevelFilterLayout(self) -> None:
-        taggingColours = app.Config.instance().value(
-            option=app.ConfigOption.TaggingColours)
-
         self._tagLevelFilterOperationComboBox = gui.EnumComboBox(
             type=logic.ComparisonFilterOperation,
             textMap=_ComparisonFilterOperationTextMap)
 
         self._tagLevelFilterValueComboBox = gui.TagLevelComboBox(
-            colours=taggingColours)
+            colours=self._taggingColours)
 
         layout = gui.FormLayoutEx()
         layout.addRow('Operation:', self._tagLevelFilterOperationComboBox)
@@ -744,15 +734,6 @@ class WorldFilterDialog(gui.DialogEx):
                         widgets.append(widget)
 
         return widgets
-
-    def _appConfigChanged(
-            self,
-            option: app.ConfigOption,
-            oldValue: typing.Any,
-            newValue: typing.Any
-            ) -> None:
-        if option is app.ConfigOption.TaggingColours:
-            self._tagLevelFilterValueComboBox.setColours(colours=newValue)
 
     def _filterTypeChanged(self) -> None:
         currentFilter = self._filterTypeComboBox.currentEnum()

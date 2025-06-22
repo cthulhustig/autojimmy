@@ -1,3 +1,4 @@
+import app
 import gui
 import logging
 import logic
@@ -57,9 +58,12 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            taggingColours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
+
+        self._taggingColours = app.TaggingColours(taggingColours)
 
         self._logicComboBox = _FilterLogicComboBox(
             value=logic.FilterLogic.MatchesAll)
@@ -111,6 +115,11 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         widgetLayout.addWidget(buttonWidget)
 
         self.setLayout(widgetLayout)
+
+    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours)
 
     def filterLogic(self) -> logic.FilterLogic:
         return self._logicComboBox.currentEnum()
@@ -228,8 +237,9 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def promptAddFilter(self) -> None:
         dlg = gui.WorldFilterDialog(
-            parent=self,
-            title='Add Filter')
+            title='Add Filter',
+            taggingColours=self._taggingColours,
+            parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
         self.addFilter(dlg.filter())
@@ -243,9 +253,10 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             return
 
         dlg = gui.WorldFilterDialog(
-            parent=self,
             title='Edit Filter',
-            editFilter=filter)
+            editFilter=filter,
+            taggingColours=self._taggingColours,
+            parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
         index = self._filterTable.currentIndex()

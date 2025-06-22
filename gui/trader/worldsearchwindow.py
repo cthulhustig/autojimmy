@@ -573,7 +573,10 @@ class WorldSearchWindow(gui.WindowWidget):
         self._areaGroupBox.setLayout(layout)
 
     def _setupFilterControls(self) -> None:
-        self._filterWidget = gui.WorldFilterTableManagerWidget()
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
+        self._filterWidget = gui.WorldFilterTableManagerWidget(
+            taggingColours=taggingColours)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._filterWidget)
@@ -808,6 +811,7 @@ class WorldSearchWindow(gui.WindowWidget):
         elif option is app.ConfigOption.TaggingColours:
             self._hexTooltipProvider.setTaggingColours(colours=newValue)
             self._worldRadiusSearchWidget.setTaggingColours(colours=newValue)
+            self._filterWidget.setTaggingColours(colours=newValue)
             self._worldTable.setTaggingColours(colours=newValue)
             self._mapWidget.setTaggingColours(colours=newValue)
 
