@@ -18,7 +18,10 @@ class TradeScore(object):
             ) -> None:
         self._world = world
         self._ruleSystem = ruleSystem
-        self._tradeGoods = tradeGoods if tradeGoods is None else traveller.tradeGoodList(ruleSystem=self._ruleSystem)
+        self._tradeGoods = \
+            traveller.tradeGoodList(ruleSystem=self._ruleSystem) \
+            if tradeGoods is None else \
+            [tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() == ruleSystem]
 
         self._purchaseScores: typing.Dict[traveller.TradeGood, common.ScalarCalculation] = {}
         self._saleScores: typing.Dict[traveller.TradeGood, common.ScalarCalculation] = {}
