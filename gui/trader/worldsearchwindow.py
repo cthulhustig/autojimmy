@@ -62,15 +62,6 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
             tradeGoodId=traveller.TradeGoodIds.Exotics)
         return tradeGood is not exotics
 
-# TODO: This MUST be updated to refresh if the milieu changes.
-# The sector/subsector combo boxes should be updated to contain the
-# names of sectors/subsectors for the milieu and the comboboxes should
-# be resized so they're big enough for the names. If the currently
-# selected sector/subsector doesn't exist in the new milieu the selection
-# should be set to the 'default'. Filling the combo box drop down on
-# demand with the values for the milieu at the point it's displayed
-# isn't a great option as it means the combo box doesn't have the correct
-# size as it's empty when it's sizing is done.
 class _RegionSelectWidget(QtWidgets.QWidget):
     _StateVersion = '_RegionSelectWidget_v1'
     _AllSubsectorsText = '<All Subsectors>'
@@ -95,8 +86,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-        self._loadSectorNames()
-        self._loadSubsectorNames()
+        self._syncToMilieu()
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -106,6 +96,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             return
 
         self._milieu = milieu
+        self._syncToMilieu()
 
     def sectorName(self) -> str:
         return self._sectorComboBox.currentText()
@@ -148,7 +139,6 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         sectorNames = sorted(
             traveller.WorldManager.instance().sectorNames(milieu=self._milieu),
             key=str.casefold)
-
         self._sectorComboBox.addItems(sectorNames)
 
     def _loadSubsectorNames(self) -> None:
@@ -160,11 +150,25 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             name=self._sectorComboBox.currentText())
         if not sector:
             return
-
         subsectorNames = sorted(
             sector.subsectorNames(),
             key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
+
+    def _syncToMilieu(self) -> None:
+        currentSector = self._sectorComboBox.currentText()
+        currentSubsector = self._subsectorComboBox.currentText()
+
+        with gui.SignalBlocker(self):
+            self._loadSectorNames()
+            index = self._sectorComboBox.findText(currentSector)
+            if index >= 0:
+                self._sectorComboBox.setCurrentIndex(index)
+
+            self._loadSubsectorNames()
+            index = self._subsectorComboBox.findText(currentSubsector)
+            if index >= 0:
+                self._subsectorComboBox.setCurrentIndex(index)
 
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
     showCenterHex = QtCore.pyqtSignal(travellermap.HexPosition)
