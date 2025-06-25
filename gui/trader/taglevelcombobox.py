@@ -1,6 +1,7 @@
 import app
 import common
 import gui
+import logic
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -85,16 +86,16 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
 class TagLevelComboBox(QtWidgets.QComboBox):
     _ComboOptions = {
         'None': None,
-        'Desirable': app.TagLevel.Desirable,
-        'Warning': app.TagLevel.Warning,
-        'Danger': app.TagLevel.Danger
+        'Desirable': logic.TagLevel.Desirable,
+        'Warning': logic.TagLevel.Warning,
+        'Danger': logic.TagLevel.Danger
     }
 
     def __init__(
             self,
             colours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            value: typing.Optional[app.TagLevel] = None
+            value: typing.Optional[logic.TagLevel] = None
             ) -> None:
         super().__init__(parent=parent)
 
@@ -142,13 +143,13 @@ class TagLevelComboBox(QtWidgets.QComboBox):
         self.setItemDelegate(self._itemDelegate)
         super().resizeEvent(e)
 
-    def currentTagLevel(self) -> typing.Optional[app.TagLevel]:
+    def currentTagLevel(self) -> typing.Optional[logic.TagLevel]:
         index = self.currentIndex()
         return self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
 
     def setCurrentTagLevel(
             self,
-            tagLevel: typing.Optional[app.TagLevel]
+            tagLevel: typing.Optional[logic.TagLevel]
             ) -> None:
         for index in range(self.count()):
             itemTagLevel = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)

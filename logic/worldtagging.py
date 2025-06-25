@@ -1,5 +1,5 @@
-import app # TODO: This shouldn't be needed when I'm finished
 import enum
+import logic
 import traveller
 import typing
 
@@ -28,34 +28,6 @@ class TaggingProperty(enum.Enum):
     Spectral = 'Spectral'
     Luminosity = 'Luminosity'
 
-# TODO: Should use a logic level enum for tag level rather than app level
-"""
-class TaggingLevel(enum.Enum):
-    Desirable = 0
-    Warning = 1
-    Danger = 2
-
-    def __ge__(self, other: 'TaggingLevel') -> bool:
-        if self.__class__ is other.__class__:
-            return self.value >= other.value
-        return NotImplemented
-
-    def __gt__(self, other: 'TaggingLevel') -> bool:
-        if self.__class__ is other.__class__:
-            return self.value > other.value
-        return NotImplemented
-
-    def __le__(self, other: 'TaggingLevel') -> bool:
-        if self.__class__ is other.__class__:
-            return self.value <= other.value
-        return NotImplemented
-
-    def __lt__(self, other: 'TaggingLevel') -> bool:
-        if self.__class__ is other.__class__:
-            return self.value < other.value
-        return NotImplemented
-"""
-
 class WorldTagging(object):
     @typing.overload
     def __init__(
@@ -64,7 +36,7 @@ class WorldTagging(object):
                 TaggingProperty,
                 typing.Dict[
                     typing.Any, # Type varies by tagging property
-                    app.TagLevel
+                    logic.TagLevel
                     ]]] = None
             ) -> None: ...
     @typing.overload
@@ -94,7 +66,7 @@ class WorldTagging(object):
                 TaggingProperty,
                 typing.Dict[
                     typing.Any, # Type varies by tagging property
-                    app.TagLevel
+                    logic.TagLevel
                     ]]:
         return WorldTagging._copyConfig(self._taggingMap)
 
@@ -104,7 +76,7 @@ class WorldTagging(object):
                 TaggingProperty,
                 typing.Mapping[
                     typing.Any, # Type varies by tagging property
-                    app.TagLevel
+                    logic.TagLevel
                     ]]
             ) -> None:
         self._taggingMap.clear()
@@ -116,7 +88,7 @@ class WorldTagging(object):
             property: TaggingProperty
             ) -> typing.Dict[
                     typing.Any, # Type varies by tagging property
-                    app.TagLevel
+                    logic.TagLevel
                     ]:
         config = self._taggingMap.get(property)
         return dict(config) if config else {}
@@ -126,17 +98,17 @@ class WorldTagging(object):
             property: TaggingProperty,
             config: typing.Mapping[
                         typing.Any, # Type varies by tagging property
-                        app.TagLevel
+                        logic.TagLevel
                         ]) -> None:
         self._taggingMap[property] = dict(config)
 
     def calculateWorldTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         # Always tag Anomalies at warning level as they're not necessarily a danger
         if world.isAnomaly():
-            return app.TagLevel.Warning
+            return logic.TagLevel.Warning
 
         worldTagLevel = None
 
@@ -241,7 +213,7 @@ class WorldTagging(object):
     def calculateZoneTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Zone,
             code=world.zone())
@@ -249,7 +221,7 @@ class WorldTagging(object):
     def calculateStarPortTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.StarPort,
             code=world.uwp().code(traveller.UWP.Element.StarPort))
@@ -257,7 +229,7 @@ class WorldTagging(object):
     def calculateWorldSizeTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.WorldSize,
             code=world.uwp().code(traveller.UWP.Element.WorldSize))
@@ -265,7 +237,7 @@ class WorldTagging(object):
     def calculateAtmosphereTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Atmosphere,
             code=world.uwp().code(traveller.UWP.Element.Atmosphere))
@@ -273,7 +245,7 @@ class WorldTagging(object):
     def calculateHydrographicsTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Hydrographics,
             code=world.uwp().code(traveller.UWP.Element.Hydrographics))
@@ -281,7 +253,7 @@ class WorldTagging(object):
     def calculatePopulationTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Population,
             code=world.uwp().code(traveller.UWP.Element.Population))
@@ -289,7 +261,7 @@ class WorldTagging(object):
     def calculateGovernmentTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Government,
             code=world.uwp().code(traveller.UWP.Element.Government))
@@ -297,7 +269,7 @@ class WorldTagging(object):
     def calculateLawLevelTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.LawLevel,
             code=world.uwp().code(traveller.UWP.Element.LawLevel))
@@ -305,7 +277,7 @@ class WorldTagging(object):
     def calculateTechLevelTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.TechLevel,
             code=world.uwp().code(traveller.UWP.Element.TechLevel))
@@ -313,7 +285,7 @@ class WorldTagging(object):
     def calculateBaseTypeTagLevel(
             self,
             baseType: traveller.BaseType
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.BaseType,
             code=baseType)
@@ -321,7 +293,7 @@ class WorldTagging(object):
     def calculateTradeCodeTagLevel(
             self,
             tradeCode: traveller.TradeCode
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.TradeCode,
             code=tradeCode)
@@ -329,7 +301,7 @@ class WorldTagging(object):
     def calculateResourcesTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Resources,
             code=world.economics().code(traveller.Economics.Element.Resources))
@@ -337,7 +309,7 @@ class WorldTagging(object):
     def calculateLabourTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Labour,
             code=world.economics().code(traveller.Economics.Element.Labour))
@@ -345,7 +317,7 @@ class WorldTagging(object):
     def calculateInfrastructureTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Infrastructure,
             code=world.economics().code(traveller.Economics.Element.Infrastructure))
@@ -353,7 +325,7 @@ class WorldTagging(object):
     def calculateEfficiencyTagLevel(
             self,
             world: traveller.World
-            ) -> app.TagLevel:
+            ) -> logic.TagLevel:
         return self._propertyTagLevel(
             property=TaggingProperty.Efficiency,
             code=world.economics().code(traveller.Economics.Element.Efficiency))
@@ -361,7 +333,7 @@ class WorldTagging(object):
     def calculateHeterogeneityTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Heterogeneity,
             code=world.culture().code(traveller.Culture.Element.Heterogeneity))
@@ -369,7 +341,7 @@ class WorldTagging(object):
     def calculateAcceptanceTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Acceptance,
             code=world.culture().code(traveller.Culture.Element.Acceptance))
@@ -377,7 +349,7 @@ class WorldTagging(object):
     def calculateStrangenessTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Strangeness,
             code=world.culture().code(traveller.Culture.Element.Strangeness))
@@ -385,7 +357,7 @@ class WorldTagging(object):
     def calculateSymbolsTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Symbols,
             code=world.culture().code(traveller.Culture.Element.Symbols))
@@ -393,7 +365,7 @@ class WorldTagging(object):
     def calculateNobilityTagLevel(
             self,
             nobilityType: traveller.NobilityType
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Nobility,
             code=nobilityType)
@@ -401,7 +373,7 @@ class WorldTagging(object):
     def calculateAllegianceTagLevel(
             self,
             world: traveller.World
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         allegianceCode = traveller.AllegianceManager.instance().uniqueAllegianceCode(
             milieu=world.milieu(),
             code=world.allegiance(),
@@ -415,7 +387,7 @@ class WorldTagging(object):
     def calculateSpectralTagLevel(
             self,
             star: traveller.Star
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Spectral,
             code=star.code(traveller.Star.Element.SpectralClass))
@@ -423,7 +395,7 @@ class WorldTagging(object):
     def calculateLuminosityTagLevel(
             self,
             star: traveller.Star
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Luminosity,
             code=star.code(traveller.Star.Element.LuminosityClass))
@@ -432,7 +404,7 @@ class WorldTagging(object):
             self,
             property: TaggingProperty,
             code: typing.Union[str, enum.Enum]
-            ) -> typing.Optional[app.TagLevel]:
+            ) -> typing.Optional[logic.TagLevel]:
         propertyTagMap = self._taggingMap.get(property)
         if not propertyTagMap:
             return None
@@ -444,13 +416,13 @@ class WorldTagging(object):
                         TaggingProperty,
                         typing.Dict[
                             typing.Any,
-                            app.TagLevel
+                            logic.TagLevel
                             ]]] = None
             ) -> typing.Dict[
                     TaggingProperty,
                     typing.Dict[
                         typing.Any,
-                        app.TagLevel
+                        logic.TagLevel
                         ]]:
         copy = {}
         if source:

@@ -694,7 +694,7 @@ class TaggingConfigItem(ConfigItem):
             option: ConfigOption,
             section: str,
             restart: bool,
-            default: typing.Optional[typing.Mapping[typing.Any, app.TagLevel]],
+            default: typing.Optional[typing.Mapping[typing.Any, logic.TagLevel]],
             keyToStringCb: typing.Callable[[typing.Any], str],
             keyFromStringCb: typing.Callable[[str], typing.Optional[typing.Any]]
             ) -> None:
@@ -708,7 +708,7 @@ class TaggingConfigItem(ConfigItem):
     def value(self, futureValue: bool = False) -> typing.Any:
         return dict(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: typing.Mapping[typing.Any, app.TagLevel]) -> None:
+    def setValue(self, value: typing.Mapping[typing.Any, logic.TagLevel]) -> None:
         if value == self._futureValue:
             return
 
@@ -744,10 +744,10 @@ class TaggingConfigItem(ConfigItem):
 
                     value = settings.value(settingKey, defaultValue=None, type=str)
                     if value:
-                        if value not in app.TagLevel.__members__:
+                        if value not in logic.TagLevel.__members__:
                             logging.warning(f'Ignoring tag map for "{key}" in section {self._section} as "{value}" is not a valid tag level')
                             continue
-                        values[key] = app.TagLevel.__members__[value]
+                        values[key] = logic.TagLevel.__members__[value]
             finally:
                 settings.endArray()
         else:
@@ -774,7 +774,7 @@ class StringTaggingConfigItem(TaggingConfigItem):
             option: ConfigOption,
             section: str,
             restart: bool,
-            default: typing.Optional[typing.Mapping[str, app.TagLevel]] = None,
+            default: typing.Optional[typing.Mapping[str, logic.TagLevel]] = None,
             ) -> None:
         super().__init__(
             option=option,
@@ -791,7 +791,7 @@ class EnumTaggingConfigItem(TaggingConfigItem):
             section: str,
             restart: bool,
             enumType: typing.Type[enum.Enum],
-            default: typing.Optional[typing.Mapping[enum.Enum, app.TagLevel]] = None,
+            default: typing.Optional[typing.Mapping[enum.Enum, logic.TagLevel]] = None,
             ) -> None:
         super().__init__(
             option=option,
@@ -838,19 +838,19 @@ class TaggingColoursConfigItem(ConfigItem):
         desirableColour = self.loadConfigSetting(
             settings=settings,
             key=self._section + TaggingColoursConfigItem._DesirableKey,
-            default=self._default.colour(level=app.TagLevel.Desirable),
+            default=self._default.colour(level=logic.TagLevel.Desirable),
             type=str)
 
         warningColour = self.loadConfigSetting(
             settings=settings,
             key=self._section + TaggingColoursConfigItem._WarningKey,
-            default=self._default.colour(level=app.TagLevel.Warning),
+            default=self._default.colour(level=logic.TagLevel.Warning),
             type=str)
 
         dangerColour = self.loadConfigSetting(
             settings=settings,
             key=self._section + TaggingColoursConfigItem._DangerKey,
-            default=self._default.colour(level=app.TagLevel.Danger),
+            default=self._default.colour(level=logic.TagLevel.Danger),
             type=str)
 
         self._currentValue = self._futureValue = app.TaggingColours(
@@ -861,13 +861,13 @@ class TaggingColoursConfigItem(ConfigItem):
     def write(self, settings: QtCore.QSettings) -> None:
         settings.setValue(
             self._section + TaggingColoursConfigItem._DesirableKey,
-            self._futureValue.colour(app.TagLevel.Desirable))
+            self._futureValue.colour(logic.TagLevel.Desirable))
         settings.setValue(
             self._section + TaggingColoursConfigItem._WarningKey,
-            self._futureValue.colour(app.TagLevel.Warning))
+            self._futureValue.colour(logic.TagLevel.Warning))
         settings.setValue(
             self._section + TaggingColoursConfigItem._DangerKey,
-            self._futureValue.colour(app.TagLevel.Danger))
+            self._futureValue.colour(logic.TagLevel.Danger))
 
 class WorldTaggingConfigItem(ConfigItem):
     _PropertyConfig = [
@@ -968,7 +968,7 @@ class WorldTaggingConfigItem(ConfigItem):
             settings: QtCore.QSettings,
             section: str,
             keyFromStringCb: typing.Callable[[str], typing.Optional[typing.Any]]
-            ) -> typing.Optional[typing.Dict[typing.Any, app.TagLevel]]:
+            ) -> typing.Optional[typing.Dict[typing.Any, logic.TagLevel]]:
         # Check to see if there is a size element for this section. This is a hack
         # to differentiate between there being no section and there being a section
         # with no entries. The distinction is important as we want to use the
@@ -993,10 +993,10 @@ class WorldTaggingConfigItem(ConfigItem):
 
                 value = settings.value(settingKey, defaultValue=None, type=str)
                 if value:
-                    if value not in app.TagLevel.__members__:
+                    if value not in logic.TagLevel.__members__:
                         logging.warning(f'Ignoring tag map for "{key}" in section {section} as "{value}" is not a valid tag level')
                         continue
-                    values[key] = app.TagLevel.__members__[value]
+                    values[key] = logic.TagLevel.__members__[value]
         finally:
             settings.endArray()
 
@@ -1006,7 +1006,7 @@ class WorldTaggingConfigItem(ConfigItem):
             self,
             settings: QtCore.QSettings,
             section: str,
-            values: typing.Optional[typing.Dict[typing.Any, app.TagLevel]],
+            values: typing.Optional[typing.Dict[typing.Any, logic.TagLevel]],
             keyToStringCb: typing.Callable[[typing.Any], str]
             ) -> None:
         settings.remove(section)
@@ -1412,32 +1412,32 @@ class Config(QtCore.QObject):
             default=logic.WorldTagging(
                 config={
                     logic.TaggingProperty.Zone: {
-                        traveller.ZoneType.AmberZone: app.TagLevel.Warning,
-                        traveller.ZoneType.RedZone: app.TagLevel.Danger,
-                        traveller.ZoneType.Unabsorbed: app.TagLevel.Warning,
-                        traveller.ZoneType.Forbidden: app.TagLevel.Danger},
+                        traveller.ZoneType.AmberZone: logic.TagLevel.Warning,
+                        traveller.ZoneType.RedZone: logic.TagLevel.Danger,
+                        traveller.ZoneType.Unabsorbed: logic.TagLevel.Warning,
+                        traveller.ZoneType.Forbidden: logic.TagLevel.Danger},
                     logic.TaggingProperty.StarPort: {
-                        'X': app.TagLevel.Warning},
+                        'X': logic.TagLevel.Warning},
                     logic.TaggingProperty.Atmosphere: {
                         # Tag corrosive and insidious atmospheres
-                        'B': app.TagLevel.Danger,
-                        'C': app.TagLevel.Danger},
+                        'B': logic.TagLevel.Danger,
+                        'C': logic.TagLevel.Danger},
                     logic.TaggingProperty.Population: {
                         # Tag worlds with less than 100 people
-                        '0': app.TagLevel.Warning,
-                        '1': app.TagLevel.Warning,
-                        '2': app.TagLevel.Warning},
+                        '0': logic.TagLevel.Warning,
+                        '1': logic.TagLevel.Warning,
+                        '2': logic.TagLevel.Warning},
                     logic.TaggingProperty.LawLevel: {
-                        '0': app.TagLevel.Danger},
+                        '0': logic.TagLevel.Danger},
                     logic.TaggingProperty.TradeCode: {
-                        traveller.TradeCode.AmberZone: app.TagLevel.Warning,
-                        traveller.TradeCode.RedZone: app.TagLevel.Danger,
-                        traveller.TradeCode.HellWorld: app.TagLevel.Danger,
-                        traveller.TradeCode.PenalColony: app.TagLevel.Danger,
-                        traveller.TradeCode.PrisonCamp: app.TagLevel.Danger,
-                        traveller.TradeCode.Reserve: app.TagLevel.Danger,
-                        traveller.TradeCode.DangerousWorld: app.TagLevel.Danger,
-                        traveller.TradeCode.ForbiddenWorld: app.TagLevel.Danger}
+                        traveller.TradeCode.AmberZone: logic.TagLevel.Warning,
+                        traveller.TradeCode.RedZone: logic.TagLevel.Danger,
+                        traveller.TradeCode.HellWorld: logic.TagLevel.Danger,
+                        traveller.TradeCode.PenalColony: logic.TagLevel.Danger,
+                        traveller.TradeCode.PrisonCamp: logic.TagLevel.Danger,
+                        traveller.TradeCode.Reserve: logic.TagLevel.Danger,
+                        traveller.TradeCode.DangerousWorld: logic.TagLevel.Danger,
+                        traveller.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
                 })))
 
     @typing.overload

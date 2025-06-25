@@ -211,7 +211,7 @@ class _TaggingTable(gui.ListTable):
             keyColumnName: str,
             keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
             taggingColours: app.TaggingColours,
-            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], app.TagLevel]] = None,
+            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], logic.TagLevel]] = None,
             keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -251,7 +251,7 @@ class _TaggingTable(gui.ListTable):
     def setContent(
             self,
             keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
-            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], app.TagLevel]] = None,
+            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], logic.TagLevel]] = None,
             keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None
             ) -> None:
         self._keyDescriptions = dict(keyDescriptions)
@@ -267,7 +267,7 @@ class _TaggingTable(gui.ListTable):
         self._taggingColours = app.TaggingColours(colours)
         self._syncToTagging()
 
-    def taggingConfig(self) -> typing.Dict[typing.Union[str, enum.Enum], typing.Optional[app.TagLevel]]:
+    def taggingConfig(self) -> typing.Dict[typing.Union[str, enum.Enum], typing.Optional[logic.TagLevel]]:
         if not self._tableFilled:
             return dict(self._keyTagging)
 
@@ -716,7 +716,7 @@ class ConfigDialog(gui.DialogEx):
             option=app.ConfigOption.TaggingColours,
             futureValue=True)
         self._desirableTagColourButton = gui.ColourButton(QtGui.QColor(
-            taggingColours.colour(level=app.TagLevel.Desirable)))
+            taggingColours.colour(level=logic.TagLevel.Desirable)))
         self._desirableTagColourButton.setFixedWidth(ColourButtonWidth)
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
@@ -724,7 +724,7 @@ class ConfigDialog(gui.DialogEx):
                 self._taggingColourChanged)
 
         self._warningTagColourButton = gui.ColourButton(QtGui.QColor(
-            taggingColours.colour(level=app.TagLevel.Warning)))
+            taggingColours.colour(level=logic.TagLevel.Warning)))
         self._warningTagColourButton.setFixedWidth(ColourButtonWidth)
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
@@ -732,7 +732,7 @@ class ConfigDialog(gui.DialogEx):
                 self._taggingColourChanged)
 
         self._dangerTagColourButton = gui.ColourButton(QtGui.QColor(
-            taggingColours.colour(level=app.TagLevel.Danger)))
+            taggingColours.colour(level=logic.TagLevel.Danger)))
         self._dangerTagColourButton.setFixedWidth(ColourButtonWidth)
         self._dangerTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight danger tagging'))

@@ -3,7 +3,6 @@ import enum
 import gui
 import logic
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -369,7 +368,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                         noteCount = len(notes) if notes else None
                     tableItem = gui.FormattedNumberTableWidgetItem(noteCount)
                     if noteCount and self._taggingColours:
-                        tableItem.setBackground(QtGui.QColor(self._taggingColours.colour(app.TagLevel.Warning)))
+                        tableItem.setBackground(QtGui.QColor(self._taggingColours.colour(logic.TagLevel.Warning)))
                 elif columnType == self.ColumnType.Jumps:
                     tableItem = gui.FormattedNumberTableWidgetItem(tradeOption.jumpCount())
                 elif columnType == self.ColumnType.Owned:

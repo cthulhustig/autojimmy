@@ -1,4 +1,3 @@
-import app
 import common
 import enum
 import logic
@@ -256,7 +255,7 @@ def deserialiseWorldFilter(
 
         return logic.TagLevelFiler(
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
-            value=deserialiseEnum(type=app.TagLevel, data=value))
+            value=deserialiseEnum(type=logic.TagLevel, data=value))
     elif filterType == 'zone':
         operation = data.get('operation')
         if not operation:

@@ -97,9 +97,9 @@ def createHexToolTip(
         if zone:
             zoneTag = None
             if zone is traveller.ZoneType.RedZone or zone is traveller.ZoneType.Forbidden:
-                zoneTag = app.TagLevel.Danger
+                zoneTag = logic.TagLevel.Danger
             elif zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.Unabsorbed:
-                zoneTag = app.TagLevel.Warning
+                zoneTag = logic.TagLevel.Warning
 
             toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
                 style=formatTaggingStyle(level=zoneTag),
@@ -124,7 +124,7 @@ def createHexToolTip(
     else:
         refuellingTypes.append('None (Dead Space)')
     toolTip += '<li><span style="{style}">Refuelling: {types}</span></li>'.format(
-        style=formatTaggingStyle(level=None if refuellingTypes else app.TagLevel.Danger),
+        style=formatTaggingStyle(level=None if refuellingTypes else logic.TagLevel.Danger),
         types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
     toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
         count=world.numberOfSystemWorlds() if world else 0)
@@ -155,7 +155,7 @@ def createHexToolTip(
             else:
                 # We don't know about this world so just display the sector hex and tag it as danger
                 ownerText = f'Unknown world at {world.ownerSectorHex()}'
-                tagLevel = app.TagLevel.Danger
+                tagLevel = logic.TagLevel.Danger
 
             style = formatTaggingStyle(level=tagLevel)
             toolTip += f'<li><span style="{style}">Owner: {html.escape(ownerText)}</span><li>'
@@ -356,7 +356,7 @@ def createHexToolTip(
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger
                     worldText = f'Unknown World at {colonySectorHex}'
-                    tagLevel = app.TagLevel.Danger
+                    tagLevel = logic.TagLevel.Danger
 
                 style = formatTaggingStyle(level=tagLevel)
                 toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'

@@ -1,4 +1,3 @@
-import app
 import enum
 import logic
 import re
@@ -169,7 +168,7 @@ class TagLevelFiler(WorldFilter):
     def __init__(
             self,
             operation: ComparisonFilterOperation,
-            value: app.TagLevel
+            value: logic.TagLevel
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -179,7 +178,7 @@ class TagLevelFiler(WorldFilter):
     def operation(self) -> ComparisonFilterOperation:
         return self._operation
 
-    def value(self) -> app.TagLevel:
+    def value(self) -> logic.TagLevel:
         return self._value
 
     def description(self) -> str:
@@ -202,9 +201,9 @@ class TagLevelFiler(WorldFilter):
 
     @staticmethod
     def _tagLevelToInt(level: str) -> int:
-        if level == app.TagLevel.Danger:
+        if level == logic.TagLevel.Danger:
             return 2
-        elif level == app.TagLevel.Warning:
+        elif level == logic.TagLevel.Warning:
             return 1
         return 0
 

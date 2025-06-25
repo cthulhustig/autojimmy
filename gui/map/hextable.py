@@ -525,7 +525,7 @@ class HexTable(gui.FrozenColumnListTable):
                         hexString = f'Dead Space {hex.offsetX():02d}{hex.offsetY():02d}'
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, hexString)
                         tableItem.setItalic(enable=True)
-                        tagColour = self._taggingColour(level=app.TagLevel.Danger) # Tag dead space as danger level
+                        tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Sector:
                     tableItem = gui.TableWidgetItemEx()
                     if world:
@@ -539,7 +539,7 @@ class HexTable(gui.FrozenColumnListTable):
                             QtCore.Qt.ItemDataRole.DisplayRole,
                             sector.name() if sector else 'Unknown')
                         tableItem.setItalic(enable=not sector)
-                        tagColour = self._taggingColour(level=app.TagLevel.Danger) # Tag dead space as danger level
+                        tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Subsector:
                     tableItem = gui.TableWidgetItemEx()
                     if world:
@@ -553,7 +553,7 @@ class HexTable(gui.FrozenColumnListTable):
                             QtCore.Qt.ItemDataRole.DisplayRole,
                             subsector.name() if subsector else 'Unknown')
                         tableItem.setItalic(enable=not sector)
-                        tagColour = self._taggingColour(level=app.TagLevel.Danger) # Tag dead space as danger level
+                        tagColour = self._taggingColour(level=logic.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Zone:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
@@ -834,7 +834,7 @@ class HexTable(gui.FrozenColumnListTable):
                             else:
                                 # We don't know about this world so just display the sector hex and tag it as danger
                                 ownerString = world.ownerSectorHex()
-                                tagLevel = app.TagLevel.Danger
+                                tagLevel = logic.TagLevel.Danger
                             tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, ownerString)
                         if tagLevel:
                             tagColour = self._taggingColour(level=tagLevel)
@@ -856,7 +856,7 @@ class HexTable(gui.FrozenColumnListTable):
                                         highestTagLevel = tagLevel
                                 else:
                                     # We don't know about this world so the tag level is error, no need to continue looking
-                                    highestTagLevel = app.TagLevel.Danger
+                                    highestTagLevel = logic.TagLevel.Danger
                                     break
                         tableItem = gui.FormattedNumberTableWidgetItem(world.colonyCount())
                         if highestTagLevel:
@@ -1093,7 +1093,7 @@ class HexTable(gui.FrozenColumnListTable):
                         colonyString = f'Unknown world at {colonySectorHex}'
                         listStrings.append(colonyString)
                         listColours[colonyString] = self._taggingColour(
-                            level=app.TagLevel.Danger)
+                            level=logic.TagLevel.Danger)
                 return gui.createListToolTip(
                     title='Colony Worlds',
                     strings=listStrings,
@@ -1118,7 +1118,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     def _taggingColour(
             self,
-            level: typing.Optional[app.TagLevel]
+            level: typing.Optional[logic.TagLevel]
             ) -> typing.Optional[str]:
         if not level or not self._taggingColours:
             return None

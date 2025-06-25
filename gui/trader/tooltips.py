@@ -4,7 +4,6 @@ import gui
 import html
 import logic
 import traveller
-import travellermap
 import typing
 
 ShipTonnageToolTip = gui.createStringToolTip(
@@ -304,7 +303,7 @@ def createLogisticsToolTip(
             type='World' if world else 'Dead Space',
             name=traveller.WorldManager.instance().canonicalHexName(milieu=jumpRoute.milieu(), hex=nodeHex)))
 
-        tagLevel = app.TagLevel.Danger # Dead space is tagged as danger
+        tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:
             tagLevel = worldTagging.calculateWorldTagLevel(world)
         tagColour = taggingColours.colour(level=tagLevel) if tagLevel and taggingColours else None
