@@ -126,13 +126,17 @@ class WorldManager(object):
                         sectorName=canonicalName,
                         milieu=milieu)
 
-                    sector = self._loadSector(
-                        milieu=milieu,
-                        sectorInfo=sectorInfo,
-                        sectorContent=sectorContent,
-                        metadataContent=metadataContent)
+                    try:
+                        sector = self._loadSector(
+                            milieu=milieu,
+                            sectorInfo=sectorInfo,
+                            sectorContent=sectorContent,
+                            metadataContent=metadataContent)
+                    except Exception as ex:
+                        logging.error(f'Failed to load sector {canonicalName} in {milieu.value}', exc_info=ex)
+                        continue
 
-                    logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} from {milieu.value}')
+                    logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} in {milieu.value}')
 
                     milieuData.sectorList.append(sector)
                     milieuData.sectorPositionMap[(sectorInfo.x(), sectorInfo.y())] = sector
@@ -176,8 +180,6 @@ class WorldManager(object):
                         hex = world.hex()
                         milieuData.worldPositionMap[(hex.absoluteX(), hex.absoluteY())] = world
 
-                # Only add milieu data if it added successfully
-                # TODO: Is this the best decision????
                 self._milieuDataMap[milieu] = milieuData
 
     def sectorNames(
