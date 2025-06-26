@@ -103,20 +103,22 @@ class WorldManager(object):
                 # weren't loaded and the point it acquired the mutex.
                 return
 
-            # TODO: Not sure what to do about error handling, currently it will bail
-            # if any milieu fails to load
-            # TODO: Handle progress update better. It should appear like
-            # a single operation not one for each milieu
+            totalSectorCount = 0
+            for milieu in travellermap.Milieu:
+                totalSectorCount += travellermap.DataStore.instance().sectorCount(milieu=milieu)
+
+            progress = 0
             for milieu in travellermap.Milieu:
                 milieuData = WorldManager._MilieuData()
 
-                sectorCount = travellermap.DataStore.instance().sectorCount(milieu=milieu)
-                for index, sectorInfo in enumerate(travellermap.DataStore.instance().sectors(milieu=milieu)):
+                for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
                     canonicalName = sectorInfo.canonicalName()
                     logging.debug(f'Loading worlds for sector {canonicalName}')
 
                     if progressCallback:
-                        progressCallback(canonicalName, index + 1, sectorCount)
+                        stage = f'{milieu.value} - {canonicalName}'
+                        progress += 1
+                        progressCallback(stage, progress, totalSectorCount)
 
                     sectorContent = travellermap.DataStore.instance().sectorFileData(
                         sectorName=canonicalName,
