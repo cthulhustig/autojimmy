@@ -604,10 +604,6 @@ class RulesConfigItem(ConfigItem):
             self._futureValue.starPortFuelType(code='E').name)
 
 class OutcomeColoursConfigItem(ConfigItem):
-    _DefaultAverageCaseColour = '#0A0000FF'
-    _DefaultWorstCaseColour = '#0AFF0000'
-    _DefaultBestCaseColour = '#0A00FF00'
-
     _AverageCaseKey = '/AverageCaseColour'
     _WorstCaseKey = '/WorstCaseColour'
     _BestCaseKey = '/BestCaseColour'
@@ -644,19 +640,19 @@ class OutcomeColoursConfigItem(ConfigItem):
         averageCaseColour = self.loadConfigSetting(
             settings=settings,
             key=self._section + OutcomeColoursConfigItem._AverageCaseKey,
-            default=OutcomeColoursConfigItem._DefaultAverageCaseColour,
+            default=self._default.colour(logic.RollOutcome.AverageCase),
             type=str)
 
         worstCaseColour = self.loadConfigSetting(
             settings=settings,
             key=self._section + OutcomeColoursConfigItem._WorstCaseKey,
-            default=OutcomeColoursConfigItem._DefaultWorstCaseColour,
+            default=self._default.colour(logic.RollOutcome.WorstCase),
             type=str)
 
         bestCaseColour = self.loadConfigSetting(
             settings=settings,
             key=self._section + OutcomeColoursConfigItem._BestCaseKey,
-            default=OutcomeColoursConfigItem._DefaultBestCaseColour,
+            default=self._default.colour(logic.RollOutcome.BestCase),
             type=str)
 
         self._currentValue = self._futureValue = app.OutcomeColours(
