@@ -479,13 +479,6 @@ class MapOptionsConfigItem(ConfigItem):
                 option in self._futureValue)
 
 class RulesConfigItem(ConfigItem):
-    _DefaultSystem = traveller.RuleSystem.MGT2022
-    _DefaultClassAFuelType = traveller.StarPortFuelType.AllTypes
-    _DefaultClassBFuelType = traveller.StarPortFuelType.AllTypes
-    _DefaultClassCFuelType = traveller.StarPortFuelType.UnrefinedOnly
-    _DefaultClassDFuelType = traveller.StarPortFuelType.UnrefinedOnly
-    _DefaultClassEFuelType = traveller.StarPortFuelType.NoFuel
-
     _RuleSystemKey = '/Rules' # NOTE: This name isn't ideal but it is what it is for backwards compatibility
     _ClassAFuelTypeKey = '/ClassAFuelTypeRule'
     _ClassBFuelTypeKey = '/ClassBFuelTypeRule'
@@ -497,17 +490,13 @@ class RulesConfigItem(ConfigItem):
             self,
             option: ConfigOption,
             section: str,
-            restart: bool
+            restart: bool,
+            default: traveller.Rules
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
-        self._currentValue = self._futureValue = traveller.Rules(
-            system=RulesConfigItem._DefaultSystem,
-            classAStarPortFuelType=RulesConfigItem._DefaultClassAFuelType,
-            classBStarPortFuelType=RulesConfigItem._DefaultClassBFuelType,
-            classCStarPortFuelType=RulesConfigItem._DefaultClassCFuelType,
-            classDStarPortFuelType=RulesConfigItem._DefaultClassDFuelType,
-            classEStarPortFuelType=RulesConfigItem._DefaultClassEFuelType)
+        self._default = traveller.Rules(default)
+        self._currentValue = self._futureValue = self._default
 
     def value(self, futureValue: bool = False) -> typing.Any:
         return traveller.Rules(self._futureValue if futureValue else self._currentValue)
@@ -534,7 +523,7 @@ class RulesConfigItem(ConfigItem):
         system = \
             traveller.RuleSystem.__members__[system] \
             if system in traveller.RuleSystem.__members__ else \
-            RulesConfigItem._DefaultSystem
+            self._default.system()
 
         classAFuelType = self.loadConfigSetting(
             settings=settings,
@@ -544,7 +533,7 @@ class RulesConfigItem(ConfigItem):
         classAFuelType = \
             traveller.StarPortFuelType.__members__[classAFuelType] \
             if classAFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesConfigItem._DefaultClassAFuelType
+            self._default.starPortFuelType(code='A')
 
         classBFuelType = self.loadConfigSetting(
             settings=settings,
@@ -554,7 +543,7 @@ class RulesConfigItem(ConfigItem):
         classBFuelType = \
             traveller.StarPortFuelType.__members__[classBFuelType] \
             if classBFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesConfigItem._DefaultClassBFuelType
+            self._default.starPortFuelType(code='B')
 
         classCFuelType = self.loadConfigSetting(
             settings=settings,
@@ -564,7 +553,7 @@ class RulesConfigItem(ConfigItem):
         classCFuelType = \
             traveller.StarPortFuelType.__members__[classCFuelType] \
             if classCFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesConfigItem._DefaultClassCFuelType
+            self._default.starPortFuelType(code='C')
 
         classDFuelType = self.loadConfigSetting(
             settings=settings,
@@ -574,7 +563,7 @@ class RulesConfigItem(ConfigItem):
         classDFuelType = \
             traveller.StarPortFuelType.__members__[classDFuelType] \
             if classDFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesConfigItem._DefaultClassDFuelType
+            self._default.starPortFuelType(code='D')
 
         classEFuelType = self.loadConfigSetting(
             settings=settings,
@@ -584,7 +573,7 @@ class RulesConfigItem(ConfigItem):
         classEFuelType = \
             traveller.StarPortFuelType.__members__[classEFuelType] \
             if classEFuelType in traveller.StarPortFuelType.__members__ else \
-            RulesConfigItem._DefaultClassEFuelType
+            self._default.starPortFuelType(code='E')
 
         self._currentValue = self._futureValue = traveller.Rules(
             system=system,
@@ -627,8 +616,8 @@ class OutcomeColoursConfigItem(ConfigItem):
             self,
             option: ConfigOption,
             section: str,
-            default: app.OutcomeColours,
-            restart: bool
+            restart: bool,
+            default: app.OutcomeColours
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
@@ -1184,6 +1173,13 @@ class Config(QtCore.QObject):
         self._addConfigItem(RulesConfigItem(
             option=ConfigOption.Rules,
             section='Game',
+            default=traveller.Rules(
+                system=traveller.RuleSystem.MGT2022,
+                classAStarPortFuelType=traveller.StarPortFuelType.AllTypes,
+                classBStarPortFuelType=traveller.StarPortFuelType.AllTypes,
+                classCStarPortFuelType=traveller.StarPortFuelType.UnrefinedOnly,
+                classDStarPortFuelType=traveller.StarPortFuelType.UnrefinedOnly,
+                classEStarPortFuelType=traveller.StarPortFuelType.NoFuel),
             restart=False))
         self._addConfigItem(IntConfigItem(
             option=ConfigOption.PlayerBrokerDM,
