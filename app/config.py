@@ -1223,7 +1223,7 @@ class Config(QtCore.QObject):
             option=ConfigOption.ShipFuelPerParsec,
             key='Game/ShipFuelPerParsec',
             restart=False,
-            # NOTE: Setting the default like this assumes the ShitTonnage option
+            # NOTE: Setting the default like this assumes the ShipTonnage option
             # has already been added
             default=self.value(option=ConfigOption.ShipTonnage) * 0.1, # 10% of ship tonnage
             # NOTE: The min value is pretty arbitrary, it needs to allow the user to
