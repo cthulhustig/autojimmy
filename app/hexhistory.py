@@ -7,11 +7,7 @@ import typing
 from PyQt5 import QtCore
 
 class HexHistory(object):
-    # NOTE: This class uses a file called recentworlds.ini even though it can
-    # contain hexes that don't contain worlds. This is for legacy reasons as
-    # the history feature was added before I added for support for dead space
-    # routing
-    _SearchFileName = 'recentworlds.ini'
+    _SearchFileName = 'hexhistory.ini'
     _MaxCount = 50
 
     # Based on the default list Traveller Map shows in a drop down if you click
