@@ -160,7 +160,18 @@ class SimulatorWindow(gui.WindowWidget):
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
+
         super().firstShowEvent(e)
+
+        # Center the map on the start hex if one is selected. This must be done
+        # after the base firstShowEvent is called as it loads the window
+        # settings including the previously selected start world
+        currentHex = self._startWorldWidget.selectedHex()
+        if currentHex:
+            self._mapWidget.centerOnHex(
+                hex=currentHex,
+                 # Immediate to prevent ugly scrolling from current map position
+                immediate=True)
 
     def loadSettings(self) -> None:
         super().loadSettings()
