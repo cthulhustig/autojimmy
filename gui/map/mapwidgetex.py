@@ -1904,15 +1904,18 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         return True
 
-    def selectionFillColour(self) -> None:
+    def selectionFillColour(self) -> str:
         return MapWidgetEx._SelectionFillDarkStyleColour \
             if travellermap.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionFillLightStyleColour
 
-    def selectionOutlineColour(self) -> None:
+    def selectionOutlineColour(self) -> str:
         return MapWidgetEx._SelectionOutlineDarkStyleColour \
             if travellermap.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionOutlineLightStyleColour
+
+    def selectionOutlineWidth(self) -> int:
+        return MapWidgetEx._SelectionOutlineWidth
 
     def _handleLeftClick(
             self,
@@ -2121,7 +2124,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self._selectionOutlineHandle = self.createHexBordersOverlay(
                 hexes=self._selectedHexes.keys(),
                 lineColour=self.selectionOutlineColour(),
-                lineWidth=MapWidgetEx._SelectionOutlineWidth)
+                lineWidth=MapWidgetEx.selectionOutlineWidth())
 
     def _recreateSelectionOverlays(self):
         for overlayHandle in self._selectedHexes.values():

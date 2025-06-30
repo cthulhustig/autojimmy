@@ -257,7 +257,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,
-                lineWidth=gui.MapWidgetEx._SelectionOutlineWidth)
+                lineWidth=gui.MapWidgetEx.selectionOutlineWidth())
             self._overlays.append(handle)
 
         self._okButton.setDisabled(not self._selectedHexes)
