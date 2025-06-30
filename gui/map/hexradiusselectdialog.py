@@ -217,6 +217,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             searchRadius = self.searchRadius()
             selectionColour = self._mapWidget.selectionFillColour()
             radiusColour = self._mapWidget.selectionOutlineColour()
+            lineWidth = self._mapWidget.selectionOutlineWidth()
 
             includeDeadSpace = not self._includeDeadSpaceCheckBox.isHidden() and \
                 self._includeDeadSpaceCheckBox.isChecked()
@@ -257,7 +258,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,
-                lineWidth=gui.MapWidgetEx.selectionOutlineWidth())
+                lineWidth=lineWidth)
             self._overlays.append(handle)
 
         self._okButton.setDisabled(not self._selectedHexes)

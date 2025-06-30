@@ -2124,7 +2124,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self._selectionOutlineHandle = self.createHexBordersOverlay(
                 hexes=self._selectedHexes.keys(),
                 lineColour=self.selectionOutlineColour(),
-                lineWidth=MapWidgetEx.selectionOutlineWidth())
+                lineWidth=self.selectionOutlineWidth())
 
     def _recreateSelectionOverlays(self):
         for overlayHandle in self._selectedHexes.values():
