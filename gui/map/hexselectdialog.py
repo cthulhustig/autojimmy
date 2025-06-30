@@ -64,9 +64,11 @@ class HexSelectDialog(gui.DialogEx):
         self.resize(640, 480)
         self.showMaximizeButton()
 
-        # Load settings now rather than in loadSettings so code that created
-        # the dialog can specify the state without it being overwritten on
-        # first show
+        # Load settings at initialisation rather than in loadSettings so the code
+        # that created the dialog can specify it's own settings rather than using
+        # the stored ones without having to create a derived class. If it was done
+        # in loadSettings any settings the user applied after constructing the
+        # dialog would be overwritten when exec was called and the dialog was shown.
         self._settings.beginGroup(self._configSection)
         storedValue = gui.safeLoadSetting(settings=self._settings, key='MapWidgetState', type=QtCore.QByteArray)
         if storedValue:
