@@ -101,16 +101,6 @@ class HexSelectDialog(gui.DialogEx):
             ) -> None:
         self._mapWidget.selectHexes(hexes=hexes)
 
-    def centerOnHex(
-            self,
-            hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64
-            ) -> None:
-        self._mapWidget.centerOnHex(
-            hex=hex,
-            linearScale=linearScale,
-            immediate=self.isHidden())
-
     def clearSelectedHexes(self) -> None:
         self._mapWidget.clearSelectedHexes()
 
@@ -137,10 +127,11 @@ class HexSelectDialog(gui.DialogEx):
     def firstShowEvent(self, e):
         super().firstShowEvent(e)
 
+        # Center the map on the current selection. This is done here as the
+        # zoom is calculated based on the current size of the map widget so
+        # it needs to be done after the initial size has been calculated.
         selection = self.selectedHexes()
         if selection:
-            # The different handling for single selection is to avoid
-            # zooming to far in
             if self._mapWidget.selectionMode() is gui.MapWidgetEx.SelectionMode.SingleSelect:
                 self._mapWidget.centerOnHex(
                     hex=selection[0],
