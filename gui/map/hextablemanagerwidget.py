@@ -184,9 +184,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         return list(self._mapStyle)
 
     def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return
-        self._mapOptions = set(options)
+        self._mapOptions = options
 
     def mapRendering(self) -> app.MapRendering:
         return self._mapRendering

@@ -58,7 +58,7 @@ class _CustomTextEdit(gui.TextEditEx):
         self._updateContent()
 
     def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
-        options = set(options)
+        options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return
 
