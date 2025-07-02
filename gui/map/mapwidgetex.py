@@ -549,7 +549,7 @@ class _LegendWidget(QtWidgets.QWidget):
         self.adjustSize()
 
     def setStyle(self, style: travellermap.Style) -> None:
-        if style is not self._style:
+        if style is self._style:
             return
         self._style = style
         self.syncContent()
