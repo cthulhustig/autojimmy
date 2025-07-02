@@ -1039,7 +1039,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self.update() # Force redraw
 
     def rendering(self) -> app.MapRendering:
-        return self._renderer
+        return self._rendering
 
     def setRendering(self, rendering: app.MapRendering) -> None:
         if rendering == self._rendering:
