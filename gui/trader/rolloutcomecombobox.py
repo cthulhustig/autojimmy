@@ -24,10 +24,10 @@ class RollOutcomeComboBox(QtWidgets.QComboBox):
         if value:
             self.setCurrentCase(value)
 
-    def currentCase(self) -> logic.RefuellingStrategy:
+    def currentCase(self) -> logic.RollOutcome:
         return self.currentData(QtCore.Qt.ItemDataRole.UserRole)
 
-    def setCurrentCase(self, rollOutcome: logic.RefuellingStrategy) -> None:
+    def setCurrentCase(self, rollOutcome: logic.RollOutcome) -> None:
         for index in range(self.count()):
             itemRollOutcome = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
             if rollOutcome == itemRollOutcome:
