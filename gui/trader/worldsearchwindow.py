@@ -254,10 +254,10 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def setMapAnimations(self, enabled: bool) -> None:
         self._hexWidget.setMapAnimations(enabled=enabled)
 
-    def setWorldTagging(self, tagging: logic.WorldTagging) -> None:
+    def setWorldTagging(self, tagging: typing.Optional[logic.WorldTagging]) -> None:
         self._hexWidget.setWorldTagging(tagging=tagging)
 
-    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+    def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
         self._hexWidget.setTaggingColours(colours=colours)
 
     def centerHex(self) -> typing.Optional[travellermap.HexPosition]:

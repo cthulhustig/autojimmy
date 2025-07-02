@@ -56,10 +56,16 @@ class HexTooltipProvider(object):
     def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         self._mapOptions = set(options)
 
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
     def setWorldTagging(self, tagging: typing.Optional[logic.WorldTagging]) -> None:
         self._worldTagging = logic.WorldTagging(tagging) if tagging else None
 
-    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
         self._taggingColours = app.TaggingColours(colours) if colours else None
 
     def tooltip(self, hex: travellermap.HexPosition) -> str:
