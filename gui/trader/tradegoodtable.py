@@ -333,7 +333,7 @@ class TradeGoodTable(gui.ListTable):
             else:
                 currentGoods.add(tradeGood)
 
-        # Add rows for goods new goods. Sorting is turned off then
+        # Add rows for new goods. Sorting is turned off then
         # re-enabled at the end so it's only performed once
         sortingEnabled = self.isSortingEnabled()
         self.setSortingEnabled(False)
