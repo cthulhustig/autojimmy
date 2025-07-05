@@ -717,7 +717,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             option=app.ConfigOption.ShipFuelCapacity,
             value=fuelCapacity)
 
-    def _shipCurrentFuelChanged(self, currentFuel: int) -> None:
+    def _shipCurrentFuelChanged(self, currentFuel: float) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.ShipCurrentFuel,
             value=currentFuel)
