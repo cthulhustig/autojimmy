@@ -919,8 +919,7 @@ class WorldSearchWindow(gui.WindowWidget):
                 text=f'The number of search results has been limited to {self._MaxSearchResults}',
                 stateKey='WorldSearchResultCountCapped')
 
-        for world in foundWorlds:
-            self._worldTable.addHex(hex=world.hex())
+        self._worldTable.addHexes(hexes=[world.hex() for world in foundWorlds])
         self._resultsCountLabel.setText(common.formatNumber(len(foundWorlds)))
 
         self._showWorldsOnMap(
