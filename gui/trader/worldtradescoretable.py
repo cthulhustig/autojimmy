@@ -133,14 +133,18 @@ class WorldTradeScoreTable(gui.HexTable):
                 tableItem = None
                 if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
                         columnType == WorldTradeScoreTableColumnType.SaleScore:
-                    tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
-                    if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-                        tradeScore = tradeScore.totalPurchaseScore()
+                    if world:
+                        tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
+                        if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
+                            tradeScore = tradeScore.totalPurchaseScore()
+                        else:
+                            tradeScore = tradeScore.totalSaleScore()
+                        tableItem = gui.FormattedNumberTableWidgetItem(
+                            value=tradeScore,
+                            alwaysIncludeSign=True)
                     else:
-                        tradeScore = tradeScore.totalSaleScore()
-                    tableItem = gui.FormattedNumberTableWidgetItem(
-                        value=tradeScore,
-                        alwaysIncludeSign=True)
+                        # Dead space has no trade score
+                        tableItem = gui.TableWidgetItemEx()
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
