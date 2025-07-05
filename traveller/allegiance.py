@@ -154,7 +154,9 @@ class AllegianceManager(object):
             self,
             milieu: travellermap.Milieu
             ) -> typing.Iterable[AllegianceCodeInfo]:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
         return milieuData.values()
 
     def allegianceName(
@@ -163,9 +165,11 @@ class AllegianceManager(object):
             code: str,
             sectorName: str
             ) -> typing.Optional[str]:
-        milieuData = self._milieuDataMap[milieu]
-
         if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
             return None
 
         codeInfo = milieuData.get(code)
@@ -179,9 +183,11 @@ class AllegianceManager(object):
             milieu: travellermap.Milieu,
             code: str
             ) -> typing.Optional[str]:
-        milieuData = self._milieuDataMap[milieu]
-
         if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
             return None
 
         codeInfo = milieuData.get(code)
@@ -195,9 +201,11 @@ class AllegianceManager(object):
             milieu: travellermap.Milieu,
             code: str
             ) -> typing.Optional[str]:
-        milieuData = self._milieuDataMap[milieu]
-
         if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
             return None
 
         codeInfo = milieuData.get(code)
@@ -212,9 +220,11 @@ class AllegianceManager(object):
             code: str,
             sectorName: str
             ) -> typing.Optional[str]:
-        milieuData = self._milieuDataMap[milieu]
-
         if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
             return None
 
         codeInfo = milieuData.get(code)
@@ -351,8 +361,10 @@ class AllegianceManager(object):
             basesCode: typing.Optional[str] = None,
             globalName: typing.Optional[str] = None,
             ) -> AllegianceCodeInfo:
-        milieuData = self._milieuDataMap[milieu]
-        codeInfo = milieuData.get(code)
+        milieuData = self._milieuDataMap.get(milieu)
+        codeInfo = None
+        if milieuData:
+            codeInfo = milieuData.get(code)
         if not codeInfo:
             codeInfo = AllegianceCodeInfo(
                 code=code,
