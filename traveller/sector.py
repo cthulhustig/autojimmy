@@ -244,10 +244,10 @@ class Sector(object):
         return self._subsectorIndexMap.get((indexX, indexY))
 
     def subsectors(self) -> typing.Sequence[Subsector]:
-        return list(self._subsectorNameMap.values())
+        return list(self._subsectorIndexMap.values())
 
     def yieldSubsectors(self) -> typing.Generator[Subsector, None, None]:
-        for subsector in self._subsectorNameMap.values():
+        for subsector in self._subsectorIndexMap.values():
             yield subsector
 
     def extent(self) -> typing.Tuple[travellermap.HexPosition, travellermap.HexPosition]:
