@@ -95,14 +95,9 @@ def createHexToolTip(
     if world:
         zone = world.zone()
         if zone:
-            zoneTag = None
-            if zone is traveller.ZoneType.RedZone or zone is traveller.ZoneType.Forbidden:
-                zoneTag = logic.TagLevel.Danger
-            elif zone is traveller.ZoneType.AmberZone or zone is traveller.ZoneType.Unabsorbed:
-                zoneTag = logic.TagLevel.Warning
-
+            tagLevel = worldTagging.calculateZoneTagLevel(world=world) if worldTagging else None
             toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
-                style=formatTaggingStyle(level=zoneTag),
+                style=formatTaggingStyle(level=tagLevel),
                 zone=html.escape(traveller.zoneTypeName(zone)))
 
     refuellingTypes = []
