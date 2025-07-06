@@ -665,7 +665,7 @@ class WorldManager(object):
             includePlaceholders: bool = False
             ) -> typing.Generator[traveller.World, None, None]:
         milieuData = self._milieuDataMap[milieu]
-        for world in milieuData.worldPositionMap.keys():
+        for world in milieuData.worldPositionMap.values():
             if not filterCallback or filterCallback(world):
                 yield world
 
