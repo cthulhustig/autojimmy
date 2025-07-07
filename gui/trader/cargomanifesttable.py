@@ -2,6 +2,7 @@ import app
 import enum
 import gui
 import logic
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -110,9 +111,17 @@ class CargoManifestTable(gui.FrozenColumnListTable):
 
     def __init__(
             self,
+            outcomeColours: app.OutcomeColours,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[ColumnType] = AllColumns
             ) -> None:
         super().__init__()
+
+        self._outcomeColours = app.OutcomeColours(outcomeColours)
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
+        self._hexTooltipProvider = None
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -127,6 +136,39 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                     columnType == self.ColumnType.SaleSector or \
                     columnType == self.ColumnType.SaleSubsector:
                 self.setColumnWidth(column, 100)
+
+    def outcomeColours(self) -> app.OutcomeColours:
+        return app.OutcomeColours(self._outcomeColours)
+
+    def setOutcomeColours(self, colours: app.OutcomeColours) -> None:
+        if colours == self._outcomeColours:
+            return
+        self._outcomeColours = app.OutcomeColours(colours)
+        self._syncContent()
+
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._syncContent()
+
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+        self._syncContent()
 
     def cargoManifest(self, row: int) -> typing.Optional[logic.CargoManifest]:
         tableItem = self.item(row, 0)
@@ -163,6 +205,12 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             return None
         return self.cargoManifest(row)
 
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
+
     def _fillRow(
             self,
             row: int,
@@ -181,12 +229,22 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             cargoCost = cargoManifest.cargoCost()
             logisticsCost = cargoManifest.logisticsCosts()
 
-            purchaseWorldTagColour = app.tagColour(app.calculateWorldTagLevel(purchaseWorld))
-            saleWorldTagColour = app.tagColour(app.calculateWorldTagLevel(saleWorld))
+            purchaseWorldTagColour = saleWorldTagColour = None
+            if self._worldTagging and self._taggingColours:
+                tagLevel = self._worldTagging.calculateWorldTagLevel(purchaseWorld)
+                if tagLevel:
+                    purchaseWorldTagColour = self._taggingColours.colour(level=tagLevel)
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().averageCaseColour())
-            worstCaseColour = QtGui.QColor(app.Config.instance().worstCaseColour())
-            bestCaseColour = QtGui.QColor(app.Config.instance().bestCaseColour())
+                tagLevel = self._worldTagging.calculateWorldTagLevel(saleWorld)
+                if tagLevel:
+                    saleWorldTagColour = self._taggingColours.colour(level=tagLevel)
+
+            averageCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.AverageCase))
+            worstCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.WorstCase))
+            bestCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.BestCase))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -297,17 +355,40 @@ class CargoManifestTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        if columnType == self.ColumnType.PurchaseWorld or \
-                columnType == self.ColumnType.PurchaseSector or \
-                columnType == self.ColumnType.PurchaseSubsector:
+        if columnType == self.ColumnType.PurchaseWorld or columnType == self.ColumnType.PurchaseSector or \
+            columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
-            return gui.createHexToolTip(purchaseWorld)
-        elif columnType == self.ColumnType.SaleWorld or \
-                columnType == self.ColumnType.SaleSector or \
-                columnType == self.ColumnType.SaleSubsector:
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=purchaseWorld.milieu(),
+                    hex=purchaseWorld.hex())
+        elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
+            columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
-            return gui.createHexToolTip(saleWorld)
+            if self._hexTooltipProvider:
+                return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
+            else:
+                return traveller.WorldManager.instance().canonicalHexName(
+                    milieu=saleWorld.milieu(),
+                    hex=saleWorld.hex())
         elif columnType == self.ColumnType.Logistics:
-            return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
+            return gui.createLogisticsToolTip(
+                routeLogistics=cargoManifest.routeLogistics(),
+                worldTagging=self._worldTagging,
+                taggingColours=self._taggingColours)
 
         return None
+
+    def _syncContent(self) -> None:
+        # Disable sorting during sync then re-enable after so sort is
+        # only performed once rather than per row
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for row in range(self.rowCount()):
+                self._fillRow(row=row, cargoManifest=self.cargoManifest(row=row))
+        finally:
+            self.setSortingEnabled(sortingEnabled)

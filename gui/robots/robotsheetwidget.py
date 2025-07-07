@@ -71,7 +71,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
         controlsLayout = QtWidgets.QHBoxLayout()
         controlsLayout.addWidget(self._applySkillModifiersCheckBox)
-        controlsLayout.addSpacing(int(10 * app.Config.instance().interfaceScale()))
+        controlsLayout.addSpacing(int(10 * gui.interfaceScale()))
         controlsLayout.addWidget(self._specialityGroupCountSpinBox)
         controlsLayout.addStretch()
 

@@ -49,16 +49,6 @@ class LoadSectorsJob(StartupJobBase):
         traveller.WorldManager.instance().loadSectors(
             progressCallback=self._handleProgressUpdate)
 
-class LoadPlaceholdersJob(StartupJobBase):
-    def executeJob(self) -> None:
-        traveller.WorldManager.instance().loadPlaceholders(
-            progressCallback=self._handleProgressUpdate)
-
-class CalculateMainsJob(StartupJobBase):
-    def executeJob(self) -> None:
-        traveller.WorldManager.instance().calculateMains(
-            progressCallback=self._handleProgressUpdate)
-
 class LoadRobotsJob(StartupJobBase):
     def executeJob(self) -> None:
         robots.RobotStore.instance().loadRobots(

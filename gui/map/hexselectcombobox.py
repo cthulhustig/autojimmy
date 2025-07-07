@@ -11,17 +11,19 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 def _formatWorldName(world: traveller.World) -> str:
     return world.name(includeSubsector=True)
 
-def _formatHexName(hex: travellermap.HexPosition) -> str:
-    world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+def _formatHexName(
+        milieu: travellermap.Milieu,
+        hex: travellermap.HexPosition
+        ) -> str:
+    world = traveller.WorldManager.instance().worldByPosition(
+        milieu=milieu,
+        hex=hex)
     if world:
         return _formatWorldName(world=world)
 
-    try:
-        sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-        subsector = traveller.WorldManager.instance().subsectorByPosition(hex=hex)
-        return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
-    except:
-        return f'{hex.absoluteX()},{hex.absoluteY()}'
+    sectorHex = traveller.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
+    subsector = traveller.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
+    return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
 
 def _formatWorldHtml(world: traveller.World) -> str:
     return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
@@ -29,18 +31,34 @@ def _formatWorldHtml(world: traveller.World) -> str:
         sectorHex=html.escape(world.sectorHex()),
         uwp=html.escape(world.uwp().string()))
 
-def _formatHexHtml(hex: travellermap.HexPosition) -> str:
-    world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+def _formatHexHtml(
+        milieu: travellermap.Milieu,
+        hex: travellermap.HexPosition
+        ) -> str:
+    world = traveller.WorldManager.instance().worldByPosition(
+        milieu=milieu,
+        hex=hex)
     if world:
         return _formatWorldHtml(world=world)
-    return html.escape(_formatHexName(hex=hex))
+    return html.escape(_formatHexName(milieu=milieu, hex=hex))
 
 # Based on code from here
 # https://stackoverflow.com/questions/21141757/pyqt-different-colors-in-a-single-row-in-a-combobox
 class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            milieu: travellermap.Milieu,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(parent)
+        self._milieu = milieu
         self._document = QtGui.QTextDocument(self)
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        self._milieu = milieu
 
     def paint(
             self,
@@ -51,13 +69,14 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         options = QtWidgets.QStyleOptionViewItem(option)
         self.initStyleOption(options, index)
         if options.widget:
+            assert(isinstance(options.widget, QtWidgets.QWidget))
             style = options.widget.style()
         else:
             style = QtWidgets.QApplication.style()
 
         hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
         if hex:
-            self._document.setHtml(_formatHexHtml(hex=hex))
+            self._document.setHtml(_formatHexHtml(milieu=self._milieu, hex=hex))
         else:
             self._document.clear()
 
@@ -85,7 +104,7 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
         if not hex:
             return super().sizeHint(option, index)
-        self._document.setHtml(_formatHexHtml(hex=hex))
+        self._document.setHtml(_formatHexHtml(milieu=self._milieu, hex=hex))
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
@@ -104,9 +123,14 @@ class HexSelectComboBox(gui.ComboBoxEx):
     # correctly
     _StateVersion = '_WorldSearchComboBox_v1'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            milieu: travellermap.Milieu,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ):
+        super().__init__(parent)
 
+        self._milieu = milieu
         self._enableDeadSpaceSelection = False
         self._selectedHex = None
 
@@ -114,19 +138,49 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self._completerModel = None
         self._completerPopupDelegate = None
 
-        self._enableWorldToolTips = False
+        self._hexTooltipProvider = None
 
         self._document = QtGui.QTextDocument(self)
+
+        self._itemDelegate = _ListItemDelegate(milieu=self._milieu)
 
         self.setEditable(True)
         self.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
         self.setCompleter(self._completer)
-        self.setItemDelegate(_ListItemDelegate())
+        self.setItemDelegate(self._itemDelegate)
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.installEventFilter(self)
         self.editTextChanged.connect(self._updateCompleter)
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._itemDelegate.setMilieu(milieu=self._milieu)
+
+        if self._completerPopupDelegate:
+            self._completerPopupDelegate.setMilieu(milieu=self._milieu)
+
+        selectedHex = self._selectedHex
+        if selectedHex and not self._enableDeadSpaceSelection:
+            # Dead space selection is not enabled so clear the currently selected
+            # hex if there isn't a world at that location
+            world = traveller.WorldManager.instance().worldByPosition(
+                milieu=self._milieu,
+                hex=selectedHex)
+            if not world:
+                selectedHex = None
+
+        # Set the current hex so the text is updated to the new world/hex name.
+        # This will also generate a selected hex changed event if the current
+        # selection has been cleared due to it being dead space
+        self.setCurrentHex(hex=selectedHex)
 
     def currentHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._selectedHex
@@ -136,7 +190,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             hex: typing.Optional[travellermap.HexPosition],
             updateHistory: bool = True
             ) -> None:
-        self.setCurrentText(_formatHexName(hex=hex) if hex else '')
+        self.setCurrentText(_formatHexName(milieu=self._milieu, hex=hex) if hex else '')
         self._updateSelectedHex(
             hex=hex,
             updateHistory=updateHistory)
@@ -147,7 +201,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         if enable:
             self._completerModel = QtGui.QStandardItemModel()
-            self._completerPopupDelegate = _ListItemDelegate()
+            self._completerPopupDelegate = _ListItemDelegate(milieu=self._milieu)
 
             self._completer = QtWidgets.QCompleter()
             self._completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
@@ -167,9 +221,6 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completerModel = None
             self._completerPopupDelegate = None
 
-    def enableWorldToolTips(self, enabled: bool) -> None:
-        self._enableWorldToolTips = enabled
-
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._enableDeadSpaceSelection = enable
 
@@ -177,11 +228,21 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # Dead space selection has been disabled so clear the current selection
             # if it's a dead space hex
             hex = self.currentHex()
-            if hex and not traveller.WorldManager.instance().worldByPosition(hex=hex):
-                self.setCurrentHex(hex=None)
+            if hex:
+                world = traveller.WorldManager.instance().worldByPosition(
+                    milieu=self._milieu,
+                    hex=hex)
+                if not world:
+                    self.setCurrentHex(hex=None)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._enableDeadSpaceSelection
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTooltipProvider = provider
 
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self:
@@ -213,7 +274,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 if self._completer and event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
                     hex = self.currentHex()
                     if hex:
-                        newText = _formatHexName(hex)
+                        newText = _formatHexName(milieu=self._milieu, hex=hex)
                         if newText != self.currentText():
                             self.setCurrentText(newText)
                     else:
@@ -228,8 +289,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
             if event.type() == QtCore.QEvent.Type.ToolTip:
                 assert(isinstance(event, QtGui.QHelpEvent))
                 toolTip = ''
-                if self._enableWorldToolTips and self._selectedHex:
-                    toolTip = gui.createHexToolTip(hex=self._selectedHex)
+                if self._hexTooltipProvider and self._selectedHex:
+                    toolTip = self._hexTooltipProvider.tooltip(hex=self._selectedHex)
                 if toolTip != self.toolTip():
                     self.setToolTip(toolTip)
 
@@ -294,14 +355,17 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self.clear()
 
             for hex in app.HexHistory.instance().hexes():
-                if not self._enableDeadSpaceSelection and \
-                        not traveller.WorldManager.instance().worldByPosition(hex):
-                    # Ignore dead space in history
-                    continue
+                if not self._enableDeadSpaceSelection:
+                    world = traveller.WorldManager.instance().worldByPosition(
+                        milieu=self._milieu,
+                        hex=hex)
+                    if not world:
+                        # Ignore dead space in history
+                        continue
 
-                self.addItem(_formatHexName(hex=hex), hex)
+                self.addItem(_formatHexName(milieu=self._milieu, hex=hex), hex)
 
-                html = _formatHexHtml(hex=hex)
+                html = _formatHexHtml(milieu=self._milieu, hex=hex)
                 itemWidth = self._calculateIdealHtmlWidth(html)
                 if itemWidth > contentWidth:
                     contentWidth = itemWidth
@@ -344,14 +408,14 @@ class HexSelectComboBox(gui.ComboBoxEx):
             modelIndex = self._completerModel.index(index, 0)
             self._completerModel.setData(
                 modelIndex,
-                _formatHexName(hex=hex),
+                _formatHexName(milieu=self._milieu, hex=hex),
                 QtCore.Qt.ItemDataRole.DisplayRole)
             self._completerModel.setData(
                 modelIndex,
                 hex,
                 QtCore.Qt.ItemDataRole.UserRole)
 
-            html = _formatHexHtml(hex=hex)
+            html = _formatHexHtml(milieu=self._milieu, hex=hex)
             idealWidth = self._calculateIdealHtmlWidth(html)
             if idealWidth > contentWidth:
                 contentWidth = idealWidth
@@ -465,6 +529,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # the completer should be done on the sorted list.
             try:
                 worlds = traveller.WorldManager.instance().searchForWorlds(
+                    milieu=self._milieu,
                     searchString=searchString)
                 for world in worlds:
                     matches.append(world.hex())
@@ -477,6 +542,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             if self._enableDeadSpaceSelection:
                 try:
                     hex = traveller.WorldManager.instance().stringToPosition(
+                        milieu=self._milieu,
                         string=searchString)
                     isDuplicate = False
                     for other in matches:

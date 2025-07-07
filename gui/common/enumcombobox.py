@@ -5,6 +5,8 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class EnumComboBox(QtWidgets.QComboBox):
+    currentEnumChanged = QtCore.pyqtSignal(object) # Selected enum or null if no selection
+
     _StateVersion = 'EnumComboBox_v1'
 
     def __init__(
@@ -27,6 +29,8 @@ class EnumComboBox(QtWidgets.QComboBox):
             isOptional=isOptional)
 
         self.setCurrentEnum(value)
+
+        self.currentIndexChanged.connect(self._currentIndexChanged)
 
     def setEnumType(
             self,
@@ -101,3 +105,6 @@ class EnumComboBox(QtWidgets.QComboBox):
             return False
         self.setCurrentEnum(self._type.__members__[name] if name else None)
         return True
+
+    def _currentIndexChanged(self, index: int) -> None:
+        self.currentEnumChanged.emit(self.currentEnum())

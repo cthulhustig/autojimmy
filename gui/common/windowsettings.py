@@ -6,6 +6,6 @@ _CachedWindowSettings = None
 def globalWindowSettings():
     global _CachedWindowSettings
     if not _CachedWindowSettings:
-        filePath = os.path.join(app.Config.appDir(), 'windows.ini')
+        filePath = os.path.join(app.Config.instance().appDir(), 'windows.ini')
         _CachedWindowSettings = QtCore.QSettings(filePath, QtCore.QSettings.Format.IniFormat)
     return _CachedWindowSettings

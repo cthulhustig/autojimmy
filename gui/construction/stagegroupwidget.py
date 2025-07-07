@@ -738,7 +738,7 @@ class _StageWidget(QtWidgets.QWidget):
 
         self._layout = QtWidgets.QVBoxLayout()
         self._layout.setSpacing(
-            int(_StageWidget._RowSpacing * app.Config.instance().interfaceScale()))
+            int(_StageWidget._RowSpacing * gui.interfaceScale()))
         self._layout.setContentsMargins(0, 0, 0, 0)
         if self._dynamic:
             buttonLayout = QtWidgets.QHBoxLayout()

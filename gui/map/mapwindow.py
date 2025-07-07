@@ -1,5 +1,5 @@
+import app
 import gui
-import logging
 import logic
 import travellermap
 import typing
@@ -10,14 +10,33 @@ class MapWindow(gui.WindowWidget):
         super().__init__(
             title='Universe Map',
             configSection='MapWindow')
-        self._mapWidget = gui.MapWidgetEx()
 
-        self._importJumpRouteButton = QtWidgets.QPushButton('Import Jump Route...')
-        self._importJumpRouteButton.clicked.connect(self._importJumpRoute)
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
+
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            rules=rules,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._mapWidget)
-        windowLayout.addWidget(self._importJumpRouteButton)
         self.resize(640, 480)
         self.setLayout(windowLayout)
 
@@ -103,24 +122,57 @@ class MapWindow(gui.WindowWidget):
 
         super().saveSettings()
 
-    def  _importJumpRoute(self) -> None:
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+    def _appConfigChanged(
             self,
-            'Open File',
-            QtCore.QDir.homePath(),
-            'JSON (*.json)')
-        if not path:
-            return
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._mapWidget.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._mapWidget.setAnimated(animated=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._mapWidget.setTaggingColours(colours=newValue)
 
-        try:
-            jumpRoute = logic.readJumpRoute(path)
-        except Exception as ex:
-            message = f'Failed to import jump route from "{path}"'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapStyle,
+            value=style)
 
-        self.setJumpRoute(jumpRoute=jumpRoute)
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)

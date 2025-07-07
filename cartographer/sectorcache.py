@@ -108,19 +108,19 @@ class SectorCache(object):
         self._graphics = graphics
         self._styleCache = styleCache
         self._worldsCache: typing.Dict[
-            typing.Union[int, int], # Sector x/y
+            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
             cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
-            typing.Union[int, int], # Sector x/y
+            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
             typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
-            typing.Union[int, int], # Sector x/y
+            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
             typing.List[SectorPath]
         ] = {}
         self._routeCache: typing.Dict[
-            typing.Union[int, int], # Sector x/y
+            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
             typing.List[SectorLines]
         ] = {}
         self._clipCache: typing.Mapping[
@@ -130,20 +130,23 @@ class SectorCache(object):
 
     def isotropicWorldPoints(
             self,
+            milieu: travellermap.Milieu,
             x: int,
             y: int
             ) -> typing.Optional[cartographer.AbstractPointList]:
-        key = (x, y)
+        key = (milieu, x, y)
         worlds = self._worldsCache.get(key)
         if worlds is not None:
             return worlds
 
-        sector = traveller.WorldManager.instance().sectorBySectorIndex(index=key)
+        pos = (x, y)
+        sector = traveller.WorldManager.instance().sectorBySectorIndex(
+            milieu=milieu,
+            index=pos,
+            includePlaceholders=True)
         if not sector:
-            sector = traveller.WorldManager.instance().placeholderSectorBySectorIndex(index=key)
-            if not sector:
-                # Don't cache the fact the sector doesn't exist to avoid memory bloat
-                return None
+            # Don't cache the fact the sector doesn't exist to avoid memory bloat
+            return None
 
         points = []
         for world in sector:
@@ -160,15 +163,17 @@ class SectorCache(object):
 
     def borderPaths(
             self,
+            milieu: travellermap.Milieu,
             x: int,
             y: int
             ) -> typing.Optional[typing.List[SectorPath]]:
-        key = (x, y)
+        key = (milieu, x, y)
         borders = self._borderCache.get(key)
         if borders is not None:
             return borders
 
         sector = traveller.WorldManager.instance().sectorByPosition(
+            milieu=milieu,
             hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
@@ -182,15 +187,17 @@ class SectorCache(object):
 
     def regionPaths(
             self,
+            milieu: travellermap.Milieu,
             x: int,
             y: int
             ) -> typing.Optional[typing.List[SectorPath]]:
-        key = (x, y)
+        key = (milieu, x, y)
         regions = self._regionCache.get(key)
         if regions is not None:
             return regions
 
         sector = traveller.WorldManager.instance().sectorByPosition(
+            milieu=milieu,
             hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
@@ -204,15 +211,17 @@ class SectorCache(object):
 
     def routeLines(
             self,
+            milieu: travellermap.Milieu,
             x: int,
             y: int
             ) -> typing.Optional[typing.List[SectorLines]]:
-        key = (x, y)
+        key = (milieu, x, y)
         routes = self._routeCache.get(key)
         if routes is not None:
             return routes
 
         sector = traveller.WorldManager.instance().sectorByPosition(
+            milieu=milieu,
             hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat

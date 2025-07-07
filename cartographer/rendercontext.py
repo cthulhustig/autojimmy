@@ -1,6 +1,5 @@
 import common
 import enum
-import logging
 import cartographer
 import math
 import traveller
@@ -69,6 +68,7 @@ class RenderContext(object):
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
+            milieu: travellermap.Milieu,
             style: travellermap.Style,
             options: cartographer.RenderOptions,
             imageCache: cartographer.ImageCache,
@@ -83,6 +83,7 @@ class RenderContext(object):
         self._outputPixelX = outputPixelX
         self._outputPixelY = outputPixelY
         self._options = options
+        self._milieu = milieu
         self._styleSheet = cartographer.StyleSheet(
             scale=self._scale,
             options=self._options,
@@ -103,7 +104,8 @@ class RenderContext(object):
             capacity=RenderContext._GridCacheCapacity)
         self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
-        self._selector = cartographer.RectSelector()
+        self._selector = cartographer.RectSelector(
+            milieu=self._milieu)
         self._worldViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
@@ -127,6 +129,14 @@ class RenderContext(object):
 
         self._createLayers()
         self._updateView()
+
+    def view(
+            self
+            ) -> typing.Tuple[
+                float, float, # World center x/y
+                float, # Scale (linear)
+                int, int]: # Pixel output x/y
+        return (self._worldCenterX, self._worldCenterY, self._scale, self._outputPixelX, self._outputPixelY)
 
     def setView(
             self,
@@ -153,6 +163,16 @@ class RenderContext(object):
 
         if scaleUpdated:
             self._updateLayerOrder()
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(
+            self,
+            milieu: travellermap.Milieu
+            ) -> None:
+        self._milieu = milieu
+        self._selector.setMilieu(milieu=milieu)
 
     def style(self) -> travellermap.Style:
         return self._styleSheet.style
@@ -368,9 +388,9 @@ class RenderContext(object):
         finishX = math.ceil(self._worldViewRect.right() / chunkParsecs)
         finishY = math.ceil(self._worldViewRect.bottom() / chunkParsecs)
 
-        r, g, b, _ = travellermap.parseHtmlColour(
+        r, g, b, _ = common.parseHtmlColour(
             self._styleSheet.pseudoRandomStars.fillBrush.colour())
-        colour = travellermap.formatHtmlColour(
+        colour = common.formatHtmlColour(
             r, g, b,
             alpha=int(255 / self._starfieldCache.intensitySteps()))
         pen = self._graphics.createPen(
@@ -598,7 +618,11 @@ class RenderContext(object):
             baseWidth = self._styleSheet.microRoutes.linePen.width()
 
             for sector in self._selector.sectors():
-                for route in self._sectorCache.routeLines(x=sector.x(), y=sector.y()):
+                sectorRoutes = self._sectorCache.routeLines(
+                    milieu=self._milieu,
+                    x=sector.x(),
+                    y=sector.y())
+                for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
@@ -634,7 +658,7 @@ class RenderContext(object):
 
                     # Ensure colour is visible
                     if self._styleSheet.grayscale or \
-                            not travellermap.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
+                            not common.noticeableColourDifference(routeColour, self._styleSheet.backgroundBrush.colour()):
                         routeColour = self._styleSheet.microRoutes.linePen.colour() # default
 
                     pen.setColour(routeColour)
@@ -645,7 +669,7 @@ class RenderContext(object):
                         points=route.points(),
                         pen=pen)
 
-    _LabelDefaultColour = travellermap.HtmlColours.TravellerAmber
+    _LabelDefaultColour = common.HtmlColours.TravellerAmber
 
     def _drawMicroLabels(self) -> None:
         if not self._styleSheet.showMicroNames:
@@ -723,7 +747,7 @@ class RenderContext(object):
                         not self._styleSheet.grayscale and \
                         label.colour() and \
                         (label.colour() != RenderContext._LabelDefaultColour) and \
-                        travellermap.noticeableColourDifference(label.colour(), self._styleSheet.backgroundBrush.colour())
+                        common.noticeableColourDifference(label.colour(), self._styleSheet.backgroundBrush.colour())
                     if useLabelColour:
                         brush.setColour(label.colour())
 
@@ -1114,6 +1138,7 @@ class RenderContext(object):
 
                 for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
+                        milieu=self._milieu,
                         x=sector.x(),
                         y=sector.y())
                     if worlds:
@@ -1121,6 +1146,7 @@ class RenderContext(object):
 
                 for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
+                        milieu=self._milieu,
                         x=sector.x(),
                         y=sector.y())
                     if worlds:
@@ -1549,23 +1575,23 @@ class RenderContext(object):
                 if sector.hasTag('Official'):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        colour=travellermap.HtmlColours.TravellerRed))
+                        colour=common.HtmlColours.TravellerRed))
                 elif sector.hasTag('InReview'):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        colour=travellermap.HtmlColours.Orange))
+                        colour=common.HtmlColours.Orange))
                 elif sector.hasTag('Unreviewed'):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        colour=travellermap.HtmlColours.TravellerAmber))
+                        colour=common.HtmlColours.TravellerAmber))
                 elif sector.hasTag('Apocryphal'):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        colour=travellermap.HtmlColours.Magenta))
+                        colour=common.HtmlColours.Magenta))
                 elif sector.hasTag('Preserve'):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
-                        colour=travellermap.HtmlColours.TravellerGreen))
+                        colour=common.HtmlColours.TravellerGreen))
                 else:
                     continue
 
@@ -1815,7 +1841,10 @@ class RenderContext(object):
             if not self._worldViewRect.intersects(sectorClipRect):
                 continue
 
-            sectorRegions = self._sectorCache.regionPaths(x=sector.x(), y=sector.y())
+            sectorRegions = self._sectorCache.regionPaths(
+                milieu=self._milieu,
+                x=sector.x(),
+                y=sector.y())
             regionOutlines: typing.List[cartographer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
@@ -1826,7 +1855,10 @@ class RenderContext(object):
                     if self._worldViewRect.intersects(outlineBounds):
                         regionOutlines.append(outline)
 
-            sectorBorders = self._sectorCache.borderPaths(x=sector.x(), y=sector.y())
+            sectorBorders = self._sectorCache.borderPaths(
+                milieu=self._milieu,
+                x=sector.x(),
+                y=sector.y())
             borderOutlines: typing.List[cartographer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:
@@ -1931,7 +1963,7 @@ class RenderContext(object):
             colour = self._styleSheet.microRoutes.linePen.colour()
 
         if self._styleSheet.grayscale or \
-                not travellermap.noticeableColourDifference(colour, self._styleSheet.backgroundBrush.colour()):
+                not common.noticeableColourDifference(colour, self._styleSheet.backgroundBrush.colour()):
             colour = self._styleSheet.microBorders.linePen.colour()
 
         return colour
@@ -2216,11 +2248,11 @@ class RenderContext(object):
         for star in stellar.yieldStars():
             classification = star.string()
             if classification == 'D':
-                props.append((travellermap.HtmlColours.White, travellermap.HtmlColours.Black, 0.3))
+                props.append((common.HtmlColours.White, common.HtmlColours.Black, 0.3))
             elif classification == 'NS' or classification == 'PSR' or classification == 'BH':
-                props.append((travellermap.HtmlColours.Black, travellermap.HtmlColours.White, 0.8))
+                props.append((common.HtmlColours.Black, common.HtmlColours.White, 0.8))
             elif classification == 'BD':
-                props.append((travellermap.HtmlColours.Brown, travellermap.HtmlColours.Black, 0.3))
+                props.append((common.HtmlColours.Brown, common.HtmlColours.Black, 0.3))
             else:
                 colour, radius = RenderContext._StarPropsMap.get(
                     star.code(element=traveller.Star.Element.SpectralClass),
@@ -2231,10 +2263,10 @@ class RenderContext(object):
                         # The second survey format spec says that some data uses VII to indicate
                         # a white dwarf (i.e. classification D).
                         # https://travellermap.com/doc/secondsurvey
-                        props.append((travellermap.HtmlColours.White, travellermap.HtmlColours.Black, 0.3))
+                        props.append((common.HtmlColours.White, common.HtmlColours.Black, 0.3))
                     else:
                         luminance = RenderContext._StarLuminanceMap.get(luminance, 0)
-                        props.append((colour, travellermap.HtmlColours.Black, radius + luminance))
+                        props.append((colour, common.HtmlColours.Black, radius + luminance))
 
         props.sort(key=lambda p: p[2], reverse=True)
         return props

@@ -68,13 +68,19 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         ColumnType.SetQuantity
     ]
 
-    _ContentVersion = 'v1'
+    # v1: Initial version
+    # v2: Updated cargo record (de)serialization to include rule system
+    # as part of config overhaul that made rules changeable at runtime
+    _ContentVersion = 'v2'
 
     def __init__(
             self,
+            outcomeColours: app.OutcomeColours,
             columns: typing.Iterable[ColumnType] = AllCaseColumns
             ) -> None:
         super().__init__()
+
+        self._outcomeColours = app.OutcomeColours(outcomeColours)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -84,6 +90,15 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         for column, columnType in enumerate(columns):
             if columnType == self.ColumnType.TradeGood:
                 self.setColumnWidth(column, 200)
+
+    def outcomeColours(self) -> app.OutcomeColours:
+        return app.OutcomeColours(self._outcomeColours)
+
+    def setOutcomeColours(self, colours: app.OutcomeColours) -> None:
+        if colours == self._outcomeColours:
+            return
+        self._outcomeColours = app.OutcomeColours(colours)
+        self._syncContent()
 
     def cargoRecord(self, row: int) -> typing.Optional[logic.CargoRecord]:
         tableItem = self.item(row, 0)
@@ -184,14 +199,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         return False
 
     def selectedCargoRecords(self) -> typing.List[logic.CargoRecord]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
         cargoRecords = []
-        for index in selection:
+        for index in self.selectedIndexes():
             if index.column() == 0:
                 cargoRecord = self.cargoRecord(index.row())
-                cargoRecords.append(cargoRecord)
+                if cargoRecord:
+                    cargoRecords.append(cargoRecord)
         return cargoRecords
 
     def saveContent(self) -> QtCore.QByteArray:
@@ -217,9 +230,7 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
         try:
             data = json.loads(stream.readQString())
-            cargoRecords = logic.deserialiseCargoRecordList(
-                rules=app.Config.instance().rules(),
-                data=data)
+            cargoRecords = logic.deserialiseCargoRecordList(data=data)
             for cargoRecord in cargoRecords:
                 self.addCargoRecord(cargoRecord)
         except Exception as ex:
@@ -244,9 +255,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             quantity = cargoRecord.quantity()
             totalPrice = cargoRecord.totalPrice()
 
-            averageCaseColour = QtGui.QColor(app.Config.instance().averageCaseColour())
-            worstCaseColour = QtGui.QColor(app.Config.instance().worstCaseColour())
-            bestCaseColour = QtGui.QColor(app.Config.instance().bestCaseColour())
+            averageCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.AverageCase))
+            worstCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.WorstCase))
+            bestCaseColour = QtGui.QColor(self._outcomeColours.colour(
+                outcome=logic.RollOutcome.BestCase))
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -307,3 +321,15 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         # columns and the table is currently sorted by one of those columns. In this the expectation is
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
+
+    def _syncContent(self) -> None:
+        # Disable sorting during sync then re-enable after so sort is
+        # only performed once rather than per row
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for row in range(self.rowCount()):
+                self._fillRow(row=row, cargoRecord=self.cargoRecord(row=row))
+        finally:
+            self.setSortingEnabled(sortingEnabled)

@@ -33,30 +33,46 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
-        super().__init__(columns=columns)
+        super().__init__(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            columns=columns)
 
-        self._tradeGoods = []
+        self._tradeGoods = set()
         self._tradeScoreMap = {}
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+
+        # Update the trade currently set trade goods, removing any that
+        # aren't for the rule system about to be set. This MUST be done
+        # before passing the rules onto the base class as it will trigger
+        # a recalculation of the trade scores when updating the rows
+        ruleSystem = rules.system()
+        self._tradeGoods = set([tradeGood for tradeGood in self._tradeGoods if tradeGood.ruleSystem() is ruleSystem])
+
+        return super().setRules(rules)
 
     def setTradeGoods(
             self,
             tradeGoods: typing.Iterable[traveller.TradeGood]
             ) -> None:
+        ruleSystem = self._rules.system()
+        tradeGoods = set([tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() is ruleSystem])
+        if tradeGoods == self._tradeGoods:
+            return
+
         self._tradeGoods = tradeGoods
-        self._tradeScoreMap.clear()
-
-        # Disable sorting while updating a row. We don't want any sorting to occur
-        # until all rows have been updated
-        sortingEnabled = self.isSortingEnabled()
-        self.setSortingEnabled(False)
-
-        try:
-            for row in range(self.rowCount()):
-                self._fillRow(row, self.hex(row), self.world(row))
-        finally:
-            self.setSortingEnabled(sortingEnabled)
+        self._syncContent()
 
     def tradeScore(
             self,
@@ -90,15 +106,18 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            hex: travellermap.HexPosition
             ) -> int:
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
+
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
             self._tradeScoreMap[hex] = logic.TradeScore(
-                rules=app.Config.instance().rules(),
                 world=world,
+                ruleSystem=self._rules.system(),
                 tradeGoods=self._tradeGoods)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
@@ -107,14 +126,14 @@ class WorldTradeScoreTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, hex, world)
+            super()._fillRow(row, hex)
 
-            if world:
-                for column in range(self.columnCount()):
-                    columnType = self.columnHeader(column)
-                    tableItem = None
-                    if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
-                            columnType == WorldTradeScoreTableColumnType.SaleScore:
+            for column in range(self.columnCount()):
+                columnType = self.columnHeader(column)
+                tableItem = None
+                if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
+                        columnType == WorldTradeScoreTableColumnType.SaleScore:
+                    if world:
                         tradeScore: logic.TradeScore = self._tradeScoreMap[hex]
                         if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
                             tradeScore = tradeScore.totalPurchaseScore()
@@ -123,17 +142,13 @@ class WorldTradeScoreTable(gui.HexTable):
                         tableItem = gui.FormattedNumberTableWidgetItem(
                             value=tradeScore,
                             alwaysIncludeSign=True)
-                        scoreValue = tradeScore.value()
-                        if scoreValue > 0:
-                            tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Desirable)))
-                        """
-                        elif scoreValue < 0:
-                            tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Warning)))
-                        """
+                    else:
+                        # Dead space has no trade score
+                        tableItem = gui.TableWidgetItemEx()
 
-                    if tableItem:
-                        self.setItem(row, column, tableItem)
-                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
+                if tableItem:
+                    self.setItem(row, column, tableItem)
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted
@@ -145,3 +160,9 @@ class WorldTradeScoreTable(gui.HexTable):
         # columns and the table is currently sorted by one of those columns. In this the expectation is
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
+
+    def _syncContent(self):
+        # Clear the trade score map so the scores will be recalculated when the
+        # underlying table triggers a refill of all rows as part of the sync
+        self._tradeScoreMap.clear()
+        return super()._syncContent()

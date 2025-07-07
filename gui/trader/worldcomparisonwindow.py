@@ -25,21 +25,15 @@ _WelcomeMessage = """
 """.format(name=app.AppName)
 
 class _CustomTradeGoodTable(gui.TradeGoodTable):
-    def __init__(self):
-        super().__init__()
+    def __init__(
+            self,
+            rules: traveller.Rules
+            ) -> None:
+        super().__init__(
+            rules=rules,
+            filterCallback=self._filterTradeGoods)
 
         self.setCheckable(True)
-
-        # Don't include exotics in the table as they're not like other trade goods and don't
-        # affect the trade score
-        tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
-            excludeTradeGoods=[traveller.tradeGoodFromId(
-                rules=app.Config.instance().rules(),
-                tradeGoodId=traveller.TradeGoodIds.Exotics)])
-        for tradeGood in tradeGoods:
-            self.addTradeGood(tradeGood=tradeGood)
-
         self.resizeColumnsToContents()
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -57,6 +51,17 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
         hint = super().minimumSizeHint()
         hint.setWidth(width)
         return hint
+
+    def _filterTradeGoods(
+            self,
+            tradeGood: traveller.TradeGood
+            ) -> bool:
+        # Don't include exotics in the table as they're not like other trade
+        # goods and don't affect the trade score
+        exotics = traveller.tradeGoodFromId(
+            ruleSystem=self._rules.system(),
+            tradeGoodId=traveller.TradeGoodIds.Exotics)
+        return tradeGood is not exotics
 
 class WorldComparisonWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -77,6 +82,8 @@ class WorldComparisonWindow(gui.WindowWidget):
         windowLayout.addWidget(self._leftRightSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -138,7 +145,8 @@ class WorldComparisonWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupTradeGoodsControls(self) -> None:
-        self._tradeGoodTable = _CustomTradeGoodTable()
+        self._tradeGoodTable = _CustomTradeGoodTable(
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         self._tradeGoodTable.itemChanged.connect(self._tradeGoodTableItemChanged)
 
         self._checkAllTradeGoodsButton = QtWidgets.QPushButton()
@@ -165,20 +173,64 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(groupLayout)
 
     def _setupWorldControls(self) -> None:
-        self._worldTable = gui.WorldTradeScoreTable()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        showTooltipImages = app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=milieu,
+            rules=rules,
+            showImages=showTooltipImages,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
+
+        self._worldTable = gui.WorldTradeScoreTable(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._worldManagementWidget = gui.HexTableManagerWidget(
+            milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             allowHexCallback=self._allowWorld,
             hexTable=self._worldTable)
+        self._worldManagementWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
         self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
         self._worldManagementWidget.enableContextMenuEvent(enable=True)
         self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
         self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
 
-        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            rules=rules,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.MultiSelect)
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -274,6 +326,78 @@ class WorldComparisonWindow(gui.WindowWidget):
             for hex in newSelection:
                 if hex not in oldSelection:
                     self._worldManagementWidget.addHex(hex=hex)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._worldManagementWidget.setMilieu(milieu=newValue)
+            self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._tradeGoodTable.setRules(rules=newValue)
+            self._hexTooltipProvider.setRules(rules=newValue)
+            self._worldManagementWidget.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._worldManagementWidget.setMapStyle(style=newValue)
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._worldManagementWidget.setMapOptions(options=newValue)
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._worldManagementWidget.setMapRendering(rendering=newValue)
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._worldManagementWidget.setMapAnimations(enabled=newValue)
+            self._mapWidget.setAnimated(animated=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._worldManagementWidget.setWorldTagging(tagging=newValue)
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._worldManagementWidget.setTaggingColours(colours=newValue)
+            self._mapWidget.setTaggingColours(colours=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
 
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedRow = self._worldManagementWidget.rowAt(y=point.y())
@@ -386,7 +510,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addWorlds(worlds=worlds)
+        infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showWorldsOnMap(
             self,

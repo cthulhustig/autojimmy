@@ -46,6 +46,7 @@ from .map.primitives import *
 from .map.mapgraphics import *
 from .map.thumbnail import *
 from .map.tooltips import *
+from .map.hextooltipprovider import *
 from .map.hexselectcombobox import *
 from .map.localmapwidget import *
 from .map.webmapwidget import *
@@ -58,13 +59,14 @@ from .map.hextable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
 from .trader.tooltips import *
+from .trader.skillspinbox import *
+from .trader.shipcontrols import *
+from .trader.tradercontrols import *
 from .trader.taglevelcombobox import *
-from .trader.probabilitycasecombobox import *
-from .trader.worldlabel import *
-from .trader.localbrokerwidget import *
+from .trader.rolloutcomecombobox import *
 from .trader.tradegoodtable import *
 from .trader.tradegoodquantitydialog import *
-from .trader.tradegoodmultiselectdialog import *
+from .trader.tradegoodselectdialog import *
 from .trader.worldfilterdialog import *
 from .trader.worldfiltertable import *
 from .trader.worldfiltertablemanagerwidget import *
@@ -75,7 +77,6 @@ from .trader.cargomanifesttable import *
 from .trader.waypointtable import *
 from .trader.worldtradescoretable import *
 from .trader.dicerolltable import *
-from .trader.sharedconfigwidgets import *
 from .trader.calculationmodetabbar import *
 from .trader.worldcomparisonwindow import *
 from .trader.worldsearchwindow import *

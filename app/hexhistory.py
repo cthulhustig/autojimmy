@@ -2,34 +2,29 @@ import app
 import logging
 import os
 import threading
-import traveller
 import travellermap
 import typing
 from PyQt5 import QtCore
 
 class HexHistory(object):
-    # NOTE: This class uses a file called recentworlds.ini even though it can
-    # contain hexes that don't contain worlds. This is for legacy reasons as
-    # the history feature was added before I added for support for dead space
-    # routing
-    _SearchFileName = 'recentworlds.ini'
+    _SearchFileName = 'hexhistory.ini'
     _MaxCount = 50
 
     # Based on the default list Traveller Map shows in a drop down if you click
     # on the search edit box when it has no content
     _DefaultSectorHexes = [
-        'Core 0140', # Reference
-        'Core 2118', # Capital
-        'Spinward Marches 1910', # Regina
-        'Vland 1717', # Vland (Vilani Home World)
-        'Solomani Rim 1827', # Terra (Solomani Home World)
-        'Zhodane 2719', # Zhdant (Zhodani Home World)
-        'Provence 2402', # Lair (Vargr Home World)
-        'Dark Nebula 1226', # Kusyu (Aslan Home World)
-        'Ricenden 0827', # Guaran (Hive Home World)
-        'Centrax 2609', # Glea (Hive Capital)
-        'Ruupiin 1315', # Kirur (K'kree Home World)
-        'Daibei 2428' # Girillovitch (Jimmy's Home World)
+        travellermap.HexPosition(absoluteX=0, absoluteY=0), # Reference/Core 0140
+        travellermap.HexPosition(absoluteX=20, absoluteY=-22), # Capital/Core 2118
+        travellermap.HexPosition(absoluteX=-110, absoluteY=-70), # Regina/Spinward Marches 1910
+        travellermap.HexPosition(absoluteX=-16, absoluteY=-63), # Vland/Vland 1717 (Vilani Home World)
+        travellermap.HexPosition(absoluteX=17, absoluteY=107), # Terra/Solomani Rim 1827 (Solomani Home World)
+        travellermap.HexPosition(absoluteX=-198, absoluteY=-101), # Zhdant/Zhodane 2719 (Zhodani Home World)
+        travellermap.HexPosition(absoluteX=-41, absoluteY=-118), # Lair/Provence 2402 (Vargr Home World)
+        travellermap.HexPosition(absoluteX=-53, absoluteY=106), # Kusyu/Dark Nebula 1226 (Aslan Home World)
+        travellermap.HexPosition(absoluteX=167, absoluteY=67), # Guaran/Ricenden 0827 (Hive Home World)
+        travellermap.HexPosition(absoluteX=153, absoluteY=89), # Glea/Centrax 2609 (Hive Capital)
+        travellermap.HexPosition(absoluteX=172, absoluteY=-65), # Kirur/Ruupiin 1315 (K'kree Home World)
+        travellermap.HexPosition(absoluteX=-9, absoluteY=68) # Girillovitch/Daibei 2428 (Jimmy's Home World)
     ]
 
     _instance = None # Singleton instance
@@ -56,13 +51,6 @@ class HexHistory(object):
         return list(HexHistory._history)
 
     def addHex(self, hex: travellermap.HexPosition) -> None:
-        try:
-            traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-        except:
-            # Only hexes that can be converted to sector hex format to be added to the
-            # the history (i.e. ones fall within a known sector).
-            return
-
         if hex in HexHistory._history:
             # Remove the hex from the history so it can be re-added as the first entry
             HexHistory._history.remove(hex)
@@ -79,61 +67,40 @@ class HexHistory(object):
 
     def load(self):
         if not self._settings:
-            filePath = os.path.join(app.Config.appDir(), self._SearchFileName)
+            filePath = os.path.join(app.Config.instance().appDir(), self._SearchFileName)
             self._settings = QtCore.QSettings(filePath, QtCore.QSettings.Format.IniFormat)
 
         HexHistory._history.clear()
         size = self._settings.beginReadArray('RecentWorlds')
-        sectorHexes = []
         for index in range(size):
             self._settings.setArrayIndex(index)
             try:
-                sectorHexes.append(self._settings.value('SectorHex', defaultValue=None, type=str))
+                value: typing.Optional[str] = self._settings.value('Hex', defaultValue=None, type=str)
+                if not value:
+                    raise RuntimeError(f'Empty hex at index {index}')
+                tokens = value.split(':')
+                if len(tokens) != 2:
+                    raise RuntimeError(f'Invalid hex string {value} at {index}')
+                HexHistory._history.append(travellermap.HexPosition(
+                    absoluteX=int(tokens[0]),
+                    absoluteY=int(tokens[1])))
             except TypeError as ex:
                 logging.error(
-                    f'Failed to read SectorHex from "{self._settings.group()}" in "{self._settings.fileName()}"  (value is not a {type.__name__})')
+                    f'Failed to read hex from "{self._settings.group()}" in "{self._settings.fileName()}"  (value is not a {type.__name__})')
             except Exception as ex:
                 logging.error(
-                    f'Failed to read SectorHex from "{self._settings.group()}" in "{self._settings.fileName()}"',
+                    f'Failed to read hex from "{self._settings.group()}" in "{self._settings.fileName()}"',
                     exc_info=ex)
         self._settings.endArray()
 
-        for sectorHex in sectorHexes:
-            try:
-                hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
-                HexHistory._history.append(hex)
-            except Exception as ex:
-                # This can happen if sector data has changed for whatever reason
-                # (e.g. map updates or custom sectors)
-                logging.debug(
-                    f'Failed to resolve sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
-                    exc_info=ex)
-
         if not HexHistory._history:
-            for sectorHex in HexHistory._DefaultSectorHexes:
-                try:
-                    hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
-                    HexHistory._history.append(hex)
-                except Exception as ex:
-                    # This can happen if sector data has changed for whatever reason
-                    # (e.g. map updates or custom sectors)
-                    logging.debug(
-                        f'Failed to resolve default sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
-                        exc_info=ex)
+            HexHistory._history.extend(HexHistory._DefaultSectorHexes)
 
     def save(self):
         self._settings.beginWriteArray('RecentWorlds')
         index = 0
         for hex in HexHistory._history:
-            try:
-                sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-            except Exception as ex:
-                logging.error(
-                    f'Failed to determine sector hex for position {hex} when saving "{self._settings.fileName()}"',
-                    exc_info=ex)
-                continue
-
             self._settings.setArrayIndex(index)
-            self._settings.setValue('SectorHex', sectorHex)
+            self._settings.setValue('Hex', f'{hex.absoluteX()}:{hex.absoluteY()}')
             index += 1
         self._settings.endArray()

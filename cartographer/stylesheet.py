@@ -174,7 +174,7 @@ class StyleSheet(object):
         # Options
 
         self.backgroundBrush = self._graphics.createBrush(
-            colour=travellermap.HtmlColours.Black)
+            colour=common.HtmlColours.Black)
 
         self.showNebulaBackground = False
         self.showGalaxyBackground = False
@@ -517,44 +517,44 @@ class StyleSheet(object):
         routePenWidth = 0.2 if self.scale <= 16 else (0.08 * penScale)
 
         self.capitals.fillBrush = self._graphics.createBrush(
-            colour=travellermap.HtmlColours.Wheat)
+            colour=common.HtmlColours.Wheat)
         self.capitals.textBrush = self._graphics.createBrush(
-            colour=travellermap.HtmlColours.TravellerRed)
+            colour=common.HtmlColours.TravellerRed)
         self.amberZone.visible = self.redZone.visible = True
         self.amberZone.linePen = self._graphics.createPen(
-            colour=travellermap.HtmlColours.TravellerAmber,
+            colour=common.HtmlColours.TravellerAmber,
             width=0.05 * penScale)
         self.redZone.linePen = self._graphics.createPen(
-            colour=travellermap.HtmlColours.TravellerRed,
+            colour=common.HtmlColours.TravellerRed,
             width=0.05 * penScale)
         self.macroBorders.linePen = self._graphics.createPen(
-            colour=travellermap.HtmlColours.TravellerRed,
+            colour=common.HtmlColours.TravellerRed,
             width=borderPenWidth)
         self.macroRoutes.linePen = self._graphics.createPen(
-            colour=travellermap.HtmlColours.White,
+            colour=common.HtmlColours.White,
             width=borderPenWidth,
             style=cartographer.LineStyle.Dash)
         self.microBorders.linePen = self._graphics.createPen(
-            colour=travellermap.HtmlColours.Gray,
+            colour=common.HtmlColours.Gray,
             width=borderPenWidth)
         self.microBorders.textBrush = self._graphics.createBrush(
-            colour=travellermap.HtmlColours.TravellerAmber)
+            colour=common.HtmlColours.TravellerAmber)
         self.microRoutes.linePen = self._graphics.createPen(
-            colour=travellermap.HtmlColours.Gray,
+            colour=common.HtmlColours.Gray,
             width=routePenWidth)
 
         self.worldWater.fillBrush = self._graphics.createBrush(
-            colour=travellermap.HtmlColours.DeepSkyBlue)
+            colour=common.HtmlColours.DeepSkyBlue)
         self.worldWater.linePen = None
         self.worldNoWater.fillBrush = self._graphics.createBrush(
-            colour=travellermap.HtmlColours.White)
+            colour=common.HtmlColours.White)
         self.worldNoWater.linePen = None
 
         gridColour = self._colourScaleInterpolate(
             scale=self.scale,
             minScale=StyleSheet._SectorGridMinScale,
             maxScale=StyleSheet._SectorGridFullScale,
-            colour=travellermap.HtmlColours.Gray)
+            colour=common.HtmlColours.Gray)
         self.parsecGrid.linePen = self._graphics.createPen(
             colour=gridColour,
             width=onePixel)
@@ -597,15 +597,15 @@ class StyleSheet(object):
         self.capitalOverlay.fillBrush = self._graphics.createBrush(
             colour=cartographer.makeAlphaColour(
                 alpha=0x80,
-                colour=travellermap.HtmlColours.TravellerGreen))
+                colour=common.HtmlColours.TravellerGreen))
         self.capitalOverlayAltA.fillBrush = self._graphics.createBrush(
             colour=cartographer.makeAlphaColour(
                 alpha=0x80,
-                colour=travellermap.HtmlColours.Blue))
+                colour=common.HtmlColours.Blue))
         self.capitalOverlayAltB.fillBrush = self._graphics.createBrush(
             colour=cartographer.makeAlphaColour(
                 alpha=0x80,
-                colour=travellermap.HtmlColours.TravellerAmber))
+                colour=common.HtmlColours.TravellerAmber))
 
         fadeSectorSubsectorNames = True
 
@@ -622,11 +622,11 @@ class StyleSheet(object):
 
         # Generic colours; applied to various elements by default (see end of this method).
         # May be overridden by specific styles
-        foregroundColour = travellermap.HtmlColours.White
-        lightColour = travellermap.HtmlColours.LightGray
-        darkColour = travellermap.HtmlColours.DarkGray
-        dimColour = travellermap.HtmlColours.DimGray
-        highlightColour = travellermap.HtmlColours.TravellerRed
+        foregroundColour = common.HtmlColours.White
+        lightColour = common.HtmlColours.LightGray
+        darkColour = common.HtmlColours.DarkGray
+        dimColour = common.HtmlColours.DimGray
+        highlightColour = common.HtmlColours.TravellerRed
 
         if self._style is travellermap.Style.Poster:
             pass
@@ -634,26 +634,26 @@ class StyleSheet(object):
             self.grayscale = True
             self.lightBackground = True
 
-            self.capitals.fillBrush.setColour(travellermap.HtmlColours.DarkGray)
-            self.capitals.textBrush.setColour(travellermap.HtmlColours.Black)
-            self.amberZone.linePen.setColour(travellermap.HtmlColours.LightGray)
-            self.redZone.linePen.setColour(travellermap.HtmlColours.Black)
-            self.macroBorders.linePen.setColour(travellermap.HtmlColours.Black)
-            self.macroRoutes.linePen.setColour(travellermap.HtmlColours.Gray)
-            self.microBorders.linePen.setColour(travellermap.HtmlColours.Black)
-            self.microRoutes.linePen.setColour(travellermap.HtmlColours.Gray)
+            self.capitals.fillBrush.setColour(common.HtmlColours.DarkGray)
+            self.capitals.textBrush.setColour(common.HtmlColours.Black)
+            self.amberZone.linePen.setColour(common.HtmlColours.LightGray)
+            self.redZone.linePen.setColour(common.HtmlColours.Black)
+            self.macroBorders.linePen.setColour(common.HtmlColours.Black)
+            self.macroRoutes.linePen.setColour(common.HtmlColours.Gray)
+            self.microBorders.linePen.setColour(common.HtmlColours.Black)
+            self.microRoutes.linePen.setColour(common.HtmlColours.Gray)
 
-            foregroundColour = travellermap.HtmlColours.Black
-            self.backgroundBrush.setColour(travellermap.HtmlColours.White)
-            lightColour = travellermap.HtmlColours.DarkGray
-            darkColour = travellermap.HtmlColours.DarkGray
-            dimColour = travellermap.HtmlColours.LightGray
-            highlightColour = travellermap.HtmlColours.Gray
-            self.microBorders.textBrush.setColour(travellermap.HtmlColours.Gray)
-            self.worldWater.fillBrush.setColour(travellermap.HtmlColours.Black)
-            self.worldNoWater.fillBrush.setColour(travellermap.HtmlColours.White)
+            foregroundColour = common.HtmlColours.Black
+            self.backgroundBrush.setColour(common.HtmlColours.White)
+            lightColour = common.HtmlColours.DarkGray
+            darkColour = common.HtmlColours.DarkGray
+            dimColour = common.HtmlColours.LightGray
+            highlightColour = common.HtmlColours.Gray
+            self.microBorders.textBrush.setColour(common.HtmlColours.Gray)
+            self.worldWater.fillBrush.setColour(common.HtmlColours.Black)
+            self.worldNoWater.fillBrush.setColour(common.HtmlColours.White)
             self.worldNoWater.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Black,
+                colour=common.HtmlColours.Black,
                 width=onePixel)
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
@@ -664,7 +664,7 @@ class StyleSheet(object):
                 alpha=0x40,
                 colour=highlightColour))
             self.populationOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dash)
 
@@ -672,7 +672,7 @@ class StyleSheet(object):
                 alpha=0x20,
                 colour=highlightColour))
             self.importanceOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
         elif self._style is travellermap.Style.Fasa:
@@ -683,7 +683,7 @@ class StyleSheet(object):
             inkColour = '#5C4033'
 
             foregroundColour = inkColour
-            self.backgroundBrush.setColour(travellermap.HtmlColours.White)
+            self.backgroundBrush.setColour(common.HtmlColours.White)
 
             self.grayscale = True
             self.lightBackground = True
@@ -752,7 +752,7 @@ class StyleSheet(object):
                 alpha=0x40,
                 colour=highlightColour))
             self.populationOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dash)
 
@@ -760,25 +760,25 @@ class StyleSheet(object):
                 alpha=0x20,
                 colour=highlightColour))
             self.importanceOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
         elif self._style is travellermap.Style.Print:
             self.lightBackground = True
 
-            foregroundColour = travellermap.HtmlColours.Black
-            self.backgroundBrush.setColour(travellermap.HtmlColours.White)
-            lightColour = travellermap.HtmlColours.DarkGray
-            darkColour = travellermap.HtmlColours.DarkGray
-            dimColour = travellermap.HtmlColours.LightGray
-            self.microRoutes.linePen.setColour(travellermap.HtmlColours.Gray)
+            foregroundColour = common.HtmlColours.Black
+            self.backgroundBrush.setColour(common.HtmlColours.White)
+            lightColour = common.HtmlColours.DarkGray
+            darkColour = common.HtmlColours.DarkGray
+            dimColour = common.HtmlColours.LightGray
+            self.microRoutes.linePen.setColour(common.HtmlColours.Gray)
 
-            self.microBorders.textBrush.setColour(travellermap.HtmlColours.Brown)
+            self.microBorders.textBrush.setColour(common.HtmlColours.Brown)
 
-            self.amberZone.linePen.setColour(travellermap.HtmlColours.TravellerAmber)
-            self.worldNoWater.fillBrush.setColour(travellermap.HtmlColours.White)
+            self.amberZone.linePen.setColour(common.HtmlColours.TravellerAmber)
+            self.worldNoWater.fillBrush.setColour(common.HtmlColours.White)
             self.worldNoWater.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Black,
+                colour=common.HtmlColours.Black,
                 width=onePixel)
 
             self.riftOpacity = min(self.riftOpacity, 0.70)
@@ -787,7 +787,7 @@ class StyleSheet(object):
                 alpha=0x40,
                 colour=self.populationOverlay.fillBrush.colour()))
             self.populationOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dash)
 
@@ -795,7 +795,7 @@ class StyleSheet(object):
                 alpha=0x20,
                 colour=self.importanceOverlay.fillBrush.colour()))
             self.importanceOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
         elif self._style is travellermap.Style.Draft:
@@ -806,27 +806,27 @@ class StyleSheet(object):
 
             self.deepBackgroundOpacity = 0
 
-            self.backgroundBrush.setColour(travellermap.HtmlColours.AntiqueWhite)
+            self.backgroundBrush.setColour(common.HtmlColours.AntiqueWhite)
             foregroundColour = cartographer.makeAlphaColour(
                 alpha=inkOpacity,
-                colour=travellermap.HtmlColours.Black)
+                colour=common.HtmlColours.Black)
             highlightColour = cartographer.makeAlphaColour(
                 alpha=inkOpacity,
-                colour=travellermap.HtmlColours.TravellerRed)
+                colour=common.HtmlColours.TravellerRed)
 
             lightColour = cartographer.makeAlphaColour(
                 alpha=inkOpacity,
-                colour=travellermap.HtmlColours.DarkCyan)
+                colour=common.HtmlColours.DarkCyan)
             darkColour = cartographer.makeAlphaColour(
                 alpha=inkOpacity,
-                colour=travellermap.HtmlColours.Black)
+                colour=common.HtmlColours.Black)
             dimColour = cartographer.makeAlphaColour(
                 alpha=inkOpacity / 2,
-                colour=travellermap.HtmlColours.Black)
+                colour=common.HtmlColours.Black)
 
             self.subsectorGrid.linePen.setColour(cartographer.makeAlphaColour(
                 alpha=inkOpacity,
-                colour=travellermap.HtmlColours.Firebrick))
+                colour=common.HtmlColours.Firebrick))
 
             fontName = 'Comic Sans MS'
 
@@ -895,7 +895,7 @@ class StyleSheet(object):
             self.microBorders.textStyle.uppercase = True
             self.microBorders.textBrush.setColour(cartographer.makeAlphaColour(
                 alpha=inkOpacity,
-                colour=travellermap.HtmlColours.Brown))
+                colour=common.HtmlColours.Brown))
 
             self.subsectorNames.font = self._createFont(
                 families=fontName,
@@ -925,7 +925,7 @@ class StyleSheet(object):
             self.amberZone.linePen.setWidth(onePixel)
             self.redZone.linePen.setWidth(onePixel * 2)
 
-            self.microRoutes.linePen.setColour(travellermap.HtmlColours.Gray)
+            self.microRoutes.linePen.setColour(common.HtmlColours.Gray)
 
             self.parsecGrid.linePen.setColour(lightColour)
 
@@ -937,7 +937,7 @@ class StyleSheet(object):
                 alpha=0x40,
                 colour=self.populationOverlay.fillBrush.colour()))
             self.populationOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dash)
 
@@ -945,7 +945,7 @@ class StyleSheet(object):
                 alpha=0x20,
                 colour=self.importanceOverlay.fillBrush.colour()))
             self.importanceOverlay.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.Gray,
+                colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
         elif self._style is travellermap.Style.Candy:
@@ -983,7 +983,7 @@ class StyleSheet(object):
             if self.scale < StyleSheet._CandyMinUwpScale:
                 self.worldDetails &= ~cartographer.WorldDetails.Uwp
 
-            self.amberZone.linePen.setColour(travellermap.HtmlColours.Goldenrod)
+            self.amberZone.linePen.setColour(common.HtmlColours.Goldenrod)
             self.amberZone.linePen.setWidth(0.035)
             self.redZone.linePen.setWidth(0.035)
 
@@ -1000,11 +1000,11 @@ class StyleSheet(object):
             self.subsectorNames.textBrush = self._graphics.createBrush(
                 colour=cartographer.makeAlphaColour(
                     alpha=128,
-                    colour=travellermap.HtmlColours.Goldenrod))
+                    colour=common.HtmlColours.Goldenrod))
             self.sectorName.textBrush = self._graphics.createBrush(
                 colour=cartographer.makeAlphaColour(
                     alpha=128,
-                    colour=travellermap.HtmlColours.Goldenrod))
+                    colour=common.HtmlColours.Goldenrod))
 
             self.microBorders.textStyle.rotation = 0
             self.microBorders.textStyle.translation = cartographer.PointF(0, 0.25)
@@ -1013,7 +1013,7 @@ class StyleSheet(object):
 
             self.microBorders.linePen.setColour(cartographer.makeAlphaColour(
                 alpha=128,
-                colour=travellermap.HtmlColours.TravellerRed))
+                colour=common.HtmlColours.TravellerRed))
             self.microRoutes.linePen.setWidth(
                 routePenWidth if self.scale < StyleSheet._CandyMaxRouteRelativeScale else routePenWidth / 2)
 
@@ -1065,14 +1065,14 @@ class StyleSheet(object):
             self.showGalaxyBackground = False
             self.lightBackground = False
 
-            foregroundColour = travellermap.HtmlColours.Cyan
-            highlightColour = travellermap.HtmlColours.White
+            foregroundColour = common.HtmlColours.Cyan
+            highlightColour = common.HtmlColours.White
 
-            lightColour = travellermap.HtmlColours.LightBlue
-            darkColour = travellermap.HtmlColours.DarkBlue
-            dimColour = travellermap.HtmlColours.DimGray
+            lightColour = common.HtmlColours.LightBlue
+            darkColour = common.HtmlColours.DarkBlue
+            dimColour = common.HtmlColours.DimGray
 
-            self.subsectorGrid.linePen.setColour(travellermap.HtmlColours.Cyan)
+            self.subsectorGrid.linePen.setColour(common.HtmlColours.Cyan)
 
             fontName = 'Courier New'
 
@@ -1172,10 +1172,10 @@ class StyleSheet(object):
             self.amberZone.linePen.setWidth(onePixel)
             self.redZone.linePen.setWidth(onePixel * 2)
 
-            self.microRoutes.linePen.setColour(travellermap.HtmlColours.Gray)
+            self.microRoutes.linePen.setColour(common.HtmlColours.Gray)
 
-            self.parsecGrid.linePen.setColour(travellermap.HtmlColours.Plum)
-            self.microBorders.textBrush.setColour(travellermap.HtmlColours.Cyan)
+            self.parsecGrid.linePen.setColour(common.HtmlColours.Plum)
+            self.microBorders.textBrush.setColour(common.HtmlColours.Cyan)
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
 
@@ -1201,18 +1201,18 @@ class StyleSheet(object):
             self.deepBackgroundOpacity = 0
 
             self.backgroundBrush.setColour('#E6E7E8')
-            foregroundColour = travellermap.HtmlColours.Black
-            highlightColour = travellermap.HtmlColours.Red
+            foregroundColour = common.HtmlColours.Black
+            highlightColour = common.HtmlColours.Red
 
-            lightColour = travellermap.HtmlColours.Black
-            darkColour = travellermap.HtmlColours.Black
-            dimColour = travellermap.HtmlColours.Gray
+            lightColour = common.HtmlColours.Black
+            darkColour = common.HtmlColours.Black
+            dimColour = common.HtmlColours.Gray
 
             self.sectorGrid.linePen.setColour(foregroundColour)
             self.subsectorGrid.linePen.setColour(foregroundColour)
             self.parsecGrid.linePen.setColour(foregroundColour)
 
-            self.microBorders.textBrush.setColour(travellermap.HtmlColours.DarkSlateGray)
+            self.microBorders.textBrush.setColour(common.HtmlColours.DarkSlateGray)
 
             fontName = 'Calibri,Arial'
 
@@ -1251,9 +1251,9 @@ class StyleSheet(object):
                 self.uwp.textBackgroundStyle = cartographer.TextBackgroundStyle.Filled
                 self.uwp.position = cartographer.PointF(0, 0.40)
                 self.uwp.fillBrush = self._graphics.createBrush(
-                    colour=travellermap.HtmlColours.Black)
+                    colour=common.HtmlColours.Black)
                 self.uwp.textBrush = self._graphics.createBrush(
-                    colour=travellermap.HtmlColours.White)
+                    colour=common.HtmlColours.White)
 
             self.macroNames.font = self._createFont(
                 families=fontName,
@@ -1296,7 +1296,7 @@ class StyleSheet(object):
             self.microBorders.textStyle.uppercase = True
             self.microBorders.linePen.setWidth(0.11)
             self.microBorders.linePen.setStyle(cartographer.LineStyle.Dot)
-            self.microBorders.textBrush.setColour(travellermap.HtmlColours.DarkSlateGray)
+            self.microBorders.textBrush.setColour(common.HtmlColours.DarkSlateGray)
 
             self.sectorName.font = self._createFont(
                 families=fontName,
@@ -1311,13 +1311,13 @@ class StyleSheet(object):
             self.subsectorNames.textStyle.uppercase = True
             self.subsectorNames.visible = False
 
-            self.worldWater.fillBrush.setColour(travellermap.HtmlColours.MediumBlue)
-            self.worldNoWater.fillBrush.setColour(travellermap.HtmlColours.DarkKhaki)
+            self.worldWater.fillBrush.setColour(common.HtmlColours.MediumBlue)
+            self.worldNoWater.fillBrush.setColour(common.HtmlColours.DarkKhaki)
             self.worldWater.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.DarkGray,
+                colour=common.HtmlColours.DarkGray,
                 width=onePixel * 2)
             self.worldNoWater.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.DarkGray,
+                colour=common.HtmlColours.DarkGray,
                 width=onePixel * 2)
 
             self.showZonesAsPerimeters = True
@@ -1328,7 +1328,7 @@ class StyleSheet(object):
                 width=0.05)
             self.amberZone.linePen.setColour('#FBB040')
             self.amberZone.linePen.setWidth(0.05)
-            self.redZone.linePen.setColour(travellermap.HtmlColours.Red)
+            self.redZone.linePen.setColour(common.HtmlColours.Red)
             self.redZone.linePen.setWidth(0.05)
 
             self.riftOpacity = min(self.riftOpacity, 0.30)
@@ -1418,21 +1418,21 @@ class StyleSheet(object):
 
         if self.showWorldDetailColours:
             self.worldRichAgricultural.fillBrush = self._graphics.createBrush(
-                colour=travellermap.HtmlColours.TravellerAmber)
+                colour=common.HtmlColours.TravellerAmber)
             self.worldAgricultural.fillBrush = self._graphics.createBrush(
-                colour=travellermap.HtmlColours.TravellerGreen)
+                colour=common.HtmlColours.TravellerGreen)
             self.worldRich.fillBrush = self._graphics.createBrush(
-                colour=travellermap.HtmlColours.Purple)
+                colour=common.HtmlColours.Purple)
             self.worldIndustrial.fillBrush = self._graphics.createBrush(
                 colour='#888888') # Gray
             self.worldHarshAtmosphere.fillBrush = self._graphics.createBrush(
                 colour='#CC6626') # Rust
             self.worldVacuum.fillBrush = self._graphics.createBrush(
-                colour=travellermap.HtmlColours.Black)
+                colour=common.HtmlColours.Black)
             self.worldVacuum.fillBrush = self._graphics.createBrush(
-                colour=travellermap.HtmlColours.Black)
+                colour=common.HtmlColours.Black)
             self.worldVacuum.linePen = self._graphics.createPen(
-                colour=travellermap.HtmlColours.White,
+                colour=common.HtmlColours.White,
                 width=self.worldWater.linePen.width() if self.worldWater.linePen else onePixel,
                 style=self.worldWater.linePen.style() if self.worldWater.linePen else cartographer.LineStyle.Solid,
                 pattern=self.worldWater.linePen.pattern()if self.worldWater.linePen else None)

@@ -6,6 +6,24 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class TradeGoodQuantityDialog(gui.DialogEx):
+    @typing.overload
+    def __init__(
+            self,
+            title: str,
+            selectableTradeGoods: typing.Iterable[traveller.TradeGood],
+            limitQuantity: typing.Optional[common.ScalarCalculation] = None,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None: ...
+    @typing.overload
+    def __init__(
+            self,
+            title: str,
+            editTradeGood: typing.Optional[traveller.TradeGood],
+            editQuantity: typing.Optional[common.ScalarCalculation],
+            limitQuantity: typing.Optional[common.ScalarCalculation] = None,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None: ...
+
     def __init__(
             self,
             title: str,
@@ -23,9 +41,7 @@ class TradeGoodQuantityDialog(gui.DialogEx):
         self._quantity = editQuantity if editQuantity != None else self._createCustomQuantity(1)
 
         self._tradeGoodCombo = QtWidgets.QComboBox()
-        if not editTradeGood:
-            if not selectableTradeGoods:
-                selectableTradeGoods = traveller.tradeGoodList(rules=app.Config.instance().rules())
+        if selectableTradeGoods:
             for tradeGood in selectableTradeGoods:
                 insertIndex = self._tradeGoodCombo.count()
                 self._tradeGoodCombo.addItem(f'{tradeGood.id()}: {tradeGood.name()}')

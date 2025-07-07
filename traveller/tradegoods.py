@@ -109,11 +109,14 @@ class TradeGood(object):
 
     def __init__(
             self,
-            system: traveller.Rules,
+            system: traveller.RuleSystem,
             data: _TradeGoodData
             ) -> None:
         self._system = system
         self._data = data
+
+    def ruleSystem(self) -> traveller.RuleSystem:
+        return self._system
 
     def id(self) -> int:
         return self._data.id()
@@ -275,19 +278,19 @@ class TradeGood(object):
         if isinstance(purchaseDm, common.ScalarCalculation):
             priceModifier = common.ScalarCalculation(
                 value=_calculatePurchasePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     purchaseDm=purchaseDm),
                 name='Base Price Scale')
         else:
             priceModifier = common.RangeCalculation(
                 worstCase=_calculatePurchasePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     purchaseDm=purchaseDm.worstCaseCalculation()),
                 bestCase=_calculatePurchasePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     purchaseDm=purchaseDm.bestCaseCalculation()),
                 averageCase=_calculatePurchasePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     purchaseDm=purchaseDm.averageCaseCalculation()),
                 name='Base Price Scale')
 
@@ -373,19 +376,19 @@ class TradeGood(object):
         if isinstance(saleDm, common.ScalarCalculation):
             priceModifier = common.ScalarCalculation(
                 value=_calculateSalePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     saleDm=saleDm),
                 name='Base Price Scale')
         else:
             priceModifier = common.RangeCalculation(
                 worstCase=_calculateSalePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     saleDm=saleDm.worstCaseCalculation()),
                 bestCase=_calculateSalePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     saleDm=saleDm.bestCaseCalculation()),
                 averageCase=_calculateSalePriceModifier(
-                    system=self._system,
+                    ruleSystem=self._system,
                     saleDm=saleDm.averageCaseCalculation()),
                 name='Base Price Scale')
 
@@ -487,11 +490,10 @@ class _PriceModifierLookupFunction(common.CalculatorFunction):
             priceModifier=self._priceModifier)
 
 def tradeGoodList(
-        rules: traveller.Rules,
+        ruleSystem: traveller.RuleSystem,
         excludeTradeGoods: typing.Optional[typing.Iterable[TradeGood]] = None
         ) -> typing.Iterable[TradeGood]:
     # Always return a copy so nothing messes with master trade code lists
-    ruleSystem = rules.system()
     if ruleSystem == traveller.RuleSystem.MGT:
         tradeGoods = _MgtTradeGoods.copy()
     elif ruleSystem == traveller.RuleSystem.MGT2:
@@ -510,10 +512,9 @@ def tradeGoodList(
     return tradeGoods
 
 def tradeGoodFromId(
-        rules: traveller.Rules,
+        ruleSystem: traveller.RuleSystem,
         tradeGoodId: int
         ) -> TradeGood:
-    ruleSystem = rules.system()
     if ruleSystem == traveller.RuleSystem.MGT:
         return _MgtTradeGoodsMap[tradeGoodId]
     elif ruleSystem == traveller.RuleSystem.MGT2:
@@ -524,12 +525,11 @@ def tradeGoodFromId(
         assert(False)
 
 def worldTradeGoods(
-        rules: traveller.Rules,
+        ruleSystem: traveller.RuleSystem,
         world: traveller.World,
         includeLegal: bool,
         includeIllegal: bool
         ) -> typing.List[TradeGood]:
-    ruleSystem = rules.system()
     if ruleSystem == traveller.RuleSystem.MGT:
         tradeGoods = _MgtTradeGoods
     elif ruleSystem == traveller.RuleSystem.MGT2:
@@ -552,12 +552,12 @@ def worldTradeGoods(
     return available
 
 def worldCargoQuantityModifiers(
-        rules: traveller.Rules,
+        ruleSystem: traveller.RuleSystem,
         world: traveller.World
         ) -> typing.Iterable[common.ScalarCalculation]:
     modifiers = []
 
-    if rules.system() != traveller.RuleSystem.MGT2022:
+    if ruleSystem != traveller.RuleSystem.MGT2022:
         return modifiers # Modifiers only apply for 2022 rules
 
     # In Mongoose 2022 rules, the amount of cargo available is affected by population. Worlds with
@@ -578,7 +578,7 @@ def worldCargoQuantityModifiers(
     return modifiers
 
 def calculateWorldTradeGoodQuantity(
-        rules: traveller.Rules,
+        ruleSystem: traveller.RuleSystem,
         world: traveller.World,
         tradeGood: TradeGood,
         diceRoller: typing.Optional[common.DiceRoller] = None
@@ -596,7 +596,7 @@ def calculateWorldTradeGoodQuantity(
             name=f'{tradeGood.name()} Quantity Roll')
 
     # Note that these are dice modifiers so are applied to the roll before it's multiplied
-    worldModifiers = traveller.worldCargoQuantityModifiers(rules=rules, world=world)
+    worldModifiers = traveller.worldCargoQuantityModifiers(ruleSystem=ruleSystem, world=world)
     if worldModifiers:
         totalModifier = common.Calculator.sum(
             values=worldModifiers,
@@ -614,7 +614,7 @@ def calculateWorldTradeGoodQuantity(
     return quantity
 
 def _calculatePurchasePriceModifier(
-        system: traveller.RuleSystem,
+        ruleSystem: traveller.RuleSystem,
         purchaseDm: typing.Union[int, common.ScalarCalculation],
         ) -> common.ScalarCalculation:
     if not isinstance(purchaseDm, common.ScalarCalculation):
@@ -623,12 +623,12 @@ def _calculatePurchasePriceModifier(
             name='Purchase DM')
 
     return _calculatePriceModifier(
-        system=system,
+        ruleSystem=ruleSystem,
         operation='Purchase',
         tradeDm=purchaseDm)
 
 def _calculateSalePriceModifier(
-        system: traveller.RuleSystem,
+        ruleSystem: traveller.RuleSystem,
         saleDm: typing.Union[int, common.ScalarCalculation]
         ) -> common.ScalarCalculation:
     if not isinstance(saleDm, common.ScalarCalculation):
@@ -637,24 +637,24 @@ def _calculateSalePriceModifier(
             name='Sale DM')
 
     return _calculatePriceModifier(
-        system=system,
+        ruleSystem=ruleSystem,
         operation='Sale',
         tradeDm=saleDm)
 
 def _calculatePriceModifier(
-        system: traveller.RuleSystem,
+        ruleSystem: traveller.RuleSystem,
         operation: str,
         tradeDm: common.ScalarCalculation
         ) -> common.ScalarCalculation:
-    if system == traveller.RuleSystem.MGT:
+    if ruleSystem == traveller.RuleSystem.MGT:
         modifierMap = _MgtPriceModifierMap
         minDm = _MgtMinPriceModifierDm
         maxDm = _MgtMaxPriceModifierDm
-    elif system == traveller.RuleSystem.MGT2:
+    elif ruleSystem == traveller.RuleSystem.MGT2:
         modifierMap = _Mgt2PriceModifierMap
         minDm = _Mgt2MinPriceModifierDm
         maxDm = _Mgt2MaxPriceModifierDm
-    elif system == traveller.RuleSystem.MGT2022:
+    elif ruleSystem == traveller.RuleSystem.MGT2022:
         modifierMap = _Mgt2022PriceModifierMap
         minDm = _Mgt2022MinPriceModifierDm
         maxDm = _Mgt2022MaxPriceModifierDm

@@ -102,10 +102,10 @@ def generateCargoManifests(
         # Default to average case purchase logic. Generally this won't matter as planning a cargo
         # manifest only really makes sense when purchase prices are known and avg, worst and best
         # case values are the same
-        purchaseLogic: logic.ProbabilityCase = logic.ProbabilityCase.AverageCase,
+        purchaseLogic: logic.RollOutcome = logic.RollOutcome.AverageCase,
         # Default to worst case logistics logic. This is the safe option as it means we don't risk
         # spending so much we could run out of money on route due to bad dice rolls
-        logisticsLogic: logic.ProbabilityCase = logic.ProbabilityCase.WorstCase,
+        logisticsLogic: logic.RollOutcome = logic.RollOutcome.WorstCase,
         ) -> typing.List[CargoManifest]:
     if not isinstance(availableFunds, common.ScalarCalculation):
         assert(isinstance(availableFunds, int) or isinstance(availableFunds, float))
@@ -150,12 +150,12 @@ def generateCargoManifests(
             lhs=remainingFunds,
             rhs=routeLogistics.totalCosts())
 
-        if logisticsLogic == logic.ProbabilityCase.AverageCase:
+        if logisticsLogic == logic.RollOutcome.AverageCase:
             remainingFunds = remainingFunds.averageCaseCalculation()
-        elif logisticsLogic == logic.ProbabilityCase.WorstCase:
+        elif logisticsLogic == logic.RollOutcome.WorstCase:
             remainingFunds = remainingFunds.worstCaseCalculation()
         else:
-            assert(logisticsLogic == logic.ProbabilityCase.BestCase)
+            assert(logisticsLogic == logic.RollOutcome.BestCase)
             remainingFunds = remainingFunds.bestCaseCalculation()
 
         cargoTradeOptions = []
@@ -189,12 +189,12 @@ def generateCargoManifests(
                 rhs=bestTradeOption.purchasePricePerTon(),
                 name=f'Purchase Price')
 
-            if purchaseLogic == logic.ProbabilityCase.AverageCase:
+            if purchaseLogic == logic.RollOutcome.AverageCase:
                 purchasePrice = purchasePrice.averageCaseCalculation()
-            elif purchaseLogic == logic.ProbabilityCase.WorstCase:
+            elif purchaseLogic == logic.RollOutcome.WorstCase:
                 purchasePrice = purchasePrice.worstCaseCalculation()
             else:
-                assert(purchaseLogic == logic.ProbabilityCase.BestCase)
+                assert(purchaseLogic == logic.RollOutcome.BestCase)
                 purchasePrice = purchasePrice.bestCaseCalculation()
 
             remainingFunds = common.Calculator.subtract(
@@ -229,7 +229,7 @@ def _findBestTradeOption(
         availableFunds: common.ScalarCalculation,
         shipCargoCapacity: common.ScalarCalculation,
         tradeOptions: typing.Iterable[logic.TradeOption],
-        purchaseLogic: logic.ProbabilityCase
+        purchaseLogic: logic.RollOutcome
         ) -> typing.Optional[logic.TradeOption]:
     bestTradeOption = None
     for tradeOption in tradeOptions:
@@ -237,20 +237,20 @@ def _findBestTradeOption(
         availableQuantity = tradeOption.cargoQuantity()
         grossProfit = tradeOption.grossProfit()
 
-        if purchaseLogic == logic.ProbabilityCase.AverageCase:
+        if purchaseLogic == logic.RollOutcome.AverageCase:
             if grossProfit.averageCaseValue() <= 0:
                 continue # Skip unprofitable trades
 
             purchasePricePerTon = purchasePricePerTon.averageCaseCalculation()
             availableQuantity = availableQuantity.averageCaseCalculation()
-        elif purchaseLogic == logic.ProbabilityCase.WorstCase:
+        elif purchaseLogic == logic.RollOutcome.WorstCase:
             if grossProfit.worstCaseValue() <= 0:
                 continue # Skip unprofitable trades
 
             purchasePricePerTon = purchasePricePerTon.worstCaseCalculation()
             availableQuantity = availableQuantity.worstCaseCalculation()
         else:
-            assert(purchaseLogic == logic.ProbabilityCase.BestCase)
+            assert(purchaseLogic == logic.RollOutcome.BestCase)
             if grossProfit.bestCaseValue() <= 0:
                 continue # Skip unprofitable trades
 
@@ -301,14 +301,14 @@ def _findBestTradeOption(
         else:
             newProfit = newTradeOption.grossProfit()
             bestProfit = bestTradeOption.grossProfit()
-            if purchaseLogic == logic.ProbabilityCase.AverageCase:
+            if purchaseLogic == logic.RollOutcome.AverageCase:
                 newProfit = newProfit.averageCaseValue()
                 bestProfit = bestProfit.averageCaseValue()
-            elif purchaseLogic == logic.ProbabilityCase.WorstCase:
+            elif purchaseLogic == logic.RollOutcome.WorstCase:
                 newProfit = newProfit.worstCaseValue()
                 bestProfit = bestProfit.worstCaseValue()
             else:
-                assert(purchaseLogic == logic.ProbabilityCase.BestCase)
+                assert(purchaseLogic == logic.RollOutcome.BestCase)
                 newProfit = newProfit.bestCaseValue()
                 bestProfit = bestProfit.bestCaseValue()
 

@@ -5,6 +5,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -40,8 +41,14 @@ _SalePriceColumns = [
 ]
 
 class _CustomCargoRecordTable(gui.CargoRecordTable):
-    def __init__(self, columns: typing.Iterable[typing.Union[_CustomColumns, gui.CargoRecordTable.ColumnType]]) -> None:
-        super().__init__(columns=columns)
+    def __init__(
+            self,
+            outcomeColours: app.OutcomeColours,
+            columns: typing.Iterable[typing.Union[_CustomColumns, gui.CargoRecordTable.ColumnType]]
+            ) -> None:
+        super().__init__(
+            outcomeColours=outcomeColours,
+            columns=columns)
 
     def _fillRow(
             self,
@@ -94,6 +101,15 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._randomGenerator = common.RandomGenerator()
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
+
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
         self._setupCargoControls()
@@ -120,6 +136,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._leftRightSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -149,7 +167,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             key='LocalBrokerState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._localBrokerWidget.restoreState(storedValue)
+            self._localBrokerSpinBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -235,16 +253,13 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._settings.setValue('SaleWorldState', self._saleWorldWidget.saveState())
         self._settings.setValue('PlayerBrokerDMState', self._playerBrokerDmSpinBox.saveState())
-        self._settings.setValue('LocalBrokerState', self._localBrokerWidget.saveState())
+        self._settings.setValue('LocalBrokerState', self._localBrokerSpinBox.saveState())
         self._settings.setValue('BuyerDmState', self._buyerDmSpinBox.saveState())
         self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
         self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
         self._settings.setValue('CargoTableState', self._cargoTable.saveState())
-        self._settings.setValue('CargoTableContent', self._cargoTable.saveContent())
         self._settings.setValue('SalePriceTableState', self._salePricesTable.saveState())
-        self._settings.setValue('SalePriceTableContent', self._salePricesTable.saveContent())
         self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
-        self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
         self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
         self._settings.setValue('LeftRightsSplitterState', self._leftRightSplitter.saveState())
 
@@ -253,7 +268,27 @@ class SaleCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._saleWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+
+        self._saleWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            labelText='Select World:')
+        self._saleWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._saleWorldWidget.enableMapSelectButton(True)
         self._saleWorldWidget.enableShowInfoButton(True)
         self._saleWorldWidget.selectionChanged.connect(self._saleWorldChanged)
@@ -265,17 +300,20 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._worldGroupBox.setLayout(layout)
 
     def _setupConfigurationControls(self) -> None:
-        self._playerBrokerDmSpinBox = gui.SpinBoxEx()
-        self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._playerBrokerDmSpinBox.setValue(1)
-        self._playerBrokerDmSpinBox.setToolTip(gui.PlayerBrokerDmToolTip)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
-        self._localBrokerWidget = gui.LocalBrokerWidget()
+        self._playerBrokerDmSpinBox = gui.SkillSpinBox(
+            value=1,
+            toolTip=gui.PlayerBrokerDmToolTip)
 
-        self._buyerDmSpinBox = gui.SpinBoxEx()
-        self._buyerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._buyerDmSpinBox.setValue(2) # Default for MGT 2022 so just use as default for everything
-        self._buyerDmSpinBox.setToolTip(gui.createStringToolTip('Buyer\'s DM bonus'))
+        self._localBrokerSpinBox = gui.LocalBrokerSpinBox(
+            enabled=False,
+            value=0,
+            rules=rules)
+
+        self._buyerDmSpinBox = gui.SkillSpinBox(
+            value=2, # Default for MGT 2022 so just use as default for everything
+            toolTip=gui.createStringToolTip('Buyer\'s DM bonus'))
 
         self._blackMarketCheckBox = gui.CheckBoxEx()
 
@@ -289,7 +327,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         layout = gui.FormLayoutEx()
         layout.addRow('Player\'s Broker DM:', self._playerBrokerDmSpinBox)
-        layout.addRow('Local Sale Broker:', self._localBrokerWidget)
+        layout.addRow('Local Sale Broker:', self._localBrokerSpinBox)
         layout.addRow('Buyer DM:', self._buyerDmSpinBox)
         layout.addRow('Black Market Buyer:', self._blackMarketCheckBox)
         layout.addRow('Price Scale (%):', self._priceScaleSpinBox)
@@ -299,7 +337,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(layout)
 
     def _setupCargoControls(self) -> None:
-        self._cargoTable = _CustomCargoRecordTable(columns=_SaleCargoColumns)
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
+        self._cargoTable = _CustomCargoRecordTable(
+            outcomeColours=outcomeColours,
+            columns=_SaleCargoColumns)
         self._cargoTable.setMinimumHeight(200)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
@@ -354,12 +397,17 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._cargoGroupBox.setLayout(mainLayout)
 
     def _setupSalePriceControls(self) -> None:
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._generateButton = QtWidgets.QPushButton('Generate Sale Prices')
         self._generateButton.clicked.connect(self._generateSalePrices)
 
         self._totalSalePriceLabel = gui.PrefixLabel('Total Sale Price: ')
 
-        self._salePricesTable = _CustomCargoRecordTable(columns=_SalePriceColumns)
+        self._salePricesTable = _CustomCargoRecordTable(
+            outcomeColours=outcomeColours,
+            columns=_SalePriceColumns)
         self._salePricesTable.setMinimumHeight(200)
         self._salePricesTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._salePricesTable.customContextMenuRequested.connect(self._showSalePricesTableContextMenu)
@@ -447,9 +495,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return None
 
         try:
-            cargoRecords = logic.readCargoRecordList(
-                rules=app.Config.instance().rules(),
-                filePath=path)
+            cargoRecords = logic.readCargoRecordList(filePath=path)
         except Exception as ex:
             message = f'Failed to load cargo records from "{path}"'
             logging.error(message, exc_info=ex)
@@ -466,6 +512,41 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return None
 
         return cargoRecords
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._saleWorldWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+            self._saleWorldWidget.setRules(rules=newValue)
+            self._localBrokerSpinBox.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._saleWorldWidget.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._saleWorldWidget.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._saleWorldWidget.setMapRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._saleWorldWidget.setMapAnimations(enabled=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._cargoTable.setOutcomeColours(colours=newValue)
+            self._salePricesTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._saleWorldWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._saleWorldWidget.setTaggingColours(colours=newValue)
 
     def _saleWorldChanged(self) -> None:
         disable = not self._saleWorldWidget.selectedWorld()
@@ -490,8 +571,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             # The user cancelled the load at the file dialog
             return
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         exoticsTradeGood = traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            ruleSystem=rules.system(),
             tradeGoodId=traveller.TradeGoodIds.Exotics)
 
         # There might be multiple cargo records for a given trade good. Condense it down to the
@@ -531,10 +613,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text='Ignored exotic cargo when importing.\nSale of exotic cargo requires role playing so can\'t be automated')
 
     def _addCargo(self) -> None:
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
         # rolling
         ignoreTradeGoods = [traveller.tradeGoodFromId(
-            rules=app.Config.instance().rules(),
+            ruleSystem=rules.system(),
             tradeGoodId=traveller.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
@@ -543,7 +627,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -594,6 +678,11 @@ class SaleCalculatorWindow(gui.WindowWidget):
             quantity=dlg.quantity())
 
         self._cargoTable.setCargoRecord(row, cargoRecord)
+
+    def _clearCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+        self._diceRollTable.removeAllRows()
+        self._salePricesTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())
@@ -662,13 +751,14 @@ class SaleCalculatorWindow(gui.WindowWidget):
         diceRoller = common.DiceRoller(
             randomGenerator=self._randomGenerator)
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            rules=app.Config.instance().rules(),
+            ruleSystem=rules.system(),
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
-            useLocalBroker=self._localBrokerWidget.isChecked(),
-            localBrokerDm=self._localBrokerWidget.value(),
+            useLocalBroker=self._localBrokerSpinBox.isChecked(),
+            localBrokerDm=self._localBrokerSpinBox.value(),
             buyerDm=self._buyerDmSpinBox.value(),
             blackMarket=blackMarket,
             diceRoller=diceRoller)
@@ -728,6 +818,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             parent=self,
             title='Edit Sale Details',
             world=saleWorld,
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=salePrice.tradeGood(),
             editPricePerTon=salePrice.pricePerTon(),
             editQuantity=salePrice.quantity(),

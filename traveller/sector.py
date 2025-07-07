@@ -5,6 +5,7 @@ import typing
 class Subsector(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             sectorX: int,
             sectorY: int,
             code: str,
@@ -13,6 +14,7 @@ class Subsector(object):
             sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
+        self._milieu = milieu
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._code = code
@@ -36,6 +38,9 @@ class Subsector(object):
             offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
             offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
         self._extent = (ulHex, brHex)
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def sectorX(self) -> int:
         return self._sectorX
@@ -67,6 +72,10 @@ class Subsector(object):
     def worlds(self) -> typing.Collection[traveller.World]:
         return list(self._worlds)
 
+    def yieldWorlds(self) -> typing.Generator[traveller.World, None, None]:
+        for world in self._worlds:
+            yield world
+
     def extent(self) -> typing.Tuple[
             travellermap.HexPosition,
             travellermap.HexPosition]:
@@ -87,12 +96,13 @@ class Subsector(object):
 class Sector(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            x: int,
+            y: int,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]],
             abbreviation: typing.Optional[str],
             sectorLabel: typing.Optional[str],
-            x: int,
-            y: int,
             # Subsectors should be ordered in subsector order (i.e. A-P)
             subsectors: typing.Iterable[Subsector],
             routes: typing.Iterable[traveller.Route],
@@ -102,12 +112,13 @@ class Sector(object):
             selected: bool,
             tags: typing.Iterable[str]
             ) -> None:
+        self._milieu = milieu
+        self._x = x
+        self._y = y
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
-        self._x = x
-        self._y = y
         self._routes = list(routes)
         self._borders = list(borders)
         self._regions = list(regions)
@@ -138,17 +149,8 @@ class Sector(object):
                 offsetX=travellermap.SectorWidth,
                 offsetY=travellermap.SectorHeight))
 
-    def name(self) -> str:
-        return self._name
-
-    def alternateNames(self) -> typing.Optional[typing.Collection[str]]:
-        return list(self._alternateNames) if self._alternateNames else None
-
-    def abbreviation(self) -> typing.Optional[str]:
-        return self._abbreviation
-
-    def sectorLabel(self) -> typing.Optional[str]:
-        return self._sectorLabel
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def x(self) -> int:
         return self._x
@@ -156,23 +158,60 @@ class Sector(object):
     def y(self) -> int:
         return self._y
 
+    def name(self) -> str:
+        return self._name
+
+    def alternateNames(self) -> typing.Optional[typing.Collection[str]]:
+        return list(self._alternateNames) if self._alternateNames else None
+
+    def yieldAlternateNames(self) -> typing.Generator[str, None, None]:
+        if self._alternateNames:
+            for name in self._alternateNames:
+                yield name
+
+    def abbreviation(self) -> typing.Optional[str]:
+        return self._abbreviation
+
+    def sectorLabel(self) -> typing.Optional[str]:
+        return self._sectorLabel
+
     def worldCount(self) -> int:
         return len(self._worlds)
 
     def worlds(self) -> typing.Collection[traveller.World]:
         return list(self._worlds)
 
+    def yieldWorlds(self) -> typing.Generator[traveller.World, None, None]:
+        for world in self._worlds:
+            yield world
+
     def routes(self) -> typing.Collection[traveller.Route]:
         return list(self._routes)
+
+    def yieldRoutes(self) -> typing.Generator[traveller.Route, None, None]:
+        for route in self._routes:
+            yield route
 
     def borders(self) -> typing.Collection[traveller.Border]:
         return list(self._borders)
 
+    def yieldBorders(self) -> typing.Generator[traveller.Border, None, None]:
+        for border in self._borders:
+            yield border
+
     def regions(self) -> typing.Collection[traveller.Region]:
         return list(self._regions)
 
+    def yieldBorders(self) -> typing.Generator[traveller.Region, None, None]:
+        for region in self._regions:
+            yield region
+
     def labels(self) -> typing.Collection[traveller.Label]:
         return list(self._labels)
+
+    def yieldLabels(self) -> typing.Generator[traveller.Label, None, None]:
+        for label in self._labels:
+            yield label
 
     # The concept of 'selected' comes from Traveller Map and what it is isn't
     # exactly clear. The only thing I've noticed it do is when rendering if
@@ -184,11 +223,19 @@ class Sector(object):
     def tags(self) -> typing.Iterable[str]:
         return list(self._tags)
 
+    def yieldTags(self) -> typing.Generator[str, None, None]:
+        for tag in self._tags:
+            yield tag
+
     def hasTag(self, tag: str) -> bool:
         return tag in self._tags
 
     def subsectorNames(self) -> typing.Sequence[str]:
         return list(self._subsectorNameMap.keys())
+
+    def yieldSubsectorNames(self) -> typing.Generator[str, None, None]:
+        for name in self._subsectorNameMap.keys():
+            yield name
 
     def subsectorByName(self, name: str) -> typing.Optional[Subsector]:
         return self._subsectorNameMap.get(name)
@@ -197,7 +244,11 @@ class Sector(object):
         return self._subsectorIndexMap.get((indexX, indexY))
 
     def subsectors(self) -> typing.Sequence[Subsector]:
-        return list(self._subsectorNameMap.values())
+        return list(self._subsectorIndexMap.values())
+
+    def yieldSubsectors(self) -> typing.Generator[Subsector, None, None]:
+        for subsector in self._subsectorIndexMap.values():
+            yield subsector
 
     def extent(self) -> typing.Tuple[travellermap.HexPosition, travellermap.HexPosition]:
         return self._extent

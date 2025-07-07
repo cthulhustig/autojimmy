@@ -12,12 +12,19 @@ import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _MapOverlay(object):
-    def __init__(self):
+    def __init__(self, enabled: bool = True):
         super().__init__()
         self._handle = str(uuid.uuid4())
+        self._enabled = enabled
 
     def handle(self) -> str:
         return self._handle
+
+    def isEnabled(self) -> bool:
+        return self._enabled
+
+    def setEnabled(self, enabled: bool) -> None:
+        self._enabled = enabled
 
     # The draw function will be called with the painters coordinate space
     # set to the isotropic space used for overlays. This is basically the
@@ -97,7 +104,7 @@ class _JumpRouteOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        if not self._jumpRoutePath:
+        if not self.isEnabled() or not self._jumpRoutePath:
             return False
 
         lowDetail = currentScale.log < 7
@@ -325,7 +332,7 @@ class _HexHighlightOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        if not self._styleMap:
+        if not self.isEnabled() or not self._styleMap:
             return False
 
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
@@ -424,6 +431,9 @@ class _HexBorderOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
+        if not self.isEnabled():
+            return False
+
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
 
         if self._pen:
@@ -441,11 +451,18 @@ class _EmpressWaveOverlay(_MapOverlay):
     _WaveColour = '#4CFFCC00'
     _WaveVelocity = math.pi / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            milieu: travellermap.Milieu
+            ) -> None:
         super().__init__()
+        self._milieu = milieu
         self._pen = QtGui.QPen(
             QtGui.QColor(_EmpressWaveOverlay._WaveColour),
             0) # Width will be set at render time
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        self._milieu = milieu
 
     # This code is based on the Traveller Map drawWave code (map.js)
     def draw(
@@ -453,10 +470,10 @@ class _EmpressWaveOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        if not app.Config.instance().mapOption(travellermap.Option.EmpressWaveOverlay):
+        if not self.isEnabled():
             return False
 
-        year = travellermap.milieuToYear(milieu=app.Config.instance().milieu())
+        year = travellermap.milieuToYear(milieu=self._milieu)
 
         w = 1 #pc
 
@@ -500,7 +517,7 @@ class _QrekrshaZoneOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        if not app.Config.instance().mapOption(travellermap.Option.QrekrshaZoneOverlay):
+        if not self.isEnabled():
             return False
 
         x, y = travellermap.mapSpaceToAbsoluteSpace((-179.4, 131))
@@ -526,10 +543,17 @@ class _AntaresSupernovaOverlay(_MapOverlay):
     _SupernovaCenter = travellermap.HexPosition(55, -59) # Antares
     _SupernovaVelocity = 1 / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            milieu: travellermap.Milieu
+            ) -> None:
         super().__init__()
+        self._milieu = milieu
         self._brush = QtGui.QBrush(
             QtGui.QColor(_AntaresSupernovaOverlay._SupernovaColour))
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        self._milieu = milieu
 
     # This code is based on the Traveller Map drawAS code (map.js)
     def draw(
@@ -537,10 +561,10 @@ class _AntaresSupernovaOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        if not app.Config.instance().mapOption(travellermap.Option.AntaresSupernovaOverlay):
+        if not self.isEnabled():
             return False
 
-        year = travellermap.milieuToYear(milieu=app.Config.instance().milieu())
+        year = travellermap.milieuToYear(milieu=self._milieu)
         yearRadius = (year - 1270) * _AntaresSupernovaOverlay._SupernovaVelocity
         if yearRadius < 0:
             return False
@@ -565,9 +589,9 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _MainsOverlay(_MapOverlay):
-    _SmallMainColour = travellermap.HtmlColours.Pink
+    _SmallMainColour = common.HtmlColours.Pink
     _MediumMainColour = '#FFCC00'
-    _LargeMainColour = travellermap.HtmlColours.Cyan
+    _LargeMainColour = common.HtmlColours.Cyan
     _MainAlpha = 0.25
     _PointSize = 1.15
 
@@ -610,8 +634,7 @@ class _MainsOverlay(_MapOverlay):
             painter: QtGui.QPainter,
             currentScale: travellermap.Scale
             ) -> None:
-        if not self._points or not self._pen or \
-                not app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
+        if not self.isEnabled() or not self._points or not self._pen:
             return False
 
         painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
@@ -788,6 +811,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             int, # Tile X
             int, # Tile Y
             int,
+            travellermap.Milieu,
             travellermap.Style,
             int], # MapOptions as an int
         QtGui.QImage](capacity=_TileCacheSize)
@@ -810,13 +834,27 @@ class LocalMapWidget(QtWidgets.QWidget):
     # a move.
     _sharedEasingCurveMaxCount = 4
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            milieu: travellermap.Milieu,
+            style: travellermap.Style,
+            options: typing.Collection[travellermap.Option],
+            rendering: app.MapRendering,
+            animated: bool,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent=parent)
 
         if LocalMapWidget._sharedEasingCurves is None:
             LocalMapWidget._sharedEasingCurves = []
             for _ in range(LocalMapWidget._sharedEasingCurveMaxCount):
                 LocalMapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
+
+        self._milieu = milieu
+        self._style = style
+        self._options = set(options)
+        self._rendering = rendering
+        self._animated = animated
 
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
@@ -835,7 +873,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             graphics=self._graphics)
         self._labelCache = cartographer.LabelCache()
         self._styleCache = cartographer.StyleCache()
-        self._renderer = self._createRenderer()
+        self._renderer = self._newRenderer()
 
         self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
         self._pixelDragStart: typing.Optional[QtCore.QPoint] = None
@@ -864,14 +902,14 @@ class LocalMapWidget(QtWidgets.QWidget):
             LocalMapWidget._DirectionTextFontSize)
         self._directionTextFont.setBold(True)
         self._directionTextPen = QtGui.QPen(
-            QtGui.QColor(travellermap.HtmlColours.TravellerRed),
+            QtGui.QColor(common.HtmlColours.TravellerRed),
             0)
 
         self._scaleFont = QtGui.QFont(
             LocalMapWidget._ScaleTextFontFamily,
             LocalMapWidget._ScaleTextFontSize)
         self._scalePen = QtGui.QPen(
-            QtGui.QColor(travellermap.HtmlColours.Black), # Colour will be updated when drawn
+            QtGui.QColor(common.HtmlColours.Black), # Colour will be updated when drawn
             LocalMapWidget._ScaleLineWidth,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.FlatCap)
@@ -896,16 +934,24 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._hexHighlightOverlay = _HexHighlightOverlay()
         self._overlayMap[self._hexHighlightOverlay.handle()] = self._hexHighlightOverlay
 
-        self._empressWaveOverlay = _EmpressWaveOverlay()
+        self._empressWaveOverlay = _EmpressWaveOverlay(milieu=self._milieu)
+        self._empressWaveOverlay.setEnabled(
+            enabled=travellermap.Option.EmpressWaveOverlay in self._options)
         self._overlayMap[self._empressWaveOverlay.handle()] = self._empressWaveOverlay
 
         self._qrekrshaZoneOverlay = _QrekrshaZoneOverlay()
+        self._qrekrshaZoneOverlay.setEnabled(
+            enabled=travellermap.Option.QrekrshaZoneOverlay in self._options)
         self._overlayMap[self._qrekrshaZoneOverlay.handle()] = self._qrekrshaZoneOverlay
 
-        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay()
+        self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(milieu=self._milieu)
+        self._antaresSupernovaOverlay.setEnabled(
+            enabled=travellermap.Option.AntaresSupernovaOverlay in self._options)
         self._overlayMap[self._antaresSupernovaOverlay.handle()] = self._antaresSupernovaOverlay
 
         self._mainsOverlay = _MainsOverlay()
+        self._mainsOverlay.setEnabled(
+            enabled=travellermap.Option.MainsOverlay in self._options)
         self._overlayMap[self._mainsOverlay.handle()] = self._mainsOverlay
 
         self._toolTipCallback = None
@@ -939,11 +985,84 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._handleViewUpdate()
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._renderer = self._newRenderer()
+
+        self._empressWaveOverlay.setMilieu(milieu=self._milieu)
+        self._antaresSupernovaOverlay.setMilieu(milieu=self._milieu)
+
+        # Clear the main when the milieu changes as the main may have
+        # changed
+        self._mainsOverlay.setMain(main=None)
+
+        self.update() # Force redraw
+
+    def style(self) -> travellermap.Style:
+        return self._style
+
+    def setStyle(self, style: travellermap.Style) -> None:
+        if style is self._style:
+            return
+
+        self._style = style
+        self._renderer = self._newRenderer()
+
+        self.update() # Force redraw
+
+    def options(self) -> typing.List[travellermap.Option]:
+        return list(self._options)
+
+    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+        options = set(options)
+        if options == self._options:
+            return
+
+        self._options = options
+        self._renderer = self._newRenderer()
+
+        self._empressWaveOverlay.setEnabled(
+            enabled=travellermap.Option.EmpressWaveOverlay in self._options)
+        self._qrekrshaZoneOverlay.setEnabled(
+            enabled=travellermap.Option.QrekrshaZoneOverlay in self._options)
+        self._antaresSupernovaOverlay.setEnabled(
+            enabled=travellermap.Option.AntaresSupernovaOverlay in self._options)
+        self._mainsOverlay.setEnabled(
+            enabled=travellermap.Option.MainsOverlay in self._options)
+
+        self.update() # Force redraw
+
+    def rendering(self) -> app.MapRendering:
+        return self._rendering
+
+    def setRendering(self, rendering: app.MapRendering) -> None:
+        if rendering == self._rendering:
+            return
+
+        self._rendering = rendering
+
+        self.update() # Force redraw
+
+    def isAnimated(self) -> bool:
+        return self._animated
+
+    def setAnimated(self, animated: bool) -> None:
+        if animated == self._animated:
+            return
+
+        self._animated = animated
+
     # TODO: When I finally remove WebMapWidget I should rework how
     # reloading work as it doesn't make conceptual sense whe there
     # is nothing to "load"
     def reload(self) -> None:
-        self._renderer = self._createRenderer()
+        self._renderer = self._newRenderer()
         self._clearTileCache()
         self._handleViewUpdate()
 
@@ -1153,15 +1272,15 @@ class LocalMapWidget(QtWidgets.QWidget):
     def createSnapshot(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
 
-        renderType = app.Config.instance().mapRenderingType()
-        if renderType is app.MapRenderingType.Tiled:
+        rendering = self._rendering
+        if rendering is app.MapRendering.Tiled:
             # If tiled rendering is currently in use force hybrid so any
             # missing tiles will be created
-            renderType = app.MapRenderingType.Hybrid
+            rendering = app.MapRendering.Hybrid
 
         self._drawView(
             paintDevice=image,
-            renderType=renderType)
+            rendering=rendering)
         return image
 
     def saveState(self) -> QtCore.QByteArray:
@@ -1314,13 +1433,13 @@ class LocalMapWidget(QtWidgets.QWidget):
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
 
-        renderType = app.Config.instance().mapRenderingType()
-        if renderType is app.MapRenderingType.Tiled and self._forceAtomicRedraw:
+        rendering = self._rendering
+        if rendering is app.MapRendering.Tiled and self._forceAtomicRedraw:
             # Render any missing tiles now rather than in the background. Hybrid
             # rendering is used rather than Full as we want the same digital
             # zooming between log scales that you would get with Background
             # rendering
-            renderType = app.MapRenderingType.Hybrid
+            rendering = app.MapRendering.Hybrid
 
         if self._isWindows:
             # On Windows the view is rendered to an offscreen image then blitted
@@ -1339,10 +1458,10 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._drawView(
             paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
-            renderType=renderType)
+            rendering=rendering)
 
-        if renderType is app.MapRenderingType.Tiled or \
-                renderType is app.MapRenderingType.Hybrid:
+        if rendering is app.MapRendering.Tiled or \
+                rendering is app.MapRendering.Hybrid:
             if not self._tileRenderQueue and LocalMapWidget._LookaheadBorderTiles:
                 # If there are no tiles needing loaded, pre-load tiles just
                 # outside the current view area.
@@ -1365,14 +1484,14 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _drawView(
             self,
             paintDevice: QtGui.QPaintDevice,
-            renderType: app.MapRenderingType
+            rendering: app.MapRendering
             ) -> None:
         painter = QtGui.QPainter()
         with gui.PainterDrawGuard(painter, paintDevice):
             painter.setBrush(QtCore.Qt.GlobalColor.black)
             painter.drawRect(0, 0, self.width(), self.height())
 
-            self._drawMap(painter, renderType)
+            self._drawMap(painter, rendering)
             self._drawOverlays(painter)
             self._drawScale(painter)
             self._drawDirections(painter)
@@ -1380,12 +1499,12 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _drawMap(
             self,
             painter: QtGui.QPainter,
-            renderType: app.MapRenderingType
+            rendering: app.MapRendering
             ) -> None:
-        if renderType is app.MapRenderingType.Tiled or \
-                renderType is app.MapRenderingType.Hybrid:
+        if rendering is app.MapRendering.Tiled or \
+                rendering is app.MapRendering.Hybrid:
             tiles = self._currentDrawTiles(
-                createMissing=renderType is not app.MapRenderingType.Tiled)
+                createMissing=rendering is not app.MapRendering.Tiled)
 
             # This is disabled as I think it actually makes scaled tiles
             # look worse (a bit to blurry)
@@ -1477,9 +1596,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         labelRect = fontMetrics.tightBoundingRect(label)
 
         self._scalePen.setColor(QtGui.QColor(
-            travellermap.HtmlColours.White
+            common.HtmlColours.White
             if travellermap.isDarkStyle(self._renderer.style()) else
-            travellermap.HtmlColours.Black))
+            common.HtmlColours.Black))
 
         with gui.PainterStateGuard(painter):
             painter.setPen(self._scalePen)
@@ -1511,8 +1630,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             painter: QtGui.QPainter
             ) -> None:
-        if not self._directionTextFont or \
-                not app.Config.instance().mapOption(travellermap.Option.GalacticDirections):
+        if not self._directionTextFont or travellermap.Option.GalacticDirections not in self._options:
             return
 
         viewWidth = self.width()
@@ -1559,8 +1677,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
-            if app.Config.instance().mapOption(travellermap.Option.MainsOverlay):
-                main = traveller.WorldManager.instance().positionToMain(hex=hex)
+            if travellermap.Option.MainsOverlay in self._options:
+                main = traveller.WorldManager.instance().mainByPosition(
+                    milieu=self._milieu,
+                    hex=hex)
                 self._mainsOverlay.setMain(main)
                 self.update() # Trigger redraw
 
@@ -1624,7 +1744,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             absoluteX=absoluteX,
             absoluteY=absoluteY)
 
-    def _createRenderer(self) -> cartographer.RenderContext:
+    def _newRenderer(self) -> cartographer.RenderContext:
         return cartographer.RenderContext(
             graphics=self._graphics,
             worldCenterX=self._worldCenterPos.x(),
@@ -1632,9 +1752,9 @@ class LocalMapWidget(QtWidgets.QWidget):
             scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height(),
-            style=app.Config.instance().mapStyle(),
-            options=cartographer.mapOptionsToRenderOptions(
-                app.Config.instance().mapOptions()),
+            milieu=self._milieu,
+            style=self._style,
+            options=cartographer.mapOptionsToRenderOptions(self._options),
             imageCache=self._imageCache,
             vectorCache=self._vectorCache,
             labelCache=self._labelCache,
@@ -1887,18 +2007,20 @@ class LocalMapWidget(QtWidgets.QWidget):
             tileScale: int, # Log scale rounded down,
             createMissing: bool
             ) -> typing.Optional[QtGui.QImage]:
-        key = (
+        tileCacheKey = (
             tileX,
             tileY,
             tileScale,
-            self._renderer.style(),
+            self._milieu,
+            self._style,
             int(self._renderer.options()))
-        image = self._sharedTileCache.get(key)
+        image = self._sharedTileCache.get(tileCacheKey)
         if not image:
             if not createMissing:
                 # Add the tile to the queue of tiles to be created in the background
-                if key not in self._tileRenderQueue:
-                    self._tileRenderQueue.append(key)
+                requiredTile = (tileX, tileY, tileScale)
+                if requiredTile not in self._tileRenderQueue:
+                    self._tileRenderQueue.append(requiredTile)
             else:
                 # Render the tile
                 image = None
@@ -1906,7 +2028,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                     # Reuse oldest cached tile
                     _, image = self._sharedTileCache.pop()
                 image = self._renderTile(tileX, tileY, tileScale, image)
-                self._sharedTileCache[key] = image
+                self._sharedTileCache[tileCacheKey] = image
         return image
 
     def _gatherPlaceholderTiles(
@@ -1981,6 +2103,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                     x,
                     y,
                     placeholderScale,
+                    self._renderer.milieu(),
                     self._renderer.style(),
                     int(self._renderer.options()))
 
@@ -2062,18 +2185,21 @@ class LocalMapWidget(QtWidgets.QWidget):
         return image
 
     def _handleRenderTileTimer(self) -> None:
-        tileX, tileY, tileScale, _, _ = self._tileRenderQueue.pop(0)
+        tileX, tileY, tileScale = self._tileRenderQueue.pop(0)
         image = None
         if self._sharedTileCache.isFull():
             # Reuse oldest cached tile
             _, image = self._sharedTileCache.pop()
-        key = (
+        tileCacheKey = (
             tileX,
             tileY,
             tileScale,
+            # Use the settings for the renderer that is going to render the
+            # tile to make sure the key is accurate
+            self._renderer.milieu(),
             self._renderer.style(),
             int(self._renderer.options()))
-        self._sharedTileCache[key] = self._renderTile(
+        self._sharedTileCache[tileCacheKey] = self._renderTile(
             tileX=tileX,
             tileY=tileY,
             tileScale=tileScale,
@@ -2114,7 +2240,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             newViewCenter: QtCore.QPointF,
             newViewLogScale: float
             ) -> bool:
-        if self.isHidden() or not app.Config.instance().mapAnimations():
+        if self.isHidden() or not self._animated:
             return False
 
         deltaX = newViewCenter.x() - self._worldCenterPos.x()

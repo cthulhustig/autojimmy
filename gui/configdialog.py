@@ -5,6 +5,7 @@ import enum
 import gui
 import json
 import logging
+import logic
 import proxy
 import traveller
 import travellermap
@@ -193,7 +194,173 @@ class _ClearTileCacheDialog(QtWidgets.QDialog):
         text += '.'
         self._workingLabel.setText(text)
 
+class _InPlaceTagLevelComboBox(gui.TagLevelComboBox):
+    def __init__(self, colours, parent = None, value = None):
+        super().__init__(colours, parent, value)
+        # NOTE: Change focus policy and install event filter to prevent
+        # accidental changes to the value if, while scrolling the list the
+        # widget is contained in, the spin box happens to move under the
+        # cursor
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+        self.installEventFilter(self._noWheelFilter)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+class _TaggingTable(gui.ListTable):
+    def __init__(
+            self,
+            keyColumnName: str,
+            keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
+            taggingColours: app.TaggingColours,
+            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], logic.TagLevel]] = None,
+            keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._keyColumnName = keyColumnName
+        self._keyDescriptions = dict(keyDescriptions)
+        self._keyTagging = dict(keyTagging) if keyTagging else {}
+        self._keyAliases = dict(keyAliases) if keyAliases else {}
+        self._taggingColours = app.TaggingColours(taggingColours)
+        self._tableFilled = False
+
+        columnNames = [keyColumnName, 'Tag Level', 'Description']
+
+        self.setColumnHeaders(columnNames)
+        self.setColumnsMoveable(False)
+        self.resizeColumnsToContents() # Size columns to header text
+        self.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+
+        # Setup horizontal scroll bar. Setting the last column to stretch to fit its content
+        # is required to make the it appear reliably
+        self.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.horizontalHeader().setSectionResizeMode(
+            self.columnCount() - 1,
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setStretchLastSection(False)
+
+        # Disable sorting as some tables (e.g. luminosity) have a natural order that is not
+        # ordered alphabetically so it makes sense to keep them in that order
+        self.setSortingEnabled(False)
+
+        # Set default column widths
+        self.setColumnWidth(1, 100)
+        self.horizontalHeader().setStretchLastSection(True)
+
+    def setContent(
+            self,
+            keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
+            keyTagging: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], logic.TagLevel]] = None,
+            keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None
+            ) -> None:
+        self._keyDescriptions = dict(keyDescriptions)
+        self._keyTagging = dict(keyTagging) if keyTagging else {}
+        self._keyAliases = dict(keyAliases) if keyAliases else {}
+        if self._tableFilled:
+            self._fillTable()
+
+    def setTaggingColours(self, colours: app.TaggingColours) -> None:
+        if colours == self._taggingColours:
+            return
+
+        self._taggingColours = app.TaggingColours(colours)
+        self._syncToTagging()
+
+    def taggingConfig(self) -> typing.Dict[typing.Union[str, enum.Enum], typing.Optional[logic.TagLevel]]:
+        if not self._tableFilled:
+            return dict(self._keyTagging)
+
+        tagging = {}
+        for row in range(self.rowCount()):
+            comboBox: _InPlaceTagLevelComboBox = self.cellWidget(row, 1)
+            if not isinstance(comboBox, _InPlaceTagLevelComboBox):
+                continue
+
+            tagLevel = comboBox.currentTagLevel()
+            if not tagLevel:
+                continue
+
+            item = self.item(row, 0)
+            key = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            tagging[key] = tagLevel
+        return tagging
+
+    def showEvent(self, event: typing.Optional[QtGui.QShowEvent]) -> None:
+        if not self._tableFilled:
+            self._fillTable()
+            self._tableFilled = True
+        return super().showEvent(event)
+
+    def _fillTable(self) -> None:
+        self.removeAllRows()
+
+        for row, (key, description) in enumerate(self._keyDescriptions.items()):
+            self.insertRow(row)
+
+            toolTip = gui.createStringToolTip(description)
+
+            keyText = self._keyAliases.get(key)
+            if keyText is None:
+                keyText = key.name if isinstance(key, enum.Enum) else key
+
+            item = QtWidgets.QTableWidgetItem(keyText)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, key)
+            item.setToolTip(toolTip)
+            self.setItem(row, 0, item)
+
+            tagLevel = self._keyTagging.get(key)
+
+            item = QtWidgets.QTableWidgetItem()
+            item.setToolTip(toolTip)
+            self.setItem(row, 1, item)
+            comboBox = _InPlaceTagLevelComboBox(
+                value=tagLevel,
+                colours=self._taggingColours)
+            # Set the background role of the combo box to the same background role that will be used
+            # for the alternating rows in the table. This makes sure the combo boxes have the same
+            # colour as the rest of the row (when no tag level is selected). Note that this will most
+            # likely break if sorting is ever enabled on the table
+            comboBox.setBackgroundRole(QtGui.QPalette.ColorRole.AlternateBase if row % 2 else QtGui.QPalette.ColorRole.Base)
+            self.setCellWidget(row, 1, comboBox)
+
+            item = QtWidgets.QTableWidgetItem(description)
+            item.setToolTip(toolTip)
+            self.setItem(row, 2, item)
+
+    def _syncToTagging(self) -> None:
+        for row in range(self.rowCount()):
+            comboBox: _InPlaceTagLevelComboBox = self.cellWidget(row, 1)
+            if isinstance(comboBox, _InPlaceTagLevelComboBox):
+                comboBox.setColours(self._taggingColours)
+
 class ConfigDialog(gui.DialogEx):
+    _TaggingTableSettingKeys = {
+        logic.TaggingProperty.Zone: 'ZoneTaggingTableState',
+        logic.TaggingProperty.StarPort: 'StarportTaggingTableState',
+        logic.TaggingProperty.WorldSize: 'WorldSizeTaggingTableState',
+        logic.TaggingProperty.Atmosphere: 'AtmosphereTaggingTableState',
+        logic.TaggingProperty.Hydrographics: 'HydrographicsTaggingTableState',
+        logic.TaggingProperty.Population: 'PopulationTaggingTableState',
+        logic.TaggingProperty.Government: 'GovernmentTaggingTableState',
+        logic.TaggingProperty.LawLevel: 'LawLevelTaggingTableState',
+        logic.TaggingProperty.TechLevel: 'TechLevelTaggingTableState',
+        logic.TaggingProperty.BaseType: 'BaseTypeTaggingTableState',
+        logic.TaggingProperty.TradeCode: 'TradeCodeTaggingTableState',
+        logic.TaggingProperty.Resources: 'ResourcesTaggingTableState',
+        logic.TaggingProperty.Labour: 'LabourTaggingTableState',
+        logic.TaggingProperty.Infrastructure: 'InfrastructureTaggingTableState',
+        logic.TaggingProperty.Efficiency: 'EfficiencyTaggingTableState',
+        logic.TaggingProperty.Heterogeneity: 'HeterogeneityTaggingTableState',
+        logic.TaggingProperty.Acceptance: 'AcceptanceTaggingTableState',
+        logic.TaggingProperty.Strangeness: 'StrangenessTaggingTableState',
+        logic.TaggingProperty.Symbols: 'SymbolsTaggingTableState',
+        logic.TaggingProperty.Nobility: 'NobilityTaggingTableState',
+        logic.TaggingProperty.Allegiance: 'AllegianceTaggingTableState',
+        logic.TaggingProperty.Spectral: 'SpectralTaggingTableState',
+        logic.TaggingProperty.Luminosity: 'LuminosityTaggingTableState',
+        }
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -203,35 +370,12 @@ class ConfigDialog(gui.DialogEx):
             configSection='ConfigDialog',
             parent=parent)
 
-        self._restartRequired = False
-
         self._tabWidget = gui.VerticalTabWidget()
+        self._taggingTables: typing.Dict[logic.TaggingProperty, _TaggingTable] = {}
 
         self._setupGeneralTab()
         self._setupRulesTab()
-        self._setupZoneTaggingTab()
-        self._setupStarPortTaggingTab()
-        self._setupWorldSizeTaggingTab()
-        self._setupAtmosphereTaggingTab()
-        self._setupHydrographicsTaggingTab()
-        self._setupPopulationTaggingTab()
-        self._setupGovernmentTaggingTab()
-        self._setupLawLevelTaggingTab()
-        self._setupTechLevelTaggingTab()
-        self._setupTradeCodeTaggingTab()
-        self._setupBaseTypeTaggingTab()
-        self._setupResourcesTaggingTab()
-        self._setupLabourTaggingTab()
-        self._setupInfrastructureTaggingTab()
-        self._setupEfficiencyTaggingTab()
-        self._setupHeterogeneityTaggingTab()
-        self._setupAcceptanceTaggingTab()
-        self._setupStrangenessTaggingTab()
-        self._setupSymbolsTaggingTab()
-        self._setupNobilityTaggingTab()
-        self._setupAllegianceTaggingTab()
-        self._setupSpectralTaggingTab()
-        self._setupLuminosityTaggingTab()
+        self._setupTaggingTabs()
         self._setupButtons()
 
         dialogLayout = QtWidgets.QVBoxLayout()
@@ -240,9 +384,6 @@ class ConfigDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
         self.showMaximizeButton()
-
-    def restartRequired(self) -> bool:
-        return self._restartRequired
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -259,166 +400,16 @@ class ConfigDialog(gui.DialogEx):
 
         self._settings.beginGroup(self._configSection)
 
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='ZoneTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._zoneTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='StarPortTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._starPortTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='WorldSizeTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._worldSizeTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='AtmosphereTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._atmosphereTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='HydrographicsTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._hydrographicsTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='PopulationTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._populationTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='GovernmentTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._governmentTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='LawLevelTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._lawLevelTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='TechLevelTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._techLevelTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='BaseTypeTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._baseTypeTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='TradeCodeTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._tradeCodeTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='ResourcesTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._resourcesTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='LabourTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._labourTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='InfrastructureTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._infrastructureTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='EfficiencyTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._efficiencyTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='HeterogeneityTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._heterogeneityTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='AcceptanceTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._acceptanceTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='StrangenessTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._strangenessTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SymbolsTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._symbolsTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='NobilityTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._nobilityTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='AllegianceTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._allegianceTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SpectralTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._spectralTaggingTable.restoreState(storedState)
-
-        storedState = gui.safeLoadSetting(
-            settings=self._settings,
-            key='LuminosityTaggingTableState',
-            type=QtCore.QByteArray)
-        if storedState:
-            self._luminosityTaggingTable.restoreState(storedState)
+        for taggingProperty, settingKey in ConfigDialog._TaggingTableSettingKeys.items():
+            table = self._taggingTables.get(taggingProperty)
+            if not table:
+                continue
+            storedState = gui.safeLoadSetting(
+                settings=self._settings,
+                key=settingKey,
+                type=QtCore.QByteArray)
+            if storedState:
+                table.restoreState(storedState)
 
         self._settings.endGroup()
 
@@ -427,29 +418,12 @@ class ConfigDialog(gui.DialogEx):
 
         # Note that this is saving the state of the various tables not the actual configuration
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('ZoneTaggingTableState', self._zoneTaggingTable.saveState())
-        self._settings.setValue('StarPortTaggingTableState', self._starPortTaggingTable.saveState())
-        self._settings.setValue('WorldSizeTaggingTableState', self._worldSizeTaggingTable.saveState())
-        self._settings.setValue('AtmosphereTaggingTableState', self._atmosphereTaggingTable.saveState())
-        self._settings.setValue('HydrographicsTaggingTableState', self._hydrographicsTaggingTable.saveState())
-        self._settings.setValue('PopulationTaggingTableState', self._populationTaggingTable.saveState())
-        self._settings.setValue('GovernmentTaggingTableState', self._governmentTaggingTable.saveState())
-        self._settings.setValue('LawLevelTaggingTableState', self._lawLevelTaggingTable.saveState())
-        self._settings.setValue('TechLevelTaggingTableState', self._techLevelTaggingTable.saveState())
-        self._settings.setValue('BaseTypeTaggingTableState', self._baseTypeTaggingTable.saveState())
-        self._settings.setValue('TradeCodeTaggingTableState', self._tradeCodeTaggingTable.saveState())
-        self._settings.setValue('ResourcesTaggingTableState', self._resourcesTaggingTable.saveState())
-        self._settings.setValue('LabourTaggingTableState', self._labourTaggingTable.saveState())
-        self._settings.setValue('InfrastructureTaggingTableState', self._infrastructureTaggingTable.saveState())
-        self._settings.setValue('EfficiencyTaggingTableState', self._efficiencyTaggingTable.saveState())
-        self._settings.setValue('HeterogeneityTaggingTableState', self._heterogeneityTaggingTable.saveState())
-        self._settings.setValue('AcceptanceTaggingTableState', self._acceptanceTaggingTable.saveState())
-        self._settings.setValue('StrangenessTaggingTableState', self._strangenessTaggingTable.saveState())
-        self._settings.setValue('SymbolsTaggingTableState', self._symbolsTaggingTable.saveState())
-        self._settings.setValue('NobilityTaggingTableState', self._nobilityTaggingTable.saveState())
-        self._settings.setValue('AllegianceTaggingTableState', self._allegianceTaggingTable.saveState())
-        self._settings.setValue('SpectralTaggingTableState', self._spectralTaggingTable.saveState())
-        self._settings.setValue('LuminosityTaggingTableState', self._luminosityTaggingTable.saveState())
+
+        for taggingProperty, settingKey in ConfigDialog._TaggingTableSettingKeys.items():
+            table = self._taggingTables.get(taggingProperty)
+            if table:
+                self._settings.setValue(settingKey, table.saveState())
+
         self._settings.endGroup()
 
     def _setupGeneralTab(self) -> None:
@@ -458,14 +432,19 @@ class ConfigDialog(gui.DialogEx):
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
-            value=app.Config.instance().milieu(),
+            value=app.Config.instance().value(
+                option=app.ConfigOption.Milieu,
+                futureValue=True),
             textMap={milieu: travellermap.milieuDescription(milieu) for milieu in  travellermap.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
             '<p>The milieu to use when determining sector and world information</p>' +
             _RestartRequiredParagraph,
             escape=False))
+        self._milieuComboBox.currentIndexChanged.connect(self._milieuChanged)
 
-        rules = app.Config.instance().rules()
+        rules = app.Config.instance().value(
+            option=app.ConfigOption.Rules,
+            futureValue=True)
 
         self._rulesComboBox = gui.EnumComboBox(
             type=traveller.RuleSystem,
@@ -488,7 +467,9 @@ class ConfigDialog(gui.DialogEx):
 
         self._mapEngineComboBox = gui.EnumComboBox(
             type=app.MapEngine,
-            value=app.Config.instance().mapEngine())
+            value=app.Config.instance().value(
+                option=app.ConfigOption.MapEngine,
+                futureValue=True))
         self._mapEngineComboBox.currentIndexChanged.connect(
             self._renderingTypeChanged)
         self._mapEngineComboBox.setToolTip(gui.createStringToolTip(
@@ -522,7 +503,9 @@ class ConfigDialog(gui.DialogEx):
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
-        self._proxyPortSpinBox.setValue(app.Config.instance().proxyPort())
+        self._proxyPortSpinBox.setValue(app.Config.instance().value(
+            option=app.ConfigOption.ProxyPort,
+            futureValue=True))
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the port the local Traveller Map proxy will listen '
@@ -534,7 +517,9 @@ class ConfigDialog(gui.DialogEx):
 
         self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
         self._proxyHostPoolSizeSpinBox.setRange(1, 10)
-        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
+        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().value(
+            option=app.ConfigOption.ProxyHostPoolSize,
+            futureValue=True))
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the number of localhost addresses the proxy will '
@@ -557,7 +542,9 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         self._proxyMapUrlLineEdit = gui.LineEditEx()
-        self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
+        self._proxyMapUrlLineEdit.setText(app.Config.instance().value(
+            option=app.ConfigOption.ProxyMapUrl,
+            futureValue=True))
         self._proxyMapUrlLineEdit.setMaximumWidth(200)
         self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
@@ -575,7 +562,9 @@ class ConfigDialog(gui.DialogEx):
         self._proxyCompositionModeComboBox.addItem('Hybrid', False)
         self._proxyCompositionModeComboBox.addItem('SVG', True)
         self._proxyCompositionModeComboBox.setCurrentByUserData(
-            userData=app.Config.instance().proxySvgCompositionEnabled())
+            userData=app.Config.instance().value(
+                option=app.ConfigOption.ProxySvgComposition,
+                futureValue=True))
         self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
         self._proxyCompositionModeComboBox.setHidden(
             not depschecker.DetectedCairoSvgState)
@@ -607,7 +596,9 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
         self._proxyTileCacheSizeSpinBox.setValue(
-            int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
+            int(app.Config.instance().value(
+                option=app.ConfigOption.ProxyTileCacheSize,
+                futureValue=True) / (1000 * 1000)))
         self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the amount of disk space to use to cache tiles.</p>'
@@ -620,7 +611,9 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
         self._proxyTileCacheLifetimeSpinBox.setValue(
-            app.Config.instance().proxyTileCacheLifetime())
+            app.Config.instance().value(
+                option=app.ConfigOption.ProxyTileCacheLifetime,
+                futureValue=True))
         self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the max time the proxy will cache a tile on disk.</p>'
@@ -653,7 +646,9 @@ class ConfigDialog(gui.DialogEx):
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
             type=app.ColourTheme,
-            value=app.Config.instance().colourTheme())
+            value=app.Config.instance().value(
+                option=app.ConfigOption.ColourTheme,
+                futureValue=True))
         self._colourThemeComboBox.setToolTip(gui.createStringToolTip(
             '<p>Select the colour theme.</p>' +
             _RestartRequiredParagraph,
@@ -663,14 +658,18 @@ class ConfigDialog(gui.DialogEx):
         # where 1.0 is 100%
         self._interfaceScaleSpinBox = gui.SpinBoxEx()
         self._interfaceScaleSpinBox.setRange(100, 400)
-        self._interfaceScaleSpinBox.setValue(int(app.Config.instance().interfaceScale() * 100))
+        self._interfaceScaleSpinBox.setValue(int(app.Config.instance().value(
+            option=app.ConfigOption.InterfaceScale,
+            futureValue=True) * 100))
         self._interfaceScaleSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Scale the UI up to make things easier to read</p>' +
             _RestartRequiredParagraph,
             escape=False))
 
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
-        self._showToolTipImagesCheckBox.setChecked(app.Config.instance().showToolTipImages())
+        self._showToolTipImagesCheckBox.setChecked(app.Config.instance().value(
+            option=app.ConfigOption.ShowToolTipImages,
+            futureValue=True))
         self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
             '<p>Display world images in tool tips</p>'
             '<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
@@ -679,17 +678,24 @@ class ConfigDialog(gui.DialogEx):
             'can cause the user interface to block temporarily while the image is downloaded.</p>',
             escape=False))
 
-        self._averageCaseColourButton = gui.ColourButton(app.Config.instance().averageCaseColour())
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours,
+            futureValue=True)
+
+        self._averageCaseColourButton = gui.ColourButton(
+            colour=outcomeColours.colour(outcome=logic.RollOutcome.AverageCase))
         self._averageCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._averageCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using average dice rolls'))
 
-        self._worstCaseColourButton = gui.ColourButton(app.Config.instance().worstCaseColour())
+        self._worstCaseColourButton = gui.ColourButton(
+            colour=outcomeColours.colour(outcome=logic.RollOutcome.WorstCase))
         self._worstCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._worstCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using worst case dice rolls'))
 
-        self._bestCaseColourButton = gui.ColourButton(app.Config.instance().bestCaseColour())
+        self._bestCaseColourButton = gui.ColourButton(
+            colour=outcomeColours.colour(outcome=logic.RollOutcome.BestCase))
         self._bestCaseColourButton.setFixedWidth(ColourButtonWidth)
         self._bestCaseColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight values calculated using best case dice rolls'))
@@ -706,20 +712,32 @@ class ConfigDialog(gui.DialogEx):
         guiGroupBox.setLayout(guiLayout)
 
         # Tagging widgets
-        self._desirableTagColourButton = gui.ColourButton(app.Config.instance().tagColour(app.TagLevel.Desirable))
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours,
+            futureValue=True)
+        self._desirableTagColourButton = gui.ColourButton(QtGui.QColor(
+            taggingColours.colour(level=logic.TagLevel.Desirable)))
         self._desirableTagColourButton.setFixedWidth(ColourButtonWidth)
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
+        self._desirableTagColourButton.colourChanged.connect(
+                self._taggingColourChanged)
 
-        self._warningTagColourButton = gui.ColourButton(app.Config.instance().tagColour(app.TagLevel.Warning))
+        self._warningTagColourButton = gui.ColourButton(QtGui.QColor(
+            taggingColours.colour(level=logic.TagLevel.Warning)))
         self._warningTagColourButton.setFixedWidth(ColourButtonWidth)
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
+        self._warningTagColourButton.colourChanged.connect(
+                self._taggingColourChanged)
 
-        self._dangerTagColourButton = gui.ColourButton(app.Config.instance().tagColour(app.TagLevel.Danger))
+        self._dangerTagColourButton = gui.ColourButton(QtGui.QColor(
+            taggingColours.colour(level=logic.TagLevel.Danger)))
         self._dangerTagColourButton.setFixedWidth(ColourButtonWidth)
         self._dangerTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight danger tagging'))
+        self._dangerTagColourButton.colourChanged.connect(
+                self._taggingColourChanged)
 
         taggingLayout = gui.FormLayoutEx()
         taggingLayout.addRow('Desirable Tagging Colour:', self._desirableTagColourButton)
@@ -742,7 +760,9 @@ class ConfigDialog(gui.DialogEx):
         self._tabWidget.addTab(tab, 'General')
 
     def _setupRulesTab(self) -> None:
-        rules = app.Config.instance().rules()
+        rules = app.Config.instance().value(
+            option=app.ConfigOption.Rules,
+            futureValue=True)
 
         self._classAStarPortFuelType = gui.EnumComboBox(
             type=traveller.StarPortFuelType,
@@ -798,252 +818,150 @@ class ConfigDialog(gui.DialogEx):
         tab.setLayout(tabLayout)
         self._tabWidget.addTab(tab, 'Rules')
 
-    def _setupZoneTaggingTab(self) -> None:
-        keyDescriptions = {}
-        keyAliases = {}
-        for zoneType in traveller.ZoneType:
-            keyDescriptions[zoneType] = traveller.zoneTypeName(zoneType)
-            keyAliases[zoneType] = traveller.zoneTypeCode(zoneType)
+    def _setupTaggingTabs(self) -> None:
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Zone,
+            displayName='Zone',
+            keyDescriptions={zone: traveller.zoneTypeName(zone) for zone in traveller.ZoneType},
+            keyAliases={zone: traveller.zoneTypeCode(zone) for zone in traveller.ZoneType})
 
-        self._zoneTaggingTable = self._createTaggingTable(
-            keyTitle='Zone',
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.StarPort,
+            displayName='Star Port',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.StarPort))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.WorldSize,
+            displayName='World Size',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.WorldSize))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Atmosphere,
+            displayName='Atmosphere',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Atmosphere))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Hydrographics,
+            displayName='Hydrographics',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Hydrographics))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Population,
+            displayName='Population',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Population))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Government,
+            displayName='Government',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Government))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.LawLevel,
+            displayName='Law Level',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.LawLevel))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.TechLevel,
+            displayName='Tech Level',
+            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.TechLevel))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.BaseType,
+            displayName='Base',
+            keyDescriptions={base: traveller.Bases.description(base) for base in  traveller.BaseType},
+            keyAliases={base: traveller.Bases.code(base) for base in  traveller.BaseType})
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.TradeCode,
+            displayName='Trade Code',
+            keyDescriptions={code: f'{traveller.tradeCodeName(code)} - {traveller.tradeCodeDescription(code)}' for code in  traveller.TradeCode},
+            keyAliases={code: traveller.tradeCodeString(code) for code in  traveller.TradeCode})
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Resources,
+            displayName='Resources',
+            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Resources))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Labour,
+            displayName='Labour',
+            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Labour))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Infrastructure,
+            displayName='Infrastructure',
+            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Infrastructure))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Efficiency,
+            displayName='Efficiency',
+            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Efficiency))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Heterogeneity,
+            displayName='Heterogeneity',
+            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Heterogeneity))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Acceptance,
+            displayName='Acceptance',
+            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Acceptance))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Strangeness,
+            displayName='Strangeness',
+            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Strangeness))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Symbols,
+            displayName='Symbols',
+            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Symbols))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Nobility,
+            displayName='Nobility',
+            keyDescriptions={nobility: traveller.Nobilities.description(nobility) for nobility in traveller.NobilityType},
+            keyAliases={nobility: traveller.Nobilities.code(nobility) for nobility in traveller.NobilityType})
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Allegiance,
+            displayName='Allegiance',
+            keyDescriptions=self._generateAllegianceDescriptions())
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Spectral,
+            displayName='Spectral Class',
+            keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.SpectralClass))
+
+        self._setupTaggingTab(
+            taggingProperty=logic.TaggingProperty.Luminosity,
+            displayName='Luminosity Class',
+            keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.LuminosityClass))
+
+    def _setupTaggingTab(
+            self,
+            taggingProperty: logic.TaggingProperty,
+            displayName: str,
+            keyDescriptions: typing.Mapping[typing.Union[str, enum.Enum], str],
+            keyAliases: typing.Optional[typing.Mapping[typing.Union[str, enum.Enum], str]] = None,
+            ) -> None:
+        worldTagging = app.Config.instance().value(
+            option=app.ConfigOption.WorldTagging,
+            futureValue=True)
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours,
+            futureValue=True)
+
+        table = _TaggingTable(
+            keyColumnName=displayName,
             keyDescriptions=keyDescriptions,
+            keyTagging=worldTagging.propertyConfig(property=taggingProperty),
             keyAliases=keyAliases,
-            taggingMap=app.Config.instance().zoneTagLevels())
+            taggingColours=taggingColours)
+        self._taggingTables[taggingProperty] = table
         self._addTableTab(
-            title='Zone Tagging',
-            table=self._zoneTaggingTable)
-
-    def _setupStarPortTaggingTab(self) -> None:
-        self._starPortTaggingTable = self._createTaggingTable(
-            keyTitle='Star Port',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.StarPort),
-            taggingMap=app.Config.instance().starPortTagLevels())
-        self._addTableTab(
-            title='Star Port Tagging',
-            table=self._starPortTaggingTable)
-
-    def _setupWorldSizeTaggingTab(self) -> None:
-        self._worldSizeTaggingTable = self._createTaggingTable(
-            keyTitle='World Size',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.WorldSize),
-            taggingMap=app.Config.instance().worldSizeTagLevels())
-        self._addTableTab(
-            title='World Size Tagging',
-            table=self._worldSizeTaggingTable)
-
-    def _setupAtmosphereTaggingTab(self) -> None:
-        self._atmosphereTaggingTable = self._createTaggingTable(
-            keyTitle='Atmosphere',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Atmosphere),
-            taggingMap=app.Config.instance().atmosphereTagLevels())
-        self._addTableTab(
-            title='Atmosphere Tagging',
-            table=self._atmosphereTaggingTable)
-
-    def _setupHydrographicsTaggingTab(self) -> None:
-        self._hydrographicsTaggingTable = self._createTaggingTable(
-            keyTitle='Hydrographics',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Hydrographics),
-            taggingMap=app.Config.instance().hydrographicsTagLevels())
-        self._addTableTab(
-            title='Hydrographics Tagging',
-            table=self._hydrographicsTaggingTable)
-
-    def _setupPopulationTaggingTab(self) -> None:
-        self._populationTaggingTable = self._createTaggingTable(
-            keyTitle='Population',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Population),
-            taggingMap=app.Config.instance().populationTagLevels())
-        self._addTableTab(
-            title='Population Tagging',
-            table=self._populationTaggingTable)
-
-    def _setupGovernmentTaggingTab(self) -> None:
-        self._governmentTaggingTable = self._createTaggingTable(
-            keyTitle='Government',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.Government),
-            taggingMap=app.Config.instance().governmentTagLevels())
-        self._addTableTab(
-            title='Government Tagging',
-            table=self._governmentTaggingTable)
-
-    def _setupLawLevelTaggingTab(self) -> None:
-        self._lawLevelTaggingTable = self._createTaggingTable(
-            keyTitle='Law Level',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.LawLevel),
-            taggingMap=app.Config.instance().lawLevelTagLevels())
-        self._addTableTab(
-            title='Law Level Tagging',
-            table=self._lawLevelTaggingTable)
-
-    def _setupTechLevelTaggingTab(self) -> None:
-        self._techLevelTaggingTable = self._createTaggingTable(
-            keyTitle='Tech Level',
-            keyDescriptions=traveller.UWP.descriptionMap(traveller.UWP.Element.TechLevel),
-            taggingMap=app.Config.instance().techLevelTagLevels())
-        self._addTableTab(
-            title='Tech Level Tagging',
-            table=self._techLevelTaggingTable)
-
-    def _setupBaseTypeTaggingTab(self) -> None:
-        keyDescriptions = {}
-        keyAliases = {}
-        for baseType in traveller.BaseType:
-            keyDescriptions[baseType] = traveller.Bases.description(baseType)
-            keyAliases[baseType] = traveller.Bases.code(baseType)
-
-        self._baseTypeTaggingTable = self._createTaggingTable(
-            keyTitle='Base',
-            keyDescriptions=keyDescriptions,
-            keyAliases=keyAliases,
-            taggingMap=app.Config.instance().baseTypeTagLevels())
-        self._addTableTab(
-            title='Base Tagging',
-            table=self._baseTypeTaggingTable)
-
-    def _setupTradeCodeTaggingTab(self) -> None:
-        keyDescriptions = {}
-        keyAliases = {}
-        for tradeCode in traveller.TradeCode:
-            keyDescriptions[tradeCode] = f'{traveller.tradeCodeName(tradeCode)} - {traveller.tradeCodeDescription(tradeCode)}'
-            keyAliases[tradeCode] = traveller.tradeCodeString(tradeCode)
-
-        self._tradeCodeTaggingTable = self._createTaggingTable(
-            keyTitle='Trade Code',
-            keyDescriptions=keyDescriptions,
-            keyAliases=keyAliases,
-            taggingMap=app.Config.instance().tradeCodeTagLevels())
-        self._addTableTab(
-            title='Trade Code Tagging',
-            table=self._tradeCodeTaggingTable)
-
-    def _setupResourcesTaggingTab(self) -> None:
-        self._resourcesTaggingTable = self._createTaggingTable(
-            keyTitle='Resources',
-            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Resources),
-            taggingMap=app.Config.instance().resourceTagLevels())
-        self._addTableTab(
-            title='Resources Tagging',
-            table=self._resourcesTaggingTable)
-
-    def _setupLabourTaggingTab(self) -> None:
-        self._labourTaggingTable = self._createTaggingTable(
-            keyTitle='Labour',
-            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Labour),
-            taggingMap=app.Config.instance().labourTagLevels())
-        self._addTableTab(
-            title='Labour Tagging',
-            table=self._labourTaggingTable)
-
-    def _setupInfrastructureTaggingTab(self) -> None:
-        self._infrastructureTaggingTable = self._createTaggingTable(
-            keyTitle='Infrastructure',
-            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Infrastructure),
-            taggingMap=app.Config.instance().infrastructureTagLevels())
-        self._addTableTab(
-            title='Infrastructure Tagging',
-            table=self._infrastructureTaggingTable)
-
-    def _setupEfficiencyTaggingTab(self) -> None:
-        self._efficiencyTaggingTable = self._createTaggingTable(
-            keyTitle='Efficiency',
-            keyDescriptions=traveller.Economics.descriptionMap(traveller.Economics.Element.Efficiency),
-            taggingMap=app.Config.instance().efficiencyTagLevels())
-        self._addTableTab(
-            title='Efficiency Tagging',
-            table=self._efficiencyTaggingTable)
-
-    def _setupHeterogeneityTaggingTab(self) -> None:
-        self._heterogeneityTaggingTable = self._createTaggingTable(
-            keyTitle='Heterogeneity',
-            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Heterogeneity),
-            taggingMap=app.Config.instance().heterogeneityTagLevels())
-        self._addTableTab(
-            title='Heterogeneity Tagging',
-            table=self._heterogeneityTaggingTable)
-
-    def _setupAcceptanceTaggingTab(self) -> None:
-        self._acceptanceTaggingTable = self._createTaggingTable(
-            keyTitle='Acceptance',
-            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Acceptance),
-            taggingMap=app.Config.instance().acceptanceTagLevels())
-        self._addTableTab(
-            title='Acceptance Tagging',
-            table=self._acceptanceTaggingTable)
-
-    def _setupStrangenessTaggingTab(self) -> None:
-        self._strangenessTaggingTable = self._createTaggingTable(
-            keyTitle='Strangeness',
-            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Strangeness),
-            taggingMap=app.Config.instance().strangenessTagLevels())
-        self._addTableTab(
-            title='Strangeness Tagging',
-            table=self._strangenessTaggingTable)
-
-    def _setupSymbolsTaggingTab(self) -> None:
-        self._symbolsTaggingTable = self._createTaggingTable(
-            keyTitle='Symbols',
-            keyDescriptions=traveller.Culture.descriptionMap(traveller.Culture.Element.Symbols),
-            taggingMap=app.Config.instance().symbolsTagLevels())
-        self._addTableTab(
-            title='Symbols Tagging',
-            table=self._symbolsTaggingTable)
-
-    def _setupNobilityTaggingTab(self) -> None:
-        keyDescriptions = {}
-        keyAliases = {}
-        for nobilityType in traveller.NobilityType:
-            keyDescriptions[nobilityType] = traveller.Nobilities.description(nobilityType)
-            keyAliases[nobilityType] = traveller.Nobilities.code(nobilityType)
-
-        self._nobilityTaggingTable = self._createTaggingTable(
-            keyTitle='Nobility',
-            keyDescriptions=keyDescriptions,
-            keyAliases=keyAliases,
-            taggingMap=app.Config.instance().nobilityTagLevels())
-        self._addTableTab(
-            title='Nobility Tagging',
-            table=self._nobilityTaggingTable)
-
-    def _setupAllegianceTaggingTab(self) -> None:
-        allegiances = traveller.AllegianceManager.instance().allegiances()
-
-        # Create a copy of the allegiances list and sort it by code
-        allegiances = list(allegiances)
-        allegiances.sort(key=lambda x: x.code())
-
-        keyDescriptions = {}
-        for allegiance in allegiances:
-            nameMap = allegiance.uniqueNameMap()
-            for code, name in nameMap.items():
-                keyDescriptions[code] = name
-
-        self._allegianceTaggingTable = self._createTaggingTable(
-            keyTitle='Allegiance',
-            keyDescriptions=keyDescriptions,
-            taggingMap=app.Config.instance().allegianceTagLevels())
-        self._addTableTab(
-            title='Allegiance Tagging',
-            table=self._allegianceTaggingTable)
-
-    def _setupSpectralTaggingTab(self) -> None:
-        self._spectralTaggingTable = self._createTaggingTable(
-            keyTitle='Spectral Class',
-            keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.SpectralClass),
-            taggingMap=app.Config.instance().spectralTagLevels())
-        self._addTableTab(
-            title='Spectral Class Tagging',
-            table=self._spectralTaggingTable)
-
-    def _setupLuminosityTaggingTab(self) -> None:
-        self._luminosityTaggingTable = self._createTaggingTable(
-            keyTitle='Luminosity Class',
-            keyDescriptions=traveller.Star.descriptionMap(traveller.Star.Element.LuminosityClass),
-            taggingMap=app.Config.instance().luminosityTagLevels())
-        self._addTableTab(
-            title='Luminosity Class Tagging',
-            table=self._luminosityTaggingTable)
+            title=displayName + ' Tagging',
+            table=table)
 
     def _setupButtons(self):
         self._okButton = QtWidgets.QPushButton('OK')
@@ -1074,75 +992,72 @@ class ConfigDialog(gui.DialogEx):
         return True
 
     def _saveConfig(self) -> None:
-        class RestartChecker(object):
-            def __init__(self) -> None:
-                self._needsRestart = False
-
-            def needsRestart(self) -> bool:
-                return self._needsRestart
-
-            def update(self, needsRestart: bool):
-                if needsRestart:
-                    self._needsRestart = True
-
-        checker = RestartChecker()
-
         try:
-            config = app.Config.instance()
-            checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
-            checker.update(config.setRules(traveller.Rules(
-                system=self._rulesComboBox.currentEnum(),
-                classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
-                classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
-                classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
-                classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
-                classEStarPortFuelType=self._classEStarPortFuelType.currentEnum())))
-            checker.update(config.setMapEngine(self._mapEngineComboBox.currentEnum()))
-            checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
-            checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
-            checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
-            checker.update(config.setProxyTileCacheSize(
-                self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000))) # Convert MB to bytes
-            checker.update(config.setProxyTileCacheLifetime(
-                self._proxyTileCacheLifetimeSpinBox.value()))
-            checker.update(config.setProxySvgCompositionEnabled(
-                self._proxyCompositionModeComboBox.currentUserData()))
+            app.Config.instance().setValue(
+                option=app.ConfigOption.Milieu,
+                value=self._milieuComboBox.currentEnum())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.Rules,
+                value=traveller.Rules(
+                    system=self._rulesComboBox.currentEnum(),
+                    classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
+                    classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
+                    classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
+                    classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
+                    classEStarPortFuelType=self._classEStarPortFuelType.currentEnum()))
+            app.Config.instance().setValue(
+                option=app.ConfigOption.MapEngine,
+                value=self._mapEngineComboBox.currentEnum())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ProxyPort,
+                value=self._proxyPortSpinBox.value())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ProxyHostPoolSize,
+                value=self._proxyHostPoolSizeSpinBox.value())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ProxyMapUrl,
+                value=self._proxyMapUrlLineEdit.text())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ProxyTileCacheSize,
+                value=self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000)) # Convert MB to bytes
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ProxyTileCacheLifetime,
+                value=self._proxyTileCacheLifetimeSpinBox.value())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ProxySvgComposition,
+                value=self._proxyCompositionModeComboBox.currentUserData())
 
-            checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
-            checker.update(config.setInterfaceScale(
-                self._interfaceScaleSpinBox.value() / 100)) # Convert percent to scale
-            checker.update(config.setShowToolTipImages(self._showToolTipImagesCheckBox.isChecked()))
-            checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
-            checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))
-            checker.update(config.setBestCaseColour(self._bestCaseColourButton.colour()))
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ColourTheme,
+                value=self._colourThemeComboBox.currentEnum())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.InterfaceScale,
+                value=self._interfaceScaleSpinBox.value() / 100) # Convert percent to scale
+            app.Config.instance().setValue(
+                option=app.ConfigOption.ShowToolTipImages,
+                value=self._showToolTipImagesCheckBox.isChecked())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.OutcomeColours,
+                value=app.OutcomeColours(
+                    averageCaseColour=gui.colourToString(self._averageCaseColourButton.colour()),
+                    worstCaseColour=gui.colourToString(self._worstCaseColourButton.colour()),
+                    bestCaseColour=gui.colourToString(self._bestCaseColourButton.colour())))
 
-            checker.update(config.setTagColour(app.TagLevel.Desirable, self._desirableTagColourButton.colour()))
-            checker.update(config.setTagColour(app.TagLevel.Warning, self._warningTagColourButton.colour()))
-            checker.update(config.setTagColour(app.TagLevel.Danger, self._dangerTagColourButton.colour()))
+            app.Config.instance().setValue(
+                option=app.ConfigOption.TaggingColours,
+                value=app.TaggingColours(
+                    desirableColour=gui.colourToString(self._desirableTagColourButton.colour()),
+                    warningColour=gui.colourToString(self._warningTagColourButton.colour()),
+                    dangerColour=gui.colourToString(self._dangerTagColourButton.colour())))
 
-            checker.update(config.setZoneTagLevels(self._taggingMapFromTable(self._zoneTaggingTable)))
-            checker.update(config.setStarPortTagLevels(self._taggingMapFromTable(self._starPortTaggingTable)))
-            checker.update(config.setWorldSizeTagLevels(self._taggingMapFromTable(self._worldSizeTaggingTable)))
-            checker.update(config.setAtmosphereTagLevels(self._taggingMapFromTable(self._atmosphereTaggingTable)))
-            checker.update(config.setHydrographicsTagLevels(self._taggingMapFromTable(self._hydrographicsTaggingTable)))
-            checker.update(config.setPopulationTagLevels(self._taggingMapFromTable(self._populationTaggingTable)))
-            checker.update(config.setGovernmentTagLevels(self._taggingMapFromTable(self._governmentTaggingTable)))
-            checker.update(config.setLawLevelTagLevels(self._taggingMapFromTable(self._lawLevelTaggingTable)))
-            checker.update(config.setTechLevelTagLevels(self._taggingMapFromTable(self._techLevelTaggingTable)))
-            checker.update(config.setBaseTypeTagLevels(self._taggingMapFromTable(self._baseTypeTaggingTable)))
-            checker.update(config.setTradeCodeTagLevels(self._taggingMapFromTable(self._tradeCodeTaggingTable)))
-            checker.update(config.setResourceTagLevels(self._taggingMapFromTable(self._resourcesTaggingTable)))
-            checker.update(config.setLabourTagLevels(self._taggingMapFromTable(self._labourTaggingTable)))
-            checker.update(config.setInfrastructureTagLevels(self._taggingMapFromTable(self._infrastructureTaggingTable)))
-            checker.update(config.setEfficiencyTagLevels(self._taggingMapFromTable(self._efficiencyTaggingTable)))
-            checker.update(config.setHeterogeneityTagLevels(self._taggingMapFromTable(self._heterogeneityTaggingTable)))
-            checker.update(config.setAcceptanceTagLevels(self._taggingMapFromTable(self._acceptanceTaggingTable)))
-            checker.update(config.setStrangenessTagLevels(self._taggingMapFromTable(self._strangenessTaggingTable)))
-            checker.update(config.setSymbolsTagLevels(self._taggingMapFromTable(self._symbolsTaggingTable)))
-            checker.update(config.setNobilityTagLevels(self._taggingMapFromTable(self._nobilityTaggingTable)))
-            checker.update(config.setAllegianceTagLevels(self._taggingMapFromTable(self._allegianceTaggingTable)))
-            checker.update(config.setSpectralTagLevels(self._taggingMapFromTable(self._spectralTaggingTable)))
-            checker.update(config.setLuminosityTagLevels(self._taggingMapFromTable(self._luminosityTaggingTable)))
+            tagging = logic.WorldTagging()
+            for taggingProperty, table in self._taggingTables.items():
+                tagging.setPropertyConfig(
+                    property=taggingProperty,
+                    config=table.taggingConfig())
+            app.Config.instance().setValue(
+                option=app.ConfigOption.WorldTagging,
+                value=tagging)
         except Exception as ex:
             message = 'Failed to save configuration'
             logging.error(message, exc_info=ex)
@@ -1151,77 +1066,6 @@ class ConfigDialog(gui.DialogEx):
                 text=message,
                 exception=ex)
             return
-
-        self._restartRequired = checker.needsRestart()
-
-    def _createTaggingTable(
-            self,
-            keyTitle: str,
-            keyDescriptions: typing.Union[typing.Dict[str, str], typing.Dict[enum.Enum, str]],
-            taggingMap: typing.Union[typing.Dict[str, app.TagLevel], typing.Dict[enum.Enum, app.TagLevel]],
-            keyAliases: typing.Optional[typing.Union[typing.Dict[str, str], typing.Dict[enum.Enum, str]]] = None
-            ) -> gui.ListTable:
-        columnNames = [keyTitle, 'Tag Level', 'Description']
-
-        table = gui.ListTable()
-        table.setColumnHeaders(columnNames)
-        table.setColumnsMoveable(False)
-        table.resizeColumnsToContents() # Size columns to header text
-        table.setSizeAdjustPolicy(
-            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
-
-        # Setup horizontal scroll bar. Setting the last column to stretch to fit its content
-        # is required to make the it appear reliably
-        table.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
-        table.horizontalHeader().setSectionResizeMode(
-            table.columnCount() - 1,
-            QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-        table.horizontalHeader().setStretchLastSection(False)
-
-        # Disable sorting as some tables (e.g. luminosity) have a natural order that is not
-        # ordered alphabetically so it makes sense to keep them in that order
-        table.setSortingEnabled(False)
-
-        for row, (key, description) in enumerate(keyDescriptions.items()):
-            table.insertRow(row)
-
-            toolTip = gui.createStringToolTip(description)
-
-            keyText = None
-            if keyAliases and key in keyAliases:
-                keyText = keyAliases[key]
-            else:
-                keyText = key.name if isinstance(key, enum.Enum) else key
-
-            item = QtWidgets.QTableWidgetItem(keyText)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, key)
-            item.setToolTip(toolTip)
-            table.setItem(row, 0, item)
-
-            tagLevel = None
-            if key in taggingMap:
-                tagLevel = taggingMap[key]
-
-            item = QtWidgets.QTableWidgetItem()
-            item.setToolTip(toolTip)
-            table.setItem(row, 1, item)
-            comboBox = gui.TagLevelComboBox(value=tagLevel)
-            # Set the background role of the combo box to the same background role that will be used
-            # for the alternating rows in the table. This makes sure the combo boxes have the same
-            # colour as the rest of the row (when no tag level is selected). Note that this will most
-            # likely break if sorting is ever enabled on the table
-            comboBox.setBackgroundRole(QtGui.QPalette.ColorRole.AlternateBase if row % 2 else QtGui.QPalette.ColorRole.Base)
-            table.setCellWidget(row, 1, comboBox)
-
-            item = QtWidgets.QTableWidgetItem(description)
-            item.setToolTip(toolTip)
-            table.setItem(row, 2, item)
-
-        # Set default column widths
-        table.setColumnWidth(1, 100)
-        table.horizontalHeader().setStretchLastSection(True)
-
-        return table
 
     def _addTableTab(
             self,
@@ -1236,24 +1080,6 @@ class ConfigDialog(gui.DialogEx):
         tab.setLayout(layout)
         self._tabWidget.addTab(tab, title)
 
-    def _taggingMapFromTable(
-            self,
-            table: QtWidgets.QTableWidget
-            ) -> typing.Union[typing.Dict[str, app.TagLevel], typing.Dict[enum.Enum, app.TagLevel]]:
-        taggingMap = {}
-        for row in range(table.rowCount()):
-            item = table.item(row, 0)
-            key = item.data(QtCore.Qt.ItemDataRole.UserRole)
-
-            combo = table.cellWidget(row, 1)
-            assert(isinstance(combo, gui.TagLevelComboBox))
-            tagLevel = combo.currentTagLevel()
-            if not tagLevel:
-                continue # Ignore no tagging
-
-            taggingMap[key] = tagLevel
-        return taggingMap
-
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
             parent=self,
@@ -1261,6 +1087,17 @@ class ConfigDialog(gui.DialogEx):
             html=_WelcomeMessage,
             noShowAgainId='ConfigWelcome')
         message.exec()
+
+    def _milieuChanged(self) -> None:
+        # Update allegiance tagging table as allegiances are milieu dependant.
+        # This will clear any tagging set for the previously selected milieu.
+        # This seems like the sensible thing to do as there is no guarantee that
+        # the code that was tagged for the previous milieu has any relation to
+        # the allegiance that is using that code in the new milieu.
+        table = self._taggingTables.get(logic.TaggingProperty.Allegiance)
+        if table:
+            table.setContent(
+                keyDescriptions=self._generateAllegianceDescriptions())
 
     def _renderingTypeChanged(self) -> None:
         isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
@@ -1283,3 +1120,28 @@ class ConfigDialog(gui.DialogEx):
     def _clearTileCacheClicked(self) -> None:
         dlg = _ClearTileCacheDialog(parent=self)
         dlg.exec()
+
+    def _taggingColourChanged(self) -> None:
+        colours = app.TaggingColours(
+            desirableColour=self._desirableTagColourButton.colour(),
+            warningColour=self._warningTagColourButton.colour(),
+            dangerColour=self._dangerTagColourButton.colour())
+
+        for table in self._taggingTables.values():
+            table.setTaggingColours(colours=colours)
+
+    def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
+        allegiances = traveller.AllegianceManager.instance().allegiances(
+            milieu=self._milieuComboBox.currentEnum())
+
+        # Create a copy of the allegiances list and sort it by code
+        allegiances = list(allegiances)
+        allegiances.sort(key=lambda x: x.code())
+
+        descriptions: typing.Mapping[str, str] = {}
+        for allegiance in allegiances:
+            nameMap = allegiance.uniqueNameMap()
+            for code, name in nameMap.items():
+                descriptions[code] = name
+
+        return descriptions

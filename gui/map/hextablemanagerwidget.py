@@ -1,5 +1,7 @@
+import app
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
@@ -15,6 +17,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
             isOrderedList: bool = False,
             hexTable: typing.Optional[gui.HexTable] = None,
@@ -22,6 +32,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__()
 
+        self._milieu = milieu
+        self._rules = traveller.Rules(rules)
+        self._mapStyle = mapStyle
+        self._mapOptions = set(mapOptions) # Use a set for easy checking for differences
+        self._mapRendering = mapRendering
+        self._mapAnimations = mapAnimations
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._allowHexCallback = allowHexCallback
         self._isOrderedList = isOrderedList
         self._relativeHex = None
@@ -30,11 +48,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._enableShowOnMapEvent = False
         self._enableDeadSpace = False
 
-        # Instance of dialogs are created on demand then maintained. This is
-        # done to prevent the web widget being recreated
-        self._locationSelectDialog: typing.Optional[gui.HexSelectDialog] = None
-        self._radiusSelectDialog: typing.Optional[gui.HexRadiusSelectDialog] = None
-
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
             self._displayModeTabs = gui.HexTableTabBar()
@@ -42,7 +55,16 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self._hexTable = hexTable
         if not self._hexTable:
-            self._hexTable = gui.HexTable()
+            self._hexTable = gui.HexTable(
+                milieu=self._milieu,
+                rules=self._rules,
+                worldTagging=self._worldTagging,
+                taggingColours=self._taggingColours)
+        else:
+            self._hexTable.setMilieu(milieu=self._milieu)
+            self._hexTable.setRules(rules=self._rules)
+            self._hexTable.setWorldTagging(tagging=self._worldTagging)
+            self._hexTable.setTaggingColours(colours=self._taggingColours)
         self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -131,31 +153,99 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._hexTable.setMilieu(milieu=self._milieu)
+
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+
+        self._rules = traveller.Rules(rules)
+        self._hexTable.setRules(rules=self._rules)
+
+    def mapStyle(self) -> travellermap.Style:
+        return self._mapStyle
+
+    def setMapStyle(self, style: travellermap.Style) -> None:
+        if style == self._mapStyle:
+            return
+        self._mapStyle = style
+
+    def mapOptions(self) -> typing.Iterable[travellermap.Option]:
+        return list(self._mapStyle)
+
+    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        options = set(options) # Force use of set so options can be compared
+        if options == self._mapOptions:
+            return
+        self._mapOptions = options
+
+    def mapRendering(self) -> app.MapRendering:
+        return self._mapRendering
+
+    def setMapRendering(self, rendering: app.MapRendering):
+        if rendering == self._mapRendering:
+            return
+        self._mapRendering = rendering
+
+    def mapAnimations(self) -> bool:
+        return self._mapAnimations
+
+    def setMapAnimations(self, enabled: bool) -> None:
+        if enabled == self._mapAnimations:
+            return
+        self._mapAnimations = enabled
+
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+        self._hexTable.setWorldTagging(tagging=self._worldTagging)
+
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+        self._hexTable.setTaggingColours(colours=self._taggingColours)
+
     def addHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> None:
-        if isinstance(hex, traveller.World):
-            hex = hex.hex()
         if self._allowHexCallback:
             if not self._allowHexCallback(hex):
                 return
         self._hexTable.addHex(hex)
         self.contentChanged.emit()
 
-    def addWorld(self, world: traveller.World) -> None:
-        self.addHex(world)
-
     def addHexes(
             self,
-            hexes: typing.Iterable[
-                typing.Union[travellermap.HexPosition, traveller.World]
-                ]) -> None:
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
         if self._allowHexCallback:
-            filteredHexes = []
+            filteredHexes: typing.List[travellermap.HexPosition] = []
             for hex in hexes:
-                if isinstance(hex, traveller.World):
-                    hex = hex.hex()
                 if not self._allowHexCallback(hex):
                     continue
                 filteredHexes.append(hex)
@@ -167,20 +257,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.contentChanged.emit()
 
-    def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        self.addHexes(hexes=worlds)
-
     def removeHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> bool:
         removed = self._hexTable.removeHex(hex)
         if removed:
             self.contentChanged.emit()
         return removed
-
-    def removeWorld(self, world: traveller.World) -> bool:
-        return self.removeHex(world)
 
     def removeAllRows(self) -> None:
         if not self._hexTable.isEmpty():
@@ -192,12 +276,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def containsHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: travellermap.HexPosition
             ) -> bool:
         return self._hexTable.containsHex(hex)
-
-    def containsWorld(self, world: traveller.World) -> bool:
-        return self.containsHex(world)
 
     def rowCount(self) -> int:
         return self._hexTable.rowCount()
@@ -324,6 +405,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
         return result
 
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._hexTable.setHexTooltipProvider(provider=provider)
+
     def enableContextMenuEvent(self, enable: bool = True) -> None:
         self._enableContextMenuEvent = enable
 
@@ -343,16 +430,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         return self._enableShowOnMapEvent
 
     def enableDeadSpace(self, enable: bool) -> None:
+        if enable == self._enableDeadSpace:
+            return
+
         self._enableDeadSpace = enable
-
-        if self._radiusSelectDialog:
-            self._radiusSelectDialog.enableDeadSpaceSelection(
-                enable=enable)
-
-        if self._locationSelectDialog:
-            self._locationSelectDialog.configureSelection(
-                singleSelect=self._isOrderedList,
-                includeDeadSpace=enable)
 
         if not enable:
             # Dead space hexes are not allowed so remove any that are already in
@@ -360,6 +441,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(
+                    milieu=self._milieu,
                     hex=self.hex(row=row))
                 if not world:
                     self._hexTable.removeRow(row=row)
@@ -373,13 +455,19 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def promptAddLocations(self) -> None:
         currentHexes = self.hexes()
 
-        if not self._locationSelectDialog:
-            self._locationSelectDialog = gui.HexSelectDialog(parent=self)
-            self._locationSelectDialog.configureSelection(
-                singleSelect=self._isOrderedList,
-                includeDeadSpace=self._enableDeadSpace)
-
-        self._locationSelectDialog.clearSelectedHexes()
+        dlg = gui.HexSelectDialog(
+            milieu=self._milieu,
+            rules=self._rules,
+            mapStyle=self._mapStyle,
+            mapOptions=self._mapOptions,
+            mapRendering=self._mapRendering,
+            mapAnimations=self._mapAnimations,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours,
+            parent=self)
+        dlg.configureSelection(
+            singleSelect=self._isOrderedList,
+            includeDeadSpace=self._enableDeadSpace)
 
         # If it's not an ordered list that is being managed then the dialog should
         # show the current table contents and allow the user to select more hexes or
@@ -388,13 +476,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         # new world that should be added to the table, in which case the current
         # table contents are not shown.
         if not self._isOrderedList:
-            for hex in currentHexes:
-                self._locationSelectDialog.selectHex(hex=hex, centerOnHex=False)
+            dlg.selectHexes(hexes=currentHexes)
 
-        if self._locationSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        newHexes = self._locationSelectDialog.selectedHexes()
+        newHexes = dlg.selectedHexes()
         updated = False
 
         sortingEnabled = self._hexTable.isSortingEnabled()
@@ -433,19 +520,27 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 traveller.World
                 ]] = None
             ) -> None:
-        if isinstance(initialHex, traveller.World):
-            initialHex = initialHex.hex()
+        centerHex = initialHex.hex() if isinstance(initialHex, traveller.World) else initialHex
+        if not centerHex and self._relativeHex:
+            centerHex = self._relativeHex
 
-        if not self._radiusSelectDialog:
-            self._radiusSelectDialog = gui.HexRadiusSelectDialog()
-            self._radiusSelectDialog.enableDeadSpaceSelection(
-                enable=self._enableDeadSpace)
-        self._radiusSelectDialog.setCenterHex(
-            hex=initialHex if initialHex else self._relativeHex)
-        if self._radiusSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+        dlg = gui.HexRadiusSelectDialog(
+            milieu=self._milieu,
+            rules=self._rules,
+            mapStyle=self._mapStyle,
+            mapOptions=self._mapOptions,
+            mapRendering=self._mapRendering,
+            mapAnimations=self._mapAnimations,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours,
+            parent=self)
+        dlg.enableDeadSpaceSelection(enable=self._enableDeadSpace)
+        if centerHex:
+            dlg.setCenterHex(hex=centerHex)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        self.addHexes(hexes=self._radiusSelectDialog.selectedHexes())
+        self.addHexes(hexes=dlg.selectedHexes())
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()

@@ -58,7 +58,7 @@ class Simulator(object):
             nextStepDelayCallback: typing.Optional[typing.Callable[[], float]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
-        self._rules = rules
+        self._rules = traveller.Rules(rules)
         self._eventCallback = eventCallback
         self._nextStepDelayCallback = nextStepDelayCallback
         self._isCancelledCallback = isCancelledCallback
@@ -68,6 +68,7 @@ class Simulator(object):
 
     def run(
             self,
+            milieu: travellermap.Milieu,
             startHex: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
@@ -90,6 +91,7 @@ class Simulator(object):
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:
+        self._milieu = milieu
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
@@ -136,7 +138,9 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = traveller.WorldManager.instance().worldByPosition(hex=self._currentHex)
+        currentWorld = traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=self._currentHex)
 
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
@@ -145,9 +149,10 @@ class Simulator(object):
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInRadius(
+                milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
-                worldFilterCallback=worldFilterCallback)
+                filterCallback=worldFilterCallback)
 
             # Buy something
             self._logMessage(f'Buying goods on {currentWorld.name(includeSubsector=True)}')
@@ -216,8 +221,12 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
-                currentString = traveller.WorldManager.instance().canonicalHexName(hex=self._currentHex)
-                nextString = traveller.WorldManager.instance().canonicalHexName(hex=nextHex)
+                currentString = traveller.WorldManager.instance().canonicalHexName(
+                    milieu=self._milieu,
+                    hex=self._currentHex)
+                nextString = traveller.WorldManager.instance().canonicalHexName(
+                    milieu=self._milieu,
+                    hex=nextHex)
                 self._logMessage(
                     f'Travelling from {currentString} to {nextString}')
 
@@ -307,7 +316,7 @@ class Simulator(object):
 
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
-            rules=self._rules,
+            ruleSystem=self._rules.system(),
             world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
@@ -323,6 +332,7 @@ class Simulator(object):
 
         trader = logic.Trader(
             rules=self._rules,
+            milieu=self._milieu,
             tradeOptionCallback=lambda tradeOption: tradeOptions.append(tradeOption),
             traderInfoCallback=lambda infoMessage: infoMessages.append(infoMessage),
             isCancelledCallback=self._isCancelledCallback)
@@ -408,7 +418,7 @@ class Simulator(object):
 
         purchaseCargoRecords = self._cargoManifest.cargoRecords()
         saleCargoRecords, _ = logic.generateRandomSaleCargo(
-            rules=self._rules,
+            ruleSystem=self._rules.system(),
             world=world,
             currentCargo=purchaseCargoRecords,
             playerBrokerDm=self._playerBrokerDm,

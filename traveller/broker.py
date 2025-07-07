@@ -6,7 +6,7 @@ def calculateLocalBrokerDetails(
     # For MGT the brokerDm is the desired skill level of the broker (range 1-6)
     # For MGT2 the brokerDm is the skill increase above base (range 1-4)
     # For MGT2022 the brokerDm isn't used as the broker skill is based purely on dice rolls
-    rules: traveller.Rules,
+    ruleSystem: traveller.RuleSystem,
     brokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
     blackMarket: bool,
     diceRoller: typing.Optional[common.DiceRoller] = None,
@@ -20,7 +20,6 @@ def calculateLocalBrokerDetails(
             value=brokerDm,
             name='Broker DM Increase')
 
-    ruleSystem = rules.system()
     if ruleSystem == traveller.RuleSystem.MGT:
         return _calculateMgtBrokerDetails(skillValue=brokerDm)
     elif ruleSystem == traveller.RuleSystem.MGT2:
@@ -35,8 +34,7 @@ def calculateLocalBrokerDetails(
     else:
         assert(False)
 
-def minLocalBrokerDm(rules: traveller.Rules) -> int:
-    ruleSystem = rules.system()
+def minLocalBrokerDm(ruleSystem: traveller.RuleSystem) -> int:
     if ruleSystem == traveller.RuleSystem.MGT or \
             ruleSystem == traveller.RuleSystem.MGT2:
         return 1
@@ -46,8 +44,7 @@ def minLocalBrokerDm(rules: traveller.Rules) -> int:
     else:
         assert(False)
 
-def maxLocalBrokerDm(rules: traveller.Rules) -> int:
-    ruleSystem = rules.system()
+def maxLocalBrokerDm(ruleSystem: traveller.RuleSystem) -> int:
     if ruleSystem == traveller.RuleSystem.MGT:
         return 6
     elif ruleSystem == traveller.RuleSystem.MGT2:

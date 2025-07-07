@@ -420,16 +420,15 @@ class ListTable(gui.TableWidgetEx):
                 position.setY(position.y() - self.horizontalHeader().height())
                 item = self.itemAt(position)
 
-                if item and not item.data(QtCore.Qt.ItemDataRole.ToolTipRole):
+                if item:
+                    # Generating the tooltip on demand like this is problematic
+                    # as a tooltip set on an item at this point won't be actually
+                    # displayed. Storing the tooltips would also cause additional
+                    # headaches for tables where the tooltip content can change
+                    # (e.g. hex tooltips change if map style changes). The solution
+                    # is to just manually display the tooltip.
                     toolTip = self._createToolTip(item)
                     if toolTip:
-                        # Set the items tooltip text so it will be displayed in
-                        # the future (we'll no longer get tool tip events for
-                        # this item)
-                        item.setData(QtCore.Qt.ItemDataRole.ToolTipRole, toolTip)
-
-                        # We've missed the opportunity to use the built in tool tip
-                        # display for this event so manually display it
                         QtWidgets.QToolTip.showText(event.globalPos(), toolTip)
         if object == self.horizontalHeader().viewport():
             # Process header mouse down and release events to check for icon click (if enabled).
@@ -1078,15 +1077,15 @@ class FrozenColumnListTable(ListTable):
                     return True
             elif object == self._frozenColumnWidget:
                 item = self._frozenColumnWidget.itemAt(position)
-                if item and not item.data(QtCore.Qt.ItemDataRole.ToolTipRole):
+                if item:
+                    # Generating the tooltip on demand like this is problematic
+                    # as a tooltip set on an item at this point won't be actually
+                    # displayed. Storing the tooltips would also cause additional
+                    # headaches for tables where the tooltip content can change
+                    # (e.g. hex tooltips change if map style changes). The solution
+                    # is to just manually display the tooltip.
                     toolTip = self._createToolTip(item)
                     if toolTip:
-                        # Set the items tooltip text so it will be displayed in the future (we'll no
-                        # longer get tool tip events for this item)
-                        item.setData(QtCore.Qt.ItemDataRole.ToolTipRole, toolTip)
-
-                        # We've missed the opportunity to use the built in tool tip display for this
-                        # event so manually display it
                         QtWidgets.QToolTip.showText(event.globalPos(), toolTip)
         return super().eventFilter(object, event)
 

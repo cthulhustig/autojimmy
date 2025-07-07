@@ -31,9 +31,6 @@ ShipFuelPerParsecToolTip = gui.createStringToolTip(
     '<p>Enabling this option allows the specified value to be used instead of the default of 10% '
     'of total ship tonnage.</p>',
     escape=False)
-FreeCargoSpaceToolTip = gui.createStringToolTip(
-    '<p>Free cargo space available for purchased trade cargo</p>',
-    escape=False)
 RoutingTypeToolTip = gui.createStringToolTip(
     '<p>Type of routing algorithm to use</p>'
     '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
@@ -164,8 +161,8 @@ IncludeLogisticsCostsToolTip = gui.createStringToolTip(
     'The logistics costs will still be taken into account when calculating the refuelling plan for '
     'the route.</p>',
     escape=False)
-IncludeUnprofitableTradesToolTip = gui.createStringToolTip(
-    '<p>Include trade options where average dice rolls will result in no profit or a loss</p>',
+ShowUnprofitableTradesToolTip = gui.createStringToolTip(
+    '<p>Show trade options where average dice rolls will result in no profit or a loss</p>',
     escape=False)
 PerJumpOverheadsToolTip = gui.createStringToolTip(
     '<p>The overheads accrued each jump</p>' \
@@ -175,6 +172,9 @@ PerJumpOverheadsToolTip = gui.createStringToolTip(
     escape=False)
 AvailableFundsToolTip = gui.createStringToolTip(
     'Funds available for trading (including logistics costs if applied).',
+    escape=False)
+MaxCargoTonnageToolTip = gui.createStringToolTip(
+    '<p>The max tonnage of cargo you want to purchase.</p>',
     escape=False)
 PlayerBrokerDmToolTip = gui.createStringToolTip('<p>Player\'s broker skill with all modifiers</p>',
                                                 escape=False)
@@ -224,12 +224,20 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     'broker you hired is some kind of informant and hilarity ensues.</p>',
     escape=False)
 
-def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
+def createLogisticsToolTip(
+        routeLogistics: logic.RouteLogistics,
+        worldTagging: typing.Optional[logic.WorldTagging] = None,
+        taggingColours: typing.Optional[app.TaggingColours] = None
+        ) -> str:
     jumpRoute = routeLogistics.jumpRoute()
     startHex, _ = jumpRoute.startNode()
     finishHex, _ = jumpRoute.finishNode()
-    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=startHex))
-    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=finishHex))
+    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(
+        milieu=jumpRoute.milieu(),
+        hex=startHex))
+    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(
+        milieu=jumpRoute.milieu(),
+        hex=finishHex))
 
     toolTip = '<html>'
 
@@ -261,7 +269,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
         berthingCosts = refuellingPlan.totalBerthingCosts()
         toolTip += f'<li><span>Berthing:</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Range: Cr{berthingCosts.worstCaseValue()} - Cr{berthingCosts.bestCaseValue()}</span></li>'
+        toolTip += f'<li><span>Range: Cr{berthingCosts.bestCaseValue()} - Cr{berthingCosts.worstCaseValue()}</span></li>'
         toolTip += f'<li><span>Average: Cr{berthingCosts.averageCaseValue()}</span></li>'
         toolTip += '</ul>'
 
@@ -269,14 +277,14 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     if overheads:
         toolTip += '<li><span>Overheads:</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Range: Cr{overheads.worstCaseValue()} - Cr{overheads.bestCaseValue()}</span></li>'
+        toolTip += f'<li><span>Range: Cr{overheads.bestCaseValue()} - Cr{overheads.worstCaseValue()}</span></li>'
         toolTip += f'<li><span>Average: Cr{overheads.averageCaseValue()}</span></li>'
         toolTip += '</ul>'
 
     totalCosts = routeLogistics.totalCosts()
     toolTip += '<li><span>Total:</span></li>'
     toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-    toolTip += f'<li><span>Range: Cr{totalCosts.worstCaseValue()} - Cr{totalCosts.bestCaseValue()}</span></li>'
+    toolTip += f'<li><span>Range: Cr{totalCosts.bestCaseValue()} - Cr{totalCosts.worstCaseValue()}</span></li>'
     toolTip += f'<li><span>Average: Cr{totalCosts.averageCaseValue()}</span></li>'
     toolTip += '</ul>'
 
@@ -293,14 +301,14 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     for index, (nodeHex, world) in enumerate(jumpRoute):
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(hex=nodeHex)))
-        tagColour = app.tagColour(
-            app.calculateWorldTagLevel(world)
-            if world else
-            app.TagLevel.Danger) # Dead space is tagged as danger
-        style = ""
-        if tagColour:
-            style = f'background-color:#{tagColour}'
+            name=traveller.WorldManager.instance().canonicalHexName(milieu=jumpRoute.milieu(), hex=nodeHex)))
+
+        tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
+        if world and worldTagging:
+            tagLevel = worldTagging.calculateWorldTagLevel(world)
+        tagColour = taggingColours.colour(level=tagLevel) if tagLevel and taggingColours else None
+
+        style = f'background-color:#{tagColour}' if tagColour else ''
         toolTip += f'<li><span style="{style}">{hexString}<span></li>'
 
         if index in pitStopMap:
@@ -333,7 +341,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
             if berthingCosts:
                 toolTip += f'<li><span>Berthing:</span></li>'
                 toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-                toolTip += f'<li><span>Range: Cr{berthingCosts.worstCaseValue()} - Cr{berthingCosts.bestCaseValue()}</span></li>'
+                toolTip += f'<li><span>Range: Cr{berthingCosts.bestCaseValue()} - Cr{berthingCosts.worstCaseValue()}</span></li>'
                 toolTip += f'<li><span>Average: Cr{berthingCosts.averageCaseValue()}</span></li>'
                 toolTip += '</ul>'
 
@@ -421,7 +429,9 @@ def _createTradeScoreToolTip(
 
 def createBasesToolTip(
         world: traveller.World,
-        includeBaseTypes: typing.Optional[typing.Iterable[traveller.BaseType]] = None
+        includeBaseTypes: typing.Optional[typing.Iterable[traveller.BaseType]] = None,
+        worldTagging: typing.Optional[logic.WorldTagging] = None,
+        taggingColours: typing.Optional[app.TaggingColours] = None
         ) -> str:
     baseStrings = []
     baseColours = {}
@@ -432,9 +442,9 @@ def createBasesToolTip(
         baseString = traveller.Bases.description(baseType=baseType)
         baseStrings.append(baseString)
 
-        tagLevel = app.calculateBaseTypeTagLevel(baseType=baseType)
-        if tagLevel:
-            baseColours[baseString] = app.tagColour(tagLevel=tagLevel)
+        tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None
+        if tagLevel and taggingColours:
+            baseColours[baseString] = taggingColours.colour(level=tagLevel)
     if not baseStrings:
         return ''
 

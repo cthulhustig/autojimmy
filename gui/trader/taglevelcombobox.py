@@ -1,42 +1,110 @@
 import app
 import common
 import gui
+import logic
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+def _blendColor(
+        baseColour: QtGui.QColor,
+        topColour: QtGui.QColor
+        ) -> QtGui.QColor:
+    alpha = topColour.alpha() / 255
+    clampToByte = lambda value: common.clamp(round(value), 0, 255)
+    blended = QtGui.QColor(
+        clampToByte(baseColour.red() * (1.0 - alpha) + (topColour.red() * alpha)),
+        clampToByte(baseColour.green() * (1.0 - alpha) + (topColour.green() * alpha)),
+        clampToByte(baseColour.blue() * (1.0 - alpha) + (topColour.blue() * alpha)),
+        255)
+    return blended
+
+class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
+    _ListItemScale = 0.90
+
+    def __init__(
+            self,
+            height: int,
+            colours: app.TaggingColours,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(parent)
+        self._height = height
+        self._colours = app.TaggingColours(colours)
+
+    def height(self) -> int:
+        return self._height
+
+    def setHeight(self, height: int) -> None:
+        if height == self._height:
+            return
+        self._height = height
+
+    def colours(self) -> app.TaggingColours:
+        return app.TaggingColours(self._colours)
+
+    def setColours(self, colours: app.TaggingColours) -> None:
+        if colours == self._colours:
+            return
+
+        self._colours = app.TaggingColours(colours)
+
+    def sizeHint(
+            self,
+            option: 'QtWidgets.QStyleOptionViewItem',
+            index: QtCore.QModelIndex
+            ) -> QtCore.QSize:
+        hint = super().sizeHint(option, index)
+        hint.setHeight(int(self._height * _ListItemDelegate._ListItemScale))
+        return hint
+
+    def paint(
+            self,
+            painter: QtGui.QPainter,
+            option: QtWidgets.QStyleOptionViewItem,
+            index: QtCore.QModelIndex
+            ) -> None:
+        options = QtWidgets.QStyleOptionViewItem(option)
+        self.initStyleOption(options, index)
+
+        if isinstance(option.widget, QtWidgets.QWidget):
+            colour = option.widget.palette().color(QtGui.QPalette.ColorRole.Background)
+            tagLevel = index.data(QtCore.Qt.ItemDataRole.UserRole)
+            if tagLevel:
+                taggingColour = QtGui.QColor(self._colours.colour(level=tagLevel))
+                colour = _blendColor(
+                    baseColour=colour,
+                    topColour=taggingColour)
+
+            painter.save()
+            try:
+                painter.fillRect(option.rect, colour)
+            finally:
+                painter.restore()
+
+        super().paint(painter, option, index)
+
 class TagLevelComboBox(QtWidgets.QComboBox):
-    class _ItemStyleDelegate(QtWidgets.QStyledItemDelegate):
-        def __init__(
-                self,
-                height: int
-                ) -> None:
-            super().__init__()
-            self._height = height
-
-        def sizeHint(
-                self,
-                option: 'QtWidgets.QStyleOptionViewItem',
-                index: QtCore.QModelIndex
-                ) -> QtCore.QSize:
-            hint = super().sizeHint(option, index)
-            hint.setHeight(self._height)
-            return hint
-
     _ComboOptions = {
         'None': None,
-        'Desirable': app.TagLevel.Desirable,
-        'Warning': app.TagLevel.Warning,
-        'Danger': app.TagLevel.Danger
+        'Desirable': logic.TagLevel.Desirable,
+        'Warning': logic.TagLevel.Warning,
+        'Danger': logic.TagLevel.Danger
     }
 
     def __init__(
             self,
+            colours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            value: typing.Optional[app.TagLevel] = None
+            value: typing.Optional[logic.TagLevel] = None
             ) -> None:
         super().__init__(parent=parent)
 
-        self.setAutoFillBackground(True)
+        self._colours = app.TaggingColours(colours)
+        self._itemDelegate = _ListItemDelegate(
+            height=self.height(),
+            colours=colours)
+
+        self.setItemDelegate(self._itemDelegate)
         self.currentIndexChanged.connect(self._selectedItemChanged)
 
         for text, tagLevel in TagLevelComboBox._ComboOptions.items():
@@ -44,66 +112,66 @@ class TagLevelComboBox(QtWidgets.QComboBox):
             self.addItem(text)
             self.setItemData(itemIndex, tagLevel, QtCore.Qt.ItemDataRole.UserRole)
 
-            if tagLevel:
-                colour = QtGui.QColor(app.Config.instance().tagColour(tagLevel))
-            else:
-                colour = QtWidgets.QApplication.palette().color(self.backgroundRole())
+        self.setCurrentTagLevel(value)
 
-            self.setItemData(itemIndex, colour, QtCore.Qt.ItemDataRole.BackgroundRole)
+    def colours(self) -> app.TaggingColours:
+        return app.TaggingColours(self._colours)
 
-        if value:
-            self.setCurrentTagLevel(value)
+    def setColours(self, colours: app.TaggingColours) -> None:
+        if colours == self._colours:
+            return
+
+        self._colours = app.TaggingColours(colours)
+        self._itemDelegate.setColours(colours)
+
+        tagLevel = self.currentTagLevel()
+        if tagLevel:
+            self._updateBackgroundColour(
+                colour=colours.colour(level=tagLevel))
+
+        self.update() # Force redraw
 
     def resizeEvent(self, e: QtGui.QResizeEvent) -> None:
-        self.setItemDelegate(TagLevelComboBox._ItemStyleDelegate(self.size().height()))
-        return super().resizeEvent(e)
+        # HACK: For reasons I don't understand the size hint for the delegate
+        # isn't respected if I just update the existing delegate here. It might
+        # be the call to setItemDelegate that is actually fixing it but just
+        # updating the existing delegate and calling setItemDelegate with the
+        # delegate it's already using results in a crash inside Qt
+        self._itemDelegate = _ListItemDelegate(
+            height=self.height(),
+            colours=self._colours)
+        self.setItemDelegate(self._itemDelegate)
+        super().resizeEvent(e)
 
-    def currentTagLevel(self) -> app.TagLevel:
+    def currentTagLevel(self) -> typing.Optional[logic.TagLevel]:
         index = self.currentIndex()
         return self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
 
-    def setCurrentTagLevel(self, tagLevel: app.TagLevel) -> None:
+    def setCurrentTagLevel(
+            self,
+            tagLevel: typing.Optional[logic.TagLevel]
+            ) -> None:
         for index in range(self.count()):
             itemTagLevel = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
             if tagLevel == itemTagLevel:
                 self.setCurrentIndex(index)
                 return
 
-    def setBackgroundRole(self, role: QtGui.QPalette.ColorRole) -> None:
-        result = super().setBackgroundRole(role)
-
-        for itemIndex in range(self.count()):
-            tagLevel = self.itemData(itemIndex, QtCore.Qt.ItemDataRole.UserRole)
-            if not tagLevel:
-                colour = QtWidgets.QApplication.palette().color(role)
-                self.setItemData(itemIndex, colour, QtCore.Qt.ItemDataRole.BackgroundRole)
-
-        colour = self.itemData(self.currentIndex(), QtCore.Qt.ItemDataRole.BackgroundRole)
-        if not colour:
-            colour = self._defaultBackgroundColour()
-        self._updateBackgroundColour(colour=colour)
-
-        return result
-
     def _selectedItemChanged(self, index: int):
-        colour = self.itemData(index, QtCore.Qt.ItemDataRole.BackgroundRole)
-        if not colour:
-            colour = self._defaultBackgroundColour()
+        tagLevel = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
+        colour = \
+            QtGui.QColor(self._colours.colour(level=tagLevel)) \
+            if tagLevel else \
+            self.palette().color(QtGui.QPalette.ColorRole.Background)
         self._updateBackgroundColour(colour=colour)
-
-    def _defaultBackgroundColour(self) -> QtGui.QColor:
-        colour = QtWidgets.QApplication.palette().color(self.backgroundRole())
-        if not colour:
-            colour = QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Base)
-        return colour
 
     def _updateBackgroundColour(
             self,
             colour: QtGui.QColor
             ) -> None:
         if gui.isDarkModeEnabled():
-            colour = TagLevelComboBox.blendColor(
-                baseColour=self._defaultBackgroundColour(),
+            colour = _blendColor(
+                baseColour=self.palette().color(QtGui.QPalette.ColorRole.Background),
                 topColour=colour)
 
         palette = self.palette()

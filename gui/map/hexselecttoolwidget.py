@@ -1,6 +1,7 @@
 import app
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
@@ -13,7 +14,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
     # This state version intentionally doesn't match the class name. This
     # was done for backwards compatibility when the class was renamed as
     # part of the work for dead space routing
-    _StateVersion = 'WorldSelectWidget_v1'
+    # v2 - Switched to storing absolute hex rather than sector hex as part
+    # of making the milieu dynamically changeable
+    _StateVersion = 'WorldSelectWidget_v2'
 
     # The hex select combo box has a minimum width applied to stop it becoming
     # stupidly small. This min size isn't expected to be big enough for all
@@ -22,21 +25,35 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             labelText: typing.Optional[str] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
+        self._milieu = milieu
+        self._rules = traveller.Rules(rules)
+        self._mapStyle = mapStyle
+        self._mapOptions = set(mapOptions) # Use a set for easy checking for differences
+        self._mapRendering = mapRendering
+        self._mapAnimations = mapAnimations
+        self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
+        self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._enableMapSelectButton = False
         self._enableShowHexButton = False
         self._enableShowInfoButton = False
-        self._hexSelectDialog = None
 
-        self._searchComboBox = gui.HexSelectComboBox()
+        self._searchComboBox = gui.HexSelectComboBox(milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
-        self._searchComboBox.setMinimumWidth(int(
-            HexSelectToolWidget._MinWoldSelectWidth *
-            app.Config.instance().interfaceScale()))
+        self._searchComboBox.setMinimumWidth(
+            int(HexSelectToolWidget._MinWoldSelectWidth * gui.interfaceScale()))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
         self._mapSelectButton = gui.IconButton(
@@ -81,6 +98,82 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
         QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(
+            self,
+            milieu: travellermap.Milieu,
+            ) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._searchComboBox.setMilieu(milieu=self._milieu)
+
+    def rules(self) -> traveller.Rules:
+        return traveller.Rules(self._rules)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        if rules == self._rules:
+            return
+        self._rules = traveller.Rules(rules)
+
+    def mapStyle(self) -> travellermap.Style:
+        return self._mapStyle
+
+    def setMapStyle(self, style: travellermap.Style) -> None:
+        if style == self._mapStyle:
+            return
+        self._mapStyle = style
+
+    def mapOptions(self) -> typing.Iterable[travellermap.Option]:
+        return list(self._mapStyle)
+
+    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        options = set(options) # Force use of set so options can be compared
+        if options == self._mapOptions:
+            return
+        self._mapOptions = options
+
+    def mapRendering(self) -> app.MapRendering:
+        return self._mapRendering
+
+    def setMapRendering(self, rendering: app.MapRendering):
+        if rendering == self._mapRendering:
+            return
+        self._mapRendering = rendering
+
+    def mapAnimations(self) -> bool:
+        return self._mapAnimations
+
+    def setMapAnimations(self, enabled: bool) -> None:
+        if enabled == self._mapAnimations:
+            return
+        self._mapAnimations = enabled
+
+    def worldTagging(self) -> typing.Optional[logic.WorldTagging]:
+        return logic.WorldTagging(self._worldTagging) if self._worldTagging else None
+
+    def setWorldTagging(
+            self,
+            tagging: typing.Optional[logic.WorldTagging],
+            ) -> None:
+        if tagging == self._worldTagging:
+            return
+        self._worldTagging = logic.WorldTagging(tagging) if tagging else None
+
+    def taggingColours(self) -> typing.Optional[app.TaggingColours]:
+        return app.TaggingColours(self._taggingColours) if self._taggingColours else None
+
+    def setTaggingColours(
+            self,
+            colours: typing.Optional[app.TaggingColours]
+            ) -> None:
+        if colours == self._taggingColours:
+            return
+        self._taggingColours = app.TaggingColours(colours) if colours else None
+
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._searchComboBox.currentHex()
 
@@ -99,7 +192,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         hex = self.selectedHex()
         if not hex:
             return None
-        return traveller.WorldManager.instance().worldByPosition(hex=hex) if hex else None
+        return traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -124,13 +219,15 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._searchComboBox.enableDeadSpaceSelection(enable=enable)
-        if self._hexSelectDialog:
-            self._hexSelectDialog.configureSelection(
-                singleSelect=True,
-                includeDeadSpace=enable)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._searchComboBox.isDeadSpaceSelectionEnabled()
+
+    def setHexTooltipProvider(
+            self,
+            provider: typing.Optional[gui.HexTooltipProvider]
+            ) -> None:
+        self._searchComboBox.setHexTooltipProvider(provider=provider)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -138,15 +235,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         stream.writeQString(HexSelectToolWidget._StateVersion)
 
         hex = self.selectedHex()
-        sectorHex = ''
-        if hex:
-            try:
-                sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
-            except Exception as ex:
-                logging.error(
-                    f'Failed to resolve hex {hex} to sector hex when saving HexSelectToolWidget state',
-                    exc_info=ex)
-        stream.writeQString(sectorHex)
+        stream.writeQString(f'{hex.absoluteX()}:{hex.absoluteY()}' if hex else '')
 
         return state
 
@@ -161,16 +250,21 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore HexSelectToolWidget state (Incorrect version)')
             return False
 
-        sectorHex = stream.readQString()
+        value = stream.readQString()
         hex = None
-        if sectorHex:
+        if value:
+            tokens = value.split(':')
+            if len(tokens) < 0:
+                logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}")')
+                return False
             try:
-                hex = traveller.WorldManager.instance().sectorHexToPosition(
-                    sectorHex=sectorHex)
+                hex = travellermap.HexPosition(
+                    absoluteX=int(tokens[0]),
+                    absoluteY=int(tokens[1]))
             except Exception as ex:
                 # This can happen if sector data has changed for whatever reason
                 # (e.g. map updates or custom sectors)
-                logging.warning(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
+                logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}"', exc_info=ex)
                 return False
 
         self.setSelectedHex(hex=hex, updateHistory=False)
@@ -185,20 +279,26 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
-        if not self._hexSelectDialog:
-            self._hexSelectDialog = gui.HexSelectDialog(parent=self)
-            self._hexSelectDialog.configureSelection(
-                singleSelect=True,
-                includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
+        dlg = gui.HexSelectDialog(
+            milieu=self._milieu,
+            rules=self._rules,
+            mapStyle=self._mapStyle,
+            mapOptions=self._mapOptions,
+            mapRendering=self._mapRendering,
+            mapAnimations=self._mapAnimations,
+            worldTagging=self._worldTagging,
+            taggingColours=self._taggingColours,
+            parent=self)
+        dlg.configureSelection(
+            singleSelect=True,
+            includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
 
         hex = self.selectedHex()
         if hex:
-            self._hexSelectDialog.selectHex(hex=hex)
-        else:
-            self._hexSelectDialog.clearSelectedHexes()
-        if self._hexSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            dlg.selectHex(hex=hex)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        newSelection = self._hexSelectDialog.selectedHexes()
+        newSelection = dlg.selectedHexes()
         if len(newSelection) != 1:
             return
 

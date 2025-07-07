@@ -167,6 +167,11 @@ class VerticalTabBar(QtWidgets.QWidget):
     def tabsClosable(self) -> bool:
         return self._tabsClosable
 
+    def setTabText(self, index: int, text: str) -> None:
+        item = self._list.item(index)
+        if item:
+            item.setText(text)
+
     def _closeTabRequested(
             self,
             index: int

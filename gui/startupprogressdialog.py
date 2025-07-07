@@ -9,9 +9,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # can cause incorrect sizing if the font scaling is increased then decreased
 class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
-        jobs.LoadSectorsJob: 'Loading: Sector - ',
-        jobs.LoadPlaceholdersJob: 'Loading: Placeholders - ',
-        jobs.CalculateMainsJob: '',
+        jobs.LoadSectorsJob: 'Loading: ',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
         jobs.LoadRobotsJob: 'Loading: Robot - ',
         jobs.StartProxyJob: 'Proxy: '}
@@ -40,7 +38,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
-        self.setFixedWidth(int(300 * app.Config.instance().interfaceScale()))
+        self.setFixedWidth(int(300 * gui.interfaceScale()))
         self.setSizeGripEnabled(False)
 
         # Setting up the title bar needs to be done before the window is show to take effect. It
@@ -53,8 +51,6 @@ class StartupProgressDialog(QtWidgets.QDialog):
 
     def exec(self) -> int:
         self._jobQueue.append(jobs.LoadSectorsJob)
-        self._jobQueue.append(jobs.LoadPlaceholdersJob) # Must be done after sectors are loaded
-        self._jobQueue.append(jobs.CalculateMainsJob) # Must be done after sectors and placeholders are loaded
         self._jobQueue.append(jobs.LoadWeaponsJob)
         self._jobQueue.append(jobs.LoadRobotsJob)
         if self._startProxy:

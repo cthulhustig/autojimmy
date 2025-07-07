@@ -1,26 +1,26 @@
-import app
 import gui
 import traveller
 import typing
 from PyQt5 import QtWidgets
 
-class TradeGoodMultiSelectDialog(gui.DialogEx):
+class TradeGoodSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            selectableTradeGoods: typing.Iterable[traveller.TradeGood] = None,
+            rules: traveller.Rules,
+            filterCallback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
             title='Select Trade Goods',
+            # NOTE: The config section name differs from the class name for
+            # backwards compatibility
             configSection='TradeGoodMultiSelectDialog',
             parent=parent)
 
-        self._table = gui.TradeGoodTable()
+        self._table = gui.TradeGoodTable(
+            rules=rules,
+            filterCallback=filterCallback)
         self._table.setCheckable(enable=True)
-        if not selectableTradeGoods:
-            selectableTradeGoods = traveller.tradeGoodList(rules=app.Config.instance().rules())
-        for tradeGood in selectableTradeGoods:
-            self._table.addTradeGood(tradeGood)
 
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDefault(True)

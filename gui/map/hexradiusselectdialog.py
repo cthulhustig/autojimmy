@@ -1,14 +1,23 @@
 import app
 import gui
 import logging
+import logic
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: logic.WorldTagging,
+            taggingColours: app.TaggingColours,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
@@ -22,12 +31,12 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(app.MinPossibleJumpRating, app.MaxSearchRadius)
         self._radiusSpinBox.setValue(2)
-        self._radiusSpinBox.valueChanged.connect(self._handleConfigChange)
+        self._radiusSpinBox.valueChanged.connect(self._updateOverlay)
 
         self._includeDeadSpaceCheckBox = gui.CheckBoxEx('Include Dead Space: ')
         self._includeDeadSpaceCheckBox.setTextOnLeft(True)
         self._includeDeadSpaceCheckBox.setHidden(True)
-        self._includeDeadSpaceCheckBox.stateChanged.connect(self._handleConfigChange)
+        self._includeDeadSpaceCheckBox.stateChanged.connect(self._updateOverlay)
 
         selectionRadiusLayout = QtWidgets.QHBoxLayout()
         selectionRadiusLayout.setContentsMargins(0, 0, 0, 0)
@@ -36,15 +45,26 @@ class HexRadiusSelectDialog(gui.DialogEx):
         selectionRadiusLayout.addWidget(self._includeDeadSpaceCheckBox)
         selectionRadiusLayout.addStretch()
 
-        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            rules=rules,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.setSelectionMode(
             mode=gui.MapWidgetEx.SelectionMode.SingleSelect)
         # Always enable dead space selection on the map as, even if dead space selection
         # is disabled at the dialog level, the user should be able to select a dead space
         # hex and have the worlds around it selected
         self._mapWidget.enableDeadSpaceSelection(enable=True)
-        self._mapWidget.selectionChanged.connect(self._handleConfigChange)
-        self._mapWidget.displayOptionsChanged.connect(self._handleConfigChange)
+        self._mapWidget.selectionChanged.connect(self._updateOverlay)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDisabled(False)
@@ -69,36 +89,24 @@ class HexRadiusSelectDialog(gui.DialogEx):
         self.resize(640, 480)
         self.showMaximizeButton()
 
-        self._handleConfigChange()
-
-    # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
-    def loadSettings(self) -> None:
-        super().loadSettings()
-
+        # Load settings at initialisation rather than in loadSettings so the code
+        # that created the dialog can specify it's own settings rather than using
+        # the stored ones without having to create a derived class. If it was done
+        # in loadSettings any settings the user applied after constructing the
+        # dialog would be overwritten when exec was called and the dialog was shown.
         self._settings.beginGroup(self._configSection)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SelectHexState',
-            type=QtCore.QByteArray)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='SelectHexState', type=QtCore.QByteArray)
         if storedValue:
             self._mapWidget.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SelectRadiusState',
-            type=QtCore.QByteArray)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='SelectRadiusState', type=QtCore.QByteArray)
         if storedValue:
             self._radiusSpinBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='IncludeDeadSpaceState',
-            type=QtCore.QByteArray)
+        storedValue = gui.safeLoadSetting(settings=self._settings, key='IncludeDeadSpaceState', type=QtCore.QByteArray)
         if storedValue:
             self._includeDeadSpaceCheckBox.restoreState(storedValue)
-
         self._settings.endGroup()
+
+        self._updateOverlay()
 
     def selectedHexes(self) -> typing.Collection[travellermap.HexPosition]:
         return list(self._selectedHexes)
@@ -120,7 +128,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             else:
                 self._mapWidget.clearSelectedHexes()
 
-        self._handleConfigChange()
+        self._updateOverlay()
 
     def searchRadius(self) -> int:
         return self._radiusSpinBox.value()
@@ -132,11 +140,11 @@ class HexRadiusSelectDialog(gui.DialogEx):
         with gui.SignalBlocker(self._mapWidget):
             self._radiusSpinBox.setValue(radius)
 
-        self._handleConfigChange()
+        self._updateOverlay()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._includeDeadSpaceCheckBox.setHidden(not enable)
-        self._handleConfigChange()
+        self._updateOverlay()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return not self._includeDeadSpaceCheckBox.isHidden()
@@ -157,7 +165,48 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         super().accept()
 
-    def _handleConfigChange(self) -> None:
+    def firstShowEvent(self, e):
+        super().firstShowEvent(e)
+
+        selection = self.selectedHexes()
+        if selection:
+            self._mapWidget.centerOnHexes(
+                hexes=selection,
+                immediate=True)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
+
+    def _updateOverlay(self) -> None:
         self._selectedHexes.clear()
         for handle in self._overlays:
             self._mapWidget.removeOverlay(handle)
@@ -166,9 +215,9 @@ class HexRadiusSelectDialog(gui.DialogEx):
         centerHex = self.centerHex()
         if centerHex:
             searchRadius = self.searchRadius()
-            selectionColour = gui.MapWidgetEx.selectionFillColour()
-            radiusColour = gui.MapWidgetEx.selectionOutlineColour()
-            radiusWidth = gui.MapWidgetEx.selectionOutlineWidth()
+            selectionColour = self._mapWidget.selectionFillColour()
+            radiusColour = self._mapWidget.selectionOutlineColour()
+            lineWidth = self._mapWidget.selectionOutlineWidth()
 
             includeDeadSpace = not self._includeDeadSpaceCheckBox.isHidden() and \
                 self._includeDeadSpaceCheckBox.isChecked()
@@ -185,6 +234,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             else:
                 try:
                     worlds = traveller.WorldManager.instance().worldsInRadius(
+                        milieu=self._mapWidget.milieu(),
                         center=centerHex,
                         searchRadius=searchRadius)
                     for world in worlds:
@@ -208,7 +258,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 center=centerHex,
                 radius=searchRadius,
                 lineColour=radiusColour,
-                lineWidth=radiusWidth)
+                lineWidth=lineWidth)
             self._overlays.append(handle)
 
         self._okButton.setDisabled(not self._selectedHexes)

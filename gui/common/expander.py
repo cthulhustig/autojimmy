@@ -92,7 +92,7 @@ class ExpanderWidget(QtWidgets.QWidget):
         if isinstance(content, QtWidgets.QWidget):
             # This layout intentionally keeps the default padding to indent the widget a little
             layout = QtWidgets.QVBoxLayout()
-            interfaceScale = app.Config.instance().interfaceScale()
+            interfaceScale = gui.interfaceScale()
             layout.setContentsMargins(
                 int(ExpanderWidget._LeftContentMargin * interfaceScale),
                 int(ExpanderWidget._TopContentMargin * interfaceScale),

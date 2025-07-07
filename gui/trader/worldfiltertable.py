@@ -30,13 +30,13 @@ class WorldFilterTable(gui.ListTable):
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
     def filters(self) -> typing.Iterable[logic.WorldFilter]:
-        worlds = []
+        filters = []
         for row in range(self.rowCount()):
-            world = self.filter(row)
-            if not world:
+            filter = self.filter(row)
+            if not filter:
                 continue
-            worlds.append(world)
-        return worlds
+            filters.append(filter)
+        return filters
 
     def filterAt(self, y: int) -> typing.Optional[logic.WorldFilter]:
         row = self.rowAt(y)
@@ -79,15 +79,13 @@ class WorldFilterTable(gui.ListTable):
         return self.filter(row)
 
     def selectedFilters(self) -> typing.Iterable[logic.WorldFilter]:
-        selection = self.selectedIndexes()
-        if not selection:
-            return None
-        worlds = []
-        for index in selection:
+        filters = []
+        for index in self.selectedIndexes():
             if index.column() == 0:
-                world = self.filter(index.row())
-                worlds.append(world)
-        return worlds
+                filter = self.filter(index.row())
+                if filter:
+                    filters.append(filter)
+        return filters
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -112,9 +110,7 @@ class WorldFilterTable(gui.ListTable):
 
         try:
             data = json.loads(stream.readQString())
-            self.addFilters(logic.deserialiseWorldFiltersList(
-                data=data,
-                rules=app.Config.instance().rules()))
+            self.addFilters(logic.deserialiseWorldFiltersList(data=data))
         except Exception as ex:
             logging.warning(f'Failed to deserialise WorldFilterTable filter list', exc_info=ex)
             return False

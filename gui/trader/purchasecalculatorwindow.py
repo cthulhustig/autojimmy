@@ -4,6 +4,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -25,6 +26,15 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             configSection='PurchaseCalculatorWindow')
 
         self._randomGenerator = common.RandomGenerator()
+
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
@@ -49,6 +59,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         windowLayout.addWidget(self._horizontalSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -78,7 +90,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             key='LocalBrokerState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._localBrokerWidget.restoreState(storedValue)
+            self._localBrokerSpinBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -157,15 +169,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
         self._settings.setValue('PlayerBrokerDMState', self._playerBrokerDmSpinBox.saveState())
-        self._settings.setValue('LocalBrokerState', self._localBrokerWidget.saveState())
+        self._settings.setValue('LocalBrokerState', self._localBrokerSpinBox.saveState())
         self._settings.setValue('SellerDmState', self._sellerDmSpinBox.saveState())
         self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
         self._settings.setValue('AvailabilityScaleState', self._availabilityScaleSpinBox.saveState())
         self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
         self._settings.setValue('CargoTableState', self._cargoTable.saveState())
-        self._settings.setValue('CargoTableContent', self._cargoTable.saveContent())
         self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
-        self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
         self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
         self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
 
@@ -174,7 +184,27 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._purchaseWorldWidget = gui.HexSelectToolWidget(labelText='Select World:')
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+
+        self._purchaseWorldWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
+            labelText='Select World:')
+        self._purchaseWorldWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -186,17 +216,20 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._worldGroupBox.setLayout(layout)
 
     def _setupConfigurationControls(self) -> None:
-        self._playerBrokerDmSpinBox = gui.SpinBoxEx()
-        self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._playerBrokerDmSpinBox.setValue(1)
-        self._playerBrokerDmSpinBox.setToolTip(gui.PlayerBrokerDmToolTip)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
-        self._localBrokerWidget = gui.LocalBrokerWidget()
+        self._playerBrokerDmSpinBox = gui.SkillSpinBox(
+            value=1,
+            toolTip=gui.PlayerBrokerDmToolTip)
 
-        self._sellerDmSpinBox = gui.SpinBoxEx()
-        self._sellerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
-        self._sellerDmSpinBox.setValue(2) # Default for MGT 2022 so just use as default for everything
-        self._sellerDmSpinBox.setToolTip(gui.createStringToolTip('Seller\'s DM bonus'))
+        self._localBrokerSpinBox = gui.LocalBrokerSpinBox(
+            enabled=False,
+            value=0,
+            rules=rules)
+
+        self._sellerDmSpinBox = gui.SkillSpinBox(
+            value=2, # Default for MGT 2022 so just use as default for everything
+            toolTip=gui.createStringToolTip('Seller\'s DM bonus'))
 
         self._blackMarketCheckBox = gui.CheckBoxEx()
 
@@ -218,7 +251,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         layout = gui.FormLayoutEx()
         layout.addRow('Player\'s broker DM:', self._playerBrokerDmSpinBox)
-        layout.addRow('Local Purchase Broker:', self._localBrokerWidget)
+        layout.addRow('Local Purchase Broker:', self._localBrokerSpinBox)
         layout.addRow('Seller DM:', self._sellerDmSpinBox)
         layout.addRow('Black Market Seller:', self._blackMarketCheckBox)
         layout.addRow('Price Scale (%):', self._priceScaleSpinBox)
@@ -229,10 +262,14 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(layout)
 
     def _setupAvailableCargoControls(self) -> None:
+        outcomeColours = app.Config.instance().value(
+            option=app.ConfigOption.OutcomeColours)
+
         self._generateButton = QtWidgets.QPushButton('Generate Available Cargo')
         self._generateButton.clicked.connect(self._generateAvailableCargo)
 
         self._cargoTable = gui.CargoRecordTable(
+            outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.KnownValueColumns)
         self._cargoTable.setMinimumHeight(200)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -298,6 +335,40 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollGroupBox.setDisabled(True)
         self._diceRollGroupBox.setLayout(layout)
 
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._purchaseWorldWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+            self._purchaseWorldWidget.setRules(rules=newValue)
+            self._localBrokerSpinBox.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._purchaseWorldWidget.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._purchaseWorldWidget.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._purchaseWorldWidget.setMapRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._purchaseWorldWidget.setMapAnimations(enabled=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.OutcomeColours:
+            self._cargoTable.setOutcomeColours(colours=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._purchaseWorldWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._purchaseWorldWidget.setTaggingColours(colours=newValue)
+
     def _purchaseWorldChanged(self) -> None:
         disable = not self._purchaseWorldWidget.selectedWorld()
         self._configurationGroupBox.setDisabled(disable)
@@ -314,12 +385,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         diceRoller = common.DiceRoller(
             randomGenerator=self._randomGenerator)
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            rules=app.Config.instance().rules(),
+            ruleSystem=rules.system(),
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
-            useLocalBroker=self._localBrokerWidget.isChecked(),
-            localBrokerDm=self._localBrokerWidget.value(),
+            useLocalBroker=self._localBrokerSpinBox.isChecked(),
+            localBrokerDm=self._localBrokerSpinBox.value(),
             sellerDm=self._sellerDmSpinBox.value(),
             blackMarket=self._blackMarketCheckBox.isChecked(),
             diceRoller=diceRoller)
@@ -388,8 +460,9 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             cargoRecord = self._cargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
+            ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
         if not tradeGoods:
@@ -402,6 +475,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             parent=self,
             title='Add Available Cargo',
             world=purchaseWorld,
+            rules=rules,
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -430,6 +504,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             parent=self,
             title='Edit Available Cargo',
             world=purchaseWorld,
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=cargoRecord.pricePerTon(),
             editQuantity=cargoRecord.quantity())
@@ -493,6 +568,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _clearCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+        self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())

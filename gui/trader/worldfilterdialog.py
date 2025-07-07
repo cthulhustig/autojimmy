@@ -4,7 +4,7 @@ import gui
 import logic
 import traveller
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _FilterType(enum.Enum):
     NameFilter = 'Name'
@@ -207,6 +207,7 @@ class WorldFilterDialog(gui.DialogEx):
     def __init__(
             self,
             title: str,
+            taggingColours: app.TaggingColours,
             editFilter: typing.Optional[logic.WorldFilter] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -214,6 +215,8 @@ class WorldFilterDialog(gui.DialogEx):
             title=title,
             configSection='WorldFilterDialog',
             parent=parent)
+
+        self._taggingColours = app.TaggingColours(taggingColours)
 
         self._setupFilterComboBox()
         self._setupLayoutStack()
@@ -285,8 +288,7 @@ class WorldFilterDialog(gui.DialogEx):
         elif filterType == _FilterType.RefuellingFilter:
             return logic.RefuellingFilter(
                 operation=self._refuellingFilterOperationComboBox.currentEnum(),
-                value=self._refuellingFilterValuesList.checkedEnums(),
-                rules=app.Config.instance().rules())
+                value=self._refuellingFilterValuesList.checkedEnums())
         elif filterType == _FilterType.AllegianceFilter:
             return logic.AllegianceFilter(
                 operation=self._allegianceFilterOperationCombo.currentEnum(),
@@ -420,7 +422,8 @@ class WorldFilterDialog(gui.DialogEx):
             type=logic.ComparisonFilterOperation,
             textMap=_ComparisonFilterOperationTextMap)
 
-        self._tagLevelFilterValueComboBox = gui.TagLevelComboBox()
+        self._tagLevelFilterValueComboBox = gui.TagLevelComboBox(
+            colours=self._taggingColours)
 
         layout = gui.FormLayoutEx()
         layout.addRow('Operation:', self._tagLevelFilterOperationComboBox)

@@ -1,6 +1,9 @@
 import enum
 import typing
 
+# NOTE: If I ever change the names of these enums I'll need to add some kind of
+# mapping to CargoRecord serialization/deserialization as the names are store
+# in the file files
 class RuleSystem(enum.Enum):
     MGT = 'Mongoose Traveller'
     MGT2 = 'Mongoose Traveller 2e'
@@ -13,6 +16,7 @@ class StarPortFuelType(enum.Enum):
     NoFuel = 'No Fuel'
 
 class Rules(object):
+    @typing.overload
     def __init__(
             self,
             system: RuleSystem,
@@ -21,15 +25,25 @@ class Rules(object):
             classCStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
             classDStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
             classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel,
-            ) -> None:
-        self._system = system
-        self._starPortFuelTypes = {
-            'A': classAStarPortFuelType,
-            'B': classBStarPortFuelType,
-            'C': classCStarPortFuelType,
-            'D': classDStarPortFuelType,
-            'E': classEStarPortFuelType
-        }
+            ) -> None: ...
+    @typing.overload
+    def __init__(self, other: 'Rules' ) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        if len(args) + len(kwargs) == 1:
+            other = args[0] if len(args) > 0 else kwargs['other']
+            if not isinstance(other, Rules):
+                raise TypeError('The other parameter must be an Rules')
+            self._system = other._system
+            self._starPortFuelTypes = dict(other._starPortFuelTypes)
+        else:
+            self._system = args[0] if len(args) > 0 else kwargs['system']
+            self._starPortFuelTypes = {
+                'A': args[1] if len(args) > 1 else kwargs.get('classAStarPortFuelType', StarPortFuelType.AllTypes),
+                'B': args[2] if len(args) > 2 else kwargs.get('classBStarPortFuelType', StarPortFuelType.AllTypes),
+                'C': args[3] if len(args) > 3 else kwargs.get('classCStarPortFuelType', StarPortFuelType.UnrefinedOnly),
+                'D': args[4] if len(args) > 4 else kwargs.get('classDStarPortFuelType', StarPortFuelType.UnrefinedOnly),
+                'E': args[5] if len(args) > 5 else kwargs.get('classEStarPortFuelType', StarPortFuelType.NoFuel)}
 
     def system(self) -> RuleSystem:
         return self._system
@@ -68,6 +82,6 @@ class Rules(object):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Rules):
-            raise NotImplementedError()
+            return False
         return self._system == other._system and \
             self._starPortFuelTypes == other._starPortFuelTypes

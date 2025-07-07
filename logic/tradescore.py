@@ -5,13 +5,16 @@ import typing
 class TradeScore(object):
     def __init__(
             self,
-            rules: traveller.Rules,
             world: traveller.World,
+            ruleSystem: traveller.RuleSystem,
             tradeGoods: typing.Optional[typing.Iterable[traveller.TradeGood]] = None
             ) -> None:
-        self._rules = rules
         self._world = world
-        self._tradeGoods = tradeGoods if tradeGoods != None else traveller.tradeGoodList(rules=self._rules)
+        self._ruleSystem = ruleSystem
+        self._tradeGoods = \
+            traveller.tradeGoodList(ruleSystem=self._ruleSystem) \
+            if tradeGoods is None else \
+            [tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() == ruleSystem]
 
         self._purchaseScores: typing.Dict[traveller.TradeGood, common.ScalarCalculation] = {}
         self._saleScores: typing.Dict[traveller.TradeGood, common.ScalarCalculation] = {}
@@ -29,7 +32,7 @@ class TradeScore(object):
                 self._saleScores[tradeGood] = saleScore
 
         self._quantityModifiers = traveller.worldCargoQuantityModifiers(
-            rules=self._rules,
+            ruleSystem=self._ruleSystem,
             world=self._world)
 
         self._totalPurchaseScore = common.Calculator.sum(
@@ -41,6 +44,9 @@ class TradeScore(object):
 
     def world(self) -> traveller.World:
         return self._world
+
+    def ruleSystem(self) -> traveller.RuleSystem:
+        return self._ruleSystem
 
     def tradeGoods(self) -> typing.Iterable[traveller.TradeGood]:
         return self._tradeGoods

@@ -24,21 +24,15 @@ _WelcomeMessage = """
 """.format(name=app.AppName)
 
 class _CustomTradeGoodTable(gui.TradeGoodTable):
-    def __init__(self):
-        super().__init__()
+    def __init__(
+            self,
+            rules: traveller.Rules
+            ) -> None:
+        super().__init__(
+            rules=rules,
+            filterCallback=self._filterTradeGoods)
 
         self.setCheckable(enable=True)
-
-        # Don't include exotics in the table as they're not like other trade goods and don't
-        # affect the trade score
-        tradeGoods = traveller.tradeGoodList(
-            rules=app.Config.instance().rules(),
-            excludeTradeGoods=[traveller.tradeGoodFromId(
-                rules=app.Config.instance().rules(),
-                tradeGoodId=traveller.TradeGoodIds.Exotics)])
-        for tradeGood in tradeGoods:
-            self.addTradeGood(tradeGood=tradeGood)
-
         self.resizeColumnsToContents()
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -57,24 +51,33 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
         hint.setWidth(width)
         return hint
 
+    def _filterTradeGoods(
+            self,
+            tradeGood: traveller.TradeGood
+            ) -> bool:
+        # Don't include exotics in the table as they're not like other trade
+        # goods and don't affect the trade score
+        exotics = traveller.tradeGoodFromId(
+            ruleSystem=self._rules.system(),
+            tradeGoodId=traveller.TradeGoodIds.Exotics)
+        return tradeGood is not exotics
+
 class _RegionSelectWidget(QtWidgets.QWidget):
     _StateVersion = '_RegionSelectWidget_v1'
     _AllSubsectorsText = '<All Subsectors>'
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        sectorNames = list(traveller.WorldManager.instance().sectorNames())
-        sectorNames.sort(key=str.casefold)
+        self._milieu = milieu
 
         self._sectorComboBox = QtWidgets.QComboBox()
-        self._sectorComboBox.addItems(sectorNames)
-        self._sectorComboBox.currentIndexChanged.connect(self._updateSubsectorComboBox)
+        self._sectorComboBox.currentIndexChanged.connect(self._loadSubsectorNames)
         self._subsectorComboBox = QtWidgets.QComboBox()
-        self._updateSubsectorComboBox()
 
         layout = gui.FormLayoutEx()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -82,6 +85,18 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         layout.addRow('Subsector:', self._subsectorComboBox)
 
         self.setLayout(layout)
+
+        self._syncToMilieu()
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+
+        self._milieu = milieu
+        self._syncToMilieu()
 
     def sectorName(self) -> str:
         return self._sectorComboBox.currentText()
@@ -118,33 +133,78 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         return True
 
-    def _updateSubsectorComboBox(self) -> None:
+    def _loadSectorNames(self) -> None:
+        self._sectorComboBox.clear()
+
+        sectorNames = sorted(
+            traveller.WorldManager.instance().sectorNames(milieu=self._milieu),
+            key=str.casefold)
+        self._sectorComboBox.addItems(sectorNames)
+
+    def _loadSubsectorNames(self) -> None:
         self._subsectorComboBox.clear()
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
-        sector = traveller.WorldManager.instance().sectorByName(self._sectorComboBox.currentText())
+        sector = traveller.WorldManager.instance().sectorByName(
+            milieu=self._milieu,
+            name=self._sectorComboBox.currentText())
         if not sector:
             return
-
-        subsectorNames = list(sector.subsectorNames())
-        subsectorNames.sort(key=str.casefold)
+        subsectorNames = sorted(
+            sector.subsectorNames(),
+            key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
+    def _syncToMilieu(self) -> None:
+        currentSector = self._sectorComboBox.currentText()
+        currentSubsector = self._subsectorComboBox.currentText()
+
+        with gui.SignalBlocker(self):
+            self._loadSectorNames()
+            index = self._sectorComboBox.findText(currentSector)
+            if index >= 0:
+                self._sectorComboBox.setCurrentIndex(index)
+
+            self._loadSubsectorNames()
+            index = self._subsectorComboBox.findText(currentSubsector)
+            if index >= 0:
+                self._subsectorComboBox.setCurrentIndex(index)
+
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
+    showCenterHex = QtCore.pyqtSignal(travellermap.HexPosition)
+
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
     _MinWorldWidgetWidth = 350
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            rules: traveller.Rules,
+            mapStyle: travellermap.Style,
+            mapOptions: typing.Iterable[travellermap.Option],
+            mapRendering: app.MapRendering,
+            mapAnimations: bool,
+            worldTagging: typing.Optional[logic.WorldTagging] = None,
+            taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self._hexWidget = gui.HexSelectToolWidget(
+            milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours,
             labelText='Center Hex:')
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
+        self._hexWidget.enableShowHexButton(True)
+        self._hexWidget.showHex.connect(self.showCenterHex.emit)
         # Setting this to a fixed size is horrible, but no mater what I try I
         # can't get this f*cking thing to expand to fill available space. I
         # suspect it might be something to do with one of layers of widgets or
@@ -156,8 +216,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         # jump route planner window where the start/finish world combo boxes do
         # expand to fil available space.
         self._hexWidget.setMinimumWidth(
-            int(_HexSearchRadiusWidget._MinWorldWidgetWidth *
-                app.Config.instance().interfaceScale()))
+            int(_HexSearchRadiusWidget._MinWorldWidgetWidth * gui.interfaceScale()))
         # Enable dead space selection so the user can find things centred around
         # a dead space hex
         self._hexWidget.enableDeadSpaceSelection(enable=True)
@@ -177,11 +236,38 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        self._hexWidget.setMilieu(milieu=milieu)
+
+    def setRules(self, rules: traveller.Rules) -> None:
+        self._hexWidget.setRules(rules=rules)
+
+    def setMapStyle(self, style: travellermap.Style) -> None:
+        self._hexWidget.setMapStyle(style=style)
+
+    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+        self._hexWidget.setMapOptions(options=options)
+
+    def setMapRendering(self, rendering: app.MapRendering) -> None:
+        self._hexWidget.setMapRendering(rendering=rendering)
+
+    def setMapAnimations(self, enabled: bool) -> None:
+        self._hexWidget.setMapAnimations(enabled=enabled)
+
+    def setWorldTagging(self, tagging: typing.Optional[logic.WorldTagging]) -> None:
+        self._hexWidget.setWorldTagging(tagging=tagging)
+
+    def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
+        self._hexWidget.setTaggingColours(colours=colours)
+
     def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._hexWidget.selectedHex()
 
     def searchRadius(self) -> int:
         return self._radiusSpinBox.value()
+
+    def setHexTooltipProvider(self, provider: gui.HexTooltipProvider) -> None:
+        self._hexWidget.setHexTooltipProvider(provider=provider)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -237,6 +323,15 @@ class WorldSearchWindow(gui.WindowWidget):
 
         self._scoreRecalculationTimer = None
 
+        self._hexTooltipProvider = gui.HexTooltipProvider(
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
+            mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
+
         self._setupAreaControls()
         self._setupFilterControls()
         self._setupTradeGoodsControls()
@@ -263,6 +358,8 @@ class WorldSearchWindow(gui.WindowWidget):
         windowLayout.addWidget(self._leftRightSplitter)
 
         self.setLayout(windowLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -400,13 +497,32 @@ class WorldSearchWindow(gui.WindowWidget):
         return super().firstShowEvent(e)
 
     def _setupAreaControls(self) -> None:
-        self._worldRadiusSearchWidget = _HexSearchRadiusWidget()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+
+        self._worldRadiusSearchWidget = _HexSearchRadiusWidget(
+            milieu=milieu,
+            rules=rules,
+            mapStyle=mapStyle,
+            mapOptions=mapOptions,
+            mapRendering=mapRendering,
+            mapAnimations=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
+        self._worldRadiusSearchWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
+        self._worldRadiusSearchWidget.showCenterHex.connect(self._showCenterHexOnMapClicked)
         self._worldRadiusSearchRadioButton = gui.RadioButtonEx()
         self._worldRadiusSearchRadioButton.setToolTip('Search for worlds in the area surrounding the specified world.')
         self._worldRadiusSearchRadioButton.toggled.connect(self._worldRadiusSearchToggled)
         self._worldRadiusSearchRadioButton.setChecked(True)
 
-        self._regionSearchSelectWidget = _RegionSelectWidget()
+        self._regionSearchSelectWidget = _RegionSelectWidget(milieu=milieu)
         self._regionSearchSelectWidget.setDisabled(True)
         self._regionSearchRadioButton = gui.RadioButtonEx()
         self._regionSearchRadioButton.setToolTip('Search for worlds in the selected sector/subsector.')
@@ -461,7 +577,10 @@ class WorldSearchWindow(gui.WindowWidget):
         self._areaGroupBox.setLayout(layout)
 
     def _setupFilterControls(self) -> None:
-        self._filterWidget = gui.WorldFilterTableManagerWidget()
+        taggingColours = app.Config.instance().value(
+            option=app.ConfigOption.TaggingColours)
+        self._filterWidget = gui.WorldFilterTableManagerWidget(
+            taggingColours=taggingColours)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._filterWidget)
@@ -470,7 +589,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._configGroupBox.setLayout(layout)
 
     def _setupTradeGoodsControls(self) -> None:
-        self._tradeGoodTable = _CustomTradeGoodTable()
+        self._tradeGoodTable = _CustomTradeGoodTable(
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
         self._tradeGoodTable.itemChanged.connect(self._tradeGoodTableItemChanged)
 
         self._checkAllTradeGoodsButton = QtWidgets.QPushButton()
@@ -497,6 +617,15 @@ class WorldSearchWindow(gui.WindowWidget):
         self._scoredGoodGroupBox.setLayout(layout)
 
     def _setupFoundWorldsControls(self) -> None:
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+        mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
+        mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
+        mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
+        mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
+        worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+        taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
+
         self._findWorldsButton = QtWidgets.QPushButton('Perform Search')
         self._findWorldsButton.clicked.connect(self._findWorlds)
 
@@ -505,7 +634,12 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTableDisplayModeTabs = gui.HexTableTabBar()
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
-        self._worldTable = gui.WorldTradeScoreTable()
+        self._worldTable = gui.WorldTradeScoreTable(
+            milieu=milieu,
+            rules=rules,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
+        self._worldTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._worldTable.setActiveColumns(self._worldColumns())
         self._worldTable.setMinimumHeight(100)
         self._worldTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
@@ -519,8 +653,20 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget = QtWidgets.QTabWidget()
         tableLayoutWidget.setLayout(tableLayout)
 
-        self._mapWidget = gui.MapWidgetEx()
+        self._mapWidget = gui.MapWidgetEx(
+            milieu=milieu,
+            rules=rules,
+            style=mapStyle,
+            options=mapOptions,
+            rendering=mapRendering,
+            animated=mapAnimations,
+            worldTagging=worldTagging,
+            taggingColours=taggingColours)
         self._mapWidget.enableDeadSpaceSelection(enable=True)
+        self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._mapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         # HACK: This wrapper widget for the map is a hacky fix for what looks
         # like a bug in QTabWidget that is triggered if you make one of the
@@ -608,11 +754,102 @@ class WorldSearchWindow(gui.WindowWidget):
     def _worldRadiusSearchToggled(self, selected: bool) -> None:
         self._worldRadiusSearchWidget.setDisabled(not selected)
 
+    def _showCenterHexOnMapClicked(self, hex: travellermap.HexPosition) -> None:
+        try:
+            self._resultsDisplayModeTabView.setCurrentWidget(
+                self._mapWrapperWidget)
+            self._mapWidget.centerOnHex(hex=hex)
+        except Exception as ex:
+            message = 'Failed to show hex on map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
     def _scoreRecalculationTimerFired(self) -> None:
         if not self._worldTable:
             # This should never happen but handle it just in case
             return
         self._worldTable.setTradeGoods(tradeGoods=self._tradeGoodTable.checkedTradeGoods())
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._hexTooltipProvider.setMilieu(milieu=newValue)
+            self._worldRadiusSearchWidget.setMilieu(milieu=newValue)
+            self._regionSearchSelectWidget.setMilieu(milieu=newValue)
+            self._worldTable.setMilieu(milieu=newValue)
+            self._mapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._hexTooltipProvider.setRules(rules=newValue)
+            self._worldRadiusSearchWidget.setRules(rules=newValue)
+            self._tradeGoodTable.setRules(rules=newValue)
+            self._worldTable.setRules(rules=newValue)
+            self._mapWidget.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._hexTooltipProvider.setMapStyle(style=newValue)
+            self._worldRadiusSearchWidget.setMapStyle(style=newValue)
+            self._mapWidget.setStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._hexTooltipProvider.setMapOptions(options=newValue)
+            self._worldRadiusSearchWidget.setMapOptions(options=newValue)
+            self._mapWidget.setOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._worldRadiusSearchWidget.setMapRendering(rendering=newValue)
+            self._mapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._worldRadiusSearchWidget.setMapAnimations(enabled=newValue)
+            self._mapWidget.setAnimated(animated=newValue)
+        elif option is app.ConfigOption.ShowToolTipImages:
+            self._hexTooltipProvider.setShowImages(show=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._hexTooltipProvider.setWorldTagging(tagging=newValue)
+            self._worldRadiusSearchWidget.setWorldTagging(tagging=newValue)
+            self._worldTable.setWorldTagging(tagging=newValue)
+            self._mapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._hexTooltipProvider.setTaggingColours(colours=newValue)
+            self._worldRadiusSearchWidget.setTaggingColours(colours=newValue)
+            self._filterWidget.setTaggingColours(colours=newValue)
+            self._worldTable.setTaggingColours(colours=newValue)
+            self._mapWidget.setTaggingColours(colours=newValue)
+
+    def _mapStyleChanged(
+            self,
+            style: travellermap.Style
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[travellermap.Option]
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
 
     def _findWorlds(self) -> None:
         self._worldTable.removeAllRows()
@@ -624,14 +861,25 @@ class WorldSearchWindow(gui.WindowWidget):
         foundWorlds = None
         try:
             worldFilter = logic.WorldSearch()
-            worldFilter.setLogic(filterLogic=self._filterWidget.filterLogic())
+            worldFilter.setFilterLogic(filterLogic=self._filterWidget.filterLogic())
             worldFilter.setFilters(filters=self._filterWidget.filters())
+
+            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            rules = app.Config.instance().value(option=app.ConfigOption.Rules)
+            tagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
+
 
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
+                    milieu=milieu,
+                    rules=rules,
+                    tagging=tagging,
                     maxResults=self._MaxSearchResults)
             elif self._regionSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.searchRegion(
+                    milieu=milieu,
+                    rules=rules,
+                    tagging=tagging,
                     sectorName=self._regionSearchSelectWidget.sectorName(),
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
@@ -642,7 +890,10 @@ class WorldSearchWindow(gui.WindowWidget):
                         parent=self,
                         text='Select a hex to center the search radius around')
                     return
-                foundWorlds = worldFilter.searchArea(
+                foundWorlds = worldFilter.searchRadius(
+                    milieu=milieu,
+                    rules=rules,
+                    tagging=tagging,
                     centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
                 if len(foundWorlds) > self._MaxSearchResults:
@@ -668,13 +919,18 @@ class WorldSearchWindow(gui.WindowWidget):
                 text=f'The number of search results has been limited to {self._MaxSearchResults}',
                 stateKey='WorldSearchResultCountCapped')
 
-        self._worldTable.addWorlds(worlds=foundWorlds)
+        self._worldTable.addHexes(hexes=[world.hex() for world in foundWorlds])
         self._resultsCountLabel.setText(common.formatNumber(len(foundWorlds)))
 
         self._showWorldsOnMap(
             worlds=foundWorlds,
             highlightWorlds=True,
             switchTab=False)
+
+    def _clearResults(self) -> None:
+        self._worldTable.removeAllRows()
+        self._resultsCountLabel.clear()
+        self._mapWidget.clearHexHighlights()
 
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
@@ -751,7 +1007,7 @@ class WorldSearchWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addHexes(hexes=worlds)
+        infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showTradeScoreCalculations(
             self,

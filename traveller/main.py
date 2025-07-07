@@ -6,10 +6,13 @@ class Main(object):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        self._worlds = set(worlds)
+        self._worlds = list(worlds)
 
-    def worlds(self) -> str:
-        return self._worlds
+    def worldCount(self) -> int:
+        return len(self._worlds)
+
+    def worlds(self) -> typing.Iterable[traveller.World]:
+        return list(self._worlds)
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)
