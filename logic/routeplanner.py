@@ -264,9 +264,7 @@ class RoutePlanner(object):
         if sequenceLength == 2:
             # Handle corner case where the start and finish are the same world
             if startHex == finishHex:
-                return logic.JumpRoute(
-                    milieu=milieu,
-                    nodes=[(startHex, startWorld)])
+                return logic.JumpRoute(nodes=[(startHex, startWorld)])
 
             # A _LOT_ of the time we're asked to calculate a route the finish
             # world is actually within one jump of the start world (as finished
@@ -303,7 +301,6 @@ class RoutePlanner(object):
                 fuelToFinish = distance * shipFuelPerParsec
                 if fuelToFinish <= availableFuel:
                     return logic.JumpRoute(
-                        milieu=milieu,
                         nodes=[(startHex, startWorld), (finishHex, finishWorld)])
 
         openQueue: typing.List[_RouteNode] = []
@@ -381,7 +378,6 @@ class RoutePlanner(object):
                     # We've found the lowest cost route that goes through all the worlds in the sequence.
                     # Process it to generate the final list of route worlds then bail
                     return self._finaliseRoute(
-                        milieu=milieu,
                         finishNode=currentNode,
                         progressCount=closedRoutes + 1, # +1 for this route
                         progressCallback=progressCallback)
@@ -402,7 +398,6 @@ class RoutePlanner(object):
                     # loop in order to skip this world
                     if targetIndex >= finishWorldIndex:
                         return self._finaliseRoute(
-                            milieu=milieu,
                             finishNode=currentNode,
                             progressCount=closedRoutes + 1, # +1 for this route
                             progressCallback=progressCallback)
@@ -773,7 +768,6 @@ class RoutePlanner(object):
 
     def _finaliseRoute(
             self,
-            milieu: travellermap.Milieu,
             finishNode: _RouteNode,
             progressCount: int,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
@@ -793,4 +787,4 @@ class RoutePlanner(object):
         if progressCallback:
             progressCallback(progressCount, True) # Search is finished
 
-        return logic.JumpRoute(milieu=milieu, nodes=path)
+        return logic.JumpRoute(nodes=path)

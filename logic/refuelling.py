@@ -547,6 +547,7 @@ class _CalculationContext:
         return isBetter
 
 def calculateRefuellingPlan(
+        milieu: travellermap.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -612,7 +613,7 @@ def calculateRefuellingPlan(
         return None
 
     return _createRefuellingPlan(
-        milieu=jumpRoute.milieu(),
+        milieu=milieu,
         calculationContext=calculationContext,
         pitCostCalculator=pitCostCalculator,
         includeRefuellingCosts=includeRefuellingCosts,
@@ -643,7 +644,9 @@ def _processRoute(
         parsecsToNextWorld = None
         reachableNodeIndex = nodeIndex + 1
         while reachableNodeIndex <= finishNodeIndex:
+            # TODO: This would need changed to not treat jump route as a collection
             fromHex, _ = jumpRoute[reachableNodeIndex - 1]
+            # TODO: This would need changed to not treat jump route as a collection
             toHex, toWorld = jumpRoute[reachableNodeIndex]
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs

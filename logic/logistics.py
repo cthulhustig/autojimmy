@@ -1,10 +1,12 @@
 import common
 import logic
+import travellermap
 import typing
 
 class RouteLogistics(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[logic.RefuellingPlan],
             perJumpOverheads: typing.Optional[typing.Union[int, common.ScalarCalculation]]
@@ -18,6 +20,7 @@ class RouteLogistics(object):
                 value=perJumpOverheads,
                 name='Per Jump Overheads')
 
+        self._milieu = milieu
         self._jumpRoute = jumpRoute
         self._refuellingPlan = refuellingPlan
 
@@ -31,6 +34,9 @@ class RouteLogistics(object):
                 lhs=perJumpOverheads,
                 rhs=jumpCount,
                 name='Total Overheads')
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def jumpCount(self) -> int:
         return self._jumpRoute.jumpCount()
@@ -60,6 +66,7 @@ class RouteLogistics(object):
             name='Total Logistics Cost')
 
 def calculateRouteLogistics(
+        milieu: travellermap.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -79,6 +86,7 @@ def calculateRouteLogistics(
     if pitCostCalculator:
         if jumpRoute.nodeCount() > 1:
             refuellingPlan = logic.calculateRefuellingPlan(
+                milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
@@ -121,7 +129,7 @@ def calculateRouteLogistics(
                         fuelCost=None,
                         berthingCost=berthingCost)
                     refuellingPlan = logic.RefuellingPlan(
-                        milieu=jumpRoute.milieu(),
+                        milieu=milieu,
                         pitStops=[pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads
@@ -132,6 +140,7 @@ def calculateRouteLogistics(
             name='Ignored Per Jump Overheads')
 
     return logic.RouteLogistics(
+        milieu=milieu,
         jumpRoute=jumpRoute,
         refuellingPlan=refuellingPlan,
         perJumpOverheads=reportedPerJumpOverheads)

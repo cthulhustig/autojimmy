@@ -686,6 +686,7 @@ class JumpRouteWindow(gui.WindowWidget):
             raise RuntimeError('Unable to set jump route while a jump route job is in progress')
 
         self._jumpRoute = route
+        # TODO: This would need changed to not treat jump route as a collection
         self._jumpRouteTable.setHexes(
             hexes=[hex for hex, _ in self._jumpRoute])
 
@@ -1535,6 +1536,7 @@ class JumpRouteWindow(gui.WindowWidget):
             ) -> None:
             self._jumpRoute = jumpRoute
             self._routeLogistics = routeLogistics
+            # TODO: This would need changed to not treat jump route as a collection
             self._jumpRouteTable.setHexes(
                 hexes=[hex for hex, _ in self._jumpRoute])
 
@@ -1886,7 +1888,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 milieu=milieu,
                 hex=hex)
             nodes.append((hex, world))
-        jumpRoute = logic.JumpRoute(milieu=milieu, nodes=nodes)
+        jumpRoute = logic.JumpRoute(nodes=nodes)
         routeLogistics = self._interactiveCalculateLogistics(jumpRoute=jumpRoute)
 
         self._selectStartFinishWidget.setStartHex(hexes[0])
@@ -2010,6 +2012,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if not self._jumpRoute:
             return
 
+        # TODO: This would need changed to not treat jump route as a collection
         self._showHexesOnMap(
             hexes=[hex for hex, _ in self._jumpRoute])
 
@@ -2314,6 +2317,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
                 return
 
+            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
@@ -2324,6 +2328,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             try:
                 routeLogistics = logic.calculateRouteLogistics(
+                    milieu=milieu,
                     jumpRoute=jumpRoute,
                     shipTonnage=self._shipTonnageSpinBox.value(),
                     shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -2339,7 +2344,6 @@ class JumpRouteWindow(gui.WindowWidget):
                         text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
                 return routeLogistics
             except Exception as ex:
-                milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
                 startHex, _ = jumpRoute.startNode()
                 finishHex, _ = jumpRoute.finishNode()
                 startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)

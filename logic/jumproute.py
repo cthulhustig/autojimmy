@@ -2,29 +2,31 @@ import traveller
 import travellermap
 import typing
 
+# TODO: Better jump routes
+# - Drop milieu and worlds from jump route, they should be independent of
+# the milieu
+# - Hexes in the route need to have a flag to say berthing is required
 class JumpRoute(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
             nodes: typing.Sequence[typing.Tuple[
                 travellermap.HexPosition,
                 typing.Optional[traveller.World]]]
             ) -> None:
         if not nodes:
             raise ValueError('A jump route can\'t have an empty nodes list')
-        self._milieu = milieu
         self._nodes = list(nodes)
 
         # The total parsecs calculation is done on demand as it's not often used and is relatively
         # expensive to calculate
         self._totalParsecs = None
 
-    def milieu(self) -> travellermap.Milieu:
-        return self._milieu
-
     def jumpCount(self) -> int:
         return len(self._nodes) - 1
 
+    # TODO: Need to drop term node and just use hexes. All calls
+    # to these methods should be replaced with calls to the hex
+    # equivalent
     def nodeCount(self) -> int:
         return len(self._nodes)
 
@@ -55,6 +57,9 @@ class JumpRoute(object):
     def finishHex(self) -> travellermap.HexPosition:
         return self._nodes[-1][0]
 
+    # TODO: Need to remove worlds from jump routes to make them independent
+    # of milieu. All calls to world functions should be replaced with calls
+    # to the hex equivalent
     def world(self, index: int) -> typing.Optional[traveller.World]:
         return self._nodes[index][1]
 
@@ -79,6 +84,10 @@ class JumpRoute(object):
             self._totalParsecs = self.nodeParsecs(index=len(self._nodes) - 1)
         return self._totalParsecs
 
+    # TODO: I either need to get rid of these methods or switch them to return
+    # just the hex. I think I've marked all the places that will need updated
+    # with either option. I'm currently thinking to keep them as it means it's
+    # consistent with things like refuelling plans
     def __getitem__(self, index: int) -> typing.Tuple[
             travellermap.HexPosition,
             typing.Optional[traveller.World]]:

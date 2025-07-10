@@ -428,6 +428,7 @@ class Trader(object):
                     requiredBerthingIndices.add(jumpRoute.nodeCount() - 1)
 
             routeLogistics = logic.calculateRouteLogistics(
+                milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
