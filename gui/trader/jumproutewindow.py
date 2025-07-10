@@ -695,8 +695,8 @@ class JumpRouteWindow(gui.WindowWidget):
             pitStops=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
 
         self._selectStartFinishWidget.setHexes(
-            startHex=route.startHex(),
-            finishHex=route.finishHex())
+            startHex=route.startNode(),
+            finishHex=route.finishNode())
         self._waypointsTable.removeAllRows()
 
         self._updateRouteLabels()
@@ -1787,7 +1787,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
         for nodeIndex in range(self._jumpRoute.nodeCount()):
-            if self._jumpRoute.hex(nodeIndex) == hex:
+            if self._jumpRoute.nodeAt(nodeIndex) == hex:
                 jumpNodes[nodeIndex] = None
 
         if self._routeLogistics:
@@ -1914,7 +1914,7 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         try:
-            logic.writeHexList(self._jumpRoute.hexes(), path)
+            logic.writeHexList(self._jumpRoute.nodes(), path)
         except Exception as ex:
             message = f'Failed to write jump route to "{path}"'
             logging.error(message, exc_info=ex)
@@ -2344,8 +2344,8 @@ class JumpRouteWindow(gui.WindowWidget):
                         text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
                 return routeLogistics
             except Exception as ex:
-                startHex, _ = jumpRoute.startNode()
-                finishHex, _ = jumpRoute.finishNode()
+                startHex = jumpRoute.startNode()
+                finishHex = jumpRoute.finishNode()
                 startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
                 finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
                 message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
@@ -2379,7 +2379,12 @@ class JumpRouteWindow(gui.WindowWidget):
             bool # Mandatory berthing required
             ]] = []
 
-        startHex, startWorld = jumpRoute.startNode()
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        startHex = jumpRoute.startNode()
+        startWorld = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=startHex)
         waypoints.append((
             startHex,
             startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
@@ -2389,7 +2394,10 @@ class JumpRouteWindow(gui.WindowWidget):
                 self._waypointsTable.hex(row),
                 self._waypointsTable.isBerthingChecked(row)))
 
-        finishHex, finishWorld = jumpRoute.finishNode()
+        finishHex = jumpRoute.finishNode()
+        finishWorld = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=finishHex)
         waypoints.append((
             finishHex,
             finishWorld and self._includeFinishWorldBerthingCheckBox.isChecked()))
@@ -2407,7 +2415,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         waypointIndex = 0
         for jumpIndex in range(jumpRoute.nodeCount()):
-            if jumpRoute.hex(jumpIndex) == waypoints[waypointIndex][0]:
+            if jumpRoute.nodeAt(jumpIndex) == waypoints[waypointIndex][0]:
                 # We've found the current waypoint on the jump route
                 if waypoints[waypointIndex][1]:
                     requiredBerthingIndices.add(jumpIndex)

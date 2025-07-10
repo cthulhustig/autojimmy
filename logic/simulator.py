@@ -245,7 +245,7 @@ class Simulator(object):
                 self._actualLogisticsCost += jumpOverheads
 
             # We've reached the sale world
-            assert(self._currentHex == jumpRoute.finishHex())
+            assert(self._currentHex == jumpRoute.finishNode())
             assert(self._actualLogisticsCost <= routeLogistics.totalCosts().worstCaseValue())
             assert(self._actualLogisticsCost >= routeLogistics.totalCosts().bestCaseValue())
         else:

@@ -24,50 +24,20 @@ class JumpRoute(object):
     def jumpCount(self) -> int:
         return len(self._nodes) - 1
 
-    # TODO: Need to drop term node and just use hexes. All calls
-    # to these methods should be replaced with calls to the hex
-    # equivalent
     def nodeCount(self) -> int:
         return len(self._nodes)
 
-    def node(self, index) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes[index]
-
-    def startNode(self) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes[0]
-
-    def finishNode(self) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes[-1]
-
-    def hex(self, index: int) -> travellermap.HexPosition:
+    def nodeAt(self, index: int) -> travellermap.HexPosition:
         return self._nodes[index][0]
 
-    def hexes(self) -> typing.List[travellermap.HexPosition]:
+    def nodes(self) -> typing.List[travellermap.HexPosition]:
         return [node[0] for node in self._nodes]
 
-    def startHex(self) -> travellermap.HexPosition:
+    def startNode(self) -> travellermap.HexPosition:
         return self._nodes[0][0]
 
-    def finishHex(self) -> travellermap.HexPosition:
+    def finishNode(self) -> travellermap.HexPosition:
         return self._nodes[-1][0]
-
-    # TODO: Need to remove worlds from jump routes to make them independent
-    # of milieu. All calls to world functions should be replaced with calls
-    # to the hex equivalent
-    def world(self, index: int) -> typing.Optional[traveller.World]:
-        return self._nodes[index][1]
-
-    def startWorld(self) -> typing.Optional[traveller.World]:
-        return self._nodes[0][1]
-
-    def finishWorld(self) -> typing.Optional[traveller.World]:
-        return self._nodes[-1][1]
 
     def nodeParsecs(self, index: int) -> int:
         parsecs = 0

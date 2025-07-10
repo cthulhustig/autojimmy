@@ -602,6 +602,7 @@ def calculateRefuellingPlan(
     assert(parsecsWithoutRefuelling > 0)
 
     calculationContext = _processRoute(
+        milieu=milieu,
         jumpRoute=jumpRoute,
         shipFuelCapacity=shipFuelCapacity,
         shipStartingFuel=shipStartingFuel,
@@ -620,6 +621,7 @@ def calculateRefuellingPlan(
         diceRoller=diceRoller)
 
 def _processRoute(
+        milieu: travellermap.Milieu,
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
@@ -663,7 +665,10 @@ def _processRoute(
 
             reachableNodeIndex += 1
 
-        world = jumpRoute.world(nodeIndex)
+        nodePos = jumpRoute.nodeAt(index=nodeIndex)
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=nodePos)
         refuellingType = None
         fuelCostPerTon = None
         berthingCost = None

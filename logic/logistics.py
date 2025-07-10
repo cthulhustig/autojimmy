@@ -1,5 +1,6 @@
 import common
 import logic
+import traveller
 import travellermap
 import typing
 
@@ -106,10 +107,10 @@ def calculateRouteLogistics(
             requireFinishWorldBerthing = requiredBerthingIndices and (jumpRoute.nodeCount() - 1) in requiredBerthingIndices
 
             if requireStartWorldBerthing or requireFinishWorldBerthing:
-                _, startWorld = jumpRoute.startNode()
+                startHex = jumpRoute.startNode()
+                startWorld = traveller.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
-                    berthingCost = pitCostCalculator.berthingCost(
-                        world=startWorld)
+                    berthingCost = pitCostCalculator.berthingCost(world=startWorld)
                     if berthingCost:
                         berthingCost = common.Calculator.rename(
                             value=berthingCost,

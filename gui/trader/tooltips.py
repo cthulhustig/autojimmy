@@ -231,8 +231,8 @@ def createLogisticsToolTip(
         ) -> str:
     milieu = routeLogistics.milieu()
     jumpRoute = routeLogistics.jumpRoute()
-    startHex, _ = jumpRoute.startNode()
-    finishHex, _ = jumpRoute.finishNode()
+    startHex = jumpRoute.startNode()
+    finishHex = jumpRoute.finishNode()
     startString = html.escape(traveller.WorldManager.instance().canonicalHexName(
         milieu=milieu,
         hex=startHex))
