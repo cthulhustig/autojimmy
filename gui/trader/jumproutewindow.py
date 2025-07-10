@@ -467,7 +467,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteJob = None
         self._jumpRoute = None
         self._routeLogistics = None
-        self._zoomToJumpRoute = False
+        self._shouldZoomToNewRoute = False
         self._jumpOverlayHandles = set()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
@@ -1146,7 +1146,7 @@ class JumpRouteWindow(gui.WindowWidget):
         # displaying a completely different location. After the first route has been calculated
         # for this start/finish pair the view is left as is as it's assumed the user is doing
         # something like adding a waypoint world
-        self._zoomToJumpRoute = True
+        self._shouldZoomToNewRoute = True
 
     def _waypointsTableDisplayModeChanged(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
         columns = None
@@ -1516,24 +1516,9 @@ class JumpRouteWindow(gui.WindowWidget):
         elif self._jumpRouteJob and self._jumpRouteJob.isCancelled():
             pass
         elif isinstance(result, logic.JumpRoute):
-            self._jumpRoute = result
-            self._jumpRouteTable.setHexes(
-                hexes=[hex for hex, _ in self._jumpRoute])
-
-            # Only calculate logistics if fuel based routing is enabled. If it's
-            # disabled the route will most likely contain worlds that don't
-            # match the refuelling strategy
-            if self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic:
-                self._generateLogistics()
-
-            self._updateRouteLabels()
-            self._updateTravellerMapOverlays()
-
-            # We've calculated a new jump route so prevent future recalculations
-            # from zooming out to show the full jump route. Zooming will be
-            # re-enabled if we start calculating a "new" jump route (i.e the
-            # start/finish world changes)
-            self._zoomToJumpRoute = False
+            self._setJumpRoute(
+                jumpRoute=result,
+                routeLogistics=self._interactiveCalculateLogistics(jumpRoute=result))
         else:
             gui.MessageBoxEx.information(
                 parent=self,
@@ -1542,6 +1527,31 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteJob = None
         self._calculateRouteButton.showPrimaryText()
         self._enableDisableControls()
+
+    def _setJumpRoute(
+            self,
+            jumpRoute: logic.JumpRoute,
+            routeLogistics: typing.Optional[logic.RouteLogistics]
+            ) -> None:
+            self._jumpRoute = jumpRoute
+            self._routeLogistics = routeLogistics
+            self._jumpRouteTable.setHexes(
+                hexes=[hex for hex, _ in self._jumpRoute])
+
+            if self._routeLogistics:
+                self._refuellingPlanTable.setPitStops(
+                    pitStops=self._routeLogistics.refuellingPlan())
+            else:
+                self._refuellingPlanTable.removeAllRows()
+
+            self._updateRouteLabels()
+            self._updateTravellerMapOverlays()
+
+            # We've set a new jump route so prevent future recalculations
+            # from zooming out to show the full jump route. Zooming will be
+            # re-enabled if we start calculating a "new" jump route (i.e the
+            # start/finish world changes)
+            self._shouldZoomToNewRoute = False
 
     def _updateJumpRouteTableColumns(self, index: int) -> None:
         self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
@@ -1732,8 +1742,18 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(lambda: self._showJumpRouteOnMap())
         action.setEnabled(self._jumpRoute != None)
 
+        menu = QtWidgets.QMenu('Import', self)
+        menuItems.append(menu)
+        action = menu.addAction('Jump Route...')
+        action.triggered.connect(self._importJumpRoute)
+
+
+        menu = QtWidgets.QMenu('Export', self)
+        menuItems.append(menu)
+        action = menu.addAction('Jump Route...')
+        action.triggered.connect(self._exportJumpRoute)
+        action.setEnabled(self._jumpRoute != None)
         action = menu.addAction('Screenshot...')
-        menuItems.append(action)
         action.setEnabled(True)
         action.triggered.connect(self._exportMapScreenshot)
 
@@ -1829,6 +1849,77 @@ class JumpRouteWindow(gui.WindowWidget):
 
         toolTip = f'<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">{toolTip}</ul>'
         return gui.createStringToolTip(toolTip, escape=False)
+
+    def _importJumpRoute(self) -> None:
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            parent=self,
+            caption='Import Jump Route',
+            directory=QtCore.QDir.homePath(),
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}')
+        if not path:
+            return
+
+        try:
+            hexes = logic.readHexList(filePath=path)
+        except Exception as ex:
+            message = f'Failed to read jump route from "{path}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        if not hexes:
+            message = f'No jump route found in "{path}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        nodes = []
+        for hex in hexes:
+            world = traveller.WorldManager.instance().worldByPosition(
+                milieu=milieu,
+                hex=hex)
+            nodes.append((hex, world))
+        jumpRoute = logic.JumpRoute(milieu=milieu, nodes=nodes)
+        routeLogistics = self._interactiveCalculateLogistics(jumpRoute=jumpRoute)
+
+        self._selectStartFinishWidget.setStartHex(hexes[0])
+        self._selectStartFinishWidget.setFinishHex(hexes[-1])
+        self._shouldZoomToNewRoute = True
+        self._setJumpRoute(
+            jumpRoute=jumpRoute,
+            routeLogistics=routeLogistics)
+
+    def _exportJumpRoute(self) -> None:
+        if not self._jumpRoute:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='No jump route to export')
+            return
+
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Export Jump Route',
+            directory=QtCore.QDir.homePath() + '/route.json',
+            filter=gui.JSONFileFilter)
+        if not path:
+            return
+
+        try:
+            logic.writeHexList(self._jumpRoute.hexes(), path)
+        except Exception as ex:
+            message = f'Failed to write jump route to "{path}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
 
     def _exportMapScreenshot(self) -> None:
         try:
@@ -2070,7 +2161,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._mapWidget.setJumpRoute(
                 jumpRoute=self._jumpRoute,
                 refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
-            if self._zoomToJumpRoute:
+            if self._shouldZoomToNewRoute:
                 # Only zoom to area if this is a 'new' route (i.e. the start/finish worlds have changed).
                 # Otherwise we assume this is an iteration of the existing jump route and the user wants
                 # to stay with their current view
@@ -2207,72 +2298,70 @@ class JumpRouteWindow(gui.WindowWidget):
             return False
         return True
 
-    def _generateLogistics(self) -> None:
-        self._routeLogistics = None
-        self._refuellingPlanTable.removeAllRows()
-        self._avgRouteCostLabel.setText('')
-        self._minRouteCostLabel.setText('')
-        self._maxRouteCostLabel.setText('')
+    def _interactiveCalculateLogistics(
+            self,
+            jumpRoute: logic.JumpRoute
+            ) -> logic.RouteLogistics:
+            invalidConfigReason = None
+            if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
+                invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
+            elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
+                invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
 
-        invalidConfigReason = None
-        if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
-            invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
-        elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
-            invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
+            if invalidConfigReason:
+                gui.MessageBoxEx.information(
+                    parent=self,
+                    text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
+                return
 
-        if invalidConfigReason:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
-            return
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+            pitCostCalculator = logic.PitStopCostCalculator(
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
 
-        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        pitCostCalculator = logic.PitStopCostCalculator(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
+            try:
+                routeLogistics = logic.calculateRouteLogistics(
+                    jumpRoute=jumpRoute,
+                    shipTonnage=self._shipTonnageSpinBox.value(),
+                    shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                    shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                    shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                    perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                    pitCostCalculator=pitCostCalculator,
+                    requiredBerthingIndices=self._generateRequiredBerthingIndices(jumpRoute=jumpRoute),
+                    includeLogisticsCosts=True) # Always include logistics costs
+                if not routeLogistics:
+                    gui.MessageBoxEx.information(
+                        parent=self,
+                        text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
+                return routeLogistics
+            except Exception as ex:
+                milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+                startHex, _ = jumpRoute.startNode()
+                finishHex, _ = jumpRoute.finishNode()
+                startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+                finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+                message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
+                    start=startString,
+                    finish=finishString)
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
 
-        try:
-            self._routeLogistics = logic.calculateRouteLogistics(
-                jumpRoute=self._jumpRoute,
-                shipTonnage=self._shipTonnageSpinBox.value(),
-                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
-                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                pitCostCalculator=pitCostCalculator,
-                requiredBerthingIndices=self._generateRequiredBerthingIndices(),
-                includeLogisticsCosts=True) # Always include logistics costs
-        except Exception as ex:
-            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-            startHex, _ = self._jumpRoute.startNode()
-            finishHex, _ = self._jumpRoute.finishNode()
-            startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
-            message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
-                start=startString,
-                finish=finishString)
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        if self._routeLogistics:
-            self._refuellingPlanTable.setPitStops(
-                pitStops=self._routeLogistics.refuellingPlan())
-        else:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
-
-        self._updateRouteLabels()
-
-    def _generateRequiredBerthingIndices(self) -> typing.Optional[typing.Set[int]]:
-        if not self._jumpRoute or self._jumpRoute.nodeCount() < 1:
+    # TODO: The way this works is broken when importing with current
+    # implementation as the current waypoints aren't necessarily the
+    # waypoints that were used when calculating the imported route so
+    # this code can throw an exception
+    def _generateRequiredBerthingIndices(
+            self,
+            jumpRoute: logic.JumpRoute
+            ) -> typing.Optional[typing.Set[int]]:
+        if not jumpRoute or jumpRoute.nodeCount() < 1:
             return None
 
         # The jump route planner will reduce sequences of the same waypoint world to a single
@@ -2286,7 +2375,7 @@ class JumpRouteWindow(gui.WindowWidget):
             bool # Mandatory berthing required
             ]] = []
 
-        startHex, startWorld = self._jumpRoute.startNode()
+        startHex, startWorld = jumpRoute.startNode()
         waypoints.append((
             startHex,
             startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
@@ -2296,7 +2385,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 self._waypointsTable.hex(row),
                 self._waypointsTable.isBerthingChecked(row)))
 
-        finishHex, finishWorld = self._jumpRoute.finishNode()
+        finishHex, finishWorld = jumpRoute.finishNode()
         waypoints.append((
             finishHex,
             finishWorld and self._includeFinishWorldBerthingCheckBox.isChecked()))
@@ -2313,8 +2402,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 waypoints.pop(waypointIndex)
 
         waypointIndex = 0
-        for jumpIndex in range(self._jumpRoute.nodeCount()):
-            if self._jumpRoute.hex(jumpIndex) == waypoints[waypointIndex][0]:
+        for jumpIndex in range(jumpRoute.nodeCount()):
+            if jumpRoute.hex(jumpIndex) == waypoints[waypointIndex][0]:
                 # We've found the current waypoint on the jump route
                 if waypoints[waypointIndex][1]:
                     requiredBerthingIndices.add(jumpIndex)

@@ -1,7 +1,11 @@
 import common
 import enum
 import logic
+import json
+import packaging
+import packaging.version
 import traveller
+import travellermap
 import typing
 
 def serialiseCalculation(
@@ -442,3 +446,81 @@ def deserialiseWorldFiltersList(
     for item in items:
         worldFilters.append(deserialiseWorldFilter(data=item))
     return worldFilters
+
+#
+# Hex List
+#
+
+# v1.0 - Initial version that used sector hexes. Support for this
+# format was dropped as it's milieu specific so was incompatible
+# with recent changes
+# v2.0 - Switched from world based to hex based jump routes as part of
+# the work for dead space routing
+_HexListVersion = packaging.version.Version('2.0')
+
+def _serialiseHex(
+        hex: travellermap.HexPosition,
+        ) -> typing.Mapping[str, typing.Any]:
+
+    return {'absoluteX': hex.absoluteX(),
+            'absoluteY': hex.absoluteY()}
+
+def _deserialiseHex(
+        data: typing.Mapping[str, typing.Any]
+        ) -> travellermap.HexPosition:
+    absoluteX = data.get('absoluteX')
+    if absoluteX == None:
+        raise RuntimeError('Hex is missing absoluteX property')
+    if not isinstance(absoluteX, int):
+        raise RuntimeError('Hex absoluteX property is not a integer')
+
+    absoluteY = data.get('absoluteY')
+    if absoluteY == None:
+        raise RuntimeError('Hex is missing absoluteY property')
+    if not isinstance(absoluteY, int):
+        raise RuntimeError('Hex absoluteY property is not a integer')
+
+    return travellermap.HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
+
+def serialiseHexList(
+        hexes: typing.Sequence[travellermap.HexPosition]
+        ) -> typing.Mapping[str, typing.Any]:
+    return {
+        'version': str(_HexListVersion),
+        'hexes': [_serialiseHex(hex=hex) for hex in hexes]}
+
+def deserialiseHexList(
+        data: typing.Mapping[str, typing.Any]
+        ) -> typing.Sequence[travellermap.HexPosition]:
+    version = data.get('version')
+    if version == None:
+        raise RuntimeError('Hex list is missing version property')
+    if not isinstance(version, str):
+        raise RuntimeError('Hex list version property is not a string')
+    try:
+        version = packaging.version.Version(version)
+    except Exception:
+        raise RuntimeError(f'Hex list version property "{version}" could not be parsed')
+
+    if version.major == _HexListVersion.major:
+        hexesData = data.get('hexes')
+        if hexesData == None:
+            raise RuntimeError('Hex list has no hexes property')
+        if not isinstance(hexesData, list):
+            raise RuntimeError('Hex list hexes property is not a list')
+        hexes = [_deserialiseHex(data=data) for data in hexesData]
+    else:
+        raise RuntimeError(f'Hex list has unsupported file format {version}')
+
+    return hexes
+
+def writeHexList(
+        hexes: typing.Sequence[travellermap.HexPosition],
+        filePath: str
+        ) -> None:
+    with open(filePath, 'w', encoding='UTF8') as file:
+        json.dump(serialiseHexList(hexes=hexes), file, indent=4)
+
+def readHexList(filePath: str) -> typing.Sequence[travellermap.HexPosition]:
+    with open(filePath, 'r') as file:
+        return deserialiseHexList(data=json.load(file))

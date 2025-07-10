@@ -46,6 +46,9 @@ class JumpRoute(object):
     def hex(self, index: int) -> travellermap.HexPosition:
         return self._nodes[index][0]
 
+    def hexes(self) -> typing.List[travellermap.HexPosition]:
+        return [node[0] for node in self._nodes]
+
     def startHex(self) -> travellermap.HexPosition:
         return self._nodes[0][0]
 
