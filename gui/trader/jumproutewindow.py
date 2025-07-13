@@ -1873,7 +1873,7 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         try:
-            hexes = logic.readHexList(filePath=path)
+            jumpRoute = logic.readJumpRoute(path=path)
         except Exception as ex:
             message = f'Failed to read jump route from "{path}"'
             logging.error(message, exc_info=ex)
@@ -1883,7 +1883,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        if not hexes:
+        if not jumpRoute:
             message = f'No jump route found in "{path}"'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
@@ -1892,15 +1892,16 @@ class JumpRouteWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        nodes = []
-        for hex in hexes:
-            # TODO: Add loading berthing info from file
-            nodes.append((hex, False))
-        jumpRoute = logic.JumpRoute(nodes=nodes)
         routeLogistics = self._interactiveCalculateLogistics(jumpRoute=jumpRoute)
 
-        self._selectStartFinishWidget.setStartHex(hexes[0])
-        self._selectStartFinishWidget.setFinishHex(hexes[-1])
+        # TODO: I'm not sure about this. Feels weird to do this and not
+        # reinstate waypoints. But then what about the other settings
+        # that were used when things were the route was created. Maybe
+        # best to treat the imported route independently of existing
+        # settings
+        self._selectStartFinishWidget.setStartHex(jumpRoute[0])
+        self._selectStartFinishWidget.setFinishHex(jumpRoute[-1])
+
         self._shouldZoomToNewRoute = True
         self._setJumpRoute(
             jumpRoute=jumpRoute,
@@ -1922,7 +1923,7 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         try:
-            logic.writeHexList(self._jumpRoute.nodes(), path)
+            logic.writeJumpRoute(route=self._jumpRoute, path=path)
         except Exception as ex:
             message = f'Failed to write jump route to "{path}"'
             logging.error(message, exc_info=ex)

@@ -448,79 +448,101 @@ def deserialiseWorldFiltersList(
     return worldFilters
 
 #
-# Hex List
+# Jump Route
 #
-
 # v1.0 - Initial version that used sector hexes. Support for this
 # format was dropped as it's milieu specific so was incompatible
 # with recent changes
 # v2.0 - Switched from world based to hex based jump routes as part of
-# the work for dead space routing
-_HexListVersion = packaging.version.Version('2.0')
+# the work for dead space routing. Support for berthing was added later,
+# it's optional though so didn't require an uptick of the version.
 
-def _serialiseHex(
-        hex: travellermap.HexPosition,
+_JumpRouteVersion = packaging.version.Version('2.0')
+
+def serialiseJumpRoute(
+        route: logic.JumpRoute
         ) -> typing.Mapping[str, typing.Any]:
+    jsonRoute = []
+    for index, node in enumerate(route.nodes()):
+        jsonNode = {
+            'absoluteX': node.absoluteX(),
+            'absoluteY': node.absoluteY()}
+        if route.mandatoryBerthing(index=index):
+            jsonNode['berthing'] = 'true'
+        jsonRoute.append(jsonNode)
 
-    return {'absoluteX': hex.absoluteX(),
-            'absoluteY': hex.absoluteY()}
-
-def _deserialiseHex(
-        data: typing.Mapping[str, typing.Any]
-        ) -> travellermap.HexPosition:
-    absoluteX = data.get('absoluteX')
-    if absoluteX == None:
-        raise RuntimeError('Hex is missing absoluteX property')
-    if not isinstance(absoluteX, int):
-        raise RuntimeError('Hex absoluteX property is not a integer')
-
-    absoluteY = data.get('absoluteY')
-    if absoluteY == None:
-        raise RuntimeError('Hex is missing absoluteY property')
-    if not isinstance(absoluteY, int):
-        raise RuntimeError('Hex absoluteY property is not a integer')
-
-    return travellermap.HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
-
-def serialiseHexList(
-        hexes: typing.Sequence[travellermap.HexPosition]
-        ) -> typing.Mapping[str, typing.Any]:
     return {
-        'version': str(_HexListVersion),
-        'hexes': [_serialiseHex(hex=hex) for hex in hexes]}
+        'version': str(_JumpRouteVersion),
+        'route': jsonRoute}
 
-def deserialiseHexList(
-        data: typing.Mapping[str, typing.Any]
-        ) -> typing.Sequence[travellermap.HexPosition]:
-    version = data.get('version')
-    if version == None:
-        raise RuntimeError('Hex list is missing version property')
-    if not isinstance(version, str):
-        raise RuntimeError('Hex list version property is not a string')
+def deserialiseJumpRoute(
+        jsonData: typing.Mapping[str, typing.Any]
+        ) -> typing.Sequence[logic.JumpRoute]:
+    jsonVersion = jsonData.get('version')
+    if jsonVersion is None:
+        raise RuntimeError('Jump route is missing the version property')
+    if not isinstance(jsonVersion, str):
+        raise RuntimeError('Jump route version property is not a string')
     try:
-        version = packaging.version.Version(version)
+        version = packaging.version.Version(jsonVersion)
     except Exception:
-        raise RuntimeError(f'Hex list version property "{version}" could not be parsed')
+        raise RuntimeError(f'Jump route version property "{jsonVersion}" could not be parsed')
 
-    if version.major == _HexListVersion.major:
-        hexesData = data.get('hexes')
-        if hexesData == None:
-            raise RuntimeError('Hex list has no hexes property')
-        if not isinstance(hexesData, list):
-            raise RuntimeError('Hex list hexes property is not a list')
-        hexes = [_deserialiseHex(data=data) for data in hexesData]
-    else:
-        raise RuntimeError(f'Hex list has unsupported file format {version}')
+    if version.major != _JumpRouteVersion.major:
+        raise RuntimeError(f'Jump route has unsupported file format {version}')
 
-    return hexes
+    jsonRoute = jsonData.get('route')
+    if jsonRoute is None:
+        raise RuntimeError('Jump route is missing the route property')
+    if not isinstance(jsonRoute, list):
+        raise RuntimeError('Jump route route property is not a list')
 
-def writeHexList(
-        hexes: typing.Sequence[travellermap.HexPosition],
-        filePath: str
+    nodes = []
+    for index, jsonNode in enumerate(jsonRoute):
+        if not isinstance(jsonNode, dict):
+            raise RuntimeError(f'Jump route node {index} is not a dictionary')
+
+        absoluteX = jsonNode.get('absoluteX')
+        if absoluteX is None:
+            raise RuntimeError(f'Jump route node {index} is missing absoluteX property')
+        if not isinstance(absoluteX, int):
+            raise RuntimeError(f'Jump route node {index} absoluteX property is not a integer')
+
+        absoluteY = jsonNode.get('absoluteY')
+        if absoluteY is None:
+            raise RuntimeError(f'Jump route node {index} is missing absoluteY property')
+        if not isinstance(absoluteY, int):
+            raise RuntimeError(f'Jump route node {index} absoluteY property is not a integer')
+
+        # This indicates if berthing is required for the route that was
+        # exported. This is either because required start/finish world
+        # berthing was enabled when the jump route was created or it was
+        # a waypoint with berthing specified
+        berthing = jsonNode.get('berthing')
+        if berthing is not None:
+            if not isinstance(berthing, str):
+                raise RuntimeError(f'Jump route node {index} berthing property is not a string')
+            try:
+                berthing = common.stringToBool(string=berthing, strict=False)
+            except Exception as ex:
+                raise RuntimeError(f'Jump route node {index} berthing property can\'t be converted to a boolean')
+        else:
+            berthing = False
+
+        nodes.append((travellermap.HexPosition(absoluteX, absoluteY), berthing))
+
+    if not nodes:
+        raise RuntimeError('Jump route is empty')
+
+    return logic.JumpRoute(nodes)
+
+def writeJumpRoute(
+        route: typing.Sequence[logic.JumpRoute],
+        path: str
         ) -> None:
-    with open(filePath, 'w', encoding='UTF8') as file:
-        json.dump(serialiseHexList(hexes=hexes), file, indent=4)
+    with open(path, 'w', encoding='UTF8') as file:
+        json.dump(serialiseJumpRoute(route=route), file, indent=4)
 
-def readHexList(filePath: str) -> typing.Sequence[travellermap.HexPosition]:
-    with open(filePath, 'r') as file:
-        return deserialiseHexList(data=json.load(file))
+def readJumpRoute(path: str) -> typing.Sequence[logic.JumpRoute]:
+    with open(path, 'r') as file:
+        return deserialiseJumpRoute(jsonData=json.load(file))

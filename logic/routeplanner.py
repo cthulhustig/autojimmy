@@ -279,7 +279,6 @@ class RoutePlanner(object):
         worldManager = traveller.WorldManager.instance()
 
         sequenceLength = len(hexSequence)
-        assert(sequenceLength >= 2)
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
@@ -302,7 +301,10 @@ class RoutePlanner(object):
             maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
 
         # Handle early outs when dealing with direct world to world routes
-        if sequenceLength == 2:
+        if sequenceLength == 1:
+            mandatoryBerthing = (0 in berthingIndices) if berthingIndices else False
+            return logic.JumpRoute(nodes=[(startHex, mandatoryBerthing)])
+        elif sequenceLength == 2:
             # A _LOT_ of the time we're asked to calculate a route the finish
             # world is actually within one jump of the start world (as finished
             # worlds tend to come from nearby world searches). Do a quick check
