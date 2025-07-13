@@ -135,13 +135,30 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
+            mandatoryStartBerthing: bool = False,
+            mandatoryFinishBerthing: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
+        hexSequence = []
+        berthingIndices = None
+        if startHex == finishHex:
+            hexSequence = [startHex]
+            if mandatoryStartBerthing or mandatoryFinishBerthing:
+                berthingIndices = [0]
+        else:
+            hexSequence = [startHex, finishHex]
+            if mandatoryStartBerthing or mandatoryFinishBerthing:
+                berthingIndices = []
+                if mandatoryStartBerthing:
+                    berthingIndices.append(0)
+                if mandatoryFinishBerthing:
+                    berthingIndices.append(1)
+
         return self._calculateRoute(
             routingType=routingType,
             milieu=milieu,
-            hexSequence=[startHex, finishHex],
+            hexSequence=hexSequence,
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
             shipFuelCapacity=shipFuelCapacity,
@@ -150,6 +167,7 @@ class RoutePlanner(object):
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
             hexFilter=hexFilter,
+            berthingIndices=berthingIndices,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
 
@@ -166,13 +184,34 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
+            berthingIndices: typing.Optional[typing.Collection[int]] = None, # This is a collection of indices into the hex sequence where berthing is mandatory
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
+        # Process hex sequence and berthing indices to remove runs of the same hex.
+        # This is done so that runs of the same hex only result in a single node in
+        # the resulting route.
+        processedHexSequence = []
+        processedBerthingIndices = set() if berthingIndices else None
+        previousHex = None
+        for index, hex in enumerate(hexSequence):
+            if not previousHex or hex != previousHex:
+                processedHexSequence.append(hex)
+
+            if berthingIndices and index in berthingIndices:
+                # This hex in the input sequence requires berthing so add the index
+                # of the processed hex that corresponds to it to the processed berthing
+                # indices. This means if there are any runs of the same hex, if any of
+                # the entries in that run require berthing, the node that corresponds
+                # to the run will be marked as requiring berthing
+                processedBerthingIndices.add(len(processedHexSequence) - 1)
+
+            previousHex = hex
+
         return self._calculateRoute(
             routingType=routingType,
             milieu=milieu,
-            hexSequence=hexSequence,
+            hexSequence=processedHexSequence,
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
             shipFuelCapacity=shipFuelCapacity,
@@ -181,6 +220,7 @@ class RoutePlanner(object):
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
             hexFilter=hexFilter,
+            berthingIndices=processedBerthingIndices,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
 
@@ -197,7 +237,7 @@ class RoutePlanner(object):
             self,
             routingType: RoutingType,
             milieu: travellermap.Milieu,
-            hexSequence: typing.Sequence[travellermap.HexPosition],
+            hexSequence: typing.Sequence[travellermap.HexPosition], # This code assumes sequences of the same hex have already been removed
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -206,6 +246,7 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # Required for fuel based and dead space routing
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
+            berthingIndices: typing.Optional[typing.Collection[int]] = None, # This is a collection of indices into the hex sequence where berthing is mandatory
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
@@ -262,10 +303,6 @@ class RoutePlanner(object):
 
         # Handle early outs when dealing with direct world to world routes
         if sequenceLength == 2:
-            # Handle corner case where the start and finish are the same world
-            if startHex == finishHex:
-                return logic.JumpRoute(nodes=[(startHex, startWorld)])
-
             # A _LOT_ of the time we're asked to calculate a route the finish
             # world is actually within one jump of the start world (as finished
             # worlds tend to come from nearby world searches). Do a quick check
@@ -300,8 +337,15 @@ class RoutePlanner(object):
 
                 fuelToFinish = distance * shipFuelPerParsec
                 if fuelToFinish <= availableFuel:
+                    mandatoryStartBerthing = mandatoryFinishBerthing = False
+                    if berthingIndices:
+                        mandatoryStartBerthing = 0 in berthingIndices
+                        mandatoryFinishBerthing = finishWorldIndex in berthingIndices
+                    # TODO: Need to check this is correct
                     return logic.JumpRoute(
-                        nodes=[(startHex, startWorld), (finishHex, finishWorld)])
+                        nodes=[
+                            (startHex, mandatoryStartBerthing),
+                            (finishHex, mandatoryFinishBerthing)])
 
         openQueue: typing.List[_RouteNode] = []
         targetStates: typing.List[
@@ -379,28 +423,15 @@ class RoutePlanner(object):
                     # Process it to generate the final list of route worlds then bail
                     return self._finaliseRoute(
                         finishNode=currentNode,
+                        hexSequence=hexSequence,
+                        berthingIndices=berthingIndices,
                         progressCount=closedRoutes + 1, # +1 for this route
                         progressCallback=progressCallback)
 
                 # We've reached the current target for the node but there are still more worlds
-                # in the sequence. Increment the target index, skipping runs of the same target
-                # world, then continue to processing this node.
-                while True:
-                    targetIndex += 1
-                    newTargetHex = hexSequence[targetIndex]
-                    if newTargetHex != targetHex:
-                        targetHex = newTargetHex
-                        break
-
-                    # There is a run of waypoints for the target world. If we've reached the end
-                    # of the world sequence then we're done and the current route is the lowest
-                    # cost route. If we've not reached the end of the world sequence then just
-                    # loop in order to skip this world
-                    if targetIndex >= finishWorldIndex:
-                        return self._finaliseRoute(
-                            finishNode=currentNode,
-                            progressCount=closedRoutes + 1, # +1 for this route
-                            progressCallback=progressCallback)
+                # in the sequence
+                targetIndex += 1
+                targetHex = hexSequence[targetIndex]
 
                 # Update the best scores for entry for the current world
                 # NOTE: It's important to get the state for the new target
@@ -769,19 +800,40 @@ class RoutePlanner(object):
     def _finaliseRoute(
             self,
             finishNode: _RouteNode,
+            hexSequence: typing.Sequence[travellermap.HexPosition],
+            berthingIndices: typing.Optional[typing.Collection[int]], # This is a collection of indices into the hex sequence where berthing is mandatory
             progressCount: int,
-            progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
+            progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]],
             ) -> logic.JumpRoute:
         # We've found the lowest cost route that goes through all the worlds in the sequence.
         # Process it to generate the final list of route worlds then bail
         path = []
 
         node = finishNode
-        path.append((node.hex(), node.world()))
+        while node is not None:
+            parent = node.parent()
+            nodeHex = node.hex()
 
-        while node.parent():
-            node = node.parent()
-            path.append((node.hex(), node.world()))
+            # TODO: Need to check this is correct
+            mandatoryBerthing = False
+            if berthingIndices:
+                # The way the index into the hex sequence for this node is calculated is
+                # a little odd due to the fact the target index for a node is the index
+                # of the hex that was being targetted at the point the hex was added to
+                # the queue of nodes to be checked against the hex being targetted. This
+                # means the target for the start node for the found path is always 1 as
+                # it's added to the queue at the start of the process with the target
+                # being the next hex in the sequence. As we progress along the route and
+                # hit waypoints or the finish, the nodes for those hexes will be added
+                # to the queue with the index of that hex in the hex sequence.
+                sequenceIndex = node.targetIndex() if parent else 0
+                sequenceHex = hexSequence[sequenceIndex]
+                if sequenceHex == nodeHex:
+                    mandatoryBerthing = sequenceIndex in berthingIndices
+
+            path.append((nodeHex, mandatoryBerthing))
+            node = parent
+
         path.reverse()
 
         if progressCallback:

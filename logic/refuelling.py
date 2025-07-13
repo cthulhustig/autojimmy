@@ -554,8 +554,6 @@ def calculateRefuellingPlan(
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         pitCostCalculator: PitStopCostCalculator,
         shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
-        # Optional set containing the integer indices of jump route worlds where berthing is required.
-        requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
         # Specify if generated refuelling plan should include refuelling costs. If not included the
         # costs will still be taken into account when calculating the optimal pit stop worlds,
         # however the costs for fuel and berthing will be zero
@@ -608,8 +606,7 @@ def calculateRefuellingPlan(
         shipStartingFuel=shipStartingFuel,
         shipFuelPerParsec=shipFuelPerParsec,
         parsecsWithoutRefuelling=parsecsWithoutRefuelling,
-        pitCostCalculator=pitCostCalculator,
-        requiredBerthingIndices=requiredBerthingIndices)
+        pitCostCalculator=pitCostCalculator)
     if not calculationContext.hasBestSequence():
         return None
 
@@ -628,7 +625,6 @@ def _processRoute(
         shipFuelPerParsec: float,
         parsecsWithoutRefuelling: int,
         pitCostCalculator: PitStopCostCalculator,
-        requiredBerthingIndices: typing.Optional[typing.Set[int]],
         ) -> _CalculationContext:
     jumpNodeCount = jumpRoute.nodeCount()
     finishNodeIndex = jumpNodeCount - 1
@@ -647,9 +643,12 @@ def _processRoute(
         reachableNodeIndex = nodeIndex + 1
         while reachableNodeIndex <= finishNodeIndex:
             # TODO: This would need changed to not treat jump route as a collection
-            fromHex, _ = jumpRoute[reachableNodeIndex - 1]
+            fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             # TODO: This would need changed to not treat jump route as a collection
-            toHex, toWorld = jumpRoute[reachableNodeIndex]
+            toHex = jumpRoute.nodeAt(reachableNodeIndex)
+            toWorld = traveller.WorldManager.instance().worldByPosition(
+                milieu=milieu,
+                hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
@@ -684,8 +683,8 @@ def _processRoute(
             cost = pitCostCalculator.berthingCost(world=world)
             berthingCost = cost.worstCaseValue() if cost else 0
 
-            mandatoryBerthing = (requiredBerthingIndices != None) and \
-                (nodeIndex in requiredBerthingIndices)
+            # NOTE: Mandatory berthing isn't applied in dead space
+            mandatoryBerthing = jumpRoute.mandatoryBerthing(nodeIndex)
 
         nodeContexts.append(_NodeContext(
             index=nodeIndex,

@@ -402,6 +402,8 @@ class Trader(object):
                 shipCurrentFuel=shipStartingFuel,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
+                mandatoryStartBerthing=includePurchaseWorldBerthing,
+                mandatoryFinishBerthing=includeSaleWorldBerthing,
                 hexFilter=None,
                 isCancelledCallback=self._isCancelledCallback)
             if not jumpRoute:
@@ -419,14 +421,6 @@ class Trader(object):
                         f'There is no jump route to get there with jump-{shipJumpRating}')
                 continue
 
-            requiredBerthingIndices = None
-            if includePurchaseWorldBerthing or includeSaleWorldBerthing:
-                requiredBerthingIndices = set()
-                if includePurchaseWorldBerthing:
-                    requiredBerthingIndices.add(0)
-                if includeSaleWorldBerthing:
-                    requiredBerthingIndices.add(jumpRoute.nodeCount() - 1)
-
             routeLogistics = logic.calculateRouteLogistics(
                 milieu=milieu,
                 jumpRoute=jumpRoute,
@@ -436,7 +430,6 @@ class Trader(object):
                 shipFuelPerParsec=shipFuelPerParsec,
                 perJumpOverheads=perJumpOverheads,
                 pitCostCalculator=pitCostCalculator,
-                requiredBerthingIndices=requiredBerthingIndices,
                 includeLogisticsCosts=includeLogisticsCosts)
             if not routeLogistics:
                 self._updateProgress(

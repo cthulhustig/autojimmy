@@ -85,7 +85,7 @@ class _JumpRouteOverlay(_MapOverlay):
 
         self._jumpRoutePath = QtGui.QPolygonF()
         # TODO: This would need changed to not treat jump route as a collection
-        for hex, _ in jumpRoute:
+        for hex in jumpRoute:
             centerX, centerY = hex.worldCenter()
             self._jumpRoutePath.append(QtCore.QPointF(
                 centerX * travellermap.ParsecScaleX,
@@ -1171,7 +1171,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             return
         # TODO: This would need changed to not treat jump route as a collection
         self.centerOnHexes(
-            hexes=[nodeHex for nodeHex, _ in self._jumpRoute],
+            hexes=self._jumpRoute.nodes(),
             immediate=immediate)
 
     def highlightHex(

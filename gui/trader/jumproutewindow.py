@@ -687,8 +687,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._jumpRoute = route
         # TODO: This would need changed to not treat jump route as a collection
-        self._jumpRouteTable.setHexes(
-            hexes=[hex for hex, _ in self._jumpRoute])
+        self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
 
         self._routeLogistics = logistics
         self._refuellingPlanTable.setPitStops(
@@ -1419,9 +1418,21 @@ class JumpRouteWindow(gui.WindowWidget):
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
-        hexSequence = [startHex]
-        hexSequence.extend(self._waypointsWidget.hexes())
+        hexSequence = []
+        berthingIndices = []
+
+        hexSequence.append(startHex)
+        if self._includeStartWorldBerthingCheckBox.isChecked():
+            berthingIndices.append(0)
+
+        for row in range(self._waypointsTable.rowCount()):
+            hexSequence.append(self._waypointsTable.hex(row))
+            if self._waypointsTable.isBerthingChecked(row):
+                berthingIndices.append(row + 1)
+
         hexSequence.append(finishHex)
+        if self._includeFinishWorldBerthingCheckBox.isChecked():
+            berthingIndices.append(len(hexSequence) - 1)
 
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
@@ -1464,6 +1475,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
+                berthingIndices=berthingIndices,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
         except Exception as ex:
@@ -1537,8 +1549,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRoute = jumpRoute
             self._routeLogistics = routeLogistics
             # TODO: This would need changed to not treat jump route as a collection
-            self._jumpRouteTable.setHexes(
-                hexes=[hex for hex, _ in self._jumpRoute])
+            self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
 
             if self._routeLogistics:
                 self._refuellingPlanTable.setPitStops(
@@ -1881,13 +1892,10 @@ class JumpRouteWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         nodes = []
         for hex in hexes:
-            world = traveller.WorldManager.instance().worldByPosition(
-                milieu=milieu,
-                hex=hex)
-            nodes.append((hex, world))
+            # TODO: Add loading berthing info from file
+            nodes.append((hex, False))
         jumpRoute = logic.JumpRoute(nodes=nodes)
         routeLogistics = self._interactiveCalculateLogistics(jumpRoute=jumpRoute)
 
@@ -2013,8 +2021,7 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         # TODO: This would need changed to not treat jump route as a collection
-        self._showHexesOnMap(
-            hexes=[hex for hex, _ in self._jumpRoute])
+        self._showHexesOnMap(hexes=self._jumpRoute.nodes())
 
     def _showHexesOnMap(
             self,
@@ -2336,7 +2343,6 @@ class JumpRouteWindow(gui.WindowWidget):
                     shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                     perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                     pitCostCalculator=pitCostCalculator,
-                    requiredBerthingIndices=self._generateRequiredBerthingIndices(jumpRoute=jumpRoute),
                     includeLogisticsCosts=True) # Always include logistics costs
                 if not routeLogistics:
                     gui.MessageBoxEx.information(
@@ -2356,79 +2362,6 @@ class JumpRouteWindow(gui.WindowWidget):
                     parent=self,
                     text=message,
                     exception=ex)
-
-    # TODO: The way this works is broken when importing with current
-    # implementation as the current waypoints aren't necessarily the
-    # waypoints that were used when calculating the imported route so
-    # this code can throw an exception
-    def _generateRequiredBerthingIndices(
-            self,
-            jumpRoute: logic.JumpRoute
-            ) -> typing.Optional[typing.Set[int]]:
-        if not jumpRoute or jumpRoute.nodeCount() < 1:
-            return None
-
-        # The jump route planner will reduce sequences of the same waypoint world to a single
-        # stop at that world. In order to match the waypoints to the jump route we need to
-        # remove such sequences. This includes sequences where the worlds at the start of the
-        # waypoint list match the start world and/or worlds at the end of the list match the
-        # finish world.
-
-        waypoints: typing.List[typing.Tuple[
-            travellermap.HexPosition,
-            bool # Mandatory berthing required
-            ]] = []
-
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-
-        startHex = jumpRoute.startNode()
-        startWorld = traveller.WorldManager.instance().worldByPosition(
-            milieu=milieu,
-            hex=startHex)
-        waypoints.append((
-            startHex,
-            startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
-
-        for row in range(self._waypointsTable.rowCount()):
-            waypoints.append((
-                self._waypointsTable.hex(row),
-                self._waypointsTable.isBerthingChecked(row)))
-
-        finishHex = jumpRoute.finishNode()
-        finishWorld = traveller.WorldManager.instance().worldByPosition(
-            milieu=milieu,
-            hex=finishHex)
-        waypoints.append((
-            finishHex,
-            finishWorld and self._includeFinishWorldBerthingCheckBox.isChecked()))
-
-        requiredBerthingIndices = set()
-
-        for waypointIndex in range(len(waypoints) - 1, 0, -1):
-            if waypoints[waypointIndex][0] == waypoints[waypointIndex - 1][0]:
-                # This is a sequence of the same hex so remove the last instance in the sequence
-                if waypoints[waypointIndex][1]:
-                    # Berthing is required if any of the instances of the world in the sequence are
-                    # marked as requiring berthing
-                    waypoints[waypointIndex - 1] = waypoints[waypointIndex]
-                waypoints.pop(waypointIndex)
-
-        waypointIndex = 0
-        for jumpIndex in range(jumpRoute.nodeCount()):
-            if jumpRoute.nodeAt(jumpIndex) == waypoints[waypointIndex][0]:
-                # We've found the current waypoint on the jump route
-                if waypoints[waypointIndex][1]:
-                    requiredBerthingIndices.add(jumpIndex)
-                waypointIndex += 1
-                if waypointIndex >= len(waypoints):
-                    # All waypoints have been matched to the jump route
-                    break
-
-        if waypointIndex < len(waypoints):
-            # Failed to match waypoints to jump route
-            raise RuntimeError('Failed to match waypoints to jump route')
-
-        return requiredBerthingIndices
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

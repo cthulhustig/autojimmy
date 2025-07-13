@@ -300,10 +300,13 @@ def createLogisticsToolTip(
             pitStopMap[pitStop.jumpIndex()] = pitStop
 
     # TODO: This would need changed to not treat jump route as a collection
-    for index, (nodeHex, world) in enumerate(jumpRoute):
+    for index, nodePos in enumerate(jumpRoute):
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodeHex)))
+            name=traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:

@@ -75,8 +75,6 @@ def calculateRouteLogistics(
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
         pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,
-        # Optional set containing the integer indices of jump route worlds where berthing is required.
-        requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
         # Specify if generated route logistics will include refuelling costs. If not included the
         # costs will still be taken into account when calculating the optimal pit stop worlds,
         # however the costs for fuel and berthing will be zero
@@ -94,7 +92,6 @@ def calculateRouteLogistics(
                 shipStartingFuel=shipStartingFuel,
                 shipFuelPerParsec=shipFuelPerParsec,
                 pitCostCalculator=pitCostCalculator,
-                requiredBerthingIndices=requiredBerthingIndices,
                 includeRefuellingCosts=includeLogisticsCosts,
                 diceRoller=diceRoller)
             if not refuellingPlan:
@@ -103,14 +100,13 @@ def calculateRouteLogistics(
             # The start and end world are the same so there are no travel costs. There can still be
             # berthing costs on the start world, this covers the case where you've not arrived on
             # the world yet
-            requireStartWorldBerthing = requiredBerthingIndices and 0 in requiredBerthingIndices
-            requireFinishWorldBerthing = requiredBerthingIndices and (jumpRoute.nodeCount() - 1) in requiredBerthingIndices
-
-            if requireStartWorldBerthing or requireFinishWorldBerthing:
+            if jumpRoute.mandatoryBerthing(index=0) or jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1):
                 startHex = jumpRoute.startNode()
                 startWorld = traveller.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
-                    berthingCost = pitCostCalculator.berthingCost(world=startWorld)
+                    berthingCost = pitCostCalculator.berthingCost(
+                        world=startWorld,
+                        mandatory=True)
                     if berthingCost:
                         berthingCost = common.Calculator.rename(
                             value=berthingCost,
