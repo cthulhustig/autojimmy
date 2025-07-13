@@ -302,8 +302,10 @@ class RoutePlanner(object):
 
         # Handle early outs when dealing with direct world to world routes
         if sequenceLength == 1:
-            mandatoryBerthing = (0 in berthingIndices) if berthingIndices else False
-            return logic.JumpRoute(nodes=[(startHex, mandatoryBerthing)])
+            startFlags = 0
+            if berthingIndices and (0 in berthingIndices):
+                startFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
+            return logic.JumpRoute(nodes=[(startHex, startFlags)])
         elif sequenceLength == 2:
             # A _LOT_ of the time we're asked to calculate a route the finish
             # world is actually within one jump of the start world (as finished
@@ -339,15 +341,16 @@ class RoutePlanner(object):
 
                 fuelToFinish = distance * shipFuelPerParsec
                 if fuelToFinish <= availableFuel:
-                    mandatoryStartBerthing = mandatoryFinishBerthing = False
+                    startFlags = finishFlags = 0
                     if berthingIndices:
-                        mandatoryStartBerthing = 0 in berthingIndices
-                        mandatoryFinishBerthing = finishWorldIndex in berthingIndices
+                        if 0 in berthingIndices:
+                            startFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
+                        if finishWorldIndex in berthingIndices:
+                            finishFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
                     # TODO: Need to check this is correct
                     return logic.JumpRoute(
-                        nodes=[
-                            (startHex, mandatoryStartBerthing),
-                            (finishHex, mandatoryFinishBerthing)])
+                        nodes=[(startHex, startFlags),
+                               (finishHex, finishFlags)])
 
         openQueue: typing.List[_RouteNode] = []
         targetStates: typing.List[
@@ -812,29 +815,28 @@ class RoutePlanner(object):
         path = []
 
         node = finishNode
+        finishSequenceIndex = len(hexSequence) - 1
+        sequenceIndex = finishSequenceIndex
+
         while node is not None:
             parent = node.parent()
             nodeHex = node.hex()
 
             # TODO: Need to check this is correct
-            mandatoryBerthing = False
-            if berthingIndices:
-                # The way the index into the hex sequence for this node is calculated is
-                # a little odd due to the fact the target index for a node is the index
-                # of the hex that was being targetted at the point the hex was added to
-                # the queue of nodes to be checked against the hex being targetted. This
-                # means the target for the start node for the found path is always 1 as
-                # it's added to the queue at the start of the process with the target
-                # being the next hex in the sequence. As we progress along the route and
-                # hit waypoints or the finish, the nodes for those hexes will be added
-                # to the queue with the index of that hex in the hex sequence.
-                sequenceIndex = node.targetIndex() if parent else 0
-                sequenceHex = hexSequence[sequenceIndex]
-                if sequenceHex == nodeHex:
-                    mandatoryBerthing = sequenceIndex in berthingIndices
+            nodeFlags = 0
+            sequenceHex = hexSequence[sequenceIndex]
+            if sequenceHex == nodeHex:
+                if sequenceIndex > 0 and sequenceIndex < finishSequenceIndex:
+                    nodeFlags |= logic.JumpRoute.NodeFlags.Waypoint
 
-            path.append((nodeHex, mandatoryBerthing))
+                if berthingIndices and sequenceIndex in berthingIndices:
+                    nodeFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
+
+                sequenceIndex -= 1
+
+            path.append((nodeHex, nodeFlags))
             node = parent
+        assert(sequenceIndex == -1)
 
         path.reverse()
 

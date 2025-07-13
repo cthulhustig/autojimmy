@@ -454,8 +454,9 @@ def deserialiseWorldFiltersList(
 # format was dropped as it's milieu specific so was incompatible
 # with recent changes
 # v2.0 - Switched from world based to hex based jump routes as part of
-# the work for dead space routing. Support for berthing was added later,
-# it's optional though so didn't require an uptick of the version.
+# the work for dead space routing. Support for waypoints and berthing
+# was added later as part of improvements to jump route import/export.
+# They're optional though so didn't require an up tick of the version.
 
 _JumpRouteVersion = packaging.version.Version('2.0')
 
@@ -467,8 +468,13 @@ def serialiseJumpRoute(
         jsonNode = {
             'absoluteX': node.absoluteX(),
             'absoluteY': node.absoluteY()}
+
+        if route.isWaypoint(index=index):
+            jsonNode['waypoint'] = 'true'
+
         if route.mandatoryBerthing(index=index):
             jsonNode['berthing'] = 'true'
+
         jsonRoute.append(jsonNode)
 
     return {
@@ -514,6 +520,19 @@ def deserialiseJumpRoute(
         if not isinstance(absoluteY, int):
             raise RuntimeError(f'Jump route node {index} absoluteY property is not a integer')
 
+        nodeHex = travellermap.HexPosition(absoluteX, absoluteY)
+        nodeFlags = 0
+
+        waypoint = jsonNode.get('waypoint')
+        if waypoint is not None:
+            if not isinstance(waypoint, str):
+                raise RuntimeError(f'Jump route node {index} waypoint property is not a string')
+            try:
+                if common.stringToBool(string=waypoint, strict=True):
+                    nodeFlags |= logic.JumpRoute.NodeFlags.Waypoint
+            except Exception:
+                raise RuntimeError(f'Jump route node {index} waypoint property can\'t be converted to a boolean')
+
         # This indicates if berthing is required for the route that was
         # exported. This is either because required start/finish world
         # berthing was enabled when the jump route was created or it was
@@ -523,13 +542,12 @@ def deserialiseJumpRoute(
             if not isinstance(berthing, str):
                 raise RuntimeError(f'Jump route node {index} berthing property is not a string')
             try:
-                berthing = common.stringToBool(string=berthing, strict=False)
-            except Exception as ex:
+                if common.stringToBool(string=berthing, strict=True):
+                    nodeFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
+            except Exception:
                 raise RuntimeError(f'Jump route node {index} berthing property can\'t be converted to a boolean')
-        else:
-            berthing = False
 
-        nodes.append((travellermap.HexPosition(absoluteX, absoluteY), berthing))
+        nodes.append((nodeHex, nodeFlags))
 
     if not nodes:
         raise RuntimeError('Jump route is empty')
@@ -537,12 +555,12 @@ def deserialiseJumpRoute(
     return logic.JumpRoute(nodes)
 
 def writeJumpRoute(
-        route: typing.Sequence[logic.JumpRoute],
+        route: logic.JumpRoute,
         path: str
         ) -> None:
     with open(path, 'w', encoding='UTF8') as file:
         json.dump(serialiseJumpRoute(route=route), file, indent=4)
 
-def readJumpRoute(path: str) -> typing.Sequence[logic.JumpRoute]:
+def readJumpRoute(path: str) -> logic.JumpRoute:
     with open(path, 'r') as file:
         return deserialiseJumpRoute(jsonData=json.load(file))

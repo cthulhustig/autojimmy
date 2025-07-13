@@ -1,21 +1,25 @@
+import enum
 import travellermap
 import typing
 
 class JumpRoute(object):
+    class NodeFlags(enum.IntFlag):
+        Waypoint = 1
+        MandatoryBerthing = 2
+
     def __init__(
             self,
             nodes: typing.Sequence[typing.Tuple[
                 travellermap.HexPosition,
-                bool]] # True if berthing is mandatory at this hex (i.e. regardless of if it's required for fuel)
+                NodeFlags]]
             ) -> None:
         if not nodes:
             raise ValueError('A jump route can\'t have an empty nodes list')
         self._hexes: typing.List[travellermap.HexPosition] = []
-        self._berthing: typing.Set[int] = set()
-        for index, (hex, berthing) in enumerate(nodes):
+        self._flags: typing.List[JumpRoute.NodeFlags] = []
+        for hex, flags in nodes:
             self._hexes.append(hex)
-            if berthing:
-                self._berthing.add(index)
+            self._flags.append(flags)
 
         # The total parsecs calculation is done on demand as it's not often used and is relatively
         # expensive to calculate
@@ -39,8 +43,14 @@ class JumpRoute(object):
     def finishNode(self) -> travellermap.HexPosition:
         return self._hexes[-1]
 
+    def flagsAt(self, index: int) -> NodeFlags:
+        return self._flags[index]
+
+    def isWaypoint(self, index: int) -> bool:
+        return self._flags[index] & JumpRoute.NodeFlags.Waypoint
+
     def mandatoryBerthing(self, index: int) -> bool:
-        return index in self._berthing
+        return self._flags[index] & JumpRoute.NodeFlags.MandatoryBerthing
 
     def nodeParsecs(self, index: int) -> int:
         parsecs = 0

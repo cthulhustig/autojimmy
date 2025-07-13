@@ -1898,9 +1898,20 @@ class JumpRouteWindow(gui.WindowWidget):
         # reinstate waypoints. But then what about the other settings
         # that were used when things were the route was created. Maybe
         # best to treat the imported route independently of existing
-        # settings
-        self._selectStartFinishWidget.setStartHex(jumpRoute[0])
-        self._selectStartFinishWidget.setFinishHex(jumpRoute[-1])
+        # settings. Should it maybe prompt to ask if you want to update
+        # the start/finish/waypoints
+        finishIndex = jumpRoute.nodeCount() - 1
+
+        self._waypointsTable.removeAllRows()
+        for index, node in enumerate(jumpRoute.nodes()):
+            if index == 0:
+                self._selectStartFinishWidget.setStartHex(node)
+            if index == finishIndex:
+                self._selectStartFinishWidget.setFinishHex(node)
+            if  (index > 0) and (index < finishIndex) and jumpRoute.isWaypoint(index):
+                self._waypointsTable.addHex(node)
+                if jumpRoute.mandatoryBerthing(index):
+                    self._waypointsTable.setBerthingChecked(index - 1, True)
 
         self._shouldZoomToNewRoute = True
         self._setJumpRoute(
