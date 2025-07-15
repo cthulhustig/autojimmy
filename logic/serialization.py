@@ -8,6 +8,8 @@ import traveller
 import travellermap
 import typing
 
+# TODO: It should be possible to delete this calculation (de)serialisation
+# code when I'm finished
 def serialiseCalculation(
         calculation: common.Calculation
         ) -> typing.Mapping[str, typing.Any]:

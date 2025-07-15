@@ -7,8 +7,6 @@ import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class CalculationWindow(gui.WindowWidget):
-    _CalculationFileFilter = 'PKL (*.pkl)'
-
     def __init__(
             self
             ) -> None:
@@ -100,12 +98,16 @@ class CalculationWindow(gui.WindowWidget):
             key='CalculationColumnState',
             type=QtCore.QByteArray)
         if storedState:
-            self._calculationTree.header().restoreState(storedState)
+            header = self._calculationTree.header()
+            if header:
+                header.restoreState(storedState)
         self._settings.endGroup()
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('CalculationColumnState', self._calculationTree.header().saveState())
+        header = self._calculationTree.header()
+        if header:
+            self._settings.setValue('CalculationColumnState', header.saveState())
         self._settings.endGroup()
 
         super().saveSettings()
@@ -125,14 +127,15 @@ class CalculationWindow(gui.WindowWidget):
         path, filter = QtWidgets.QFileDialog.getSaveFileName(
             parent=self,
             caption='Save Calculations',
-            directory=os.path.join(QtCore.QDir.homePath(), 'calculations.pkl'),
-            filter=f'{CalculationWindow._CalculationFileFilter}')
+            directory=os.path.join(QtCore.QDir.homePath(), 'calculations.json'),
+            filter=f'{gui.JSONFileFilter}')
         if not path:
             return # User cancelled
 
         try:
-            calculations = self._calculationTree.calculations()
-            app.writeCalculations(calculations=calculations, filePath=path)
+            common.writeCalculationList(
+                calculations=self._calculationTree.calculations(),
+                path=path)
         except Exception as ex:
             message = 'Failed to save calculations'
             logging.error(message, exc_info=ex)
@@ -145,19 +148,13 @@ class CalculationWindow(gui.WindowWidget):
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
             parent=self,
             directory=QtCore.QDir.homePath(),
-            filter=CalculationWindow._CalculationFileFilter)
+            filter=gui.JSONFileFilter)
         if not path:
             return # User cancelled
 
         try:
-            archive = app.readCalculations(filePath=path)
-            if archive.appVersion() != app.AppVersion:
-                answer = gui.MessageBoxEx.question(
-                    parent=self,
-                    text=f'The calculation archive was created with {app.AppName} version {archive.appVersion()}.\nDo you want to continue loading it?')
-                if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-                    return # User cancelled
-            self.setCalculations(calculations=archive.calculations())
+            self.setCalculations(
+                calculations=common.readCalculationList(path=path))
         except Exception as ex:
             message = 'Failed to save calculations'
             logging.error(message, exc_info=ex)

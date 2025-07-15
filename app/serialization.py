@@ -3,6 +3,7 @@ import common
 import pickle
 import typing
 
+# TODO: It should be possible to delete this when I'm finsihed
 class CalculationArchive(object):
     def __init__(
             self,

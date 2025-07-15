@@ -2,6 +2,8 @@ import common
 import enum
 import typing
 
+# NOTE: If I ever update the value of these enums I'll need to do something
+# for backward compatibility with serialisation
 class Characteristic(enum.Enum):
     Strength = 'STR'
     Dexterity = 'DEX'
@@ -14,6 +16,8 @@ class Characteristic(enum.Enum):
     Wealth = 'WLT'
     Moral = 'MRL'
     Sanity = 'STY'
+_CharacteristicSerialisationTypeToStr = {e: e.value.lower() for e in Characteristic}
+_CharacteristicSerialisationStrToType = {v: k for k, v in _CharacteristicSerialisationTypeToStr.items()}
 
 def characteristicDM(level: int) -> int:
     if level <= 0:
@@ -66,3 +70,33 @@ class CharacteristicDMFunction(common.CalculatorFunction):
     def copy(self) -> 'CharacteristicDMFunction':
         return CharacteristicDMFunction(
             level=self._level.copy())
+
+    @staticmethod
+    def serialisationType() -> str:
+        return 'chardm'
+
+    def toJson(self) -> typing.Mapping[str, typing.Any]:
+        return {
+            'characteristic': _CharacteristicSerialisationTypeToStr[self._characteristic],
+            'level': self._level.toJson()}
+
+    @staticmethod
+    def fromJson(
+        jsonData: typing.Mapping[str, typing.Any]
+        ) -> 'CharacteristicDMFunction':
+        characteristic = jsonData.get('characteristic')
+        if characteristic is None:
+            raise RuntimeError('Characteristic DM function is missing the characteristic property')
+        if not isinstance(characteristic, str):
+            raise RuntimeError('Significant digits function characteristic property is not a string')
+        characteristic = characteristic.lower()
+        if characteristic not in _CharacteristicSerialisationStrToType:
+            raise RuntimeError(f'Characteristic DM function has invalid characteristic property {characteristic}')
+        characteristic = _CharacteristicSerialisationStrToType[characteristic]
+
+        level = jsonData.get('level')
+        if level is None:
+            raise RuntimeError('Characteristic DM function is missing the level property')
+        level = common.ScalarCalculation.fromJson(jsonData=level)
+
+        return CharacteristicDMFunction(characteristic=characteristic, level=level)
