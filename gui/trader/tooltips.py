@@ -297,7 +297,7 @@ def createLogisticsToolTip(
     pitStopMap = {}
     if refuellingPlan:
         for pitStop in refuellingPlan:
-            pitStopMap[pitStop.jumpIndex()] = pitStop
+            pitStopMap[pitStop.routeIndex()] = pitStop
 
     # TODO: This would need changed to not treat jump route as a collection
     for index, nodePos in enumerate(jumpRoute):

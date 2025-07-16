@@ -1805,8 +1805,8 @@ class JumpRouteWindow(gui.WindowWidget):
             refuellingPlan = self._routeLogistics.refuellingPlan()
             if refuellingPlan:
                 for pitStop in refuellingPlan:
-                    if pitStop.jumpIndex() in jumpNodes:
-                        jumpNodes[pitStop.jumpIndex()] = pitStop
+                    if pitStop.routeIndex() in jumpNodes:
+                        jumpNodes[pitStop.routeIndex()] = pitStop
 
         toolTip = ''
         for nodeIndex, pitStop in jumpNodes.items():
@@ -1863,6 +1863,14 @@ class JumpRouteWindow(gui.WindowWidget):
         toolTip = f'<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">{toolTip}</ul>'
         return gui.createStringToolTip(toolTip, escape=False)
 
+    # TODO: Import and export probably need options. If I do this then it might
+    # make sense to have a dialog with the file name and a browse button along
+    # with the options
+    # - Option to import/export logistics
+    # - Option to ignore logistics when loading and recalculate them instead
+    # - Update start/stop/waypoints
+    # TODO: Need to handle the case where the loaded logistics are not for the
+    # current milieu
     def _importJumpRoute(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
             parent=self,
@@ -1883,6 +1891,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 exception=ex)
             return
 
+        routeLogistics = None
+        if isinstance(jumpRoute, logic.RouteLogistics):
+            routeLogistics = jumpRoute
+            jumpRoute = routeLogistics.jumpRoute()
+
         if not jumpRoute:
             message = f'No jump route found in "{path}"'
             logging.error(message, exc_info=ex)
@@ -1891,8 +1904,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
-
-        routeLogistics = self._interactiveCalculateLogistics(jumpRoute=jumpRoute)
 
         # TODO: I'm not sure about this. Feels weird to do this and not
         # reinstate waypoints. But then what about the other settings
@@ -1934,7 +1945,9 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         try:
-            logic.writeJumpRoute(route=self._jumpRoute, path=path)
+            logic.writeJumpRoute(
+                route=self._routeLogistics if self._routeLengthLabel else self._jumpRoute,
+                path=path)
         except Exception as ex:
             message = f'Failed to write jump route to "{path}"'
             logging.error(message, exc_info=ex)

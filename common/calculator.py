@@ -38,7 +38,7 @@ class Calculation(object):
     def copy(self) -> typing.Any:
         raise RuntimeError('The copy method should be overridden by derived classes')
 
-    def toJson(self) -> typing.Mapping[str, typing.Any]:
+    def toJson(self, includeHierarchy: bool = True) -> typing.Mapping[str, typing.Any]:
         raise RuntimeError('The toJson method should be overridden by derived classes')
 
     @staticmethod
@@ -144,13 +144,16 @@ class ScalarCalculation(Calculation):
             value=self._function.copy() if self._function else self._value,
             name=self._name)
 
-    def toJson(self) -> typing.Mapping[str, typing.Any]:
+    def toJson(
+            self,
+            includeHierarchy: bool = True
+            ) -> typing.Mapping[str, typing.Any]:
         jsonData = {}
 
         if self._name:
             jsonData['name'] = self._name
 
-        if self._function:
+        if self._function and includeHierarchy:
             jsonData['type'] = 'function'
             jsonData['value'] = _CalculationSerialiser.instance().serialiseFunction(function=self._function)
         else:
@@ -241,15 +244,18 @@ class RangeCalculation(Calculation):
             averageCase=self._averageCaseCalculation.copy(),
             name=self._name)
 
-    def toJson(self) -> typing.Mapping[str, typing.Any]:
+    def toJson(
+            self,
+            includeHierarchy: bool = True
+            ) -> typing.Mapping[str, typing.Any]:
         jsonData = {}
 
         if self._name:
             jsonData['name'] = self._name
 
-        jsonData['worst'] = self._worstCaseCalculation.toJson()
-        jsonData['best'] = self._bestCaseCalculation.toJson()
-        jsonData['average'] = self._averageCaseCalculation.toJson()
+        jsonData['worst'] = self._worstCaseCalculation.toJson(includeHierarchy=includeHierarchy)
+        jsonData['best'] = self._bestCaseCalculation.toJson(includeHierarchy=includeHierarchy)
+        jsonData['average'] = self._averageCaseCalculation.toJson(includeHierarchy=includeHierarchy)
 
         return jsonData
 
@@ -2327,7 +2333,8 @@ class _CalculationSerialiser(object):
 
     def serialiseCalculation(
             self,
-            calculation: Calculation
+            calculation: Calculation,
+            includeHierarchy: bool = True
             ) -> typing.Mapping[str, typing.Any]:
         jsonData = {}
 
@@ -2396,28 +2403,41 @@ class _CalculationSerialiser(object):
 _CalculationVersion = packaging.version.Version('1.0')
 
 def serialiseCalculation(
-        calculation: Calculation
+        calculation: Calculation,
+        includeHierarchy: bool = True
         ) -> typing.Mapping[str, typing.Any]:
     jsonData = _CalculationSerialiser.instance().serialiseCalculation(
-        calculation=calculation)
+        calculation=calculation,
+        includeHierarchy=includeHierarchy)
     jsonData = dict(jsonData)
+    # TODO: The way this is done isn't ideal for 2 reasons
+    # - The fact it's added after the initial dict is created means it ends up
+    # after all the other parameters when dumped to json rather than it being
+    # the first parameter. This isn't a real problem but it looks ugly
+    # - The fact it's added means every calculation saved in something like
+    # the jump route gets it's own version. Again not a real problem but looks
+    # ugly. It does server a purpose though as, if the calculation format ever
+    # changes we need to know which calculation format to use when reading it
+    # back in
     jsonData['version'] = str(_CalculationVersion)
     return jsonData
 
 def serialiseCalculationList(
-        calculations: typing.Iterable[Calculation]
+        calculations: typing.Iterable[Calculation],
+        includeHierarchy: bool = True
         ) -> typing.Mapping[str, typing.Any]:
     jsonList = []
     for calculation in calculations:
         jsonList.append(_CalculationSerialiser.instance().serialiseCalculation(
-            calculation=calculation))
+            calculation=calculation,
+            includeHierarchy=includeHierarchy))
 
     return {
         'version': str(_CalculationVersion),
         'list': jsonList}
 
 def deserialiseCalculation(
-        jsonData: typing.Mapping[str, typing.Any]
+        jsonData: typing.Mapping[str, typing.Any],
         ) -> Calculation:
     jsonVersion = jsonData.get('version')
     if jsonVersion is None:

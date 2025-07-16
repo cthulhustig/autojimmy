@@ -15,7 +15,7 @@ class RouteLogistics(object):
         if not jumpRoute:
             raise ValueError('Invalid jump route')
 
-        if perJumpOverheads and not isinstance(perJumpOverheads, common.ScalarCalculation):
+        if perJumpOverheads != None and not isinstance(perJumpOverheads, common.ScalarCalculation):
             assert(isinstance(perJumpOverheads, int))
             perJumpOverheads = common.ScalarCalculation(
                 value=perJumpOverheads,
@@ -24,15 +24,16 @@ class RouteLogistics(object):
         self._milieu = milieu
         self._jumpRoute = jumpRoute
         self._refuellingPlan = refuellingPlan
+        self._perJumpOverheads = perJumpOverheads
 
         self._totalOverheads = None
-        if perJumpOverheads:
+        if self._perJumpOverheads:
             jumpCount = common.ScalarCalculation(
                 value=self._jumpRoute.jumpCount(),
                 name='Jump Count')
 
             self._totalOverheads = common.Calculator.multiply(
-                lhs=perJumpOverheads,
+                lhs=self._perJumpOverheads,
                 rhs=jumpCount,
                 name='Total Overheads')
 
@@ -51,7 +52,10 @@ class RouteLogistics(object):
     def refuellingPlan(self) -> typing.Optional[logic.RefuellingPlan]:
         return self._refuellingPlan
 
-    def totalOverheads(self) -> typing.Optional[typing.Union[common.ScalarCalculation, common.RangeCalculation]]:
+    def perJumpOverheads(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._perJumpOverheads
+
+    def totalOverheads(self) -> typing.Optional[common.ScalarCalculation]:
         return self._totalOverheads
 
     def totalCosts(self) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:
@@ -119,7 +123,7 @@ def calculateRouteLogistics(
                                 name='Ignored Berthing Cost')
 
                     pitStop = logic.PitStop(
-                        jumpIndex=0,
+                        routeIndex=0,
                         world=startWorld,
                         refuellingType=None, # No refuelling
                         tonsOfFuel=None,

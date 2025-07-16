@@ -5,7 +5,6 @@ from .worldtagging import *
 from .worldsearch import *
 from .cargorecord import *
 from .jumproute import *
-from .serialization import *
 from .refuelling import *
 from .routeplanner import *
 from .routecosting import *
@@ -15,3 +14,4 @@ from .trader import *
 from .cargomanifest import *
 from .simulator import *
 from .hexoutlines import *
+from .serialization import *

@@ -8,6 +8,9 @@ import traveller
 import travellermap
 import typing
 
+# NOTE: The names of these enums are when serialising jump routes (specifically
+# the logistics). If I ever rename them I'll need to do something to maintain
+# backwards compatibility
 class RefuellingType(enum.Enum):
     Refined = 'Refined'
     Unrefined = 'Unrefined'
@@ -232,14 +235,14 @@ class PitStopCostCalculator(object):
 class PitStop(object):
     def __init__(
             self,
-            jumpIndex: int, # Intentionally not a calculation as it's not used to calculate values
+            routeIndex: int, # Intentionally not a calculation as it's not used to calculate values
             world: traveller.World,
             refuellingType: typing.Optional[RefuellingType],
             tonsOfFuel: typing.Optional[common.ScalarCalculation],
             fuelCost: typing.Optional[common.ScalarCalculation],
             berthingCost: typing.Optional[typing.Union[common.ScalarCalculation, common.RangeCalculation]]
             ) -> None:
-        self._jumpIndex = jumpIndex
+        self._routeIndex = routeIndex
         self._world = world
         self._refuellingType = refuellingType
         self._tonsOfFuel = tonsOfFuel
@@ -267,8 +270,8 @@ class PitStop(object):
                 value=0,
                 name=calculationName)
 
-    def jumpIndex(self) -> int:
-        return self._jumpIndex
+    def routeIndex(self) -> int:
+        return self._routeIndex
 
     def world(self) -> traveller.World:
         return self._world
@@ -305,9 +308,9 @@ class RefuellingPlan(object):
             ) -> None:
         self._milieu = milieu
         self._pitStops = list(pitStops)
-        self._jumpIndexMap = {}
+        self._routeIndexMap = {}
         for pitStop in self._pitStops:
-            self._jumpIndexMap[pitStop.jumpIndex()] = pitStop
+            self._routeIndexMap[pitStop.routeIndex()] = pitStop
 
         # Cache totals so we don't have to repeatedly calculate them. This assumes that the list of
         # pit stops and the pit stops themselves are immutable
@@ -348,10 +351,13 @@ class RefuellingPlan(object):
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
 
-    def pitStop(self, jumpIndex: int) -> typing.Optional[PitStop]:
-        if jumpIndex not in self._jumpIndexMap:
+    def pitStop(self, routeIndex: int) -> typing.Optional[PitStop]:
+        if routeIndex not in self._routeIndexMap:
             return None
-        return self._jumpIndexMap[jumpIndex]
+        return self._routeIndexMap[routeIndex]
+
+    def pitStops(self) -> typing.List[PitStop]:
+        return [self._pitStops]
 
     def pitStopCount(self) -> common.ScalarCalculation:
         return self._pitStopCount
@@ -904,7 +910,7 @@ def _createRefuellingPlan(
                         name='Ignored Berthing Cost')
 
             pitStops.append(PitStop(
-                jumpIndex=nodeContext.index(),
+                routeIndex=nodeContext.index(),
                 world=world,
                 refuellingType=refuellingType,
                 tonsOfFuel=fuelAmount,
