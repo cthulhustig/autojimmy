@@ -2294,7 +2294,7 @@ _CalculationVersion = packaging.version.Version('1.0')
 def serialiseCalculation(
         calculation: Calculation,
         includeVersion: bool = True,
-        includeHierarchy: bool = True
+        includeSubcalculations: bool = True
         ) -> typing.Mapping[str, typing.Any]:
     # TODO: The way this is done isn't ideal for 2 reasons
     # - The fact it's added means every calculation saved in something like
@@ -2314,7 +2314,7 @@ def serialiseCalculation(
 
         jsonData['value'] = calculation.value()
 
-        if includeHierarchy and calculation.function():
+        if includeSubcalculations and calculation.function():
             jsonData['valueFunc'] = _FunctionSerialiser.instance().serialise(
                 function=calculation.function())
     elif isinstance(calculation, RangeCalculation):
@@ -2325,19 +2325,19 @@ def serialiseCalculation(
 
         worst = calculation.worstCaseCalculation()
         jsonData['worst'] = worst.value()
-        if includeHierarchy and worst.function():
+        if includeSubcalculations and worst.function():
             jsonData['worstFunc'] = _FunctionSerialiser.instance().serialise(
                 function=worst.function())
 
         best = calculation.bestCaseCalculation()
         jsonData['best'] = best.value()
-        if includeHierarchy and best.function():
+        if includeSubcalculations and best.function():
             jsonData['bestFunc'] = _FunctionSerialiser.instance().serialise(
                 function=best.function())
 
         average = calculation.averageCaseCalculation()
         jsonData['average'] = average.value()
-        if includeHierarchy and average.function():
+        if includeSubcalculations and average.function():
             jsonData['averageFunc'] = _FunctionSerialiser.instance().serialise(
                 function=average.function())
     else:
@@ -2348,7 +2348,7 @@ def serialiseCalculation(
 def serialiseCalculationList(
         calculations: typing.Iterable[Calculation],
         includeVersion: bool = True,
-        includeHierarchy: bool = True
+        includeSubcalculations: bool = True
         ) -> typing.Mapping[str, typing.Any]:
     jsonData = {}
     if includeVersion:
@@ -2359,7 +2359,7 @@ def serialiseCalculationList(
         jsonList.append(serialiseCalculation(
             calculation=calculation,
             includeVersion=False,
-            includeHierarchy=includeHierarchy))
+            includeSubcalculations=includeSubcalculations))
     jsonData['list'] = jsonList
 
     return jsonData
@@ -2504,24 +2504,24 @@ def deserialiseCalculationList(
 def writeCalculation(
         calculation: Calculation,
         path: str,
-        includeHierarchy: bool = True
+        includeSubcalculations: bool = True
         ) -> None:
     jsonData = serialiseCalculation(
         calculation=calculation,
         includeVersion=True,
-        includeHierarchy=includeHierarchy)
+        includeSubcalculations=includeSubcalculations)
     with open(path, 'w', encoding='UTF8') as file:
         json.dump(jsonData, file, indent=4)
 
 def writeCalculationList(
         calculations: typing.Iterable[Calculation],
         path: str,
-        includeHierarchy: bool = True
+        includeSubcalculations: bool = True
         ) -> None:
     jsonData = serialiseCalculationList(
         calculations=calculations,
         includeVersion=True,
-        includeHierarchy=includeHierarchy)
+        includeSubcalculations=includeSubcalculations)
     with open(path, 'w', encoding='UTF8') as file:
         json.dump(jsonData, file, indent=4)
 
