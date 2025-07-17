@@ -673,7 +673,8 @@ class Calculator(object):
             return 'sum'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'values': serialiseCalculationList(self._values, includeVersion=False)}
+            return {
+                'values': [serialiseCalculation(value, includeVersion=False) for value in self._values]}
 
         @staticmethod
         def fromJson(
