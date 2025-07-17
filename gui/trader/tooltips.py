@@ -299,7 +299,6 @@ def createLogisticsToolTip(
         for pitStop in refuellingPlan:
             pitStopMap[pitStop.routeIndex()] = pitStop
 
-    # TODO: This would need changed to not treat jump route as a collection
     for index, nodePos in enumerate(jumpRoute):
         world = traveller.WorldManager.instance().worldByPosition(
             milieu=milieu,

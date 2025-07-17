@@ -686,7 +686,6 @@ class JumpRouteWindow(gui.WindowWidget):
             raise RuntimeError('Unable to set jump route while a jump route job is in progress')
 
         self._jumpRoute = route
-        # TODO: This would need changed to not treat jump route as a collection
         self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
 
         self._routeLogistics = logistics
@@ -1548,7 +1547,6 @@ class JumpRouteWindow(gui.WindowWidget):
             ) -> None:
             self._jumpRoute = jumpRoute
             self._routeLogistics = routeLogistics
-            # TODO: This would need changed to not treat jump route as a collection
             self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
 
             if self._routeLogistics:
@@ -2044,8 +2042,6 @@ class JumpRouteWindow(gui.WindowWidget):
     def _showJumpRouteOnMap(self) -> None:
         if not self._jumpRoute:
             return
-
-        # TODO: This would need changed to not treat jump route as a collection
         self._showHexesOnMap(hexes=self._jumpRoute.nodes())
 
     def _showHexesOnMap(

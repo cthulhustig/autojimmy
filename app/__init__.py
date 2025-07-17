@@ -5,5 +5,4 @@ from .outcomecolours import *
 from .taggingcolours import *
 from .config import *
 from .hexhistory import *
-from .serialization import *
 from .asyncrequest import *

@@ -2297,12 +2297,6 @@ def serialiseCalculation(
         includeVersion: bool = True,
         includeSubcalculations: bool = True
         ) -> typing.Mapping[str, typing.Any]:
-    # TODO: The way this is done isn't ideal for 2 reasons
-    # - The fact it's added means every calculation saved in something like
-    # the jump route gets it's own version. Again not a real problem but looks
-    # ugly. It does server a purpose though as, if the calculation format ever
-    # changes we need to know which calculation format to use when reading it
-    # back in
     jsonData = {}
     if includeVersion:
         jsonData['version'] = str(_CalculationVersion)

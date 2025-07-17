@@ -220,7 +220,6 @@ class Simulator(object):
             self._jumpRouteIndex += 1
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
-                # TODO: This would need changed to not treat jump route as a collection
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
                 nextWorld = traveller.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,

@@ -82,7 +82,6 @@ class RoutePlannerJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            # TODO: Update this to pass in berthing indices
             jumpRoute = self._planner.calculateSequenceRoute(
                 routingType=self._routingType,
                 milieu=self._milieu,

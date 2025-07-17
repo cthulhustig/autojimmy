@@ -648,9 +648,7 @@ def _processRoute(
         parsecsToNextWorld = None
         reachableNodeIndex = nodeIndex + 1
         while reachableNodeIndex <= finishNodeIndex:
-            # TODO: This would need changed to not treat jump route as a collection
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
-            # TODO: This would need changed to not treat jump route as a collection
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
             toWorld = traveller.WorldManager.instance().worldByPosition(
                 milieu=milieu,

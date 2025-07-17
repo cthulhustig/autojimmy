@@ -412,7 +412,6 @@ def _rollRandomTradeGood(
 def serialiseCargoRecord(
         cargoRecord: CargoRecord
         ) -> typing.Mapping[str, typing.Any]:
-    # TODO: Update this to use new calculation (de)serialisation
     return {
         'ruleSystem': cargoRecord.ruleSystem().name,
         'tradeGoodId': cargoRecord.tradeGood().id(),
@@ -444,7 +443,6 @@ def deserialiseCargoRecord(data: typing.Mapping[str, typing.Any]) -> CargoRecord
     if pricePerTon == None:
         raise RuntimeError('Cargo record data is missing the pricePerTon property')
 
-    # TODO: Update this to use new calculation (de)serialisation
     return CargoRecord(
         tradeGood=traveller.tradeGoodFromId(
             ruleSystem=ruleSystem,
