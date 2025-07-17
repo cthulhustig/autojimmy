@@ -71,17 +71,17 @@ _MgtBrokerPercentageMap = {
 }
 _MgtBrokerMaxDm = common.ScalarCalculation(value=6, name='Max Allowed Broker DM')
 
-class MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
+class MgtBrokerSkillToPercentageCutFunction(common.CalculatorFunction):
     def __init__(
             self,
             skill: common.ScalarCalculation,
-            percentage: int
+            percentage: common.ScalarCalculation
             ) -> None:
         self._skill = skill
         self._percentage = percentage
 
     def value(self) -> typing.Union[int, float]:
-        return self._percentage
+        return self._percentage.value()
 
     def calculationString(
             self,
@@ -100,10 +100,10 @@ class MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
             return [self._skill]
         return self._skill.subCalculations()
 
-    def copy(self) -> 'MgtBrokerPercentageLookupFunction':
-        return MgtBrokerPercentageLookupFunction(
+    def copy(self) -> 'MgtBrokerSkillToPercentageCutFunction':
+        return MgtBrokerSkillToPercentageCutFunction(
             skill=self._skill.copy(),
-            percentage=self._percentage)
+            percentage=self._percentage.copy())
 
     @staticmethod
     def serialisationType() -> str:
@@ -114,12 +114,12 @@ class MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
         # consistency rather than an integer
         return {
             'skill': common.serialiseCalculation(self._skill, includeVersion=False),
-            'percentage': self._percentage}
+            'percentage': common.serialiseCalculation(self._percentage, includeVersion=False)}
 
     @staticmethod
     def fromJson(
         jsonData: typing.Mapping[str, typing.Any]
-        ) -> 'MgtBrokerPercentageLookupFunction':
+        ) -> 'MgtBrokerSkillToPercentageCutFunction':
         skill = jsonData.get('skill')
         if skill is None:
             raise RuntimeError('Mongoose broker cut function is missing the skill property')
@@ -128,10 +128,9 @@ class MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
         percentage = jsonData.get('percentage')
         if percentage is None:
             raise RuntimeError('Mongoose broker cut function is missing the percentage property')
-        if not isinstance(percentage, int):
-            raise RuntimeError('Mongoose broker cut function percentage property is not an integer')
+        percentage = common.deserialiseCalculation(jsonData=percentage)
 
-        return MgtBrokerPercentageLookupFunction(skill=skill, percentage=percentage)
+        return MgtBrokerSkillToPercentageCutFunction(skill=skill, percentage=percentage)
 
 def _calculateMgtBrokerDetails(
     skillValue: common.ScalarCalculation
@@ -149,11 +148,15 @@ def _calculateMgtBrokerDetails(
         skillValue = common.Calculator.min(
             lhs=skillValue,
             rhs=_MgtBrokerMaxDm,
-            name='Clamped Broker DM')
+            name='Clamped Broker Skill')
         brokerPercentage = _MgtBrokerPercentageMap.get(skillValue.value())
 
     brokerPercentage = common.ScalarCalculation(
-        value=MgtBrokerPercentageLookupFunction(
+        value=brokerPercentage,
+        name=f'Percentage Cut for Broker with Broker {skillValue.value()}')
+
+    brokerPercentage = common.ScalarCalculation(
+        value=MgtBrokerSkillToPercentageCutFunction(
             skill=skillValue,
             percentage=brokerPercentage),
         name='Broker Cut Percentage')

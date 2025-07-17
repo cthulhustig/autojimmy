@@ -461,19 +461,19 @@ class TradeGood(object):
 
         return worldIllegalDm
 
-class TradeDMLookupFunction(common.CalculatorFunction):
+class TradeDMToPriceModifierFunction(common.CalculatorFunction):
     def __init__(
             self,
             tradeType: TradeType,
             tradeDm: common.ScalarCalculation,
-            priceModifier: float
+            priceModifier: common.ScalarCalculation
             ) -> None:
         self._tradeType = tradeType
         self._tradeDm = tradeDm
         self._priceModifier = priceModifier
 
     def value(self) -> typing.Union[int, float]:
-        return self._priceModifier
+        return self._priceModifier.value()
 
     def calculationString(
             self,
@@ -492,27 +492,26 @@ class TradeDMLookupFunction(common.CalculatorFunction):
             return [self._tradeDm]
         return self._tradeDm.subCalculations()
 
-    def copy(self) -> 'TradeDMLookupFunction':
-        return TradeDMLookupFunction(
+    def copy(self) -> 'TradeDMToPriceModifierFunction':
+        return TradeDMToPriceModifierFunction(
             tradeType=self._tradeType,
             tradeDm=self._tradeDm.copy(),
-            priceModifier=self._priceModifier)
+            priceModifier=self._priceModifier.copy())
 
     @staticmethod
     def serialisationType() -> str:
         return 'tradedm'
 
     def toJson(self) -> typing.Mapping[str, typing.Any]:
-        # TODO: Should modifier be saved as a scalar value
         return {
             'type': _TradeTypeSerialisationTypeToStr[self._tradeType],
             'value': common.serialiseCalculation(self._tradeDm, includeVersion=False),
-            'modifier': self._priceModifier}
+            'modifier': common.serialiseCalculation(self._priceModifier, includeVersion=False)}
 
     @staticmethod
     def fromJson(
         jsonData: typing.Mapping[str, typing.Any]
-        ) -> 'TradeDMLookupFunction':
+        ) -> 'TradeDMToPriceModifierFunction':
         type = jsonData.get('type')
         if type is None:
             raise RuntimeError('Trade DM function is missing the type property')
@@ -531,10 +530,12 @@ class TradeDMLookupFunction(common.CalculatorFunction):
         modifier = jsonData.get('modifier')
         if modifier is None:
             raise RuntimeError('Characteristic DM function is missing the modifier property')
-        if not isinstance(modifier, (int, float)):
-            raise RuntimeError('Characteristic DM function modifier property is not an integer')
+        modifier = common.deserialiseCalculation(jsonData=modifier)
 
-        return TradeDMLookupFunction(tradeType=type, tradeDm=value, priceModifier=modifier)
+        return TradeDMToPriceModifierFunction(
+            tradeType=type,
+            tradeDm=value,
+            priceModifier=modifier)
 
 def tradeGoodList(
         ruleSystem: traveller.RuleSystem,
@@ -690,7 +691,7 @@ def _calculateSalePriceModifier(
 
 def _calculatePriceModifier(
         ruleSystem: traveller.RuleSystem,
-        operation: str,
+        operation: TradeType,
         tradeDm: common.ScalarCalculation
         ) -> common.ScalarCalculation:
     if ruleSystem == traveller.RuleSystem.MGT:
@@ -715,8 +716,12 @@ def _calculatePriceModifier(
     else:
         priceModifier = modifierMap[tradeDm.value()][operation]
 
+    priceModifier = common.ScalarCalculation(
+        value=priceModifier,
+        name=f'Price Modifier for {operation.value} DM{tradeDm.value():+}')
+
     return common.ScalarCalculation(
-        value=TradeDMLookupFunction(
+        value=TradeDMToPriceModifierFunction(
             tradeType=operation,
             tradeDm=tradeDm,
             priceModifier=priceModifier),
