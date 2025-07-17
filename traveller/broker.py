@@ -112,7 +112,9 @@ class MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
     def toJson(self) -> typing.Mapping[str, typing.Any]:
         # TODO: Should the percentage be stored as a ScalarValue for
         # consistency rather than an integer
-        return {'skill': self._skill.toJson(), 'percentage': self._percentage}
+        return {
+            'skill': common.serialiseCalculation(self._skill, includeVersion=False),
+            'percentage': self._percentage}
 
     @staticmethod
     def fromJson(
@@ -121,7 +123,7 @@ class MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
         skill = jsonData.get('skill')
         if skill is None:
             raise RuntimeError('Mongoose broker cut function is missing the skill property')
-        skill = common.ScalarCalculation.fromJson(jsonData=skill)
+        skill = common.deserialiseCalculation(jsonData=skill)
 
         percentage = jsonData.get('percentage')
         if percentage is None:

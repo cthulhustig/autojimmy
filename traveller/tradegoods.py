@@ -506,7 +506,7 @@ class TradeDMLookupFunction(common.CalculatorFunction):
         # TODO: Should modifier be saved as a scalar value
         return {
             'type': _TradeTypeSerialisationTypeToStr[self._tradeType],
-            'value': self._tradeDm.toJson(),
+            'value': common.serialiseCalculation(self._tradeDm, includeVersion=False),
             'modifier': self._priceModifier}
 
     @staticmethod
@@ -526,7 +526,7 @@ class TradeDMLookupFunction(common.CalculatorFunction):
         value = jsonData.get('value')
         if value is None:
             raise RuntimeError('Characteristic DM function is missing the value property')
-        value = common.ScalarCalculation.fromJson(jsonData=value)
+        value = common.deserialiseCalculation(jsonData=value)
 
         modifier = jsonData.get('modifier')
         if modifier is None:

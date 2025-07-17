@@ -78,7 +78,7 @@ class CharacteristicDMFunction(common.CalculatorFunction):
     def toJson(self) -> typing.Mapping[str, typing.Any]:
         return {
             'characteristic': _CharacteristicSerialisationTypeToStr[self._characteristic],
-            'level': self._level.toJson()}
+            'level': common.serialiseCalculation(self._level, includeVersion=False)}
 
     @staticmethod
     def fromJson(
@@ -97,6 +97,6 @@ class CharacteristicDMFunction(common.CalculatorFunction):
         level = jsonData.get('level')
         if level is None:
             raise RuntimeError('Characteristic DM function is missing the level property')
-        level = common.ScalarCalculation.fromJson(jsonData=level)
+        level = common.deserialiseCalculation(jsonData=level)
 
         return CharacteristicDMFunction(characteristic=characteristic, level=level)

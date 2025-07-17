@@ -82,6 +82,7 @@ def calculateRouteLogistics(
         # Specify if generated route logistics will include refuelling costs. If not included the
         # costs will still be taken into account when calculating the optimal pit stop worlds,
         # however the costs for fuel and berthing will be zero
+        # TODO: If this does what is says above why isn't it called includeRefuellingCosts?
         includeLogisticsCosts: bool = True,
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[RouteLogistics]:

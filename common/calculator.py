@@ -1,6 +1,7 @@
 import common
 import enum
 import json
+import logging
 import packaging
 import packaging.version
 import threading
@@ -37,13 +38,6 @@ class Calculation(object):
 
     def copy(self) -> typing.Any:
         raise RuntimeError('The copy method should be overridden by derived classes')
-
-    def toJson(self, includeHierarchy: bool = True) -> typing.Mapping[str, typing.Any]:
-        raise RuntimeError('The toJson method should be overridden by derived classes')
-
-    @staticmethod
-    def fromJson(jsonData: typing.Mapping[str, typing.Any]) -> 'Calculation':
-        raise RuntimeError('The static fromJson method should be overridden by derived classes')
 
 class CalculatorFunction(object):
     def value(self) -> typing.Union[int, float]:
@@ -84,13 +78,16 @@ class ScalarCalculation(Calculation):
             self._value = value.value()
             self._function = value
         else:
-            assert(isinstance(value, int) or isinstance(value, float))
+            assert(isinstance(value, (int, float)))
             self._value = value
             self._function = None
         self._name = name
 
     def value(self) -> typing.Union[int, float]:
         return self._value
+
+    def function(self) -> typing.Optional[CalculatorFunction]:
+        return self._function
 
     def name(self, forCalculation=False) -> typing.Optional[str]:
         if not self._name:
@@ -143,52 +140,6 @@ class ScalarCalculation(Calculation):
         return ScalarCalculation(
             value=self._function.copy() if self._function else self._value,
             name=self._name)
-
-    def toJson(
-            self,
-            includeHierarchy: bool = True
-            ) -> typing.Mapping[str, typing.Any]:
-        jsonData = {}
-
-        if self._name:
-            jsonData['name'] = self._name
-
-        if self._function and includeHierarchy:
-            jsonData['type'] = 'function'
-            jsonData['value'] = _CalculationSerialiser.instance().serialiseFunction(function=self._function)
-        else:
-            jsonData['type'] = 'raw'
-            jsonData['value'] = self._value
-
-        return jsonData
-
-    @staticmethod
-    def fromJson(jsonData: typing.Mapping[str, typing.Any]) -> 'ScalarCalculation':
-        name = jsonData.get('name')
-        if name is not None and not isinstance(name, str):
-            raise RuntimeError('Scalar calculation name property is not a string')
-
-        type = jsonData.get('type')
-        if type is None:
-            raise RuntimeError('Scalar calculation is missing the type property')
-        if not isinstance(type, str):
-            raise RuntimeError('Scalar calculation type property is not a string')
-
-        value = jsonData.get('value')
-        if value is None:
-            raise RuntimeError('Scalar calculation is missing the value property')
-        if type == 'function':
-            if not isinstance(value, dict):
-                raise RuntimeError('Scalar calculation value property is not a dictionary')
-            value = _CalculationSerialiser.instance().deserialiseFunction(
-                jsonData=value)
-        elif type == 'raw':
-            if not isinstance(value, (int, float)):
-                raise RuntimeError('Scalar calculation value property is not an integer or float')
-        else:
-            raise RuntimeError(f'Scalar calculation value property has unknown type {type}')
-
-        return ScalarCalculation(value=value, name=name)
 
 # IMPORTANT: To avoid weird bugs the min, max & avg values of a RangeValue should never be
 # allowed to change after it's constructed
@@ -243,54 +194,6 @@ class RangeCalculation(Calculation):
             bestCase=self._bestCaseCalculation.copy(),
             averageCase=self._averageCaseCalculation.copy(),
             name=self._name)
-
-    def toJson(
-            self,
-            includeHierarchy: bool = True
-            ) -> typing.Mapping[str, typing.Any]:
-        jsonData = {}
-
-        if self._name:
-            jsonData['name'] = self._name
-
-        jsonData['worst'] = self._worstCaseCalculation.toJson(includeHierarchy=includeHierarchy)
-        jsonData['best'] = self._bestCaseCalculation.toJson(includeHierarchy=includeHierarchy)
-        jsonData['average'] = self._averageCaseCalculation.toJson(includeHierarchy=includeHierarchy)
-
-        return jsonData
-
-    @staticmethod
-    def fromJson(jsonData: typing.Mapping[str, typing.Any]) -> 'RangeCalculation':
-        name = jsonData.get('name')
-        if name is not None and not isinstance(name, str):
-            raise RuntimeError('Range calculation name property is not a string')
-
-        worst = jsonData.get('worst')
-        if worst is None:
-            raise RuntimeError('Range calculation is missing the worst property')
-        if not isinstance(worst, dict):
-            raise RuntimeError('Range calculation worst property is not a dictionary')
-        worst = ScalarCalculation.fromJson(jsonData=worst)
-
-        best = jsonData.get('best')
-        if best is None:
-            raise RuntimeError('Range calculation is missing the best property')
-        if not isinstance(best, dict):
-            raise RuntimeError('Range calculation best property is not a dictionary')
-        best = ScalarCalculation.fromJson(jsonData=best)
-
-        average = jsonData.get('average')
-        if average is None:
-            raise RuntimeError('Range calculation is missing the average property')
-        if not isinstance(average, dict):
-            raise RuntimeError('Range calculation average property is not a dictionary')
-        average = ScalarCalculation.fromJson(jsonData=average)
-
-        return RangeCalculation(
-            worstCase=worst,
-            bestCase=best,
-            averageCase=average,
-            name=name)
 
 class Calculator(object):
     class SingleParameterFunction(CalculatorFunction):
@@ -359,7 +262,7 @@ class Calculator(object):
             return 'rename'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._value.toJson()}
+            return {'value': serialiseCalculation(self._value, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -368,7 +271,7 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Rename function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
             return Calculator.RenameFunction(value=value)
 
     class EqualsFunction(SingleParameterFunction):
@@ -395,7 +298,7 @@ class Calculator(object):
             return 'equals'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._value.toJson()}
+            return {'value': serialiseCalculation(self._value, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -404,7 +307,7 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Equals function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
             return Calculator.EqualsFunction(value=value)
 
     class AddFunction(TwoParameterFunction):
@@ -443,7 +346,9 @@ class Calculator(object):
             return 'add'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -452,12 +357,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Add function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Add function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.AddFunction(lhs=lhs, rhs=rhs)
 
@@ -497,7 +402,9 @@ class Calculator(object):
             return 'subtract'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -506,12 +413,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Subtract function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Subtract function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.SubtractFunction(lhs=lhs, rhs=rhs)
 
@@ -551,7 +458,9 @@ class Calculator(object):
             return 'multiply'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -560,12 +469,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Multiply function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Multiply function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.MultiplyFunction(lhs=lhs, rhs=rhs)
 
@@ -614,7 +523,9 @@ class Calculator(object):
             return 'dividef'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -623,12 +534,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Divide float function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Divide float function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.DivideFloatFunction(lhs=lhs, rhs=rhs)
 
@@ -678,7 +589,9 @@ class Calculator(object):
             return 'dividei'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -687,12 +600,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Divide integer function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Divide integer function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.DivideIntegerFunction(lhs=lhs, rhs=rhs)
 
@@ -760,7 +673,8 @@ class Calculator(object):
             return 'sum'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'values': [value.toJson() for value in self._values]}
+            return {
+                'values': [serialiseCalculation(value, includeVersion=False) for value in self._values]}
 
         @staticmethod
         def fromJson(
@@ -774,7 +688,7 @@ class Calculator(object):
 
             values = []
             for jsonValue in jsonValues:
-                values.append(ScalarCalculation.fromJson(jsonData=jsonValue))
+                values.append(deserialiseCalculation(jsonData=jsonValue))
 
             return Calculator.SumFunction(values=values)
 
@@ -807,7 +721,9 @@ class Calculator(object):
             return 'average'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -816,12 +732,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Average function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Average function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.AverageFunction(lhs=lhs, rhs=rhs)
 
@@ -857,7 +773,7 @@ class Calculator(object):
             return 'floor'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._value.toJson()}
+            return {'value': serialiseCalculation(self._value, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -866,7 +782,7 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Floor function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
             return Calculator.FloorFunction(value=value)
 
     class CeilFunction(SingleParameterFunction):
@@ -901,7 +817,7 @@ class Calculator(object):
             return 'ceil'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._value.toJson()}
+            return {'value': serialiseCalculation(self._value, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -910,7 +826,7 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Ceil function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
             return Calculator.CeilFunction(value=value)
 
     # https://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
@@ -982,8 +898,8 @@ class Calculator(object):
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
             return {
-                'value': self._lhs.toJson(),
-                'digits': self._rhs.toJson(),
+                'value': serialiseCalculation(self._lhs, includeVersion=False),
+                'digits': serialiseCalculation(self._rhs, includeVersion=False),
                 'rounding': Calculator.SignificantDigitsFunction._RoundingSerialisationTypeToStr[self._rounding]}
 
         @staticmethod
@@ -993,12 +909,12 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Significant digits function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
 
             digits = jsonData.get('digits')
             if digits is None:
                 raise RuntimeError('Significant digits function is missing the digits property')
-            digits = ScalarCalculation.fromJson(jsonData=digits)
+            digits = deserialiseCalculation(jsonData=digits)
 
             rounding = jsonData.get('rounding')
             if rounding is None:
@@ -1043,7 +959,9 @@ class Calculator(object):
             return 'min'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1052,12 +970,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Min function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Min function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.MinFunction(lhs=lhs, rhs=rhs)
 
@@ -1092,7 +1010,9 @@ class Calculator(object):
             return 'max'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'lhs': self._lhs.toJson(), 'rhs': self._rhs.toJson()}
+            return {
+                'lhs': serialiseCalculation(self._lhs, includeVersion=False),
+                'rhs': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1101,12 +1021,12 @@ class Calculator(object):
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Max function is missing the lhs property')
-            lhs = ScalarCalculation.fromJson(jsonData=lhs)
+            lhs = deserialiseCalculation(jsonData=lhs)
 
             rhs = jsonData.get('rhs')
             if rhs is None:
                 raise RuntimeError('Max function is missing the rhs property')
-            rhs = ScalarCalculation.fromJson(jsonData=rhs)
+            rhs = deserialiseCalculation(jsonData=rhs)
 
             return Calculator.MaxFunction(lhs=lhs, rhs=rhs)
 
@@ -1141,7 +1061,7 @@ class Calculator(object):
             return 'negate'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._value.toJson()}
+            return {'value': serialiseCalculation(self._value, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1150,7 +1070,7 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Negate function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
             return Calculator.NegateFunction(value=value)
 
     class AbsoluteFunction(SingleParameterFunction):
@@ -1184,7 +1104,7 @@ class Calculator(object):
             return 'abs'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._value.toJson()}
+            return {'value': serialiseCalculation(self._value, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1193,7 +1113,7 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Absolute function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
             return Calculator.AbsoluteFunction(value=value)
 
     # This can be used to capture calculation logic when overriding (i.e. replacing) one
@@ -1236,7 +1156,9 @@ class Calculator(object):
             return 'override'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'old': self._lhs.toJson(), 'new': self._rhs.toJson()}
+            return {
+                'old': serialiseCalculation(self._lhs, includeVersion=False),
+                'new': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1245,12 +1167,12 @@ class Calculator(object):
             old = jsonData.get('old')
             if old is None:
                 raise RuntimeError('Override function is missing the old property')
-            old = ScalarCalculation.fromJson(jsonData=old)
+            old = deserialiseCalculation(jsonData=old)
 
             new = jsonData.get('new')
             if new is None:
                 raise RuntimeError('Override function is missing the new property')
-            new = ScalarCalculation.fromJson(jsonData=new)
+            new = deserialiseCalculation(jsonData=new)
 
             return Calculator.OverrideFunction(old=old, new=new)
 
@@ -1292,13 +1214,15 @@ class Calculator(object):
         def copy(self) -> 'Calculator.TakePercentageFunction':
             return Calculator.TakePercentageFunction(self._lhs.copy(), self._rhs.copy())
 
-        # TODO: I don't like this name
+        # TODO: I don't like this name (maybe jsonType???)
         @staticmethod
         def serialisationType() -> str:
             return 'takepercent'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._lhs.toJson(), 'percentage': self._rhs.toJson()}
+            return {
+                'value': serialiseCalculation(self._lhs, includeVersion=False),
+                'percentage': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1307,12 +1231,12 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Take percentage function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
 
             percentage = jsonData.get('percentage')
             if percentage is None:
                 raise RuntimeError('Take percentage function is missing the percentage property')
-            percentage = ScalarCalculation.fromJson(jsonData=percentage)
+            percentage = deserialiseCalculation(jsonData=percentage)
 
             return Calculator.TakePercentageFunction(value=value, percentage=percentage)
 
@@ -1360,7 +1284,9 @@ class Calculator(object):
             return 'applypercent'
 
         def toJson(self) -> typing.Mapping[str, typing.Any]:
-            return {'value': self._lhs.toJson(), 'percentage': self._rhs.toJson()}
+            return {
+                'value': serialiseCalculation(self._lhs, includeVersion=False),
+                'percentage': serialiseCalculation(self._rhs, includeVersion=False)}
 
         @staticmethod
         def fromJson(
@@ -1369,12 +1295,12 @@ class Calculator(object):
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Apply percentage function is missing the value property')
-            value = ScalarCalculation.fromJson(jsonData=value)
+            value = deserialiseCalculation(jsonData=value)
 
             percentage = jsonData.get('percentage')
             if percentage is None:
                 raise RuntimeError('Apply percentage function is missing the percentage property')
-            percentage = ScalarCalculation.fromJson(jsonData=percentage)
+            percentage = deserialiseCalculation(jsonData=percentage)
 
             return Calculator.ApplyPercentageFunction(value=value, percentage=percentage)
 
@@ -2312,7 +2238,7 @@ class Calculator(object):
 #
 # Serialisation
 #
-class _CalculationSerialiser(object):
+class _FunctionSerialiser(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _FunctionTypeMap: typing.Optional[typing.Dict[str, typing.Type[CalculatorFunction]]] = None
@@ -2331,43 +2257,7 @@ class _CalculationSerialiser(object):
                     cls._instance._findFunctions()
         return cls._instance
 
-    def serialiseCalculation(
-            self,
-            calculation: Calculation,
-            includeHierarchy: bool = True
-            ) -> typing.Mapping[str, typing.Any]:
-        jsonData = {}
-
-        if isinstance(calculation, ScalarCalculation):
-            jsonData['type'] = 'scalar'
-            jsonData['value'] = calculation.toJson()
-        elif isinstance(calculation, RangeCalculation):
-            jsonData['type'] = 'range'
-            jsonData['value'] = calculation.toJson()
-        else:
-            raise ValueError(f'Unable to serialise unknown calculation type {type(calculation)}')
-
-        return jsonData
-
-    def deserialiseCalculation(
-            self,
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> Calculation:
-        type = jsonData.get('type')
-        if type is None:
-            raise RuntimeError('Calculation is missing the type property')
-        value = jsonData.get('value')
-        if value is None:
-            raise RuntimeError('Scalar calculation is missing the value property')
-
-        if type == 'scalar':
-            return ScalarCalculation.fromJson(jsonData=value)
-        elif type == 'range':
-            return RangeCalculation.fromJson(jsonData=value)
-        else:
-            raise RuntimeError(f'Unable to deserialise unknown calculation type {type}')
-
-    def serialiseFunction(
+    def serialise(
             self,
             function: CalculatorFunction
             ) -> typing.Mapping[str, typing.Any]:
@@ -2375,7 +2265,7 @@ class _CalculationSerialiser(object):
             'type': function.serialisationType(),
             'values': function.toJson()}
 
-    def deserialiseFunction(
+    def deserialise(
             self,
             jsonData: typing.Mapping[str, typing.Any]
             ) -> CalculatorFunction:
@@ -2387,115 +2277,254 @@ class _CalculationSerialiser(object):
             raise RuntimeError('Calculation function is missing the values property')
 
         cls = None
-        if _CalculationSerialiser._FunctionTypeMap:
-            cls = _CalculationSerialiser._FunctionTypeMap.get(type)
+        if _FunctionSerialiser._FunctionTypeMap:
+            cls = _FunctionSerialiser._FunctionTypeMap.get(type)
         if cls is None:
             raise RuntimeError(f'Calculation function has unknown type {type}')
 
         return cls.fromJson(jsonData=values)
 
     def _findFunctions(self) -> None:
-        if _CalculationSerialiser._FunctionTypeMap is None:
-            _CalculationSerialiser._FunctionTypeMap = {}
+        if _FunctionSerialiser._FunctionTypeMap is None:
+            _FunctionSerialiser._FunctionTypeMap = {}
             for cls in common.getSubclasses(classType=CalculatorFunction):
-                _CalculationSerialiser._FunctionTypeMap[cls.serialisationType()] = cls
+                _FunctionSerialiser._FunctionTypeMap[cls.serialisationType()] = cls
 
 _CalculationVersion = packaging.version.Version('1.0')
 
 def serialiseCalculation(
         calculation: Calculation,
+        includeVersion: bool = True,
         includeHierarchy: bool = True
         ) -> typing.Mapping[str, typing.Any]:
-    jsonData = _CalculationSerialiser.instance().serialiseCalculation(
-        calculation=calculation,
-        includeHierarchy=includeHierarchy)
-    jsonData = dict(jsonData)
     # TODO: The way this is done isn't ideal for 2 reasons
-    # - The fact it's added after the initial dict is created means it ends up
-    # after all the other parameters when dumped to json rather than it being
-    # the first parameter. This isn't a real problem but it looks ugly
     # - The fact it's added means every calculation saved in something like
     # the jump route gets it's own version. Again not a real problem but looks
     # ugly. It does server a purpose though as, if the calculation format ever
     # changes we need to know which calculation format to use when reading it
     # back in
-    jsonData['version'] = str(_CalculationVersion)
+    jsonData = {}
+    if includeVersion:
+        jsonData['version'] = str(_CalculationVersion)
+
+    if isinstance(calculation, ScalarCalculation):
+        jsonData['type'] = 'scalar'
+
+        if calculation.name():
+            jsonData['name'] = calculation.name()
+
+        jsonData['value'] = calculation.value()
+
+        if includeHierarchy and calculation.function():
+            jsonData['valueFunc'] = _FunctionSerialiser.instance().serialise(
+                function=calculation.function())
+    elif isinstance(calculation, RangeCalculation):
+        jsonData['type'] = 'range'
+
+        if calculation.name():
+            jsonData['name'] = calculation.name()
+
+        worst = calculation.worstCaseCalculation()
+        jsonData['worst'] = worst.value()
+        if includeHierarchy and worst.function():
+            jsonData['worstFunc'] = _FunctionSerialiser.instance().serialise(
+                function=worst.function())
+
+        best = calculation.bestCaseCalculation()
+        jsonData['best'] = best.value()
+        if includeHierarchy and best.function():
+            jsonData['bestFunc'] = _FunctionSerialiser.instance().serialise(
+                function=best.function())
+
+        average = calculation.averageCaseCalculation()
+        jsonData['average'] = average.value()
+        if includeHierarchy and average.function():
+            jsonData['averageFunc'] = _FunctionSerialiser.instance().serialise(
+                function=average.function())
+    else:
+        raise ValueError(f'Unable to serialise unknown calculation type {type(calculation)}')
+
     return jsonData
 
 def serialiseCalculationList(
         calculations: typing.Iterable[Calculation],
+        includeVersion: bool = True,
         includeHierarchy: bool = True
         ) -> typing.Mapping[str, typing.Any]:
+    jsonData = {}
+    if includeVersion:
+        jsonData['version'] = str(_CalculationVersion)
+
     jsonList = []
     for calculation in calculations:
-        jsonList.append(_CalculationSerialiser.instance().serialiseCalculation(
+        jsonList.append(serialiseCalculation(
             calculation=calculation,
+            includeVersion=False,
             includeHierarchy=includeHierarchy))
+    jsonData['list'] = jsonList
 
-    return {
-        'version': str(_CalculationVersion),
-        'list': jsonList}
+    return jsonData
 
 def deserialiseCalculation(
         jsonData: typing.Mapping[str, typing.Any],
         ) -> Calculation:
-    jsonVersion = jsonData.get('version')
-    if jsonVersion is None:
-        raise RuntimeError('Calculation is missing the version property')
-    if not isinstance(jsonVersion, str):
-        raise RuntimeError('Calculation version property is not a string')
-    try:
-        version = packaging.version.Version(jsonVersion)
-    except Exception:
-        raise RuntimeError(f'Calculation version property has invalid value {jsonVersion}')
-    if version.major != _CalculationVersion.major:
-        raise RuntimeError(f'Calculation version property has unsupported version {version}')
+    version = jsonData.get('version')
+    if version is not None:
+        if not isinstance(version, str):
+            raise RuntimeError('Calculation version property is not a string')
+        try:
+            version = packaging.version.Version(version)
+        except Exception:
+            raise RuntimeError(f'Calculation version property has invalid value {version}')
+        if version.major != _CalculationVersion.major:
+            raise RuntimeError(f'Calculation version property has unsupported version {version}')
 
-    return _CalculationSerialiser.instance().deserialiseCalculation(
-        jsonData=jsonData)
+    type = jsonData.get('type')
+    if type is None:
+        raise RuntimeError('Calculation is missing the type property')
+
+    name = jsonData.get('name')
+    if name is not None and not isinstance(name, str):
+        raise RuntimeError('Scalar calculation name property is not a string')
+
+    if type == 'scalar':
+        value = jsonData.get('value')
+        if value is None:
+            raise RuntimeError('Calculation is missing the value property')
+        if not isinstance(value, (int, float)):
+            raise RuntimeError('Scalar calculation value property is not a number')
+
+        function = jsonData.get('valueFunc')
+        if function is not None:
+            if not isinstance(function, dict):
+                raise RuntimeError('Scalar calculation valueFunc property is not a dictionary')
+            try:
+                function = _FunctionSerialiser.instance().deserialise(jsonData=function)
+            except Exception as ex:
+                message = \
+                    'Failed to deserialise valueFunc property for scalar calculation with name "{name}"'.format(name=name) \
+                    if name else \
+                    'Failed to deserialise valueFunc property for unnamed scalar calculation'
+                logging.warning(message, exc_info=ex)
+
+        return ScalarCalculation(value=function if function else value, name=name)
+    elif type == 'range':
+        worstValue = jsonData.get('worst')
+        if worstValue is None:
+            raise RuntimeError('Calculation is missing the worst property')
+        if not isinstance(worstValue, (int, float)):
+            raise RuntimeError('Scalar calculation worst property is not a number')
+
+        worstFunction = jsonData.get('worstFunc')
+        if worstFunction is not None:
+            if not isinstance(worstFunction, dict):
+                raise RuntimeError('Scalar calculation worstFunc property is not a dictionary')
+            try:
+                worstFunction = _FunctionSerialiser.instance().deserialise(jsonData=worstFunction)
+            except Exception as ex:
+                message = \
+                    'Failed to deserialise worstFunc property for range calculation with name "{name}"'.format(name=name) \
+                    if name else \
+                    'Failed to deserialise worstFunc property for unnamed range calculation'
+                logging.warning(message, exc_info=ex)
+
+
+        bestValue = jsonData.get('best')
+        if bestValue is None:
+            raise RuntimeError('Calculation is missing the best property')
+        if not isinstance(bestValue, (int, float)):
+            raise RuntimeError('Scalar calculation best property is not a number')
+
+        bestFunction = jsonData.get('bestFunc')
+        if bestFunction is not None:
+            if not isinstance(bestFunction, dict):
+                raise RuntimeError('Scalar calculation bestFunc property is not a dictionary')
+            try:
+                bestFunction = _FunctionSerialiser.instance().deserialise(jsonData=bestFunction)
+            except Exception as ex:
+                message = \
+                    'Failed to deserialise bestFunc property for range calculation with name "{name}"'.format(name=name) \
+                    if name else \
+                    'Failed to deserialise bestFunc property for unnamed range calculation'
+                logging.warning(message, exc_info=ex)
+
+        averageValue = jsonData.get('average')
+        if averageValue is None:
+            raise RuntimeError('Calculation is missing the average property')
+        if not isinstance(averageValue, (int, float)):
+            raise RuntimeError('Scalar calculation average property is not a number')
+
+        averageFunction = jsonData.get('averageFunc')
+        if averageFunction is not None:
+            if not isinstance(averageFunction, dict):
+                raise RuntimeError('Scalar calculation averageFunc property is not a dictionary')
+            try:
+                averageFunction = _FunctionSerialiser.instance().deserialise(jsonData=averageFunction)
+            except Exception as ex:
+                message = \
+                    'Failed to deserialise averageFunc property for range calculation with name "{name}"'.format(name=name) \
+                    if name else \
+                    'Failed to deserialise averageFunc property for unnamed range calculation'
+                logging.warning(message, exc_info=ex)
+
+        return RangeCalculation(
+            worstCase=worstFunction if worstFunction else worstValue,
+            bestCase=bestFunction if bestFunction else bestValue,
+            averageCase=averageFunction if averageFunction else averageValue,
+            name=name)
+    else:
+        raise RuntimeError(f'Unable to deserialise unknown calculation type {type}')
 
 def deserialiseCalculationList(
         jsonData: typing.Mapping[str, typing.Any]
         ) -> typing.List[Calculation]:
-    jsonVersion = jsonData.get('version')
-    if jsonVersion is None:
-        raise RuntimeError('Calculation list is missing the version property')
-    if not isinstance(jsonVersion, str):
-        raise RuntimeError('Calculation list version property is not a string')
-    try:
-        version = packaging.version.Version(jsonVersion)
-    except Exception:
-        raise RuntimeError(f'Calculation list version property has invalid value {jsonVersion}')
-    if version.major != _CalculationVersion.major:
-        raise RuntimeError(f'Calculation list version property has unsupported version {version}')
+    version = jsonData.get('version')
+    if version is not None:
+        if not isinstance(version, str):
+            raise RuntimeError('Calculation list version property is not a string')
+        try:
+            version = packaging.version.Version(version)
+        except Exception:
+            raise RuntimeError(f'Calculation list version property has invalid value {version}')
+        if version.major != _CalculationVersion.major:
+            raise RuntimeError(f'Calculation list version property has unsupported version {version}')
 
-    jsonList = jsonData.get('list')
-    if jsonList is None:
-        raise RuntimeError('Calculation list is missing the list property')
-    if not isinstance(jsonList, list):
-        raise RuntimeError('Calculation list list property is not a list')
+        jsonList = jsonData.get('list')
+        if jsonList is None:
+            raise RuntimeError('Calculation list is missing the list property')
+        if not isinstance(jsonList, list):
+            raise RuntimeError('Calculation list list property is not a list')
 
     calculations = []
     for jsonCalculation in jsonList:
-        calculations.append(_CalculationSerialiser.instance().deserialiseCalculation(
-            jsonData=jsonCalculation))
+        calculations.append(deserialiseCalculation(jsonData=jsonCalculation))
     if not calculations:
         raise RuntimeError('Calculation list is empty')
     return calculations
 
 def writeCalculation(
         calculation: Calculation,
-        path: str
+        path: str,
+        includeHierarchy: bool = True
         ) -> None:
+    jsonData = serialiseCalculation(
+        calculation=calculation,
+        includeVersion=True,
+        includeHierarchy=includeHierarchy)
     with open(path, 'w', encoding='UTF8') as file:
-        json.dump(serialiseCalculation(calculation=calculation), file, indent=4)
+        json.dump(jsonData, file, indent=4)
 
 def writeCalculationList(
         calculations: typing.Iterable[Calculation],
-        path: str
+        path: str,
+        includeHierarchy: bool = True
         ) -> None:
+    jsonData = serialiseCalculationList(
+        calculations=calculations,
+        includeVersion=True,
+        includeHierarchy=includeHierarchy)
     with open(path, 'w', encoding='UTF8') as file:
-        json.dump(serialiseCalculationList(calculations=calculations), file, indent=4)
+        json.dump(jsonData, file, indent=4)
 
 def readCalculation(path: str) -> Calculation:
     with open(path, 'r') as file:

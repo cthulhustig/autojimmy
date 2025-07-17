@@ -8,69 +8,12 @@ import traveller
 import travellermap
 import typing
 
-# TODO: It should be possible to delete this calculation (de)serialisation
-# code when I'm finished
-def serialiseCalculation(
-        calculation: common.Calculation
-        ) -> typing.Mapping[str, typing.Any]:
-    if isinstance(calculation, common.ScalarCalculation):
-        return {
-            'type': 'scalar',
-            'name': calculation.name(),
-            'value': calculation.value()}
-    elif isinstance(calculation, common.RangeCalculation):
-        return {
-            'type': 'range',
-            'name': calculation.name(),
-            'average': calculation.averageCaseValue(),
-            'worst': calculation.worstCaseValue(),
-            'best': calculation.bestCaseValue()}
-
-    raise RuntimeError('Unknown calculation type')
-
-def deserialiseCalculation(
-        data: typing.Mapping[str, typing.Any]
-        ) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:
-    type = data.get('type')
-    if type == 'scalar':
-        name = data.get('name') # Name can be None
-
-        value = data.get('value')
-        if value == None:
-            raise RuntimeError('Calculation data is missing the value element')
-
-        return common.ScalarCalculation(
-            value=value,
-            name=name)
-    elif type == 'range':
-        name = data.get('name') # Name can be None
-
-        average = data.get('average')
-        if average == None:
-            raise RuntimeError('Calculation data is missing the average element')
-
-        worst = data.get('worst')
-        if worst == None:
-            raise RuntimeError('Calculation data is missing the worst element')
-
-        best = data.get('best')
-        if best == None:
-            raise RuntimeError('Calculation data is missing the best element')
-
-        return common.RangeCalculation(
-            averageCase=average,
-            worstCase=worst,
-            bestCase=best,
-            name=name)
-
-    raise RuntimeError(f'Unknown calculation type "{type}"')
-
 def serialiseDiceRollResult(
         diceRoll: common.DiceRollResult
         ) -> typing.Mapping[str, typing.Any]:
     return {
-        'dieCount': serialiseCalculation(diceRoll.dieCount()),
-        'result': serialiseCalculation(diceRoll.result())}
+        'dieCount': common.serialiseCalculation(diceRoll.dieCount()),
+        'result': common.serialiseCalculation(diceRoll.result())}
 
 def deserialiseDiceRollResults(
         data: typing.Mapping[str, typing.Any]
@@ -84,8 +27,8 @@ def deserialiseDiceRollResults(
         raise RuntimeError('Dice roll data is missing the result element')
 
     return common.DiceRollResult(
-        dieCount=deserialiseCalculation(dieCount),
-        result=deserialiseCalculation(result))
+        dieCount=common.deserialiseCalculation(dieCount),
+        result=common.deserialiseCalculation(result))
 
 def serialiseDiceRollList(
         diceRolls: typing.Iterable[common.DiceRollResult]
