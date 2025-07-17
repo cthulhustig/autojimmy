@@ -492,12 +492,6 @@ class TradeDMToPriceModifierFunction(common.CalculatorFunction):
             return [self._tradeDm]
         return self._tradeDm.subCalculations()
 
-    def copy(self) -> 'TradeDMToPriceModifierFunction':
-        return TradeDMToPriceModifierFunction(
-            tradeType=self._tradeType,
-            tradeDm=self._tradeDm.copy(),
-            priceModifier=self._priceModifier.copy())
-
     @staticmethod
     def serialisationType() -> str:
         return 'tradedm'

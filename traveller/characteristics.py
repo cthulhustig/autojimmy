@@ -67,10 +67,6 @@ class CharacteristicDMFunction(common.CalculatorFunction):
             return [self._level]
         return self._level.subCalculations()
 
-    def copy(self) -> 'CharacteristicDMFunction':
-        return CharacteristicDMFunction(
-            level=self._level.copy())
-
     @staticmethod
     def serialisationType() -> str:
         return 'chardm'

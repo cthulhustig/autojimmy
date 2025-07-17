@@ -36,9 +36,6 @@ class Calculation(object):
     def averageCaseCalculation(self) -> 'ScalarCalculation':
         raise RuntimeError('The averageCaseCalculation method should be overridden by derived classes')
 
-    def copy(self) -> typing.Any:
-        raise RuntimeError('The copy method should be overridden by derived classes')
-
 class CalculatorFunction(object):
     def value(self) -> typing.Union[int, float]:
         raise RuntimeError('The execute method should be overridden by derived classes')
@@ -48,9 +45,6 @@ class CalculatorFunction(object):
 
     def calculations(self) -> typing.List['ScalarCalculation']:
         raise RuntimeError('The getCalculations method should be overridden by derived classes')
-
-    def copy(self) -> typing.Any:
-        raise RuntimeError('The copy method should be overridden by derived classes')
 
     @staticmethod
     def serialisationType() -> str:
@@ -136,11 +130,6 @@ class ScalarCalculation(Calculation):
     def averageCaseCalculation(self) -> 'ScalarCalculation':
         return self
 
-    def copy(self) -> 'ScalarCalculation':
-        return ScalarCalculation(
-            value=self._function.copy() if self._function else self._value,
-            name=self._name)
-
 # IMPORTANT: To avoid weird bugs the min, max & avg values of a RangeValue should never be
 # allowed to change after it's constructed
 class RangeCalculation(Calculation):
@@ -187,13 +176,6 @@ class RangeCalculation(Calculation):
 
     def averageCaseCalculation(self) -> ScalarCalculation:
         return self._averageCaseCalculation
-
-    def copy(self) -> 'RangeCalculation':
-        return RangeCalculation(
-            worstCase=self._worstCaseCalculation.copy(),
-            bestCase=self._bestCaseCalculation.copy(),
-            averageCase=self._averageCaseCalculation.copy(),
-            name=self._name)
 
 class Calculator(object):
     class SingleParameterFunction(CalculatorFunction):
@@ -254,9 +236,6 @@ class Calculator(object):
         def calculations(self) -> typing.List[ScalarCalculation]:
             return self._value.subCalculations()
 
-        def copy(self) -> 'Calculator.RenameFunction':
-            return Calculator.RenameFunction(self._value.copy())
-
         @staticmethod
         def serialisationType() -> str:
             return 'rename'
@@ -289,9 +268,6 @@ class Calculator(object):
                     outerBrackets=outerBrackets,
                     decimalPlaces=decimalPlaces)
             return valueString
-
-        def copy(self) -> 'Calculator.EqualsFunction':
-            return Calculator.EqualsFunction(self._value.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -337,9 +313,6 @@ class Calculator(object):
             if outerBrackets:
                 calculationString += ')'
             return calculationString
-
-        def copy(self) -> 'Calculator.AddFunction':
-            return Calculator.AddFunction(self._lhs.copy(), self._rhs.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -394,9 +367,6 @@ class Calculator(object):
                 calculationString += ')'
             return calculationString
 
-        def copy(self) -> 'Calculator.SubtractFunction':
-            return Calculator.SubtractFunction(self._lhs.copy(), self._rhs.copy())
-
         @staticmethod
         def serialisationType() -> str:
             return 'subtract'
@@ -449,9 +419,6 @@ class Calculator(object):
             if outerBrackets:
                 calculationString += ')'
             return calculationString
-
-        def copy(self) -> 'Calculator.MultiplyFunction':
-            return Calculator.MultiplyFunction(self._lhs.copy(), self._rhs.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -515,9 +482,6 @@ class Calculator(object):
                 calculationString += ')'
             return calculationString
 
-        def copy(self) -> 'Calculator.DivideFloatFunction':
-            return Calculator.DivideFloatFunction(self._lhs.copy(), self._rhs.copy())
-
         @staticmethod
         def serialisationType() -> str:
             return 'dividef'
@@ -580,9 +544,6 @@ class Calculator(object):
                 return calculationString
 
             return f'RoundedDown({lhsString} / {rhsString})'
-
-        def copy(self) -> 'Calculator.DivideIntegerFunction':
-            return Calculator.DivideIntegerFunction(self._lhs.copy(), self._rhs.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -665,9 +626,6 @@ class Calculator(object):
                     calculations.extend(value.subCalculations())
             return calculations
 
-        def copy(self) -> 'Calculator.SumFunction':
-            return Calculator.SumFunction(values=[v.copy() for v in self._values])
-
         @staticmethod
         def serialisationType() -> str:
             return 'sum'
@@ -712,9 +670,6 @@ class Calculator(object):
                     outerBrackets=False,
                     decimalPlaces=decimalPlaces)
             return f'Average({lhsString}, {rhsString})'
-
-        def copy(self) -> 'Calculator.AverageFunction':
-            return Calculator.AverageFunction(self._lhs.copy(), self._rhs.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -765,9 +720,6 @@ class Calculator(object):
 
             return f'RoundedDown({valueString})'
 
-        def copy(self) -> 'Calculator.FloorFunction':
-            return Calculator.FloorFunction(self._value.copy())
-
         @staticmethod
         def serialisationType() -> str:
             return 'floor'
@@ -808,9 +760,6 @@ class Calculator(object):
                 return valueString
 
             return f'RoundedUp({valueString})'
-
-        def copy(self) -> 'Calculator.CeilFunction':
-            return Calculator.CeilFunction(self._value.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -886,12 +835,6 @@ class Calculator(object):
 
             return f'{self._rounding.value}SignificantDigits({numberString}, {digitsString})'
 
-        def copy(self) -> 'Calculator.SignificantDigitsFunction':
-            return Calculator.SignificantDigitsFunction(
-                value=self._lhs.copy(),
-                digits=self._rhs.copy(),
-                rounding=self._rounding)
-
         @staticmethod
         def serialisationType() -> str:
             return 'sigdigs'
@@ -951,9 +894,6 @@ class Calculator(object):
 
             return f'Minimum({lhsString}, {rhsString})'
 
-        def copy(self) -> 'Calculator.MinFunction':
-            return Calculator.MinFunction(self._lhs.copy(), self._rhs.copy())
-
         @staticmethod
         def serialisationType() -> str:
             return 'min'
@@ -1001,9 +941,6 @@ class Calculator(object):
                     decimalPlaces=decimalPlaces)
 
             return f'Maximum({lhsString}, {rhsString})'
-
-        def copy(self) -> 'Calculator.MaxFunction':
-            return Calculator.MaxFunction(self._lhs.copy(), self._rhs.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -1053,9 +990,6 @@ class Calculator(object):
                 calculationString += ')'
             return calculationString
 
-        def copy(self) -> 'Calculator.NegateFunction':
-            return Calculator.NegateFunction(self._value.copy())
-
         @staticmethod
         def serialisationType() -> str:
             return 'negate'
@@ -1095,9 +1029,6 @@ class Calculator(object):
             if outerBrackets:
                 calculationString += ')'
             return calculationString
-
-        def copy(self) -> 'Calculator.AbsoluteFunction':
-            return Calculator.AbsoluteFunction(self._value.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -1147,9 +1078,6 @@ class Calculator(object):
                     decimalPlaces=decimalPlaces)
 
             return f'Override(old={lhsString}, new={rhsString})'
-
-        def copy(self) -> 'Calculator.OverrideFunction':
-            return Calculator.OverrideFunction(self._lhs.copy(), self._rhs.copy())
 
         @staticmethod
         def serialisationType() -> str:
@@ -1211,10 +1139,6 @@ class Calculator(object):
                 calculationString += ')'
             return calculationString
 
-        def copy(self) -> 'Calculator.TakePercentageFunction':
-            return Calculator.TakePercentageFunction(self._lhs.copy(), self._rhs.copy())
-
-        # TODO: I don't like this name (maybe jsonType???)
         @staticmethod
         def serialisationType() -> str:
             return 'takepercent'
@@ -1275,10 +1199,6 @@ class Calculator(object):
                 calculationString += ')'
             return calculationString
 
-        def copy(self) -> 'Calculator.ApplyPercentageFunction':
-            return Calculator.ApplyPercentageFunction(self._lhs.copy(), self._rhs.copy())
-
-        # TODO: I don't like this name
         @staticmethod
         def serialisationType() -> str:
             return 'applypercent'

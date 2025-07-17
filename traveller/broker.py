@@ -100,11 +100,6 @@ class MgtBrokerSkillToPercentageCutFunction(common.CalculatorFunction):
             return [self._skill]
         return self._skill.subCalculations()
 
-    def copy(self) -> 'MgtBrokerSkillToPercentageCutFunction':
-        return MgtBrokerSkillToPercentageCutFunction(
-            skill=self._skill.copy(),
-            percentage=self._percentage.copy())
-
     @staticmethod
     def serialisationType() -> str:
         return 'mgtbrokercut'
