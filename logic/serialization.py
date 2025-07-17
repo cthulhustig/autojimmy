@@ -8,48 +8,6 @@ import traveller
 import travellermap
 import typing
 
-def serialiseDiceRollResult(
-        diceRoll: common.DiceRollResult
-        ) -> typing.Mapping[str, typing.Any]:
-    return {
-        'dieCount': common.serialiseCalculation(diceRoll.dieCount()),
-        'result': common.serialiseCalculation(diceRoll.result())}
-
-def deserialiseDiceRollResults(
-        data: typing.Mapping[str, typing.Any]
-        ) -> common.DiceRollResult:
-    dieCount = data.get('dieCount')
-    if dieCount == None:
-        raise RuntimeError('Dice roll data is missing the dieCount element')
-
-    result = data.get('result')
-    if result == None:
-        raise RuntimeError('Dice roll data is missing the result element')
-
-    return common.DiceRollResult(
-        dieCount=common.deserialiseCalculation(dieCount),
-        result=common.deserialiseCalculation(result))
-
-def serialiseDiceRollList(
-        diceRolls: typing.Iterable[common.DiceRollResult]
-        ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
-    items = []
-    for roll in diceRolls:
-        items.append(serialiseDiceRollResult(diceRoll=roll))
-    return {'diceRollResults': items}
-
-def deserialiseDiceRollResultList(
-        data: typing.Mapping[str, typing.Any]
-        ) -> typing.Iterable[common.DiceRoller]:
-    items = data.get('diceRollResults')
-    if items == None:
-        raise RuntimeError('Dice roll results list is missing the diceRollResults element')
-
-    diceRolls = []
-    for item in items:
-        diceRolls.append(deserialiseDiceRollResults(data=item))
-    return diceRolls
-
 def serialiseEnum(
         enumValue: enum.Enum
         ) -> typing.Mapping[str, typing.Any]:
