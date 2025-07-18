@@ -79,10 +79,11 @@ def calculateRouteLogistics(
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
         pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,
-        # Specify if generated route logistics will include refuelling costs. If not included the
-        # costs will still be taken into account when calculating the optimal pit stop worlds,
-        # however the costs for fuel and berthing will be zero
-        # TODO: If this does what is says above why isn't it called includeRefuellingCosts?
+        # Specify if generated route logistics will include logistics costs. If
+        # not included, fuel, berthing and overheads costs will be set to 0 in
+        # the returned logistics.
+        # When not included the, costs will still be taken into account when
+        # calculating the optimal worlds for refuelling
         includeLogisticsCosts: bool = True,
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[RouteLogistics]:

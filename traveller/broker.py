@@ -105,8 +105,6 @@ class MgtBrokerSkillToPercentageCutFunction(common.CalculatorFunction):
         return 'mgtbrokercut'
 
     def toJson(self) -> typing.Mapping[str, typing.Any]:
-        # TODO: Should the percentage be stored as a ScalarValue for
-        # consistency rather than an integer
         return {
             'skill': common.serialiseCalculation(self._skill, includeVersion=False),
             'percentage': common.serialiseCalculation(self._percentage, includeVersion=False)}
