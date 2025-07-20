@@ -489,6 +489,7 @@ class _ImportJumpRouteDialog(gui.DialogEx):
         self._cancelButton.clicked.connect(self.reject)
 
         buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.addStretch()
         buttonLayout.addWidget(self._importButton)
         buttonLayout.addWidget(self._cancelButton)
 
@@ -498,7 +499,12 @@ class _ImportJumpRouteDialog(gui.DialogEx):
         layout.addLayout(buttonLayout)
 
         self.setLayout(layout)
-        self.setFixedHeight(self.sizeHint().height())
+
+        sizeHint = self.sizeHint()
+        self.setFixedHeight(sizeHint.height())
+        self.resize(QtCore.QSize(
+            int(400 * gui.interfaceScale()),
+            sizeHint.height()))
 
     def filePath(self) -> str:
         return self._filePathLineEdit.text()
@@ -606,6 +612,7 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         self._cancelButton.clicked.connect(self.reject)
 
         buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.addStretch()
         buttonLayout.addWidget(self._importButton)
         buttonLayout.addWidget(self._cancelButton)
 
@@ -615,7 +622,12 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         layout.addLayout(buttonLayout)
 
         self.setLayout(layout)
-        self.setFixedHeight(self.sizeHint().height())
+
+        sizeHint = self.sizeHint()
+        self.setFixedHeight(sizeHint.height())
+        self.resize(QtCore.QSize(
+            int(400 * gui.interfaceScale()),
+            sizeHint.height()))
 
     def filePath(self) -> str:
         return self._filePathLineEdit.text()
