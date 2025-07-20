@@ -106,7 +106,9 @@ def calculateRouteLogistics(
             # The start and end world are the same so there are no travel costs. There can still be
             # berthing costs on the start world, this covers the case where you've not arrived on
             # the world yet
-            if jumpRoute.mandatoryBerthing(index=0) or jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1):
+            mandatoryStartBerthing = jumpRoute.mandatoryBerthing(index=0)
+            mandatoryFinishBerthing = jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1)
+            if mandatoryStartBerthing or mandatoryFinishBerthing:
                 startHex = jumpRoute.startNode()
                 startWorld = traveller.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
