@@ -2067,8 +2067,9 @@ class JumpRouteWindow(gui.WindowWidget):
                         _formatRefuellingTypeString(pitStop=pitStop))
 
                     tonsOfFuel = pitStop.tonsOfFuel()
-                    toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
-                        common.formatNumber(number=tonsOfFuel.value()))
+                    if tonsOfFuel:
+                        toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
+                            common.formatNumber(number=tonsOfFuel.value()))
 
                     fuelCost = pitStop.fuelCost()
                     if fuelCost:
