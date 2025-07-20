@@ -5,6 +5,7 @@ import gui
 import jobs
 import logging
 import logic
+import os
 import traveller
 import travellermap
 import typing
@@ -453,6 +454,233 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
             ) -> None:
         if hex:
             self.showHexRequested.emit(hex)
+
+class _ImportJumpRouteDialog(gui.DialogEx):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            title='Import Jump Route',
+            configSection='ImportJumpRouteDialog',
+            parent=parent)
+
+        self._filePathLineEdit = gui.LineEditEx()
+        self._filePathBrowseButton = QtWidgets.QPushButton('Browse...')
+        self._filePathBrowseButton.clicked.connect(self._filePathBrowseClicked)
+        filePathLayout = QtWidgets.QHBoxLayout()
+        filePathLayout.setContentsMargins(0, 0, 0, 0)
+        filePathLayout.addWidget(self._filePathLineEdit)
+        filePathLayout.addWidget(self._filePathBrowseButton)
+
+        self._includeLogisticsCheckBox = gui.CheckBoxEx()
+        self._includeLogisticsCheckBox.setChecked(True)
+        self._replaceStartFinishCheckBox = gui.CheckBoxEx()
+        self._replaceStartFinishCheckBox.setChecked(False)
+        self._replaceWaypointsCheckBox = gui.CheckBoxEx()
+        self._replaceWaypointsCheckBox.setChecked(False)
+        optionsLayout = gui.FormLayoutEx()
+        optionsLayout.addRow('Include Logistics', self._includeLogisticsCheckBox)
+        optionsLayout.addRow('Replace Current Start/Finish', self._replaceStartFinishCheckBox)
+        optionsLayout.addRow('Replace Current Waypoints', self._replaceWaypointsCheckBox)
+
+        self._importButton = QtWidgets.QPushButton('Import')
+        self._importButton.setDefault(True)
+        self._importButton.clicked.connect(self.accept)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self.reject)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.addWidget(self._importButton)
+        buttonLayout.addWidget(self._cancelButton)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addLayout(filePathLayout)
+        layout.addLayout(optionsLayout)
+        layout.addLayout(buttonLayout)
+
+        self.setLayout(layout)
+        self.setFixedHeight(self.sizeHint().height())
+
+    def filePath(self) -> str:
+        return self._filePathLineEdit.text()
+
+    def includeLogistics(self) -> bool:
+        return self._includeLogisticsCheckBox.isChecked()
+
+    def replaceStartFinish(self) -> bool:
+        return self._replaceStartFinishCheckBox.isChecked()
+
+    def replaceWaypoints(self) -> bool:
+        return self._replaceWaypointsCheckBox.isChecked()
+
+    # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
+    # if the user cancels the dialog)
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='FilePath',
+            type=str)
+        if storedValue:
+            self._filePathLineEdit.setText(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeLogisticsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeLogisticsCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ReplaceStartFinishCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._replaceStartFinishCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ReplaceWaypointsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._replaceWaypointsCheckBox.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def accept(self) -> None:
+        self._settings.beginGroup(self._configSection)
+        self._settings.setValue('FilePath', self._filePathLineEdit.text())
+        self._settings.setValue('IncludeLogisticsCheckBoxState', self._includeLogisticsCheckBox.saveState())
+        self._settings.setValue('ReplaceStartFinishCheckBoxState', self._replaceStartFinishCheckBox.saveState())
+        self._settings.setValue('ReplaceWaypointsCheckBoxState', self._replaceWaypointsCheckBox.saveState())
+        self._settings.endGroup()
+
+        return super().accept()
+
+    def _filePathBrowseClicked(self) -> None:
+        path = self._filePathLineEdit.text()
+        initialDir = QtCore.QDir.homePath()
+        if path and os.path.isfile(path):
+            initialDir = os.path.dirname(path)
+
+        path, _ = gui.FileDialogEx.getOpenFileName(
+            parent=self,
+            caption='Jump Route File',
+            directory=initialDir,
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}')
+        if not path:
+            return None # User cancelled
+
+        self._filePathLineEdit.setText(path)
+
+class _ExportJumpRouteDialog(gui.DialogEx):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            title='Export Jump Route',
+            configSection='ExportJumpRouteDialog',
+            parent=parent)
+
+        self._filePathLineEdit = gui.LineEditEx()
+        self._filePathBrowseButton = QtWidgets.QPushButton('Browse...')
+        self._filePathBrowseButton.clicked.connect(self._filePathBrowseClicked)
+        filePathLayout = QtWidgets.QHBoxLayout()
+        filePathLayout.setContentsMargins(0, 0, 0, 0)
+        filePathLayout.addWidget(self._filePathLineEdit)
+        filePathLayout.addWidget(self._filePathBrowseButton)
+
+        self._includeLogisticsCheckBox = gui.CheckBoxEx()
+        self._includeLogisticsCheckBox.setChecked(True)
+        self._includeCalculationsCheckBox = gui.CheckBoxEx()
+        self._includeCalculationsCheckBox.setChecked(False)
+        optionsLayout = gui.FormLayoutEx()
+        optionsLayout.addRow('Include Logistics', self._includeLogisticsCheckBox)
+        optionsLayout.addRow('Include Calculations', self._includeCalculationsCheckBox)
+
+        self._importButton = QtWidgets.QPushButton('Export')
+        self._importButton.setDefault(True)
+        self._importButton.clicked.connect(self.accept)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self.reject)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.addWidget(self._importButton)
+        buttonLayout.addWidget(self._cancelButton)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addLayout(filePathLayout)
+        layout.addLayout(optionsLayout)
+        layout.addLayout(buttonLayout)
+
+        self.setLayout(layout)
+        self.setFixedHeight(self.sizeHint().height())
+
+    def filePath(self) -> str:
+        return self._filePathLineEdit.text()
+
+    def includeLogistics(self) -> bool:
+        return self._includeLogisticsCheckBox.isChecked()
+
+    def includeCalculations(self) -> bool:
+        return self._includeCalculationsCheckBox.isChecked()
+
+    # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
+    # if the user cancels the dialog)
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='FilePath',
+            type=str)
+        if storedValue:
+            self._filePathLineEdit.setText(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeLogisticsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeLogisticsCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeCalculationsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeCalculationsCheckBox.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def accept(self) -> None:
+        self._settings.beginGroup(self._configSection)
+        self._settings.setValue('FilePath', self._filePathLineEdit.text())
+        self._settings.setValue('IncludeLogisticsCheckBoxState', self._includeLogisticsCheckBox.saveState())
+        self._settings.setValue('IncludeCalculationsCheckBoxState', self._includeCalculationsCheckBox.saveState())
+        self._settings.endGroup()
+
+        return super().accept()
+
+    def _filePathBrowseClicked(self) -> None:
+        path = self._filePathLineEdit.text()
+        initialDir = QtCore.QDir.homePath()
+        if path and os.path.isfile(path):
+            initialDir = os.path.dirname(path)
+
+        path, _ = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Jump Route File',
+            directory=initialDir,
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}',
+            defaultFileName='route.json')
+        if not path:
+            return None # User cancelled
+
+        self._filePathLineEdit.setText(path)
 
 class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayDarkStyleColour = '#9D03FC'
@@ -1665,7 +1893,7 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Pit Stop Calculations...',
-                callback=lambda: pitStop.totalCost(),
+                callback=lambda: self._showCalculations(pitStop.totalCost()),
                 enabled=pitStop != None
             ),
             gui.MenuItem(
@@ -1806,42 +2034,44 @@ class JumpRouteWindow(gui.WindowWidget):
                     if pitStop.routeIndex() in jumpNodes:
                         jumpNodes[pitStop.routeIndex()] = pitStop
 
+        routeParsecs = self._jumpRoute.totalParsecs()
         toolTip = ''
         for nodeIndex, pitStop in jumpNodes.items():
             toolTip += f'<li><nobr>Route Node: {nodeIndex + 1}</nobr></li>'
+            toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
 
-            if nodeIndex != 0:
-                toolTip += '<li><nobr>Route Distance: {} parsecs</nobr></li>'.format(
-                    self._jumpRoute.nodeParsecs(index=nodeIndex))
+            nodeParsecs = self._jumpRoute.nodeParsecs(index=nodeIndex)
+            toolTip += '<li><nobr>Travelled: {} parsecs</nobr></li>'.format(
+                nodeParsecs)
+            toolTip += '<li><nobr>Remaining: {} parsecs</nobr></li>'.format(
+                routeParsecs - nodeParsecs)
 
-            if not pitStop:
-                continue # Nothing mor to do
+            if pitStop:
+                refuellingType = pitStop.refuellingType()
+                if refuellingType:
+                    toolTip += '<li><nobr>Refuelling Type: {}</nobr></li>'.format(
+                        _formatRefuellingTypeString(pitStop=pitStop))
 
-            refuellingType = pitStop.refuellingType()
-            if refuellingType:
-                toolTip += '<li><nobr>Refuelling Type: {}</nobr></li>'.format(
-                    _formatRefuellingTypeString(pitStop=pitStop))
+                    tonsOfFuel = pitStop.tonsOfFuel()
+                    toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
+                        common.formatNumber(number=tonsOfFuel.value()))
 
-                tonsOfFuel = pitStop.tonsOfFuel()
-                toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
-                    common.formatNumber(number=tonsOfFuel.value()))
+                    fuelCost = pitStop.fuelCost()
+                    if fuelCost:
+                        toolTip += '<li><nobr>Fuel Cost: Cr{}</nobr></li>'.format(
+                            common.formatNumber(number=fuelCost.value()))
 
-                fuelCost = pitStop.fuelCost()
-                if fuelCost:
-                    toolTip += '<li><nobr>Fuel Cost: Cr{}</nobr></li>'.format(
-                        common.formatNumber(number=fuelCost.value()))
-
-            berthingCost = pitStop.berthingCost()
-            if berthingCost:
-                toolTip += '<li><nobr>Berthing Type: {}</nobr></li>'.format(
-                    _formatBerthingTypeString(pitStop=pitStop))
-                if isinstance(berthingCost, common.ScalarCalculation):
-                    toolTip += '<li><nobr>Berthing Cost: Cr{}</nobr></li>'.format(
-                        common.formatNumber(number=berthingCost.value()))
-                elif isinstance(berthingCost, common.RangeCalculation):
-                    toolTip += '<li><nobr>Berthing Cost: Cr{best} - Cr{worst}</nobr></li>'.format(
-                        best=common.formatNumber(number=berthingCost.bestCaseValue()),
-                        worst=common.formatNumber(number=berthingCost.worstCaseValue()))
+                berthingCost = pitStop.berthingCost()
+                if berthingCost:
+                    toolTip += '<li><nobr>Berthing Type: {}</nobr></li>'.format(
+                        _formatBerthingTypeString(pitStop=pitStop))
+                    if isinstance(berthingCost, common.ScalarCalculation):
+                        toolTip += '<li><nobr>Berthing Cost: Cr{}</nobr></li>'.format(
+                            common.formatNumber(number=berthingCost.value()))
+                    elif isinstance(berthingCost, common.RangeCalculation):
+                        toolTip += '<li><nobr>Berthing Cost: Cr{best} - Cr{worst}</nobr></li>'.format(
+                            best=common.formatNumber(number=berthingCost.bestCaseValue()),
+                            worst=common.formatNumber(number=berthingCost.worstCaseValue()))
 
             toolTip += '</ul>'
 
@@ -1861,27 +2091,15 @@ class JumpRouteWindow(gui.WindowWidget):
         toolTip = f'<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">{toolTip}</ul>'
         return gui.createStringToolTip(toolTip, escape=False)
 
-    # TODO: Import and export probably need options. If I do this then it might
-    # make sense to have a dialog with the file name and a browse button along
-    # with the options
-    # - Option to import/export logistics
-    # - Option to ignore logistics when loading and recalculate them instead
-    # - Update start/stop/waypoints
-    # TODO: Need to handle the case where the loaded logistics are not for the
-    # current milieu
     def _importJumpRoute(self) -> None:
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            parent=self,
-            caption='Import Jump Route',
-            directory=QtCore.QDir.homePath(),
-            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}')
-        if not path:
+        dlg = _ImportJumpRouteDialog(parent=self)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
         try:
-            jumpRoute = logic.readJumpRoute(path=path)
+            jumpRoute = logic.readJumpRoute(path=dlg.filePath())
         except Exception as ex:
-            message = f'Failed to read jump route from "{path}"'
+            message = f'Failed to read jump route from "{dlg.filePath()}"'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1893,9 +2111,32 @@ class JumpRouteWindow(gui.WindowWidget):
         if isinstance(jumpRoute, logic.RouteLogistics):
             routeLogistics = jumpRoute
             jumpRoute = routeLogistics.jumpRoute()
+            if not dlg.includeLogistics():
+                routeLogistics = None
+
+            if routeLogistics:
+                logisticsMilieu = routeLogistics.milieu()
+                currentMilieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+                if logisticsMilieu != currentMilieu:
+                    text = 'The logistics for the imported jump route not from the current milieu\n' \
+                        f'Current: {currentMilieu.value}\n' \
+                        f'Imported: {logisticsMilieu.value}\n' \
+                        '\nDo you want to import them?'
+                    answer = gui.MessageBoxEx.question(
+                        parent=self,
+                        text=text,
+                        buttons=QtWidgets.QMessageBox.StandardButton.Yes | \
+                        QtWidgets.QMessageBox.StandardButton.No | \
+                        QtWidgets.QMessageBox.StandardButton.Cancel)
+                    if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
+                        return # User cancelled
+
+                    if answer == QtWidgets.QMessageBox.StandardButton.No:
+                        # Ignore logistics but continue importing route
+                        routeLogistics = None
 
         if not jumpRoute:
-            message = f'No jump route found in "{path}"'
+            message = f'No jump route found in "{dlg.filePath()}"'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -1903,24 +2144,23 @@ class JumpRouteWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        # TODO: I'm not sure about this. Feels weird to do this and not
-        # reinstate waypoints. But then what about the other settings
-        # that were used when things were the route was created. Maybe
-        # best to treat the imported route independently of existing
-        # settings. Should it maybe prompt to ask if you want to update
-        # the start/finish/waypoints
-        finishIndex = jumpRoute.nodeCount() - 1
+        if dlg.replaceStartFinish():
+            self._selectStartFinishWidget.setHexes(
+                startHex=jumpRoute.startNode(),
+                finishHex=jumpRoute.finishNode())
 
-        self._waypointsTable.removeAllRows()
-        for index, node in enumerate(jumpRoute.nodes()):
-            if index == 0:
-                self._selectStartFinishWidget.setStartHex(node)
-            if index == finishIndex:
-                self._selectStartFinishWidget.setFinishHex(node)
-            if  (index > 0) and (index < finishIndex) and jumpRoute.isWaypoint(index):
-                self._waypointsTable.addHex(node)
-                if jumpRoute.mandatoryBerthing(index):
-                    self._waypointsTable.setBerthingChecked(index - 1, True)
+        if dlg.replaceWaypoints():
+            self._waypointsTable.removeAllRows()
+
+            # Check for waypoints (start & finish are ignored as they
+            # can't be waypoints)
+            for index in range(1, jumpRoute.nodeCount() - 1):
+                if jumpRoute.isWaypoint(index):
+                    node = jumpRoute.nodeAt(index)
+                    row = self._waypointsTable.addHex(node)
+                    self._waypointsTable.setBerthingChecked(
+                        row,
+                        jumpRoute.mandatoryBerthing(index))
 
         self._shouldZoomToNewRoute = True
         self._setJumpRoute(
@@ -1934,20 +2174,17 @@ class JumpRouteWindow(gui.WindowWidget):
                 text='No jump route to export')
             return
 
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            parent=self,
-            caption='Export Jump Route',
-            directory=QtCore.QDir.homePath() + '/route.json',
-            filter=gui.JSONFileFilter)
-        if not path:
+        dlg = _ExportJumpRouteDialog(parent=self)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
         try:
             logic.writeJumpRoute(
-                route=self._routeLogistics if self._routeLengthLabel else self._jumpRoute,
-                path=path)
+                route=self._routeLogistics if dlg.includeLogistics() else self._jumpRoute,
+                path=dlg.filePath(),
+                includeCalculations=dlg.includeCalculations())
         except Exception as ex:
-            message = f'Failed to write jump route to "{path}"'
+            message = f'Failed to write jump route to "{dlg.filePath()}"'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

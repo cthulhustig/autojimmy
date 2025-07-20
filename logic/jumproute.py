@@ -21,9 +21,19 @@ class JumpRoute(object):
             self._hexes.append(hex)
             self._flags.append(flags)
 
-        # The total parsecs calculation is done on demand as it's not often used and is relatively
-        # expensive to calculate
-        self._totalParsecs = None
+        self._totalParsecs = 0
+        self._minJumpRating = 0
+
+        if len(self._hexes) > 1:
+            fromHex = self._hexes[0]
+            for index in range(1, len(self._hexes)):
+                toHex = self._hexes[index]
+                parsecs = fromHex.parsecsTo(toHex)
+
+                self._totalParsecs += parsecs
+                if parsecs > self._minJumpRating:
+                    self._minJumpRating = parsecs
+                fromHex = toHex
 
     def jumpCount(self) -> int:
         return len(self._hexes) - 1
@@ -52,6 +62,9 @@ class JumpRoute(object):
     def mandatoryBerthing(self, index: int) -> bool:
         return self._flags[index] & JumpRoute.NodeFlags.MandatoryBerthing
 
+    def minJumpRating(self) -> int:
+        return self._minJumpRating
+
     def nodeParsecs(self, index: int) -> int:
         parsecs = 0
         for current in range(0, self.jumpCount()):
@@ -63,8 +76,6 @@ class JumpRoute(object):
         return parsecs
 
     def totalParsecs(self) -> int:
-        if self._totalParsecs == None:
-            self._totalParsecs = self.nodeParsecs(index=len(self._hexes) - 1)
         return self._totalParsecs
 
     def __getitem__(self, index: int) -> travellermap.HexPosition:

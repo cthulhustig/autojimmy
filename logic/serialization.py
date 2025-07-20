@@ -360,6 +360,7 @@ def deserialiseWorldFiltersList(
 # the work for dead space routing. Support for waypoints and berthing
 # was added later as part of improvements to jump route import/export.
 # They're optional though so didn't require an up tick of the version.
+# Calculations are stored using Calculation v1.0 format
 
 _JumpRouteVersion = packaging.version.Version('2.0')
 
@@ -384,16 +385,6 @@ _RefuellingTypeToString = {
 assert(len(_RefuellingTypeToString) == len(logic.RefuellingType))
 _StringToRefuellingType = {v: k for k, v in _RefuellingTypeToString.items()}
 
-# TODO: I'm not sure I'm a fan of saving values as calculations in the jump
-# route.
-# - It makes the file more complex if someone wanted to hand craft one
-# or generate it in some other way.
-# - It could cause future backwards comparability issues if the serialised
-# calculation format ever changes
-# - It also bloats the file and looks ugly as hell.
-#
-# The only real complexity around chaining it is the fact berthing costs for
-# pit stops are ranges so 3 values need to be stored
 def _serialiseLogistics(
         logistics: logic.RouteLogistics,
         includeCalculations: bool
@@ -401,7 +392,10 @@ def _serialiseLogistics(
     jsonData = {'milieu': _MilieuToString[logistics.milieu()]}
 
     if logistics.perJumpOverheads():
-        jsonData['overheads'] = common.serialiseCalculation(logistics.perJumpOverheads())
+        jsonData['overheads'] = common.serialiseCalculation(
+            calculation=logistics.perJumpOverheads(),
+            includeVersion=False, # Don't include version to avoid bloat, v1.0 is currently assumed
+            includeSubcalculations=includeCalculations)
 
     refuelling = logistics.refuellingPlan()
     if refuelling:
@@ -413,13 +407,22 @@ def _serialiseLogistics(
                 jsonPitStop['refuelling'] = _RefuellingTypeToString[pitStop.refuellingType()]
 
             if pitStop.tonsOfFuel():
-                jsonPitStop['fuelAmount'] = common.serialiseCalculation(pitStop.tonsOfFuel())
+                jsonPitStop['fuelAmount'] = common.serialiseCalculation(
+                    calculation=pitStop.tonsOfFuel(),
+                    includeVersion=False, # Don't include version to avoid bloat, v1.0 is currently assumed
+                    includeSubcalculations=includeCalculations)
 
             if pitStop.fuelCost():
-                jsonPitStop['fuelCost'] = common.serialiseCalculation(pitStop.fuelCost())
+                jsonPitStop['fuelCost'] = common.serialiseCalculation(
+                    calculation=pitStop.fuelCost(),
+                    includeVersion=False, # Don't include version to avoid bloat, v1.0 is currently assumed
+                    includeSubcalculations=includeCalculations)
 
             if pitStop.berthingCost():
-                jsonPitStop['berthingCost'] = common.serialiseCalculation(pitStop.berthingCost())
+                jsonPitStop['berthingCost'] = common.serialiseCalculation(
+                    calculation=pitStop.berthingCost(),
+                    includeVersion=False, # Don't include version to avoid bloat, v1.0 is currently assumed
+                    includeSubcalculations=includeCalculations)
 
             jsonPitStops.append(jsonPitStop)
 
@@ -538,8 +541,7 @@ def serialiseJumpRoute(
     return jsonData
 
 def deserialiseJumpRoute(
-        jsonData: typing.Mapping[str, typing.Any],
-        loadLogistics: bool = True
+        jsonData: typing.Mapping[str, typing.Any]
         ) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
     jsonVersion = jsonData.get('version')
     if jsonVersion is None:
@@ -610,8 +612,6 @@ def deserialiseJumpRoute(
         raise RuntimeError('Jump route is empty')
 
     route = logic.JumpRoute(nodes)
-    if not loadLogistics:
-        return route
 
     jsonLogistics: typing.Mapping[str, typing.Any] = jsonData.get('logistics')
     logistics = None
@@ -628,11 +628,6 @@ def writeJumpRoute(
     with open(path, 'w', encoding='UTF8') as file:
         json.dump(serialiseJumpRoute(route=route, includeCalculations=includeCalculations), file, indent=4)
 
-def readJumpRoute(
-        path: str,
-        loadLogistics: bool = True
-        ) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
+def readJumpRoute(path: str) -> typing.Union[logic.JumpRoute, logic.RouteLogistics]:
     with open(path, 'r') as file:
-        return deserialiseJumpRoute(
-            jsonData=json.load(file),
-            loadLogistics=loadLogistics)
+        return deserialiseJumpRoute(jsonData=json.load(file))
