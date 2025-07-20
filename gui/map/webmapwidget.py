@@ -656,7 +656,7 @@ class WebMapWidget(QtWidgets.QWidget):
             ) -> None:
         script = 'map.SetRoute(['
         for index in range(jumpRoute.nodeCount()):
-            hex = jumpRoute.hex(index)
+            hex = jumpRoute.nodeAt(index)
             sectorX, sectorY, offsetX, offsetY = hex.relative()
             script += f'{{hx:{offsetX}, hy:{offsetY}, sx:{sectorX}, sy:{sectorY}}},'
         script = script.strip(',')

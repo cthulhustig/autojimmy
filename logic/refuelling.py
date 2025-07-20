@@ -8,6 +8,9 @@ import traveller
 import travellermap
 import typing
 
+# NOTE: The names of these enums are when serialising jump routes (specifically
+# the logistics). If I ever rename them I'll need to do something to maintain
+# backwards compatibility
 class RefuellingType(enum.Enum):
     Refined = 'Refined'
     Unrefined = 'Unrefined'
@@ -232,14 +235,14 @@ class PitStopCostCalculator(object):
 class PitStop(object):
     def __init__(
             self,
-            jumpIndex: int, # Intentionally not a calculation as it's not used to calculate values
+            routeIndex: int, # Intentionally not a calculation as it's not used to calculate values
             world: traveller.World,
             refuellingType: typing.Optional[RefuellingType],
             tonsOfFuel: typing.Optional[common.ScalarCalculation],
             fuelCost: typing.Optional[common.ScalarCalculation],
             berthingCost: typing.Optional[typing.Union[common.ScalarCalculation, common.RangeCalculation]]
             ) -> None:
-        self._jumpIndex = jumpIndex
+        self._routeIndex = routeIndex
         self._world = world
         self._refuellingType = refuellingType
         self._tonsOfFuel = tonsOfFuel
@@ -267,8 +270,8 @@ class PitStop(object):
                 value=0,
                 name=calculationName)
 
-    def jumpIndex(self) -> int:
-        return self._jumpIndex
+    def routeIndex(self) -> int:
+        return self._routeIndex
 
     def world(self) -> traveller.World:
         return self._world
@@ -305,9 +308,9 @@ class RefuellingPlan(object):
             ) -> None:
         self._milieu = milieu
         self._pitStops = list(pitStops)
-        self._jumpIndexMap = {}
+        self._routeIndexMap = {}
         for pitStop in self._pitStops:
-            self._jumpIndexMap[pitStop.jumpIndex()] = pitStop
+            self._routeIndexMap[pitStop.routeIndex()] = pitStop
 
         # Cache totals so we don't have to repeatedly calculate them. This assumes that the list of
         # pit stops and the pit stops themselves are immutable
@@ -348,10 +351,13 @@ class RefuellingPlan(object):
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
 
-    def pitStop(self, jumpIndex: int) -> typing.Optional[PitStop]:
-        if jumpIndex not in self._jumpIndexMap:
+    def pitStop(self, routeIndex: int) -> typing.Optional[PitStop]:
+        if routeIndex not in self._routeIndexMap:
             return None
-        return self._jumpIndexMap[jumpIndex]
+        return self._routeIndexMap[routeIndex]
+
+    def pitStops(self) -> typing.List[PitStop]:
+        return [self._pitStops]
 
     def pitStopCount(self) -> common.ScalarCalculation:
         return self._pitStopCount
@@ -547,14 +553,13 @@ class _CalculationContext:
         return isBetter
 
 def calculateRefuellingPlan(
+        milieu: travellermap.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         pitCostCalculator: PitStopCostCalculator,
         shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
-        # Optional set containing the integer indices of jump route worlds where berthing is required.
-        requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
         # Specify if generated refuelling plan should include refuelling costs. If not included the
         # costs will still be taken into account when calculating the optimal pit stop worlds,
         # however the costs for fuel and berthing will be zero
@@ -601,31 +606,31 @@ def calculateRefuellingPlan(
     assert(parsecsWithoutRefuelling > 0)
 
     calculationContext = _processRoute(
+        milieu=milieu,
         jumpRoute=jumpRoute,
         shipFuelCapacity=shipFuelCapacity,
         shipStartingFuel=shipStartingFuel,
         shipFuelPerParsec=shipFuelPerParsec,
         parsecsWithoutRefuelling=parsecsWithoutRefuelling,
-        pitCostCalculator=pitCostCalculator,
-        requiredBerthingIndices=requiredBerthingIndices)
+        pitCostCalculator=pitCostCalculator)
     if not calculationContext.hasBestSequence():
         return None
 
     return _createRefuellingPlan(
-        milieu=jumpRoute.milieu(),
+        milieu=milieu,
         calculationContext=calculationContext,
         pitCostCalculator=pitCostCalculator,
         includeRefuellingCosts=includeRefuellingCosts,
         diceRoller=diceRoller)
 
 def _processRoute(
+        milieu: travellermap.Milieu,
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         shipFuelPerParsec: float,
         parsecsWithoutRefuelling: int,
         pitCostCalculator: PitStopCostCalculator,
-        requiredBerthingIndices: typing.Optional[typing.Set[int]],
         ) -> _CalculationContext:
     jumpNodeCount = jumpRoute.nodeCount()
     finishNodeIndex = jumpNodeCount - 1
@@ -643,8 +648,11 @@ def _processRoute(
         parsecsToNextWorld = None
         reachableNodeIndex = nodeIndex + 1
         while reachableNodeIndex <= finishNodeIndex:
-            fromHex, _ = jumpRoute[reachableNodeIndex - 1]
-            toHex, toWorld = jumpRoute[reachableNodeIndex]
+            fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
+            toHex = jumpRoute.nodeAt(reachableNodeIndex)
+            toWorld = traveller.WorldManager.instance().worldByPosition(
+                milieu=milieu,
+                hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
@@ -660,7 +668,10 @@ def _processRoute(
 
             reachableNodeIndex += 1
 
-        world = jumpRoute.world(nodeIndex)
+        nodePos = jumpRoute.nodeAt(index=nodeIndex)
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=nodePos)
         refuellingType = None
         fuelCostPerTon = None
         berthingCost = None
@@ -676,8 +687,8 @@ def _processRoute(
             cost = pitCostCalculator.berthingCost(world=world)
             berthingCost = cost.worstCaseValue() if cost else 0
 
-            mandatoryBerthing = (requiredBerthingIndices != None) and \
-                (nodeIndex in requiredBerthingIndices)
+            # NOTE: Mandatory berthing isn't applied in dead space
+            mandatoryBerthing = jumpRoute.mandatoryBerthing(nodeIndex)
 
         nodeContexts.append(_NodeContext(
             index=nodeIndex,
@@ -897,7 +908,7 @@ def _createRefuellingPlan(
                         name='Ignored Berthing Cost')
 
             pitStops.append(PitStop(
-                jumpIndex=nodeContext.index(),
+                routeIndex=nodeContext.index(),
                 world=world,
                 refuellingType=refuellingType,
                 tonsOfFuel=fuelAmount,

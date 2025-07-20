@@ -1,4 +1,5 @@
 import common
+import enum
 import traveller
 import typing
 
@@ -28,6 +29,14 @@ import typing
 # 3. Subtract any DM from the purchase column (only use highest one if there are multiple)
 # 4. Add any DM from the sale column (only use highest one if there are multiple)
 # 5. Subtract supplier DM
+
+# NOTE: If I ever update the value of these enums I'll need to do something
+# for backward compatibility with serialisation
+class TradeType(enum.Enum):
+    Sale = 'Sale'
+    Purchase = 'Purchase'
+_TradeTypeSerialisationTypeToStr = {e: e.value.lower() for e in TradeType}
+_TradeTypeSerialisationStrToType = {v: k for k, v in _TradeTypeSerialisationTypeToStr.items()}
 
 class _TradeGoodData(object):
     def __init__(
@@ -452,19 +461,19 @@ class TradeGood(object):
 
         return worldIllegalDm
 
-class _PriceModifierLookupFunction(common.CalculatorFunction):
+class TradeDMToPriceModifierFunction(common.CalculatorFunction):
     def __init__(
             self,
-            prefix: str,
+            tradeType: TradeType,
             tradeDm: common.ScalarCalculation,
-            priceModifier: int
+            priceModifier: common.ScalarCalculation
             ) -> None:
-        self._prefix = prefix
+        self._tradeType = tradeType
         self._tradeDm = tradeDm
         self._priceModifier = priceModifier
 
     def value(self) -> typing.Union[int, float]:
-        return self._priceModifier
+        return self._priceModifier.value()
 
     def calculationString(
             self,
@@ -476,18 +485,51 @@ class _PriceModifierLookupFunction(common.CalculatorFunction):
             valueString = self._tradeDm.calculationString(
                 outerBrackets=False,
                 decimalPlaces=decimalPlaces)
-        return f'{self._prefix}PriceScaleForDM({valueString})'
+        return f'{self._tradeType.value}PriceScaleForDM({valueString})'
 
     def calculations(self) -> typing.List[common.ScalarCalculation]:
         if self._tradeDm.name():
             return [self._tradeDm]
         return self._tradeDm.subCalculations()
 
-    def copy(self) -> '_PriceModifierLookupFunction':
-        return _PriceModifierLookupFunction(
-            prefix=self._prefix,
-            tradeDm=self._tradeDm.copy(),
-            priceModifier=self._priceModifier)
+    @staticmethod
+    def serialisationType() -> str:
+        return 'tradedm'
+
+    def toJson(self) -> typing.Mapping[str, typing.Any]:
+        return {
+            'type': _TradeTypeSerialisationTypeToStr[self._tradeType],
+            'value': common.serialiseCalculation(self._tradeDm, includeVersion=False),
+            'modifier': common.serialiseCalculation(self._priceModifier, includeVersion=False)}
+
+    @staticmethod
+    def fromJson(
+        jsonData: typing.Mapping[str, typing.Any]
+        ) -> 'TradeDMToPriceModifierFunction':
+        type = jsonData.get('type')
+        if type is None:
+            raise RuntimeError('Trade DM function is missing the type property')
+        if not isinstance(type, str):
+            raise RuntimeError('Trade DM function type property is not a string')
+        type = type.lower()
+        if type not in _TradeTypeSerialisationStrToType:
+            raise RuntimeError(f'Trade DM function has invalid type property {type}')
+        type = _TradeTypeSerialisationStrToType[type]
+
+        value = jsonData.get('value')
+        if value is None:
+            raise RuntimeError('Trade DM function is missing the value property')
+        value = common.deserialiseCalculation(jsonData=value)
+
+        modifier = jsonData.get('modifier')
+        if modifier is None:
+            raise RuntimeError('Trade DM function is missing the modifier property')
+        modifier = common.deserialiseCalculation(jsonData=modifier)
+
+        return TradeDMToPriceModifierFunction(
+            tradeType=type,
+            tradeDm=value,
+            priceModifier=modifier)
 
 def tradeGoodList(
         ruleSystem: traveller.RuleSystem,
@@ -624,7 +666,7 @@ def _calculatePurchasePriceModifier(
 
     return _calculatePriceModifier(
         ruleSystem=ruleSystem,
-        operation='Purchase',
+        operation=TradeType.Purchase,
         tradeDm=purchaseDm)
 
 def _calculateSalePriceModifier(
@@ -638,12 +680,12 @@ def _calculateSalePriceModifier(
 
     return _calculatePriceModifier(
         ruleSystem=ruleSystem,
-        operation='Sale',
+        operation=TradeType.Sale,
         tradeDm=saleDm)
 
 def _calculatePriceModifier(
         ruleSystem: traveller.RuleSystem,
-        operation: str,
+        operation: TradeType,
         tradeDm: common.ScalarCalculation
         ) -> common.ScalarCalculation:
     if ruleSystem == traveller.RuleSystem.MGT:
@@ -668,9 +710,13 @@ def _calculatePriceModifier(
     else:
         priceModifier = modifierMap[tradeDm.value()][operation]
 
+    priceModifier = common.ScalarCalculation(
+        value=priceModifier,
+        name=f'Price Modifier for {operation.value} DM{tradeDm.value():+}')
+
     return common.ScalarCalculation(
-        value=_PriceModifierLookupFunction(
-            prefix=operation,
+        value=TradeDMToPriceModifierFunction(
+            tradeType=operation,
             tradeDm=tradeDm,
             priceModifier=priceModifier),
         name=f'{operation} Price Modifier')
@@ -1408,104 +1454,104 @@ _Mgt2MinPriceModifierDm = -1
 _Mgt2MaxPriceModifierDm = 23
 _Mgt2PriceModifierMap = {
     -1: {
-        'Purchase': 2.0,
-        'Sale': 0.3
+        TradeType.Purchase: 2.0,
+        TradeType.Sale: 0.3
     },
     0: {
-        'Purchase': 1.75,
-        'Sale': 0.4
+        TradeType.Purchase: 1.75,
+        TradeType.Sale: 0.4
     },
     1: {
-        'Purchase': 1.5,
-        'Sale': 0.45
+        TradeType.Purchase: 1.5,
+        TradeType.Sale: 0.45
     },
     2: {
-        'Purchase': 1.35,
-        'Sale': 0.5
+        TradeType.Purchase: 1.35,
+        TradeType.Sale: 0.5
     },
     3: {
-        'Purchase': 1.25,
-        'Sale': 0.55
+        TradeType.Purchase: 1.25,
+        TradeType.Sale: 0.55
     },
     4: {
-        'Purchase': 1.2,
-        'Sale': 0.6
+        TradeType.Purchase: 1.2,
+        TradeType.Sale: 0.6
     },
     5: {
-        'Purchase': 1.15,
-        'Sale': 0.65
+        TradeType.Purchase: 1.15,
+        TradeType.Sale: 0.65
     },
     6: {
-        'Purchase': 1.1,
-        'Sale': 0.70
+        TradeType.Purchase: 1.1,
+        TradeType.Sale: 0.70
     },
     7: {
-        'Purchase': 1.05,
-        'Sale': 0.75
+        TradeType.Purchase: 1.05,
+        TradeType.Sale: 0.75
     },
     8: {
-        'Purchase': 1.0,
-        'Sale': 0.8
+        TradeType.Purchase: 1.0,
+        TradeType.Sale: 0.8
     },
     9: {
-        'Purchase': 0.95,
-        'Sale': 0.85
+        TradeType.Purchase: 0.95,
+        TradeType.Sale: 0.85
     },
     10: {
-        'Purchase': 0.9,
-        'Sale': 0.9
+        TradeType.Purchase: 0.9,
+        TradeType.Sale: 0.9
     },
     11: {
-        'Purchase': 0.85,
-        'Sale': 1.0
+        TradeType.Purchase: 0.85,
+        TradeType.Sale: 1.0
     },
     12: {
-        'Purchase': 0.8,
-        'Sale': 1.05
+        TradeType.Purchase: 0.8,
+        TradeType.Sale: 1.05
     },
     13: {
-        'Purchase': 0.75,
-        'Sale': 1.1
+        TradeType.Purchase: 0.75,
+        TradeType.Sale: 1.1
     },
     14: {
-        'Purchase': 0.7,
-        'Sale': 1.15
+        TradeType.Purchase: 0.7,
+        TradeType.Sale: 1.15
     },
     15: {
-        'Purchase': 0.65,
-        'Sale': 1.2
+        TradeType.Purchase: 0.65,
+        TradeType.Sale: 1.2
     },
     16: {
-        'Purchase': 0.60,
-        'Sale': 1.25
+        TradeType.Purchase: 0.60,
+        TradeType.Sale: 1.25
     },
     17: {
-        'Purchase': 0.55,
-        'Sale': 1.3
+        TradeType.Purchase: 0.55,
+        TradeType.Sale: 1.3
     },
     18: {
-        'Purchase': 0.5,
-        'Sale': 1.35
+        TradeType.Purchase: 0.5,
+        TradeType.Sale: 1.35
     },
     19: {
-        'Purchase': 0.45,
-        'Sale': 1.4
+        TradeType.Purchase: 0.45,
+        TradeType.Sale: 1.4
     },
     20: {
-        'Purchase': 0.4,
-        'Sale': 1.45
+        TradeType.Purchase: 0.4,
+        TradeType.Sale: 1.45
     },
     21: {
-        'Purchase': 0.35,
-        'Sale': 1.5
+        TradeType.Purchase: 0.35,
+        TradeType.Sale: 1.5
     },
     22: {
-        'Purchase': 0.3,
-        'Sale': 1.55
+        TradeType.Purchase: 0.3,
+        TradeType.Sale: 1.55
     },
     23: {
-        'Purchase': 0.25,
-        'Sale': 1.60
+        TradeType.Purchase: 0.25,
+        TradeType.Sale: 1.60
     }
 }
 
@@ -2191,96 +2237,96 @@ _MgtMinPriceModifierDm = -1
 _MgtMaxPriceModifierDm = 21
 _MgtPriceModifierMap = {
     -1: {
-        'Purchase': 4.0,
-        'Sale': 0.25
+        TradeType.Purchase: 4.0,
+        TradeType.Sale: 0.25
     },
     0: {
-        'Purchase': 3.0,
-        'Sale': 0.45
+        TradeType.Purchase: 3.0,
+        TradeType.Sale: 0.45
     },
     1: {
-        'Purchase': 2.0,
-        'Sale': 0.5
+        TradeType.Purchase: 2.0,
+        TradeType.Sale: 0.5
     },
     2: {
-        'Purchase': 1.75,
-        'Sale': 0.55
+        TradeType.Purchase: 1.75,
+        TradeType.Sale: 0.55
     },
     3: {
-        'Purchase': 1.5,
-        'Sale': 0.6
+        TradeType.Purchase: 1.5,
+        TradeType.Sale: 0.6
     },
     4: {
-        'Purchase': 1.35,
-        'Sale': 0.65
+        TradeType.Purchase: 1.35,
+        TradeType.Sale: 0.65
     },
     5: {
-        'Purchase': 1.25,
-        'Sale': 0.75
+        TradeType.Purchase: 1.25,
+        TradeType.Sale: 0.75
     },
     6: {
-        'Purchase': 1.2,
-        'Sale': 0.8
+        TradeType.Purchase: 1.2,
+        TradeType.Sale: 0.8
     },
     7: {
-        'Purchase': 1.15,
-        'Sale': 0.85
+        TradeType.Purchase: 1.15,
+        TradeType.Sale: 0.85
     },
     8: {
-        'Purchase': 1.1,
-        'Sale': 0.9
+        TradeType.Purchase: 1.1,
+        TradeType.Sale: 0.9
     },
     9: {
-        'Purchase': 1.05,
-        'Sale': 0.95
+        TradeType.Purchase: 1.05,
+        TradeType.Sale: 0.95
     },
     10: {
-        'Purchase': 1.0,
-        'Sale': 1.0
+        TradeType.Purchase: 1.0,
+        TradeType.Sale: 1.0
     },
     11: {
-        'Purchase': 0.95,
-        'Sale': 1.05
+        TradeType.Purchase: 0.95,
+        TradeType.Sale: 1.05
     },
     12: {
-        'Purchase': 0.9,
-        'Sale': 1.1
+        TradeType.Purchase: 0.9,
+        TradeType.Sale: 1.1
     },
     13: {
-        'Purchase': 0.85,
-        'Sale': 1.15
+        TradeType.Purchase: 0.85,
+        TradeType.Sale: 1.15
     },
     14: {
-        'Purchase': 0.8,
-        'Sale': 1.2
+        TradeType.Purchase: 0.8,
+        TradeType.Sale: 1.2
     },
     15: {
-        'Purchase': 0.75,
-        'Sale': 1.25
+        TradeType.Purchase: 0.75,
+        TradeType.Sale: 1.25
     },
     16: {
-        'Purchase': 0.70,
-        'Sale': 1.35
+        TradeType.Purchase: 0.70,
+        TradeType.Sale: 1.35
     },
     17: {
-        'Purchase': 0.65,
-        'Sale': 1.5
+        TradeType.Purchase: 0.65,
+        TradeType.Sale: 1.5
     },
     18: {
-        'Purchase': 0.55,
-        'Sale': 1.75
+        TradeType.Purchase: 0.55,
+        TradeType.Sale: 1.75
     },
     19: {
-        'Purchase': 0.5,
-        'Sale': 2.0
+        TradeType.Purchase: 0.5,
+        TradeType.Sale: 2.0
     },
     20: {
-        'Purchase': 0.4,
-        'Sale': 3.0
+        TradeType.Purchase: 0.4,
+        TradeType.Sale: 3.0
     },
     21: {
-        'Purchase': 0.25,
-        'Sale': 4.0
+        TradeType.Purchase: 0.25,
+        TradeType.Sale: 4.0
     }
 }
 
@@ -2304,119 +2350,119 @@ _Mgt2022MinPriceModifierDm = -3
 _Mgt2022MaxPriceModifierDm = 25
 _Mgt2022PriceModifierMap = {
     -3: {
-        'Purchase': 3.0,
-        'Sale': 0.1
+        TradeType.Purchase: 3.0,
+        TradeType.Sale: 0.1
     },
     -2: {
-        'Purchase': 2.5,
-        'Sale': 0.2
+        TradeType.Purchase: 2.5,
+        TradeType.Sale: 0.2
     },
     -1: {
-        'Purchase': 2.0,
-        'Sale': 0.3
+        TradeType.Purchase: 2.0,
+        TradeType.Sale: 0.3
     },
     0: {
-        'Purchase': 1.75,
-        'Sale': 0.4
+        TradeType.Purchase: 1.75,
+        TradeType.Sale: 0.4
     },
     1: {
-        'Purchase': 1.5,
-        'Sale': 0.45
+        TradeType.Purchase: 1.5,
+        TradeType.Sale: 0.45
     },
     2: {
-        'Purchase': 1.35,
-        'Sale': 0.5
+        TradeType.Purchase: 1.35,
+        TradeType.Sale: 0.5
     },
     3: {
-        'Purchase': 1.25,
-        'Sale': 0.55
+        TradeType.Purchase: 1.25,
+        TradeType.Sale: 0.55
     },
     4: {
-        'Purchase': 1.2,
-        'Sale': 0.6
+        TradeType.Purchase: 1.2,
+        TradeType.Sale: 0.6
     },
     5: {
-        'Purchase': 1.15,
-        'Sale': 0.65
+        TradeType.Purchase: 1.15,
+        TradeType.Sale: 0.65
     },
     6: {
-        'Purchase': 1.1,
-        'Sale': 0.70
+        TradeType.Purchase: 1.1,
+        TradeType.Sale: 0.70
     },
     7: {
-        'Purchase': 1.05,
-        'Sale': 0.75
+        TradeType.Purchase: 1.05,
+        TradeType.Sale: 0.75
     },
     8: {
-        'Purchase': 1.0,
-        'Sale': 0.8
+        TradeType.Purchase: 1.0,
+        TradeType.Sale: 0.8
     },
     9: {
-        'Purchase': 0.95,
-        'Sale': 0.85
+        TradeType.Purchase: 0.95,
+        TradeType.Sale: 0.85
     },
     10: {
-        'Purchase': 0.9,
-        'Sale': 0.9
+        TradeType.Purchase: 0.9,
+        TradeType.Sale: 0.9
     },
     11: {
-        'Purchase': 0.85,
-        'Sale': 1.0
+        TradeType.Purchase: 0.85,
+        TradeType.Sale: 1.0
     },
     12: {
-        'Purchase': 0.8,
-        'Sale': 1.05
+        TradeType.Purchase: 0.8,
+        TradeType.Sale: 1.05
     },
     13: {
-        'Purchase': 0.75,
-        'Sale': 1.1
+        TradeType.Purchase: 0.75,
+        TradeType.Sale: 1.1
     },
     14: {
-        'Purchase': 0.7,
-        'Sale': 1.15
+        TradeType.Purchase: 0.7,
+        TradeType.Sale: 1.15
     },
     15: {
-        'Purchase': 0.65,
-        'Sale': 1.2
+        TradeType.Purchase: 0.65,
+        TradeType.Sale: 1.2
     },
     16: {
-        'Purchase': 0.60,
-        'Sale': 1.25
+        TradeType.Purchase: 0.60,
+        TradeType.Sale: 1.25
     },
     17: {
-        'Purchase': 0.55,
-        'Sale': 1.3
+        TradeType.Purchase: 0.55,
+        TradeType.Sale: 1.3
     },
     18: {
-        'Purchase': 0.5,
-        'Sale': 1.4
+        TradeType.Purchase: 0.5,
+        TradeType.Sale: 1.4
     },
     19: {
-        'Purchase': 0.45,
-        'Sale': 1.5
+        TradeType.Purchase: 0.45,
+        TradeType.Sale: 1.5
     },
     20: {
-        'Purchase': 0.4,
-        'Sale': 1.6
+        TradeType.Purchase: 0.4,
+        TradeType.Sale: 1.6
     },
     21: {
-        'Purchase': 0.35,
-        'Sale': 1.75
+        TradeType.Purchase: 0.35,
+        TradeType.Sale: 1.75
     },
     22: {
-        'Purchase': 0.3,
-        'Sale': 2.0
+        TradeType.Purchase: 0.3,
+        TradeType.Sale: 2.0
     },
     23: {
-        'Purchase': 0.25,
-        'Sale': 2.5
+        TradeType.Purchase: 0.25,
+        TradeType.Sale: 2.5
     },
     24: {
-        'Purchase': 0.20,
-        'Sale': 3.0
+        TradeType.Purchase: 0.20,
+        TradeType.Sale: 3.0
     },
     25: {
-        'Purchase': 0.15,
-        'Sale': 4.0
+        TradeType.Purchase: 0.15,
+        TradeType.Sale: 4.0
     }
 }

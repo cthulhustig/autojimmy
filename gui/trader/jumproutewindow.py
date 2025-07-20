@@ -5,6 +5,7 @@ import gui
 import jobs
 import logging
 import logic
+import os
 import traveller
 import travellermap
 import typing
@@ -454,6 +455,247 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         if hex:
             self.showHexRequested.emit(hex)
 
+class _ImportJumpRouteDialog(gui.DialogEx):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            title='Import Jump Route',
+            configSection='ImportJumpRouteDialog',
+            parent=parent)
+
+        self._filePathLineEdit = gui.LineEditEx()
+        self._filePathBrowseButton = QtWidgets.QPushButton('Browse...')
+        self._filePathBrowseButton.clicked.connect(self._filePathBrowseClicked)
+        filePathLayout = QtWidgets.QHBoxLayout()
+        filePathLayout.setContentsMargins(0, 0, 0, 0)
+        filePathLayout.addWidget(self._filePathLineEdit)
+        filePathLayout.addWidget(self._filePathBrowseButton)
+
+        self._includeLogisticsCheckBox = gui.CheckBoxEx()
+        self._includeLogisticsCheckBox.setChecked(True)
+        self._replaceStartFinishCheckBox = gui.CheckBoxEx()
+        self._replaceStartFinishCheckBox.setChecked(False)
+        self._replaceWaypointsCheckBox = gui.CheckBoxEx()
+        self._replaceWaypointsCheckBox.setChecked(False)
+        optionsLayout = gui.FormLayoutEx()
+        optionsLayout.addRow('Include Logistics', self._includeLogisticsCheckBox)
+        optionsLayout.addRow('Replace Current Start/Finish', self._replaceStartFinishCheckBox)
+        optionsLayout.addRow('Replace Current Waypoints', self._replaceWaypointsCheckBox)
+
+        self._importButton = QtWidgets.QPushButton('Import')
+        self._importButton.setDefault(True)
+        self._importButton.clicked.connect(self.accept)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self.reject)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.addStretch()
+        buttonLayout.addWidget(self._importButton)
+        buttonLayout.addWidget(self._cancelButton)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addLayout(filePathLayout)
+        layout.addLayout(optionsLayout)
+        layout.addLayout(buttonLayout)
+
+        self.setLayout(layout)
+
+        sizeHint = self.sizeHint()
+        self.setFixedHeight(sizeHint.height())
+        self.resize(QtCore.QSize(
+            int(400 * gui.interfaceScale()),
+            sizeHint.height()))
+
+    def filePath(self) -> str:
+        return self._filePathLineEdit.text()
+
+    def includeLogistics(self) -> bool:
+        return self._includeLogisticsCheckBox.isChecked()
+
+    def replaceStartFinish(self) -> bool:
+        return self._replaceStartFinishCheckBox.isChecked()
+
+    def replaceWaypoints(self) -> bool:
+        return self._replaceWaypointsCheckBox.isChecked()
+
+    # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
+    # if the user cancels the dialog)
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='FilePath',
+            type=str)
+        if storedValue:
+            self._filePathLineEdit.setText(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeLogisticsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeLogisticsCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ReplaceStartFinishCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._replaceStartFinishCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ReplaceWaypointsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._replaceWaypointsCheckBox.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def accept(self) -> None:
+        self._settings.beginGroup(self._configSection)
+        self._settings.setValue('FilePath', self._filePathLineEdit.text())
+        self._settings.setValue('IncludeLogisticsCheckBoxState', self._includeLogisticsCheckBox.saveState())
+        self._settings.setValue('ReplaceStartFinishCheckBoxState', self._replaceStartFinishCheckBox.saveState())
+        self._settings.setValue('ReplaceWaypointsCheckBoxState', self._replaceWaypointsCheckBox.saveState())
+        self._settings.endGroup()
+
+        return super().accept()
+
+    def _filePathBrowseClicked(self) -> None:
+        path = self._filePathLineEdit.text()
+        initialDir = QtCore.QDir.homePath()
+        if path and os.path.isfile(path):
+            initialDir = os.path.dirname(path)
+
+        path, _ = gui.FileDialogEx.getOpenFileName(
+            parent=self,
+            caption='Jump Route File',
+            directory=initialDir,
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}')
+        if not path:
+            return None # User cancelled
+
+        self._filePathLineEdit.setText(path)
+
+class _ExportJumpRouteDialog(gui.DialogEx):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            title='Export Jump Route',
+            configSection='ExportJumpRouteDialog',
+            parent=parent)
+
+        self._filePathLineEdit = gui.LineEditEx()
+        self._filePathBrowseButton = QtWidgets.QPushButton('Browse...')
+        self._filePathBrowseButton.clicked.connect(self._filePathBrowseClicked)
+        filePathLayout = QtWidgets.QHBoxLayout()
+        filePathLayout.setContentsMargins(0, 0, 0, 0)
+        filePathLayout.addWidget(self._filePathLineEdit)
+        filePathLayout.addWidget(self._filePathBrowseButton)
+
+        self._includeLogisticsCheckBox = gui.CheckBoxEx()
+        self._includeLogisticsCheckBox.setChecked(True)
+        self._includeCalculationsCheckBox = gui.CheckBoxEx()
+        self._includeCalculationsCheckBox.setChecked(False)
+        optionsLayout = gui.FormLayoutEx()
+        optionsLayout.addRow('Include Logistics', self._includeLogisticsCheckBox)
+        optionsLayout.addRow('Include Calculations', self._includeCalculationsCheckBox)
+
+        self._exportButton = QtWidgets.QPushButton('Export')
+        self._exportButton.setDefault(True)
+        self._exportButton.clicked.connect(self.accept)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self.reject)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.addStretch()
+        buttonLayout.addWidget(self._exportButton)
+        buttonLayout.addWidget(self._cancelButton)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addLayout(filePathLayout)
+        layout.addLayout(optionsLayout)
+        layout.addLayout(buttonLayout)
+
+        self.setLayout(layout)
+
+        sizeHint = self.sizeHint()
+        self.setFixedHeight(sizeHint.height())
+        self.resize(QtCore.QSize(
+            int(400 * gui.interfaceScale()),
+            sizeHint.height()))
+
+    def filePath(self) -> str:
+        return self._filePathLineEdit.text()
+
+    def includeLogistics(self) -> bool:
+        return self._includeLogisticsCheckBox.isChecked()
+
+    def includeCalculations(self) -> bool:
+        return self._includeCalculationsCheckBox.isChecked()
+
+    # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
+    # if the user cancels the dialog)
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='FilePath',
+            type=str)
+        if storedValue:
+            self._filePathLineEdit.setText(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeLogisticsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeLogisticsCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeCalculationsCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeCalculationsCheckBox.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def accept(self) -> None:
+        self._settings.beginGroup(self._configSection)
+        self._settings.setValue('FilePath', self._filePathLineEdit.text())
+        self._settings.setValue('IncludeLogisticsCheckBoxState', self._includeLogisticsCheckBox.saveState())
+        self._settings.setValue('IncludeCalculationsCheckBoxState', self._includeCalculationsCheckBox.saveState())
+        self._settings.endGroup()
+
+        return super().accept()
+
+    def _filePathBrowseClicked(self) -> None:
+        path = self._filePathLineEdit.text()
+        initialDir = QtCore.QDir.homePath()
+        if path and os.path.isfile(path):
+            initialDir = os.path.dirname(path)
+
+        path, _ = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Jump Route File',
+            directory=initialDir,
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}',
+            defaultFileName='route.json')
+        if not path:
+            return None # User cancelled
+
+        self._filePathLineEdit.setText(path)
+
 class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayDarkStyleColour = '#9D03FC'
     _JumpRatingOverlayLightStyleColour = '#4A03FC'
@@ -467,7 +709,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteJob = None
         self._jumpRoute = None
         self._routeLogistics = None
-        self._zoomToJumpRoute = False
+        self._shouldZoomToNewRoute = False
         self._jumpOverlayHandles = set()
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
@@ -686,16 +928,15 @@ class JumpRouteWindow(gui.WindowWidget):
             raise RuntimeError('Unable to set jump route while a jump route job is in progress')
 
         self._jumpRoute = route
-        self._jumpRouteTable.setHexes(
-            hexes=[hex for hex, _ in self._jumpRoute])
+        self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
 
         self._routeLogistics = logistics
         self._refuellingPlanTable.setPitStops(
             pitStops=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
 
         self._selectStartFinishWidget.setHexes(
-            startHex=route.startHex(),
-            finishHex=route.finishHex())
+            startHex=route.startNode(),
+            finishHex=route.finishNode())
         self._waypointsTable.removeAllRows()
 
         self._updateRouteLabels()
@@ -1146,7 +1387,7 @@ class JumpRouteWindow(gui.WindowWidget):
         # displaying a completely different location. After the first route has been calculated
         # for this start/finish pair the view is left as is as it's assumed the user is doing
         # something like adding a waypoint world
-        self._zoomToJumpRoute = True
+        self._shouldZoomToNewRoute = True
 
     def _waypointsTableDisplayModeChanged(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
         columns = None
@@ -1418,9 +1659,21 @@ class JumpRouteWindow(gui.WindowWidget):
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
-        hexSequence = [startHex]
-        hexSequence.extend(self._waypointsWidget.hexes())
+        hexSequence = []
+        berthingIndices = []
+
+        hexSequence.append(startHex)
+        if self._includeStartWorldBerthingCheckBox.isChecked():
+            berthingIndices.append(0)
+
+        for row in range(self._waypointsTable.rowCount()):
+            hexSequence.append(self._waypointsTable.hex(row))
+            if self._waypointsTable.isBerthingChecked(row):
+                berthingIndices.append(row + 1)
+
         hexSequence.append(finishHex)
+        if self._includeFinishWorldBerthingCheckBox.isChecked():
+            berthingIndices.append(len(hexSequence) - 1)
 
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
@@ -1463,6 +1716,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
+                berthingIndices=berthingIndices,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
         except Exception as ex:
@@ -1516,24 +1770,9 @@ class JumpRouteWindow(gui.WindowWidget):
         elif self._jumpRouteJob and self._jumpRouteJob.isCancelled():
             pass
         elif isinstance(result, logic.JumpRoute):
-            self._jumpRoute = result
-            self._jumpRouteTable.setHexes(
-                hexes=[hex for hex, _ in self._jumpRoute])
-
-            # Only calculate logistics if fuel based routing is enabled. If it's
-            # disabled the route will most likely contain worlds that don't
-            # match the refuelling strategy
-            if self._routingTypeComboBox.currentEnum() is not logic.RoutingType.Basic:
-                self._generateLogistics()
-
-            self._updateRouteLabels()
-            self._updateTravellerMapOverlays()
-
-            # We've calculated a new jump route so prevent future recalculations
-            # from zooming out to show the full jump route. Zooming will be
-            # re-enabled if we start calculating a "new" jump route (i.e the
-            # start/finish world changes)
-            self._zoomToJumpRoute = False
+            self._setJumpRoute(
+                jumpRoute=result,
+                routeLogistics=self._interactiveCalculateLogistics(jumpRoute=result))
         else:
             gui.MessageBoxEx.information(
                 parent=self,
@@ -1542,6 +1781,30 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteJob = None
         self._calculateRouteButton.showPrimaryText()
         self._enableDisableControls()
+
+    def _setJumpRoute(
+            self,
+            jumpRoute: logic.JumpRoute,
+            routeLogistics: typing.Optional[logic.RouteLogistics]
+            ) -> None:
+            self._jumpRoute = jumpRoute
+            self._routeLogistics = routeLogistics
+            self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
+
+            if self._routeLogistics:
+                self._refuellingPlanTable.setPitStops(
+                    pitStops=self._routeLogistics.refuellingPlan())
+            else:
+                self._refuellingPlanTable.removeAllRows()
+
+            self._updateRouteLabels()
+            self._updateTravellerMapOverlays()
+
+            # We've set a new jump route so prevent future recalculations
+            # from zooming out to show the full jump route. Zooming will be
+            # re-enabled if we start calculating a "new" jump route (i.e the
+            # start/finish world changes)
+            self._shouldZoomToNewRoute = False
 
     def _updateJumpRouteTableColumns(self, index: int) -> None:
         self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
@@ -1644,7 +1907,7 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Pit Stop Calculations...',
-                callback=lambda: pitStop.totalCost(),
+                callback=lambda: self._showCalculations(pitStop.totalCost()),
                 enabled=pitStop != None
             ),
             gui.MenuItem(
@@ -1732,8 +1995,18 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(lambda: self._showJumpRouteOnMap())
         action.setEnabled(self._jumpRoute != None)
 
+        menu = QtWidgets.QMenu('Import', self)
+        menuItems.append(menu)
+        action = menu.addAction('Jump Route...')
+        action.triggered.connect(self._importJumpRoute)
+
+
+        menu = QtWidgets.QMenu('Export', self)
+        menuItems.append(menu)
+        action = menu.addAction('Jump Route...')
+        action.triggered.connect(self._exportJumpRoute)
+        action.setEnabled(self._jumpRoute != None)
         action = menu.addAction('Screenshot...')
-        menuItems.append(action)
         action.setEnabled(True)
         action.triggered.connect(self._exportMapScreenshot)
 
@@ -1765,52 +2038,55 @@ class JumpRouteWindow(gui.WindowWidget):
 
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
         for nodeIndex in range(self._jumpRoute.nodeCount()):
-            if self._jumpRoute.hex(nodeIndex) == hex:
+            if self._jumpRoute.nodeAt(nodeIndex) == hex:
                 jumpNodes[nodeIndex] = None
 
         if self._routeLogistics:
             refuellingPlan = self._routeLogistics.refuellingPlan()
             if refuellingPlan:
                 for pitStop in refuellingPlan:
-                    if pitStop.jumpIndex() in jumpNodes:
-                        jumpNodes[pitStop.jumpIndex()] = pitStop
+                    if pitStop.routeIndex() in jumpNodes:
+                        jumpNodes[pitStop.routeIndex()] = pitStop
 
+        routeParsecs = self._jumpRoute.totalParsecs()
         toolTip = ''
         for nodeIndex, pitStop in jumpNodes.items():
             toolTip += f'<li><nobr>Route Node: {nodeIndex + 1}</nobr></li>'
+            toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
 
-            if nodeIndex != 0:
-                toolTip += '<li><nobr>Route Distance: {} parsecs</nobr></li>'.format(
-                    self._jumpRoute.nodeParsecs(index=nodeIndex))
+            nodeParsecs = self._jumpRoute.nodeParsecs(index=nodeIndex)
+            toolTip += '<li><nobr>Travelled: {} parsecs</nobr></li>'.format(
+                nodeParsecs)
+            toolTip += '<li><nobr>Remaining: {} parsecs</nobr></li>'.format(
+                routeParsecs - nodeParsecs)
 
-            if not pitStop:
-                continue # Nothing mor to do
+            if pitStop:
+                refuellingType = pitStop.refuellingType()
+                if refuellingType:
+                    toolTip += '<li><nobr>Refuelling Type: {}</nobr></li>'.format(
+                        _formatRefuellingTypeString(pitStop=pitStop))
 
-            refuellingType = pitStop.refuellingType()
-            if refuellingType:
-                toolTip += '<li><nobr>Refuelling Type: {}</nobr></li>'.format(
-                    _formatRefuellingTypeString(pitStop=pitStop))
+                    tonsOfFuel = pitStop.tonsOfFuel()
+                    if tonsOfFuel:
+                        toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
+                            common.formatNumber(number=tonsOfFuel.value()))
 
-                tonsOfFuel = pitStop.tonsOfFuel()
-                toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
-                    common.formatNumber(number=tonsOfFuel.value()))
+                    fuelCost = pitStop.fuelCost()
+                    if fuelCost:
+                        toolTip += '<li><nobr>Fuel Cost: Cr{}</nobr></li>'.format(
+                            common.formatNumber(number=fuelCost.value()))
 
-                fuelCost = pitStop.fuelCost()
-                if fuelCost:
-                    toolTip += '<li><nobr>Fuel Cost: Cr{}</nobr></li>'.format(
-                        common.formatNumber(number=fuelCost.value()))
-
-            berthingCost = pitStop.berthingCost()
-            if berthingCost:
-                toolTip += '<li><nobr>Berthing Type: {}</nobr></li>'.format(
-                    _formatBerthingTypeString(pitStop=pitStop))
-                if isinstance(berthingCost, common.ScalarCalculation):
-                    toolTip += '<li><nobr>Berthing Cost: Cr{}</nobr></li>'.format(
-                        common.formatNumber(number=berthingCost.value()))
-                elif isinstance(berthingCost, common.RangeCalculation):
-                    toolTip += '<li><nobr>Berthing Cost: Cr{best} - Cr{worst}</nobr></li>'.format(
-                        best=common.formatNumber(number=berthingCost.bestCaseValue()),
-                        worst=common.formatNumber(number=berthingCost.worstCaseValue()))
+                berthingCost = pitStop.berthingCost()
+                if berthingCost:
+                    toolTip += '<li><nobr>Berthing Type: {}</nobr></li>'.format(
+                        _formatBerthingTypeString(pitStop=pitStop))
+                    if isinstance(berthingCost, common.ScalarCalculation):
+                        toolTip += '<li><nobr>Berthing Cost: Cr{}</nobr></li>'.format(
+                            common.formatNumber(number=berthingCost.value()))
+                    elif isinstance(berthingCost, common.RangeCalculation):
+                        toolTip += '<li><nobr>Berthing Cost: Cr{best} - Cr{worst}</nobr></li>'.format(
+                            best=common.formatNumber(number=berthingCost.bestCaseValue()),
+                            worst=common.formatNumber(number=berthingCost.worstCaseValue()))
 
             toolTip += '</ul>'
 
@@ -1829,6 +2105,106 @@ class JumpRouteWindow(gui.WindowWidget):
 
         toolTip = f'<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">{toolTip}</ul>'
         return gui.createStringToolTip(toolTip, escape=False)
+
+    def _importJumpRoute(self) -> None:
+        dlg = _ImportJumpRouteDialog(parent=self)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+
+        try:
+            jumpRoute = logic.readJumpRoute(path=dlg.filePath())
+        except Exception as ex:
+            message = f'Failed to read jump route from "{dlg.filePath()}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        routeLogistics = None
+        if isinstance(jumpRoute, logic.RouteLogistics):
+            routeLogistics = jumpRoute
+            jumpRoute = routeLogistics.jumpRoute()
+            if not dlg.includeLogistics():
+                routeLogistics = None
+
+            if routeLogistics:
+                logisticsMilieu = routeLogistics.milieu()
+                currentMilieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+                if logisticsMilieu is not currentMilieu:
+                    text = 'The logistics for the imported jump route not from the current milieu\n' \
+                        f'Current: {currentMilieu.value}\n' \
+                        f'Imported: {logisticsMilieu.value}\n' \
+                        '\nDo you want to import them?'
+                    answer = gui.MessageBoxEx.question(
+                        parent=self,
+                        text=text,
+                        buttons=QtWidgets.QMessageBox.StandardButton.Yes | \
+                        QtWidgets.QMessageBox.StandardButton.No | \
+                        QtWidgets.QMessageBox.StandardButton.Cancel)
+                    if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
+                        return # User cancelled
+
+                    if answer == QtWidgets.QMessageBox.StandardButton.No:
+                        # Ignore logistics but continue importing route
+                        routeLogistics = None
+
+        if not jumpRoute:
+            message = f'No jump route found in "{dlg.filePath()}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        if dlg.replaceStartFinish():
+            self._selectStartFinishWidget.setHexes(
+                startHex=jumpRoute.startNode(),
+                finishHex=jumpRoute.finishNode())
+
+        if dlg.replaceWaypoints():
+            self._waypointsTable.removeAllRows()
+
+            # Check for waypoints (start & finish are ignored as they
+            # can't be waypoints)
+            for index in range(1, jumpRoute.nodeCount() - 1):
+                if jumpRoute.isWaypoint(index):
+                    node = jumpRoute.nodeAt(index)
+                    row = self._waypointsTable.addHex(node)
+                    self._waypointsTable.setBerthingChecked(
+                        row,
+                        jumpRoute.mandatoryBerthing(index))
+
+        self._shouldZoomToNewRoute = True
+        self._setJumpRoute(
+            jumpRoute=jumpRoute,
+            routeLogistics=routeLogistics)
+
+    def _exportJumpRoute(self) -> None:
+        if not self._jumpRoute:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='No jump route to export')
+            return
+
+        dlg = _ExportJumpRouteDialog(parent=self)
+        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+
+        try:
+            logic.writeJumpRoute(
+                route=self._routeLogistics if dlg.includeLogistics() else self._jumpRoute,
+                path=dlg.filePath(),
+                includeCalculations=dlg.includeCalculations())
+        except Exception as ex:
+            message = f'Failed to write jump route to "{dlg.filePath()}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
 
     def _exportMapScreenshot(self) -> None:
         try:
@@ -1918,9 +2294,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _showJumpRouteOnMap(self) -> None:
         if not self._jumpRoute:
             return
-
-        self._showHexesOnMap(
-            hexes=[hex for hex, _ in self._jumpRoute])
+        self._showHexesOnMap(hexes=self._jumpRoute.nodes())
 
     def _showHexesOnMap(
             self,
@@ -2070,7 +2444,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._mapWidget.setJumpRoute(
                 jumpRoute=self._jumpRoute,
                 refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
-            if self._zoomToJumpRoute:
+            if self._shouldZoomToNewRoute:
                 # Only zoom to area if this is a 'new' route (i.e. the start/finish worlds have changed).
                 # Otherwise we assume this is an iteration of the existing jump route and the user wants
                 # to stay with their current view
@@ -2207,127 +2581,60 @@ class JumpRouteWindow(gui.WindowWidget):
             return False
         return True
 
-    def _generateLogistics(self) -> None:
-        self._routeLogistics = None
-        self._refuellingPlanTable.removeAllRows()
-        self._avgRouteCostLabel.setText('')
-        self._minRouteCostLabel.setText('')
-        self._maxRouteCostLabel.setText('')
+    def _interactiveCalculateLogistics(
+            self,
+            jumpRoute: logic.JumpRoute
+            ) -> logic.RouteLogistics:
+            invalidConfigReason = None
+            if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
+                invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
+            elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
+                invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
 
-        invalidConfigReason = None
-        if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
-            invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
-        elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
-            invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
+            if invalidConfigReason:
+                gui.MessageBoxEx.information(
+                    parent=self,
+                    text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
+                return
 
-        if invalidConfigReason:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
-            return
-
-        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-        pitCostCalculator = logic.PitStopCostCalculator(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
-
-        try:
-            self._routeLogistics = logic.calculateRouteLogistics(
-                jumpRoute=self._jumpRoute,
-                shipTonnage=self._shipTonnageSpinBox.value(),
-                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
-                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                pitCostCalculator=pitCostCalculator,
-                requiredBerthingIndices=self._generateRequiredBerthingIndices(),
-                includeLogisticsCosts=True) # Always include logistics costs
-        except Exception as ex:
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-            startHex, _ = self._jumpRoute.startNode()
-            finishHex, _ = self._jumpRoute.finishNode()
-            startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
-            message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
-                start=startString,
-                finish=finishString)
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+            pitCostCalculator = logic.PitStopCostCalculator(
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
 
-        if self._routeLogistics:
-            self._refuellingPlanTable.setPitStops(
-                pitStops=self._routeLogistics.refuellingPlan())
-        else:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
-
-        self._updateRouteLabels()
-
-    def _generateRequiredBerthingIndices(self) -> typing.Optional[typing.Set[int]]:
-        if not self._jumpRoute or self._jumpRoute.nodeCount() < 1:
-            return None
-
-        # The jump route planner will reduce sequences of the same waypoint world to a single
-        # stop at that world. In order to match the waypoints to the jump route we need to
-        # remove such sequences. This includes sequences where the worlds at the start of the
-        # waypoint list match the start world and/or worlds at the end of the list match the
-        # finish world.
-
-        waypoints: typing.List[typing.Tuple[
-            travellermap.HexPosition,
-            bool # Mandatory berthing required
-            ]] = []
-
-        startHex, startWorld = self._jumpRoute.startNode()
-        waypoints.append((
-            startHex,
-            startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
-
-        for row in range(self._waypointsTable.rowCount()):
-            waypoints.append((
-                self._waypointsTable.hex(row),
-                self._waypointsTable.isBerthingChecked(row)))
-
-        finishHex, finishWorld = self._jumpRoute.finishNode()
-        waypoints.append((
-            finishHex,
-            finishWorld and self._includeFinishWorldBerthingCheckBox.isChecked()))
-
-        requiredBerthingIndices = set()
-
-        for waypointIndex in range(len(waypoints) - 1, 0, -1):
-            if waypoints[waypointIndex][0] == waypoints[waypointIndex - 1][0]:
-                # This is a sequence of the same hex so remove the last instance in the sequence
-                if waypoints[waypointIndex][1]:
-                    # Berthing is required if any of the instances of the world in the sequence are
-                    # marked as requiring berthing
-                    waypoints[waypointIndex - 1] = waypoints[waypointIndex]
-                waypoints.pop(waypointIndex)
-
-        waypointIndex = 0
-        for jumpIndex in range(self._jumpRoute.nodeCount()):
-            if self._jumpRoute.hex(jumpIndex) == waypoints[waypointIndex][0]:
-                # We've found the current waypoint on the jump route
-                if waypoints[waypointIndex][1]:
-                    requiredBerthingIndices.add(jumpIndex)
-                waypointIndex += 1
-                if waypointIndex >= len(waypoints):
-                    # All waypoints have been matched to the jump route
-                    break
-
-        if waypointIndex < len(waypoints):
-            # Failed to match waypoints to jump route
-            raise RuntimeError('Failed to match waypoints to jump route')
-
-        return requiredBerthingIndices
+            try:
+                routeLogistics = logic.calculateRouteLogistics(
+                    milieu=milieu,
+                    jumpRoute=jumpRoute,
+                    shipTonnage=self._shipTonnageSpinBox.value(),
+                    shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                    shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                    shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                    perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                    pitCostCalculator=pitCostCalculator,
+                    includeLogisticsCosts=True) # Always include logistics costs
+                if not routeLogistics:
+                    gui.MessageBoxEx.information(
+                        parent=self,
+                        text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
+                return routeLogistics
+            except Exception as ex:
+                startHex = jumpRoute.startNode()
+                finishHex = jumpRoute.finishNode()
+                startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+                finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+                message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
+                    start=startString,
+                    finish=finishString)
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

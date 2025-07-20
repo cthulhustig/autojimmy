@@ -29,6 +29,7 @@ class RoutePlannerJob(QtCore.QThread):
             jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator], # This will be called from the worker thread
             hexFilter: typing.Optional[logic.HexFilterInterface] = None, # This will be called from the worker thread
+            berthingIndices: typing.Optional[typing.Collection[int]] = None, # This is a collection of indices into the hex sequence where berthing is mandatory
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None
             ) -> None:
@@ -47,6 +48,7 @@ class RoutePlannerJob(QtCore.QThread):
         self._shipCurrentFuel = shipCurrentFuel
         self._shipFuelPerParsec = shipFuelPerParsec
         self._jumpCostCalculator = jumpCostCalculator
+        self._berthingIndices = set(berthingIndices) if berthingIndices else None
         self._pitCostCalculator = pitCostCalculator
         self._hexFilter = hexFilter
 
@@ -92,6 +94,7 @@ class RoutePlannerJob(QtCore.QThread):
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
                 hexFilter=self._hexFilter,
+                berthingIndices=self._berthingIndices,
                 progressCallback=self._handleProgress,
                 isCancelledCallback=self.isCancelled)
 

@@ -220,7 +220,10 @@ class Simulator(object):
             self._jumpRouteIndex += 1
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
-                nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
+                nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
+                nextWorld = traveller.WorldManager.instance().worldByPosition(
+                    milieu=self._milieu,
+                    hex=nextHex)
                 currentString = traveller.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=self._currentHex)
@@ -244,7 +247,7 @@ class Simulator(object):
                 self._actualLogisticsCost += jumpOverheads
 
             # We've reached the sale world
-            assert(self._currentHex == jumpRoute.finishHex())
+            assert(self._currentHex == jumpRoute.finishNode())
             assert(self._actualLogisticsCost <= routeLogistics.totalCosts().worstCaseValue())
             assert(self._actualLogisticsCost >= routeLogistics.totalCosts().bestCaseValue())
         else:

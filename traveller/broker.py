@@ -71,39 +71,59 @@ _MgtBrokerPercentageMap = {
 }
 _MgtBrokerMaxDm = common.ScalarCalculation(value=6, name='Max Allowed Broker DM')
 
-class _MgtBrokerPercentageLookupFunction(common.CalculatorFunction):
+class MgtBrokerSkillToPercentageCutFunction(common.CalculatorFunction):
     def __init__(
             self,
-            skillValue: common.ScalarCalculation,
-            brokerPercentage: int
+            skill: common.ScalarCalculation,
+            percentage: common.ScalarCalculation
             ) -> None:
-        self._skillValue = skillValue
-        self._brokerPercentage = brokerPercentage
+        self._skill = skill
+        self._percentage = percentage
 
     def value(self) -> typing.Union[int, float]:
-        return self._brokerPercentage
+        return self._percentage.value()
 
     def calculationString(
             self,
             outerBrackets: bool,
             decimalPlaces: int = 2
             ) -> str:
-        valueString = self._skillValue.name(forCalculation=True)
+        valueString = self._skill.name(forCalculation=True)
         if not valueString:
-            valueString = self._skillValue.calculationString(
+            valueString = self._skill.calculationString(
                 outerBrackets=False,
                 decimalPlaces=decimalPlaces)
         return f'BrokerCutPercentageForDM({valueString})'
 
     def calculations(self) -> typing.List[common.ScalarCalculation]:
-        if self._skillValue.name():
-            return [self._skillValue]
-        return self._skillValue.subCalculations()
+        if self._skill.name():
+            return [self._skill]
+        return self._skill.subCalculations()
 
-    def copy(self) -> '_MgtBrokerPercentageLookupFunction':
-        return _MgtBrokerPercentageLookupFunction(
-            skillValue=self._skillValue.copy(),
-            brokerPercentage=self._brokerPercentage)
+    @staticmethod
+    def serialisationType() -> str:
+        return 'mgtbrokercut'
+
+    def toJson(self) -> typing.Mapping[str, typing.Any]:
+        return {
+            'skill': common.serialiseCalculation(self._skill, includeVersion=False),
+            'percentage': common.serialiseCalculation(self._percentage, includeVersion=False)}
+
+    @staticmethod
+    def fromJson(
+        jsonData: typing.Mapping[str, typing.Any]
+        ) -> 'MgtBrokerSkillToPercentageCutFunction':
+        skill = jsonData.get('skill')
+        if skill is None:
+            raise RuntimeError('Mongoose broker cut function is missing the skill property')
+        skill = common.deserialiseCalculation(jsonData=skill)
+
+        percentage = jsonData.get('percentage')
+        if percentage is None:
+            raise RuntimeError('Mongoose broker cut function is missing the percentage property')
+        percentage = common.deserialiseCalculation(jsonData=percentage)
+
+        return MgtBrokerSkillToPercentageCutFunction(skill=skill, percentage=percentage)
 
 def _calculateMgtBrokerDetails(
     skillValue: common.ScalarCalculation
@@ -121,13 +141,17 @@ def _calculateMgtBrokerDetails(
         skillValue = common.Calculator.min(
             lhs=skillValue,
             rhs=_MgtBrokerMaxDm,
-            name='Clamped Broker DM')
+            name='Clamped Broker Skill')
         brokerPercentage = _MgtBrokerPercentageMap.get(skillValue.value())
 
     brokerPercentage = common.ScalarCalculation(
-        value=_MgtBrokerPercentageLookupFunction(
-            skillValue=skillValue,
-            brokerPercentage=brokerPercentage),
+        value=brokerPercentage,
+        name=f'Percentage Cut for Broker with Broker {skillValue.value()}')
+
+    brokerPercentage = common.ScalarCalculation(
+        value=MgtBrokerSkillToPercentageCutFunction(
+            skill=skillValue,
+            percentage=brokerPercentage),
         name='Broker Cut Percentage')
 
     return (skillValue, brokerPercentage, False)

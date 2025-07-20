@@ -1,10 +1,13 @@
 import common
 import logic
+import traveller
+import travellermap
 import typing
 
 class RouteLogistics(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
             jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[logic.RefuellingPlan],
             perJumpOverheads: typing.Optional[typing.Union[int, common.ScalarCalculation]]
@@ -12,25 +15,30 @@ class RouteLogistics(object):
         if not jumpRoute:
             raise ValueError('Invalid jump route')
 
-        if perJumpOverheads and not isinstance(perJumpOverheads, common.ScalarCalculation):
+        if perJumpOverheads != None and not isinstance(perJumpOverheads, common.ScalarCalculation):
             assert(isinstance(perJumpOverheads, int))
             perJumpOverheads = common.ScalarCalculation(
                 value=perJumpOverheads,
                 name='Per Jump Overheads')
 
+        self._milieu = milieu
         self._jumpRoute = jumpRoute
         self._refuellingPlan = refuellingPlan
+        self._perJumpOverheads = perJumpOverheads
 
         self._totalOverheads = None
-        if perJumpOverheads:
+        if self._perJumpOverheads:
             jumpCount = common.ScalarCalculation(
                 value=self._jumpRoute.jumpCount(),
                 name='Jump Count')
 
             self._totalOverheads = common.Calculator.multiply(
-                lhs=perJumpOverheads,
+                lhs=self._perJumpOverheads,
                 rhs=jumpCount,
                 name='Total Overheads')
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
 
     def jumpCount(self) -> int:
         return self._jumpRoute.jumpCount()
@@ -44,7 +52,10 @@ class RouteLogistics(object):
     def refuellingPlan(self) -> typing.Optional[logic.RefuellingPlan]:
         return self._refuellingPlan
 
-    def totalOverheads(self) -> typing.Optional[typing.Union[common.ScalarCalculation, common.RangeCalculation]]:
+    def perJumpOverheads(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._perJumpOverheads
+
+    def totalOverheads(self) -> typing.Optional[common.ScalarCalculation]:
         return self._totalOverheads
 
     def totalCosts(self) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:
@@ -60,6 +71,7 @@ class RouteLogistics(object):
             name='Total Logistics Cost')
 
 def calculateRouteLogistics(
+        milieu: travellermap.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -67,11 +79,11 @@ def calculateRouteLogistics(
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
         pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,
-        # Optional set containing the integer indices of jump route worlds where berthing is required.
-        requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
-        # Specify if generated route logistics will include refuelling costs. If not included the
-        # costs will still be taken into account when calculating the optimal pit stop worlds,
-        # however the costs for fuel and berthing will be zero
+        # Specify if generated route logistics will include logistics costs. If
+        # not included, fuel, berthing and overheads costs will be set to 0 in
+        # the returned logistics.
+        # When not included the, costs will still be taken into account when
+        # calculating the optimal worlds for refuelling
         includeLogisticsCosts: bool = True,
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[RouteLogistics]:
@@ -79,13 +91,13 @@ def calculateRouteLogistics(
     if pitCostCalculator:
         if jumpRoute.nodeCount() > 1:
             refuellingPlan = logic.calculateRefuellingPlan(
+                milieu=milieu,
                 jumpRoute=jumpRoute,
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
                 shipStartingFuel=shipStartingFuel,
                 shipFuelPerParsec=shipFuelPerParsec,
                 pitCostCalculator=pitCostCalculator,
-                requiredBerthingIndices=requiredBerthingIndices,
                 includeRefuellingCosts=includeLogisticsCosts,
                 diceRoller=diceRoller)
             if not refuellingPlan:
@@ -94,14 +106,15 @@ def calculateRouteLogistics(
             # The start and end world are the same so there are no travel costs. There can still be
             # berthing costs on the start world, this covers the case where you've not arrived on
             # the world yet
-            requireStartWorldBerthing = requiredBerthingIndices and 0 in requiredBerthingIndices
-            requireFinishWorldBerthing = requiredBerthingIndices and (jumpRoute.nodeCount() - 1) in requiredBerthingIndices
-
-            if requireStartWorldBerthing or requireFinishWorldBerthing:
-                _, startWorld = jumpRoute.startNode()
+            mandatoryStartBerthing = jumpRoute.mandatoryBerthing(index=0)
+            mandatoryFinishBerthing = jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1)
+            if mandatoryStartBerthing or mandatoryFinishBerthing:
+                startHex = jumpRoute.startNode()
+                startWorld = traveller.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
                     berthingCost = pitCostCalculator.berthingCost(
-                        world=startWorld)
+                        world=startWorld,
+                        mandatory=True)
                     if berthingCost:
                         berthingCost = common.Calculator.rename(
                             value=berthingCost,
@@ -114,14 +127,14 @@ def calculateRouteLogistics(
                                 name='Ignored Berthing Cost')
 
                     pitStop = logic.PitStop(
-                        jumpIndex=0,
+                        routeIndex=0,
                         world=startWorld,
                         refuellingType=None, # No refuelling
                         tonsOfFuel=None,
                         fuelCost=None,
                         berthingCost=berthingCost)
                     refuellingPlan = logic.RefuellingPlan(
-                        milieu=jumpRoute.milieu(),
+                        milieu=milieu,
                         pitStops=[pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads
@@ -132,6 +145,7 @@ def calculateRouteLogistics(
             name='Ignored Per Jump Overheads')
 
     return logic.RouteLogistics(
+        milieu=milieu,
         jumpRoute=jumpRoute,
         refuellingPlan=refuellingPlan,
         perJumpOverheads=reportedPerJumpOverheads)

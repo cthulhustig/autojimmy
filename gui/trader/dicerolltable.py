@@ -1,9 +1,6 @@
 import common
 import enum
 import gui
-import json
-import logging
-import logic
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -18,8 +15,6 @@ class DiceRollTable(gui.ListTable):
         ColumnType.RollResult,
         ColumnType.DieCount
     ]
-
-    _ContentVersion = 'v1'
 
     def __init__(
             self,
@@ -74,36 +69,6 @@ class DiceRollTable(gui.ListTable):
             ) -> None:
         self.removeAllRows()
         self.addDiceRolls(diceRolls)
-
-    def saveContent(self) -> QtCore.QByteArray:
-        state = QtCore.QByteArray()
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(DiceRollTable._ContentVersion)
-
-        data = logic.serialiseDiceRollList(diceRolls=self.diceRolls())
-        stream.writeQString(json.dumps(data))
-
-        return state
-
-    def restoreContent(
-            self,
-            state: QtCore.QByteArray
-            ) -> bool:
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
-        version = stream.readQString()
-        if version != DiceRollTable._ContentVersion:
-            # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore DiceRollTable content (Incorrect version)')
-            return False
-
-        try:
-            data = json.loads(stream.readQString())
-            self.setDiceRolls(diceRolls=logic.deserialiseDiceRollResultList(data=data))
-        except Exception as ex:
-            logging.warning(f'Failed to deserialise DiceRollTable content', exc_info=ex)
-            return False
-
-        return True
 
     def _fillRow(
             self,

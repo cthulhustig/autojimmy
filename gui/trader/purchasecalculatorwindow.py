@@ -143,13 +143,6 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='DiceRollTableContent',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._diceRollTable.restoreContent(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
             key='ResultsSplitterState',
             type=QtCore.QByteArray)
         if storedValue:

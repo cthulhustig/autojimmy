@@ -1,93 +1,91 @@
-import traveller
+import enum
 import travellermap
 import typing
 
 class JumpRoute(object):
+    class NodeFlags(enum.IntFlag):
+        Waypoint = 1
+        MandatoryBerthing = 2
+
     def __init__(
             self,
-            milieu: travellermap.Milieu,
             nodes: typing.Sequence[typing.Tuple[
                 travellermap.HexPosition,
-                typing.Optional[traveller.World]]]
+                NodeFlags]]
             ) -> None:
         if not nodes:
             raise ValueError('A jump route can\'t have an empty nodes list')
-        self._milieu = milieu
-        self._nodes = list(nodes)
+        self._hexes: typing.List[travellermap.HexPosition] = []
+        self._flags: typing.List[JumpRoute.NodeFlags] = []
+        for hex, flags in nodes:
+            self._hexes.append(hex)
+            self._flags.append(flags)
 
-        # The total parsecs calculation is done on demand as it's not often used and is relatively
-        # expensive to calculate
-        self._totalParsecs = None
+        self._totalParsecs = 0
+        self._minJumpRating = 0
 
-    def milieu(self) -> travellermap.Milieu:
-        return self._milieu
+        if len(self._hexes) > 1:
+            fromHex = self._hexes[0]
+            for index in range(1, len(self._hexes)):
+                toHex = self._hexes[index]
+                parsecs = fromHex.parsecsTo(toHex)
+
+                self._totalParsecs += parsecs
+                if parsecs > self._minJumpRating:
+                    self._minJumpRating = parsecs
+                fromHex = toHex
 
     def jumpCount(self) -> int:
-        return len(self._nodes) - 1
+        return len(self._hexes) - 1
 
     def nodeCount(self) -> int:
-        return len(self._nodes)
+        return len(self._hexes)
 
-    def node(self, index) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes[index]
+    def nodeAt(self, index: int) -> travellermap.HexPosition:
+        return self._hexes[index]
 
-    def startNode(self) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes[0]
+    def nodes(self) -> typing.List[travellermap.HexPosition]:
+        return list(self._hexes)
 
-    def finishNode(self) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes[-1]
+    def startNode(self) -> travellermap.HexPosition:
+        return self._hexes[0]
 
-    def hex(self, index: int) -> travellermap.HexPosition:
-        return self._nodes[index][0]
+    def finishNode(self) -> travellermap.HexPosition:
+        return self._hexes[-1]
 
-    def startHex(self) -> travellermap.HexPosition:
-        return self._nodes[0][0]
+    def flagsAt(self, index: int) -> NodeFlags:
+        return self._flags[index]
 
-    def finishHex(self) -> travellermap.HexPosition:
-        return self._nodes[-1][0]
+    def isWaypoint(self, index: int) -> bool:
+        return self._flags[index] & JumpRoute.NodeFlags.Waypoint
 
-    def world(self, index: int) -> typing.Optional[traveller.World]:
-        return self._nodes[index][1]
+    def mandatoryBerthing(self, index: int) -> bool:
+        return self._flags[index] & JumpRoute.NodeFlags.MandatoryBerthing
 
-    def startWorld(self) -> typing.Optional[traveller.World]:
-        return self._nodes[0][1]
-
-    def finishWorld(self) -> typing.Optional[traveller.World]:
-        return self._nodes[-1][1]
+    def minJumpRating(self) -> int:
+        return self._minJumpRating
 
     def nodeParsecs(self, index: int) -> int:
         parsecs = 0
         for current in range(0, self.jumpCount()):
             if current >= index:
                 break
-            fromHex = self._nodes[current][0]
-            toHex = self._nodes[current + 1][0]
+            fromHex = self._hexes[current]
+            toHex = self._hexes[current + 1]
             parsecs += fromHex.parsecsTo(toHex)
         return parsecs
 
     def totalParsecs(self) -> int:
-        if self._totalParsecs == None:
-            self._totalParsecs = self.nodeParsecs(index=len(self._nodes) - 1)
         return self._totalParsecs
 
-    def __getitem__(self, index: int) -> typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]:
-        return self._nodes.__getitem__(index)
+    def __getitem__(self, index: int) -> travellermap.HexPosition:
+        return self.nodeAt(index)
 
-    def __iter__(self) -> typing.Iterator[typing.Tuple[
-            travellermap.HexPosition,
-            typing.Optional[traveller.World]]]:
-        return self._nodes.__iter__()
+    def __iter__(self) -> typing.Iterator[travellermap.HexPosition]:
+        return self._hexes.__iter__()
 
     def __next__(self) -> typing.Any:
-        return self._nodes.__next__()
+        return self._hexes.__next__()
 
     def __len__(self) -> int:
-        return self._nodes.__len__()
+        return self._hexes.__len__()

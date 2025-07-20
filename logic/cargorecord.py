@@ -415,8 +415,8 @@ def serialiseCargoRecord(
     return {
         'ruleSystem': cargoRecord.ruleSystem().name,
         'tradeGoodId': cargoRecord.tradeGood().id(),
-        'quantity': logic.serialiseCalculation(cargoRecord.quantity()),
-        'pricePerTon': logic.serialiseCalculation(cargoRecord.pricePerTon())}
+        'quantity': common.serialiseCalculation(cargoRecord.quantity()),
+        'pricePerTon': common.serialiseCalculation(cargoRecord.pricePerTon())}
 
 def deserialiseCargoRecord(data: typing.Mapping[str, typing.Any]) -> CargoRecord:
     ruleSystem = data.get('ruleSystem')
@@ -447,8 +447,8 @@ def deserialiseCargoRecord(data: typing.Mapping[str, typing.Any]) -> CargoRecord
         tradeGood=traveller.tradeGoodFromId(
             ruleSystem=ruleSystem,
             tradeGoodId=tradeGoodId),
-        quantity=logic.deserialiseCalculation(quantity),
-        pricePerTon=logic.deserialiseCalculation(pricePerTon))
+        quantity=common.deserialiseCalculation(quantity),
+        pricePerTon=common.deserialiseCalculation(pricePerTon))
 
 def serialiseCargoRecordList(
         cargoRecords: typing.Iterable[CargoRecord]

@@ -236,11 +236,12 @@ def sanitiseFileName(fileName: str) -> str:
         result = result.replace(char, '')
     return result
 
+T = typing.TypeVar('T')
 def getSubclasses(
-        classType: typing.Type[typing.Any],
+        classType: typing.Type[T],
         topLevelOnly: bool = True
-        ):
-    subclasses = []
+        ) -> typing.List[typing.Type[T]]:
+    subclasses: typing.List[T] = []
 
     for subclass in classType.__subclasses__():
         if subclass.__subclasses__():

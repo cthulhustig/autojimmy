@@ -3,7 +3,6 @@ from .tradescore import *
 from .taglevels import *
 from .worldtagging import *
 from .worldsearch import *
-from .serialization import *
 from .cargorecord import *
 from .jumproute import *
 from .refuelling import *
@@ -15,3 +14,4 @@ from .trader import *
 from .cargomanifest import *
 from .simulator import *
 from .hexoutlines import *
+from .serialization import *

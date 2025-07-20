@@ -1,5 +1,8 @@
 import enum
 
+# NOTE: The names of these enums are when serialising jump routes (specifically
+# the logistics). If I ever rename them I'll need to do something to maintain
+# backwards compatibility
 class Milieu(enum.Enum):
     IW = 'IW'
     M0 = 'M0'

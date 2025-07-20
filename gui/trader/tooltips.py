@@ -229,14 +229,15 @@ def createLogisticsToolTip(
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
         ) -> str:
+    milieu = routeLogistics.milieu()
     jumpRoute = routeLogistics.jumpRoute()
-    startHex, _ = jumpRoute.startNode()
-    finishHex, _ = jumpRoute.finishNode()
+    startHex = jumpRoute.startNode()
+    finishHex = jumpRoute.finishNode()
     startString = html.escape(traveller.WorldManager.instance().canonicalHexName(
-        milieu=jumpRoute.milieu(),
+        milieu=milieu,
         hex=startHex))
     finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(
-        milieu=jumpRoute.milieu(),
+        milieu=milieu,
         hex=finishHex))
 
     toolTip = '<html>'
@@ -296,12 +297,15 @@ def createLogisticsToolTip(
     pitStopMap = {}
     if refuellingPlan:
         for pitStop in refuellingPlan:
-            pitStopMap[pitStop.jumpIndex()] = pitStop
+            pitStopMap[pitStop.routeIndex()] = pitStop
 
-    for index, (nodeHex, world) in enumerate(jumpRoute):
+    for index, nodePos in enumerate(jumpRoute):
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(milieu=jumpRoute.milieu(), hex=nodeHex)))
+            name=traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:
