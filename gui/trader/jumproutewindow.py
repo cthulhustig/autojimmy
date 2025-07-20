@@ -605,9 +605,9 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         optionsLayout.addRow('Include Logistics', self._includeLogisticsCheckBox)
         optionsLayout.addRow('Include Calculations', self._includeCalculationsCheckBox)
 
-        self._importButton = QtWidgets.QPushButton('Export')
-        self._importButton.setDefault(True)
-        self._importButton.clicked.connect(self.accept)
+        self._exportButton = QtWidgets.QPushButton('Export')
+        self._exportButton.setDefault(True)
+        self._exportButton.clicked.connect(self.accept)
 
         self._cancelButton = QtWidgets.QPushButton('Cancel')
         self._cancelButton.clicked.connect(self.reject)
@@ -615,7 +615,7 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._importButton)
+        buttonLayout.addWidget(self._exportButton)
         buttonLayout.addWidget(self._cancelButton)
 
         layout = QtWidgets.QVBoxLayout()
