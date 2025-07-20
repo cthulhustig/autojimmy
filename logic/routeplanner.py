@@ -347,7 +347,6 @@ class RoutePlanner(object):
                             startFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
                         if finishWorldIndex in berthingIndices:
                             finishFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
-                    # TODO: Need to check this is correct
                     return logic.JumpRoute(
                         nodes=[(startHex, startFlags),
                                (finishHex, finishFlags)])
@@ -822,7 +821,6 @@ class RoutePlanner(object):
             parent = node.parent()
             nodeHex = node.hex()
 
-            # TODO: Need to check this is correct
             nodeFlags = 0
             sequenceHex = hexSequence[sequenceIndex]
             if sequenceHex == nodeHex:
