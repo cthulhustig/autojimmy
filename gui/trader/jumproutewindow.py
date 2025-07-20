@@ -489,6 +489,7 @@ class _ImportJumpRouteDialog(gui.DialogEx):
         self._cancelButton.clicked.connect(self.reject)
 
         buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
         buttonLayout.addWidget(self._importButton)
         buttonLayout.addWidget(self._cancelButton)
@@ -612,6 +613,7 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         self._cancelButton.clicked.connect(self.reject)
 
         buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
         buttonLayout.addWidget(self._importButton)
         buttonLayout.addWidget(self._cancelButton)
