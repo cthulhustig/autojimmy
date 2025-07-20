@@ -2132,7 +2132,7 @@ class JumpRouteWindow(gui.WindowWidget):
             if routeLogistics:
                 logisticsMilieu = routeLogistics.milieu()
                 currentMilieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-                if logisticsMilieu != currentMilieu:
+                if logisticsMilieu is not currentMilieu:
                     text = 'The logistics for the imported jump route not from the current milieu\n' \
                         f'Current: {currentMilieu.value}\n' \
                         f'Imported: {logisticsMilieu.value}\n' \
