@@ -489,7 +489,7 @@ def _deserialiseLogistics(
 
             world = traveller.WorldManager.instance().worldByPosition(
                 milieu=milieu,
-                hex=route[routeIndex])
+                hex=route.nodeAt(routeIndex))
 
             pitStops.append(logic.PitStop(
                 routeIndex=routeIndex,
