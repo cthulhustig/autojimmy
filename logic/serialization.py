@@ -451,23 +451,28 @@ def _deserialiseLogistics(
     jsonPitStops = jsonData.get('stops')
     refuelling = None
     if jsonPitStops is not None:
+        if not isinstance(jsonPitStops, list):
+            raise RuntimeError('Jump route logistics stops property is not a list')
+
         pitStops = []
         for index, jsonStop in enumerate(jsonPitStops):
-            assert(isinstance(jsonStop, dict))
+            if not isinstance(jsonStop, dict):
+                raise RuntimeError(f'Jump route logistics stop {index} is not a dictionary')
+
             routeIndex = jsonStop.get('index')
-            if index is None:
-                raise RuntimeError(f'Jump route stop {index} is missing index property')
+            if routeIndex is None:
+                raise RuntimeError(f'Jump route logistics stop {index} is missing index property')
             if not isinstance(routeIndex, int):
-                raise RuntimeError(f'Jump route stop {index} index property is not an integer')
+                raise RuntimeError(f'Jump route logistics stop {index} index property is not an integer')
             if (routeIndex < 0) or (routeIndex > (route.nodeCount() - 1)):
-                raise RuntimeError(f'Jump route stop {index} index property is out of range')
+                raise RuntimeError(f'Jump route logistics stop {index} index property is out of range')
 
             refuellingType = jsonStop.get('refuelling')
             if refuellingType is not None:
                 if not isinstance(refuellingType, str):
-                    raise RuntimeError(f'Jump route stop {index} refuelling property is not a string')
+                    raise RuntimeError(f'Jump route logistics stop {index} refuelling property is not a string')
                 if refuellingType not in _StringToRefuellingType:
-                    raise RuntimeError(f'Jump route stop {index} refuelling property has invalid value {refuellingType}')
+                    raise RuntimeError(f'Jump route logistics stop {index} refuelling property has invalid value {refuellingType}')
                 refuellingType = _StringToRefuellingType[refuellingType]
 
             fuelAmount = jsonStop.get('fuelAmount')
