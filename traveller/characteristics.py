@@ -84,7 +84,7 @@ class CharacteristicDMFunction(common.CalculatorFunction):
         if characteristic is None:
             raise RuntimeError('Characteristic DM function is missing the characteristic property')
         if not isinstance(characteristic, str):
-            raise RuntimeError('Significant digits function characteristic property is not a string')
+            raise RuntimeError('Characteristic DM function characteristic property is not a string')
         characteristic = characteristic.lower()
         if characteristic not in _CharacteristicSerialisationStrToType:
             raise RuntimeError(f'Characteristic DM function has invalid characteristic property {characteristic}')

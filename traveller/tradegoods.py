@@ -510,7 +510,7 @@ class TradeDMToPriceModifierFunction(common.CalculatorFunction):
         if type is None:
             raise RuntimeError('Trade DM function is missing the type property')
         if not isinstance(type, str):
-            raise RuntimeError('Significant digits function type property is not a string')
+            raise RuntimeError('Trade DM function type property is not a string')
         type = type.lower()
         if type not in _TradeTypeSerialisationStrToType:
             raise RuntimeError(f'Trade DM function has invalid type property {type}')
@@ -518,12 +518,12 @@ class TradeDMToPriceModifierFunction(common.CalculatorFunction):
 
         value = jsonData.get('value')
         if value is None:
-            raise RuntimeError('Characteristic DM function is missing the value property')
+            raise RuntimeError('Trade DM function is missing the value property')
         value = common.deserialiseCalculation(jsonData=value)
 
         modifier = jsonData.get('modifier')
         if modifier is None:
-            raise RuntimeError('Characteristic DM function is missing the modifier property')
+            raise RuntimeError('Trade DM function is missing the modifier property')
         modifier = common.deserialiseCalculation(jsonData=modifier)
 
         return TradeDMToPriceModifierFunction(
