@@ -645,6 +645,18 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._worldTable.customContextMenuRequested.connect(self._showWorldTableContextMenu)
 
+        # Override the tables actions for showing selected/all worlds on a popup map
+        # window with actions that will show them on the main map for this window
+        showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
+        showSelectionOnMapAction.setEnabled(False) # No selection
+        showSelectionOnMapAction.triggered.connect(self._showTableSelectionOnMap)
+        self._worldTable.setShowSelectionOnMapAction(showSelectionOnMapAction)
+
+        showContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showContentOnMapAction.setEnabled(False) # No content
+        showContentOnMapAction.triggered.connect(self._showTableContentOnMap)
+        self._worldTable.setShowContentOnMapAction(showContentOnMapAction)
+
         tableLayout = QtWidgets.QVBoxLayout()
         tableLayout.setContentsMargins(0, 0, 0, 0)
         tableLayout.setSpacing(0) # No spacing between tabs and table
@@ -919,12 +931,13 @@ class WorldSearchWindow(gui.WindowWidget):
                 text=f'The number of search results has been limited to {self._MaxSearchResults}',
                 stateKey='WorldSearchResultCountCapped')
 
-        self._worldTable.addHexes(hexes=[world.hex() for world in foundWorlds])
+        worldHexes = [world.hex() for world in foundWorlds]
+        self._worldTable.addHexes(hexes=worldHexes)
         self._resultsCountLabel.setText(common.formatNumber(len(foundWorlds)))
 
-        self._showWorldsOnMap(
-            worlds=foundWorlds,
-            highlightWorlds=True,
+        self._showHexesOnMap(
+            hexes=worldHexes,
+            highlightHexes=True,
             switchTab=False)
 
     def _clearResults(self) -> None:
@@ -935,56 +948,35 @@ class WorldSearchWindow(gui.WindowWidget):
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
 
-    # TODO: This will need work
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        world = self._worldTable.worldAt(y=point.y())
+        hasSelection = self._worldTable.hasSelection()
+        hasContent = not self._worldTable.isEmpty()
+        clickedRow = self._worldTable.rowAt(point.y())
+        clickedScore = self._worldTable.tradeScore(clickedRow)
 
-        menuItems = [
-            gui.MenuItem(
-                text='Find Trade Options for Selected Worlds...',
-                callback=lambda: self._findTradeOptions(self._worldTable.selectedWorlds()),
-                enabled=self._worldTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Find Trade Options for All Worlds...',
-                callback=lambda: self._findTradeOptions(self._worldTable.worlds()),
-                enabled=not self._worldTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(self._worldTable.selectedWorlds()),
-                enabled=self._worldTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(self._worldTable.worlds()),
-                enabled=not self._worldTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(self._worldTable.selectedWorlds()),
-                enabled=self._worldTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(self._worldTable.worlds()),
-                enabled=not self._worldTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Trade Score Calculations...',
-                callback=lambda: self._showTradeScoreCalculations(world),
-                enabled=world != None
-            ),
-        ]
+        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...')
+        findTradeOptionsForSelectedAction.setEnabled(hasSelection)
+        findTradeOptionsForSelectedAction.triggered.connect(
+            lambda: self._findTradeOptions(self._worldTable.selectedWorlds()))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._worldTable.viewport().mapToGlobal(point)
-        )
+        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All Worlds...')
+        findTradeOptionsForAllAction.setEnabled(hasContent)
+        findTradeOptionsForAllAction.triggered.connect(
+            lambda: self._findTradeOptions(self._worldTable.worlds()))
+
+        showTradeScoreCalculationsAction = QtWidgets.QAction('Show Trade Score Calculations...')
+        showTradeScoreCalculationsAction.setEnabled(clickedScore is not None)
+        showTradeScoreCalculationsAction.triggered.connect(
+            lambda: self._showTradeScoreCalculations(clickedRow))
+
+        menu = QtWidgets.QMenu()
+        self._worldTable.fillContextMenu(menu)
+        menu.addSeparator()
+        menu.addAction(findTradeOptionsForSelectedAction)
+        menu.addAction(findTradeOptionsForAllAction)
+        menu.addSeparator()
+        menu.addAction(showTradeScoreCalculationsAction)
+        menu.exec(self._worldTable.viewport().mapToGlobal(point))
 
     def _findTradeOptions(
             self,
@@ -1014,8 +1006,11 @@ class WorldSearchWindow(gui.WindowWidget):
             self,
             row: int
             ) -> None:
+        tradeScore = self._worldTable.tradeScore(row=row)
+        if not tradeScore:
+            return
+
         try:
-            tradeScore = self._worldTable.tradeScore(row=row)
             calculations = [tradeScore.totalPurchaseScore(), tradeScore.totalSaleScore()]
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(calculations=calculations)
@@ -1027,10 +1022,10 @@ class WorldSearchWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showWorldsOnMap(
+    def _showHexesOnMap(
             self,
-            worlds: typing.Iterable[traveller.World],
-            highlightWorlds: bool = False,
+            hexes: typing.Iterable[traveller.World],
+            highlightHexes: bool = False,
             switchTab: bool = True
             ) -> None:
         try:
@@ -1038,8 +1033,7 @@ class WorldSearchWindow(gui.WindowWidget):
                 self._resultsDisplayModeTabView.setCurrentWidget(
                     self._mapWrapperWidget)
 
-            hexes = [world.hex() for world in worlds]
-            if highlightWorlds:
+            if highlightHexes:
                 # Clear old highlight when highlighting new worlds
                 self._mapWidget.clearHexHighlights()
                 self._mapWidget.highlightHexes(hexes=hexes)
@@ -1051,6 +1045,12 @@ class WorldSearchWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _showTableSelectionOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._worldTable.selectedHexes())
+
+    def _showTableContentOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._worldTable.hexes())
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

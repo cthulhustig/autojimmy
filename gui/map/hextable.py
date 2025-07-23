@@ -258,6 +258,22 @@ class HexTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
+        self._showSelectionDetailsAction =  QtWidgets.QAction('Show Selection Details...', self)
+        self._showSelectionDetailsAction.setEnabled(False) # No selection
+        self._showSelectionDetailsAction.triggered.connect(self.showSelectionDetails)
+
+        self._showContentDetailsAction =  QtWidgets.QAction('Show All Details...', self)
+        self._showContentDetailsAction.setEnabled(False) # No content
+        self._showContentDetailsAction.triggered.connect(self.showContentDetails)
+
+        self._showSelectionOnMapAction =  QtWidgets.QAction('Show Selection on Map...', self)
+        self._showSelectionOnMapAction.setEnabled(False) # No selection
+        self._showSelectionOnMapAction.triggered.connect(self.showSelectionOnMap)
+
+        self._showContentOnMapAction =  QtWidgets.QAction('Show All on Map...', self)
+        self._showContentOnMapAction.setEnabled(False) # No content
+        self._showContentOnMapAction.triggered.connect(self.showContentOnMap)
+
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
@@ -446,6 +462,65 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> None:
         self._hexTooltipProvider = provider
 
+    def insertRow(self, row: int) -> None:
+        super().insertRow(row)
+        self._syncHexTableActions()
+
+    def removeRow(self, row: int) -> None:
+        super().removeRow(row)
+        self._syncHexTableActions()
+
+    def setRowCount(self, count: int) -> None:
+        super().setRowCount(count)
+        self._syncHexTableActions()
+
+    def showSelectionDetails(self) -> None:
+        self._showDetails(hexes=self.selectedHexes())
+
+    def showContentDetails(self) -> None:
+        self._showDetails(hexes=self.hexes())
+
+    def showSelectionOnMap(self) -> None:
+        self._showOnMap(hexes=self.selectedHexes())
+
+    def showContentOnMap(self) -> None:
+        self._showOnMap(hexes=self.hexes())
+
+    def showSelectionDetailsAction(self) -> QtWidgets.QAction:
+        return self._showSelectionDetailsAction
+
+    def setShowSelectionDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectionDetailsAction = action
+
+    def showContentDetailsAction(self) -> QtWidgets.QAction:
+        return self._showContentDetailsAction
+
+    def setShowContentDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._showContentDetailsAction = action
+
+    def showSelectionOnMapAction(self) -> QtWidgets.QAction:
+        return self._showSelectionOnMapAction
+
+    def setShowSelectionOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectionOnMapAction = action
+
+    def showContentOnMapAction(self) -> QtWidgets.QAction:
+        return self._showContentOnMapAction
+
+    def setShowContentOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showContentOnMapAction = action
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        menu.addAction(self.showSelectionDetailsAction())
+        menu.addAction(self.showContentDetailsAction())
+        menu.addSeparator()
+        menu.addAction(self.showSelectionOnMapAction())
+        menu.addAction(self.showContentOnMapAction())
+        menu.addSeparator()
+
+        # Add base class menu options (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
@@ -480,6 +555,14 @@ class HexTable(gui.FrozenColumnListTable):
         self.setHexes(hexes=hexes)
 
         return True
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncHexTableActions()
 
     def _fillRow(
             self,
@@ -1104,6 +1187,14 @@ class HexTable(gui.FrozenColumnListTable):
 
         return None
 
+    def _taggingColour(
+            self,
+            level: typing.Optional[logic.TagLevel]
+            ) -> typing.Optional[str]:
+        if not level or not self._taggingColours:
+            return None
+        return self._taggingColours.colour(level=level)
+
     def _syncContent(self) -> None:
         # Disable sorting during sync then re-enable after so sort is
         # only performed once rather than per row
@@ -1116,10 +1207,37 @@ class HexTable(gui.FrozenColumnListTable):
         finally:
             self.setSortingEnabled(sortingEnabled)
 
-    def _taggingColour(
+    def _syncHexTableActions(self) -> None:
+        hasContent = not self.isEmpty()
+        hasSelection = self.hasSelection()
+        if self._showSelectionDetailsAction:
+            self._showSelectionDetailsAction.setEnabled(hasSelection)
+        if self._showContentDetailsAction:
+            self._showContentDetailsAction.setEnabled(hasContent)
+        if self._showSelectionOnMapAction:
+            self._showSelectionOnMapAction.setEnabled(hasSelection)
+        if self._showContentOnMapAction:
+            self._showContentOnMapAction.setEnabled(hasContent)
+
+    def _showDetails(
             self,
-            level: typing.Optional[logic.TagLevel]
-            ) -> typing.Optional[str]:
-        if not level or not self._taggingColours:
-            return None
-        return self._taggingColours.colour(level=level)
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
+        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        detailsWindow.addHexes(hexes=hexes)
+
+    def _showOnMap(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
+        try:
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=hexes)
+        except Exception as ex:
+            message = 'Failed to show hexes(s) on map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)

@@ -2811,13 +2811,14 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 dstWidget.removeAllRows()
         dstWidget.addHexes(hexes=srcWidget.hexes())
 
+    # TODO: This will need work
     def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedWorld = self._purchaseWorldsWidget.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
                 text='Add...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddLocations(),
+                callback=lambda: self._purchaseWorldsWidget.promptAddFreeSelection(),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2871,13 +2872,14 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             self._purchaseWorldsWidget.mapToGlobal(point)
         )
 
+    # TODO: This will need work
     def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedWorld = self._saleWorldsWidget.worldAt(y=point.y())
 
         menuItems = [
             gui.MenuItem(
                 text='Add...',
-                callback=lambda: self._saleWorldsWidget.promptAddLocations(),
+                callback=lambda: self._saleWorldsWidget.promptAddFreeSelection(),
                 enabled=True
             ),
             gui.MenuItem(
