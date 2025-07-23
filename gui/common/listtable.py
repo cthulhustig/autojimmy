@@ -1,7 +1,9 @@
 import common
+import csv
 import enum
 import functools
 import gui
+import io
 import logging
 import math
 import typing
@@ -409,6 +411,74 @@ class ListTable(gui.TableWidgetEx):
         for row in range(self.rowCount()):
             self._checkRowFiltering(row=row)
 
+    # TODO: This should probably only write out visible columns (not sure what it does now)
+    # TODO: This should probably write columns out in display order (not sure what it does now)
+    def contentToCsv(self) -> str:
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        header = []
+        for column in range(self.columnCount()):
+            header.append(self.columnHeaderText(column))
+        writer.writerow(header)
+
+        for row in range(self.rowCount()):
+            content = []
+            for column in range(self.columnCount()):
+                item = self.item(row, column)
+                content.append(item.text() if item else '')
+            writer.writerow(content)
+
+        content = output.getvalue()
+        # The csv writer inserts \r\n which get messed up if you try
+        # to write the content to a file, resulting in blank lines
+        # between every line of data
+        return content.replace('\r\n', '\n')
+
+    def fillMenu(
+            self,
+            menu: QtWidgets.QMenu,
+            pos: QtCore.QPoint
+            ) -> None:
+        menuHelper = gui.MenuHelper(menu)
+
+        hasContent = self.rowCount() > 0
+
+        copyAsCsv = QtWidgets.QAction("CSV", self)
+        copyAsCsv.setEnabled(hasContent)
+        copyAsCsv.triggered.connect(self._copyContentToClipboardAsCsv)
+        menuHelper.addAction(
+            path=['Copy to Clipboard'],
+            action=copyAsCsv)
+
+        copyAsHtml = QtWidgets.QAction("HTML", self)
+        copyAsHtml.setEnabled(hasContent)
+        copyAsHtml.triggered.connect(self._copyContentToClipboardAsHtml)
+        menuHelper.addAction(
+            path=['Copy to Clipboard'],
+            action=copyAsHtml)
+
+        copyAsBitmap = QtWidgets.QAction('Bitmap', self)
+        copyAsBitmap.setEnabled(True)
+        copyAsBitmap.triggered.connect(self._copyViewToClipboardAsBitmap)
+        menuHelper.addAction(
+            path=['Copy to Clipboard'],
+            action=copyAsBitmap)
+
+        exportToCsv = QtWidgets.QAction("CSV...", self)
+        exportToCsv.setEnabled(hasContent)
+        exportToCsv.triggered.connect(self._interactiveExportContentToCsv)
+        menuHelper.addAction(
+            path=['Export'],
+            action=exportToCsv)
+
+        exportToHtml = QtWidgets.QAction("HTML...", self)
+        exportToHtml.setEnabled(hasContent)
+        exportToHtml.triggered.connect(self._interactiveExportContentToHtml)
+        menuHelper.addAction(
+            path=['Export'],
+            action=exportToHtml)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
             if event.type() == QtCore.QEvent.Type.ToolTip:
@@ -453,9 +523,29 @@ class ListTable(gui.TableWidgetEx):
 
         return super().eventFilter(object, event)
 
-    def keyPressEvent(self, event) -> None:
+    def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]) -> None:
+        if event is not None and event.matches(QtGui.QKeySequence.StandardKey.Copy):
+            # If there is no content, don't do anything but still accept
+            # the event so the handling of the key press is consistent
+            if self.rowCount() > 0:
+                self._copyContentToClipboardAsCsv()
+            event.accept()
+
         super().keyPressEvent(event)
-        self.keyPressed.emit(event.key())
+
+        # TODO: I don't think this is the best way to handle this. Things that
+        # are currently connecting to this event should probably be registering
+        # an event filter with the list and monitoring for key presses that way
+        if event:
+            self.keyPressed.emit(event.key())
+
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        super().contextMenuEvent(event)
+
+        if event:
+            menu = QtWidgets.QMenu(self)
+            self.fillMenu(menu, event.pos())
+            menu.exec(event.globalPos())
 
     def _cacheColumnWidth(
             self,
@@ -666,6 +756,61 @@ class ListTable(gui.TableWidgetEx):
         # triggering an icon click. This is necessary as the hit box for column resize gripper
         # overlaps the icon rect
         self._headerIconClickIndex = None
+
+    def _copyContentToClipboardAsCsv(self) -> None:
+        gui.setClipboardContent(content=self.contentToCsv())
+
+    def _copyContentToClipboardAsHtml(self) -> None:
+        gui.setClipboardContent(content=self.contentToHtml())
+
+    def _copyViewToClipboardAsBitmap(self) -> None:
+        gui.setClipboardContent(content=self.grab())
+
+    def _interactiveExportContentToCsv(self) -> None:
+        content = self.contentToCsv()
+
+        path, _ = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Export to CSV',
+            filter=f'{gui.CSVFileFilter};;{gui.AllFileFilter}',
+            defaultFileName='export.csv')
+        if not path:
+            return # User cancelled
+
+        try:
+            with open(path, 'w', encoding='UTF8') as file:
+                file.write(content)
+        except Exception as ex:
+            message = f'Failed to export content to "{path}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+    def _interactiveExportContentToHtml(self) -> None:
+        content = self.contentToHtml()
+
+        path, _ = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Export to HTML',
+            filter=f'{gui.HTMLFileFilter};;{gui.AllFileFilter}',
+            defaultFileName='export.html')
+        if not path:
+            return # User cancelled
+
+        try:
+            with open(path, 'w', encoding='UTF8') as file:
+                file.write(content)
+        except Exception as ex:
+            message = f'Failed to export content to "{path}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
 # Based on code from here
 # https://github.com/baoboa/pyqt5/blob/master/examples/itemviews/frozencolumn/frozencolumn.py
