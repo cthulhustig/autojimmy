@@ -267,31 +267,19 @@ class RobotSheetWidget(QtWidgets.QWidget):
         if pixmap:
             clipboard.setImage(pixmap.toImage())
 
-    # TODO: This will need work
-    # - Note that this is currently complicated by the fact this
-    # class uses TableWidgetEx rather than ListTableWidget so
-    # doesn't get the menu stuff for free with the current implementation
     def _tableContextMenu(
             self,
             point: QtCore.QPoint
             ) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=self._showCalculations),
-            None,
-            gui.MenuItem(
-                text='Copy as Bitmap',
-                callback=self._copyToClipboardBitmap),
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboardHtml)
-        ]
+        showCalculationsAction = QtWidgets.QAction('Show Calculations...')
+        showCalculationsAction.setEnabled(True)
+        showCalculationsAction.triggered.connect(self._showCalculations)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._table.viewport().mapToGlobal(point))
+        menu = QtWidgets.QMenu()
+        self._table.fillContextMenu(menu)
+        menu.addSeparator()
+        menu.addAction(showCalculationsAction)
+        menu.exec(self._table.viewport().mapToGlobal(point))
 
     def _showCalculations(self) -> None:
         try:
