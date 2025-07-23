@@ -179,6 +179,13 @@ class TableWidgetEx(QtWidgets.QTableWidget):
     def copViewToClipboard(self) -> None:
         gui.setClipboardContent(content=self.grab())
 
+    # TODO: Ideally I want some way derived classes can control what
+    # the default file name (e.g. so when exporting a construction
+    # manifest it can default the name to include the name of the
+    # robot/weapon).
+    # - If I do this I need to remember that construction objects
+    # names can contain characters that aren't valid for different
+    # OS
     def promptExportContentToHtml(self) -> None:
         content = self.contentToHtml()
 

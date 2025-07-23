@@ -1928,6 +1928,8 @@ class JumpRouteWindow(gui.WindowWidget):
         menu.addAction(showAllRefuellingCalculationsAction)
         menu.exec(self._refuellingPlanTable.viewport().mapToGlobal(point))
 
+    # TODO: There is a discrepancy between how this menu is structured and
+    # how other menus are structured
     def _showTravellerMapContextMenu(
             self,
             hex: typing.Optional[travellermap.HexPosition]
