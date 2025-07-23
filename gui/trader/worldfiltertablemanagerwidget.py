@@ -267,6 +267,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         if key == QtCore.Qt.Key.Key_Delete:
             self.removeSelectedFilters()
 
+    # TODO: This will need work
     def _showFilterTableContextMenu(self, point: QtCore.QPoint) -> None:
         filter = self._filterTable.filterAt(point.y())
 

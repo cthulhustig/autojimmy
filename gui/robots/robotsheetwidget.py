@@ -267,6 +267,10 @@ class RobotSheetWidget(QtWidgets.QWidget):
         if pixmap:
             clipboard.setImage(pixmap.toImage())
 
+    # TODO: This will need work
+    # - Note that this is currently complicated by the fact this
+    # class uses TableWidgetEx rather than ListTableWidget so
+    # doesn't get the menu stuff for free with the current implementation
     def _tableContextMenu(
             self,
             point: QtCore.QPoint

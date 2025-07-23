@@ -566,6 +566,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._cargoTable.removeAllRows()
         self._diceRollTable.removeAllRows()
 
+    # TODO: This will need work
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())
 

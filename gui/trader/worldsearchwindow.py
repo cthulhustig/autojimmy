@@ -935,6 +935,7 @@ class WorldSearchWindow(gui.WindowWidget):
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
 
+    # TODO: This will need work
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         world = self._worldTable.worldAt(y=point.y())
 

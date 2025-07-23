@@ -1826,6 +1826,7 @@ class JumpRouteWindow(gui.WindowWidget):
         else:
             assert(False) # I missed a case
 
+    # TODO: This will need work
     def _showJumpRouteTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
@@ -1868,6 +1869,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteTable.viewport().mapToGlobal(point)
         )
 
+    # TODO: This will need work
     def _showRefuellingPlanTableContextMenu(self, point: QtCore.QPoint) -> None:
         pitStop = self._refuellingPlanTable.pitStopAt(point.y())
 

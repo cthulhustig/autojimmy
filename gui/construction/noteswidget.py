@@ -76,14 +76,10 @@ class NotesWidget(QtWidgets.QWidget):
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.horizontalHeader().sectionResized.connect(
             self._table.resizeRowsToContents)
-        self._table.installEventFilter(self)
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._table.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
-        self._table.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._table.customContextMenuRequested.connect(self._tableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -127,17 +123,6 @@ class NotesWidget(QtWidgets.QWidget):
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         self._resizeTableToContents()
         return super().resizeEvent(event)
-
-    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        if object == self._table:
-            if event.type() == QtCore.QEvent.Type.KeyPress:
-                assert(isinstance(event, QtGui.QKeyEvent))
-                if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self._copyToClipboard()
-                    event.accept()
-                    return True
-
-        return super().eventFilter(object, event)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -236,30 +221,6 @@ class NotesWidget(QtWidgets.QWidget):
             if isValidFilter else
             palette.color(QtGui.QPalette.ColorRole.BrightText))
         self._filterLineEdit.setPalette(palette)
-
-    def _tableContextMenu(
-            self,
-            point: QtCore.QPoint
-            ) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboard)
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._table.viewport().mapToGlobal(point))
-
-    def _copyToClipboard(self):
-        clipboard = QtWidgets.QApplication.clipboard()
-        if not clipboard:
-            return
-
-        content = self._table.contentToHtml()
-        if content:
-            clipboard.setText(content)
 
     def _clearFilter(self) -> None:
         self._filterLineEdit.clear()

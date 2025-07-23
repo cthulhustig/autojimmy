@@ -473,6 +473,7 @@ class CargoManifestDialog(gui.DialogEx):
         for tradeOption in cargoManifest.tradeOptions():
             self._cargoBreakdownTable.addTradeOption(tradeOption)
 
+    # TODO: This will need work
     def _showCargoManifestTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoManifest = self._cargoManifestTable.cargoManifestAt(point.y())
 
@@ -526,6 +527,7 @@ class CargoManifestDialog(gui.DialogEx):
             menuItems,
             self._cargoManifestTable.viewport().mapToGlobal(point))
 
+    # TODO: This will need work
     def _showCargoBreakdownTableContextMenu(self, point: QtCore.QPoint) -> None:
         tradeOption = self._cargoBreakdownTable.tradeOptionAt(point.y())
 

@@ -586,6 +586,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
+    # TODO: This will need work
     def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
         if self._enableContextMenuEvent:
             translated = self._hexTable.viewport().mapToGlobal(point)

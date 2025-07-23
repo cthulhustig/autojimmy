@@ -787,6 +787,7 @@ class _BaseTraderWindow(gui.WindowWidget):
     def _updateTradeOptionTableColumns(self, index: int) -> None:
         self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
 
+    # TODO: This will need work
     def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
         selectedTradeOptions = self._tradeOptionsTable.selectedTradeOptions()
@@ -1821,6 +1822,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         for cargoRecord in cargoRecords:
             self._addSpeculativeCargo(cargoRecord)
 
+    # TODO: This will need work
     def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
@@ -2010,6 +2012,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._availableFundsSpinBox.setValue(
             self._availableFundsSpinBox.value() - int(totalCost))
 
+    # TODO: This will need work
     def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
@@ -2162,6 +2165,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._currentCargoTable.setCargoRecord(row, cargoRecord)
         self._updateSaleWorldTradeScores()
 
+    # TODO: This will need work
     def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(

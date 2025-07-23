@@ -38,16 +38,12 @@ class ManifestTable(gui.ListTable):
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.verticalHeader().setMinimumSectionSize(1)
-        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self._showContextMenu)
         self.setWordWrap(True)
 
         self.setAlternatingRowColors(False)
 
         # Disable sorting as manifests should be kept in the order the occurred in
         self.setSortingEnabled(False)
-
-        self.installEventFilter(self)
 
     def setManifest(
             self,
@@ -100,16 +96,54 @@ class ManifestTable(gui.ListTable):
     def decimalPlaces(self) -> int:
         return 2
 
-    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        if object == self:
-            if event.type() == QtCore.QEvent.Type.KeyPress:
-                assert(isinstance(event, QtGui.QKeyEvent))
-                if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self._copyToClipboard()
-                    event.accept()
-                    return True
+    def fillMenu(
+            self,
+            menu: QtWidgets.QMenu,
+            pos: QtCore.QPoint
+            ) -> None:
+        super().fillMenu(menu, pos)
 
-        return super().eventFilter(object, event)
+        selectedRowCalculations = []
+        allRowCalculations = []
+        for row in range(self.rowCount()):
+            item = self.item(row, 0)
+            rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
+
+            rowCalculations = []
+            for costId in self._costType:
+                if isinstance(rowObject, construction.ManifestEntry):
+                    costModifier = rowObject.cost(costId=costId)
+                    if costModifier:
+                        rowCalculations.append(costModifier.numericModifier())
+                elif isinstance(rowObject, construction.ManifestSection):
+                    rowCalculations.append(rowObject.totalCost(costId=costId))
+                elif isinstance(rowObject, construction.Manifest):
+                    rowCalculations.append(rowObject.totalCost(costId=costId))
+
+            if isinstance(rowObject, construction.ManifestEntry):
+                for factor in rowObject.factors():
+                    rowCalculations.extend(factor.calculations())
+
+            if rowCalculations:
+                allRowCalculations.extend(rowCalculations)
+                if self.isRowSelected(row):
+                    selectedRowCalculations.extend(rowCalculations)
+
+        menuHelper = gui.MenuHelper(menu)
+
+        showSelected = QtWidgets.QAction("Show Selected...", self)
+        showSelected.setEnabled(len(selectedRowCalculations) > 0)
+        showSelected.triggered.connect(lambda: self._showCalculations(calculations=selectedRowCalculations))
+        menuHelper.addAction(
+            path=['Calculations'],
+            action=showSelected)
+
+        showAll = QtWidgets.QAction("Show All...", self)
+        showAll.setEnabled(len(allRowCalculations) > 0)
+        showAll.triggered.connect(lambda: self._showCalculations(calculations=allRowCalculations))
+        menuHelper.addAction(
+            path=['Calculations'],
+            action=showAll)
 
     def _fillManifestEntryRow(
             self,
@@ -229,53 +263,6 @@ class ManifestTable(gui.ListTable):
         self.setRowHeight(row, height)
         self.verticalHeader().resizeSection(row, height)
 
-    def _showContextMenu(
-            self,
-            point: QtCore.QPoint
-            ) -> None:
-        item = self.itemAt(point)
-        calculations = []
-        if item:
-            column = self.columnHeader(column=item.column())
-            rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
-
-            for costId in self._costType:
-                if column != costId and column != ManifestTable.StdColumnType.Component:
-                    continue
-
-                if isinstance(rowObject, construction.ManifestEntry):
-                    costModifier = rowObject.cost(costId=costId)
-                    if costModifier:
-                        calculations.append(costModifier.numericModifier())
-                elif isinstance(rowObject, construction.ManifestSection):
-                    calculations.append(rowObject.totalCost(costId=costId))
-                elif isinstance(rowObject, construction.Manifest):
-                    calculations.append(rowObject.totalCost(costId=costId))
-
-            if column == ManifestTable.StdColumnType.Factors or \
-                    column == ManifestTable.StdColumnType.Component:
-                if isinstance(rowObject, construction.ManifestEntry):
-                    for factor in rowObject.factors():
-                        calculations.extend(factor.calculations())
-
-        menuItems = [
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCalculations(calculations=calculations),
-                enabled=len(calculations) > 0
-            ),
-            None,
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboard,
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self.viewport().mapToGlobal(point))
-
     def _showCalculations(
             self,
             calculations: typing.Iterable[common.ScalarCalculation]
@@ -292,12 +279,3 @@ class ManifestTable(gui.ListTable):
                 parent=self,
                 text=message,
                 exception=ex)
-
-    def _copyToClipboard(self) -> None:
-        clipboard = QtWidgets.QApplication.clipboard()
-        if not clipboard:
-            return
-
-        content = self.contentToHtml()
-        if content:
-            clipboard.setText(content)

@@ -677,6 +677,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._diceRollTable.removeAllRows()
         self._salePricesTable.removeAllRows()
 
+    # TODO: This will need work
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
         cargoRecord = self._cargoTable.cargoRecordAt(point.y())
 
@@ -835,6 +836,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.removeAllRows()
         self._updateTotalSalePrice()
 
+    # TODO: This will need work
     def _showSalePricesTableContextMenu(self, point: QtCore.QPoint) -> None:
         salePrice = self._salePricesTable.cargoRecordAt(point.y())
 

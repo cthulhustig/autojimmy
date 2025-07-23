@@ -306,6 +306,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
 
+    # TODO: This will need work
     def _showContextMenu(
             self,
             point: QtCore.QPoint
@@ -324,6 +325,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             menuItems,
             self._historyTable.viewport().mapToGlobal(point))
 
+    # TODO: It should be possible to remove this when I'm done
     def _copyToClipboard(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()
         if not clipboard:
