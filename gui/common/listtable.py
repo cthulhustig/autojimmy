@@ -107,9 +107,9 @@ class ListTable(gui.TableWidgetEx):
         self._copyContentToClipboardAsCsvAction.setEnabled(False) # No content to copy
         self._copyContentToClipboardAsCsvAction.triggered.connect(self.copyContentToClipboardAsCsv)
 
-        self._interactiveExportContentToCsvAction = QtWidgets.QAction('Export to CSV...', self)
-        self._interactiveExportContentToCsvAction.setEnabled(False) # No content to copy
-        self._interactiveExportContentToCsvAction.triggered.connect(self.interactiveExportContentToCsv)
+        self._promptExportContentToCsvAction = QtWidgets.QAction('Export to CSV...', self)
+        self._promptExportContentToCsvAction.setEnabled(False) # No content to copy
+        self._promptExportContentToCsvAction.triggered.connect(self.promptExportContentToCsv)
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -457,7 +457,7 @@ class ListTable(gui.TableWidgetEx):
     def copyContentToClipboardAsCsv(self) -> None:
         gui.setClipboardContent(content=self.contentToCsv())
 
-    def interactiveExportContentToCsv(self) -> None:
+    def promptExportContentToCsv(self) -> None:
         content = self.contentToCsv()
 
         path, _ = gui.FileDialogEx.getSaveFileName(
@@ -489,14 +489,14 @@ class ListTable(gui.TableWidgetEx):
             ) -> None:
         self._copyContentToClipboardAsCsvAction = action
 
-    def interactiveExportContentToCsvAction(self) -> QtWidgets.QAction:
-        return self._interactiveExportContentToCsvAction
+    def promptExportContentToCsvAction(self) -> QtWidgets.QAction:
+        return self._promptExportContentToCsvAction
 
-    def setInteractiveExportContentToCsvAction(
+    def setPromptExportContentToCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._interactiveExportContentToCsvAction = action
+        self._promptExportContentToCsvAction = action
 
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
@@ -560,15 +560,15 @@ class ListTable(gui.TableWidgetEx):
         menu.addAction(self.copyContentToClipboardAsHtmlAction())
         menu.addAction(self.copyViewToClipboardAction())
         menu.addSeparator()
-        menu.addAction(self.interactiveExportContentToCsvAction())
-        menu.addAction(self.interactiveExportContentToHtmlAction())
+        menu.addAction(self.promptExportContentToCsvAction())
+        menu.addAction(self.promptExportContentToHtmlAction())
 
     def _syncListTableActions(self) -> None:
         hasContent = self.rowCount() > 0
         if self._copyContentToClipboardAsCsvAction is not None:
             self._copyContentToClipboardAsCsvAction.setEnabled(hasContent)
-        if self._interactiveExportContentToCsvAction is not None:
-            self._interactiveExportContentToCsvAction.setEnabled(hasContent)
+        if self._promptExportContentToCsvAction is not None:
+            self._promptExportContentToCsvAction.setEnabled(hasContent)
 
     def _cacheColumnWidth(
             self,

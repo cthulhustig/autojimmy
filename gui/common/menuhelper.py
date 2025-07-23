@@ -2,6 +2,7 @@ import enum
 import typing
 from PyQt5 import QtWidgets
 
+# TODO: Delete this if it ends up not being used
 class MenuHelper(object):
     class Position(enum.Enum):
         First = 0

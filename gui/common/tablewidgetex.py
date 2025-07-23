@@ -30,9 +30,9 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         self._copyViewToClipboardAction.setEnabled(True)
         self._copyViewToClipboardAction.triggered.connect(self.copViewToClipboard)
 
-        self._interactiveExportContentToHtmlAction = QtWidgets.QAction('Export to HTML...', self)
-        self._interactiveExportContentToHtmlAction.setEnabled(False) # No content to copy
-        self._interactiveExportContentToHtmlAction.triggered.connect(self.interactiveExportContentToHtml)
+        self._promptExportContentToHtmlAction = QtWidgets.QAction('Export to HTML...', self)
+        self._promptExportContentToHtmlAction.setEnabled(False) # No content to copy
+        self._promptExportContentToHtmlAction.triggered.connect(self.promptExportContentToHtml)
 
     def insertRow(self, row: int) -> None:
         super().insertRow(row)
@@ -179,7 +179,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
     def copViewToClipboard(self) -> None:
         gui.setClipboardContent(content=self.grab())
 
-    def interactiveExportContentToHtml(self) -> None:
+    def promptExportContentToHtml(self) -> None:
         content = self.contentToHtml()
 
         path, _ = gui.FileDialogEx.getSaveFileName(
@@ -220,25 +220,28 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             ) -> None:
         self._copyViewToClipboardAction = action
 
-    def interactiveExportContentToHtmlAction(self) -> QtWidgets.QAction:
-        return self._interactiveExportContentToHtmlAction
+    def promptExportContentToHtmlAction(self) -> QtWidgets.QAction:
+        return self._promptExportContentToHtmlAction
 
-    def setInteractiveExportContentToHtmlAction(
+    def setPromptExportContentToHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._interactiveExportContentToHtmlAction = action
+        self._promptExportContentToHtmlAction = action
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.copyContentToClipboardAsHtmlAction())
         menu.addAction(self.copyViewToClipboardAction())
         menu.addSeparator()
-        menu.addAction(self.interactiveExportContentToHtmlAction())
+        menu.addAction(self.promptExportContentToHtmlAction())
 
     def displayContextMenu(self, pos: QtWidgets.QMenu) -> None:
         menu = QtWidgets.QMenu(self)
         self.fillContextMenu(menu=menu)
-        menu.exec(self.mapToGlobal(pos))
+
+        viewport = self.viewport()
+        globalPos = viewport.mapToGlobal(pos) if viewport else self.mapToGlobal(pos)
+        menu.exec(globalPos)
 
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]) -> None:
         if event is not None and event.matches(QtGui.QKeySequence.StandardKey.Copy):
@@ -260,8 +263,8 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         hasContent = self.rowCount() > 0 and self.columnCount() > 0
         if self._copyContentToClipboardAsHtmlAction is not None:
             self._copyContentToClipboardAsHtmlAction.setEnabled(hasContent)
-        if self._interactiveExportContentToHtmlAction is not None:
-            self._interactiveExportContentToHtmlAction.setEnabled(hasContent)
+        if self._promptExportContentToHtmlAction is not None:
+            self._promptExportContentToHtmlAction.setEnabled(hasContent)
 
     @staticmethod
     def _formatTableHeader(
