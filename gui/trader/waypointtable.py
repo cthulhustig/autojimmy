@@ -54,6 +54,11 @@ def _customWorldTableColumns(
     columns.insert(index, WaypointTableColumnType.BerthingRequired)
     return columns
 
+# TODO: What happens for the berthing check box contents if you export a
+# waypoint table to csv/html? I suspect it currently doesn't do what
+# you'd want. Having it work might be as simple as setting the text on
+# the item for that cell to something like "True/False". Hopefully that
+# text will be hidden in the UI then written out when serialised
 class WaypointTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)

@@ -1,4 +1,3 @@
-import app
 import common
 import construction
 import enum
@@ -29,6 +28,14 @@ class ManifestTable(gui.ListTable):
         columns = [ManifestTable.StdColumnType.Component]
         columns.extend(self._costType)
         columns.append(ManifestTable.StdColumnType.Factors)
+
+        self._showSelectedCalculationsAction = QtWidgets.QAction('Show Selected Calculations...', self)
+        self._showSelectedCalculationsAction.setEnabled(False) # No content to copy
+        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+
+        self._showAllCalculationsAction = QtWidgets.QAction('Show All Calculations...', self)
+        self._showAllCalculationsAction.setEnabled(False) # No content to copy
+        self._showAllCalculationsAction.triggered.connect(self.showAllCalculations)
 
         self.setColumnHeaders(columns)
         self.setColumnsMoveable(False)
@@ -96,54 +103,63 @@ class ManifestTable(gui.ListTable):
     def decimalPlaces(self) -> int:
         return 2
 
-    def fillMenu(
+    def insertRow(self, row: int) -> None:
+        super().insertRow(row)
+        self._syncManifestTableActions()
+
+    def removeRow(self, row):
+        super().removeRow(row)
+        self._syncManifestTableActions()
+
+    def setRowCount(self, rows):
+        super().setRowCount(rows)
+        self._syncManifestTableActions()
+
+    def selectionChanged(
             self,
-            menu: QtWidgets.QMenu,
-            pos: QtCore.QPoint
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
             ) -> None:
-        super().fillMenu(menu, pos)
+        super().selectionChanged(selected, deselected)
+        self._syncManifestTableActions()
 
-        selectedRowCalculations = []
-        allRowCalculations = []
-        for row in range(self.rowCount()):
-            item = self.item(row, 0)
-            rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
+    def showSelectedCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=True)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
 
-            rowCalculations = []
-            for costId in self._costType:
-                if isinstance(rowObject, construction.ManifestEntry):
-                    costModifier = rowObject.cost(costId=costId)
-                    if costModifier:
-                        rowCalculations.append(costModifier.numericModifier())
-                elif isinstance(rowObject, construction.ManifestSection):
-                    rowCalculations.append(rowObject.totalCost(costId=costId))
-                elif isinstance(rowObject, construction.Manifest):
-                    rowCalculations.append(rowObject.totalCost(costId=costId))
+    def showAllCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=False)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
 
-            if isinstance(rowObject, construction.ManifestEntry):
-                for factor in rowObject.factors():
-                    rowCalculations.extend(factor.calculations())
+    def showSelectedCalculationsAction(self) -> QtWidgets.QAction:
+        return self._showSelectedCalculationsAction
 
-            if rowCalculations:
-                allRowCalculations.extend(rowCalculations)
-                if self.isRowSelected(row):
-                    selectedRowCalculations.extend(rowCalculations)
+    def setShowSelectedCalculationsAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._showSelectedCalculationsAction = action
 
-        menuHelper = gui.MenuHelper(menu)
+    def showAllCalculationsAction(self) -> QtWidgets.QAction:
+        return self._showAllCalculationsAction
 
-        showSelected = QtWidgets.QAction("Show Selected...", self)
-        showSelected.setEnabled(len(selectedRowCalculations) > 0)
-        showSelected.triggered.connect(lambda: self._showCalculations(calculations=selectedRowCalculations))
-        menuHelper.addAction(
-            path=['Calculations'],
-            action=showSelected)
+    def setShowAllCalculationsAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._showAllCalculationsAction = action
 
-        showAll = QtWidgets.QAction("Show All...", self)
-        showAll.setEnabled(len(allRowCalculations) > 0)
-        showAll.triggered.connect(lambda: self._showCalculations(calculations=allRowCalculations))
-        menuHelper.addAction(
-            path=['Calculations'],
-            action=showAll)
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        # Add base classes context menu (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
+        menu.addSeparator()
+        menu.addAction(self.showSelectedCalculationsAction())
+        menu.addAction(self.showAllCalculationsAction())
 
     def _fillManifestEntryRow(
             self,
@@ -262,6 +278,56 @@ class ManifestTable(gui.ListTable):
             self.setItem(row, column, tableItem)
         self.setRowHeight(row, height)
         self.verticalHeader().resizeSection(row, height)
+
+    def _syncManifestTableActions(self):
+        if self._showSelectedCalculationsAction is not None:
+            self._showSelectedCalculationsAction.setEnabled(self._hasSelectedCalculations())
+        if self._showAllCalculationsAction is not None:
+            self._showAllCalculationsAction.setEnabled(self._hasCalculations())
+
+    def _hasCalculations(self) -> bool:
+        # NOTE: This odd implementation is so that we can bail as soon as we
+        # find any calculation rather than iterating over them all with
+        # something like checking the length is greater than 0
+        for _ in self._yieldCalculations(selectedOnly=False):
+            return True
+        return False
+
+    def _hasSelectedCalculations(self) -> bool:
+        # NOTE: This odd implementation is so that we can bail as soon as we
+        # find any calculation rather than iterating over them all with
+        # something like checking the length is greater than 0
+        for _ in self._yieldCalculations(selectedOnly=True):
+            return True
+        return False
+
+    def _gatherCalculations(self, selectedOnly: bool) -> typing.List[common.Calculation]:
+        return [c for c in self._yieldCalculations(selectedOnly=selectedOnly)]
+
+    def _yieldCalculations(self, selectedOnly: bool) -> typing.Generator[common.Calculation, None, None]:
+        for row in range(self.rowCount()):
+            if selectedOnly and not self.isRowSelected(row):
+                continue
+
+            item = self.item(row, 0)
+            if not item:
+                continue
+            rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
+
+            for costId in self._costType:
+                if isinstance(rowObject, construction.ManifestEntry):
+                    costModifier = rowObject.cost(costId=costId)
+                    if costModifier:
+                        yield costModifier.numericModifier()
+                elif isinstance(rowObject, construction.ManifestSection):
+                    yield rowObject.totalCost(costId=costId)
+                elif isinstance(rowObject, construction.Manifest):
+                    yield rowObject.totalCost(costId=costId)
+
+            if isinstance(rowObject, construction.ManifestEntry):
+                for factor in rowObject.factors():
+                    for calculation in factor.calculations():
+                        yield calculation
 
     def _showCalculations(
             self,

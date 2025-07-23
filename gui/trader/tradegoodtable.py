@@ -208,6 +208,7 @@ class TradeGoodTable(gui.ListTable):
                 checked.append(self.tradeGood(row))
         return checked
 
+    # TODO: This will probably need work
     def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
         if not self._checkable:
             # The menu options only apply when checkable is enabled

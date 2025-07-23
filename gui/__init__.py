@@ -7,6 +7,7 @@ from .common.icons import *
 from .common.menuhelper import *
 from .common.eventfilters import *
 from .common.widgets import *
+from .common.tablewidgetex import *
 from .common.togglablewidget import *
 from .common.windowwidget import *
 from .common.dialogex import *
