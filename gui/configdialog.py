@@ -231,6 +231,7 @@ class _TaggingTable(gui.ListTable):
         self.resizeColumnsToContents() # Size columns to header text
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
 
         # Setup horizontal scroll bar. Setting the last column to stretch to fit its content
         # is required to make the it appear reliably
