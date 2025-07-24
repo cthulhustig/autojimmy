@@ -70,21 +70,39 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
         self._filterTable = gui.WorldFilterTable()
         self._filterTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._filterTable.customContextMenuRequested.connect(self._showFilterTableContextMenu)
-        self._filterTable.keyPressed.connect(self._worldTableKeyPressed)
-        self._filterTable.doubleClicked.connect(self.promptEditFilter)
+        self._filterTable.customContextMenuRequested.connect(self._showTableContextMenu)
+        self._filterTable.keyPressed.connect(self._tableKeyPressed)
+        self._filterTable.doubleClicked.connect(self.promptEditSelected)
+        self._filterTable.itemSelectionChanged.connect(self._tableSelectionChanged)
 
+        self._promptAddNewAction = QtWidgets.QAction('Add...', self)
+        self._promptAddNewAction.setEnabled(True)
+        self._promptAddNewAction.triggered.connect(self.promptAddNew)
+
+        self._promptEditSelectedAction = QtWidgets.QAction('Edit...', self)
+        self._promptEditSelectedAction.setEnabled(False) # No selection
+        self._promptEditSelectedAction.triggered.connect(self.promptEditSelected)
+
+        self._removeSelectedAction = QtWidgets.QAction('Remove Selected', self)
+        self._removeSelectedAction.setEnabled(False) # No selection
+        self._removeSelectedAction.triggered.connect(self.removeSelectedFilters)
+
+        self._removeContentAction = QtWidgets.QAction('Remove All', self)
+        self._removeContentAction.setEnabled(False) # No content
+        self._removeContentAction.triggered.connect(self.removeAllFilters)
+
+        # TODO: These buttons should probably trigger the actions
         self._addButton = QtWidgets.QPushButton('Add...')
         self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self.promptAddFilter)
+        self._addButton.clicked.connect(self.promptAddNew)
 
         self._editButton = QtWidgets.QPushButton('Edit...')
         self._editButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editButton.clicked.connect(self.promptEditFilter)
+        self._editButton.clicked.connect(self.promptEditSelected)
 
         self._removeButton = QtWidgets.QPushButton('Remove')
         self._removeButton.setSizePolicy(
@@ -129,22 +147,22 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def addFilter(self, filter: logic.WorldFilter) -> None:
         self._filterTable.addFilter(filter=filter)
-        self.contentChanged.emit()
+        self._notifyContentChangeObservers()
 
     def addFilters(self, filters: typing.Iterable[logic.WorldFilter]) -> None:
         self._filterTable.addFilters(filters=filters)
-        self.contentChanged.emit()
+        self._notifyContentChangeObservers()
 
     def removeFilters(self, filter: logic.WorldFilter) -> bool:
         removed = self._filterTable.removeFilter(filter=filter)
         if removed:
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
         return removed
 
     def removeAllFilters(self) -> None:
         if not self._filterTable.isEmpty():
             self._filterTable.removeAllRows()
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
 
     def isEmpty(self) -> bool:
         return self._filterTable.isEmpty()
@@ -173,7 +191,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def removeSelectedFilters(self) -> None:
         if self._filterTable.hasSelection():
             self._filterTable.removeSelectedRows()
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
 
     def setActiveColumns(
             self,
@@ -232,10 +250,10 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             ) -> bool:
         result = self._filterTable.restoreContent(state=state)
         if not self._filterTable.isEmpty():
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
         return result
 
-    def promptAddFilter(self) -> None:
+    def promptAddNew(self) -> None:
         dlg = gui.WorldFilterDialog(
             title='Add Filter',
             taggingColours=self._taggingColours,
@@ -244,7 +262,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             return
         self.addFilter(dlg.filter())
 
-    def promptEditFilter(self) -> None:
+    def promptEditSelected(self) -> None:
         filter = self._filterTable.currentFilter()
         if not filter:
             gui.MessageBoxEx.information(
@@ -261,41 +279,113 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             return
         index = self._filterTable.currentIndex()
         self._filterTable.setFilter(index.row(), dlg.filter())
+        self._notifyContentChangeObservers()
+
+    def promptAddNewAction(self) -> QtWidgets.QAction:
+        return self._promptAddNewAction
+
+    def setPromptAddNewAction(self, action: QtWidgets.QAction) -> None:
+        self._promptAddNewAction = action
+
+    def promptEditSelectedAction(self) -> QtWidgets.QAction:
+        return self._promptEditSelectedAction
+
+    def setPromptEditSelectedAction(self, action: QtWidgets.QAction) -> None:
+        self._promptEditSelectedAction = action
+
+    def removeSelectedAction(self) -> QtWidgets.QAction:
+        return self._removeSelectedAction
+
+    def setRemoveSelectedAction(self, action: QtWidgets.QAction) -> None:
+        self._removeSelectedAction = action
+
+    def removeContentAction(self) -> QtWidgets.QAction:
+        return self._removeContentAction
+
+    def setRemoveContentAction(self, action: QtWidgets.QAction) -> None:
+        self._removeContentAction = action
+
+    def copyContentToClipboardAsCSvAction(self) -> QtWidgets.QAction:
+        return self._filterTable.copyContentToClipboardAsCSvAction()
+
+    def setCopyContentToClipboardAsCsvAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._filterTable.setCopyContentToClipboardAsCsvAction(action)
+
+    def promptExportContentToCsvAction(self) -> QtWidgets.QAction:
+        return self._filterTable.promptExportContentToCsvAction()
+
+    def setPromptExportContentToCsvAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._filterTable.setPromptExportContentToCsvAction(action)
+
+    def copyContentToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._filterTable.copyContentToClipboardAsHtmlAction()
+
+    def setCopyContentToClipboardAsHtmlAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._filterTable.setCopyContentToClipboardAsHtmlAction(action)
+
+    def copyViewToClipboardAction(self) -> QtWidgets.QAction:
+        self._filterTable.copyViewToClipboardAction()
+
+    def setCopyViewToClipboardAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._filterTable.setCopyViewToClipboardAction(action)
+
+    def promptExportContentToHtmlAction(self) -> QtWidgets.QAction:
+        return self._filterTable.promptExportContentToHtmlAction()
+
+    def setPromptExportContentToHtmlAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._filterTable.setPromptExportContentToHtmlAction(action)
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        menu.addAction(self.promptAddNewAction())
+        menu.addAction(self.promptEditSelectedAction())
+        menu.addSeparator()
+        menu.addAction(self.removeSelectedAction())
+        menu.addAction(self.removeContentAction())
+        menu.addSeparator()
+
+        # Add table menu options
+        self._filterTable.fillContextMenu(menu)
+
+    def _syncActions(self) -> None:
+        hasContent = not self.isEmpty()
+        hasSelection = self.hasSelection()
+        if self._promptEditSelectedAction:
+            self._promptEditSelectedAction.setEnabled(hasSelection)
+        if self._removeSelectedAction:
+            self._removeSelectedAction.setEnabled(hasSelection)
+        if self._removeContentAction:
+            self._removeContentAction.setEnabled(hasContent)
+
+    def _notifyContentChangeObservers(self) -> None:
+        self._syncActions()
         self.contentChanged.emit()
 
-    def _worldTableKeyPressed(self, key: int) -> None:
+    def _tableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
             self.removeSelectedFilters()
 
-    # TODO: This will need work
-    def _showFilterTableContextMenu(self, point: QtCore.QPoint) -> None:
-        filter = self._filterTable.filterAt(point.y())
+    def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu(self)
+        self.fillContextMenu(menu=menu)
+        menu.exec(self.mapToGlobal(point))
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add Filter...',
-                callback=self.promptAddFilter,
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Filter...',
-                callback=self.promptEditFilter,
-                enabled=filter != None
-            ),
-            gui.MenuItem(
-                text='Remove Selected Filters',
-                callback=self.removeSelectedFilters,
-                enabled=self._filterTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Filters',
-                callback=self.removeAllFilters,
-                enabled=not self._filterTable.isEmpty()
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._filterTable.viewport().mapToGlobal(point)
-        )
+    def _tableSelectionChanged(self) -> None:
+        hasSelection = self._filterTable.hasSelection()
+        self._editButton.setEnabled(hasSelection)
+        self._removeButton.setEnabled(hasSelection)
+        self._syncActions()
