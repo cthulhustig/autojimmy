@@ -208,67 +208,63 @@ class TradeGoodTable(gui.ListTable):
                 checked.append(self.tradeGood(row))
         return checked
 
-    # TODO: This will probably need work
-    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        # Don't call base class as export/copy to clipboard etc don't
+        # make sense for this table as it's just intended to allow the
+        # user to select from the list of trade goods
+        # return super().fillContextMenu(menu)
+
         if not self._checkable:
             # The menu options only apply when checkable is enabled
-            return super().contextMenuEvent(event)
+            return
 
-        position = event.pos()
-        row = self.rowAt(position.y())
-        tradeGood = self.tradeGood(row)
+        currentItem = self.currentItem()
 
-        menuItems = [
-            gui.MenuItem(
-                text='Check All',
-                callback=lambda: self.setAllRowCheckState(checkState=True),
-                enabled=tradeGood != None
-            ),
-            gui.MenuItem(
-                text='Check Selected',
-                callback=lambda: self.setSelectionCheckState(checkState=True),
-                enabled=tradeGood != None
-            ),
-            gui.MenuItem(
-                text='Check Upwards',
-                callback=lambda: self.setCheckStateAbove(row=row, checkState=True),
-                enabled=tradeGood != None
-            ),
-            gui.MenuItem(
-                text='Check Downwards',
-                callback=lambda: self.setCheckStateBelow(row=row, checkState=True),
-                enabled=tradeGood != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Uncheck All',
-                callback=lambda: self.setAllRowCheckState(checkState=False),
-                enabled=tradeGood != None
-            ),
-            gui.MenuItem(
-                text='Uncheck Selected',
-                callback=lambda: self.setSelectionCheckState(checkState=False),
-                enabled=tradeGood != None
-            ),
-            gui.MenuItem(
-                text='Uncheck Upwards',
-                callback=lambda: self.setCheckStateAbove(row=row, checkState=False),
-                enabled=tradeGood != None
-            ),
-            gui.MenuItem(
-                text='Uncheck Downwards',
-                callback=lambda: self.setCheckStateBelow(row=row, checkState=False),
-                enabled=tradeGood != None
-            ),
-        ]
+        checkAllAction = QtWidgets.QAction('Check All', self)
+        checkAllAction.triggered.connect(
+            lambda: self.setAllRowCheckState(checkState=True))
+        menu.addAction(checkAllAction)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self.viewport().mapToGlobal(position))
+        checkSelectedAction = QtWidgets.QAction('Check Selected', self)
+        checkSelectedAction.triggered.connect(
+            lambda: self.setSelectionCheckState(checkState=True))
+        menu.addAction(checkSelectedAction)
 
-        # Don't call base class as we've handled the event
-        #return super().contextMenuEvent(event)
+        checkUpwardsAction = QtWidgets.QAction('Check Upwards', self)
+        checkUpwardsAction.setEnabled(currentItem is not None)
+        checkUpwardsAction.triggered.connect(
+            lambda: self.setCheckStateAbove(row=currentItem.row(), checkState=True))
+        menu.addAction(checkUpwardsAction)
+
+        checkDownwardsAction = QtWidgets.QAction('Check Downwards', self)
+        checkDownwardsAction.setEnabled(currentItem is not None)
+        checkDownwardsAction.triggered.connect(
+            lambda: self.setCheckStateBelow(row=currentItem.row(), checkState=True))
+        menu.addAction(checkDownwardsAction)
+
+        menu.addSeparator()
+
+        uncheckAllAction = QtWidgets.QAction('Uncheck All', self)
+        uncheckAllAction.triggered.connect(
+            lambda: self.setAllRowCheckState(checkState=False))
+        menu.addAction(uncheckAllAction)
+
+        uncheckSelectedAction = QtWidgets.QAction('Uncheck Selected', self)
+        uncheckSelectedAction.triggered.connect(
+            lambda: self.setSelectionCheckState(checkState=False))
+        menu.addAction(uncheckSelectedAction)
+
+        uncheckUpwardsAction = QtWidgets.QAction('Uncheck Upwards', self)
+        uncheckUpwardsAction.setEnabled(currentItem is not None)
+        uncheckUpwardsAction.triggered.connect(
+            lambda: self.setCheckStateAbove(row=currentItem.row(), checkState=False))
+        menu.addAction(uncheckUpwardsAction)
+
+        uncheckDownwardsAction = QtWidgets.QAction('Uncheck Downwards', self)
+        uncheckDownwardsAction.setEnabled(currentItem is not None)
+        uncheckDownwardsAction.triggered.connect(
+            lambda: self.setCheckStateBelow(row=currentItem.row(), checkState=False))
+        menu.addAction(uncheckDownwardsAction)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
