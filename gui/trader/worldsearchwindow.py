@@ -951,8 +951,6 @@ class WorldSearchWindow(gui.WindowWidget):
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
         hasSelection = self._worldTable.hasSelection()
         hasContent = not self._worldTable.isEmpty()
-        clickedRow = self._worldTable.rowAt(point.y())
-        clickedScore = self._worldTable.tradeScore(clickedRow)
 
         findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...')
         findTradeOptionsForSelectedAction.setEnabled(hasSelection)
@@ -964,19 +962,19 @@ class WorldSearchWindow(gui.WindowWidget):
         findTradeOptionsForAllAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldTable.worlds()))
 
-        showTradeScoreCalculationsAction = QtWidgets.QAction('Show Trade Score Calculations...')
-        showTradeScoreCalculationsAction.setEnabled(clickedScore is not None)
-        showTradeScoreCalculationsAction.triggered.connect(
-            lambda: self._showTradeScoreCalculations(clickedRow))
-
         menu = QtWidgets.QMenu()
         self._worldTable.fillContextMenu(menu)
-        menu.addSeparator()
-        menu.addAction(findTradeOptionsForSelectedAction)
-        menu.addAction(findTradeOptionsForAllAction)
-        menu.addSeparator()
-        menu.addAction(showTradeScoreCalculationsAction)
-        menu.exec(self._worldTable.viewport().mapToGlobal(point))
+        # TODO: This is horrible, find a better way to get these options
+        # inserted before the show calculations options
+        menu.insertAction(
+            self._worldTable.showSelectedCalculationsAction(), # Insert BEFORE this
+            findTradeOptionsForSelectedAction)
+        menu.insertAction(
+            self._worldTable.showSelectedCalculationsAction(), # Insert BEFORE this
+            findTradeOptionsForAllAction)
+        menu.insertSeparator(
+            self._worldTable.showSelectedCalculationsAction()) # Insert BEFORE this
+        menu.exec(self._worldTable.mapToGlobal(point))
 
     def _findTradeOptions(
             self,
