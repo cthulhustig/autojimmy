@@ -110,7 +110,7 @@ class WindowManager(object):
         self._simulatorWindow.bringToFront()
         return self._simulatorWindow
 
-    def showWorldDetailsWindow(self) -> 'gui.HexDetailsWindow':
+    def showHexDetailsWindow(self) -> 'gui.HexDetailsWindow':
         if not self._hexDetailsWindow:
             self._hexDetailsWindow = gui.HexDetailsWindow()
         self._hexDetailsWindow.bringToFront()

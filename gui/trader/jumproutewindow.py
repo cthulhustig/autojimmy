@@ -2263,7 +2263,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=hexes)
 
     def _showCalculations(

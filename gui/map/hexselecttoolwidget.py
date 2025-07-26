@@ -313,5 +313,5 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         hex = self.selectedHex()
         if not hex:
             return
-        infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHex(hex=hex)

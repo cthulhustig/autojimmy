@@ -4,7 +4,6 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -259,10 +258,6 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoBreakdownTable.sortByColumnHeader(
             self._cargoBreakdownDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
-        self._cargoBreakdownTable.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._cargoBreakdownTable.customContextMenuRequested.connect(
-            self._showCargoBreakdownTableContextMenu)
 
         self._cargoManifestSplitter = QtWidgets.QSplitter(
             QtCore.Qt.Orientation.Vertical)
@@ -328,7 +323,7 @@ class CargoManifestDialog(gui.DialogEx):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _cargoManifestColumns(self) -> typing.List[gui.CargoManifestTable.ColumnType]:
@@ -526,26 +521,6 @@ class CargoManifestDialog(gui.DialogEx):
             self,
             menuItems,
             self._cargoManifestTable.viewport().mapToGlobal(point))
-
-    # TODO: This will need work
-    def _showCargoBreakdownTableContextMenu(self, point: QtCore.QPoint) -> None:
-        tradeOption = self._cargoBreakdownTable.tradeOptionAt(point.y())
-
-        menuItems = [
-            # When showing trade option calculation we show the calculation for the gross profit
-            # (rather than net profit) as logistics don't apply to individual trade options when
-            # working with a cargo manifest
-            gui.MenuItem(
-                text='Show Trade Option Calculations...',
-                callback=lambda: self._showCalculations(tradeOption.grossProfit()),
-                enabled=tradeOption != None
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._cargoBreakdownTable.viewport().mapToGlobal(point))
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

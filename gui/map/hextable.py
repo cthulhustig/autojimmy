@@ -1223,7 +1223,7 @@ class HexTable(gui.FrozenColumnListTable):
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=hexes)
 
     def _showOnMap(

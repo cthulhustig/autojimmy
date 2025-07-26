@@ -503,7 +503,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showTradeOptionCalculations(
@@ -790,71 +790,16 @@ class _BaseTraderWindow(gui.WindowWidget):
     # TODO: This will need work
     def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
         clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
-        selectedTradeOptions = self._tradeOptionsTable.selectedTradeOptions()
-        selectedPurchaseWorlds = None
-        selectedSaleWorlds = None
-        selectedSaleAndPurchaseWorlds = None
-        if selectedTradeOptions:
-            selectedPurchaseWorlds = set([tradeOption.purchaseWorld() for tradeOption in selectedTradeOptions])
-            selectedSaleWorlds = set([tradeOption.saleWorld() for tradeOption in selectedTradeOptions])
-            selectedSaleAndPurchaseWorlds = selectedPurchaseWorlds.union(selectedSaleWorlds)
 
-        menuItems = [
-            gui.MenuItem(
-                text='Plan Jump Route Between Worlds...',
-                callback=lambda: self._planJumpRoute(clickedTradeOption),
-                enabled=clickedTradeOption != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Purchase World Details...',
-                callback=lambda: self._showWorldDetails(selectedPurchaseWorlds),
-                enabled=selectedPurchaseWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Sale World Details...',
-                callback=lambda: self._showWorldDetails(selectedSaleWorlds),
-                enabled=selectedSaleWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Purchase && Sale World Details...',
-                callback=lambda: self._showWorldDetails(selectedSaleAndPurchaseWorlds),
-                enabled=selectedSaleAndPurchaseWorlds != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Purchase Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(selectedPurchaseWorlds),
-                enabled=selectedPurchaseWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Sale Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(selectedSaleWorlds),
-                enabled=selectedSaleWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Sale && Purchase Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(selectedSaleAndPurchaseWorlds),
-                enabled=selectedSaleAndPurchaseWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Jump Route on Map...',
-                callback=lambda: self._showJumpRouteOnMap(clickedTradeOption.jumpRoute()),
-                enabled=clickedTradeOption != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Trade Option Calculations...',
-                callback=lambda: self._showTradeOptionCalculations(clickedTradeOption),
-                enabled=clickedTradeOption != None
-            )
-        ]
+        planJumpRouteAction = QtWidgets.QAction('Plan Jump Route Between Worlds...', self)
+        planJumpRouteAction.setEnabled(clickedTradeOption is not None)
+        planJumpRouteAction.triggered.connect(lambda: self._planJumpRoute(clickedTradeOption))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._tradeOptionsTable.viewport().mapToGlobal(point)
-        )
+        menu = QtWidgets.QMenu()
+        menu.addAction(planJumpRouteAction)
+        menu.addSeparator()
+        self._tradeOptionsTable.fillContextMenu(menu)
+        menu.exec(self._tradeOptionsTable.viewport().mapToGlobal(point))
 
     def _createCargoManifest(self) -> None:
         # This should be implemented by the derived class

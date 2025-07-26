@@ -570,6 +570,9 @@ class ListTable(gui.TableWidgetEx):
         menu.addAction(self.promptExportContentToCsvAction())
         menu.addAction(self.promptExportContentToHtmlAction())
 
+    # TODO: I don't like the fact derived classes need to implement
+    # a separate sync function with a different name and redo all
+    # the hooking into insertItem etc
     def _syncListTableActions(self) -> None:
         hasContent = self.rowCount() > 0
         if self._copyContentToClipboardAsCsvAction is not None:
