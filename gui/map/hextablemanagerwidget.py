@@ -539,13 +539,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
             # Add newly selected hexes
             for hex in newHexes:
-                if hex not in currentHexes:
-                    if self._allowHexCallback and not self._allowHexCallback(hex):
-                        # Silently ignore worlds that are filtered out
-                        continue
+                if self._allowHexCallback and not self._allowHexCallback(hex):
+                    # Silently ignore worlds that are filtered out
+                    continue
 
-                    self._hexTable.addHex(hex)
-                    updated = True
+                self._hexTable.addHex(hex)
+                updated = True
         finally:
             self._hexTable.setSortingEnabled(sortingEnabled)
 

@@ -102,7 +102,6 @@ class ListTable(gui.TableWidgetEx):
 
         self._columnWidths: typing.Dict[str, int] = {}
 
-        # TODO: Need to check these work with frozen table
         self._copyContentToClipboardAsCsvAction = QtWidgets.QAction('Copy as CSV', self)
         self._copyContentToClipboardAsCsvAction.setEnabled(False) # No content to copy
         self._copyContentToClipboardAsCsvAction.triggered.connect(self.copyContentToClipboardAsCsv)
@@ -438,14 +437,17 @@ class ListTable(gui.TableWidgetEx):
 
         header = []
         for column in range(self.columnCount()):
-            header.append(self.columnHeaderText(column))
+            if self.isColumnHidden(column):
+                continue
+            header.append(self._csvHeaderText(column))
         writer.writerow(header)
 
         for row in range(self.rowCount()):
             content = []
             for column in range(self.columnCount()):
-                item = self.item(row, column)
-                content.append(item.text() if item else '')
+                if self.isColumnHidden(column):
+                    continue
+                content.append(self._csvCellText(row, column))
             writer.writerow(content)
 
         content = output.getvalue()
@@ -550,6 +552,14 @@ class ListTable(gui.TableWidgetEx):
         return super().eventFilter(object, event)
 
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]) -> None:
+        if event is not None and event.matches(QtGui.QKeySequence.StandardKey.Copy):
+            # Override the base implementation so the clipboard format
+            # is csv rather than html. I think it's more likely to be
+            # what the user actually wants
+            if self.rowCount() > 0:
+                self.copyContentToClipboardAsCsv()
+            return
+
         super().keyPressEvent(event)
 
         # TODO: I don't think this is the best way to handle this. Things that
@@ -789,6 +799,15 @@ class ListTable(gui.TableWidgetEx):
         # triggering an icon click. This is necessary as the hit box for column resize gripper
         # overlaps the icon rect
         self._headerIconClickIndex = None
+
+    def _csvHeaderText(self, column: int) -> str:
+        text = self.columnHeaderText(column)
+        # Replacing returns with spaces just makes the csv a little nicer to read
+        return text.replace('\n', ' ')
+
+    def _csvCellText(self, row: int, column: int) -> str:
+        item = self.item(row, column)
+        return item.text() if item else ''
 
 # Based on code from here
 # https://github.com/baoboa/pyqt5/blob/master/examples/itemviews/frozencolumn/frozencolumn.py

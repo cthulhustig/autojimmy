@@ -25,8 +25,6 @@ def _customWorldTableColumns(
     columns.insert(index, WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
-# TODO: What happens for the trade score column when this table is
-# exported to html/csv
 class WorldTradeScoreTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)

@@ -140,10 +140,9 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                 rowSpan = self.rowSpan(row, column)
                 assert(rowSpan > 0)
                 if not rowHidden and not self.isColumnHidden(column):
-                    item = self.item(row, column)
-                    itemText = item.text() if item else ''
-                    itemAlignment = item.textAlignment() if item else None
-                    itemFont = item.font() if item else None
+                    itemText = self._htmlCellText(row, column)
+                    itemAlignment = self._htmlCellAlignment(row, column)
+                    itemFont = self._htmlCellFont(row, column)
 
                     itemText = gui.textToHtmlContent(text=itemText, font=itemFont)
                     itemAlignment = gui.alignmentToHtmlStyle(alignment=itemAlignment)
@@ -251,11 +250,13 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]) -> None:
         if event is not None and event.matches(QtGui.QKeySequence.StandardKey.Copy):
-            # If there is no content, don't do anything but still accept
-            # the event so the handling of the key press is consistent
             if self.rowCount() > 0:
                 self.copyContentToClipboardAsHtml()
-            event.accept()
+
+            # NOTE: Don't call base implementation as there is a default
+            # handler that copies the content of the current cell to the
+            # clipboard which will replace what has just been set
+            return
 
         super().keyPressEvent(event)
 
@@ -271,6 +272,18 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             self._copyContentToClipboardAsHtmlAction.setEnabled(hasContent)
         if self._promptExportContentToHtmlAction is not None:
             self._promptExportContentToHtmlAction.setEnabled(hasContent)
+
+    def _htmlCellText(self, row: int, column: int) -> str:
+        item = self.item(row, column)
+        return item.text() if item else ''
+
+    def _htmlCellAlignment(self, row: int, column: int) -> typing.Optional[int]:
+        item = self.item(row, column)
+        return item.textAlignment() if item else None
+
+    def _htmlCellFont(self, row: int, column: int) -> typing.Optional[QtGui.QFont]:
+        item = self.item(row, column)
+        return item.font() if item else None
 
     @staticmethod
     def _formatTableHeader(
