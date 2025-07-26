@@ -76,7 +76,6 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         self._filterTable.itemSelectionChanged.connect(self._tableSelectionChanged)
 
         self._promptAddNewAction = QtWidgets.QAction('Add...', self)
-        self._promptAddNewAction.setEnabled(True)
         self._promptAddNewAction.triggered.connect(self.promptAddNew)
 
         self._promptEditSelectedAction = QtWidgets.QAction('Edit...', self)

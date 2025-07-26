@@ -92,11 +92,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self._hexTable.setSortingEnabled(False)
 
         self._promptAddFreeSelectAction = QtWidgets.QAction('Add...', self)
-        self._promptAddFreeSelectAction.setEnabled(True)
         self._promptAddFreeSelectAction.triggered.connect(self.promptAddFreeSelection)
 
         self._promptAddNearbyAction = QtWidgets.QAction('Add Nearby...', self)
-        self._promptAddNearbyAction.setEnabled(True)
         self._promptAddNearbyAction.setVisible(not self._isOrderedList)
         self._promptAddNearbyAction.triggered.connect(self.promptAddNearby)
 

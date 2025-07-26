@@ -2014,7 +2014,6 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(self._exportJumpRoute)
         action.setEnabled(self._jumpRoute != None)
         action = menu.addAction('Screenshot...')
-        action.setEnabled(True)
         action.triggered.connect(self._exportMapScreenshot)
 
         gui.displayMenu(

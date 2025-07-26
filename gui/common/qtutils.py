@@ -19,6 +19,7 @@ def createLabelledWidgetLayout(
     layout.addStretch()
     return layout
 
+# TODO: Hopefully I can get rid of this and displayMenu as part of this work
 class MenuItem(object):
     def __init__(
             self,

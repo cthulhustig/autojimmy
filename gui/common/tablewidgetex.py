@@ -27,7 +27,6 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         self._copyContentToClipboardAsHtmlAction.triggered.connect(self.copyContentToClipboardAsHtml)
 
         self._copyViewToClipboardAction = QtWidgets.QAction('Copy as Image', self)
-        self._copyViewToClipboardAction.setEnabled(True)
         self._copyViewToClipboardAction.triggered.connect(self.copViewToClipboard)
 
         self._promptExportContentToHtmlAction = QtWidgets.QAction('Export to HTML...', self)
