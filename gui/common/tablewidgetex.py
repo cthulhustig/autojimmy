@@ -94,7 +94,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         content += 'border-collapse: collapse;\n'
         content += '}\n'
         content += 'th, td {\n'
-        content += 'padding: 2px;\n'
+        content += 'padding: 5px;\n'
         content += '}\n'
         content += '</style>\n'
         content += '</head>\n'
