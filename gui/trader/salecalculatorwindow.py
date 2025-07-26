@@ -677,37 +677,31 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._diceRollTable.removeAllRows()
         self._salePricesTable.removeAllRows()
 
-    # TODO: This will need work
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        cargoRecord = self._cargoTable.cargoRecordAt(point.y())
+        addCargoAction = QtWidgets.QAction('Add Cargo...')
+        addCargoAction.triggered.connect(self._addCargo)
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._addCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Cargo...',
-                callback=lambda: self._editCargo(),
-                enabled=cargoRecord != None
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._cargoTable.removeSelectedRows(),
-                enabled=self._cargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._cargoTable.removeAllRows(),
-                enabled=not self._cargoTable.isEmpty()
-            )
-        ]
+        editCargoAction = QtWidgets.QAction('Edit Cargo...')
+        editCargoAction.setEnabled(self._cargoTable.hasSelection())
+        editCargoAction.triggered.connect(self._editCargo)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._cargoTable.viewport().mapToGlobal(point))
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo')
+        removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
+        removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo')
+        removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
+        removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(editCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        self._cargoTable.fillContextMenu(menu)
+        menu.exec(self._cargoTable.viewport().mapToGlobal(point))
 
     def _cargoTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
@@ -836,38 +830,33 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.removeAllRows()
         self._updateTotalSalePrice()
 
-    # TODO: This will need work
     def _showSalePricesTableContextMenu(self, point: QtCore.QPoint) -> None:
-        salePrice = self._salePricesTable.cargoRecordAt(point.y())
+        editSalePriceAction = QtWidgets.QAction(
+            'Edit Sale Price...')
+        editSalePriceAction.setEnabled(self._salePricesTable.hasSelection())
+        editSalePriceAction.triggered.connect(self._editSalePrice)
 
-        menuItems = [
-            gui.MenuItem(
-                text='Edit Sale Price...',
-                callback=self._editSalePrice,
-                enabled=salePrice != None
-            ),
-            gui.MenuItem(
-                text='Remove Selected Sale Prices',
-                callback=self._removeSelectedSalePrices,
-                enabled=self._salePricesTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Sale Prices',
-                callback=self._removeAllSalePrices,
-                enabled=not self._salePricesTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCalculations(salePrice),
-                enabled=salePrice != None
-            )
-        ]
+        removeSelectedSalePriceAction = QtWidgets.QAction(
+            'Remove Selected Sale Prices')
+        removeSelectedSalePriceAction.setEnabled(self._salePricesTable.hasSelection())
+        removeSelectedSalePriceAction.triggered.connect(
+            self._removeSelectedSalePrices)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._salePricesTable.viewport().mapToGlobal(point))
+        removeAllSalePriceAction = QtWidgets.QAction(
+            'Remove All Sale Prices')
+        removeAllSalePriceAction.setEnabled(
+            not self._salePricesTable.isEmpty())
+        removeAllSalePriceAction.triggered.connect(
+            self._removeAllSalePrices)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(editSalePriceAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedSalePriceAction)
+        menu.addAction(removeAllSalePriceAction)
+        menu.addSeparator()
+        self._salePricesTable.fillContextMenu(menu)
+        menu.exec(self._salePricesTable.viewport().mapToGlobal(point))
 
     def _salePricesTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:

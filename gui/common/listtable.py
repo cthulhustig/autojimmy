@@ -305,11 +305,11 @@ class ListTable(gui.TableWidgetEx):
         super().insertRow(row)
         self._syncListTableActions()
 
-    def removeRow(self, row):
+    def removeRow(self, row: int) -> None:
         super().removeRow(row)
         self._syncListTableActions()
 
-    def setRowCount(self, rows):
+    def setRowCount(self, rows: int) -> None:
         super().setRowCount(rows)
         self._syncListTableActions()
 

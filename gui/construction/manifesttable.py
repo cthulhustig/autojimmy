@@ -107,11 +107,11 @@ class ManifestTable(gui.ListTable):
         super().insertRow(row)
         self._syncManifestTableActions()
 
-    def removeRow(self, row):
+    def removeRow(self, row: int) -> None:
         super().removeRow(row)
         self._syncManifestTableActions()
 
-    def setRowCount(self, rows):
+    def setRowCount(self, rows: int) -> None:
         super().setRowCount(rows)
         self._syncManifestTableActions()
 

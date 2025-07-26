@@ -1,4 +1,5 @@
 import app
+import common
 import enum
 import gui
 import json
@@ -81,6 +82,14 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self._outcomeColours = app.OutcomeColours(outcomeColours)
+
+        self._showSelectedCalculationsAction = QtWidgets.QAction('Show Selected Calculations...', self)
+        self._showSelectedCalculationsAction.setEnabled(False) # No content to copy
+        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+
+        self._showAllCalculationsAction = QtWidgets.QAction('Show All Calculations...', self)
+        self._showAllCalculationsAction.setEnabled(False) # No content to copy
+        self._showAllCalculationsAction.triggered.connect(self.showAllCalculations)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -206,6 +215,64 @@ class CargoRecordTable(gui.FrozenColumnListTable):
                 if cargoRecord:
                     cargoRecords.append(cargoRecord)
         return cargoRecords
+
+    def insertRow(self, row: int) -> None:
+        super().insertRow(row)
+        self._syncCargoRecordTableActions()
+
+    def removeRow(self, row: int) -> None:
+        super().removeRow(row)
+        self._syncCargoRecordTableActions()
+
+    def setRowCount(self, rows: int) -> None:
+        super().setRowCount(rows)
+        self._syncCargoRecordTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncCargoRecordTableActions()
+
+    def showSelectedCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=True)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def showAllCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=False)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def showSelectedCalculationsAction(self) -> QtWidgets.QAction:
+        return self._showSelectedCalculationsAction
+
+    def setShowSelectedCalculationsAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._showSelectedCalculationsAction = action
+
+    def showAllCalculationsAction(self) -> QtWidgets.QAction:
+        return self._showAllCalculationsAction
+
+    def setShowAllCalculationsAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._showAllCalculationsAction = action
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        # Add base classes context menu (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
+        menu.addSeparator()
+        menu.addAction(self.showSelectedCalculationsAction())
+        menu.addAction(self.showAllCalculationsAction())
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -333,3 +400,39 @@ class CargoRecordTable(gui.FrozenColumnListTable):
                 self._fillRow(row=row, cargoRecord=self.cargoRecord(row=row))
         finally:
             self.setSortingEnabled(sortingEnabled)
+
+    def _syncCargoRecordTableActions(self):
+        if self._showSelectedCalculationsAction:
+            self._showSelectedCalculationsAction.setEnabled(self.hasSelection())
+        if self._showAllCalculationsAction:
+            self._showAllCalculationsAction.setEnabled(not self.isEmpty())
+
+    def _gatherCalculations(
+            self,
+            selectedOnly: bool
+            ) -> typing.List[common.Calculation]:
+        rowIter = self.selectedRows() if selectedOnly else range(self.rowCount())
+        calculations = []
+        for row in rowIter:
+            cargoRecord = self.cargoRecord(row)
+            if cargoRecord:
+                calculations.append(cargoRecord.pricePerTon())
+                calculations.append(cargoRecord.quantity())
+        return calculations
+
+    def _showCalculations(
+            self,
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
+        try:
+            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
+            calculationWindow.showCalculations(
+                calculations=calculations,
+                decimalPlaces=2)
+        except Exception as ex:
+            message = 'Failed to show calculations'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)

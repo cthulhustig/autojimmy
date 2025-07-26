@@ -1711,42 +1711,34 @@ class WorldTraderWindow(_BaseTraderWindow):
         for cargoRecord in cargoRecords:
             self._addSpeculativeCargo(cargoRecord)
 
-    # TODO: This will need work
     def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Current World Cargo...',
-                callback=lambda: self._generateSpeculativeCargoForWorld(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._promptAddSpeculativeCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._removeSelectedSpeculativeCargo(),
-                enabled=self._speculativeCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._removeAllSpeculativeCargo(),
-                enabled=not self._speculativeCargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCargoRecordCalculations(self._speculativeCargoTable.currentCargoRecord()),
-                enabled=self._speculativeCargoTable.hasSelection()
-            )
-        ]
+        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
+        addCargoAction.triggered.connect(
+            self._promptAddSpeculativeCargo)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._speculativeCargoTable.viewport().mapToGlobal(point)
-        )
+        addCurrentWorldCargoAction = QtWidgets.QAction('Add Current World Cargo...', self)
+        addCurrentWorldCargoAction.triggered.connect(
+            self._generateSpeculativeCargoForWorld)
+
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction.setEnabled(self._speculativeCargoTable.hasSelection())
+        removeSelectedCargoAction.triggered.connect(
+            self._removeSelectedSpeculativeCargo)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction.setEnabled(not self._speculativeCargoTable.isEmpty())
+        removeAllCargoAction.triggered.connect(
+            self._removeAllSpeculativeCargo)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(addCurrentWorldCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        self._speculativeCargoTable.fillContextMenu(menu)
+        menu.exec(self._speculativeCargoTable.viewport().mapToGlobal(point))
 
     def _speculativeCargoTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
@@ -1901,48 +1893,37 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._availableFundsSpinBox.setValue(
             self._availableFundsSpinBox.value() - int(totalCost))
 
-    # TODO: This will need work
     def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._promptAddAvailableCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Cargo...',
-                callback=lambda: self._promptEditAvailableCargo(),
-                enabled=self._availableCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._removeSelectedAvailableCargo(),
-                enabled=self._availableCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._removeAllAvailableCargo(),
-                enabled=not self._availableCargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Purchase Cargo...',
-                callback=lambda: self._purchaseAvailableCargo(),
-                enabled=self._availableCargoTable.hasSelection()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCargoRecordCalculations(self._availableCargoTable.currentCargoRecord()),
-                enabled=self._availableCargoTable.hasSelection()
-            )
-        ]
+        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
+        addCargoAction.triggered.connect(self._promptAddAvailableCargo)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._availableCargoTable.viewport().mapToGlobal(point)
-        )
+        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
+        editCargoAction.setEnabled(self._availableCargoTable.hasSelection())
+        editCargoAction.triggered.connect(self._promptEditAvailableCargo)
+
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction.setEnabled(self._availableCargoTable.hasSelection())
+        removeSelectedCargoAction.triggered.connect(self._removeSelectedAvailableCargo)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction.setEnabled(not self._availableCargoTable.isEmpty())
+        removeAllCargoAction.triggered.connect(self._removeAllAvailableCargo)
+
+        purchaseCargoAction = QtWidgets.QAction('Purchase Cargo...', self)
+        purchaseCargoAction.setEnabled(self._availableCargoTable.hasSelection())
+        purchaseCargoAction.triggered.connect(self._purchaseAvailableCargo)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(editCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        menu.addAction(purchaseCargoAction)
+        menu.addSeparator()
+        self._availableCargoTable.fillContextMenu(menu)
+        menu.exec(self._availableCargoTable.viewport().mapToGlobal(point))
 
     def _availableCargoTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
@@ -2054,42 +2035,31 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._currentCargoTable.setCargoRecord(row, cargoRecord)
         self._updateSaleWorldTradeScores()
 
-    # TODO: This will need work
     def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._promptAddCurrentCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Cargo...',
-                callback=lambda: self._promptEditCurrentCargo(),
-                enabled=self._currentCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._removeSelectedCurrentCargo(),
-                enabled=self._currentCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._removeAllCurrentCargo(),
-                enabled=not self._currentCargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCargoRecordCalculations(self._currentCargoTable.currentCargoRecord()),
-                enabled=self._currentCargoTable.hasSelection()
-            )
-        ]
+        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
+        addCargoAction.triggered.connect(self._promptAddCurrentCargo)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._currentCargoTable.viewport().mapToGlobal(point)
-        )
+        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
+        editCargoAction.setEnabled(self._currentCargoTable.hasSelection())
+        editCargoAction.triggered.connect(self._promptEditCurrentCargo)
+
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction.setEnabled(self._currentCargoTable.hasSelection())
+        removeSelectedCargoAction.triggered.connect(self._removeSelectedCurrentCargo)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction.setEnabled(not self._currentCargoTable.isEmpty())
+        removeAllCargoAction.triggered.connect(self._removeAllCurrentCargo)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(editCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        self._currentCargoTable.fillContextMenu(menu)
+        menu.exec(self._currentCargoTable.viewport().mapToGlobal(point))
 
     def _currentCargoTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
