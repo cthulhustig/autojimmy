@@ -567,30 +567,32 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        addCargoAction = QtWidgets.QAction('Add Cargo...')
+        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
         addCargoAction.triggered.connect(self._addCargo)
 
-        editCargoAction = QtWidgets.QAction('Edit Cargo...')
+        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
         editCargoAction.setEnabled(self._cargoTable.hasSelection())
         editCargoAction.triggered.connect(self._editCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo')
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
         removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
 
-        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo')
+        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
         removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
         removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
 
         findTradeOptionsForSelectedCargoAction = QtWidgets.QAction(
-            'Find Trade Options for Selected Cargo...')
+            'Find Trade Options for Selected Cargo...',
+            self)
         findTradeOptionsForSelectedCargoAction.setEnabled(
             self._cargoTable.hasSelection())
         findTradeOptionsForSelectedCargoAction.triggered.connect(
             lambda: self._findTradeOptionsForCargo(self._cargoTable.selectedCargoRecords()))
 
         findTradeOptionsForAllCargoAction = QtWidgets.QAction(
-            'Find Trade Options for All Cargo...')
+            'Find Trade Options for All Cargo...',
+            self)
         findTradeOptionsForAllCargoAction.setEnabled(
             not self._cargoTable.isEmpty())
         findTradeOptionsForAllCargoAction.triggered.connect(

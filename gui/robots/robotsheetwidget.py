@@ -271,7 +271,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             self,
             point: QtCore.QPoint
             ) -> None:
-        showCalculationsAction = QtWidgets.QAction('Show Calculations...')
+        showCalculationsAction = QtWidgets.QAction('Show Calculations...', self)
         showCalculationsAction.triggered.connect(self._showCalculations)
 
         menu = QtWidgets.QMenu()

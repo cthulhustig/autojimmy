@@ -952,12 +952,12 @@ class WorldSearchWindow(gui.WindowWidget):
         hasSelection = self._worldTable.hasSelection()
         hasContent = not self._worldTable.isEmpty()
 
-        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...')
+        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...', self)
         findTradeOptionsForSelectedAction.setEnabled(hasSelection)
         findTradeOptionsForSelectedAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldTable.selectedWorlds()))
 
-        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All Worlds...')
+        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All Worlds...', self)
         findTradeOptionsForAllAction.setEnabled(hasContent)
         findTradeOptionsForAllAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldTable.worlds()))

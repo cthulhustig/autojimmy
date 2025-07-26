@@ -1877,12 +1877,12 @@ class JumpRouteWindow(gui.WindowWidget):
     def _showJumpRouteTableContextMenu(self, point: QtCore.QPoint) -> None:
         hasSelection = self._jumpRouteTable.hasSelection()
 
-        addSelectionToWaypointsAction = QtWidgets.QAction('Add Selection to Waypoints')
+        addSelectionToWaypointsAction = QtWidgets.QAction('Add Selection to Waypoints', self)
         addSelectionToWaypointsAction.setEnabled(hasSelection)
         addSelectionToWaypointsAction.triggered.connect(
             lambda: [self._waypointsWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()])
 
-        addSelectionToAvoidListAction = QtWidgets.QAction('Add Selection to Avoid List')
+        addSelectionToAvoidListAction = QtWidgets.QAction('Add Selection to Avoid List', self)
         addSelectionToAvoidListAction.setEnabled(hasSelection)
         addSelectionToAvoidListAction.triggered.connect(
             lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()])
@@ -1898,22 +1898,22 @@ class JumpRouteWindow(gui.WindowWidget):
         hasSelection = self._refuellingPlanTable.hasSelection()
         clickedPitStop = self._refuellingPlanTable.pitStopAt(point.y())
 
-        addSelectionToWaypointsAction = QtWidgets.QAction('Add Selection to Waypoints')
+        addSelectionToWaypointsAction = QtWidgets.QAction('Add Selection to Waypoints', self)
         addSelectionToWaypointsAction.setEnabled(hasSelection)
         addSelectionToWaypointsAction.triggered.connect(
             lambda: [self._waypointsWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()])
 
-        addSelectionToAvoidListAction = QtWidgets.QAction('Add Selection to Avoid List')
+        addSelectionToAvoidListAction = QtWidgets.QAction('Add Selection to Avoid List', self)
         addSelectionToAvoidListAction.setEnabled(hasSelection)
         addSelectionToAvoidListAction.triggered.connect(
             lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()])
 
-        showPitStopCalculationsAction = QtWidgets.QAction('Show Pit Stop Calculations...')
+        showPitStopCalculationsAction = QtWidgets.QAction('Show Pit Stop Calculations...', self)
         showPitStopCalculationsAction.setEnabled(clickedPitStop is not None)
         showPitStopCalculationsAction.triggered.connect(
             lambda: self._showCalculations(clickedPitStop.totalCost()))
 
-        showAllRefuellingCalculationsAction = QtWidgets.QAction('Show All Refuelling Calculations...')
+        showAllRefuellingCalculationsAction = QtWidgets.QAction('Show All Refuelling Calculations...', self)
         showAllRefuellingCalculationsAction.setEnabled(self._routeLogistics is not None)
         showAllRefuellingCalculationsAction.triggered.connect(
             lambda: self._showCalculations(self._routeLogistics.totalCosts()))

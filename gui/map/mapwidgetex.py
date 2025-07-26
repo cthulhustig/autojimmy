@@ -1110,7 +1110,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 _ActionGroupComboBox(self._renderingActionGroup),
                 renderingConfigLayout.rowCount(), 0, 1, 2)
 
-            self._animatedAction = QtWidgets.QAction('Animations')
+            self._animatedAction = QtWidgets.QAction('Animations', self)
             self._animatedAction.setCheckable(True)
             self._animatedAction.setChecked(self._animated)
             self._animatedAction.toggled.connect(self._animatedChanged)

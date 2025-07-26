@@ -415,12 +415,12 @@ class WorldComparisonWindow(gui.WindowWidget):
         hasSelection = self._worldManagementWidget.hasSelection()
         hasContent = not self._worldManagementWidget.isEmpty()
 
-        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...')
+        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...', self)
         findTradeOptionsForSelectedAction.setEnabled(hasSelection)
         findTradeOptionsForSelectedAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldManagementWidget.selectedWorlds()))
 
-        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All Worlds...')
+        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All Worlds...', self)
         findTradeOptionsForAllAction.setEnabled(hasContent)
         findTradeOptionsForAllAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldManagementWidget.worlds()))
