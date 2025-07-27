@@ -333,13 +333,9 @@ class ListTable(gui.TableWidgetEx):
         return selectedRows
 
     def removeSelectedRows(self) -> None:
-        selection = self.selectedIndexes()
-        if not selection:
-            return
-        selection.sort(key=lambda x: -1 * x.row())
-        for index in selection:
-            if index.column() == 0:
-                self.removeRow(index.row())
+        for row in range(self.rowCount() - 1, -1, -1):
+            if self.isRowSelected(row):
+                self.removeRow(row)
 
     def removeAllRows(self) -> None:
         self.setRowCount(0)
