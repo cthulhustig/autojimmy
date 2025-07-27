@@ -33,28 +33,29 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         self._promptExportContentToHtmlAction.setEnabled(False) # No content to copy
         self._promptExportContentToHtmlAction.triggered.connect(self.promptExportContentToHtml)
 
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncTableWidgetExActions()
+        self._hookModel()
 
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncTableWidgetExActions()
+    def setModel(self, model: typing.Optional[QtCore.QAbstractItemModel]) -> None:
+        wasEmpty = self.isEmpty()
 
-    def setRowCount(self, rows: int) -> None:
-        super().setRowCount(rows)
-        self._syncTableWidgetExActions()
+        self._unhookModel()
+        super().setModel(model)
+        self._hookModel()
 
-    def insertColumn(self, column):
-        super().insertColumn(column)
-        self._syncTableWidgetExActions()
+        isEmpty = self.isEmpty()
+        if isEmpty != wasEmpty:
+            self.isEmptyChanged()
 
-    def removeColumn(self, column):
-        super().removeColumn(column)
-        self._syncTableWidgetExActions()
+    # NOTE: A table not being empty just means it has cells, it doesn't
+    # necessarily those cells have content (i.e. items) yet
+    def isEmpty(self) -> bool:
+        return self.rowCount() <= 0 or self.columnCount() <= 0
 
-    def setColumnCount(self, columns):
-        super().setColumnCount(columns)
+    # NOTE: This is called when the table transitions to and from having being
+    # empty and not being empty. In this context not being empty means having
+    # non zero number of cells (i.e. the row AND column count are non-zero), it
+    # does not necessarily mean any of those cells contain items.
+    def isEmptyChanged(self) -> None:
         self._syncTableWidgetExActions()
 
     def showFocusRect(self) -> bool:
@@ -255,7 +256,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
             # NOTE: Don't call base implementation as there is a default
             # handler that copies the content of the current cell to the
-            # clipboard which will replace what has just been set
+            # clipboard which would replace what has just been set
             return
 
         super().keyPressEvent(event)
@@ -265,6 +266,100 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
         if event:
             self.displayContextMenu(pos=event.pos())
+
+    def _hookModel(self) -> None:
+        model = self.model()
+        if model:
+            model.rowsInserted.connect(self._handleRowsInserted)
+            model.rowsRemoved.connect(self._handleRowsRemoved)
+            model.columnsInserted.connect(self._handleColumnsInserted)
+            model.columnsRemoved.connect(self._handleColumnsRemoved)
+
+    def _unhookModel(self) -> None:
+        model = self.model()
+        if model:
+            model.rowsInserted.disconnect(self._handleRowsInserted)
+            model.rowsRemoved.disconnect(self._handleRowsRemoved)
+            model.columnsInserted.disconnect(self._handleColumnsInserted)
+            model.columnsRemoved.disconnect(self._handleColumnsRemoved)
+
+    def _handleRowsInserted(
+            self,
+            parent: QtCore.QModelIndex,
+            first: int,
+            last: int
+            ) -> None:
+        # The table being empty has changed if the rows inserted are the only
+        # rows in the table (i.e. it had none before the insert) _AND_ and the
+        # column count is non-zero.
+        # If the inserted rows are not the only rows in the table then either,
+        # the column count is non-zero and the table is already non-empty _OR_
+        # the column count is zero and the table is still empty, either way
+        # there is no change
+        # If the inserted rows are the only rows in the table but the column
+        # count is zero, then the table is still considered empty as there are
+        # no data cells to be displayed to the user
+        count = (last - first) + 1
+        if self.rowCount() == count and self.columnCount() > 0:
+            self.isEmptyChanged()
+
+    def _handleRowsRemoved(
+            self,
+            parent: QtCore.QModelIndex,
+            first: int,
+            last: int
+            ) -> None:
+        # The table being empty has changed if the row count is now zero (i.e.
+        # the removed rows were the last remaining rows in the table) and the
+        # column count is non-zero.
+        # If the removed rows were not the last remaining rows then, either the
+        # column count is non-zero and the table is still not empty _OR_ the
+        # column count is zero and the table was already considered empty,
+        # either way there has been no change
+        # If the removed rows were the the only rows in the table but the column
+        # count is already zero, then the table was already considered empty and
+        # there is no change
+        if self.rowCount() == 0 and self.columnCount() > 0:
+            self.isEmptyChanged()
+
+    def _handleColumnsInserted(
+            self,
+            parent: QtCore.QModelIndex,
+            first: int,
+            last: int
+            ) -> None:
+        # The table being empty has changed if the columns inserted are the
+        # only columns in the table (i.e. it had none before the insert) _AND_
+        # and the row count is non-zero.
+        # If the inserted columns are not the only columns in the table then
+        # either, the row count is non-zero and the table is already non-empty
+        # _OR_ the row count is zero and the table is still empty, either way
+        # there is no change
+        # If the inserted columns are the only columns in the table but the row
+        # count is zero, then the table is still considered empty as there are
+        # no data cells to be displayed to the user
+        count = (last - first) + 1
+        if self.columnCount() == count and self.rowCount() > 0:
+            self.isEmptyChanged()
+
+    def _handleColumnsRemoved(
+            self,
+            parent: QtCore.QModelIndex,
+            first: int,
+            last: int
+            ) -> None:
+        # The table being empty has changed if the column count is now zero
+        # (i.e. the removed columns were the last remaining rows in the table)
+        # and the row count is non-zero.
+        # If the removed columns were not the last remaining columns then,
+        # either the row count is non-zero and the table is still not empty
+        # _OR_ the row count is zero and the table was already considered empty,
+        # either way there has been no change
+        # If the removed columns were the the only columns in the table but the
+        # row count is already zero, then the table was already considered empty
+        # and there is no change
+        if self.columnCount() == 0 and self.rowCount() > 0:
+            self.isEmptyChanged()
 
     def _syncTableWidgetExActions(self) -> None:
         hasContent = self.rowCount() > 0 and self.columnCount() > 0

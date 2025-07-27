@@ -216,26 +216,6 @@ class CargoRecordTable(gui.FrozenColumnListTable):
                     cargoRecords.append(cargoRecord)
         return cargoRecords
 
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncCargoRecordTableActions()
-
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncCargoRecordTableActions()
-
-    def setRowCount(self, rows: int) -> None:
-        super().setRowCount(rows)
-        self._syncCargoRecordTableActions()
-
-    def selectionChanged(
-            self,
-            selected: QtCore.QItemSelection,
-            deselected: QtCore.QItemSelection
-            ) -> None:
-        super().selectionChanged(selected, deselected)
-        self._syncCargoRecordTableActions()
-
     def showSelectedCalculations(self) -> None:
         calculations = self._gatherCalculations(selectedOnly=True)
         if not calculations:
@@ -305,6 +285,18 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             return False
 
         return True
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncCargoRecordTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncCargoRecordTableActions()
 
     def _fillRow(
             self,

@@ -462,18 +462,6 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> None:
         self._hexTooltipProvider = provider
 
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncHexTableActions()
-
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncHexTableActions()
-
-    def setRowCount(self, count: int) -> None:
-        super().setRowCount(count)
-        self._syncHexTableActions()
-
     def showSelectionDetails(self) -> None:
         self._showDetails(hexes=self.selectedHexes())
 
@@ -555,6 +543,10 @@ class HexTable(gui.FrozenColumnListTable):
         self.setHexes(hexes=hexes)
 
         return True
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncHexTableActions()
 
     def selectionChanged(
             self,

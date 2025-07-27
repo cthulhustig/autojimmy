@@ -103,26 +103,6 @@ class ManifestTable(gui.ListTable):
     def decimalPlaces(self) -> int:
         return 2
 
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncManifestTableActions()
-
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncManifestTableActions()
-
-    def setRowCount(self, rows: int) -> None:
-        super().setRowCount(rows)
-        self._syncManifestTableActions()
-
-    def selectionChanged(
-            self,
-            selected: QtCore.QItemSelection,
-            deselected: QtCore.QItemSelection
-            ) -> None:
-        super().selectionChanged(selected, deselected)
-        self._syncManifestTableActions()
-
     def showSelectedCalculations(self) -> None:
         calculations = self._gatherCalculations(selectedOnly=True)
         if not calculations:
@@ -160,6 +140,18 @@ class ManifestTable(gui.ListTable):
         menu.addSeparator()
         menu.addAction(self.showSelectedCalculationsAction())
         menu.addAction(self.showAllCalculationsAction())
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncManifestTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncManifestTableActions()
 
     def _fillManifestEntryRow(
             self,

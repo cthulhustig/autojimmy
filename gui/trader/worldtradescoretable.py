@@ -7,7 +7,7 @@ import logic
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 class WorldTradeScoreTableColumnType(enum.Enum):
     PurchaseScore = 'Purchase Score'
@@ -91,18 +91,6 @@ class WorldTradeScoreTable(gui.HexTable):
         hex = self.hex(row)
         return self._tradeScoreMap.get(hex)
 
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncWorldFilterTableActions()
-
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncWorldFilterTableActions()
-
-    def setRowCount(self, count: int) -> None:
-        super().setRowCount(count)
-        self._syncWorldFilterTableActions()
-
     def removeRow(self, row: int):
         hex = self.hex(row)
         if hex in self._tradeScoreMap:
@@ -155,13 +143,17 @@ class WorldTradeScoreTable(gui.HexTable):
         menu.addAction(self.showSelectedCalculationsAction())
         menu.addAction(self.showContentCalculationsAction())
 
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncWorldTradeScoreTableActions()
+
     def selectionChanged(
             self,
             selected: QtCore.QItemSelection,
             deselected: QtCore.QItemSelection
             ) -> None:
         super().selectionChanged(selected, deselected)
-        self._syncWorldFilterTableActions()
+        self._syncWorldTradeScoreTableActions()
 
     def _createToolTip(
             self,
@@ -239,7 +231,7 @@ class WorldTradeScoreTable(gui.HexTable):
         self._tradeScoreMap.clear()
         return super()._syncContent()
 
-    def _syncWorldFilterTableActions(self) -> None:
+    def _syncWorldTradeScoreTableActions(self) -> None:
         hasContent = not self.isEmpty()
         hasSelection = self.hasSelection()
         if self._showSelectedCalculationsAction:

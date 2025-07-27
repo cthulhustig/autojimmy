@@ -354,26 +354,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             ) -> None:
         self._hexTooltipProvider = provider
 
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncTradeOptionTableActions()
-
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncTradeOptionTableActions()
-
-    def setRowCount(self, count: int) -> None:
-        super().setRowCount(count)
-        self._syncTradeOptionTableActions()
-
-    def selectionChanged(
-            self,
-            selected: QtCore.QItemSelection,
-            deselected: QtCore.QItemSelection
-            ) -> None:
-        super().selectionChanged(selected, deselected)
-        self._syncTradeOptionTableActions()
-
     def showSelectedPurchaseWorldDetails(self) -> None:
         worlds = self.uniquePurchaseWorlds(selectedOnly=True)
         if not worlds:
@@ -496,6 +476,18 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
         menu.addSeparator()
         menu.addAction(self.showSelectedCalculationsAction())
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncTradeOptionTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncTradeOptionTableActions()
 
     def _fillRow(
             self,

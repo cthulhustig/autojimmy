@@ -291,25 +291,10 @@ class ListTable(gui.TableWidgetEx):
                 shouldHide = self._userColumnHidingEnabled and (key in self._userHiddenColumns)
                 self.setColumnHidden(columnIndex, shouldHide)
 
-    def isEmpty(self) -> bool:
-        return self.rowCount() <= 0
-
     def addRow(self) -> int:
         index = self.rowCount()
         self.insertRow(index)
         return index
-
-    def insertRow(self, row: int) -> None:
-        super().insertRow(row)
-        self._syncListTableActions()
-
-    def removeRow(self, row: int) -> None:
-        super().removeRow(row)
-        self._syncListTableActions()
-
-    def setRowCount(self, rows: int) -> None:
-        super().setRowCount(rows)
-        self._syncListTableActions()
 
     def hasSelection(self) -> bool:
         return self.selectionModel().hasSelection()
@@ -502,6 +487,10 @@ class ListTable(gui.TableWidgetEx):
             ) -> None:
         self._promptExportContentToCsvAction = action
 
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncListTableActions()
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
             if event.type() == QtCore.QEvent.Type.ToolTip:
@@ -569,9 +558,6 @@ class ListTable(gui.TableWidgetEx):
         menu.addAction(self.promptExportContentToCsvAction())
         menu.addAction(self.promptExportContentToHtmlAction())
 
-    # TODO: I don't like the fact derived classes need to implement
-    # a separate sync function with a different name and redo all
-    # the hooking into insertItem etc
     def _syncListTableActions(self) -> None:
         hasContent = self.rowCount() > 0
         if self._copyContentToClipboardAsCsvAction is not None:
