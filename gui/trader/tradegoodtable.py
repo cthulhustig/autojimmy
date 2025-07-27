@@ -95,9 +95,9 @@ class TradeGoodTable(gui.ListTable):
 
     def selectedTradeGoods(self) -> typing.List[traveller.TradeGood]:
         tradeGoods = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                tradeGood = self.tradeGood(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                tradeGood = self.tradeGood(row)
                 if tradeGood:
                     tradeGoods.append(tradeGood)
         return tradeGoods

@@ -80,9 +80,9 @@ class WorldFilterTable(gui.ListTable):
 
     def selectedFilters(self) -> typing.Iterable[logic.WorldFilter]:
         filters = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                filter = self.filter(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                filter = self.filter(row)
                 if filter:
                     filters.append(filter)
         return filters

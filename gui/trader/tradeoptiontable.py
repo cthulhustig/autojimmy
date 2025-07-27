@@ -313,9 +313,9 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def selectedTradeOptions(self) -> typing.Iterable[logic.TradeOption]:
         tradeOptions = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                tradeOption = self.tradeOption(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                tradeOption = self.tradeOption(row)
                 if tradeOption:
                     tradeOptions.append(tradeOption)
         return tradeOptions

@@ -209,9 +209,9 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
     def selectedCargoRecords(self) -> typing.List[logic.CargoRecord]:
         cargoRecords = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                cargoRecord = self.cargoRecord(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                cargoRecord = self.cargoRecord(row)
                 if cargoRecord:
                     cargoRecords.append(cargoRecord)
         return cargoRecords

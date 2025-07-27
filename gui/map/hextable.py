@@ -438,9 +438,9 @@ class HexTable(gui.FrozenColumnListTable):
 
     def selectedHexes(self) -> typing.List[travellermap.HexPosition]:
         hexes = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                hex = self.hex(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                hex = self.hex(row)
                 if hex:
                     hexes.append(hex)
         return hexes
@@ -449,9 +449,9 @@ class HexTable(gui.FrozenColumnListTable):
     # selection indexing if the selection contains dead space hexes.
     def selectedWorlds(self) -> typing.List[traveller.World]:
         worlds = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                world = self.world(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                world = self.world(row)
                 if world:
                     worlds.append(world)
         return worlds
