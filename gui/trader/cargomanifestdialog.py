@@ -244,12 +244,8 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoManifestTable.sortByColumnHeader(
             self._cargoManifestDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
-        self._cargoManifestTable.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoManifestTable.selectionModel().selectionChanged.connect(
             self._cargoManifestTableSelectionChanged)
-        self._cargoManifestTable.customContextMenuRequested.connect(
-            self._showCargoManifestTableContextMenu)
         self._cargoManifestTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
@@ -472,60 +468,6 @@ class CargoManifestDialog(gui.DialogEx):
 
         for tradeOption in cargoManifest.tradeOptions():
             self._cargoBreakdownTable.addTradeOption(tradeOption)
-
-    # TODO: This will need work
-    def _showCargoManifestTableContextMenu(self, point: QtCore.QPoint) -> None:
-        cargoManifest = self._cargoManifestTable.cargoManifestAt(point.y())
-
-        menuItems = [
-            gui.MenuItem(
-                text='Show Purchase World Details...',
-                callback=lambda: self._showWorldDetails([cargoManifest.purchaseWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Sale World Details...',
-                callback=lambda: self._showWorldDetails([cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Purchase && Sale World Details...',
-                callback=lambda: self._showWorldDetails([cargoManifest.purchaseWorld(), cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Purchase World on Map...',
-                callback=lambda: self._showWorldsOnMap([cargoManifest.purchaseWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Sale World on Map...',
-                callback=lambda: self._showWorldsOnMap([cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Purchase && Sale Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap([cargoManifest.purchaseWorld(), cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Jump Route on Map...',
-                callback=lambda: self._showJumpRouteOnMap(cargoManifest.jumpRoute()),
-                enabled=cargoManifest != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Cargo Manifest Calculations...',
-                callback=lambda: self._showCalculations(cargoManifest.netProfit()),
-                enabled=cargoManifest != None
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._cargoManifestTable.viewport().mapToGlobal(point))
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

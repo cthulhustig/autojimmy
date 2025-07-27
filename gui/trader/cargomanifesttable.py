@@ -1,6 +1,8 @@
 import app
+import common
 import enum
 import gui
+import logging
 import logic
 import traveller
 import typing
@@ -123,6 +125,47 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
+        # TODO: The text for these actions need rewording as they are way to long
+        # - This is probably true of other menus as well
+        # TODO: This needs support for operating on all rows as well as the selected rows
+        self._showSelectedPurchaseWorldDetailsAction =  QtWidgets.QAction('Show Selected Purchase World Details...', self)
+        self._showSelectedPurchaseWorldDetailsAction.setEnabled(False) # No selection
+        self._showSelectedPurchaseWorldDetailsAction.triggered.connect(self.showSelectedPurchaseWorldDetails)
+
+        self._showSelectedSaleWorldDetailsAction =  QtWidgets.QAction('Show Selected Sale World Details...', self)
+        self._showSelectedSaleWorldDetailsAction.setEnabled(False) # No selection
+        self._showSelectedSaleWorldDetailsAction.triggered.connect(self.showSelectedSaleWorldDetails)
+
+        self._showSelectedWorldDetailsAction =  QtWidgets.QAction('Show Selected World Details...', self)
+        self._showSelectedWorldDetailsAction.setEnabled(False) # No selection
+        self._showSelectedWorldDetailsAction.triggered.connect(self.showSelectedWorldDetails)
+
+        self._showSelectedWorldDetailsAction =  QtWidgets.QAction('Show Selected World Details...', self)
+        self._showSelectedWorldDetailsAction.setEnabled(False) # No selection
+        self._showSelectedWorldDetailsAction.triggered.connect(self.showSelectedWorldDetails)
+
+        self._showSelectedPurchaseWorldsOnMapAction =  QtWidgets.QAction('Show Selected Purchase Worlds on Map...', self)
+        self._showSelectedPurchaseWorldsOnMapAction.setEnabled(False) # No selection
+        self._showSelectedPurchaseWorldsOnMapAction.triggered.connect(self.showSelectedPurchaseWorldsOnMap)
+
+        self._showSelectedSaleWorldsOnMapAction =  QtWidgets.QAction('Show Selected Sale Worlds on Map...', self)
+        self._showSelectedSaleWorldsOnMapAction.setEnabled(False) # No selection
+        self._showSelectedSaleWorldsOnMapAction.triggered.connect(self.showSelectedSaleWorldsOnMap)
+
+        self._showSelectedWorldsOnMapAction =  QtWidgets.QAction('Show Selected Worlds on Map...', self)
+        self._showSelectedWorldsOnMapAction.setEnabled(False) # No selection
+        self._showSelectedWorldsOnMapAction.triggered.connect(self.showSelectedWorldsOnMap)
+
+        # TODO: This needs to support muli-select where the routes for all
+        # worlds are shown on the map
+        self._showSelectedJumpRouteOnMapAction =  QtWidgets.QAction('Show Selected Jump Route on Map...', self)
+        self._showSelectedJumpRouteOnMapAction.setEnabled(False) # No selection
+        self._showSelectedJumpRouteOnMapAction.triggered.connect(self.showSelectedJumpRouteOnMap)
+
+        self._showSelectedCalculationsAction = QtWidgets.QAction('Show Selected Calculations...', self)
+        self._showSelectedCalculationsAction.setEnabled(False) # No content to copy
+        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
         self.resizeColumnsToContents() # Size columns to header text
@@ -205,11 +248,174 @@ class CargoManifestTable(gui.FrozenColumnListTable):
             return None
         return self.cargoManifest(row)
 
+    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[traveller.World]:
+        rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
+        worlds = set()
+        for row in rowsIter:
+            cargoManifest = self.cargoManifest(row)
+            if cargoManifest:
+                worlds.add(cargoManifest.purchaseWorld())
+                worlds.add(cargoManifest.saleWorld())
+        return worlds
+
+    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[traveller.World]:
+        rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
+        worlds = set()
+        for row in rowsIter:
+            cargoManifest = self.cargoManifest(row)
+            if cargoManifest:
+                worlds.add(cargoManifest.purchaseWorld())
+        return worlds
+
+    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[traveller.World]:
+        rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
+        worlds = set()
+        for row in rowsIter:
+            cargoManifest = self.cargoManifest(row)
+            if cargoManifest:
+                worlds.add(cargoManifest.saleWorld())
+        return worlds
+
     def setHexTooltipProvider(
             self,
             provider: typing.Optional[gui.HexTooltipProvider]
             ) -> None:
         self._hexTooltipProvider = provider
+
+    def showSelectedPurchaseWorldDetails(self) -> None:
+        worlds = self.uniquePurchaseWorlds(selectedOnly=True)
+        if not worlds:
+            return
+        self._showWorldDetails(worlds=worlds)
+
+    def showSelectedSaleWorldDetails(self) -> None:
+        worlds = self.uniqueSaleWorlds(selectedOnly=True)
+        if not worlds:
+            return
+        self._showWorldDetails(worlds=worlds)
+
+    def showSelectedWorldDetails(self) -> None:
+        worlds = self.uniqueWorlds(selectedOnly=True)
+        if not worlds:
+            return
+        self._showWorldDetails(worlds=worlds)
+
+    def showSelectedPurchaseWorldsOnMap(self) -> None:
+        worlds = self.uniquePurchaseWorlds(selectedOnly=True)
+        if not worlds:
+            return
+        self._showWorldsOnMap(worlds=worlds)
+
+    def showSelectedSaleWorldsOnMap(self) -> None:
+        worlds = self.uniqueSaleWorlds(selectedOnly=True)
+        if not worlds:
+            return
+        self._showWorldsOnMap(worlds=worlds)
+
+    def showSelectedWorldsOnMap(self) -> None:
+        worlds = self.uniqueWorlds(selectedOnly=True)
+        if not worlds:
+            return
+        self._showWorldsOnMap(worlds=worlds)
+
+    # TODO: This needs updated to handle multiselect
+    def showSelectedJumpRouteOnMap(self) -> None:
+        row = self.currentRow()
+        if row < 0:
+            return
+        cargoManifest = self.cargoManifest(row)
+        if not cargoManifest:
+            return
+        route = cargoManifest.jumpRoute()
+        if not route:
+            return
+
+        self._showJumpRouteOnMap(route=route)
+
+    def showSelectedCalculations(self) -> None:
+        calculations = []
+        for row in self.selectedRows():
+            cargoManifest = self.cargoManifest(row)
+            if cargoManifest:
+                calculations.append(cargoManifest.netProfit())
+        self._showCalculations(calculations=calculations)
+
+    def showSelectedPurchaseWorldDetailsAction(self) -> QtWidgets.QAction:
+        return self._showSelectedPurchaseWorldDetailsAction
+
+    def setShowSelectedPurchaseWorldDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedPurchaseWorldDetailsAction = action
+
+    def showSelectedSaleWorldDetailsAction(self) -> QtWidgets.QAction:
+        return self._showSelectedSaleWorldDetailsAction
+
+    def setShowSelectedSaleWorldDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedSaleWorldDetailsAction = action
+
+    def showSelectedWorldDetailsAction(self) -> QtWidgets.QAction:
+        return self._showSelectedWorldDetailsAction
+
+    def setShowSelectedWorldDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedWorldDetailsAction = action
+
+    def showSelectedPurchaseWorldsOnMapAction(self) -> QtWidgets.QAction:
+        return self._showSelectedPurchaseWorldsOnMapAction
+
+    def setShowSelectedPurchaseWorldsOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedPurchaseWorldsOnMapAction = action
+
+    def showSelectedSaleWorldsOnMapAction(self) -> QtWidgets.QAction:
+        return self._showSelectedSaleWorldsOnMapAction
+
+    def setShowSelectedSaleWorldsOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedSaleWorldsOnMapAction = action
+
+    def showSelectedWorldsOnMapAction(self) -> QtWidgets.QAction:
+        return self._showSelectedWorldsOnMapAction
+
+    def setShowSelectedWorldsOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedWorldsOnMapAction = action
+
+    def showSelectedJumpRouteOnMapAction(self) -> QtWidgets.QAction:
+        return self._showSelectedJumpRouteOnMapAction
+
+    def setShowSelectedJumpRouteOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedJumpRouteOnMapAction = action
+
+    def showSelectedCalculationsAction(self) -> None:
+        return self._showSelectedCalculationsAction
+
+    def setShowSelectedCalculationsAction(self, action: QtWidgets.QAction) -> None:
+        self._showSelectedCalculationsAction = action
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        menu.addAction(self.showSelectedPurchaseWorldDetailsAction())
+        menu.addAction(self.showSelectedSaleWorldDetailsAction())
+        menu.addAction(self.showSelectedWorldDetailsAction())
+        menu.addSeparator()
+        menu.addAction(self.showSelectedPurchaseWorldsOnMapAction())
+        menu.addAction(self.showSelectedSaleWorldsOnMapAction())
+        menu.addAction(self.showSelectedWorldsOnMapAction())
+        menu.addAction(self.showSelectedJumpRouteOnMapAction())
+        menu.addSeparator()
+
+        # Add base class menu options (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
+        menu.addSeparator()
+        menu.addAction(self.showSelectedCalculationsAction())
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncCargoManifestTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncCargoManifestTableActions()
 
     def _fillRow(
             self,
@@ -392,3 +598,78 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                 self._fillRow(row=row, cargoManifest=self.cargoManifest(row=row))
         finally:
             self.setSortingEnabled(sortingEnabled)
+
+    def _syncCargoManifestTableActions(self) -> None:
+        hasSelection = self.hasSelection()
+        if self._showSelectedPurchaseWorldDetailsAction:
+            self._showSelectedPurchaseWorldDetailsAction.setEnabled(hasSelection)
+        if self._showSelectedSaleWorldDetailsAction:
+            self._showSelectedSaleWorldDetailsAction.setEnabled(hasSelection)
+        if self._showSelectedWorldDetailsAction:
+            self._showSelectedWorldDetailsAction.setEnabled(hasSelection)
+        if self._showSelectedPurchaseWorldsOnMapAction:
+            self._showSelectedPurchaseWorldsOnMapAction.setEnabled(hasSelection)
+        if self._showSelectedSaleWorldsOnMapAction:
+            self._showSelectedSaleWorldsOnMapAction.setEnabled(hasSelection)
+        if self._showSelectedWorldsOnMapAction:
+            self._showSelectedWorldsOnMapAction.setEnabled(hasSelection)
+        if self._showSelectedJumpRouteOnMapAction:
+            self._showSelectedJumpRouteOnMapAction.setEnabled(hasSelection)
+        if self._showSelectedCalculationsAction:
+            self._showSelectedCalculationsAction.setEnabled(hasSelection)
+
+    def _showWorldDetails(
+            self,
+            worlds: typing.Iterable[traveller.World]
+            ) -> None:
+        detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
+        detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
+
+    def _showWorldsOnMap(
+            self,
+            worlds: typing.Iterable[traveller.World]
+            ) -> None:
+        try:
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=[world.hex() for world in worlds])
+        except Exception as ex:
+            message = 'Failed to show world(s) on map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _showJumpRouteOnMap(
+            self,
+            route: logic.JumpRoute
+            ) -> None:
+        try:
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
+            mapWindow.clearOverlays()
+            mapWindow.setJumpRoute(jumpRoute=route)
+        except Exception as ex:
+            message = 'Failed to show jump route on map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _showCalculations(
+            self,
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
+        try:
+            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
+            calculationWindow.showCalculations(
+                calculations=calculations,
+                decimalPlaces=2)
+        except Exception as ex:
+            message = 'Failed to show calculations'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)

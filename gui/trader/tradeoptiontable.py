@@ -174,6 +174,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
         # TODO: The text for these actions need rewording as they are way to long
         # - This is probably true of other menus as well
+        # TODO: This needs support for operating on all rows as well as the selected rows
         self._showSelectedPurchaseWorldDetailsAction =  QtWidgets.QAction('Show Selected Purchase World Details...', self)
         self._showSelectedPurchaseWorldDetailsAction.setEnabled(False) # No selection
         self._showSelectedPurchaseWorldDetailsAction.triggered.connect(self.showSelectedPurchaseWorldDetails)
