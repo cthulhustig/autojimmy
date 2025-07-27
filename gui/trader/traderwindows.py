@@ -2293,7 +2293,6 @@ class WorldTraderWindow(_BaseTraderWindow):
             tradeOptions=availableCargoTrades if availableCargoTrades else speculativeCargoTrades,
             speculativePurchase=not availableCargoTrades,
             parent=self)
-        dlg.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         dlg.finished.connect(lambda result: self._cargoManifestDialogClosed(dlg, result))
         dlg.open()
 

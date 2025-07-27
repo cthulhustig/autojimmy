@@ -84,6 +84,11 @@ class CargoManifestDialog(gui.DialogEx):
         self.showMaximizeButton()
         self.resize(800, 600)
 
+        # Make dialog only modal to this window that opened it otherwise it's
+        # not possible to pop up world info or map windows from inside the
+        # dialog
+        self.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+
         self._generateCargoManifests()
 
         app.Config.instance().configChanged.connect(self._appConfigChanged)
