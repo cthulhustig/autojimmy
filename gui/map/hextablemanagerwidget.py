@@ -5,7 +5,7 @@ import logic
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 # TODO: This should have an action/menu item that lets the user import hexes
 # - Would need to work with whatever the default Ctrl+C export format is
@@ -83,9 +83,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self._hexTable.setTaggingColours(colours=self._taggingColours)
         self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
+        self._hexTable.installEventFilter(self)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._hexTable.customContextMenuRequested.connect(self._showTableContextMenu)
-        self._hexTable.keyPressed.connect(self._tableKeyPressed)
         self._hexTable.itemSelectionChanged.connect(self._tableSelectionChanged)
         if self._isOrderedList:
             # Disable sorting on if the list is to be ordered
@@ -684,6 +684,17 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         # Add table menu options
         self._hexTable.fillContextMenu(menu)
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._hexTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self.removeSelectedRows()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _syncActions(self) -> None:
         hasContent = not self.isEmpty()
         hasSelection = self.hasSelection()
@@ -725,10 +736,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         menu = QtWidgets.QMenu(self)
         self.fillContextMenu(menu=menu)
         menu.exec(self.mapToGlobal(point))
-
-    def _tableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self.removeSelectedRows()
 
     def _tableSelectionChanged(self) -> None:
         hasSelection = self._hexTable.hasSelection()

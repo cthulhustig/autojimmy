@@ -4,7 +4,6 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -176,6 +175,17 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         super().saveSettings()
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._cargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._cargoTable.removeSelectedRows()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _setupWorldSelectControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
@@ -265,9 +275,9 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.KnownValueColumns)
         self._cargoTable.setMinimumHeight(200)
+        self._cargoTable.installEventFilter(self)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
-        self._cargoTable.keyPressed.connect(self._cargoTableKeyPressed)
         self._cargoTable.doubleClicked.connect(self._editCargo)
 
         self._exportButton = QtWidgets.QPushButton('Export...')
@@ -610,10 +620,6 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         menu.addSeparator()
         self._cargoTable.fillContextMenu(menu)
         menu.exec(self._cargoTable.viewport().mapToGlobal(point))
-
-    def _cargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._cargoTable.removeSelectedRows()
 
     def _showCalculations(
             self,

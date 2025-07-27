@@ -1067,6 +1067,31 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         super().saveSettings()
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._speculativeCargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedSpeculativeCargo()
+                    event.accept()
+                    return True
+        elif object == self._availableCargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedAvailableCargo()
+                    event.accept()
+                    return True
+        elif object == self._currentCargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedCurrentCargo()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _setupPurchaseWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
@@ -1146,9 +1171,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.AllCaseColumns)
         self._speculativeCargoTable.setMinimumHeight(100)
+        self._speculativeCargoTable.installEventFilter(self)
         self._speculativeCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._speculativeCargoTable.customContextMenuRequested.connect(self._showSpeculativeCargoTableContextMenu)
-        self._speculativeCargoTable.keyPressed.connect(self._speculativeCargoTableKeyPressed)
 
         self._addWorldSpeculativeCargoButton = QtWidgets.QPushButton('Generate...')
         self._addWorldSpeculativeCargoButton.setSizePolicy(
@@ -1222,9 +1247,9 @@ class WorldTraderWindow(_BaseTraderWindow):
                 gui.CargoRecordTable.ColumnType.SetQuantity])
         self._availableCargoTable.setMinimumHeight(100)
         self._availableCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._availableCargoTable.installEventFilter(self)
         self._availableCargoTable.customContextMenuRequested.connect(self._showAvailableCargoTableContextMenu)
         self._availableCargoTable.doubleClicked.connect(self._promptEditAvailableCargo)
-        self._availableCargoTable.keyPressed.connect(self._availableCargoTableKeyPressed)
 
         self._importAvailableCargoButton = QtWidgets.QPushButton('Import...')
         self._importAvailableCargoButton.setSizePolicy(
@@ -1311,10 +1336,10 @@ class WorldTraderWindow(_BaseTraderWindow):
                 gui.CargoRecordTable.ColumnType.SetPricePerTon,
                 gui.CargoRecordTable.ColumnType.SetQuantity])
         self._currentCargoTable.setMinimumHeight(100)
+        self._currentCargoTable.installEventFilter(self)
         self._currentCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._currentCargoTable.customContextMenuRequested.connect(self._showCurrentCargoTableContextMenu)
         self._currentCargoTable.doubleClicked.connect(self._promptEditCurrentCargo)
-        self._currentCargoTable.keyPressed.connect(self._currentCargoTableKeyPressed)
 
         self._importCurrentCargoButton = QtWidgets.QPushButton('Import...')
         self._importCurrentCargoButton.setSizePolicy(
@@ -1740,10 +1765,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._speculativeCargoTable.fillContextMenu(menu)
         menu.exec(self._speculativeCargoTable.viewport().mapToGlobal(point))
 
-    def _speculativeCargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeSelectedSpeculativeCargo()
-
     def _importAvailableCargo(self) -> None:
         if not self._availableCargoTable.isEmpty():
             answer = gui.AutoSelectMessageBox.question(
@@ -1925,10 +1946,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._availableCargoTable.fillContextMenu(menu)
         menu.exec(self._availableCargoTable.viewport().mapToGlobal(point))
 
-    def _availableCargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeSelectedAvailableCargo()
-
     def _importCurrentCargo(self) -> None:
         if not self._currentCargoTable.isEmpty():
             answer = gui.AutoSelectMessageBox.question(
@@ -2060,10 +2077,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         menu.addSeparator()
         self._currentCargoTable.fillContextMenu(menu)
         menu.exec(self._currentCargoTable.viewport().mapToGlobal(point))
-
-    def _currentCargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeSelectedCurrentCargo()
 
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:

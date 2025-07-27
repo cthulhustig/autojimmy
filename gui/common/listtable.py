@@ -82,7 +82,6 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
             option.text)
 
 class ListTable(gui.TableWidgetEx):
-    keyPressed = QtCore.pyqtSignal(int)
     iconClicked = QtCore.pyqtSignal(int)
 
     _StateVersion = 'ListTable_v2'
@@ -557,12 +556,6 @@ class ListTable(gui.TableWidgetEx):
             return
 
         super().keyPressEvent(event)
-
-        # TODO: I don't think this is the best way to handle this. Things that
-        # are currently connecting to this event should probably be registering
-        # an event filter with the list and monitoring for key presses that way
-        if event:
-            self.keyPressed.emit(event.key())
 
     # NOTE: This function intentionally doesn't call the base
     # implementation. In order to group like options, this

@@ -5,7 +5,6 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -260,6 +259,24 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         super().saveSettings()
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._cargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedCargo()
+                    event.accept()
+                    return True
+        elif object == self._salePricesTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedSalePrices()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _setupWorldSelectControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
@@ -337,9 +354,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             outcomeColours=outcomeColours,
             columns=_SaleCargoColumns)
         self._cargoTable.setMinimumHeight(200)
+        self._cargoTable.installEventFilter(self)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
-        self._cargoTable.keyPressed.connect(self._cargoTableKeyPressed)
         self._cargoTable.doubleClicked.connect(self._editCargo)
 
         self._importCargoButton = QtWidgets.QPushButton('Import...')
@@ -364,13 +381,13 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._removeCargoButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeCargoButton.clicked.connect(self._cargoTable.removeSelectedRows)
+        self._removeCargoButton.clicked.connect(self._removeSelectedCargo)
 
         self._removeAllCargoButton = QtWidgets.QPushButton('Remove All')
         self._removeAllCargoButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeAllCargoButton.clicked.connect(self._cargoTable.removeAllRows)
+        self._removeAllCargoButton.clicked.connect(self._removeAllCargo)
 
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
@@ -402,9 +419,9 @@ class SaleCalculatorWindow(gui.WindowWidget):
             outcomeColours=outcomeColours,
             columns=_SalePriceColumns)
         self._salePricesTable.setMinimumHeight(200)
+        self._salePricesTable.installEventFilter(self)
         self._salePricesTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._salePricesTable.customContextMenuRequested.connect(self._showSalePricesTableContextMenu)
-        self._salePricesTable.keyPressed.connect(self._salePricesTableKeyPressed)
         self._salePricesTable.doubleClicked.connect(self._editSalePrice)
 
         self._editSalePriceButton = QtWidgets.QPushButton('Edit...')
@@ -687,11 +704,11 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
         removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
-        removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
+        removeSelectedCargoAction.triggered.connect(self._removeSelectedCargo)
 
         removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
         removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
-        removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
+        removeAllCargoAction.triggered.connect(self._removeAllCargo)
 
         menu = QtWidgets.QMenu()
         menu.addAction(addCargoAction)
@@ -702,10 +719,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
         menu.addSeparator()
         self._cargoTable.fillContextMenu(menu)
         menu.exec(self._cargoTable.viewport().mapToGlobal(point))
-
-    def _cargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._cargoTable.removeSelectedRows()
 
     def _generateSalePrices(self) -> None:
         saleWorld = self._saleWorldWidget.selectedWorld()
@@ -822,6 +835,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.setCargoRecord(row, salePrice)
         self._updateTotalSalePrice()
 
+    def _removeSelectedCargo(self) -> None:
+        self._cargoTable.removeSelectedRows()
+
+    def _removeAllCargo(self) -> None:
+        self._cargoTable.removeAllRows()
+
     def _removeSelectedSalePrices(self) -> None:
         self._salePricesTable.removeSelectedRows()
         self._updateTotalSalePrice()
@@ -858,10 +877,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
         menu.addSeparator()
         self._salePricesTable.fillContextMenu(menu)
         menu.exec(self._salePricesTable.viewport().mapToGlobal(point))
-
-    def _salePricesTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeAllSalePrices()
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

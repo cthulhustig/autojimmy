@@ -3,7 +3,7 @@ import gui
 import logging
 import logic
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _FilterLogicComboBox(gui.EnumComboBox):
     _TextMap = {
@@ -69,9 +69,9 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             value=logic.FilterLogic.MatchesAll)
 
         self._filterTable = gui.WorldFilterTable()
+        self._filterTable.installEventFilter(self)
         self._filterTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._filterTable.customContextMenuRequested.connect(self._showTableContextMenu)
-        self._filterTable.keyPressed.connect(self._tableKeyPressed)
         self._filterTable.doubleClicked.connect(self.promptEditSelected)
         self._filterTable.itemSelectionChanged.connect(self._tableSelectionChanged)
 
@@ -360,6 +360,17 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         # Add table menu options
         self._filterTable.fillContextMenu(menu)
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._filterTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self.removeSelectedFilters()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _syncActions(self) -> None:
         hasContent = not self.isEmpty()
         hasSelection = self.hasSelection()
@@ -373,10 +384,6 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def _notifyContentChangeObservers(self) -> None:
         self._syncActions()
         self.contentChanged.emit()
-
-    def _tableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self.removeSelectedFilters()
 
     def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
         menu = QtWidgets.QMenu(self)
