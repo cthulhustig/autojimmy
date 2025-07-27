@@ -143,18 +143,16 @@ class CalculationTree(QtWidgets.QTreeWidget):
         if itemIndex == -1:
             return # Only display menu on top level items
 
-        menuItems = [
-            gui.MenuItem(
-                text='Remove',
-                callback=lambda: self.takeTopLevelItem(itemIndex),
-                enabled=True
-            )
-        ]
+        removeSelectedAction = QtWidgets.QAction('Remove')
+        removeSelectedAction.triggered.connect(lambda: self.takeTopLevelItem(itemIndex))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self.viewport().mapToGlobal(position))
+        removeAllAction = QtWidgets.QAction('Remove All')
+        removeAllAction.triggered.connect(self.clear)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(removeSelectedAction)
+        menu.addAction(removeAllAction)
+        menu.exec(self.viewport().mapToGlobal(position))
 
         # Don't call base class as we've handled the event
         #return super().contextMenuEvent(event)

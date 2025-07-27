@@ -19,43 +19,6 @@ def createLabelledWidgetLayout(
     layout.addStretch()
     return layout
 
-# TODO: Hopefully I can get rid of this and displayMenu as part of this work
-class MenuItem(object):
-    def __init__(
-            self,
-            text: str,
-            callback: typing.Callable[[], typing.Any],
-            enabled: bool = True,
-            displayed: bool = True
-            ) -> None:
-        self.text = text
-        self.callback = callback
-        self.enabled = enabled
-        self.displayed = displayed
-
-def displayMenu(
-        parent: QtWidgets.QWidget,
-        items: typing.Iterable[typing.Union[MenuItem, QtWidgets.QAction, QtWidgets.QMenu, None]],
-        globalPoint: QtCore.QPoint
-        ) -> None:
-    menu = QtWidgets.QMenu(parent)
-
-    for item in items:
-        if isinstance(item, MenuItem):
-            if not item.displayed:
-                continue
-            action = menu.addAction(item.text)
-            action.triggered.connect(item.callback)
-            action.setEnabled(item.enabled)
-        elif isinstance(item, QtWidgets.QAction):
-            menu.addAction(item)
-        elif isinstance(item, QtWidgets.QMenu):
-            menu.addMenu(item)
-        else:
-            menu.addSeparator()
-
-    menu.exec(globalPoint)
-
 def safeLoadSetting(
         settings: QtCore.QSettings,
         key: str,

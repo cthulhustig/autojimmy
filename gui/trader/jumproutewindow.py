@@ -1930,6 +1930,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
     # TODO: There is a discrepancy between how this menu is structured and
     # how other menus are structured
+    # TODO: I also need to push the screenshot menu item into the map
+    # widget so it's available on all maps not just the jump route one
     def _showTravellerMapContextMenu(
             self,
             hex: typing.Optional[travellermap.HexPosition]
@@ -1948,78 +1950,72 @@ class JumpRouteWindow(gui.WindowWidget):
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
-        menuItems = []
+        menu = QtWidgets.QMenu()
 
-        action = QtWidgets.QAction('Recalculate Jump Route', self)
-        menuItems.append(action)
-        action.triggered.connect(self._calculateJumpRoute)
+        action = menu.addAction('Recalculate Jump Route')
         action.setEnabled(startHex != None and finishHex != None)
+        action.triggered.connect(self._calculateJumpRoute)
 
-        action = QtWidgets.QAction('Show Location Details...', self)
-        menuItems.append(action)
+        action = menu.addAction('Show Location Details...')
         action.triggered.connect(lambda: self._showHexDetails([hex]))
 
-        menu = QtWidgets.QMenu('Start/Finish', self)
-        menuItems.append(menu)
-        action = menu.addAction('Set Start Location')
+        subMenu = QtWidgets.QMenu('Start/Finish', self)
+        action = subMenu.addAction('Set Start Location')
+        action.setEnabled(isValidStartFinish)
         action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(hex=hex))
+        action = subMenu.addAction('Set Finish Location')
         action.setEnabled(isValidStartFinish)
-        action = menu.addAction('Set Finish Location')
         action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(hex=hex))
-        action.setEnabled(isValidStartFinish)
-        action = menu.addAction('Swap Start && Finish Locations')
+        action = subMenu.addAction('Swap Start && Finish Locations')
+        action.setEnabled(startHex != None and finishHex != None)
         action.triggered.connect(
             lambda: self._selectStartFinishWidget.setHexes(startHex=finishHex, finishHex=startHex))
-        action.setEnabled(startHex != None and finishHex != None)
+        menu.addMenu(subMenu)
 
-        menu = QtWidgets.QMenu('Waypoints', self)
-        menuItems.append(menu)
-        action = menu.addAction('Add Location')
-        action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
+        subMenu = QtWidgets.QMenu('Waypoints', self)
+        action = subMenu.addAction('Add Location')
         action.setEnabled(isValidWaypoint)
-        action = menu.addAction('Remove Location')
+        action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
+        action = subMenu.addAction('Remove Location')
         action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
         action.setEnabled(isCurrentWaypoint)
+        menu.addMenu(subMenu)
 
-        menu = QtWidgets.QMenu('Avoid List', self)
-        menuItems.append(menu)
-        action = menu.addAction('Add Location')
-        action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
+        subMenu = QtWidgets.QMenu('Avoid List', self)
+        action = subMenu.addAction('Add Location')
         action.setEnabled(isValidAvoidHex)
-        action = menu.addAction('Remove Location')
-        action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
+        action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
+        action = subMenu.addAction('Remove Location')
         action.setEnabled(isCurrentAvoidHex)
+        action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
+        menu.addMenu(subMenu)
 
-        menu = QtWidgets.QMenu('Zoom To', self)
-        menuItems.append(menu)
-        action = menu.addAction('Start Location')
-        action.triggered.connect(lambda: self._showHexOnMap(hex=startHex))
+        subMenu = QtWidgets.QMenu('Zoom To', self)
+        action = subMenu.addAction('Start Location')
         action.setEnabled(startHex != None)
-        action = menu.addAction('Finish Location')
-        action.triggered.connect(lambda: self._showHexOnMap(hex=finishHex))
+        action.triggered.connect(lambda: self._showHexOnMap(hex=startHex))
+        action = subMenu.addAction('Finish Location')
         action.setEnabled(finishHex != None)
-        action = menu.addAction('Jump Route')
+        action.triggered.connect(lambda: self._showHexOnMap(hex=finishHex))
+        action = subMenu.addAction('Jump Route')
+        action.setEnabled(self._jumpRoute != None)
         action.triggered.connect(lambda: self._showJumpRouteOnMap())
-        action.setEnabled(self._jumpRoute != None)
+        menu.addMenu(subMenu)
 
-        menu = QtWidgets.QMenu('Import', self)
-        menuItems.append(menu)
-        action = menu.addAction('Jump Route...')
+        subMenu = QtWidgets.QMenu('Import', self)
+        action = subMenu.addAction('Jump Route...')
         action.triggered.connect(self._importJumpRoute)
+        menu.addMenu(subMenu)
 
-
-        menu = QtWidgets.QMenu('Export', self)
-        menuItems.append(menu)
-        action = menu.addAction('Jump Route...')
-        action.triggered.connect(self._exportJumpRoute)
+        subMenu = QtWidgets.QMenu('Export', self)
+        action = subMenu.addAction('Jump Route...')
         action.setEnabled(self._jumpRoute != None)
-        action = menu.addAction('Screenshot...')
+        action.triggered.connect(self._exportJumpRoute)
+        action = subMenu.addAction('Screenshot...')
         action.triggered.connect(self._exportMapScreenshot)
+        menu.addMenu(subMenu)
 
-        gui.displayMenu(
-            parent=self,
-            items=menuItems,
-            globalPoint=QtGui.QCursor.pos())
+        menu.exec(QtGui.QCursor.pos())
 
     def _formatMapToolTip(
             self,
