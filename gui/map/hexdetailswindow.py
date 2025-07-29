@@ -6,18 +6,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-
-# TODO: There can be a noticeable pause if you add a lot of worlds
-# to this window at the same time. I think there are a couple of
-# things that need done.
-# - The _CustomTextEdit should be updated so it doesn't generate
-# the content until the edit box is actually show (i.e. the
-# user selects the tab for it)
-# - HexDetailsWindow should be updated so addHexes doesn't just
-# call addHex for each hex as that causes the tab for each hex
-# to be selected as it's added which would probably cause each
-# _CustomTextEdit to generate its content
-
 class _CustomTextEdit(gui.TextEditEx):
     def __init__(
             self,
@@ -188,8 +176,24 @@ class HexDetailsWindow(gui.WindowWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
+        if not hexes:
+            return
+
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        currentHexes = set(self._hexes)
         for hex in hexes:
-            self.addHex(hex)
+            if hex not in currentHexes:
+                tabName = traveller.WorldManager.instance().canonicalHexName(
+                    milieu=milieu,
+                    hex=hex)
+                self._hexes.append(hex)
+                self._tabBar.addTab(tabName)
+
+        firstHex = hexes[0]
+        index = self._hexes.index(firstHex)
+        if index >= 0:
+            self._tabBar.setCurrentIndex(index)
+            self._hexDetails.setHex(firstHex)
 
     def _tabChanged(self) -> None:
         index = self._tabBar.currentIndex()
