@@ -37,10 +37,6 @@ class MenuHelper(object):
         elif position is MenuHelper.Position.Last:
             menu.addAction(action)
 
-    # TODO: I'm not a massive fan of having everything under submenus
-    # it might be better to use separators but it makes it more
-    # difficult for derived classes to add new options so they're
-    # grouped with options added by the base
     def addSeparator(
             self,
             path: typing.Optional[typing.Sequence[str]] = None,

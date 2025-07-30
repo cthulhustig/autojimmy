@@ -10,6 +10,9 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: This should have an action/menu item that lets the user import hexes
 # - Would need to work with whatever the default Ctrl+C export format is
 #   which I think is html for legacy reasons
+# - Would need to work with waypoint table where there is the extra berthing
+#   field to import. I don't think the world trade score table is an issue as
+#   the trade scores are calculated on demand (but would need to check)
 class HexTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
 
