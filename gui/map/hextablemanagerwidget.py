@@ -13,22 +13,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 class HexTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
 
-    # TODO: Hopefully I'll be able to get rid of this event
-    # as part of what I'm working on
-    contextMenuRequested = QtCore.pyqtSignal(QtCore.QPoint)
-
-    # TODO: I Need to remind myself why this exists. It looks
-    # incredibly hacky but I can't work out what it's achieving
-    displayModeChanged = QtCore.pyqtSignal(gui.HexTableTabBar.DisplayMode)
-
-    # TODO: Hopefully I will be able to get rid of this entire
-    # event as part of what I'm working on. I think the code
-    # that would have called this and handled the event could
-    # just set set the 2 actions for showing the selection and
-    # showing the content on the map with their own action that
-    # shows on their map
-    showOnMapRequested = QtCore.pyqtSignal([list])
-
     _StateVersion = 'HexTableManagerWidget_v1'
 
     def __init__(
@@ -59,9 +43,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._allowHexCallback = allowHexCallback
         self._isOrderedList = isOrderedList
         self._relativeHex = None
-        self._enableContextMenuEvent = False
-        self._enableDisplayModeChangedEvent = False
-        self._enableShowOnMapEvent = False
         self._enableDeadSpace = False
 
         self._displayModeTabs = displayModeTabs
@@ -84,12 +65,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
         self._hexTable.installEventFilter(self)
-        self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._hexTable.customContextMenuRequested.connect(self._showTableContextMenu)
+        self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
         self._hexTable.itemSelectionChanged.connect(self._tableSelectionChanged)
-        if self._isOrderedList:
-            # Disable sorting on if the list is to be ordered
-            self._hexTable.setSortingEnabled(False)
+        # Disable sorting on if the list is to be ordered
+        self._hexTable.setSortingEnabled(not self._isOrderedList)
 
         self._promptAddFreeSelectAction = QtWidgets.QAction('Add...', self)
         self._promptAddFreeSelectAction.triggered.connect(self.promptAddFreeSelection)
@@ -188,6 +167,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         widgetLayout.addLayout(buttonLayout)
 
         self.setLayout(widgetLayout)
+        self.installEventFilter(self)
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -450,24 +430,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> None:
         self._hexTable.setHexTooltipProvider(provider=provider)
 
-    def enableContextMenuEvent(self, enable: bool = True) -> None:
-        self._enableContextMenuEvent = enable
-
-    def isContextMenuEventEnabled(self) -> bool:
-        return self._enableContextMenuEvent
-
-    def enableDisplayModeChangedEvent(self, enable: bool = True) -> None:
-        self._enableDisplayModeChangedEvent = enable
-
-    def isDisplayModeChangedEventEnabled(self) -> bool:
-        return self._enableDisplayModeChangedEvent
-
-    def enableShowOnMapEvent(self, enable: bool = True) -> None:
-        self._enableShowOnMapEvent = enable
-
-    def isShowOnMapEventEnabled(self) -> bool:
-        return self._enableShowOnMapEvent
-
     def enableDeadSpace(self, enable: bool) -> None:
         if enable == self._enableDeadSpace:
             return
@@ -684,8 +646,43 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         # Add table menu options
         self._hexTable.fillContextMenu(menu)
 
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if not event or not self._hexTable:
+            return
+
+        globalPos = event.globalPos()
+        tablePos = self._hexTable.mapFromGlobal(globalPos)
+        viewport = self._hexTable.viewport()
+        tableGeometry = viewport.geometry() if viewport else self._hexTable.geometry()
+        if tableGeometry.contains(tablePos):
+            menu = QtWidgets.QMenu(self)
+            self.fillContextMenu(menu=menu)
+            menu.exec(globalPos)
+
+        #super().contextMenuEvent(event)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
-        if object == self._hexTable:
+        if object == self:
+            if event.type() == QtCore.QEvent.Type.ContextMenu:
+                if self.contextMenuPolicy() == QtCore.Qt.ContextMenuPolicy.CustomContextMenu:
+                    assert(isinstance(event, QtGui.QContextMenuEvent))
+                    if self._hexTable:
+                        globalPos = event.globalPos()
+                        tablePos = self._hexTable.mapFromGlobal(globalPos)
+
+                        # Only allow context menu if mouse is over the table viewport
+                        viewport = self._hexTable.viewport()
+                        tableGeometry = viewport.geometry() if viewport else self._hexTable.geometry()
+                        if tableGeometry.contains(tablePos):
+                            self.customContextMenuRequested.emit(event.pos())
+
+                    event.accept()
+                    return True
+        elif object == self._hexTable:
             if event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.key() == QtCore.Qt.Key.Key_Delete:
@@ -727,15 +724,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self.contentChanged.emit()
 
     def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
-        if self._enableContextMenuEvent:
-            translated = self._hexTable.viewport().mapToGlobal(point)
-            translated = self.mapFromGlobal(translated)
-            self.contextMenuRequested.emit(translated)
-            return
-
+        globalPos = self._hexTable.viewport().mapToGlobal(point)
         menu = QtWidgets.QMenu(self)
         self.fillContextMenu(menu=menu)
-        menu.exec(self.mapToGlobal(point))
+        menu.exec(globalPos)
 
     def _tableSelectionChanged(self) -> None:
         hasSelection = self._hexTable.hasSelection()
@@ -743,8 +735,4 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._syncActions()
 
     def _displayModeChanged(self, index: int) -> None:
-        if self._enableDisplayModeChangedEvent:
-            self.displayModeChanged.emit(self._displayModeTabs.currentDisplayMode())
-            return
-
         self._hexTable.setActiveColumns(self._displayColumns())

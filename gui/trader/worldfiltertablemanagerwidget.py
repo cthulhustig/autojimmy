@@ -70,8 +70,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
         self._filterTable = gui.WorldFilterTable()
         self._filterTable.installEventFilter(self)
-        self._filterTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._filterTable.customContextMenuRequested.connect(self._showTableContextMenu)
+        self._filterTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
         self._filterTable.doubleClicked.connect(self.promptEditSelected)
         self._filterTable.itemSelectionChanged.connect(self._tableSelectionChanged)
 
@@ -132,6 +131,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         widgetLayout.addWidget(buttonWidget)
 
         self.setLayout(widgetLayout)
+        self.installEventFilter(self)
 
     def setTaggingColours(self, colours: app.TaggingColours) -> None:
         if colours == self._taggingColours:
@@ -360,8 +360,43 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         # Add table menu options
         self._filterTable.fillContextMenu(menu)
 
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if not event or not self._filterTable:
+            return
+
+        globalPos = event.globalPos()
+        tablePos = self._filterTable.mapFromGlobal(globalPos)
+        viewport = self._filterTable.viewport()
+        tableGeometry = viewport.geometry() if viewport else self._filterTable.geometry()
+        if tableGeometry.contains(tablePos):
+            menu = QtWidgets.QMenu(self)
+            self.fillContextMenu(menu=menu)
+            menu.exec(globalPos)
+
+        #super().contextMenuEvent(event)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
-        if object == self._filterTable:
+        if object == self:
+            if event.type() == QtCore.QEvent.Type.ContextMenu:
+                if self.contextMenuPolicy() == QtCore.Qt.ContextMenuPolicy.CustomContextMenu:
+                    assert(isinstance(event, QtGui.QContextMenuEvent))
+                    if self._filterTable:
+                        globalPos = event.globalPos()
+                        tablePos = self._filterTable.mapFromGlobal(globalPos)
+
+                        # Only allow context menu if mouse is over the table viewport
+                        viewport = self._filterTable.viewport()
+                        tableGeometry = viewport.geometry() if viewport else self._filterTable.geometry()
+                        if tableGeometry.contains(tablePos):
+                            self.customContextMenuRequested.emit(event.pos())
+
+                    event.accept()
+                    return True
+        elif object == self._filterTable:
             if event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.key() == QtCore.Qt.Key.Key_Delete:
@@ -384,11 +419,6 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def _notifyContentChangeObservers(self) -> None:
         self._syncActions()
         self.contentChanged.emit()
-
-    def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menu = QtWidgets.QMenu(self)
-        self.fillContextMenu(menu=menu)
-        menu.exec(self.mapToGlobal(point))
 
     def _tableSelectionChanged(self) -> None:
         hasSelection = self._filterTable.hasSelection()

@@ -130,7 +130,14 @@ class CalculationTree(QtWidgets.QTreeWidget):
                 expand=expand,
                 decimalPlaces=decimalPlaces)
 
-    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if not event:
+            return
+
         position = event.pos()
         index = self.indexAt(position)
         if not index.isValid():

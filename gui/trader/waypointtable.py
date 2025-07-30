@@ -10,12 +10,14 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _BerthingBoxWidget(QtWidgets.QWidget):
     stateChanged = QtCore.pyqtSignal([int])
+    clicked = QtCore.pyqtSignal([bool])
 
     def __init__(self) -> None:
         super().__init__()
 
         self._checkBox = gui.CheckBoxEx()
-        self._checkBox.stateChanged.connect(lambda state: self.stateChanged.emit(state))
+        self._checkBox.stateChanged.connect(self.stateChanged.emit)
+        self._checkBox.clicked.connect(self.clicked.emit)
 
         if gui.isDarkModeEnabled():
             # In dark mode put an outline around the check box as they have a tendency to blend into
@@ -248,6 +250,7 @@ class WaypointTable(gui.HexTable):
 
         checkBox = _BerthingBoxWidget()
         checkBox.setChecked(checked)
+        checkBox.clicked.connect(self._berthingCheckboxClicked)
         self.setCellWidget(row, column, checkBox)
 
     def _swapBerthingChecks(
@@ -298,3 +301,16 @@ class WaypointTable(gui.HexTable):
             return 'Yes' if checkBox and checkBox.isChecked() else 'No'
 
         return super()._csvCellText(row, column)
+
+    # When the user checks/unchecks berthing for one row, all selected rows should
+    # have their state set to the same value. It's important this handler is hooked
+    # up to the check boxes clicked handler rather than stateChanged so it's only
+    # triggered in response to the user clicking a check box and not a check box
+    # being set programmatically
+    def _berthingCheckboxClicked(self, checked: bool) -> None:
+        sourceCheckBox = self.sender()
+        column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        for row in self.selectedRows():
+            checkBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(row, column)
+            if checkBox and checkBox is not sourceCheckBox:
+                checkBox.setChecked(checked)

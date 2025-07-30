@@ -1147,11 +1147,7 @@ class JumpRouteWindow(gui.WindowWidget):
             provider=self._hexTooltipProvider)
         self._waypointsWidget.enableDeadSpace(
             enable=routingType is logic.RoutingType.DeadSpace)
-        self._waypointsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._waypointsWidget.enableDisplayModeChangedEvent(enable=True)
-        self._waypointsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
-        self._waypointsWidget.enableShowOnMapEvent(enable=True)
-        self._waypointsWidget.showOnMapRequested.connect(self._showHexesOnMap)
+        self._waypointsWidget.contentChanged.connect(self._waypointTableContentChanged)
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
@@ -1198,15 +1194,9 @@ class JumpRouteWindow(gui.WindowWidget):
             provider=self._hexTooltipProvider)
         self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
-        self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._avoidHexesWidget.enableShowOnMapEvent(enable=True)
-        self._avoidHexesWidget.showOnMapRequested.connect(self._showHexesOnMap)
+        self._avoidHexesWidget.contentChanged.connect(self._avoidHexesTableContentChanged)
         self._avoidLocationsTabWidget.addTab(self._avoidHexesWidget, 'Hexes')
         self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidHexesWidget, 0)
-        self._avoidHexesWidget.contentChanged.connect(
-            lambda: self._avoidLocationsTabWidget.setWidgetItemCount(
-                self._avoidHexesWidget,
-                self._avoidHexesWidget.rowCount()))
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
@@ -1222,12 +1212,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget(
             taggingColours=taggingColours)
+        self._avoidFiltersWidget.contentChanged.connect(self._avoidFiltersTableContentChange)
         self._avoidLocationsTabWidget.addTab(self._avoidFiltersWidget, 'Filters')
         self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidFiltersWidget, 0)
-        self._avoidFiltersWidget.contentChanged.connect(
-            lambda: self._avoidLocationsTabWidget.setWidgetItemCount(
-                self._avoidFiltersWidget,
-                self._avoidFiltersWidget.filterCount()))
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._avoidLocationsTabWidget)
@@ -1436,24 +1423,6 @@ class JumpRouteWindow(gui.WindowWidget):
         # for this start/finish pair the view is left as is as it's assumed the user is doing
         # something like adding a waypoint world
         self._shouldZoomToNewRoute = True
-
-    def _waypointsTableDisplayModeChanged(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
-        columns = None
-        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
-            columns = gui.WaypointTable.AllColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
-            columns = gui.WaypointTable.SystemColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
-            columns = gui.WaypointTable.UWPColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
-            columns = gui.WaypointTable.EconomicsColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
-            columns = gui.WaypointTable.CultureColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
-            columns = gui.WaypointTable.RefuellingColumns
-        else:
-            assert(False) # I missed a case
-        self._waypointsWidget.setActiveColumns(columns)
 
     def _appConfigChanged(
             self,
@@ -2480,6 +2449,20 @@ class JumpRouteWindow(gui.WindowWidget):
                 self._mapWidget.centerOnJumpRoute()
 
         self._updateJumpOverlays()
+
+    def _waypointTableContentChanged(self) -> None:
+        self._updateTravellerMapOverlays()
+
+    def _avoidHexesTableContentChanged(self) -> None:
+        self._updateTravellerMapOverlays()
+        self._avoidLocationsTabWidget.setWidgetItemCount(
+                self._avoidHexesWidget,
+                self._avoidHexesWidget.rowCount())
+
+    def _avoidFiltersTableContentChange(self) -> None:
+        self._avoidLocationsTabWidget.setWidgetItemCount(
+                self._avoidFiltersWidget,
+                self._avoidFiltersWidget.filterCount())
 
     def _perJumpOverheadsChanged(self, jumpOverheads: int) -> None:
         app.Config.instance().setValue(

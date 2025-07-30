@@ -208,12 +208,14 @@ class WorldComparisonWindow(gui.WindowWidget):
             taggingColours=taggingColours,
             allowHexCallback=self._allowWorld,
             hexTable=self._worldTable)
-        self._worldManagementWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
-        self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
-        self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
-        self._worldManagementWidget.enableContextMenuEvent(enable=True)
-        self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
-        self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
+        self._worldManagementWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
+        self._worldManagementWidget.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._worldManagementWidget.customContextMenuRequested.connect(
+            self._showWorldTableContextMenu)
+        self._worldManagementWidget.contentChanged.connect(
+            self._tableContentsChanged)
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
@@ -276,23 +278,6 @@ class WorldComparisonWindow(gui.WindowWidget):
     def _allowWorld(self, hex: travellermap.HexPosition) -> bool:
         return not self._worldManagementWidget.containsHex(hex)
 
-    def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
-        displayMode = self._worldManagementWidget.displayMode()
-        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
-            return gui.WorldTradeScoreTable.AllColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
-            return gui.WorldTradeScoreTable.SystemColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
-            return gui.WorldTradeScoreTable.UWPColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
-            return gui.WorldTradeScoreTable.EconomicsColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
-            return gui.WorldTradeScoreTable.CultureColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
-            return gui.WorldTradeScoreTable.RefuellingColumns
-        else:
-            assert(False) # I missed a case
-
     def _tradeGoodTableItemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
         if not self._worldTable:
             # This should only happen during setup when the world management widget hasn't
@@ -314,9 +299,6 @@ class WorldComparisonWindow(gui.WindowWidget):
             # This should never happen but handle it just in case
             return
         self._worldTable.setTradeGoods(tradeGoods=self._tradeGoodTable.checkedTradeGoods())
-
-    def _updateWorldTableColumns(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
-        self._worldManagementWidget.setActiveColumns(self._worldColumns())
 
     def _tableContentsChanged(self) -> None:
         with gui.SignalBlocker(widget=self._mapWidget):

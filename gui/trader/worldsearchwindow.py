@@ -948,7 +948,7 @@ class WorldSearchWindow(gui.WindowWidget):
     def _updateWorldTableColumns(self, index: int) -> None:
         self._worldTable.setActiveColumns(self._worldColumns())
 
-    def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
+    def _showWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
         hasSelection = self._worldTable.hasSelection()
         hasContent = not self._worldTable.isEmpty()
 
@@ -974,7 +974,7 @@ class WorldSearchWindow(gui.WindowWidget):
             findTradeOptionsForAllAction)
         menu.insertSeparator(
             self._worldTable.showSelectedCalculationsAction()) # Insert BEFORE this
-        menu.exec(self._worldTable.mapToGlobal(point))
+        menu.exec(self._worldTable.viewport().mapToGlobal(pos))
 
     def _findTradeOptions(
             self,

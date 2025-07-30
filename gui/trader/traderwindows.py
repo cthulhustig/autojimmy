@@ -2577,8 +2577,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
-        self._saleWorldsWidget.enableContextMenuEvent(True)
-        self._saleWorldsWidget.contextMenuRequested.connect(self._showSaleWorldTableContextMenu)
+        self._saleWorldsWidget.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._saleWorldsWidget.customContextMenuRequested.connect(
+            self._showSaleWorldTableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._saleWorldsWidget)
@@ -2608,8 +2610,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             allowHexCallback=self._allowPurchaseWorld)
         self._purchaseWorldsWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
-        self._purchaseWorldsWidget.enableContextMenuEvent(True)
-        self._purchaseWorldsWidget.contextMenuRequested.connect(self._showPurchaseWorldTableContextMenu)
+        self._purchaseWorldsWidget.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._purchaseWorldsWidget.customContextMenuRequested.connect(
+            self._showPurchaseWorldTableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._purchaseWorldsWidget)
@@ -2682,35 +2686,51 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 dstWidget.removeAllRows()
         dstWidget.addHexes(hexes=srcWidget.hexes())
 
-    def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        copySaleWorldsAction = QtWidgets.QAction('Copy Sale Worlds', self)
-        copySaleWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
-        copySaleWorldsAction.triggered.connect(
+    def _showPurchaseWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
+        copyFromSaleWorldsAction = QtWidgets.QAction('Copy From Sale Worlds', self)
+        copyFromSaleWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
+        copyFromSaleWorldsAction.triggered.connect(
             lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget))
+
+        copyToSaleWorldsAction = QtWidgets.QAction('Copy To Sale Worlds', self)
+        copyToSaleWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
+        copyToSaleWorldsAction.triggered.connect(
+            lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget))
 
         menu = QtWidgets.QMenu()
         self._purchaseWorldsWidget.fillContextMenu(menu)
         menu.insertAction(
             self._purchaseWorldsWidget.showSelectionDetailsAction(),
-            copySaleWorldsAction)
+            copyFromSaleWorldsAction)
+        menu.insertAction(
+            self._purchaseWorldsWidget.showSelectionDetailsAction(),
+            copyToSaleWorldsAction)
         menu.insertSeparator(
             self._purchaseWorldsWidget.showSelectionDetailsAction())
-        menu.exec(self._purchaseWorldsWidget.mapToGlobal(point))
+        menu.exec(self._purchaseWorldsWidget.mapToGlobal(pos))
 
-    def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        copyPurchaseWorldsAction = QtWidgets.QAction('Copy Purchase Worlds', self)
-        copyPurchaseWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
-        copyPurchaseWorldsAction.triggered.connect(
+    def _showSaleWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
+        copyFromPurchaseWorldsAction = QtWidgets.QAction('Copy From Purchase Worlds', self)
+        copyFromPurchaseWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
+        copyFromPurchaseWorldsAction.triggered.connect(
             lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget))
+
+        copyToPurchaseWorldsAction = QtWidgets.QAction('Copy To Purchase Worlds', self)
+        copyToPurchaseWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
+        copyToPurchaseWorldsAction.triggered.connect(
+            lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget))
 
         menu = QtWidgets.QMenu()
         self._saleWorldsWidget.fillContextMenu(menu)
         menu.insertAction(
             self._saleWorldsWidget.showSelectionDetailsAction(),
-            copyPurchaseWorldsAction)
+            copyFromPurchaseWorldsAction)
+        menu.insertAction(
+            self._saleWorldsWidget.showSelectionDetailsAction(),
+            copyToPurchaseWorldsAction)
         menu.insertSeparator(
             self._saleWorldsWidget.showSelectionDetailsAction())
-        menu.exec(self._saleWorldsWidget.mapToGlobal(point))
+        menu.exec(self._saleWorldsWidget.mapToGlobal(pos))
 
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:

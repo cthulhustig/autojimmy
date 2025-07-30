@@ -262,10 +262,14 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         super().keyPressEvent(event)
 
     def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
-        super().contextMenuEvent(event)
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
 
         if event:
             self.displayContextMenu(pos=event.pos())
+        #super().contextMenuEvent(event)
+
 
     def _hookModel(self) -> None:
         model = self.model()
