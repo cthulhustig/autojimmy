@@ -73,8 +73,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         # Disable sorting on if the list is to be ordered
         self._hexTable.setSortingEnabled(not self._isOrderedList)
 
-        self._promptAddFreeSelectAction = QtWidgets.QAction('Add...', self)
-        self._promptAddFreeSelectAction.triggered.connect(self.promptAddFreeSelection)
+        self._promptAddLocationAction = QtWidgets.QAction('Add...', self)
+        self._promptAddLocationAction.triggered.connect(self.promptAddLocation)
 
         self._promptAddNearbyAction = QtWidgets.QAction('Add Nearby...', self)
         self._promptAddNearbyAction.setVisible(not self._isOrderedList)
@@ -123,37 +123,34 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
             tableLayout = orderedTableLayout
 
-        # TODO: The add and remove buttons should trigger the corresponding
-        # action when rather than directly calling a function. This would
-        # allow things to replace the action and have it affect the button
-        # as well as the menu option.
-        self._addLocationsButton = QtWidgets.QPushButton('Add...')
+        self._addLocationsButton = gui.ActionButton(
+            action=self._promptAddLocationAction)
         self._addLocationsButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addLocationsButton.clicked.connect(self.promptAddFreeSelection)
 
         self._addNearbyButton = None
         if not self._isOrderedList:
             # Adding multiple hexes as one time doesn't really make sense for
             # ordered list
-            self._addNearbyButton = QtWidgets.QPushButton('Add Nearby...')
+            self._addNearbyButton = gui.ActionButton(
+                action=self._promptAddNearbyAction)
             self._addNearbyButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
                 QtWidgets.QSizePolicy.Policy.Minimum)
-            self._addNearbyButton.clicked.connect(self.promptAddNearby)
 
-        self._removeButton = QtWidgets.QPushButton('Remove')
-        self._removeButton.setSizePolicy(
+        self._removeSelectionButton = gui.ActionButton(
+            action=self._removeSelectedAction,
+            text='Remove')
+        self._removeSelectionButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeButton.clicked.connect(self.removeSelectedRows)
 
-        self._removeAllButton = QtWidgets.QPushButton('Remove All')
-        self._removeAllButton.setSizePolicy(
+        self._removeContentButton = gui.ActionButton(
+            action=self._removeContentAction)
+        self._removeContentButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeAllButton.clicked.connect(self.removeAllRows)
 
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
@@ -161,8 +158,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         buttonLayout.addWidget(self._addLocationsButton)
         if self._addNearbyButton:
             buttonLayout.addWidget(self._addNearbyButton)
-        buttonLayout.addWidget(self._removeButton)
-        buttonLayout.addWidget(self._removeAllButton)
+        buttonLayout.addWidget(self._removeSelectionButton)
+        buttonLayout.addWidget(self._removeContentButton)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -456,7 +453,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
 
-    def promptAddFreeSelection(self) -> None:
+    def promptAddLocation(self) -> None:
         currentHexes = self.hexes()
 
         dlg = gui.HexSelectDialog(
@@ -545,29 +542,37 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.addHexes(hexes=dlg.selectedHexes())
 
-    def promptAddFreeSelectAction(self) -> QtWidgets.QAction:
-        return self._promptAddFreeSelectAction
+    def promptAddLocationAction(self) -> QtWidgets.QAction:
+        return self._promptAddLocationAction
 
-    def setPromptAddFreeSelectAction(self, action: QtWidgets.QAction) -> None:
-        self._promptAddFreeSelectAction = action
+    def setPromptAddLocationAction(self, action: QtWidgets.QAction) -> None:
+        self._promptAddLocationAction = action
+        if self._addLocationsButton:
+            self._addLocationsButton.setAction(action=self._promptAddLocationAction)
 
     def promptAddNearbyAction(self) -> QtWidgets.QAction:
         return self._promptAddNearbyAction
 
     def setPromptAddNearbyAction(self, action: QtWidgets.QAction) -> None:
         self._promptAddNearbyAction = action
+        if self._addNearbyButton:
+            self._addNearbyButton.setAction(action=self._promptAddNearbyAction)
 
     def removeSelectedAction(self) -> QtWidgets.QAction:
         return self._removeSelectedAction
 
     def setRemoveSelectedAction(self, action: QtWidgets.QAction) -> None:
         self._removeSelectedAction = action
+        if self._removeSelectionButton:
+            self._removeSelectionButton.setAction(action=self._removeSelectedAction)
 
     def removeContentAction(self) -> QtWidgets.QAction:
         return self._removeContentAction
 
     def setRemoveContentAction(self, action: QtWidgets.QAction) -> None:
         self._removeContentAction = action
+        if self._removeContentButton:
+            self._removeContentButton.setAction(action=self._removeContentAction)
 
     def showSelectionDetailsAction(self) -> QtWidgets.QAction:
         return self._hexTable.showSelectionDetailsAction()
@@ -639,7 +644,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable.setPromptExportContentToHtmlAction(action)
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
-        menu.addAction(self.promptAddFreeSelectAction())
+        menu.addAction(self.promptAddLocationAction())
         menu.addAction(self.promptAddNearbyAction())
         menu.addSeparator()
         menu.addAction(self.removeSelectedAction())
@@ -734,7 +739,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def _tableSelectionChanged(self) -> None:
         hasSelection = self._hexTable.hasSelection()
-        self._removeButton.setEnabled(hasSelection)
+        self._removeSelectionButton.setEnabled(hasSelection)
         self._syncActions()
 
     def _displayModeChanged(self, index: int) -> None:

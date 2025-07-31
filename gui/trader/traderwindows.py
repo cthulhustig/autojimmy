@@ -2687,12 +2687,12 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         dstWidget.addHexes(hexes=srcWidget.hexes())
 
     def _showPurchaseWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
-        copyFromSaleWorldsAction = QtWidgets.QAction('Copy From Sale Worlds', self)
+        copyFromSaleWorldsAction = QtWidgets.QAction('Copy from Sale Worlds', self)
         copyFromSaleWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
         copyFromSaleWorldsAction.triggered.connect(
             lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget))
 
-        copyToSaleWorldsAction = QtWidgets.QAction('Copy To Sale Worlds', self)
+        copyToSaleWorldsAction = QtWidgets.QAction('Copy to Sale Worlds', self)
         copyToSaleWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
         copyToSaleWorldsAction.triggered.connect(
             lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget))
@@ -2710,12 +2710,12 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         menu.exec(self._purchaseWorldsWidget.mapToGlobal(pos))
 
     def _showSaleWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
-        copyFromPurchaseWorldsAction = QtWidgets.QAction('Copy From Purchase Worlds', self)
+        copyFromPurchaseWorldsAction = QtWidgets.QAction('Copy from Purchase Worlds', self)
         copyFromPurchaseWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
         copyFromPurchaseWorldsAction.triggered.connect(
             lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget))
 
-        copyToPurchaseWorldsAction = QtWidgets.QAction('Copy To Purchase Worlds', self)
+        copyToPurchaseWorldsAction = QtWidgets.QAction('Copy to Purchase Worlds', self)
         copyToPurchaseWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
         copyToPurchaseWorldsAction.triggered.connect(
             lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget))

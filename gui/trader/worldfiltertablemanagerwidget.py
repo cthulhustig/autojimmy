@@ -89,38 +89,38 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         self._removeContentAction.setEnabled(False) # No content
         self._removeContentAction.triggered.connect(self.removeAllFilters)
 
-        # TODO: These buttons should probably trigger the actions
-        self._addButton = QtWidgets.QPushButton('Add...')
-        self._addButton.setSizePolicy(
+        self._addNewButton = gui.ActionButton(
+            action=self._promptAddNewAction)
+        self._addNewButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self.promptAddNew)
 
-        self._editButton = QtWidgets.QPushButton('Edit...')
-        self._editButton.setSizePolicy(
+        self._editSelectionButton = gui.ActionButton(
+            action=self._promptEditSelectedAction)
+        self._editSelectionButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editButton.clicked.connect(self.promptEditSelected)
 
-        self._removeButton = QtWidgets.QPushButton('Remove')
-        self._removeButton.setSizePolicy(
+        self._removeSelectedButton = gui.ActionButton(
+            action=self._removeSelectedAction,
+            text='Remove')
+        self._removeSelectedButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeButton.clicked.connect(self.removeSelectedFilters)
 
-        self._removeAllButton = QtWidgets.QPushButton('Remove All')
-        self._removeAllButton.setSizePolicy(
+        self._removeContentButton = gui.ActionButton(
+            action=self._removeContentAction)
+        self._removeContentButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeAllButton.clicked.connect(self.removeAllFilters)
 
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._addButton)
-        buttonLayout.addWidget(self._editButton)
-        buttonLayout.addWidget(self._removeButton)
-        buttonLayout.addWidget(self._removeAllButton)
+        buttonLayout.addWidget(self._addNewButton)
+        buttonLayout.addWidget(self._editSelectionButton)
+        buttonLayout.addWidget(self._removeSelectedButton)
+        buttonLayout.addWidget(self._removeContentButton)
         buttonWidget = QtWidgets.QWidget()
         buttonWidget.setLayout(buttonLayout)
 
@@ -285,24 +285,32 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def setPromptAddNewAction(self, action: QtWidgets.QAction) -> None:
         self._promptAddNewAction = action
+        if self._addNewButton:
+            self._addNewButton.setAction(action=self._promptAddNewAction)
 
     def promptEditSelectedAction(self) -> QtWidgets.QAction:
         return self._promptEditSelectedAction
 
     def setPromptEditSelectedAction(self, action: QtWidgets.QAction) -> None:
         self._promptEditSelectedAction = action
+        if self._editSelectionButton:
+            self._editSelectionButton.setAction(action=self._promptEditSelectedAction)
 
     def removeSelectedAction(self) -> QtWidgets.QAction:
         return self._removeSelectedAction
 
     def setRemoveSelectedAction(self, action: QtWidgets.QAction) -> None:
         self._removeSelectedAction = action
+        if self._removeSelectedButton:
+            self._removeSelectedButton.setAction(action=self._removeSelectedAction)
 
     def removeContentAction(self) -> QtWidgets.QAction:
         return self._removeContentAction
 
     def setRemoveContentAction(self, action: QtWidgets.QAction) -> None:
         self._removeContentAction = action
+        if self._removeContentButton:
+            self._removeContentButton.setAction(action=self._removeContentAction)
 
     def copyContentToClipboardAsCSvAction(self) -> QtWidgets.QAction:
         return self._filterTable.copyContentToClipboardAsCSvAction()
@@ -422,6 +430,6 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def _tableSelectionChanged(self) -> None:
         hasSelection = self._filterTable.hasSelection()
-        self._editButton.setEnabled(hasSelection)
-        self._removeButton.setEnabled(hasSelection)
+        self._editSelectionButton.setEnabled(hasSelection)
+        self._removeSelectedButton.setEnabled(hasSelection)
         self._syncActions()
