@@ -40,25 +40,19 @@ class ActionButton(QtWidgets.QPushButton):
     def _syncButton(self) -> None:
         if self._action:
             self.setText(self._customText if self._customText else self._action.text())
-            self.setEnabled(self._action.isEnabled())
-            self.setVisible(self._action.isVisible())
+            self.setEnabled(self._action.isEnabled() and self._action.isVisible())
         else:
             self.setText('')
             self.setEnabled(False)
-            self.setVisible(False)
 
     def _hookAction(self) -> None:
         if self._action:
-            self._action.changed.connect(self._actionChanged)
+            self._action.changed.connect(self._syncButton)
 
     def _unhookAction(self) -> None:
         if self._action:
-            self._action.changed.disconnect(self._actionChanged)
+            self._action.changed.disconnect(self._syncButton)
 
     def _buttonClicked(self) -> None:
         if self._action:
             self._action.trigger()
-
-    def _actionChanged(self) -> None:
-        self.setEnabled(self._action.isEnabled())
-        self.setVisible(self._action.isVisible())
