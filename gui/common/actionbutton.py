@@ -30,6 +30,9 @@ class ActionButton(QtWidgets.QPushButton):
         if self._action:
             self._hookAction()
 
+    def customText(self) -> typing.Optional[str]:
+        return self._customText
+
     def setCustomText(self, text: typing.Optional[str]) -> None:
         if text == self._customText:
             return
