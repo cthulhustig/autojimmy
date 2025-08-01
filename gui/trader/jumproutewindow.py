@@ -1156,10 +1156,10 @@ class JumpRouteWindow(gui.WindowWidget):
         showSelectionOnMapAction.triggered.connect(self._showWaypointsTableSelectionOnMap)
         self._waypointsWidget.setShowSelectionOnMapAction(showSelectionOnMapAction)
 
-        showContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
-        showContentOnMapAction.setEnabled(False) # No content
-        showContentOnMapAction.triggered.connect(self._showWaypointsTableContentOnMap)
-        self._waypointsWidget.setShowContentOnMapAction(showContentOnMapAction)
+        showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showAllOnMapAction.setEnabled(False) # No content
+        showAllOnMapAction.triggered.connect(self._showWaypointsTableContentOnMap)
+        self._waypointsWidget.setShowAllOnMapAction(showAllOnMapAction)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._waypointsWidget)
@@ -1205,10 +1205,10 @@ class JumpRouteWindow(gui.WindowWidget):
         showSelectionOnMapAction.triggered.connect(self._showAvoidHexesTableSelectionOnMap)
         self._avoidHexesWidget.setShowSelectionOnMapAction(showSelectionOnMapAction)
 
-        showContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
-        showContentOnMapAction.setEnabled(False) # No content
-        showContentOnMapAction.triggered.connect(self._showAvoidHexesTableContentOnMap)
-        self._avoidHexesWidget.setShowContentOnMapAction(showContentOnMapAction)
+        showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showAllOnMapAction.setEnabled(False) # No content
+        showAllOnMapAction.triggered.connect(self._showAvoidHexesTableContentOnMap)
+        self._avoidHexesWidget.setShowAllOnMapAction(showAllOnMapAction)
 
         self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget(
             taggingColours=taggingColours)
@@ -1293,7 +1293,7 @@ class JumpRouteWindow(gui.WindowWidget):
         showJumpRouteContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showJumpRouteContentOnMapAction.setEnabled(False) # No content
         showJumpRouteContentOnMapAction.triggered.connect(self._showJumpRouteContentOnMap)
-        self._jumpRouteTable.setShowContentOnMapAction(showJumpRouteContentOnMapAction)
+        self._jumpRouteTable.setShowAllOnMapAction(showJumpRouteContentOnMapAction)
 
         jumpRouteLayout = QtWidgets.QVBoxLayout()
         jumpRouteLayout.setContentsMargins(0, 0, 0, 0)
@@ -1323,7 +1323,7 @@ class JumpRouteWindow(gui.WindowWidget):
         showRefuellingContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showRefuellingContentOnMapAction.setEnabled(False) # No content
         showRefuellingContentOnMapAction.triggered.connect(self._showRefuellingTableContentOnMap)
-        self._refuellingPlanTable.setShowContentOnMapAction(showRefuellingContentOnMapAction)
+        self._refuellingPlanTable.setShowAllOnMapAction(showRefuellingContentOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,

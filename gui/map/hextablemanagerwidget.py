@@ -84,9 +84,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._removeSelectedAction.setEnabled(False) # No selection
         self._removeSelectedAction.triggered.connect(self.removeSelectedRows)
 
-        self._removeContentAction = QtWidgets.QAction('Remove All', self)
-        self._removeContentAction.setEnabled(False) # No content
-        self._removeContentAction.triggered.connect(self.removeAllRows)
+        self._removeAllAction = QtWidgets.QAction('Remove All', self)
+        self._removeAllAction.setEnabled(False) # No content
+        self._removeAllAction.triggered.connect(self.removeAllRows)
 
         tableLayout = QtWidgets.QVBoxLayout()
         tableLayout.setContentsMargins(0, 0, 0 , 0)
@@ -146,9 +146,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
-        self._removeContentButton = gui.ActionButton(
-            action=self._removeContentAction)
-        self._removeContentButton.setSizePolicy(
+        self._removeAllButton = gui.ActionButton(
+            action=self._removeAllAction)
+        self._removeAllButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
@@ -159,7 +159,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if self._addNearbyButton:
             buttonLayout.addWidget(self._addNearbyButton)
         buttonLayout.addWidget(self._removeSelectionButton)
-        buttonLayout.addWidget(self._removeContentButton)
+        buttonLayout.addWidget(self._removeAllButton)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -566,13 +566,13 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if self._removeSelectionButton:
             self._removeSelectionButton.setAction(action=self._removeSelectedAction)
 
-    def removeContentAction(self) -> QtWidgets.QAction:
-        return self._removeContentAction
+    def removeAllAction(self) -> QtWidgets.QAction:
+        return self._removeAllAction
 
-    def setRemoveContentAction(self, action: QtWidgets.QAction) -> None:
-        self._removeContentAction = action
-        if self._removeContentButton:
-            self._removeContentButton.setAction(action=self._removeContentAction)
+    def setRemoveAllAction(self, action: QtWidgets.QAction) -> None:
+        self._removeAllAction = action
+        if self._removeAllButton:
+            self._removeAllButton.setAction(action=self._removeAllAction)
 
     def showSelectionDetailsAction(self) -> QtWidgets.QAction:
         return self._hexTable.showSelectionDetailsAction()
@@ -580,11 +580,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def setShowSelectionDetailsAction(self, action: QtWidgets.QAction) -> None:
         self._hexTable.setShowSelectionDetailsAction(action)
 
-    def showContentDetailsAction(self) -> QtWidgets.QAction:
-        return self._hexTable.showContentDetailsAction()
+    def showAllDetailsAction(self) -> QtWidgets.QAction:
+        return self._hexTable.showAllDetailsAction()
 
-    def setShowContentDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._hexTable.setShowContentDetailsAction(action)
+    def setShowAllDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._hexTable.setShowAllDetailsAction(action)
 
     def showSelectionOnMapAction(self) -> QtWidgets.QAction:
         return self._hexTable.showSelectionOnMapAction()
@@ -592,11 +592,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def setShowSelectionOnMapAction(self, action: QtWidgets.QAction) -> None:
         self._hexTable.setShowSelectionOnMapAction(action)
 
-    def showContentOnMapAction(self) -> QtWidgets.QAction:
-        return self._hexTable.showContentOnMapAction()
+    def showAllOnMapAction(self) -> QtWidgets.QAction:
+        return self._hexTable.showAllOnMapAction()
 
-    def setShowContentOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._hexTable.setShowContentOnMapAction(action)
+    def setShowAllOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._hexTable.setShowAllOnMapAction(action)
 
     def copyContentToClipboardAsCSvAction(self) -> QtWidgets.QAction:
         return self._hexTable.copyContentToClipboardAsCSvAction()
@@ -648,7 +648,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         menu.addAction(self.promptAddNearbyAction())
         menu.addSeparator()
         menu.addAction(self.removeSelectedAction())
-        menu.addAction(self.removeContentAction())
+        menu.addAction(self.removeAllAction())
         menu.addSeparator()
 
         # Add table menu options
@@ -707,8 +707,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self._promptAddNearbyAction.setVisible(not self._isOrderedList)
         if self._removeSelectedAction:
             self._removeSelectedAction.setEnabled(hasSelection)
-        if self._removeContentAction:
-            self._removeContentAction.setEnabled(hasContent)
+        if self._removeAllAction:
+            self._removeAllAction.setEnabled(hasContent)
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()

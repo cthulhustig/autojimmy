@@ -55,9 +55,9 @@ class WorldTradeScoreTable(gui.HexTable):
         self._showSelectedCalculationsAction.setEnabled(False) # No selection
         self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
 
-        self._showContentCalculationsAction =  QtWidgets.QAction('Show All Calculations...', self)
-        self._showContentCalculationsAction.setEnabled(False) # No selection
-        self._showContentCalculationsAction.triggered.connect(self.showContentCalculations)
+        self._showAllCalculationsAction =  QtWidgets.QAction('Show All Calculations...', self)
+        self._showAllCalculationsAction.setEnabled(False) # No selection
+        self._showAllCalculationsAction.triggered.connect(self.showAllCalculations)
 
     def setRules(self, rules: traveller.Rules) -> None:
         if rules == self._rules:
@@ -112,7 +112,7 @@ class WorldTradeScoreTable(gui.HexTable):
             return
         self._showCalculations(calculations=calculations)
 
-    def showContentCalculations(self) -> None:
+    def showAllCalculations(self) -> None:
         calculations = []
         for row in range(self.rowCount()):
             tradeScore = self.tradeScore(row)
@@ -129,11 +129,11 @@ class WorldTradeScoreTable(gui.HexTable):
     def setShowSelectedCalculationsAction(self, action: QtWidgets.QAction) -> None:
         self._showSelectedCalculationsAction = action
 
-    def showContentCalculationsAction(self) -> QtWidgets.QAction:
-        return self._showContentCalculationsAction
+    def showAllCalculationsAction(self) -> QtWidgets.QAction:
+        return self._showAllCalculationsAction
 
-    def setShowContentCalculationsAction(self, action: QtWidgets.QAction) -> None:
-        self._showContentCalculationsAction = action
+    def setShowAllCalculationsAction(self, action: QtWidgets.QAction) -> None:
+        self._showAllCalculationsAction = action
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         # Add base class menu options (export, show on map etc)
@@ -141,7 +141,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
         menu.addSeparator()
         menu.addAction(self.showSelectedCalculationsAction())
-        menu.addAction(self.showContentCalculationsAction())
+        menu.addAction(self.showAllCalculationsAction())
 
     def isEmptyChanged(self) -> None:
         super().isEmptyChanged()
@@ -236,8 +236,8 @@ class WorldTradeScoreTable(gui.HexTable):
         hasSelection = self.hasSelection()
         if self._showSelectedCalculationsAction:
             self._showSelectedCalculationsAction.setEnabled(hasSelection)
-        if self._showContentCalculationsAction:
-            self._showContentCalculationsAction.setEnabled(hasContent)
+        if self._showAllCalculationsAction:
+            self._showAllCalculationsAction.setEnabled(hasContent)
 
     def _showCalculations(
             self,

@@ -357,25 +357,25 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._cargoTable.installEventFilter(self)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
-        self._cargoTable.doubleClicked.connect(self._editCargo)
+        self._cargoTable.doubleClicked.connect(self._promptEditCargo)
 
         self._importCargoButton = QtWidgets.QPushButton('Import...')
         self._importCargoButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._importCargoButton.clicked.connect(self._importCargo)
+        self._importCargoButton.clicked.connect(self._promptImportCargo)
 
         self._addCargoButton = QtWidgets.QPushButton('Add...')
         self._addCargoButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addCargoButton.clicked.connect(self._addCargo)
+        self._addCargoButton.clicked.connect(self._promptAddCargo)
 
         self._editCargoButton = QtWidgets.QPushButton('Edit...')
         self._editCargoButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editCargoButton.clicked.connect(self._editCargo)
+        self._editCargoButton.clicked.connect(self._promptEditCargo)
 
         self._removeCargoButton = QtWidgets.QPushButton('Remove')
         self._removeCargoButton.setSizePolicy(
@@ -565,7 +565,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePriceGroupBox.setDisabled(disable)
         self._diceRollGroupBox.setDisabled(disable)
 
-    def _importCargo(self) -> None:
+    def _promptImportCargo(self) -> None:
         if not self._cargoTable.isEmpty():
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,
@@ -622,7 +622,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text='Ignored exotic cargo when importing.\nSale of exotic cargo requires role playing so can\'t be automated')
 
-    def _addCargo(self) -> None:
+    def _promptAddCargo(self) -> None:
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
 
         # Don't list exotics. Calculating their sale price requires role playing rather than dice
@@ -662,7 +662,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         self._cargoTable.addCargoRecord(cargoRecord)
 
-    def _editCargo(self) -> None:
+    def _promptEditCargo(self) -> None:
         row = self._cargoTable.currentRow()
         if row < 0:
             gui.MessageBoxEx.information(
@@ -695,18 +695,18 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
-        addCargoAction.triggered.connect(self._addCargo)
+        addCargoAction = QtWidgets.QAction('Add...', self)
+        addCargoAction.triggered.connect(self._promptAddCargo)
 
-        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
+        editCargoAction = QtWidgets.QAction('Edit...', self)
         editCargoAction.setEnabled(self._cargoTable.hasSelection())
-        editCargoAction.triggered.connect(self._editCargo)
+        editCargoAction.triggered.connect(self._promptEditCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
         removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(self._removeSelectedCargo)
 
-        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
         removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
         removeAllCargoAction.triggered.connect(self._removeAllCargo)
 
@@ -850,19 +850,19 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._updateTotalSalePrice()
 
     def _showSalePricesTableContextMenu(self, point: QtCore.QPoint) -> None:
-        editSalePriceAction = QtWidgets.QAction('Edit Sale Price...', self)
+        editSalePriceAction = QtWidgets.QAction('Edit...', self)
         editSalePriceAction.setEnabled(self._salePricesTable.hasSelection())
         editSalePriceAction.triggered.connect(self._editSalePrice)
 
         removeSelectedSalePriceAction = QtWidgets.QAction(
-            'Remove Selected Sale Prices',
+            'Remove Selected',
             self)
         removeSelectedSalePriceAction.setEnabled(self._salePricesTable.hasSelection())
         removeSelectedSalePriceAction.triggered.connect(
             self._removeSelectedSalePrices)
 
         removeAllSalePriceAction = QtWidgets.QAction(
-            'Remove All Sale Prices',
+            'Remove All',
             self)
         removeAllSalePriceAction.setEnabled(
             not self._salePricesTable.isEmpty())

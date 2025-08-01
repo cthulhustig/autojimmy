@@ -262,17 +262,17 @@ class HexTable(gui.FrozenColumnListTable):
         self._showSelectionDetailsAction.setEnabled(False) # No selection
         self._showSelectionDetailsAction.triggered.connect(self.showSelectionDetails)
 
-        self._showContentDetailsAction =  QtWidgets.QAction('Show All Details...', self)
-        self._showContentDetailsAction.setEnabled(False) # No content
-        self._showContentDetailsAction.triggered.connect(self.showContentDetails)
+        self._showAllDetailsAction =  QtWidgets.QAction('Show All Details...', self)
+        self._showAllDetailsAction.setEnabled(False) # No content
+        self._showAllDetailsAction.triggered.connect(self.showAllDetails)
 
         self._showSelectionOnMapAction =  QtWidgets.QAction('Show Selection on Map...', self)
         self._showSelectionOnMapAction.setEnabled(False) # No selection
         self._showSelectionOnMapAction.triggered.connect(self.showSelectionOnMap)
 
-        self._showContentOnMapAction =  QtWidgets.QAction('Show All on Map...', self)
-        self._showContentOnMapAction.setEnabled(False) # No content
-        self._showContentOnMapAction.triggered.connect(self.showContentOnMap)
+        self._showAllOnMapAction =  QtWidgets.QAction('Show All on Map...', self)
+        self._showAllOnMapAction.setEnabled(False) # No content
+        self._showAllOnMapAction.triggered.connect(self.showAllOnMap)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -465,13 +465,13 @@ class HexTable(gui.FrozenColumnListTable):
     def showSelectionDetails(self) -> None:
         self._showDetails(hexes=self.selectedHexes())
 
-    def showContentDetails(self) -> None:
+    def showAllDetails(self) -> None:
         self._showDetails(hexes=self.hexes())
 
     def showSelectionOnMap(self) -> None:
         self._showOnMap(hexes=self.selectedHexes())
 
-    def showContentOnMap(self) -> None:
+    def showAllOnMap(self) -> None:
         self._showOnMap(hexes=self.hexes())
 
     def showSelectionDetailsAction(self) -> QtWidgets.QAction:
@@ -480,11 +480,11 @@ class HexTable(gui.FrozenColumnListTable):
     def setShowSelectionDetailsAction(self, action: QtWidgets.QAction) -> None:
         self._showSelectionDetailsAction = action
 
-    def showContentDetailsAction(self) -> QtWidgets.QAction:
-        return self._showContentDetailsAction
+    def showAllDetailsAction(self) -> QtWidgets.QAction:
+        return self._showAllDetailsAction
 
-    def setShowContentDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._showContentDetailsAction = action
+    def setShowAllDetailsAction(self, action: QtWidgets.QAction) -> None:
+        self._showAllDetailsAction = action
 
     def showSelectionOnMapAction(self) -> QtWidgets.QAction:
         return self._showSelectionOnMapAction
@@ -492,18 +492,18 @@ class HexTable(gui.FrozenColumnListTable):
     def setShowSelectionOnMapAction(self, action: QtWidgets.QAction) -> None:
         self._showSelectionOnMapAction = action
 
-    def showContentOnMapAction(self) -> QtWidgets.QAction:
-        return self._showContentOnMapAction
+    def showAllOnMapAction(self) -> QtWidgets.QAction:
+        return self._showAllOnMapAction
 
-    def setShowContentOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showContentOnMapAction = action
+    def setShowAllOnMapAction(self, action: QtWidgets.QAction) -> None:
+        self._showAllOnMapAction = action
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.showSelectionDetailsAction())
-        menu.addAction(self.showContentDetailsAction())
+        menu.addAction(self.showAllDetailsAction())
         menu.addSeparator()
         menu.addAction(self.showSelectionOnMapAction())
-        menu.addAction(self.showContentOnMapAction())
+        menu.addAction(self.showAllOnMapAction())
         menu.addSeparator()
 
         # Add base class menu options (export, copy to clipboard etc)
@@ -1204,12 +1204,12 @@ class HexTable(gui.FrozenColumnListTable):
         hasSelection = self.hasSelection()
         if self._showSelectionDetailsAction:
             self._showSelectionDetailsAction.setEnabled(hasSelection)
-        if self._showContentDetailsAction:
-            self._showContentDetailsAction.setEnabled(hasContent)
+        if self._showAllDetailsAction:
+            self._showAllDetailsAction.setEnabled(hasContent)
         if self._showSelectionOnMapAction:
             self._showSelectionOnMapAction.setEnabled(hasSelection)
-        if self._showContentOnMapAction:
-            self._showContentOnMapAction.setEnabled(hasContent)
+        if self._showAllOnMapAction:
+            self._showAllOnMapAction.setEnabled(hasContent)
 
     def _showDetails(
             self,

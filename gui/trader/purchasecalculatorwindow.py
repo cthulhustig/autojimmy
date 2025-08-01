@@ -278,7 +278,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._cargoTable.installEventFilter(self)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
-        self._cargoTable.doubleClicked.connect(self._editCargo)
+        self._cargoTable.doubleClicked.connect(self._promptEditCargo)
 
         self._exportButton = QtWidgets.QPushButton('Export...')
         self._exportButton.setSizePolicy(
@@ -290,13 +290,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self._addCargo)
+        self._addButton.clicked.connect(self._promptAddCargo)
 
         self._editButton = QtWidgets.QPushButton('Edit...')
         self._editButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editButton.clicked.connect(self._editCargo)
+        self._editButton.clicked.connect(self._promptEditCargo)
 
         self._removeButton = QtWidgets.QPushButton('Remove')
         self._removeButton.setSizePolicy(
@@ -452,7 +452,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text=f'The seller has no goods available at this time.\nThis can happen due to world specific modifiers (e.g. for low population worlds).')
 
-    def _addCargo(self) -> None:
+    def _promptAddCargo(self) -> None:
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if not purchaseWorld:
             return
@@ -489,7 +489,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 pricePerTon=dlg.pricePerTon(),
                 quantity=dlg.quantity()))
 
-    def _editCargo(self) -> None:
+    def _promptEditCargo(self) -> None:
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if not purchaseWorld:
             return
@@ -577,23 +577,23 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
-        addCargoAction.triggered.connect(self._addCargo)
+        addCargoAction = QtWidgets.QAction('Add...', self)
+        addCargoAction.triggered.connect(self._promptAddCargo)
 
-        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
+        editCargoAction = QtWidgets.QAction('Edit...', self)
         editCargoAction.setEnabled(self._cargoTable.hasSelection())
-        editCargoAction.triggered.connect(self._editCargo)
+        editCargoAction.triggered.connect(self._promptEditCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
         removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
 
-        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
         removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
         removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
 
         findTradeOptionsForSelectedCargoAction = QtWidgets.QAction(
-            'Find Trade Options for Selected Cargo...',
+            'Find Trade Options for Selected...',
             self)
         findTradeOptionsForSelectedCargoAction.setEnabled(
             self._cargoTable.hasSelection())
@@ -601,7 +601,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             lambda: self._findTradeOptionsForCargo(self._cargoTable.selectedCargoRecords()))
 
         findTradeOptionsForAllCargoAction = QtWidgets.QAction(
-            'Find Trade Options for All Cargo...',
+            'Find Trade Options for All...',
             self)
         findTradeOptionsForAllCargoAction.setEnabled(
             not self._cargoTable.isEmpty())

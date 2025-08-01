@@ -652,10 +652,10 @@ class WorldSearchWindow(gui.WindowWidget):
         showSelectionOnMapAction.triggered.connect(self._showTableSelectionOnMap)
         self._worldTable.setShowSelectionOnMapAction(showSelectionOnMapAction)
 
-        showContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
-        showContentOnMapAction.setEnabled(False) # No content
-        showContentOnMapAction.triggered.connect(self._showTableContentOnMap)
-        self._worldTable.setShowContentOnMapAction(showContentOnMapAction)
+        showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showAllOnMapAction.setEnabled(False) # No content
+        showAllOnMapAction.triggered.connect(self._showTableContentOnMap)
+        self._worldTable.setShowAllOnMapAction(showAllOnMapAction)
 
         tableLayout = QtWidgets.QVBoxLayout()
         tableLayout.setContentsMargins(0, 0, 0, 0)
@@ -952,12 +952,12 @@ class WorldSearchWindow(gui.WindowWidget):
         hasSelection = self._worldTable.hasSelection()
         hasContent = not self._worldTable.isEmpty()
 
-        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected Worlds...', self)
+        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected...', self)
         findTradeOptionsForSelectedAction.setEnabled(hasSelection)
         findTradeOptionsForSelectedAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldTable.selectedWorlds()))
 
-        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All Worlds...', self)
+        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All...', self)
         findTradeOptionsForAllAction.setEnabled(hasContent)
         findTradeOptionsForAllAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldTable.worlds()))
@@ -967,13 +967,13 @@ class WorldSearchWindow(gui.WindowWidget):
         # TODO: This is horrible, find a better way to get these options
         # inserted before the show calculations options
         menu.insertAction(
-            self._worldTable.showSelectedCalculationsAction(), # Insert BEFORE this
+            self._worldTable.copyContentToClipboardAsCSvAction(), # Insert BEFORE this
             findTradeOptionsForSelectedAction)
         menu.insertAction(
-            self._worldTable.showSelectedCalculationsAction(), # Insert BEFORE this
+            self._worldTable.copyContentToClipboardAsCSvAction(), # Insert BEFORE this
             findTradeOptionsForAllAction)
         menu.insertSeparator(
-            self._worldTable.showSelectedCalculationsAction()) # Insert BEFORE this
+            self._worldTable.copyContentToClipboardAsCSvAction()) # Insert BEFORE this
         menu.exec(self._worldTable.viewport().mapToGlobal(pos))
 
     def _findTradeOptions(

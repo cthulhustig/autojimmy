@@ -1737,20 +1737,20 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._addSpeculativeCargo(cargoRecord)
 
     def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
+        addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(
             self._promptAddSpeculativeCargo)
 
-        addCurrentWorldCargoAction = QtWidgets.QAction('Add Current World Cargo...', self)
+        addCurrentWorldCargoAction = QtWidgets.QAction('Generate for World...', self)
         addCurrentWorldCargoAction.triggered.connect(
             self._generateSpeculativeCargoForWorld)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
         removeSelectedCargoAction.setEnabled(self._speculativeCargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(
             self._removeSelectedSpeculativeCargo)
 
-        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
         removeAllCargoAction.setEnabled(not self._speculativeCargoTable.isEmpty())
         removeAllCargoAction.triggered.connect(
             self._removeAllSpeculativeCargo)
@@ -1915,22 +1915,22 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._availableFundsSpinBox.value() - int(totalCost))
 
     def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
+        addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(self._promptAddAvailableCargo)
 
-        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
+        editCargoAction = QtWidgets.QAction('Edit...', self)
         editCargoAction.setEnabled(self._availableCargoTable.hasSelection())
         editCargoAction.triggered.connect(self._promptEditAvailableCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
         removeSelectedCargoAction.setEnabled(self._availableCargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(self._removeSelectedAvailableCargo)
 
-        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
         removeAllCargoAction.setEnabled(not self._availableCargoTable.isEmpty())
         removeAllCargoAction.triggered.connect(self._removeAllAvailableCargo)
 
-        purchaseCargoAction = QtWidgets.QAction('Purchase Cargo...', self)
+        purchaseCargoAction = QtWidgets.QAction('Purchase...', self)
         purchaseCargoAction.setEnabled(self._availableCargoTable.hasSelection())
         purchaseCargoAction.triggered.connect(self._purchaseAvailableCargo)
 
@@ -2053,18 +2053,18 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        addCargoAction = QtWidgets.QAction('Add Cargo...', self)
+        addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(self._promptAddCurrentCargo)
 
-        editCargoAction = QtWidgets.QAction('Edit Cargo...', self)
+        editCargoAction = QtWidgets.QAction('Edit...', self)
         editCargoAction.setEnabled(self._currentCargoTable.hasSelection())
         editCargoAction.triggered.connect(self._promptEditCurrentCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected Cargo', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
         removeSelectedCargoAction.setEnabled(self._currentCargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(self._removeSelectedCurrentCargo)
 
-        removeAllCargoAction = QtWidgets.QAction('Remove All Cargo', self)
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
         removeAllCargoAction.setEnabled(not self._currentCargoTable.isEmpty())
         removeAllCargoAction.triggered.connect(self._removeAllCurrentCargo)
 
