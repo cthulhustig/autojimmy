@@ -412,13 +412,13 @@ class WorldComparisonWindow(gui.WindowWidget):
         # TODO: This is horrible, find a better way to get these options
         # inserted before the show calculations options
         menu.insertAction(
-            self._worldTable.copyContentToClipboardAsCSvAction(), # Insert BEFORE this
+            self._worldTable.copyToClipboardAsCSvAction(), # Insert BEFORE this
             findTradeOptionsForSelectedAction)
         menu.insertAction(
-            self._worldTable.copyContentToClipboardAsCSvAction(), # Insert BEFORE this
+            self._worldTable.copyToClipboardAsCSvAction(), # Insert BEFORE this
             findTradeOptionsForAllAction)
         menu.insertSeparator(
-            self._worldTable.copyContentToClipboardAsCSvAction()) # Insert BEFORE this
+            self._worldTable.copyToClipboardAsCSvAction()) # Insert BEFORE this
         menu.exec(self._worldManagementWidget.mapToGlobal(point))
 
     def _findTradeOptions(

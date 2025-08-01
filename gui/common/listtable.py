@@ -101,13 +101,13 @@ class ListTable(gui.TableWidgetEx):
 
         self._columnWidths: typing.Dict[str, int] = {}
 
-        self._copyContentToClipboardAsCsvAction = QtWidgets.QAction('Copy as CSV', self)
-        self._copyContentToClipboardAsCsvAction.setEnabled(False) # No content to copy
-        self._copyContentToClipboardAsCsvAction.triggered.connect(self.copyContentToClipboardAsCsv)
+        self._copyToClipboardAsCsvAction = QtWidgets.QAction('Copy as CSV', self)
+        self._copyToClipboardAsCsvAction.setEnabled(False) # No content to copy
+        self._copyToClipboardAsCsvAction.triggered.connect(self.copyToClipboardAsCsv)
 
-        self._promptExportContentToCsvAction = QtWidgets.QAction('Export as CSV...', self)
-        self._promptExportContentToCsvAction.setEnabled(False) # No content to copy
-        self._promptExportContentToCsvAction.triggered.connect(self.promptExportContentToCsv)
+        self._promptExportAsCsvAction = QtWidgets.QAction('Export as CSV...', self)
+        self._promptExportAsCsvAction.setEnabled(False) # No content to copy
+        self._promptExportAsCsvAction.triggered.connect(self.promptExportAsCsv)
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -436,7 +436,7 @@ class ListTable(gui.TableWidgetEx):
         # between every line of data
         return content.replace('\r\n', '\n')
 
-    def copyContentToClipboardAsCsv(self) -> None:
+    def copyToClipboardAsCsv(self) -> None:
         gui.setClipboardContent(content=self.contentToCsv())
 
     # TODO: Ideally I want some way derived classes can control what
@@ -446,7 +446,7 @@ class ListTable(gui.TableWidgetEx):
     # - If I do this I need to remember that construction objects
     # names can contain characters that aren't valid for different
     # OS
-    def promptExportContentToCsv(self) -> None:
+    def promptExportAsCsv(self) -> None:
         content = self.contentToCsv()
 
         path, _ = gui.FileDialogEx.getSaveFileName(
@@ -469,23 +469,23 @@ class ListTable(gui.TableWidgetEx):
                 exception=ex)
             return
 
-    def copyContentToClipboardAsCSvAction(self) -> QtWidgets.QAction:
-        return self._copyContentToClipboardAsCsvAction
+    def copyToClipboardAsCSvAction(self) -> QtWidgets.QAction:
+        return self._copyToClipboardAsCsvAction
 
-    def setCopyContentToClipboardAsCsvAction(
+    def setCopyToClipboardAsCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._copyContentToClipboardAsCsvAction = action
+        self._copyToClipboardAsCsvAction = action
 
-    def promptExportContentToCsvAction(self) -> QtWidgets.QAction:
-        return self._promptExportContentToCsvAction
+    def promptExportAsCsvAction(self) -> QtWidgets.QAction:
+        return self._promptExportAsCsvAction
 
-    def setPromptExportContentToCsvAction(
+    def setPromptExportAsCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._promptExportContentToCsvAction = action
+        self._promptExportAsCsvAction = action
 
     def isEmptyChanged(self) -> None:
         super().isEmptyChanged()
@@ -541,7 +541,7 @@ class ListTable(gui.TableWidgetEx):
             # is csv rather than html. I think it's more likely to be
             # what the user actually wants
             if self.rowCount() > 0:
-                self.copyContentToClipboardAsCsv()
+                self.copyToClipboardAsCsv()
             return
 
         super().keyPressEvent(event)
@@ -551,19 +551,19 @@ class ListTable(gui.TableWidgetEx):
     # implementation inserts its action and the base classes
     # actions
     def fillContextMenu(self, menu):
-        menu.addAction(self.copyContentToClipboardAsCSvAction())
-        menu.addAction(self.copyContentToClipboardAsHtmlAction())
-        menu.addAction(self.copyViewToClipboardAction())
+        menu.addAction(self.copyToClipboardAsCSvAction())
+        menu.addAction(self.copyToClipboardAsHtmlAction())
+        menu.addAction(self.copyToClipboardAsImageAction())
         menu.addSeparator()
-        menu.addAction(self.promptExportContentToCsvAction())
-        menu.addAction(self.promptExportContentToHtmlAction())
+        menu.addAction(self.promptExportAsCsvAction())
+        menu.addAction(self.promptExportAsHtmlAction())
 
     def _syncListTableActions(self) -> None:
         hasContent = self.rowCount() > 0
-        if self._copyContentToClipboardAsCsvAction is not None:
-            self._copyContentToClipboardAsCsvAction.setEnabled(hasContent)
-        if self._promptExportContentToCsvAction is not None:
-            self._promptExportContentToCsvAction.setEnabled(hasContent)
+        if self._copyToClipboardAsCsvAction is not None:
+            self._copyToClipboardAsCsvAction.setEnabled(hasContent)
+        if self._promptExportAsCsvAction is not None:
+            self._promptExportAsCsvAction.setEnabled(hasContent)
 
     def _cacheColumnWidth(
             self,

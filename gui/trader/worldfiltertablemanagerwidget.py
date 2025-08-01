@@ -312,50 +312,50 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         if self._removeAllButton:
             self._removeAllButton.setAction(action=self._removeAllAction)
 
-    def copyContentToClipboardAsCSvAction(self) -> QtWidgets.QAction:
-        return self._filterTable.copyContentToClipboardAsCSvAction()
+    def copyToClipboardAsCSvAction(self) -> QtWidgets.QAction:
+        return self._filterTable.copyToClipboardAsCSvAction()
 
-    def setCopyContentToClipboardAsCsvAction(
+    def setCopyToClipboardAsCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._filterTable.setCopyContentToClipboardAsCsvAction(action)
+        self._filterTable.setCopyToClipboardAsCsvAction(action)
 
-    def promptExportContentToCsvAction(self) -> QtWidgets.QAction:
-        return self._filterTable.promptExportContentToCsvAction()
+    def promptExportAsCsvAction(self) -> QtWidgets.QAction:
+        return self._filterTable.promptExportAsCsvAction()
 
-    def setPromptExportContentToCsvAction(
+    def setPromptExportAsCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._filterTable.setPromptExportContentToCsvAction(action)
+        self._filterTable.setPromptExportAsCsvAction(action)
 
-    def copyContentToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
-        return self._filterTable.copyContentToClipboardAsHtmlAction()
+    def copyToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._filterTable.copyToClipboardAsHtmlAction()
 
-    def setCopyContentToClipboardAsHtmlAction(
+    def setCopyToClipboardAsHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._filterTable.setCopyContentToClipboardAsHtmlAction(action)
+        self._filterTable.setCopyToClipboardAsHtmlAction(action)
 
-    def copyViewToClipboardAction(self) -> QtWidgets.QAction:
-        self._filterTable.copyViewToClipboardAction()
+    def copyToClipboardAsImageAction(self) -> QtWidgets.QAction:
+        self._filterTable.copyToClipboardAsImageAction()
 
-    def setCopyViewToClipboardAction(
+    def setCopyToClipboardAsImageAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._filterTable.setCopyViewToClipboardAction(action)
+        self._filterTable.setCopyToClipboardAsImageAction(action)
 
-    def promptExportContentToHtmlAction(self) -> QtWidgets.QAction:
-        return self._filterTable.promptExportContentToHtmlAction()
+    def promptExportAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._filterTable.promptExportAsHtmlAction()
 
-    def setPromptExportContentToHtmlAction(
+    def setPromptExportAsHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._filterTable.setPromptExportContentToHtmlAction(action)
+        self._filterTable.setPromptExportAsHtmlAction(action)
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.promptAddNewAction())

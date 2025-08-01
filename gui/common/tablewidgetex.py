@@ -32,16 +32,16 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         super().__init__(*args, **kwargs)
         self._showFocusRect = False
 
-        self._copyContentToClipboardAsHtmlAction = QtWidgets.QAction('Copy as HTML', self)
-        self._copyContentToClipboardAsHtmlAction.setEnabled(False) # No content to copy
-        self._copyContentToClipboardAsHtmlAction.triggered.connect(self.copyContentToClipboardAsHtml)
+        self._copyToClipboardAsHtmlAction = QtWidgets.QAction('Copy as HTML', self)
+        self._copyToClipboardAsHtmlAction.setEnabled(False) # No content to copy
+        self._copyToClipboardAsHtmlAction.triggered.connect(self.copyToClipboardAsHtml)
 
-        self._copyViewToClipboardAction = QtWidgets.QAction('Copy as Image', self)
-        self._copyViewToClipboardAction.triggered.connect(self.copyViewToClipboard)
+        self._copyToClipboardAsImageAction = QtWidgets.QAction('Copy as Image', self)
+        self._copyToClipboardAsImageAction.triggered.connect(self.copyToClipboardAsImage)
 
-        self._promptExportContentToHtmlAction = QtWidgets.QAction('Export as HTML...', self)
-        self._promptExportContentToHtmlAction.setEnabled(False) # No content to copy
-        self._promptExportContentToHtmlAction.triggered.connect(self.promptExportContentToHtml)
+        self._promptExportAsHtmlAction = QtWidgets.QAction('Export as HTML...', self)
+        self._promptExportAsHtmlAction.setEnabled(False) # No content to copy
+        self._promptExportAsHtmlAction.triggered.connect(self.promptExportAsHtml)
 
         self._hookModel()
 
@@ -182,10 +182,10 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
         return content
 
-    def copyContentToClipboardAsHtml(self) -> None:
+    def copyToClipboardAsHtml(self) -> None:
         gui.setClipboardContent(content=self.contentToHtml())
 
-    def copyViewToClipboard(self) -> None:
+    def copyToClipboardAsImage(self) -> None:
         gui.setClipboardContent(content=self.grab())
 
     # TODO: Ideally I want some way derived classes can control what
@@ -195,7 +195,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
     # - If I do this I need to remember that construction objects
     # names can contain characters that aren't valid for different
     # OS
-    def promptExportContentToHtml(self) -> None:
+    def promptExportAsHtml(self) -> None:
         content = self.contentToHtml()
 
         path, _ = gui.FileDialogEx.getSaveFileName(
@@ -218,38 +218,38 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                 exception=ex)
             return
 
-    def copyContentToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
-        return self._copyContentToClipboardAsHtmlAction
+    def copyToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._copyToClipboardAsHtmlAction
 
-    def setCopyContentToClipboardAsHtmlAction(
+    def setCopyToClipboardAsHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._copyContentToClipboardAsHtmlAction = action
+        self._copyToClipboardAsHtmlAction = action
 
-    def copyViewToClipboardAction(self) -> QtWidgets.QAction:
-        return self._copyViewToClipboardAction
+    def copyToClipboardAsImageAction(self) -> QtWidgets.QAction:
+        return self._copyToClipboardAsImageAction
 
-    def setCopyViewToClipboardAction(
+    def setCopyToClipboardAsImageAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._copyViewToClipboardAction = action
+        self._copyToClipboardAsImageAction = action
 
-    def promptExportContentToHtmlAction(self) -> QtWidgets.QAction:
-        return self._promptExportContentToHtmlAction
+    def promptExportAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._promptExportAsHtmlAction
 
-    def setPromptExportContentToHtmlAction(
+    def setPromptExportAsHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._promptExportContentToHtmlAction = action
+        self._promptExportAsHtmlAction = action
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
-        menu.addAction(self.copyContentToClipboardAsHtmlAction())
-        menu.addAction(self.copyViewToClipboardAction())
+        menu.addAction(self.copyToClipboardAsHtmlAction())
+        menu.addAction(self.copyToClipboardAsImageAction())
         menu.addSeparator()
-        menu.addAction(self.promptExportContentToHtmlAction())
+        menu.addAction(self.promptExportAsHtmlAction())
 
     def displayContextMenu(self, pos: QtWidgets.QMenu) -> None:
         menu = QtWidgets.QMenu(self)
@@ -262,7 +262,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]) -> None:
         if event is not None and event.matches(QtGui.QKeySequence.StandardKey.Copy):
             if self.rowCount() > 0:
-                self.copyContentToClipboardAsHtml()
+                self.copyToClipboardAsHtml()
 
             # NOTE: Don't call base implementation as there is a default
             # handler that copies the content of the current cell to the
@@ -377,10 +377,10 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
     def _syncTableWidgetExActions(self) -> None:
         hasContent = self.rowCount() > 0 and self.columnCount() > 0
-        if self._copyContentToClipboardAsHtmlAction is not None:
-            self._copyContentToClipboardAsHtmlAction.setEnabled(hasContent)
-        if self._promptExportContentToHtmlAction is not None:
-            self._promptExportContentToHtmlAction.setEnabled(hasContent)
+        if self._copyToClipboardAsHtmlAction is not None:
+            self._copyToClipboardAsHtmlAction.setEnabled(hasContent)
+        if self._promptExportAsHtmlAction is not None:
+            self._promptExportAsHtmlAction.setEnabled(hasContent)
 
     def _htmlCellText(self, row: int, column: int) -> str:
         item = self.item(row, column)

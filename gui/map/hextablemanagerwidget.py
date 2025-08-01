@@ -598,50 +598,50 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def setShowAllOnMapAction(self, action: QtWidgets.QAction) -> None:
         self._hexTable.setShowAllOnMapAction(action)
 
-    def copyContentToClipboardAsCSvAction(self) -> QtWidgets.QAction:
-        return self._hexTable.copyContentToClipboardAsCSvAction()
+    def copyToClipboardAsCSvAction(self) -> QtWidgets.QAction:
+        return self._hexTable.copyToClipboardAsCSvAction()
 
-    def setCopyContentToClipboardAsCsvAction(
+    def setCopyToClipboardAsCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._hexTable.setCopyContentToClipboardAsCsvAction(action)
+        self._hexTable.setCopyToClipboardAsCsvAction(action)
 
-    def promptExportContentToCsvAction(self) -> QtWidgets.QAction:
-        return self._hexTable.promptExportContentToCsvAction()
+    def promptExportAsCsvAction(self) -> QtWidgets.QAction:
+        return self._hexTable.promptExportAsCsvAction()
 
-    def setPromptExportContentToCsvAction(
+    def setPromptExportAsCsvAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._hexTable.setPromptExportContentToCsvAction(action)
+        self._hexTable.setPromptExportAsCsvAction(action)
 
-    def copyContentToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
-        return self._hexTable.copyContentToClipboardAsHtmlAction()
+    def copyToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._hexTable.copyToClipboardAsHtmlAction()
 
-    def setCopyContentToClipboardAsHtmlAction(
+    def setCopyToClipboardAsHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._hexTable.setCopyContentToClipboardAsHtmlAction(action)
+        self._hexTable.setCopyToClipboardAsHtmlAction(action)
 
-    def copyViewToClipboardAction(self) -> QtWidgets.QAction:
-        self._hexTable.copyViewToClipboardAction()
+    def copyToClipboardAsImageAction(self) -> QtWidgets.QAction:
+        self._hexTable.copyToClipboardAsImageAction()
 
-    def setCopyViewToClipboardAction(
+    def setCopyToClipboardAsImageAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._hexTable.setCopyViewToClipboardAction(action)
+        self._hexTable.setCopyToClipboardAsImageAction(action)
 
-    def promptExportContentToHtmlAction(self) -> QtWidgets.QAction:
-        return self._hexTable.promptExportContentToHtmlAction()
+    def promptExportAsHtmlAction(self) -> QtWidgets.QAction:
+        return self._hexTable.promptExportAsHtmlAction()
 
-    def setPromptExportContentToHtmlAction(
+    def setPromptExportAsHtmlAction(
             self,
             action: QtWidgets.QAction
             ) -> None:
-        self._hexTable.setPromptExportContentToHtmlAction(action)
+        self._hexTable.setPromptExportAsHtmlAction(action)
 
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.promptAddLocationAction())
