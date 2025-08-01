@@ -37,9 +37,9 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         self._copyContentToClipboardAsHtmlAction.triggered.connect(self.copyContentToClipboardAsHtml)
 
         self._copyViewToClipboardAction = QtWidgets.QAction('Copy as Image', self)
-        self._copyViewToClipboardAction.triggered.connect(self.copViewToClipboard)
+        self._copyViewToClipboardAction.triggered.connect(self.copyViewToClipboard)
 
-        self._promptExportContentToHtmlAction = QtWidgets.QAction('Export to HTML...', self)
+        self._promptExportContentToHtmlAction = QtWidgets.QAction('Export as HTML...', self)
         self._promptExportContentToHtmlAction.setEnabled(False) # No content to copy
         self._promptExportContentToHtmlAction.triggered.connect(self.promptExportContentToHtml)
 
@@ -185,7 +185,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
     def copyContentToClipboardAsHtml(self) -> None:
         gui.setClipboardContent(content=self.contentToHtml())
 
-    def copViewToClipboard(self) -> None:
+    def copyViewToClipboard(self) -> None:
         gui.setClipboardContent(content=self.grab())
 
     # TODO: Ideally I want some way derived classes can control what
@@ -200,7 +200,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
         path, _ = gui.FileDialogEx.getSaveFileName(
             parent=self,
-            caption='Export to HTML',
+            caption='Export as HTML',
             filter=f'{gui.HTMLFileFilter};;{gui.AllFileFilter}',
             defaultFileName='export.html')
         if not path:

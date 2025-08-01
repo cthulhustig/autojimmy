@@ -524,7 +524,7 @@ class WebMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
-    def createSnapshot(self) -> QtGui.QPixmap:
+    def createPixmap(self) -> QtGui.QPixmap:
         view = self._mapWidget.page().view()
         size = view.size()
 

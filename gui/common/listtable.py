@@ -105,7 +105,7 @@ class ListTable(gui.TableWidgetEx):
         self._copyContentToClipboardAsCsvAction.setEnabled(False) # No content to copy
         self._copyContentToClipboardAsCsvAction.triggered.connect(self.copyContentToClipboardAsCsv)
 
-        self._promptExportContentToCsvAction = QtWidgets.QAction('Export to CSV...', self)
+        self._promptExportContentToCsvAction = QtWidgets.QAction('Export as CSV...', self)
         self._promptExportContentToCsvAction.setEnabled(False) # No content to copy
         self._promptExportContentToCsvAction.triggered.connect(self.promptExportContentToCsv)
 
@@ -451,7 +451,7 @@ class ListTable(gui.TableWidgetEx):
 
         path, _ = gui.FileDialogEx.getSaveFileName(
             parent=self,
-            caption='Export to CSV',
+            caption='Export as CSV',
             filter=f'{gui.CSVFileFilter};;{gui.AllFileFilter}',
             defaultFileName='export.csv')
         if not path:

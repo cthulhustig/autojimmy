@@ -1269,7 +1269,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
-    def createSnapshot(self) -> QtGui.QPixmap:
+    def createPixmap(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
 
         rendering = self._rendering

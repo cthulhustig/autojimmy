@@ -1980,8 +1980,8 @@ class JumpRouteWindow(gui.WindowWidget):
         action = subMenu.addAction('Jump Route...')
         action.setEnabled(self._jumpRoute != None)
         action.triggered.connect(self._exportJumpRoute)
-        action = subMenu.addAction('Screenshot...')
-        action.triggered.connect(self._exportMapScreenshot)
+        action = subMenu.addAction('Image...')
+        action.triggered.connect(self._exportMapImage)
         menu.addMenu(subMenu)
 
         menu.exec(QtGui.QCursor.pos())
@@ -2177,9 +2177,9 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _exportMapScreenshot(self) -> None:
+    def _exportMapImage(self) -> None:
         try:
-            snapshot = self._mapWidget.createSnapshot()
+            snapshot = self._mapWidget.createPixmap()
         except Exception as ex:
             message = 'An exception occurred while generating the snapshot'
             logging.error(msg=message, exc_info=ex)

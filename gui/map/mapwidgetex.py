@@ -1594,8 +1594,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._mapWidget.setToolTipCallback(callback=callback)
 
-    def createSnapshot(self) -> QtGui.QPixmap:
-        return self._mapWidget.createSnapshot()
+    def createPixmap(self) -> QtGui.QPixmap:
+        return self._mapWidget.createPixmap()
 
     def hasSelection(self) -> bool:
         return len(self._selectedHexes) > 0
