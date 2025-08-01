@@ -357,6 +357,15 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             ) -> None:
         self._filterTable.setPromptExportAsHtmlAction(action)
 
+    def promptExportAsImageAction(self) -> QtWidgets.QAction:
+        return self._filterTable.promptExportAsImageAction()
+
+    def setPromptExportAsImageAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._filterTable.setPromptExportAsImageAction(action)
+
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.promptAddNewAction())
         menu.addAction(self.promptEditSelectedAction())

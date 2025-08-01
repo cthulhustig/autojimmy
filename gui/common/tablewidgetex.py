@@ -37,11 +37,16 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         self._copyToClipboardAsHtmlAction.triggered.connect(self.copyToClipboardAsHtml)
 
         self._copyToClipboardAsImageAction = QtWidgets.QAction('Copy as Image', self)
+        self._copyToClipboardAsImageAction.setEnabled(False) # No content to copy
         self._copyToClipboardAsImageAction.triggered.connect(self.copyToClipboardAsImage)
 
         self._promptExportAsHtmlAction = QtWidgets.QAction('Export as HTML...', self)
-        self._promptExportAsHtmlAction.setEnabled(False) # No content to copy
+        self._promptExportAsHtmlAction.setEnabled(False) # No content to export
         self._promptExportAsHtmlAction.triggered.connect(self.promptExportAsHtml)
+
+        self._promptExportAsImageAction = QtWidgets.QAction('Export as Image...', self)
+        self._promptExportAsImageAction.setEnabled(False) # No content to export
+        self._promptExportAsImageAction.triggered.connect(self.promptExportAsImage)
 
         self._hookModel()
 
@@ -218,6 +223,33 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                 exception=ex)
             return
 
+    def promptExportAsImage(self) -> None:
+        path, filter = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Export as Image',
+            filter=f'{gui.BMPFileFilter};;{gui.JPEGFileFilter};;{gui.PNGFileFilter};;{gui.X11BitmapFileFilter};;{gui.X11PixmapFileFilter}',
+            defaultFileName='export.png')
+        if not path:
+            return # User cancelled
+
+        if filter == gui.BMPFileFilter:
+            format = 'BMP'
+        elif filter == gui.JPEGFileFilter:
+            format = 'JPG'
+        elif filter == gui.PNGFileFilter:
+            format = 'PNG'
+        elif filter == gui.X11BitmapFileFilter:
+            format = 'XBM'
+        elif filter == gui.X11PixmapFileFilter:
+            format = 'XPM'
+        else:
+            # TODO: Handle error
+            return
+
+        image = self.grab()
+        if not image.save(path, format):
+            pass # TODO: Handle error
+
     def copyToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
         return self._copyToClipboardAsHtmlAction
 
@@ -245,11 +277,24 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             ) -> None:
         self._promptExportAsHtmlAction = action
 
+    def promptExportAsImageAction(self) -> QtWidgets.QAction:
+        return self._promptExportAsImageAction
+
+    def setPromptExportAsImageAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._promptExportAsImageAction = action
+
+    # TODO: This and every other fillContextMenu implementation needs to check
+    # that the action is not None before adding it to the menu (Qt prints a
+    # message to the terminal if it is None)
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.copyToClipboardAsHtmlAction())
         menu.addAction(self.copyToClipboardAsImageAction())
         menu.addSeparator()
         menu.addAction(self.promptExportAsHtmlAction())
+        menu.addAction(self.promptExportAsImageAction())
 
     def displayContextMenu(self, pos: QtWidgets.QMenu) -> None:
         menu = QtWidgets.QMenu(self)
@@ -377,10 +422,14 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
     def _syncTableWidgetExActions(self) -> None:
         hasContent = self.rowCount() > 0 and self.columnCount() > 0
-        if self._copyToClipboardAsHtmlAction is not None:
+        if self._copyToClipboardAsHtmlAction:
             self._copyToClipboardAsHtmlAction.setEnabled(hasContent)
-        if self._promptExportAsHtmlAction is not None:
+        if self._copyToClipboardAsImageAction:
+            self._copyToClipboardAsImageAction.setEnabled(hasContent)
+        if self._promptExportAsHtmlAction:
             self._promptExportAsHtmlAction.setEnabled(hasContent)
+        if self._promptExportAsImageAction:
+            self._promptExportAsImageAction.setEnabled(hasContent)
 
     def _htmlCellText(self, row: int, column: int) -> str:
         item = self.item(row, column)

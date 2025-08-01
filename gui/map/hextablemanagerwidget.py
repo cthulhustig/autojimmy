@@ -643,6 +643,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> None:
         self._hexTable.setPromptExportAsHtmlAction(action)
 
+    def promptExportAsImageAction(self) -> QtWidgets.QAction:
+        return self._hexTable.promptExportAsImageAction()
+
+    def setPromptExportAsImageAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._hexTable.setPromptExportAsImageAction(action)
+
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         menu.addAction(self.promptAddLocationAction())
         menu.addAction(self.promptAddNearbyAction())

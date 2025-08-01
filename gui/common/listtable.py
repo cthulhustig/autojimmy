@@ -557,6 +557,7 @@ class ListTable(gui.TableWidgetEx):
         menu.addSeparator()
         menu.addAction(self.promptExportAsCsvAction())
         menu.addAction(self.promptExportAsHtmlAction())
+        menu.addAction(self.promptExportAsImageAction())
 
     def _syncListTableActions(self) -> None:
         hasContent = self.rowCount() > 0
