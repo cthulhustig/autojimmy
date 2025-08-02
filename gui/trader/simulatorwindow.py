@@ -863,7 +863,7 @@ class SimulatorWindow(gui.WindowWidget):
                 self._mapWidget.highlightHex(hex=self._currentHex)
                 self._mapWidget.centerOnHex(
                     hex=self._currentHex,
-                    linearScale=None) # Keep current scale
+                    scale=None) # Keep current scale
                 self._mapWidget.setInfoHex(hex=self._currentHex)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message

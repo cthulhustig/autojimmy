@@ -1461,12 +1461,12 @@ class MapWidgetEx(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
-            linearScale=linearScale,
+            scale=scale,
             immediate=immediate)
 
     def centerOnHexes(
@@ -1966,7 +1966,8 @@ class MapWidgetEx(QtWidgets.QWidget):
                 sectorY=travellermap.ReferenceSectorY,
                 offsetX=travellermap.ReferenceHexX,
                 offsetY=travellermap.ReferenceHexY),
-            linearScale=MapWidgetEx._HomeLinearScale)
+            scale=travellermap.Scale(
+                linear=MapWidgetEx._HomeLinearScale))
 
     def _mapStyleChanged(self, style: travellermap.Style) -> None:
         self.setMapStyle(style=style)

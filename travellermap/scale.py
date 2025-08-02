@@ -9,25 +9,35 @@ def logScaleToLinearScale(logScale: float) -> float:
 
 class Scale(object):
     @typing.overload
-    def __init__(self, other: 'Scale') -> None: ...
+    def __init__(self, linear: 'float') -> None: ...
     @typing.overload
-    def __init__(self, value: float, linear: bool) -> None: ...
+    def __init__(self, log: 'float') -> None: ...
+    @typing.overload
+    def __init__(self, other: 'Scale') -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         argCount = len(args) + len(kwargs)
-        if argCount == 1:
-            other = args[0] if len(args) > 0 else kwargs['other']
+        if argCount != 1:
+            raise ValueError('Invalid number of arguments')
+
+        if args:
+            other = args[0]
+        else:
+            other = kwargs.get('other')
+
+        if other is not None:
             if not isinstance(other, Scale):
                 raise TypeError('The other parameter must be a Scale')
             self._linear = other._linear
             self._log = other._log
-        elif argCount == 2:
-            value = float(args[0] if len(args) > 0 else kwargs['value'])
-            linear = bool(args[1] if len(args) > 1 else kwargs['linear'])
-            self._linear = value if linear else None
-            self._log = value if not linear else None
         else:
-            raise ValueError('Invalid number of arguments')
+            linear = kwargs.get('linear')
+            log = kwargs.get('log')
+            if linear is None and log is None:
+                raise ValueError('Invalid arguments')
+
+            self._linear = float(linear) if linear is not None else None
+            self._log = float(log) if log is not None else None
 
     @property
     def linear(self) -> float:
@@ -39,7 +49,7 @@ class Scale(object):
     def linear(self, value: float) -> None:
         if value == self._linear:
             return # Nothing to do
-        self._linear = value
+        self._linear = float(value)
         if self._log is not None:
             self._log = None
 
@@ -53,6 +63,36 @@ class Scale(object):
     def log(self, value: float) -> None:
         if value == self._log:
             return # Nothing to do
-        self._log = value
+        self._log = float(value)
         if self._linear is not None:
             self._linear = None
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Scale):
+            return self.log == other.log
+        return NotImplemented
+
+    def __lt__(self, other) -> bool:
+        if isinstance(other, Scale):
+            return self.log < other.log
+        return NotImplemented
+
+    def __gt__(self, other) -> bool:
+        if isinstance(other, Scale):
+            return self.log > other.log
+        return NotImplemented
+
+    def __le__(self, other) -> bool:
+        if isinstance(other, Scale):
+            return self.log <= other.log
+        return NotImplemented
+
+    def __ge__(self, other) -> bool:
+        if isinstance(other, Scale):
+            return self.log >= other.log
+        return NotImplemented
+
+    def __ne__(self, other) -> bool:
+        if isinstance(other, Scale):
+            return self.log != other.log
+        return NotImplemented

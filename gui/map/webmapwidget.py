@@ -260,14 +260,14 @@ class WebMapWidget(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
             # This class doesn't support skipping animations but it needs to take
             # the value for comparability with LocalMapWidget
             immediate: bool = False
             ) -> None:
         sectorX, sectorY, offsetX, offsetY = hex.relative()
-        if linearScale != None:
-            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {offsetX}, {offsetY}, {{scale: {linearScale}}})'
+        if scale != None:
+            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {offsetX}, {offsetY}, {{scale: {scale.linear}}})'
         else:
             # When keeping the current scale, it's important to use map.scale rather than extracting
             # the scale from the current url. This is required in order for movements to be animated

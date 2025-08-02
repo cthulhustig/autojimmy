@@ -43,11 +43,11 @@ class MapWindow(gui.WindowWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64 # None keeps current scale
+            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
-            linearScale=linearScale,
+            scale=scale,
             immediate=self.isHidden())
 
     def centerOnHexes(
