@@ -648,11 +648,11 @@ class SimulatorWindow(gui.WindowWidget):
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._startWorldWidget.setMapStyle(style=newValue)
-            self._mapWidget.setStyle(style=newValue)
+            self._mapWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=option)
             self._startWorldWidget.setMapOptions(options=newValue)
-            self._mapWidget.setOptions(options=newValue)
+            self._mapWidget.setMapOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._startWorldWidget.setMapRendering(rendering=newValue)
             self._mapWidget.setRendering(rendering=newValue)

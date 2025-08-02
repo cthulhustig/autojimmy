@@ -548,13 +548,13 @@ class _LegendWidget(QtWidgets.QWidget):
         self.syncContent()
         self.adjustSize()
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
         self._style = style
         self.syncContent()
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1329,31 +1329,31 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._infoWidget.setRules(rules=self._rules)
 
-    def style(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.Style:
         return self._style
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
 
         self._style = style
-        self._mapWidget.setStyle(style=self._style)
-        self._legendWidget.setStyle(style=self._style)
+        self._mapWidget.setMapStyle(style=self._style)
+        self._legendWidget.setMapStyle(style=self._style)
         self._styleActionGroup.setCurrent(current=self._style)
 
         self.mapStyleChanged.emit(self._style)
 
-    def options(self) -> typing.List[travellermap.Option]:
+    def mapOptions(self) -> typing.List[travellermap.Option]:
         return list(self._options)
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
 
         self._options = options
-        self._mapWidget.setOptions(options=self._options)
-        self._legendWidget.setOptions(options=self._options)
+        self._mapWidget.setMapOptions(options=self._options)
+        self._legendWidget.setMapOptions(options=self._options)
         self._galacticDirectionsAction.setChecked(
             travellermap.Option.GalacticDirections in self._options)
         self._sectorGridAction.setChecked(
@@ -1969,7 +1969,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             linearScale=MapWidgetEx._HomeLinearScale)
 
     def _mapStyleChanged(self, style: travellermap.Style) -> None:
-        self.setStyle(style=style)
+        self.setMapStyle(style=style)
 
     def _mapOptionChanged(self, option: travellermap.Option, enabled: bool) -> None:
         if (enabled and option in self._options) or (not enabled and option not in self._options):
@@ -1981,7 +1981,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         else:
             newOptions.remove(option)
 
-        self.setOptions(options=newOptions)
+        self.setMapOptions(options=newOptions)
 
     def _renderingChanged(self, rendering: app.MapRendering) -> None:
         self.setRendering(rendering=rendering)

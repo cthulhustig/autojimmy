@@ -806,11 +806,11 @@ class WorldSearchWindow(gui.WindowWidget):
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._worldRadiusSearchWidget.setMapStyle(style=newValue)
-            self._mapWidget.setStyle(style=newValue)
+            self._mapWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
             self._worldRadiusSearchWidget.setMapOptions(options=newValue)
-            self._mapWidget.setOptions(options=newValue)
+            self._mapWidget.setMapOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._worldRadiusSearchWidget.setMapRendering(rendering=newValue)
             self._mapWidget.setRendering(rendering=newValue)

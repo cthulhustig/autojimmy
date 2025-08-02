@@ -1453,13 +1453,13 @@ class JumpRouteWindow(gui.WindowWidget):
             self._selectStartFinishWidget.setMapStyle(style=newValue)
             self._waypointsWidget.setMapStyle(style=newValue)
             self._avoidHexesWidget.setMapStyle(style=newValue)
-            self._mapWidget.setStyle(style=newValue)
+            self._mapWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
             self._selectStartFinishWidget.setMapOptions(options=newValue)
             self._waypointsWidget.setMapOptions(options=newValue)
             self._avoidHexesWidget.setMapOptions(options=newValue)
-            self._mapWidget.setOptions(options=newValue)
+            self._mapWidget.setMapOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._selectStartFinishWidget.setMapRendering(rendering=newValue)
             self._waypointsWidget.setMapRendering(rendering=newValue)

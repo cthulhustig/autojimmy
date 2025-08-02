@@ -133,9 +133,9 @@ class MapWindow(gui.WindowWidget):
         elif option is app.ConfigOption.Rules:
             self._mapWidget.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
-            self._mapWidget.setStyle(style=newValue)
+            self._mapWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
-            self._mapWidget.setOptions(options=newValue)
+            self._mapWidget.setMapOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._mapWidget.setRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:

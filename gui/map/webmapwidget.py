@@ -235,14 +235,14 @@ class WebMapWidget(QtWidgets.QWidget):
         self._milieu = milieu
         self.reload()
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
 
         self._style = style
         self.reload()
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return

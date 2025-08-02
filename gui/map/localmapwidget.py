@@ -1004,10 +1004,10 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def style(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.Style:
         return self._style
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
 
@@ -1016,10 +1016,10 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def options(self) -> typing.List[travellermap.Option]:
+    def mapOptions(self) -> typing.List[travellermap.Option]:
         return list(self._options)
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
