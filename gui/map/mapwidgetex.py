@@ -1208,12 +1208,12 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._filledBordersAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._filledBordersAction)
 
-        self._dmUnofficialAction = _MapOptionAction(
+        self._dimUnofficialAction = _MapOptionAction(
             option=travellermap.Option.DimUnofficial)
-        self._dmUnofficialAction.setChecked(
+        self._dimUnofficialAction.setChecked(
             travellermap.Option.DimUnofficial in self._options)
-        self._dmUnofficialAction.optionChanged.connect(self._mapOptionChanged)
-        appearanceConfigLayout.addToggleAction(self._dmUnofficialAction)
+        self._dimUnofficialAction.optionChanged.connect(self._mapOptionChanged)
+        appearanceConfigLayout.addToggleAction(self._dimUnofficialAction)
 
         self._configWidget.addSection(
             section='Appearance',
@@ -1376,7 +1376,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             travellermap.Option.WorldColours in self._options)
         self._filledBordersAction.setChecked(
             travellermap.Option.FilledBorders in self._options)
-        self._dmUnofficialAction.setChecked(
+        self._dimUnofficialAction.setChecked(
             travellermap.Option.DimUnofficial in self._options)
         self._mainsOverlayAction.setChecked(
             travellermap.Option.MainsOverlay in self._options)
