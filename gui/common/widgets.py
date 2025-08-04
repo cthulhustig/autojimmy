@@ -1116,7 +1116,17 @@ class TreeWidgetEx(QtWidgets.QTreeWidget):
         self.setItemWidget(item, column, container)
 
 class ScrollAreaEx(QtWidgets.QScrollArea):
+    viewportChanged = QtCore.pyqtSignal(QtCore.QRect)
+
     _StateVersion = 'ScrollAreaEx_v1'
+
+    def resizeEvent(self, event: typing.Optional[QtGui.QResizeEvent]):
+        if event:
+            viewport = self.viewport()
+            if viewport:
+                self.viewportChanged.emit(viewport.rect())
+
+        return super().resizeEvent(event)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()

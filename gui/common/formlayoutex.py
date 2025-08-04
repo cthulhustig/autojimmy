@@ -375,6 +375,19 @@ class FormLayoutEx(QtWidgets.QFormLayout):
         if old:
             old.removeEventFilter(self._parentChangeWatcher)
 
+    @typing.overload
+    def insertRow(self, row: int, label: typing.Optional[QtWidgets.QWidget], field: typing.Optional[QtWidgets.QWidget]) -> None: ...
+    @typing.overload
+    def insertRow(self, row: int, label: typing.Optional[QtWidgets.QWidget], field: typing.Optional[QtWidgets.QLayout]) -> None: ...
+    @typing.overload
+    def insertRow(self, row: int, labelText: typing.Optional[str], field: typing.Optional[QtWidgets.QWidget]) -> None: ...
+    @typing.overload
+    def insertRow(self, row: int, labelText: typing.Optional[str], field: typing.Optional[QtWidgets.QLayout]) -> None: ...
+    @typing.overload
+    def insertRow(self, row: int, widget: typing.Optional[QtWidgets.QWidget]) -> None: ...
+    @typing.overload
+    def insertRow(self, row: int, layout: typing.Optional[QtWidgets.QLayout]) -> None: ...
+
     def insertRow(self, *args) -> None:
         count = self.rowCount()
 
@@ -394,6 +407,19 @@ class FormLayoutEx(QtWidgets.QFormLayout):
 
         if field:
             field.installEventFilter(self._parentChangeWatcher)
+
+    @typing.overload
+    def addRow(self, label: typing.Optional[QtWidgets.QWidget], field: typing.Optional[QtWidgets.QWidget]) -> None: ...
+    @typing.overload
+    def addRow(self, label: typing.Optional[QtWidgets.QWidget], field: typing.Optional[QtWidgets.QLayout]) -> None: ...
+    @typing.overload
+    def addRow(self, labelText: typing.Optional[str], field: typing.Optional[QtWidgets.QWidget]) -> None: ...
+    @typing.overload
+    def addRow(self, labelText: typing.Optional[str], field: typing.Optional[QtWidgets.QLayout]) -> None: ...
+    @typing.overload
+    def addRow(self, widget: typing.Optional[QtWidgets.QWidget]) -> None: ...
+    @typing.overload
+    def addRow(self, layout: typing.Optional[QtWidgets.QLayout]) -> None: ...
 
     def addRow(self, *args) -> None:
         row = self.rowCount()
