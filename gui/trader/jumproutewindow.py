@@ -1897,17 +1897,22 @@ class JumpRouteWindow(gui.WindowWidget):
         menu.addAction(showAllRefuellingCalculationsAction)
         menu.exec(self._refuellingPlanTable.viewport().mapToGlobal(point))
 
-    # TODO: There is a discrepancy between how this menu is structured and
-    # how other menus are structured
-    # TODO: I also need to push the screenshot menu item into the map
-    # widget so it's available on all maps not just the jump route one
+    # TODO: When I get rid of the web map widget I can switch this to use
+    # the standard custom context menu rather than the maps right click
+    # event. It can't be done now as it would require an non-async way
+    # to resolve the widget position to a hex which isn't possible with
+    # the web map widget.
+    # - I think I would need to implement a hexAt function for the local map
+    # widget but it should be pretty straight forward
+    # - I would also need to update this function to handle the fact the
+    # hex could in theory be null (menu should still display, just with
+    # some options disabled)
     def _showTravellerMapContextMenu(
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if not hex:
             return
-
         isCurrentWaypoint = self._waypointsWidget.containsHex(hex=hex)
         isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
 
@@ -1919,70 +1924,106 @@ class JumpRouteWindow(gui.WindowWidget):
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
-        menu = QtWidgets.QMenu()
+        actions: typing.List[QtWidgets.QAction] = []
 
-        action = menu.addAction('Recalculate Jump Route')
+        action = QtWidgets.QAction('Recalculate Jump Route', self)
         action.setEnabled(startHex != None and finishHex != None)
         action.triggered.connect(self._calculateJumpRoute)
+        actions.append(action)
 
-        action = menu.addAction('Show Location Details...')
+        action = QtWidgets.QAction('Show Location Details...', self)
         action.triggered.connect(lambda: self._showHexDetails([hex]))
+        actions.append(action)
 
-        subMenu = QtWidgets.QMenu('Start/Finish', self)
-        action = subMenu.addAction('Set Start Location')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Set Start Location', self)
         action.setEnabled(isValidStartFinish)
         action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(hex=hex))
-        action = subMenu.addAction('Set Finish Location')
+        actions.append(action)
+
+        action = QtWidgets.QAction('Set Finish Location', self)
         action.setEnabled(isValidStartFinish)
         action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(hex=hex))
-        action = subMenu.addAction('Swap Start && Finish Locations')
+        actions.append(action)
+
+        action = QtWidgets.QAction('Swap Start && Finish Locations', self)
         action.setEnabled(startHex != None and finishHex != None)
         action.triggered.connect(
             lambda: self._selectStartFinishWidget.setHexes(startHex=finishHex, finishHex=startHex))
-        menu.addMenu(subMenu)
+        actions.append(action)
 
-        subMenu = QtWidgets.QMenu('Waypoints', self)
-        action = subMenu.addAction('Add Location')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Add Waypoint Location', self)
         action.setEnabled(isValidWaypoint)
         action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
-        action = subMenu.addAction('Remove Location')
-        action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
-        action.setEnabled(isCurrentWaypoint)
-        menu.addMenu(subMenu)
+        actions.append(action)
 
-        subMenu = QtWidgets.QMenu('Avoid List', self)
-        action = subMenu.addAction('Add Location')
+        action = QtWidgets.QAction('Remove Waypoint Location', self)
+        action.setEnabled(isCurrentWaypoint)
+        action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
+        actions.append(action)
+
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Add Avoid Location', self)
         action.setEnabled(isValidAvoidHex)
         action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
-        action = subMenu.addAction('Remove Location')
+        actions.append(action)
+
+        action = QtWidgets.QAction('Remove Avoid Location', self)
         action.setEnabled(isCurrentAvoidHex)
         action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
-        menu.addMenu(subMenu)
+        actions.append(action)
 
-        subMenu = QtWidgets.QMenu('Zoom To', self)
-        action = subMenu.addAction('Start Location')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Show Start Location', self)
         action.setEnabled(startHex != None)
         action.triggered.connect(lambda: self._showHexOnMap(hex=startHex))
-        action = subMenu.addAction('Finish Location')
+        actions.append(action)
+
+        action = QtWidgets.QAction('Show Finish Location', self)
         action.setEnabled(finishHex != None)
         action.triggered.connect(lambda: self._showHexOnMap(hex=finishHex))
-        action = subMenu.addAction('Jump Route')
+        actions.append(action)
+
+        action = QtWidgets.QAction('Show Jump Route', self)
         action.setEnabled(self._jumpRoute != None)
         action.triggered.connect(lambda: self._showJumpRouteOnMap())
-        menu.addMenu(subMenu)
+        actions.append(action)
 
-        subMenu = QtWidgets.QMenu('Import', self)
-        action = subMenu.addAction('Jump Route...')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Import Jump Route...', self)
         action.triggered.connect(self._importJumpRoute)
-        menu.addMenu(subMenu)
+        actions.append(action)
 
-        subMenu = QtWidgets.QMenu('Export', self)
-        action = subMenu.addAction('Jump Route...')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Export Jump Route...', self)
         action.setEnabled(self._jumpRoute != None)
         action.triggered.connect(self._exportJumpRoute)
-        action = subMenu.addAction('Image...')
-        action.triggered.connect(self._exportMapImage)
-        menu.addMenu(subMenu)
+        actions.append(action)
+
+        menu = QtWidgets.QMenu()
+        self._mapWidget.fillContextMenu(menu)
+
+        helper = gui.MenuHelper(menu)
+        helper.prependActions(actions)
 
         menu.exec(QtGui.QCursor.pos())
 
@@ -2172,52 +2213,6 @@ class JumpRouteWindow(gui.WindowWidget):
         except Exception as ex:
             message = f'Failed to write jump route to "{dlg.filePath()}"'
             logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _exportMapImage(self) -> None:
-        try:
-            snapshot = self._mapWidget.createPixmap()
-        except Exception as ex:
-            message = 'An exception occurred while generating the snapshot'
-            logging.error(msg=message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        # https://doc.qt.io/qt-5/qpixmap.html#reading-and-writing-image-files
-        _SupportedFormats = {
-            'Bitmap (*.bmp)': 'bmp',
-            'JPEG (*.jpg *.jpeg)': 'jpg',
-            'PNG (*.png)': 'png',
-            'Portable Pixmap (*.ppm)': 'ppm',
-            'X11 Bitmap (*.xbm)': 'xbm',
-            'X11 Pixmap (*.xpm)': 'xpm'}
-
-        path, filter = QtWidgets.QFileDialog.getSaveFileName(
-            parent=self,
-            caption='Export Snapshot',
-            filter=';;'.join(_SupportedFormats.keys()))
-        if not path:
-            return # User cancelled
-
-        format = _SupportedFormats.get(filter)
-        if format is None:
-            message = f'Unable to save unknown format "{filter}"'
-            logging.error(msg=message)
-            gui.MessageBoxEx.critical(message)
-            return
-
-        try:
-            if not snapshot.save(path, format):
-                gui.MessageBoxEx.critical(f'Failed to save snapshot to "{path}"')
-        except Exception as ex:
-            message = f'An exception occurred while saving the snapshot to "{path}"'
-            logging.error(msg=message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,

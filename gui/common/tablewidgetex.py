@@ -300,7 +300,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         menu.addAction(self.promptExportAsHtmlAction())
         menu.addAction(self.promptExportAsImageAction())
 
-    def displayContextMenu(self, pos: QtWidgets.QMenu) -> None:
+    def displayContextMenu(self, pos: QtCore.QPoint) -> None:
         menu = QtWidgets.QMenu(self)
         self.fillContextMenu(menu=menu)
 

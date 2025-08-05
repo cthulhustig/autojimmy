@@ -1,80 +1,120 @@
-import enum
 import typing
 from PyQt5 import QtWidgets
 
-# TODO: Delete this if it ends up not being used
 class MenuHelper(object):
-    class Position(enum.Enum):
-        First = 0
-        Last = 1
-
-    def __init__(
-            self,
-            menu: QtWidgets.QMenu
-            ) -> None:
-        super().__init__()
+    def __init__(self, menu: QtWidgets.QMenu) -> None:
         self._menu = menu
 
-    def addAction(
+    def prependActions(
             self,
-            action: QtWidgets.QAction,
-            path: typing.Optional[typing.Sequence[str]] = None,
-            position: 'MenuHelper.Position' = Position.Last
+            actions: typing.Iterable[QtWidgets.QAction]
             ) -> None:
-        if path:
-            menu = self._findMenu(
-                path=path,
-                menu=self._menu)
+        existing = self._menu.actions()
+        if existing:
+            before = existing[0]
+            self._menu.insertActions(before, actions)
         else:
-            menu = self._menu
+            self._menu.addActions(actions)
 
-        actions = menu.actions()
-        if not actions:
-            menu.addAction(action)
-
-        if position is MenuHelper.Position.First:
-            menu.insertAction(actions[0], action)
-        elif position is MenuHelper.Position.Last:
-            menu.addAction(action)
-
-    def addSeparator(
+    def prependAction(
             self,
-            path: typing.Optional[typing.Sequence[str]] = None,
-            position: 'MenuHelper.Position' = Position.Last
+            action: QtWidgets.QAction
             ) -> None:
-        if path:
-            menu = self._findMenu(
-                path=path,
-                menu=self._menu)
-        else:
-            menu = self._menu
+        self.prependActions(actions=[action])
 
-        actions = menu.actions()
-        if not actions:
-            menu.addSeparator()
-
-        if position is MenuHelper.Position.First:
-            menu.insertSeparator(actions[0])
-        elif position is MenuHelper.Position.Last:
-            menu.addSeparator()
-
-    def _findMenu(
+    def appendActions(
             self,
-            path: typing.Sequence[str],
-            menu: QtWidgets.QMenu
-            ) -> QtWidgets.QMenu:
-        if not path:
-            return menu
+            actions: typing.Iterable[QtWidgets.QAction]) -> None:
+        self._menu.addActions(actions)
 
-        segment = path[0]
-        remaining = path[1:]
+    def appendAction(
+            self,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._menu.addAction(action)
 
-        # https://stackoverflow.com/questions/9399840/how-to-iterate-through-a-menus-actions-in-qt
-        for action in menu.actions():
-            child = action.menu()
-            if child is not None and child.title() == segment:
-               return self._findMenu(path=remaining, menu=child)
+    def insertActionsBefore(
+            self,
+            before: QtWidgets.QAction,
+            actions: typing.Iterable[QtWidgets.QAction]
+            ) -> None:
+        self._menu.insertActions(before, actions)
 
-        child = QtWidgets.QMenu(segment, menu)
-        menu.addMenu(child)
-        return self._findMenu(path=remaining, menu=child)
+    def insertActionBefore(
+            self,
+            before: QtWidgets.QAction,
+            action: QtWidgets.QAction
+            ) -> None:
+        self._menu.insertAction(before, action)
+
+    def insertActionsAfter(
+            self,
+            after: QtWidgets.QAction,
+            actions: typing.Iterable[QtWidgets.QAction]
+            ) -> None:
+        existing = self._menu.actions()
+        count = len(existing)
+        for i in range(count):
+            if existing[i] == after:
+                if i == count - 1:
+                    # The after action is the last item in the menu so append
+                    # the new action
+                    self._menu.addActions(actions)
+                else:
+                    before = existing[i + 1]
+                    self._menu.insertActions(before, actions)
+                return
+
+        # The after action wasn't found so just add the action to the end
+        # of the menu
+        self._menu.addActions(actions)
+
+    def insertActionAfter(
+            self,
+            after: QtWidgets.QAction,
+            action: QtWidgets.QAction
+            ) -> None:
+        self.insertActionsAfter(
+            after=after,
+            actions=[action])
+
+    def prependSeparator(self) -> None:
+        existing = self._menu.actions()
+        if existing:
+            before = existing[0]
+            self._menu.insertSeparator(before)
+        else:
+            self._menu.addSeparator()
+
+    def appendSeparator(self) -> None:
+        self._menu.addSeparator()
+
+    def insertSeparatorBefore(
+            self,
+            before: QtWidgets.QAction
+            ) -> None:
+        self._menu.insertSeparator(before)
+
+    def insertSeparatorAfter(
+            self,
+            after: QtWidgets.QAction
+            ) -> None:
+        existing = self._menu.actions()
+        count = len(existing)
+        for i in range(count):
+            if existing[i] == after:
+                if i == count - 1:
+                    # The after action is the last item in the menu so append
+                    # the new action
+                    self._menu.addSeparator()
+                else:
+                    before = existing[i + 1]
+                    self._menu.insertSeparator(before)
+                return
+
+        # The after action wasn't found so just add the separator to the end
+        # of the menu
+        self._menu.addSeparator()
+
+    def removeAction(self, action: QtWidgets.QAction) -> None:
+        self._menu.removeAction(action)

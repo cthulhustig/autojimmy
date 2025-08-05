@@ -937,6 +937,9 @@ class MapWidgetEx(QtWidgets.QWidget):
         SingleSelect = 1
         MultiSelect = 2
 
+    class MenuAction(enum.Enum):
+        ExportImage = 0
+
     _StateVersion = 'MapWidgetEx_v1'
 
     _ControlWidgetInset = 20
@@ -1306,6 +1309,14 @@ class MapWidgetEx(QtWidgets.QWidget):
             content=overlayConfigLayout)
 
         self._configureOverlayControls()
+
+        self._menuActions: typing.Dict[typing.Tuple[enum.Enum, QtWidgets.QAction]] = {}
+
+        action = QtWidgets.QAction(
+            'Export Image...',
+            self)
+        action.triggered.connect(self.promptExportImage)
+        self.setMenuAction(MapWidgetEx.MenuAction.ExportImage, action)
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -1771,6 +1782,80 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._configWidget.addSection(section=section, content=content)
 
+    def promptExportImage(self) -> None:
+        try:
+            snapshot = self._mapWidget.createPixmap()
+        except Exception as ex:
+            message = 'An exception occurred while generating image to export'
+            logging.error(msg=message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        # https://doc.qt.io/qt-5/qpixmap.html#reading-and-writing-image-files
+        _SupportedFormats = {
+            'Bitmap (*.bmp)': 'bmp',
+            'JPEG (*.jpg *.jpeg)': 'jpg',
+            'PNG (*.png)': 'png',
+            'Portable Pixmap (*.ppm)': 'ppm',
+            'X11 Bitmap (*.xbm)': 'xbm',
+            'X11 Pixmap (*.xpm)': 'xpm'}
+
+        path, filter = QtWidgets.QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Export Snapshot',
+            filter=';;'.join(_SupportedFormats.keys()))
+        if not path:
+            return # User cancelled
+
+        format = _SupportedFormats.get(filter)
+        if format is None:
+            message = f'Unable to export image with unknown format "{filter}"'
+            logging.error(msg=message)
+            gui.MessageBoxEx.critical(message)
+            return
+
+        try:
+            if not snapshot.save(path, format):
+                gui.MessageBoxEx.critical(f'Failed to export image to "{path}"')
+        except Exception as ex:
+            message = f'An exception occurred while exporting the image to "{path}"'
+            logging.error(msg=message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def menuAction(
+            self,
+            id: enum.Enum
+            ) -> typing.Optional[QtWidgets.QAction]:
+        return self._menuActions.get(id)
+
+    def setMenuAction(
+            self,
+            id: enum.Enum,
+            action: typing.Optional[QtWidgets.QAction]
+            ) -> None:
+        self._menuActions[id] = action
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        action = self.menuAction(MapWidgetEx.MenuAction.ExportImage)
+        if action:
+            menu.addAction(action)
+
+    def displayContextMenu(self, pos: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu(self)
+        self.fillContextMenu(menu=menu)
+
+        if menu.isEmpty():
+            return
+
+        globalPos = self.mapToGlobal(pos)
+        menu.exec(globalPos)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._searchWidget or object == self._searchButton:
             if event.type() == QtCore.QEvent.Type.KeyPress:
@@ -1785,30 +1870,38 @@ class MapWidgetEx(QtWidgets.QWidget):
             if event.key() == QtCore.Qt.Key.Key_Escape:
                 if self._fullScreenButton.isChecked():
                     self._fullScreenButton.setChecked(False)
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_C:
                 hex = self._searchWidget.currentHex()
                 if hex:
                     self.centerOnHex(hex=hex)
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_H: # Copied from Traveller Map
                 self._gotoHome()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_F: # Copied from Traveller Map
                 self._fullScreenButton.toggle()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_M: # Copied from Traveller Map
                 self._legendButton.toggle()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_Slash: # Copied from Traveller Map
                 self._searchWidget.setFocus()
-                return # Swallow event
+                event.accept()
+                return
         elif event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier:
             if event.key() == QtCore.Qt.Key.Key_F:
                 self._searchWidget.setFocus()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_W:
                 self._infoButton.toggle()
-                return # Swallow event
+                return
 
         super().keyPressEvent(event)
 
@@ -1816,6 +1909,16 @@ class MapWidgetEx(QtWidgets.QWidget):
         super().resizeEvent(event)
         self._mapWidget.resize(event.size())
         self._configureOverlayControls()
+
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if event:
+            self.displayContextMenu(pos=event.pos())
+            event.accept()
+        #super().contextMenuEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
         searchWidgetSize = self._searchWidget.size()
