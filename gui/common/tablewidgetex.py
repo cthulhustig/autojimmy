@@ -243,12 +243,16 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         elif filter == gui.X11PixmapFileFilter:
             format = 'XPM'
         else:
-            # TODO: Handle error
+            message = f'Unable to export image with unknown filter "{filter}"'
+            logging.error(message)
+            gui.MessageBoxEx.critical(parent=self, text=message)
             return
 
         image = self.grab()
         if not image.save(path, format):
-            pass # TODO: Handle error
+            message = f'Failed to export content to "{path}"'
+            logging.error(message)
+            gui.MessageBoxEx.critical(parent=self, text=message)
 
     def copyToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
         return self._copyToClipboardAsHtmlAction

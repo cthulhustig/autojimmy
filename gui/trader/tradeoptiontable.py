@@ -203,8 +203,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         self._showSelectedWorldsOnMapAction.setEnabled(False) # No selection
         self._showSelectedWorldsOnMapAction.triggered.connect(self.showSelectedWorldsOnMap)
 
-        # TODO: This needs to support muli-select where the routes for all
-        # worlds are shown on the map
         self._showSelectedJumpRouteOnMapAction =  QtWidgets.QAction('Show Selected Jump Route on Map...', self)
         self._showSelectedJumpRouteOnMapAction.setEnabled(False) # No selection
         self._showSelectedJumpRouteOnMapAction.triggered.connect(self.showSelectedJumpRouteOnMap)
@@ -391,7 +389,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             return
         self._showWorldsOnMap(worlds=worlds)
 
-    # TODO: This needs updated to handle multiselect
     def showSelectedJumpRouteOnMap(self) -> None:
         row = self.currentRow()
         if row < 0:
@@ -741,7 +738,9 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             self.setSortingEnabled(sortingEnabled)
 
     def _syncTradeOptionTableActions(self) -> None:
-        hasSelection = self.hasSelection()
+        selectionCount = len(self.selectedRows())
+        hasSelection = selectionCount > 0
+        hasSingleSelection = selectionCount == 1
         if self._showSelectedPurchaseWorldDetailsAction:
             self._showSelectedPurchaseWorldDetailsAction.setEnabled(hasSelection)
         if self._showSelectedSaleWorldDetailsAction:
@@ -755,7 +754,10 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         if self._showSelectedWorldsOnMapAction:
             self._showSelectedWorldsOnMapAction.setEnabled(hasSelection)
         if self._showSelectedJumpRouteOnMapAction:
-            self._showSelectedJumpRouteOnMapAction.setEnabled(hasSelection)
+            # Map currently only supports a single jump route so only
+            # enable the action when there is only one route to avoid
+            # ambiguity
+            self._showSelectedJumpRouteOnMapAction.setEnabled(hasSingleSelection)
         if self._showSelectedCalculationsAction:
             self._showSelectedCalculationsAction.setEnabled(hasSelection)
 

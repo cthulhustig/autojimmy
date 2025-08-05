@@ -1330,23 +1330,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
-    def renderToImage(
-            self,
-            resolution: typing.Optional[QtCore.QSize] = None
-            ) -> QtGui.QImage:
-        image = QtGui.QImage(resolution if resolution else self.size())
-
-        rendering = self._rendering
-        if rendering is app.MapRendering.Tiled:
-            # If tiled rendering is currently in use force hybrid so any
-            # missing tiles will be created
-            rendering = app.MapRendering.Hybrid
-
-        self._drawView(paintDevice=image, rendering=rendering)
-        return image
-
-    # TODO: I should be able to delete this (and the instances in other
-    #  map classes) when I'm finished
     def createPixmap(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
 
