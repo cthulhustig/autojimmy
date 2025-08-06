@@ -968,8 +968,6 @@ class WorldSearchWindow(gui.WindowWidget):
 
         menu = QtWidgets.QMenu()
         self._worldTable.fillContextMenu(menu)
-        # TODO: This is horrible, find a better way to get these options
-        # inserted before the show calculations options
         beforeAction = self._worldTable.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
         menu.insertAction(
             beforeAction, # Insert BEFORE this
