@@ -11,6 +11,10 @@ class ManifestTable(gui.ListTable):
         Component = 'Component'
         Factors = 'Other Factors'
 
+    class MenuAction(enum.Enum):
+        ShowSelectedCalculations = enum.auto()
+        ShowAllCalculations = enum.auto()
+
     # I've disabled this for now as I'm not sure I like it. I think it makes
     # the table look uglier and I'm not sure it makes it any more readable
     _AddSpaceBetweenPhases = False
@@ -29,13 +33,15 @@ class ManifestTable(gui.ListTable):
         columns.extend(self._costType)
         columns.append(ManifestTable.StdColumnType.Factors)
 
-        self._showSelectedCalculationsAction = QtWidgets.QAction('Show Selected Calculations...', self)
-        self._showSelectedCalculationsAction.setEnabled(False) # No content to copy
-        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+        action = QtWidgets.QAction('Show Selected Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(ManifestTable.MenuAction.ShowSelectedCalculations, action)
 
-        self._showAllCalculationsAction = QtWidgets.QAction('Show All Calculations...', self)
-        self._showAllCalculationsAction.setEnabled(False) # No content to copy
-        self._showAllCalculationsAction.triggered.connect(self.showAllCalculations)
+        action = QtWidgets.QAction('Show All Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showAllCalculations)
+        self.setMenuAction(ManifestTable.MenuAction.ShowAllCalculations, action)
 
         self.setColumnHeaders(columns)
         self.setColumnsMoveable(False)
@@ -137,9 +143,16 @@ class ManifestTable(gui.ListTable):
         # Add base classes context menu (export, copy to clipboard etc)
         super().fillContextMenu(menu)
 
-        menu.addSeparator()
-        menu.addAction(self.showSelectedCalculationsAction())
-        menu.addAction(self.showAllCalculationsAction())
+        if not menu.isEmpty():
+            menu.addSeparator()
+
+        action = self.menuAction(ManifestTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(ManifestTable.MenuAction.ShowAllCalculations)
+        if action:
+            menu.addAction(action)
 
     def isEmptyChanged(self) -> None:
         super().isEmptyChanged()
@@ -272,10 +285,13 @@ class ManifestTable(gui.ListTable):
         self.verticalHeader().resizeSection(row, height)
 
     def _syncManifestTableActions(self):
-        if self._showSelectedCalculationsAction is not None:
-            self._showSelectedCalculationsAction.setEnabled(self._hasSelectedCalculations())
-        if self._showAllCalculationsAction is not None:
-            self._showAllCalculationsAction.setEnabled(self._hasCalculations())
+        action = self.menuAction(ManifestTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(self._hasSelectedCalculations())
+
+        action = self.menuAction(ManifestTable.MenuAction.ShowAllCalculations)
+        if action:
+            action.setEnabled(self._hasCalculations())
 
     def _hasCalculations(self) -> bool:
         # NOTE: This odd implementation is so that we can bail as soon as we

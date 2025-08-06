@@ -69,6 +69,10 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         ColumnType.SetQuantity
     ]
 
+    class MenuAction(enum.Enum):
+        ShowSelectedCalculations = enum.auto()
+        ShowAllCalculations = enum.auto()
+
     # v1: Initial version
     # v2: Updated cargo record (de)serialization to include rule system
     # as part of config overhaul that made rules changeable at runtime
@@ -83,13 +87,15 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
         self._outcomeColours = app.OutcomeColours(outcomeColours)
 
-        self._showSelectedCalculationsAction = QtWidgets.QAction('Show Selected Calculations...', self)
-        self._showSelectedCalculationsAction.setEnabled(False) # No content to copy
-        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+        action = QtWidgets.QAction('Show Selected Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations, action)
 
-        self._showAllCalculationsAction = QtWidgets.QAction('Show All Calculations...', self)
-        self._showAllCalculationsAction.setEnabled(False) # No content to copy
-        self._showAllCalculationsAction.triggered.connect(self.showAllCalculations)
+        action = QtWidgets.QAction('Show All Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showAllCalculations)
+        self.setMenuAction(CargoRecordTable.MenuAction.ShowAllCalculations, action)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -228,31 +234,20 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             return
         self._showCalculations(calculations=calculations)
 
-    def showSelectedCalculationsAction(self) -> QtWidgets.QAction:
-        return self._showSelectedCalculationsAction
-
-    def setShowSelectedCalculationsAction(
-            self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._showSelectedCalculationsAction = action
-
-    def showAllCalculationsAction(self) -> QtWidgets.QAction:
-        return self._showAllCalculationsAction
-
-    def setShowAllCalculationsAction(
-            self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._showAllCalculationsAction = action
-
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         # Add base classes context menu (export, copy to clipboard etc)
         super().fillContextMenu(menu)
 
-        menu.addSeparator()
-        menu.addAction(self.showSelectedCalculationsAction())
-        menu.addAction(self.showAllCalculationsAction())
+        if not menu.isEmpty():
+            menu.addSeparator()
+
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowAllCalculations)
+        if action:
+            menu.addAction(action)
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -394,10 +389,13 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             self.setSortingEnabled(sortingEnabled)
 
     def _syncCargoRecordTableActions(self):
-        if self._showSelectedCalculationsAction:
-            self._showSelectedCalculationsAction.setEnabled(self.hasSelection())
-        if self._showAllCalculationsAction:
-            self._showAllCalculationsAction.setEnabled(not self.isEmpty())
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(self.hasSelection())
+
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowAllCalculations)
+        if action:
+            action.setEnabled(not self.isEmpty())
 
     def _gatherCalculations(
             self,

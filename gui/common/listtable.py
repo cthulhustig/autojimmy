@@ -84,6 +84,10 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
 class ListTable(gui.TableWidgetEx):
     iconClicked = QtCore.pyqtSignal(int)
 
+    class MenuAction(enum.Enum):
+        CopyAsCsv = enum.auto()
+        ExportAsCsv = enum.auto()
+
     _StateVersion = 'ListTable_v2'
 
     def __init__(
@@ -101,13 +105,15 @@ class ListTable(gui.TableWidgetEx):
 
         self._columnWidths: typing.Dict[str, int] = {}
 
-        self._copyToClipboardAsCsvAction = QtWidgets.QAction('Copy as CSV', self)
-        self._copyToClipboardAsCsvAction.setEnabled(False) # No content to copy
-        self._copyToClipboardAsCsvAction.triggered.connect(self.copyToClipboardAsCsv)
+        action = QtWidgets.QAction('Copy as CSV', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.copyToClipboardAsCsv)
+        self.setMenuAction(ListTable.MenuAction.CopyAsCsv, action)
 
-        self._promptExportAsCsvAction = QtWidgets.QAction('Export as CSV...', self)
-        self._promptExportAsCsvAction.setEnabled(False) # No content to copy
-        self._promptExportAsCsvAction.triggered.connect(self.promptExportAsCsv)
+        action = QtWidgets.QAction('Export as CSV...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.promptExportAsCsv)
+        self.setMenuAction(ListTable.MenuAction.ExportAsCsv, action)
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -469,24 +475,6 @@ class ListTable(gui.TableWidgetEx):
                 exception=ex)
             return
 
-    def copyToClipboardAsCSvAction(self) -> QtWidgets.QAction:
-        return self._copyToClipboardAsCsvAction
-
-    def setCopyToClipboardAsCsvAction(
-            self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._copyToClipboardAsCsvAction = action
-
-    def promptExportAsCsvAction(self) -> QtWidgets.QAction:
-        return self._promptExportAsCsvAction
-
-    def setPromptExportAsCsvAction(
-            self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._promptExportAsCsvAction = action
-
     def isEmptyChanged(self) -> None:
         super().isEmptyChanged()
         self._syncListTableActions()
@@ -546,25 +534,53 @@ class ListTable(gui.TableWidgetEx):
 
         super().keyPressEvent(event)
 
-    # NOTE: This function intentionally doesn't call the base
-    # implementation. In order to group like options, this
-    # implementation inserts its action and the base classes
-    # actions
-    def fillContextMenu(self, menu):
-        menu.addAction(self.copyToClipboardAsCSvAction())
-        menu.addAction(self.copyToClipboardAsHtmlAction())
-        menu.addAction(self.copyToClipboardAsImageAction())
-        menu.addSeparator()
-        menu.addAction(self.promptExportAsCsvAction())
-        menu.addAction(self.promptExportAsHtmlAction())
-        menu.addAction(self.promptExportAsImageAction())
+    # NOTE: This function intentionally doesn't call the base implementation. In
+    # order to group like options, this implementation inserts its action and
+    # the base classes actions
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        needsSeparator = False
+
+        action = self.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.CopyAsHtml)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.CopyAsImage)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(gui.ListTable.MenuAction.ExportAsCsv)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.ExportAsHtml)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.ExportAsImage)
+        if action:
+            menu.addAction(action)
 
     def _syncListTableActions(self) -> None:
         hasContent = self.rowCount() > 0
-        if self._copyToClipboardAsCsvAction is not None:
-            self._copyToClipboardAsCsvAction.setEnabled(hasContent)
-        if self._promptExportAsCsvAction is not None:
-            self._promptExportAsCsvAction.setEnabled(hasContent)
+
+        action = self.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(gui.ListTable.MenuAction.ExportAsCsv)
+        if action:
+            action.setEnabled(hasContent)
 
     def _cacheColumnWidth(
             self,

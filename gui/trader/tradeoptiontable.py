@@ -158,6 +158,16 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         ColumnType.BestPurchasePricePerTon,
     ]
 
+    class MenuAction(enum.Enum):
+        ShowSelectedPurchaseWorldDetails = enum.auto()
+        ShowSelectedSaleWorldDetails = enum.auto()
+        ShowSelectedWorldDetails = enum.auto()
+        ShowSelectedPurchaseWorldsOnMap = enum.auto()
+        ShowSelectedSaleWorldsOnMap = enum.auto()
+        ShowSelectedWorldsOnMap = enum.auto()
+        ShowSelectedJumpRouteOnMap = enum.auto()
+        ShowSelectedCalculations = enum.auto()
+
     def __init__(
             self,
             outcomeColours: app.OutcomeColours,
@@ -175,41 +185,45 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         # TODO: The text for these actions need rewording as they are way to long
         # - This is probably true of other menus as well
         # TODO: This needs support for operating on all rows as well as the selected rows
-        self._showSelectedPurchaseWorldDetailsAction =  QtWidgets.QAction('Show Selected Purchase World Details...', self)
-        self._showSelectedPurchaseWorldDetailsAction.setEnabled(False) # No selection
-        self._showSelectedPurchaseWorldDetailsAction.triggered.connect(self.showSelectedPurchaseWorldDetails)
+        action =  QtWidgets.QAction('Show Selected Purchase World Details...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedPurchaseWorldDetails)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedPurchaseWorldDetails, action)
 
-        self._showSelectedSaleWorldDetailsAction =  QtWidgets.QAction('Show Selected Sale World Details...', self)
-        self._showSelectedSaleWorldDetailsAction.setEnabled(False) # No selection
-        self._showSelectedSaleWorldDetailsAction.triggered.connect(self.showSelectedSaleWorldDetails)
+        action =  QtWidgets.QAction('Show Selected Sale World Details...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedSaleWorldDetails)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedSaleWorldDetails, action)
 
-        self._showSelectedWorldDetailsAction =  QtWidgets.QAction('Show Selected World Details...', self)
-        self._showSelectedWorldDetailsAction.setEnabled(False) # No selection
-        self._showSelectedWorldDetailsAction.triggered.connect(self.showSelectedWorldDetails)
+        action =  QtWidgets.QAction('Show Selected World Details...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedWorldDetails)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedWorldDetails, action)
 
-        self._showSelectedWorldDetailsAction =  QtWidgets.QAction('Show Selected World Details...', self)
-        self._showSelectedWorldDetailsAction.setEnabled(False) # No selection
-        self._showSelectedWorldDetailsAction.triggered.connect(self.showSelectedWorldDetails)
+        action =  QtWidgets.QAction('Show Selected Purchase Worlds on Map...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedPurchaseWorldsOnMap)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedPurchaseWorldsOnMap, action)
 
-        self._showSelectedPurchaseWorldsOnMapAction =  QtWidgets.QAction('Show Selected Purchase Worlds on Map...', self)
-        self._showSelectedPurchaseWorldsOnMapAction.setEnabled(False) # No selection
-        self._showSelectedPurchaseWorldsOnMapAction.triggered.connect(self.showSelectedPurchaseWorldsOnMap)
+        action =  QtWidgets.QAction('Show Selected Sale Worlds on Map...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedSaleWorldsOnMap)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedSaleWorldsOnMap, action)
 
-        self._showSelectedSaleWorldsOnMapAction =  QtWidgets.QAction('Show Selected Sale Worlds on Map...', self)
-        self._showSelectedSaleWorldsOnMapAction.setEnabled(False) # No selection
-        self._showSelectedSaleWorldsOnMapAction.triggered.connect(self.showSelectedSaleWorldsOnMap)
+        action =  QtWidgets.QAction('Show Selected Worlds on Map...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedWorldsOnMap)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedWorldsOnMap, action)
 
-        self._showSelectedWorldsOnMapAction =  QtWidgets.QAction('Show Selected Worlds on Map...', self)
-        self._showSelectedWorldsOnMapAction.setEnabled(False) # No selection
-        self._showSelectedWorldsOnMapAction.triggered.connect(self.showSelectedWorldsOnMap)
+        action =  QtWidgets.QAction('Show Selected Jump Route on Map...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedJumpRouteOnMap)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedJumpRouteOnMap, action)
 
-        self._showSelectedJumpRouteOnMapAction =  QtWidgets.QAction('Show Selected Jump Route on Map...', self)
-        self._showSelectedJumpRouteOnMapAction.setEnabled(False) # No selection
-        self._showSelectedJumpRouteOnMapAction.triggered.connect(self.showSelectedJumpRouteOnMap)
-
-        self._showSelectedCalculationsAction = QtWidgets.QAction('Show Selected Calculations...', self)
-        self._showSelectedCalculationsAction.setEnabled(False) # No content to copy
-        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+        action = QtWidgets.QAction('Show Selected Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(TradeOptionsTable.MenuAction.ShowSelectedCalculations, action)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -410,70 +424,62 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 calculations.append(tradeOption.returnOnInvestment())
         self._showCalculations(calculations=calculations)
 
-    def showSelectedPurchaseWorldDetailsAction(self) -> QtWidgets.QAction:
-        return self._showSelectedPurchaseWorldDetailsAction
-
-    def setShowSelectedPurchaseWorldDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedPurchaseWorldDetailsAction = action
-
-    def showSelectedSaleWorldDetailsAction(self) -> QtWidgets.QAction:
-        return self._showSelectedSaleWorldDetailsAction
-
-    def setShowSelectedSaleWorldDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedSaleWorldDetailsAction = action
-
-    def showSelectedWorldDetailsAction(self) -> QtWidgets.QAction:
-        return self._showSelectedWorldDetailsAction
-
-    def setShowSelectedWorldDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedWorldDetailsAction = action
-
-    def showSelectedPurchaseWorldsOnMapAction(self) -> QtWidgets.QAction:
-        return self._showSelectedPurchaseWorldsOnMapAction
-
-    def setShowSelectedPurchaseWorldsOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedPurchaseWorldsOnMapAction = action
-
-    def showSelectedSaleWorldsOnMapAction(self) -> QtWidgets.QAction:
-        return self._showSelectedSaleWorldsOnMapAction
-
-    def setShowSelectedSaleWorldsOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedSaleWorldsOnMapAction = action
-
-    def showSelectedWorldsOnMapAction(self) -> QtWidgets.QAction:
-        return self._showSelectedWorldsOnMapAction
-
-    def setShowSelectedWorldsOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedWorldsOnMapAction = action
-
-    def showSelectedJumpRouteOnMapAction(self) -> QtWidgets.QAction:
-        return self._showSelectedJumpRouteOnMapAction
-
-    def setShowSelectedJumpRouteOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedJumpRouteOnMapAction = action
-
-    def showSelectedCalculationsAction(self) -> None:
-        return self._showSelectedCalculationsAction
-
-    def setShowSelectedCalculationsAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedCalculationsAction = action
-
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
-        menu.addAction(self.showSelectedPurchaseWorldDetailsAction())
-        menu.addAction(self.showSelectedSaleWorldDetailsAction())
-        menu.addAction(self.showSelectedWorldDetailsAction())
-        menu.addSeparator()
-        menu.addAction(self.showSelectedPurchaseWorldsOnMapAction())
-        menu.addAction(self.showSelectedSaleWorldsOnMapAction())
-        menu.addAction(self.showSelectedWorldsOnMapAction())
-        menu.addAction(self.showSelectedJumpRouteOnMapAction())
-        menu.addSeparator()
+        needsSeparator = False
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedPurchaseWorldDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedSaleWorldDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedWorldDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedPurchaseWorldsOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedSaleWorldsOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedWorldsOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedJumpRouteOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
 
         # Add base class menu options (export, copy to clipboard etc)
+        beforeCount = len(menu.actions())
         super().fillContextMenu(menu)
 
-        menu.addSeparator()
-        menu.addAction(self.showSelectedCalculationsAction())
+        if len(menu.actions()) > beforeCount:
+            menu.addSeparator()
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
 
     def isEmptyChanged(self) -> None:
         super().isEmptyChanged()
@@ -741,25 +747,41 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         selectionCount = len(self.selectedRows())
         hasSelection = selectionCount > 0
         hasSingleSelection = selectionCount == 1
-        if self._showSelectedPurchaseWorldDetailsAction:
-            self._showSelectedPurchaseWorldDetailsAction.setEnabled(hasSelection)
-        if self._showSelectedSaleWorldDetailsAction:
-            self._showSelectedSaleWorldDetailsAction.setEnabled(hasSelection)
-        if self._showSelectedWorldDetailsAction:
-            self._showSelectedWorldDetailsAction.setEnabled(hasSelection)
-        if self._showSelectedPurchaseWorldsOnMapAction:
-            self._showSelectedPurchaseWorldsOnMapAction.setEnabled(hasSelection)
-        if self._showSelectedSaleWorldsOnMapAction:
-            self._showSelectedSaleWorldsOnMapAction.setEnabled(hasSelection)
-        if self._showSelectedWorldsOnMapAction:
-            self._showSelectedWorldsOnMapAction.setEnabled(hasSelection)
-        if self._showSelectedJumpRouteOnMapAction:
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedPurchaseWorldDetails)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedSaleWorldDetails)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedWorldDetails)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedPurchaseWorldsOnMap)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedSaleWorldsOnMap)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedWorldsOnMap)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedJumpRouteOnMap)
+        if action:
             # Map currently only supports a single jump route so only
             # enable the action when there is only one route to avoid
             # ambiguity
-            self._showSelectedJumpRouteOnMapAction.setEnabled(hasSingleSelection)
-        if self._showSelectedCalculationsAction:
-            self._showSelectedCalculationsAction.setEnabled(hasSelection)
+            action.setEnabled(hasSingleSelection)
+
+        action = self.menuAction(TradeOptionsTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(hasSelection)
 
     def _showWorldDetails(
             self,

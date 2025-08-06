@@ -650,12 +650,16 @@ class WorldSearchWindow(gui.WindowWidget):
         showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
         showSelectionOnMapAction.setEnabled(False) # No selection
         showSelectionOnMapAction.triggered.connect(self._showTableSelectionOnMap)
-        self._worldTable.setShowSelectionOnMapAction(showSelectionOnMapAction)
+        self._worldTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showSelectionOnMapAction)
 
         showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showAllOnMapAction.setEnabled(False) # No content
         showAllOnMapAction.triggered.connect(self._showTableContentOnMap)
-        self._worldTable.setShowAllOnMapAction(showAllOnMapAction)
+        self._worldTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showAllOnMapAction)
 
         tableLayout = QtWidgets.QVBoxLayout()
         tableLayout.setContentsMargins(0, 0, 0, 0)
@@ -966,14 +970,15 @@ class WorldSearchWindow(gui.WindowWidget):
         self._worldTable.fillContextMenu(menu)
         # TODO: This is horrible, find a better way to get these options
         # inserted before the show calculations options
+        beforeAction = self._worldTable.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
         menu.insertAction(
-            self._worldTable.copyToClipboardAsCSvAction(), # Insert BEFORE this
+            beforeAction, # Insert BEFORE this
             findTradeOptionsForSelectedAction)
         menu.insertAction(
-            self._worldTable.copyToClipboardAsCSvAction(), # Insert BEFORE this
+            beforeAction, # Insert BEFORE this
             findTradeOptionsForAllAction)
         menu.insertSeparator(
-            self._worldTable.copyToClipboardAsCSvAction()) # Insert BEFORE this
+            beforeAction) # Insert BEFORE this
         menu.exec(self._worldTable.viewport().mapToGlobal(pos))
 
     def _findTradeOptions(

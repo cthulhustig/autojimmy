@@ -1915,23 +1915,27 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._availableFundsSpinBox.value() - int(totalCost))
 
     def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
+        hasContent = not self._availableCargoTable.isEmpty()
+        hasSelection = self._availableCargoTable.hasSelection()
+        hasSingleSelection = len(self._availableCargoTable.selectedRows()) == 1
+
         addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(self._promptAddAvailableCargo)
 
         editCargoAction = QtWidgets.QAction('Edit...', self)
-        editCargoAction.setEnabled(self._availableCargoTable.hasSelection())
+        editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditAvailableCargo)
 
         removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
-        removeSelectedCargoAction.setEnabled(self._availableCargoTable.hasSelection())
+        removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._removeSelectedAvailableCargo)
 
         removeAllCargoAction = QtWidgets.QAction('Remove All', self)
-        removeAllCargoAction.setEnabled(not self._availableCargoTable.isEmpty())
+        removeAllCargoAction.setEnabled(hasContent)
         removeAllCargoAction.triggered.connect(self._removeAllAvailableCargo)
 
         purchaseCargoAction = QtWidgets.QAction('Purchase...', self)
-        purchaseCargoAction.setEnabled(self._availableCargoTable.hasSelection())
+        purchaseCargoAction.setEnabled(hasContent)
         purchaseCargoAction.triggered.connect(self._purchaseAvailableCargo)
 
         menu = QtWidgets.QMenu()
@@ -2053,19 +2057,23 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
+        hasContent = not self._currentCargoTable.isEmpty()
+        hasSelection = self._currentCargoTable.hasSelection()
+        hasSingleSelection = len(self._currentCargoTable.selectedRows()) == 1
+
         addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(self._promptAddCurrentCargo)
 
         editCargoAction = QtWidgets.QAction('Edit...', self)
-        editCargoAction.setEnabled(self._currentCargoTable.hasSelection())
+        editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditCurrentCargo)
 
         removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
-        removeSelectedCargoAction.setEnabled(self._currentCargoTable.hasSelection())
+        removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._removeSelectedCurrentCargo)
 
         removeAllCargoAction = QtWidgets.QAction('Remove All', self)
-        removeAllCargoAction.setEnabled(not self._currentCargoTable.isEmpty())
+        removeAllCargoAction.setEnabled(hasContent)
         removeAllCargoAction.triggered.connect(self._removeAllCurrentCargo)
 
         menu = QtWidgets.QMenu()
@@ -2699,14 +2707,15 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         menu = QtWidgets.QMenu()
         self._purchaseWorldsWidget.fillContextMenu(menu)
+        beforeAction = self._purchaseWorldsWidget.menuAction(gui.HexTable.MenuAction.ShowSelectionDetails)
         menu.insertAction(
-            self._purchaseWorldsWidget.showSelectionDetailsAction(),
+            beforeAction,
             copyFromSaleWorldsAction)
         menu.insertAction(
-            self._purchaseWorldsWidget.showSelectionDetailsAction(),
+            beforeAction,
             copyToSaleWorldsAction)
         menu.insertSeparator(
-            self._purchaseWorldsWidget.showSelectionDetailsAction())
+            beforeAction)
         menu.exec(self._purchaseWorldsWidget.mapToGlobal(pos))
 
     def _showSaleWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
@@ -2722,14 +2731,15 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         menu = QtWidgets.QMenu()
         self._saleWorldsWidget.fillContextMenu(menu)
+        beforeAction = self._purchaseWorldsWidget.menuAction(gui.HexTable.MenuAction.ShowSelectionDetails)
         menu.insertAction(
-            self._saleWorldsWidget.showSelectionDetailsAction(),
+            beforeAction,
             copyFromPurchaseWorldsAction)
         menu.insertAction(
-            self._saleWorldsWidget.showSelectionDetailsAction(),
+            beforeAction,
             copyToPurchaseWorldsAction)
         menu.insertSeparator(
-            self._saleWorldsWidget.showSelectionDetailsAction())
+            beforeAction)
         menu.exec(self._saleWorldsWidget.mapToGlobal(pos))
 
     def _calculateTradeOptions(self) -> None:

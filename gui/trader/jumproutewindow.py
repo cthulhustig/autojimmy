@@ -1154,12 +1154,16 @@ class JumpRouteWindow(gui.WindowWidget):
         showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
         showSelectionOnMapAction.setEnabled(False) # No selection
         showSelectionOnMapAction.triggered.connect(self._showWaypointsTableSelectionOnMap)
-        self._waypointsWidget.setShowSelectionOnMapAction(showSelectionOnMapAction)
+        self._waypointsWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showSelectionOnMapAction)
 
         showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showAllOnMapAction.setEnabled(False) # No content
         showAllOnMapAction.triggered.connect(self._showWaypointsTableContentOnMap)
-        self._waypointsWidget.setShowAllOnMapAction(showAllOnMapAction)
+        self._waypointsWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showAllOnMapAction)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._waypointsWidget)
@@ -1203,12 +1207,16 @@ class JumpRouteWindow(gui.WindowWidget):
         showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
         showSelectionOnMapAction.setEnabled(False) # No selection
         showSelectionOnMapAction.triggered.connect(self._showAvoidHexesTableSelectionOnMap)
-        self._avoidHexesWidget.setShowSelectionOnMapAction(showSelectionOnMapAction)
+        self._avoidHexesWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showSelectionOnMapAction)
 
         showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showAllOnMapAction.setEnabled(False) # No content
         showAllOnMapAction.triggered.connect(self._showAvoidHexesTableContentOnMap)
-        self._avoidHexesWidget.setShowAllOnMapAction(showAllOnMapAction)
+        self._avoidHexesWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showAllOnMapAction)
 
         self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget(
             taggingColours=taggingColours)
@@ -1288,12 +1296,16 @@ class JumpRouteWindow(gui.WindowWidget):
         showJumpRouteSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
         showJumpRouteSelectionOnMapAction.setEnabled(False) # No selection
         showJumpRouteSelectionOnMapAction.triggered.connect(self._showJumpRouteTableSelectionOnMap)
-        self._jumpRouteTable.setShowSelectionOnMapAction(showJumpRouteSelectionOnMapAction)
+        self._jumpRouteTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showJumpRouteSelectionOnMapAction)
 
         showJumpRouteContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showJumpRouteContentOnMapAction.setEnabled(False) # No content
         showJumpRouteContentOnMapAction.triggered.connect(self._showJumpRouteContentOnMap)
-        self._jumpRouteTable.setShowAllOnMapAction(showJumpRouteContentOnMapAction)
+        self._jumpRouteTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showJumpRouteContentOnMapAction)
 
         jumpRouteLayout = QtWidgets.QVBoxLayout()
         jumpRouteLayout.setContentsMargins(0, 0, 0, 0)
@@ -1318,12 +1330,16 @@ class JumpRouteWindow(gui.WindowWidget):
         showRefuellingSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
         showRefuellingSelectionOnMapAction.setEnabled(False) # No selection
         showRefuellingSelectionOnMapAction.triggered.connect(self._showRefuellingTableSelectionOnMap)
-        self._refuellingPlanTable.setShowSelectionOnMapAction(showRefuellingSelectionOnMapAction)
+        self._refuellingPlanTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showRefuellingSelectionOnMapAction)
 
         showRefuellingContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
         showRefuellingContentOnMapAction.setEnabled(False) # No content
         showRefuellingContentOnMapAction.triggered.connect(self._showRefuellingTableContentOnMap)
-        self._refuellingPlanTable.setShowAllOnMapAction(showRefuellingContentOnMapAction)
+        self._refuellingPlanTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showRefuellingContentOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,

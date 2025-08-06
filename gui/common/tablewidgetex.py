@@ -1,3 +1,4 @@
+import enum
 import gui
 import logging
 import re
@@ -19,6 +20,12 @@ class TableWidgetEx(QtWidgets.QTableWidget):
     _FocusRectRegex = re.compile(r'QTableWidget:focus\s*{.*?}')
     _FocusRectWidth = 4
 
+    class MenuAction(enum.Enum):
+        CopyAsHtml = enum.auto()
+        CopyAsImage = enum.auto()
+        ExportAsHtml = enum.auto()
+        ExportAsImage = enum.auto()
+
     @typing.overload
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
     @typing.overload
@@ -32,21 +39,27 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         super().__init__(*args, **kwargs)
         self._showFocusRect = False
 
-        self._copyToClipboardAsHtmlAction = QtWidgets.QAction('Copy as HTML', self)
-        self._copyToClipboardAsHtmlAction.setEnabled(False) # No content to copy
-        self._copyToClipboardAsHtmlAction.triggered.connect(self.copyToClipboardAsHtml)
+        self._menuActions: typing.Dict[typing.Tuple[enum.Enum, QtWidgets.QAction]] = {}
 
-        self._copyToClipboardAsImageAction = QtWidgets.QAction('Copy as Image', self)
-        self._copyToClipboardAsImageAction.setEnabled(False) # No content to copy
-        self._copyToClipboardAsImageAction.triggered.connect(self.copyToClipboardAsImage)
+        action = QtWidgets.QAction('Copy as HTML', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.copyToClipboardAsHtml)
+        self.setMenuAction(TableWidgetEx.MenuAction.CopyAsHtml, action)
 
-        self._promptExportAsHtmlAction = QtWidgets.QAction('Export as HTML...', self)
-        self._promptExportAsHtmlAction.setEnabled(False) # No content to export
-        self._promptExportAsHtmlAction.triggered.connect(self.promptExportAsHtml)
+        action = QtWidgets.QAction('Copy as Image', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.copyToClipboardAsImage)
+        self.setMenuAction(TableWidgetEx.MenuAction.CopyAsImage, action)
 
-        self._promptExportAsImageAction = QtWidgets.QAction('Export as Image...', self)
-        self._promptExportAsImageAction.setEnabled(False) # No content to export
-        self._promptExportAsImageAction.triggered.connect(self.promptExportAsImage)
+        action = QtWidgets.QAction('Export as HTML...', self)
+        action.setEnabled(False) # No content to export
+        action.triggered.connect(self.promptExportAsHtml)
+        self.setMenuAction(TableWidgetEx.MenuAction.ExportAsHtml, action)
+
+        action = QtWidgets.QAction('Export as Image...', self)
+        action.setEnabled(False) # No content to export
+        action.triggered.connect(self.promptExportAsImage)
+        self.setMenuAction(TableWidgetEx.MenuAction.ExportAsImage, action)
 
         self._hookModel()
 
@@ -254,51 +267,43 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             logging.error(message)
             gui.MessageBoxEx.critical(parent=self, text=message)
 
-    def copyToClipboardAsHtmlAction(self) -> QtWidgets.QAction:
-        return self._copyToClipboardAsHtmlAction
-
-    def setCopyToClipboardAsHtmlAction(
+    def menuAction(
             self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._copyToClipboardAsHtmlAction = action
+            id: enum.Enum
+            ) -> typing.Optional[QtWidgets.QAction]:
+        return self._menuActions.get(id)
 
-    def copyToClipboardAsImageAction(self) -> QtWidgets.QAction:
-        return self._copyToClipboardAsImageAction
-
-    def setCopyToClipboardAsImageAction(
+    def setMenuAction(
             self,
-            action: QtWidgets.QAction
+            id: enum.Enum,
+            action: typing.Optional[QtWidgets.QAction]
             ) -> None:
-        self._copyToClipboardAsImageAction = action
+        self._menuActions[id] = action
 
-    def promptExportAsHtmlAction(self) -> QtWidgets.QAction:
-        return self._promptExportAsHtmlAction
-
-    def setPromptExportAsHtmlAction(
-            self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._promptExportAsHtmlAction = action
-
-    def promptExportAsImageAction(self) -> QtWidgets.QAction:
-        return self._promptExportAsImageAction
-
-    def setPromptExportAsImageAction(
-            self,
-            action: QtWidgets.QAction
-            ) -> None:
-        self._promptExportAsImageAction = action
-
-    # TODO: This and every other fillContextMenu implementation needs to check
-    # that the action is not None before adding it to the menu (Qt prints a
-    # message to the terminal if it is None)
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
-        menu.addAction(self.copyToClipboardAsHtmlAction())
-        menu.addAction(self.copyToClipboardAsImageAction())
-        menu.addSeparator()
-        menu.addAction(self.promptExportAsHtmlAction())
-        menu.addAction(self.promptExportAsImageAction())
+        needsSeparator = False
+
+        action = self.menuAction(TableWidgetEx.MenuAction.CopyAsHtml)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(TableWidgetEx.MenuAction.CopyAsImage)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(TableWidgetEx.MenuAction.ExportAsHtml)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(TableWidgetEx.MenuAction.ExportAsImage)
+        if action:
+            menu.addAction(action)
 
     def displayContextMenu(self, pos: QtCore.QPoint) -> None:
         menu = QtWidgets.QMenu(self)
@@ -426,14 +431,22 @@ class TableWidgetEx(QtWidgets.QTableWidget):
 
     def _syncTableWidgetExActions(self) -> None:
         hasContent = self.rowCount() > 0 and self.columnCount() > 0
-        if self._copyToClipboardAsHtmlAction:
-            self._copyToClipboardAsHtmlAction.setEnabled(hasContent)
-        if self._copyToClipboardAsImageAction:
-            self._copyToClipboardAsImageAction.setEnabled(hasContent)
-        if self._promptExportAsHtmlAction:
-            self._promptExportAsHtmlAction.setEnabled(hasContent)
-        if self._promptExportAsImageAction:
-            self._promptExportAsImageAction.setEnabled(hasContent)
+
+        action = self.menuAction(TableWidgetEx.MenuAction.CopyAsHtml)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(TableWidgetEx.MenuAction.CopyAsImage)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(TableWidgetEx.MenuAction.ExportAsHtml)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(TableWidgetEx.MenuAction.ExportAsImage)
+        if action:
+            action.setEnabled(hasContent)
 
     def _htmlCellText(self, row: int, column: int) -> str:
         item = self.item(row, column)

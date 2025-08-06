@@ -235,6 +235,12 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Atmosphere,
     ]
 
+    class MenuAction(enum.Enum):
+        ShowSelectionDetails = enum.auto()
+        ShowAllDetails = enum.auto()
+        ShowSelectionOnMap = enum.auto()
+        ShowAllOnMap = enum.auto()
+
     # Version 1 format used a world list rather than a hex list. Note that
     # this just used 'v1' for the version rather than 'WorldTable_v1'
     # Version 2 format was added when the table was switched from using worlds
@@ -258,21 +264,25 @@ class HexTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
-        self._showSelectionDetailsAction =  QtWidgets.QAction('Show Selection Details...', self)
-        self._showSelectionDetailsAction.setEnabled(False) # No selection
-        self._showSelectionDetailsAction.triggered.connect(self.showSelectionDetails)
+        action =  QtWidgets.QAction('Show Selection Details...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectionDetails)
+        self.setMenuAction(HexTable.MenuAction.ShowSelectionDetails, action)
 
-        self._showAllDetailsAction =  QtWidgets.QAction('Show All Details...', self)
-        self._showAllDetailsAction.setEnabled(False) # No content
-        self._showAllDetailsAction.triggered.connect(self.showAllDetails)
+        action =  QtWidgets.QAction('Show All Details...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllDetails)
+        self.setMenuAction(HexTable.MenuAction.ShowAllDetails, action)
 
-        self._showSelectionOnMapAction =  QtWidgets.QAction('Show Selection on Map...', self)
-        self._showSelectionOnMapAction.setEnabled(False) # No selection
-        self._showSelectionOnMapAction.triggered.connect(self.showSelectionOnMap)
+        action =  QtWidgets.QAction('Show Selection on Map...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectionOnMap)
+        self.setMenuAction(HexTable.MenuAction.ShowSelectionOnMap, action)
 
-        self._showAllOnMapAction =  QtWidgets.QAction('Show All on Map...', self)
-        self._showAllOnMapAction.setEnabled(False) # No content
-        self._showAllOnMapAction.triggered.connect(self.showAllOnMap)
+        action =  QtWidgets.QAction('Show All on Map...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllOnMap)
+        self.setMenuAction(HexTable.MenuAction.ShowAllOnMap, action)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -474,37 +484,36 @@ class HexTable(gui.FrozenColumnListTable):
     def showAllOnMap(self) -> None:
         self._showOnMap(hexes=self.hexes())
 
-    def showSelectionDetailsAction(self) -> QtWidgets.QAction:
-        return self._showSelectionDetailsAction
-
-    def setShowSelectionDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectionDetailsAction = action
-
-    def showAllDetailsAction(self) -> QtWidgets.QAction:
-        return self._showAllDetailsAction
-
-    def setShowAllDetailsAction(self, action: QtWidgets.QAction) -> None:
-        self._showAllDetailsAction = action
-
-    def showSelectionOnMapAction(self) -> QtWidgets.QAction:
-        return self._showSelectionOnMapAction
-
-    def setShowSelectionOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectionOnMapAction = action
-
-    def showAllOnMapAction(self) -> QtWidgets.QAction:
-        return self._showAllOnMapAction
-
-    def setShowAllOnMapAction(self, action: QtWidgets.QAction) -> None:
-        self._showAllOnMapAction = action
-
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
-        menu.addAction(self.showSelectionDetailsAction())
-        menu.addAction(self.showAllDetailsAction())
-        menu.addSeparator()
-        menu.addAction(self.showSelectionOnMapAction())
-        menu.addAction(self.showAllOnMapAction())
-        menu.addSeparator()
+        needsSeparator = False
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
 
         # Add base class menu options (export, copy to clipboard etc)
         super().fillContextMenu(menu)
@@ -1202,14 +1211,22 @@ class HexTable(gui.FrozenColumnListTable):
     def _syncHexTableActions(self) -> None:
         hasContent = not self.isEmpty()
         hasSelection = self.hasSelection()
-        if self._showSelectionDetailsAction:
-            self._showSelectionDetailsAction.setEnabled(hasSelection)
-        if self._showAllDetailsAction:
-            self._showAllDetailsAction.setEnabled(hasContent)
-        if self._showSelectionOnMapAction:
-            self._showSelectionOnMapAction.setEnabled(hasSelection)
-        if self._showAllOnMapAction:
-            self._showAllOnMapAction.setEnabled(hasContent)
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionDetails)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllDetails)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionOnMap)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllOnMap)
+        if action:
+            action.setEnabled(hasContent)
 
     def _showDetails(
             self,

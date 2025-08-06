@@ -33,6 +33,10 @@ class WorldTradeScoreTable(gui.HexTable):
     CultureColumns = _customWorldTableColumns(gui.HexTable.CultureColumns)
     RefuellingColumns = _customWorldTableColumns(gui.HexTable.RefuellingColumns)
 
+    class MenuAction(enum.Enum):
+        ShowSelectedCalculations = enum.auto()
+        ShowAllCalculations = enum.auto()
+
     def __init__(
             self,
             milieu: travellermap.Milieu,
@@ -51,13 +55,15 @@ class WorldTradeScoreTable(gui.HexTable):
         self._tradeGoods = set()
         self._tradeScoreMap = {}
 
-        self._showSelectedCalculationsAction =  QtWidgets.QAction('Show Selected Calculations...', self)
-        self._showSelectedCalculationsAction.setEnabled(False) # No selection
-        self._showSelectedCalculationsAction.triggered.connect(self.showSelectedCalculations)
+        action = QtWidgets.QAction('Show Selected Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations, action)
 
-        self._showAllCalculationsAction =  QtWidgets.QAction('Show All Calculations...', self)
-        self._showAllCalculationsAction.setEnabled(False) # No selection
-        self._showAllCalculationsAction.triggered.connect(self.showAllCalculations)
+        action = QtWidgets.QAction('Show All Calculations...', self)
+        action.setEnabled(False) # No content to copy
+        action.triggered.connect(self.showAllCalculations)
+        self.setMenuAction(WorldTradeScoreTable.MenuAction.ShowAllCalculations, action)
 
     def setRules(self, rules: traveller.Rules) -> None:
         if rules == self._rules:
@@ -139,9 +145,16 @@ class WorldTradeScoreTable(gui.HexTable):
         # Add base class menu options (export, show on map etc)
         super().fillContextMenu(menu)
 
-        menu.addSeparator()
-        menu.addAction(self.showSelectedCalculationsAction())
-        menu.addAction(self.showAllCalculationsAction())
+        if not menu.isEmpty():
+            menu.addSeparator()
+
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowAllCalculations)
+        if action:
+            menu.addAction(action)
 
     def isEmptyChanged(self) -> None:
         super().isEmptyChanged()
@@ -232,12 +245,13 @@ class WorldTradeScoreTable(gui.HexTable):
         return super()._syncContent()
 
     def _syncWorldTradeScoreTableActions(self) -> None:
-        hasContent = not self.isEmpty()
-        hasSelection = self.hasSelection()
-        if self._showSelectedCalculationsAction:
-            self._showSelectedCalculationsAction.setEnabled(hasSelection)
-        if self._showAllCalculationsAction:
-            self._showAllCalculationsAction.setEnabled(hasContent)
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(self.hasSelection())
+
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowAllCalculations)
+        if action:
+            action.setEnabled(not self.isEmpty())
 
     def _showCalculations(
             self,

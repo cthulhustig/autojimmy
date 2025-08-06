@@ -422,13 +422,13 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.installEventFilter(self)
         self._salePricesTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._salePricesTable.customContextMenuRequested.connect(self._showSalePricesTableContextMenu)
-        self._salePricesTable.doubleClicked.connect(self._editSalePrice)
+        self._salePricesTable.doubleClicked.connect(self._promptEditSalePrice)
 
         self._editSalePriceButton = QtWidgets.QPushButton('Edit...')
         self._editSalePriceButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editSalePriceButton.clicked.connect(self._editSalePrice)
+        self._editSalePriceButton.clicked.connect(self._promptEditSalePrice)
 
         self._removeSalePriceButton = QtWidgets.QPushButton('Remove')
         self._removeSalePriceButton.setSizePolicy(
@@ -695,19 +695,23 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._salePricesTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
+        hasContent = not self._cargoTable.isEmpty()
+        hasSelection = self._cargoTable.hasSelection()
+        hasSingleSelection = len(self._cargoTable.selectedRows()) == 1
+
         addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(self._promptAddCargo)
 
         editCargoAction = QtWidgets.QAction('Edit...', self)
-        editCargoAction.setEnabled(self._cargoTable.hasSelection())
+        editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditCargo)
 
         removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
-        removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
+        removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._removeSelectedCargo)
 
         removeAllCargoAction = QtWidgets.QAction('Remove All', self)
-        removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
+        removeAllCargoAction.setEnabled(hasContent)
         removeAllCargoAction.triggered.connect(self._removeAllCargo)
 
         menu = QtWidgets.QMenu()
@@ -795,7 +799,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text=f'The local black market fixer that was hired is an informant')
 
-    def _editSalePrice(self) -> None:
+    def _promptEditSalePrice(self) -> None:
         saleWorld = self._saleWorldWidget.selectedWorld()
         if not saleWorld:
             return
@@ -850,22 +854,25 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._updateTotalSalePrice()
 
     def _showSalePricesTableContextMenu(self, point: QtCore.QPoint) -> None:
+        hasContent = not self._salePricesTable.isEmpty()
+        hasSelection = self._salePricesTable.hasSelection()
+        hasSingleSelection = len(self._salePricesTable.selectedRows()) == 1
+
         editSalePriceAction = QtWidgets.QAction('Edit...', self)
-        editSalePriceAction.setEnabled(self._salePricesTable.hasSelection())
-        editSalePriceAction.triggered.connect(self._editSalePrice)
+        editSalePriceAction.setEnabled(hasSingleSelection)
+        editSalePriceAction.triggered.connect(self._promptEditSalePrice)
 
         removeSelectedSalePriceAction = QtWidgets.QAction(
             'Remove Selected',
             self)
-        removeSelectedSalePriceAction.setEnabled(self._salePricesTable.hasSelection())
+        removeSelectedSalePriceAction.setEnabled(hasSelection)
         removeSelectedSalePriceAction.triggered.connect(
             self._removeSelectedSalePrices)
 
         removeAllSalePriceAction = QtWidgets.QAction(
             'Remove All',
             self)
-        removeAllSalePriceAction.setEnabled(
-            not self._salePricesTable.isEmpty())
+        removeAllSalePriceAction.setEnabled(hasContent)
         removeAllSalePriceAction.triggered.connect(
             self._removeAllSalePrices)
 

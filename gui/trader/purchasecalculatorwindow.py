@@ -577,34 +577,36 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
+        hasContent = not self._cargoTable.isEmpty()
+        hasSelection = self._cargoTable.hasSelection()
+        hasSingleSelection = len(self._cargoTable.selectedRows()) == 1
+
         addCargoAction = QtWidgets.QAction('Add...', self)
         addCargoAction.triggered.connect(self._promptAddCargo)
 
         editCargoAction = QtWidgets.QAction('Edit...', self)
-        editCargoAction.setEnabled(self._cargoTable.hasSelection())
+        editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditCargo)
 
         removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
-        removeSelectedCargoAction.setEnabled(self._cargoTable.hasSelection())
+        removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
 
         removeAllCargoAction = QtWidgets.QAction('Remove All', self)
-        removeAllCargoAction.setEnabled(not self._cargoTable.isEmpty())
+        removeAllCargoAction.setEnabled(hasContent)
         removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
 
         findTradeOptionsForSelectedCargoAction = QtWidgets.QAction(
             'Find Trade Options for Selected...',
             self)
-        findTradeOptionsForSelectedCargoAction.setEnabled(
-            self._cargoTable.hasSelection())
+        findTradeOptionsForSelectedCargoAction.setEnabled(hasSelection)
         findTradeOptionsForSelectedCargoAction.triggered.connect(
             lambda: self._findTradeOptionsForCargo(self._cargoTable.selectedCargoRecords()))
 
         findTradeOptionsForAllCargoAction = QtWidgets.QAction(
             'Find Trade Options for All...',
             self)
-        findTradeOptionsForAllCargoAction.setEnabled(
-            not self._cargoTable.isEmpty())
+        findTradeOptionsForAllCargoAction.setEnabled(hasContent)
         findTradeOptionsForAllCargoAction.triggered.connect(
             lambda: self._findTradeOptionsForCargo(self._cargoTable.cargoRecords()))
 
