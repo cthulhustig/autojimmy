@@ -182,8 +182,6 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
-        # TODO: The text for these actions need rewording as they are way to long
-        # - This is probably true of other menus as well
         # TODO: This needs support for operating on all rows as well as the selected rows
         action =  QtWidgets.QAction('Show Selected Purchase World Details...', self)
         action.setEnabled(False) # No selection

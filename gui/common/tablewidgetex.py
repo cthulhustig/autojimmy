@@ -5,16 +5,6 @@ import re
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Ideas for menu consistency
-# - Drop all "do X for All" menu items (except Remove All), the user can always
-# select everything. If there are lots of rows in the table it's unlikely they
-# would want do do anything with them all.
-# - Drop using Selected in things like "do X for Selected", it's implied it's
-# for the selection
-# - Try to drop "Show" from the start of options so just have "Details..." or
-# "Calculations...", the exception is probably show on map as jus having "Map..."
-# doesn't make any sense
-# - Flatten map menu
 class TableWidgetEx(QtWidgets.QTableWidget):
     _FocusRectStyle = 'QTableWidget:focus{{border:{width}px solid {colour};}}'
     _FocusRectRegex = re.compile(r'QTableWidget:focus\s*{.*?}')
