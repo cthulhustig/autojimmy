@@ -65,7 +65,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             self.isEmptyChanged()
 
     # NOTE: A table not being empty just means it has cells, it doesn't
-    # necessarily those cells have content (i.e. items) yet
+    # necessarily mean those cells have content (i.e. items) yet
     def isEmpty(self) -> bool:
         return self.rowCount() <= 0 or self.columnCount() <= 0
 
