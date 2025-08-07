@@ -34,12 +34,12 @@ class ManifestTable(gui.ListTable):
         columns.append(ManifestTable.StdColumnType.Factors)
 
         action = QtWidgets.QAction('Show Selected Calculations...', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.showSelectedCalculations)
         self.setMenuAction(ManifestTable.MenuAction.ShowSelectedCalculations, action)
 
         action = QtWidgets.QAction('Show All Calculations...', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.showAllCalculations)
         self.setMenuAction(ManifestTable.MenuAction.ShowAllCalculations, action)
 

@@ -106,12 +106,12 @@ class ListTable(gui.TableWidgetEx):
         self._columnWidths: typing.Dict[str, int] = {}
 
         action = QtWidgets.QAction('Copy as CSV', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.copyToClipboardAsCsv)
         self.setMenuAction(ListTable.MenuAction.CopyAsCsv, action)
 
         action = QtWidgets.QAction('Export as CSV...', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.promptExportAsCsv)
         self.setMenuAction(ListTable.MenuAction.ExportAsCsv, action)
 

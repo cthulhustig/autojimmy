@@ -32,22 +32,22 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         self._menuActions: typing.Dict[typing.Tuple[enum.Enum, QtWidgets.QAction]] = {}
 
         action = QtWidgets.QAction('Copy as HTML', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.copyToClipboardAsHtml)
         self.setMenuAction(TableWidgetEx.MenuAction.CopyAsHtml, action)
 
         action = QtWidgets.QAction('Copy as Image', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.copyToClipboardAsImage)
         self.setMenuAction(TableWidgetEx.MenuAction.CopyAsImage, action)
 
         action = QtWidgets.QAction('Export as HTML...', self)
-        action.setEnabled(False) # No content to export
+        action.setEnabled(False) # No content
         action.triggered.connect(self.promptExportAsHtml)
         self.setMenuAction(TableWidgetEx.MenuAction.ExportAsHtml, action)
 
         action = QtWidgets.QAction('Export as Image...', self)
-        action.setEnabled(False) # No content to export
+        action.setEnabled(False) # No content
         action.triggered.connect(self.promptExportAsImage)
         self.setMenuAction(TableWidgetEx.MenuAction.ExportAsImage, action)
 

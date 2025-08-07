@@ -88,12 +88,12 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         self._outcomeColours = app.OutcomeColours(outcomeColours)
 
         action = QtWidgets.QAction('Show Selected Calculations...', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedCalculations)
         self.setMenuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations, action)
 
         action = QtWidgets.QAction('Show All Calculations...', self)
-        action.setEnabled(False) # No content to copy
+        action.setEnabled(False) # No content
         action.triggered.connect(self.showAllCalculations)
         self.setMenuAction(CargoRecordTable.MenuAction.ShowAllCalculations, action)
 
