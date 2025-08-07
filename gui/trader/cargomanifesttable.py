@@ -171,7 +171,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedJumpRouteOnMap, action)
 
         action = QtWidgets.QAction('Show Selected Calculations...', self)
-        action.setEnabled(False) # No content
+        action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedCalculations)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedCalculations, action)
 
