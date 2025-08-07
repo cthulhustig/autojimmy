@@ -1,6 +1,8 @@
 import app
+import csv
 import enum
 import gui
+import io
 import logging
 import logic
 import traveller
@@ -517,6 +519,42 @@ class HexTable(gui.FrozenColumnListTable):
 
         # Add base class menu options (export, copy to clipboard etc)
         super().fillContextMenu(menu)
+
+    # NOTE: Override base ListTable implementation of contentToCsv so that x/y
+    # hex positions can be inserted in the exported data. This is done so in
+    # the future I can add milieu independent import of the exported files by
+    # just using the x/y position and ignoring the rest of the details.
+    def contentToCsv(self) -> str:
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        header = []
+        for column in range(self.columnCount()):
+            if self.isColumnHidden(column):
+                continue
+            header.append(self._csvHeaderText(column))
+        header.extend(['Reference X', 'Reference Y'])
+        writer.writerow(header)
+
+        for row in range(self.rowCount()):
+            hex = self.hex(row)
+            if not hex:
+                continue
+
+            content = []
+            for column in range(self.columnCount()):
+                if self.isColumnHidden(column):
+                    continue
+                content.append(self._csvCellText(row, column))
+            content.extend([hex.absoluteX(), hex.absoluteY()])
+
+            writer.writerow(content)
+
+        content = output.getvalue()
+        # The csv writer inserts \r\n which get messed up if you try
+        # to write the content to a file, resulting in blank lines
+        # between every line of data
+        return content.replace('\r\n', '\n')
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
