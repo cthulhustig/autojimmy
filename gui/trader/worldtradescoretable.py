@@ -129,18 +129,6 @@ class WorldTradeScoreTable(gui.HexTable):
             return
         self._showCalculations(calculations=calculations)
 
-    def showSelectedCalculationsAction(self) -> QtWidgets.QAction:
-        return self._showSelectedCalculationsAction
-
-    def setShowSelectedCalculationsAction(self, action: QtWidgets.QAction) -> None:
-        self._showSelectedCalculationsAction = action
-
-    def showAllCalculationsAction(self) -> QtWidgets.QAction:
-        return self._showAllCalculationsAction
-
-    def setShowAllCalculationsAction(self, action: QtWidgets.QAction) -> None:
-        self._showAllCalculationsAction = action
-
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         # Add base class menu options (export, show on map etc)
         super().fillContextMenu(menu)
