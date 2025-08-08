@@ -115,6 +115,12 @@ class ManifestTable(gui.ListTable):
             return
         self._showCalculations(calculations=calculations)
 
+    def showAllCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=False)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
     def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
         # Add base classes context menu (export, copy to clipboard etc)
         super().fillContextMenu(menu)
