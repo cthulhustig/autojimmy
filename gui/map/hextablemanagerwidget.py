@@ -693,8 +693,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         menu.exec(globalPos)
 
     def _tableSelectionChanged(self) -> None:
-        hasSelection = self._hexTable.hasSelection()
-        self._removeSelectionButton.setEnabled(hasSelection)
         self._syncActions()
 
     def _displayModeChanged(self, index: int) -> None:

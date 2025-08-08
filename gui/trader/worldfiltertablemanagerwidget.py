@@ -423,7 +423,4 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         self.contentChanged.emit()
 
     def _tableSelectionChanged(self) -> None:
-        hasSelection = self._filterTable.hasSelection()
-        self._editSelectionButton.setEnabled(hasSelection)
-        self._removeSelectedButton.setEnabled(hasSelection)
         self._syncActions()
