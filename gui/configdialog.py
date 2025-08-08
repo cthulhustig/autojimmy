@@ -567,8 +567,8 @@ class ConfigDialog(gui.DialogEx):
                 option=app.ConfigOption.ProxySvgComposition,
                 futureValue=True))
         self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
-        self._proxyCompositionModeComboBox.setHidden(
-            not depschecker.DetectedCairoSvgState)
+        if not depschecker.DetectedCairoSvgState:
+            self._proxyCompositionModeComboBox.setHidden(True)
         self._proxyCompositionModeComboBox.currentIndexChanged.connect(
             self._proxyModeChanged)
         self._proxyCompositionModeComboBox.setToolTip(gui.createStringToolTip(
