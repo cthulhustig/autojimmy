@@ -71,7 +71,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._hexTable.installEventFilter(self)
         self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
         self._hexTable.itemSelectionChanged.connect(self._tableSelectionChanged)
-        # Disable sorting on if the list is to be ordered
+        # Disable sorting if the list is to be ordered
         self._hexTable.setSortingEnabled(not self._isOrderedList)
 
         addLocationAction = QtWidgets.QAction('Add...', self)
