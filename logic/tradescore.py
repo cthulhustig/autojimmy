@@ -93,7 +93,7 @@ class TradeScore(object):
         if not purchaseDm and not saleDm:
             return None
 
-        name = f'Purchase Trade Score For {tradeGood.name()} on {world.name()}'
+        name = f'Purchase Trade Score For {tradeGood.name()} on {world.name(includeSubsector=True)}'
         if purchaseDm and not saleDm:
             return common.Calculator.equals(
                 value=purchaseDm,
@@ -119,7 +119,7 @@ class TradeScore(object):
         if not purchaseDm and not saleDm:
             return None
 
-        name = f'Sale Trade Score For {tradeGood.name()} on {world.name()}'
+        name = f'Sale Trade Score For {tradeGood.name()} on {world.name(includeSubsector=True)}'
         if saleDm and not purchaseDm:
             return common.Calculator.equals(
                 value=saleDm,
