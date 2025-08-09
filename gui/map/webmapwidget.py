@@ -365,7 +365,7 @@ class WebMapWidget(QtWidgets.QWidget):
         if not self._jumpRoute:
             return
 
-        hexes = [nodeHex for nodeHex, _ in self._jumpRoute]
+        hexes = [nodeHex for nodeHex in self._jumpRoute]
         self.centerOnHexes(
             hexes=hexes,
             immediate=immediate)
