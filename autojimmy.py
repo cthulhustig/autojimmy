@@ -16,14 +16,12 @@ import os
 import pathlib
 import qasync
 import robots
-import socket
 import sys
 import travellermap
 import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-# TODO: Remove cairo and qt web widget from requirements
 # TODO: Update custom sector import dialog
 # - Remember to update dialog welcome message
 # TODO: Drop libcairo stuff from docs

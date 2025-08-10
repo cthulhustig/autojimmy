@@ -102,6 +102,7 @@ class SectorInfo(object):
             metadataFormat: travellermap.MetadataFormat,
             modifiedTimestamp: datetime.datetime,
             isCustomSector: bool,
+            # TODO: These options should go as part of this work
             customMapStyle: typing.Optional[travellermap.Style],
             customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
             customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]
@@ -1273,6 +1274,7 @@ class DataStore(object):
                 else:
                     modifiedTimestamp = datetime.datetime.fromtimestamp(0)
 
+                # TODO: Loading this should go as part of this work
                 customMapLevels = None
                 customMapStyle = None
                 customMapOptions = None
@@ -1382,6 +1384,7 @@ class DataStore(object):
                 sectorData['ModifiedTimestamp'] = \
                     DataStore._formatTimestamp(sectorInfo.modifiedTimestamp()).decode()
 
+                # TODO: Writing map levels, style & options should go as part of this work
                 mapLevels = sectorInfo.customMapLevels()
                 mapLevelListData = []
                 if mapLevels:
