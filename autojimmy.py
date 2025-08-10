@@ -24,6 +24,8 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 
 # TODO: Update custom sector import dialog
 # - Remember to update dialog welcome message
+# - It would be really nice if I could get some way of making sector imports live
+# rather than needing a restart
 # TODO: Drop libcairo stuff from docs
 
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
