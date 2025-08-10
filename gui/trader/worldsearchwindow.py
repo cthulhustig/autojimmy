@@ -489,10 +489,6 @@ class WorldSearchWindow(gui.WindowWidget):
         super().saveSettings()
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
-        # Schedule the Traveller Map init fix to be run shortly after the window is displayed. We
-        # can't run it directly here as the window won't have finished being resized (after loading
-        # the saved window layout) so the fix won't work.
-        QtCore.QTimer.singleShot(1000, self._travellerMapInitFix)
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         return super().firstShowEvent(e)
 
@@ -714,19 +710,6 @@ class WorldSearchWindow(gui.WindowWidget):
 
         self._foundWorldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._foundWorldsGroupBox.setLayout(layout)
-
-    # This is a MASSIVE hack. It works around the fact the Traveller Map widget isn't resized until
-    # its tab is displayed. This caused zooming to the jump route to not zoom to the correct area
-    # if the route was calculated before the widget was displayed for the first time. The hack works
-    # by checking if the Traveller Map widget is not the displayed widget and forces a resize if
-    # it's not.
-    # TODO: This can be removed when I finally ditch the web map widget
-    def _travellerMapInitFix(self) -> None:
-        currentWidget = self._resultsDisplayModeTabView.currentWidget()
-        if currentWidget != self._mapWidget:
-            size = currentWidget.size()
-            self._mapWidget.resize(size)
-            self._mapWidget.show()
 
     def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._worldTableDisplayModeTabs.currentDisplayMode()
