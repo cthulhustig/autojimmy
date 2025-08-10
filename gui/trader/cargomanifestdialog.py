@@ -4,7 +4,6 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -84,6 +83,11 @@ class CargoManifestDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
         self.showMaximizeButton()
         self.resize(800, 600)
+
+        # Make dialog only modal to this window that opened it otherwise it's
+        # not possible to pop up world info or map windows from inside the
+        # dialog
+        self.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
 
         self._generateCargoManifests()
 
@@ -240,12 +244,8 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoManifestTable.sortByColumnHeader(
             self._cargoManifestDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
-        self._cargoManifestTable.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoManifestTable.selectionModel().selectionChanged.connect(
             self._cargoManifestTableSelectionChanged)
-        self._cargoManifestTable.customContextMenuRequested.connect(
-            self._showCargoManifestTableContextMenu)
         self._cargoManifestTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
@@ -259,10 +259,6 @@ class CargoManifestDialog(gui.DialogEx):
         self._cargoBreakdownTable.sortByColumnHeader(
             self._cargoBreakdownDefaultSortColumn(),
             QtCore.Qt.SortOrder.DescendingOrder)
-        self._cargoBreakdownTable.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._cargoBreakdownTable.customContextMenuRequested.connect(
-            self._showCargoBreakdownTableContextMenu)
 
         self._cargoManifestSplitter = QtWidgets.QSplitter(
             QtCore.Qt.Orientation.Vertical)
@@ -328,7 +324,7 @@ class CargoManifestDialog(gui.DialogEx):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _cargoManifestColumns(self) -> typing.List[gui.CargoManifestTable.ColumnType]:
@@ -472,78 +468,6 @@ class CargoManifestDialog(gui.DialogEx):
 
         for tradeOption in cargoManifest.tradeOptions():
             self._cargoBreakdownTable.addTradeOption(tradeOption)
-
-    def _showCargoManifestTableContextMenu(self, point: QtCore.QPoint) -> None:
-        cargoManifest = self._cargoManifestTable.cargoManifestAt(point.y())
-
-        menuItems = [
-            gui.MenuItem(
-                text='Show Purchase World Details...',
-                callback=lambda: self._showWorldDetails([cargoManifest.purchaseWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Sale World Details...',
-                callback=lambda: self._showWorldDetails([cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Purchase && Sale World Details...',
-                callback=lambda: self._showWorldDetails([cargoManifest.purchaseWorld(), cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Purchase World on Map...',
-                callback=lambda: self._showWorldsOnMap([cargoManifest.purchaseWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Sale World on Map...',
-                callback=lambda: self._showWorldsOnMap([cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Purchase && Sale Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap([cargoManifest.purchaseWorld(), cargoManifest.saleWorld()]),
-                enabled=cargoManifest != None
-            ),
-            gui.MenuItem(
-                text='Show Jump Route on Map...',
-                callback=lambda: self._showJumpRouteOnMap(cargoManifest.jumpRoute()),
-                enabled=cargoManifest != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Cargo Manifest Calculations...',
-                callback=lambda: self._showCalculations(cargoManifest.netProfit()),
-                enabled=cargoManifest != None
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._cargoManifestTable.viewport().mapToGlobal(point))
-
-    def _showCargoBreakdownTableContextMenu(self, point: QtCore.QPoint) -> None:
-        tradeOption = self._cargoBreakdownTable.tradeOptionAt(point.y())
-
-        menuItems = [
-            # When showing trade option calculation we show the calculation for the gross profit
-            # (rather than net profit) as logistics don't apply to individual trade options when
-            # working with a cargo manifest
-            gui.MenuItem(
-                text='Show Trade Option Calculations...',
-                callback=lambda: self._showCalculations(tradeOption.grossProfit()),
-                enabled=tradeOption != None
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._cargoBreakdownTable.viewport().mapToGlobal(point))
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

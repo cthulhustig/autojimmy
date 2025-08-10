@@ -231,6 +231,7 @@ class _TaggingTable(gui.ListTable):
         self.resizeColumnsToContents() # Size columns to header text
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
 
         # Setup horizontal scroll bar. Setting the last column to stretch to fit its content
         # is required to make the it appear reliably
@@ -500,6 +501,7 @@ class ConfigDialog(gui.DialogEx):
 
         # Proxy Widgets
         isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
+        isCairoDetected = depschecker.DetectedCairoSvgState is depschecker.CairoSvgState.Working
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
@@ -565,9 +567,8 @@ class ConfigDialog(gui.DialogEx):
             userData=app.Config.instance().value(
                 option=app.ConfigOption.ProxySvgComposition,
                 futureValue=True))
-        self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
-        self._proxyCompositionModeComboBox.setHidden(
-            not depschecker.DetectedCairoSvgState)
+        self._proxyCompositionModeComboBox.setEnabled(
+            isProxyEnabled and isCairoDetected)
         self._proxyCompositionModeComboBox.currentIndexChanged.connect(
             self._proxyModeChanged)
         self._proxyCompositionModeComboBox.setToolTip(gui.createStringToolTip(
@@ -1101,12 +1102,13 @@ class ConfigDialog(gui.DialogEx):
 
     def _renderingTypeChanged(self) -> None:
         isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
+        isCairoDetected = depschecker.DetectedCairoSvgState is depschecker.CairoSvgState.Working
         self._proxyPortSpinBox.setEnabled(isProxyEnabled)
         self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
         self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
         self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled)
+        self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled and isCairoDetected)
 
     def _proxyModeChanged(self) -> None:
         if not self._proxyCompositionModeComboBox.currentUserData():

@@ -1,17 +1,21 @@
 import app
+import enum
 import gui
 import logging
 import logic
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
-    contextMenuRequested = QtCore.pyqtSignal(QtCore.QPoint)
-    displayModeChanged = QtCore.pyqtSignal(gui.HexTableTabBar.DisplayMode)
-    showOnMapRequested = QtCore.pyqtSignal([list])
+
+    class MenuAction(enum.Enum):
+        AddLocation = enum.auto()
+        AddNearby = enum.auto()
+        RemoveSelected = enum.auto()
+        RemoveAll = enum.auto()
 
     _StateVersion = 'HexTableManagerWidget_v1'
 
@@ -43,9 +47,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._allowHexCallback = allowHexCallback
         self._isOrderedList = isOrderedList
         self._relativeHex = None
-        self._enableContextMenuEvent = False
-        self._enableDisplayModeChangedEvent = False
-        self._enableShowOnMapEvent = False
         self._enableDeadSpace = False
 
         self._displayModeTabs = displayModeTabs
@@ -67,12 +68,30 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self._hexTable.setTaggingColours(colours=self._taggingColours)
         self._hexTable.setActiveColumns(self._displayColumns())
         self._hexTable.setMinimumHeight(100)
-        self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._hexTable.customContextMenuRequested.connect(self._showTableContextMenu)
-        self._hexTable.keyPressed.connect(self._tableKeyPressed)
-        if self._isOrderedList:
-            # Disable sorting on if the list is to be ordered
-            self._hexTable.setSortingEnabled(False)
+        self._hexTable.installEventFilter(self)
+        self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
+        self._hexTable.itemSelectionChanged.connect(self._tableSelectionChanged)
+        # Disable sorting if the list is to be ordered
+        self._hexTable.setSortingEnabled(not self._isOrderedList)
+
+        addLocationAction = QtWidgets.QAction('Add...', self)
+        addLocationAction.triggered.connect(self.promptAddLocation)
+        self._hexTable.setMenuAction(HexTableManagerWidget.MenuAction.AddLocation, addLocationAction)
+
+        addNearbyAction = QtWidgets.QAction('Add Nearby...', self)
+        addNearbyAction.setVisible(not self._isOrderedList)
+        addNearbyAction.triggered.connect(self.promptAddNearby)
+        self._hexTable.setMenuAction(HexTableManagerWidget.MenuAction.AddNearby, addNearbyAction)
+
+        removeSelectionAction = QtWidgets.QAction('Remove', self)
+        removeSelectionAction.setEnabled(False) # No selection
+        removeSelectionAction.triggered.connect(self.removeSelectedRows)
+        self._hexTable.setMenuAction(HexTableManagerWidget.MenuAction.RemoveSelected, removeSelectionAction)
+
+        removeAllAction = QtWidgets.QAction('Remove All', self)
+        removeAllAction.setEnabled(False) # No content
+        removeAllAction.triggered.connect(self.removeAllRows)
+        self._hexTable.setMenuAction(HexTableManagerWidget.MenuAction.RemoveAll, removeAllAction)
 
         tableLayout = QtWidgets.QVBoxLayout()
         tableLayout.setContentsMargins(0, 0, 0 , 0)
@@ -109,33 +128,34 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
             tableLayout = orderedTableLayout
 
-        self._addLocationsButton = QtWidgets.QPushButton('Add...')
+        self._addLocationsButton = gui.ActionButton(
+            action=addLocationAction)
         self._addLocationsButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addLocationsButton.clicked.connect(self.promptAddLocations)
 
         self._addNearbyButton = None
         if not self._isOrderedList:
             # Adding multiple hexes as one time doesn't really make sense for
             # ordered list
-            self._addNearbyButton = QtWidgets.QPushButton('Add Nearby...')
+            self._addNearbyButton = gui.ActionButton(
+                action=addNearbyAction)
             self._addNearbyButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
                 QtWidgets.QSizePolicy.Policy.Minimum)
-            self._addNearbyButton.clicked.connect(self.promptAddNearby)
 
-        self._removeButton = QtWidgets.QPushButton('Remove')
-        self._removeButton.setSizePolicy(
+        self._removeSelectionButton = gui.ActionButton(
+            action=removeSelectionAction,
+            text='Remove')
+        self._removeSelectionButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeButton.clicked.connect(self.removeSelectedRows)
 
-        self._removeAllButton = QtWidgets.QPushButton('Remove All')
+        self._removeAllButton = gui.ActionButton(
+            action=removeAllAction)
         self._removeAllButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeAllButton.clicked.connect(self.removeAllRows)
 
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
@@ -143,7 +163,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         buttonLayout.addWidget(self._addLocationsButton)
         if self._addNearbyButton:
             buttonLayout.addWidget(self._addNearbyButton)
-        buttonLayout.addWidget(self._removeButton)
+        buttonLayout.addWidget(self._removeSelectionButton)
         buttonLayout.addWidget(self._removeAllButton)
 
         widgetLayout = QtWidgets.QVBoxLayout()
@@ -152,6 +172,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         widgetLayout.addLayout(buttonLayout)
 
         self.setLayout(widgetLayout)
+        self.installEventFilter(self)
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -237,7 +258,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             if not self._allowHexCallback(hex):
                 return
         self._hexTable.addHex(hex)
-        self.contentChanged.emit()
+        self._notifyContentChangeObservers()
 
     def addHexes(
             self,
@@ -255,7 +276,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         else:
             self._hexTable.addHexes(hexes=hexes)
 
-        self.contentChanged.emit()
+        self._notifyContentChangeObservers()
 
     def removeHex(
             self,
@@ -263,13 +284,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> bool:
         removed = self._hexTable.removeHex(hex)
         if removed:
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
         return removed
 
     def removeAllRows(self) -> None:
-        if not self._hexTable.isEmpty():
-            self._hexTable.removeAllRows()
-            self.contentChanged.emit()
+        if self._hexTable.isEmpty():
+            return
+        self._hexTable.removeAllRows()
+        self._notifyContentChangeObservers()
 
     def isEmpty(self) -> bool:
         return self._hexTable.isEmpty()
@@ -322,9 +344,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         return self._hexTable.selectedWorlds()
 
     def removeSelectedRows(self) -> None:
-        if self._hexTable.hasSelection():
-            self._hexTable.removeSelectedRows()
-            self.contentChanged.emit()
+        if not self._hexTable.hasSelection():
+            return
+
+        self._hexTable.removeSelectedRows()
+        self._notifyContentChangeObservers()
 
     def setRelativeHex(
             self,
@@ -402,7 +426,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             ) -> bool:
         result = self._hexTable.restoreContent(state=state)
         if not self._hexTable.isEmpty():
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
         return result
 
     def setHexTooltipProvider(
@@ -410,24 +434,6 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             provider: typing.Optional[gui.HexTooltipProvider]
             ) -> None:
         self._hexTable.setHexTooltipProvider(provider=provider)
-
-    def enableContextMenuEvent(self, enable: bool = True) -> None:
-        self._enableContextMenuEvent = enable
-
-    def isContextMenuEventEnabled(self) -> bool:
-        return self._enableContextMenuEvent
-
-    def enableDisplayModeChangedEvent(self, enable: bool = True) -> None:
-        self._enableDisplayModeChangedEvent = enable
-
-    def isDisplayModeChangedEventEnabled(self) -> bool:
-        return self._enableDisplayModeChangedEvent
-
-    def enableShowOnMapEvent(self, enable: bool = True) -> None:
-        self._enableShowOnMapEvent = enable
-
-    def isShowOnMapEventEnabled(self) -> bool:
-        return self._enableShowOnMapEvent
 
     def enableDeadSpace(self, enable: bool) -> None:
         if enable == self._enableDeadSpace:
@@ -447,12 +453,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                     self._hexTable.removeRow(row=row)
                     contentChanged = True
             if contentChanged:
-                self.contentChanged.emit()
+                self._notifyContentChangeObservers()
 
     def isDeadSpaceEnabled(self) -> bool:
         return self._enableDeadSpace
 
-    def promptAddLocations(self) -> None:
+    def promptAddLocation(self) -> None:
         currentHexes = self.hexes()
 
         dlg = gui.HexSelectDialog(
@@ -500,18 +506,17 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
             # Add newly selected hexes
             for hex in newHexes:
-                if hex not in currentHexes:
-                    if self._allowHexCallback and not self._allowHexCallback(hex):
-                        # Silently ignore worlds that are filtered out
-                        continue
+                if self._allowHexCallback and not self._allowHexCallback(hex):
+                    # Silently ignore worlds that are filtered out
+                    continue
 
-                    self._hexTable.addHex(hex)
-                    updated = True
+                self._hexTable.addHex(hex)
+                updated = True
         finally:
             self._hexTable.setSortingEnabled(sortingEnabled)
 
         if updated:
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
 
     def promptAddNearby(
             self,
@@ -542,6 +547,124 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
         self.addHexes(hexes=dlg.selectedHexes())
 
+    def menuAction(
+            self,
+            id: enum.Enum
+            ) -> typing.Optional[QtWidgets.QAction]:
+        return self._hexTable.menuAction(id)
+
+    def setMenuAction(
+            self,
+            id: enum.Enum,
+            action: typing.Optional[QtWidgets.QAction]
+            ) -> None:
+        self._hexTable.setMenuAction(id, action)
+
+        if id is HexTableManagerWidget.MenuAction.AddLocation:
+            self._addLocationsButton.setAction(action=action)
+        elif id is HexTableManagerWidget.MenuAction.AddNearby:
+            self._addNearbyButton.setAction(action=action)
+        elif id is HexTableManagerWidget.MenuAction.RemoveSelected:
+            self._removeSelectionButton.setAction(action=action)
+        elif id is HexTableManagerWidget.MenuAction.RemoveAll:
+            self._removeAllButton.setAction(action=action)
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        needsSeparator = False
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.AddLocation)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.AddNearby)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.RemoveSelected)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.RemoveAll)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        # Add table menu options
+        self._hexTable.fillContextMenu(menu)
+
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if not event or not self._hexTable:
+            return
+
+        globalPos = event.globalPos()
+        tablePos = self._hexTable.mapFromGlobal(globalPos)
+        viewport = self._hexTable.viewport()
+        tableGeometry = viewport.geometry() if viewport else self._hexTable.geometry()
+        if tableGeometry.contains(tablePos):
+            menu = QtWidgets.QMenu(self)
+            self.fillContextMenu(menu=menu)
+            menu.exec(globalPos)
+
+        #super().contextMenuEvent(event)
+
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self:
+            if event.type() == QtCore.QEvent.Type.ContextMenu:
+                if self.contextMenuPolicy() == QtCore.Qt.ContextMenuPolicy.CustomContextMenu:
+                    assert(isinstance(event, QtGui.QContextMenuEvent))
+                    if self._hexTable:
+                        globalPos = event.globalPos()
+                        tablePos = self._hexTable.mapFromGlobal(globalPos)
+
+                        # Only allow context menu if mouse is over the table viewport
+                        viewport = self._hexTable.viewport()
+                        tableGeometry = viewport.geometry() if viewport else self._hexTable.geometry()
+                        if tableGeometry.contains(tablePos):
+                            self.customContextMenuRequested.emit(event.pos())
+
+                    event.accept()
+                    return True
+        elif object == self._hexTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self.removeSelectedRows()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
+    def _syncActions(self) -> None:
+        hasContent = not self.isEmpty()
+        hasSelection = self.hasSelection()
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.AddNearby)
+        if action:
+            action.setVisible(not self._isOrderedList)
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.RemoveSelected)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(HexTableManagerWidget.MenuAction.RemoveAll)
+        if action:
+            action.setEnabled(hasContent)
+
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()
         if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
@@ -559,97 +682,18 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         else:
             assert(False) # I missed a case
 
-    def _showDetails(
-            self,
-            hexes: typing.Iterable[travellermap.HexPosition]
-            ) -> None:
-        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addHexes(hexes=hexes)
-
-    def _showOnMap(
-            self,
-            hexes: typing.Iterable[travellermap.HexPosition]
-            ) -> None:
-        if self._enableShowOnMapEvent:
-            self.showOnMapRequested.emit(hexes)
-            return
-
-        try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
-            mapWindow.highlightHexes(hexes=hexes)
-        except Exception as ex:
-            message = 'Failed to show world(s) on map'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
+    def _notifyContentChangeObservers(self) -> None:
+        self._syncActions()
+        self.contentChanged.emit()
 
     def _showTableContextMenu(self, point: QtCore.QPoint) -> None:
-        if self._enableContextMenuEvent:
-            translated = self._hexTable.viewport().mapToGlobal(point)
-            translated = self.mapFromGlobal(translated)
-            self.contextMenuRequested.emit(translated)
-            return
+        globalPos = self._hexTable.viewport().mapToGlobal(point)
+        menu = QtWidgets.QMenu(self)
+        self.fillContextMenu(menu=menu)
+        menu.exec(globalPos)
 
-        clickedHex = self._hexTable.hexAt(point.y())
-
-        menuItems = []
-
-        menuItems.append(gui.MenuItem(
-            text='Add...',
-            callback=lambda: self.promptAddLocations(),
-            enabled=True))
-        if not self._isOrderedList:
-            menuItems.append(gui.MenuItem(
-                text='Add Nearby...',
-                callback=lambda: self.promptAddNearby(initialHex=clickedHex),
-                enabled=True,
-                displayed=self._addNearbyButton != None))
-        menuItems.append(None) # Separator
-
-        menuItems.append(gui.MenuItem(
-            text='Remove Selected',
-            callback=lambda: self.removeSelectedRows(),
-            enabled=self._hexTable.hasSelection()))
-        menuItems.append(gui.MenuItem(
-            text='Remove All',
-            callback=lambda: self.removeAllRows(),
-            enabled=not self._hexTable.isEmpty()))
-        menuItems.append(None) # Separator
-
-        menuItems.append(gui.MenuItem(
-            text='Show Selection Details...',
-            callback=lambda: self._showDetails(self._hexTable.selectedHexes()),
-            enabled=self._hexTable.hasSelection()))
-        menuItems.append(gui.MenuItem(
-            text='Show All Details...',
-            callback=lambda: self._showDetails(self._hexTable.hexes()),
-            enabled=not self._hexTable.isEmpty()))
-        menuItems.append(None) # Separator
-
-        menuItems.append(gui.MenuItem(
-            text='Show Selection on Map...',
-            callback=lambda: self._showOnMap(self._hexTable.selectedHexes()),
-            enabled=self._hexTable.hasSelection()))
-        menuItems.append(gui.MenuItem(
-            text='Show All on Map...',
-            callback=lambda: self._showOnMap(self._hexTable.hexes()),
-            enabled=not self._hexTable.isEmpty()))
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._hexTable.viewport().mapToGlobal(point))
-
-    def _tableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self.removeSelectedRows()
+    def _tableSelectionChanged(self) -> None:
+        self._syncActions()
 
     def _displayModeChanged(self, index: int) -> None:
-        if self._enableDisplayModeChangedEvent:
-            self.displayModeChanged.emit(self._displayModeTabs.currentDisplayMode())
-            return
-
         self._hexTable.setActiveColumns(self._displayColumns())

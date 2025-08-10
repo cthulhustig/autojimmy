@@ -548,13 +548,13 @@ class _LegendWidget(QtWidgets.QWidget):
         self.syncContent()
         self.adjustSize()
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
         self._style = style
         self.syncContent()
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -937,6 +937,9 @@ class MapWidgetEx(QtWidgets.QWidget):
         SingleSelect = 1
         MultiSelect = 2
 
+    class MenuAction(enum.Enum):
+        ExportImage = 0
+
     _StateVersion = 'MapWidgetEx_v1'
 
     _ControlWidgetInset = 20
@@ -1110,7 +1113,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 _ActionGroupComboBox(self._renderingActionGroup),
                 renderingConfigLayout.rowCount(), 0, 1, 2)
 
-            self._animatedAction = QtWidgets.QAction('Animations')
+            self._animatedAction = QtWidgets.QAction('Animations', self)
             self._animatedAction.setCheckable(True)
             self._animatedAction.setChecked(self._animated)
             self._animatedAction.toggled.connect(self._animatedChanged)
@@ -1208,12 +1211,12 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._filledBordersAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._filledBordersAction)
 
-        self._dmUnofficialAction = _MapOptionAction(
+        self._dimUnofficialAction = _MapOptionAction(
             option=travellermap.Option.DimUnofficial)
-        self._dmUnofficialAction.setChecked(
+        self._dimUnofficialAction.setChecked(
             travellermap.Option.DimUnofficial in self._options)
-        self._dmUnofficialAction.optionChanged.connect(self._mapOptionChanged)
-        appearanceConfigLayout.addToggleAction(self._dmUnofficialAction)
+        self._dimUnofficialAction.optionChanged.connect(self._mapOptionChanged)
+        appearanceConfigLayout.addToggleAction(self._dimUnofficialAction)
 
         self._configWidget.addSection(
             section='Appearance',
@@ -1307,6 +1310,14 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._configureOverlayControls()
 
+        self._menuActions: typing.Dict[typing.Tuple[enum.Enum, QtWidgets.QAction]] = {}
+
+        action = QtWidgets.QAction(
+            'Export Image...',
+            self)
+        action.triggered.connect(self.promptExportImage)
+        self.setMenuAction(MapWidgetEx.MenuAction.ExportImage, action)
+
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
 
@@ -1329,31 +1340,31 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._infoWidget.setRules(rules=self._rules)
 
-    def style(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.Style:
         return self._style
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
 
         self._style = style
-        self._mapWidget.setStyle(style=self._style)
-        self._legendWidget.setStyle(style=self._style)
+        self._mapWidget.setMapStyle(style=self._style)
+        self._legendWidget.setMapStyle(style=self._style)
         self._styleActionGroup.setCurrent(current=self._style)
 
         self.mapStyleChanged.emit(self._style)
 
-    def options(self) -> typing.List[travellermap.Option]:
+    def mapOptions(self) -> typing.List[travellermap.Option]:
         return list(self._options)
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
 
         self._options = options
-        self._mapWidget.setOptions(options=self._options)
-        self._legendWidget.setOptions(options=self._options)
+        self._mapWidget.setMapOptions(options=self._options)
+        self._legendWidget.setMapOptions(options=self._options)
         self._galacticDirectionsAction.setChecked(
             travellermap.Option.GalacticDirections in self._options)
         self._sectorGridAction.setChecked(
@@ -1376,7 +1387,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             travellermap.Option.WorldColours in self._options)
         self._filledBordersAction.setChecked(
             travellermap.Option.FilledBorders in self._options)
-        self._dmUnofficialAction.setChecked(
+        self._dimUnofficialAction.setChecked(
             travellermap.Option.DimUnofficial in self._options)
         self._mainsOverlayAction.setChecked(
             travellermap.Option.MainsOverlay in self._options)
@@ -1461,12 +1472,12 @@ class MapWidgetEx(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
-            linearScale=linearScale,
+            scale=scale,
             immediate=immediate)
 
     def centerOnHexes(
@@ -1594,8 +1605,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._mapWidget.setToolTipCallback(callback=callback)
 
-    def createSnapshot(self) -> QtGui.QPixmap:
-        return self._mapWidget.createSnapshot()
+    def createPixmap(self) -> QtGui.QPixmap:
+        return self._mapWidget.createPixmap()
 
     def hasSelection(self) -> bool:
         return len(self._selectedHexes) > 0
@@ -1771,6 +1782,80 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._configWidget.addSection(section=section, content=content)
 
+    def promptExportImage(self) -> None:
+        try:
+            snapshot = self._mapWidget.createPixmap()
+        except Exception as ex:
+            message = 'An exception occurred while generating image to export'
+            logging.error(msg=message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        # https://doc.qt.io/qt-5/qpixmap.html#reading-and-writing-image-files
+        _SupportedFormats = {
+            'Bitmap (*.bmp)': 'bmp',
+            'JPEG (*.jpg *.jpeg)': 'jpg',
+            'PNG (*.png)': 'png',
+            'Portable Pixmap (*.ppm)': 'ppm',
+            'X11 Bitmap (*.xbm)': 'xbm',
+            'X11 Pixmap (*.xpm)': 'xpm'}
+
+        path, filter = QtWidgets.QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Export Snapshot',
+            filter=';;'.join(_SupportedFormats.keys()))
+        if not path:
+            return # User cancelled
+
+        format = _SupportedFormats.get(filter)
+        if format is None:
+            message = f'Unable to export image with unknown format "{filter}"'
+            logging.error(msg=message)
+            gui.MessageBoxEx.critical(message)
+            return
+
+        try:
+            if not snapshot.save(path, format):
+                gui.MessageBoxEx.critical(f'Failed to export image to "{path}"')
+        except Exception as ex:
+            message = f'An exception occurred while exporting the image to "{path}"'
+            logging.error(msg=message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def menuAction(
+            self,
+            id: enum.Enum
+            ) -> typing.Optional[QtWidgets.QAction]:
+        return self._menuActions.get(id)
+
+    def setMenuAction(
+            self,
+            id: enum.Enum,
+            action: typing.Optional[QtWidgets.QAction]
+            ) -> None:
+        self._menuActions[id] = action
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        action = self.menuAction(MapWidgetEx.MenuAction.ExportImage)
+        if action:
+            menu.addAction(action)
+
+    def displayContextMenu(self, pos: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu(self)
+        self.fillContextMenu(menu=menu)
+
+        if menu.isEmpty():
+            return
+
+        globalPos = self.mapToGlobal(pos)
+        menu.exec(globalPos)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._searchWidget or object == self._searchButton:
             if event.type() == QtCore.QEvent.Type.KeyPress:
@@ -1785,30 +1870,38 @@ class MapWidgetEx(QtWidgets.QWidget):
             if event.key() == QtCore.Qt.Key.Key_Escape:
                 if self._fullScreenButton.isChecked():
                     self._fullScreenButton.setChecked(False)
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_C:
                 hex = self._searchWidget.currentHex()
                 if hex:
                     self.centerOnHex(hex=hex)
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_H: # Copied from Traveller Map
                 self._gotoHome()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_F: # Copied from Traveller Map
                 self._fullScreenButton.toggle()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_M: # Copied from Traveller Map
                 self._legendButton.toggle()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_Slash: # Copied from Traveller Map
                 self._searchWidget.setFocus()
-                return # Swallow event
+                event.accept()
+                return
         elif event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier:
             if event.key() == QtCore.Qt.Key.Key_F:
                 self._searchWidget.setFocus()
-                return # Swallow event
+                event.accept()
+                return
             elif event.key() == QtCore.Qt.Key.Key_W:
                 self._infoButton.toggle()
-                return # Swallow event
+                return
 
         super().keyPressEvent(event)
 
@@ -1816,6 +1909,16 @@ class MapWidgetEx(QtWidgets.QWidget):
         super().resizeEvent(event)
         self._mapWidget.resize(event.size())
         self._configureOverlayControls()
+
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if event:
+            self.displayContextMenu(pos=event.pos())
+            event.accept()
+        #super().contextMenuEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
         searchWidgetSize = self._searchWidget.size()
@@ -1966,10 +2069,11 @@ class MapWidgetEx(QtWidgets.QWidget):
                 sectorY=travellermap.ReferenceSectorY,
                 offsetX=travellermap.ReferenceHexX,
                 offsetY=travellermap.ReferenceHexY),
-            linearScale=MapWidgetEx._HomeLinearScale)
+            scale=travellermap.Scale(
+                linear=MapWidgetEx._HomeLinearScale))
 
     def _mapStyleChanged(self, style: travellermap.Style) -> None:
-        self.setStyle(style=style)
+        self.setMapStyle(style=style)
 
     def _mapOptionChanged(self, option: travellermap.Option, enabled: bool) -> None:
         if (enabled and option in self._options) or (not enabled and option not in self._options):
@@ -1981,7 +2085,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         else:
             newOptions.remove(option)
 
-        self.setOptions(options=newOptions)
+        self.setMapOptions(options=newOptions)
 
     def _renderingChanged(self, rendering: app.MapRendering) -> None:
         self.setRendering(rendering=rendering)

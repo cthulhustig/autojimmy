@@ -208,12 +208,30 @@ class WorldComparisonWindow(gui.WindowWidget):
             taggingColours=taggingColours,
             allowHexCallback=self._allowWorld,
             hexTable=self._worldTable)
-        self._worldManagementWidget.setHexTooltipProvider(provider=self._hexTooltipProvider)
-        self._worldManagementWidget.enableDisplayModeChangedEvent(enable=True)
-        self._worldManagementWidget.displayModeChanged.connect(self._updateWorldTableColumns)
-        self._worldManagementWidget.enableContextMenuEvent(enable=True)
-        self._worldManagementWidget.contextMenuRequested.connect(self._showWorldTableContextMenu)
-        self._worldManagementWidget.contentChanged.connect(self._tableContentsChanged)
+        self._worldManagementWidget.setHexTooltipProvider(
+            provider=self._hexTooltipProvider)
+        self._worldManagementWidget.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._worldManagementWidget.customContextMenuRequested.connect(
+            self._showWorldTableContextMenu)
+        self._worldManagementWidget.contentChanged.connect(
+            self._tableContentsChanged)
+
+        # Override the tables actions for showing selected/all worlds on a popup map
+        # window with actions that will show them on the main map for this window
+        showSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
+        showSelectionOnMapAction.setEnabled(False) # No selection
+        showSelectionOnMapAction.triggered.connect(self._showTableSelectionOnMap)
+        self._worldManagementWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showSelectionOnMapAction)
+
+        showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showAllOnMapAction.setEnabled(False) # No content
+        showAllOnMapAction.triggered.connect(self._showTableContentOnMap)
+        self._worldManagementWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showAllOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -264,23 +282,6 @@ class WorldComparisonWindow(gui.WindowWidget):
     def _allowWorld(self, hex: travellermap.HexPosition) -> bool:
         return not self._worldManagementWidget.containsHex(hex)
 
-    def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
-        displayMode = self._worldManagementWidget.displayMode()
-        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
-            return gui.WorldTradeScoreTable.AllColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
-            return gui.WorldTradeScoreTable.SystemColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
-            return gui.WorldTradeScoreTable.UWPColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
-            return gui.WorldTradeScoreTable.EconomicsColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
-            return gui.WorldTradeScoreTable.CultureColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
-            return gui.WorldTradeScoreTable.RefuellingColumns
-        else:
-            assert(False) # I missed a case
-
     def _tradeGoodTableItemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
         if not self._worldTable:
             # This should only happen during setup when the world management widget hasn't
@@ -302,9 +303,6 @@ class WorldComparisonWindow(gui.WindowWidget):
             # This should never happen but handle it just in case
             return
         self._worldTable.setTradeGoods(tradeGoods=self._tradeGoodTable.checkedTradeGoods())
-
-    def _updateWorldTableColumns(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
-        self._worldManagementWidget.setActiveColumns(self._worldColumns())
 
     def _tableContentsChanged(self) -> None:
         with gui.SignalBlocker(widget=self._mapWidget):
@@ -345,11 +343,11 @@ class WorldComparisonWindow(gui.WindowWidget):
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
             self._worldManagementWidget.setMapStyle(style=newValue)
-            self._mapWidget.setStyle(style=newValue)
+            self._mapWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
             self._worldManagementWidget.setMapOptions(options=newValue)
-            self._mapWidget.setOptions(options=newValue)
+            self._mapWidget.setMapOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._worldManagementWidget.setMapRendering(rendering=newValue)
             self._mapWidget.setRendering(rendering=newValue)
@@ -400,77 +398,31 @@ class WorldComparisonWindow(gui.WindowWidget):
             value=animations)
 
     def _showWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedRow = self._worldManagementWidget.rowAt(y=point.y())
-        clickedWorld = self._worldTable.world(row=clickedRow)
-        clickedScore = self._worldTable.tradeScore(row=clickedRow)
+        hasSelection = self._worldManagementWidget.hasSelection()
+        hasContent = not self._worldManagementWidget.isEmpty()
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add World...',
-                callback=lambda: self._worldManagementWidget.promptAddLocations(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Add Nearby Worlds...',
-                callback=lambda: self._worldManagementWidget.promptAddNearby(initialHex=clickedWorld),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Remove Selected Worlds',
-                callback=lambda: self._worldManagementWidget.removeSelectedRows(),
-                enabled=self._worldManagementWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Worlds',
-                callback=lambda: self._worldManagementWidget.removeAllRows(),
-                enabled=not self._worldManagementWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Find Trade Options for Selected Worlds...',
-                callback=lambda: self._findTradeOptions(self._worldManagementWidget.selectedWorlds()),
-                enabled=self._worldManagementWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Find Trade Options for All Worlds...',
-                callback=lambda: self._findTradeOptions(self._worldManagementWidget.worlds()),
-                enabled=not self._worldManagementWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(self._worldManagementWidget.selectedWorlds()),
-                enabled=self._worldManagementWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(self._worldManagementWidget.worlds()),
-                enabled=not self._worldManagementWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(self._worldManagementWidget.selectedWorlds()),
-                enabled=self._worldManagementWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(self._worldManagementWidget.worlds()),
-                enabled=not self._worldManagementWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Trade Score Calculations...',
-                callback=lambda: self._showTradeScoreCalculations(clickedScore),
-                enabled=clickedScore != None
-            ),
-        ]
+        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options...', self)
+        findTradeOptionsForSelectedAction.setEnabled(hasSelection)
+        findTradeOptionsForSelectedAction.triggered.connect(
+            lambda: self._findTradeOptions(self._worldManagementWidget.selectedWorlds()))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._worldManagementWidget.mapToGlobal(point)
-        )
+        findTradeOptionsForAllAction = QtWidgets.QAction('Find Trade Options for All...', self)
+        findTradeOptionsForAllAction.setEnabled(hasContent)
+        findTradeOptionsForAllAction.triggered.connect(
+            lambda: self._findTradeOptions(self._worldManagementWidget.worlds()))
+
+        menu = QtWidgets.QMenu()
+        self._worldManagementWidget.fillContextMenu(menu)
+        beforeAction = self._worldTable.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
+        menu.insertAction(
+            beforeAction, # Insert BEFORE this
+            findTradeOptionsForSelectedAction)
+        menu.insertAction(
+            beforeAction, # Insert BEFORE this
+            findTradeOptionsForAllAction)
+        menu.insertSeparator(
+            beforeAction) # Insert BEFORE this
+        menu.exec(self._worldManagementWidget.mapToGlobal(point))
 
     def _findTradeOptions(
             self,
@@ -509,14 +461,16 @@ class WorldComparisonWindow(gui.WindowWidget):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
-        infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
-    def _showWorldsOnMap(
+    def _showHexesOnMap(
             self,
-            worlds: typing.Iterable[traveller.World]
+            hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        hexes = [world.hex() for world in worlds]
+        if not hexes:
+            return
+
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(
                 self._mapWrapperWidget)
@@ -528,6 +482,12 @@ class WorldComparisonWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _showTableSelectionOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._worldTable.selectedHexes())
+
+    def _showTableContentOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._worldTable.hexes())
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

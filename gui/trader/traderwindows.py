@@ -499,61 +499,6 @@ class _BaseTraderWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showWorldDetails(
-            self,
-            worlds: typing.Iterable[traveller.World]
-            ) -> None:
-        detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
-
-    def _showTradeOptionCalculations(
-            self,
-            tradeOption: logic.TradeOption
-            ) -> None:
-        try:
-            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
-            calculationWindow.showCalculation(calculation=tradeOption.returnOnInvestment())
-        except Exception as ex:
-            message = 'Failed to show trade option calculations'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _showJumpRouteOnMap(
-            self,
-            jumpRoute: logic.JumpRoute
-            ) -> None:
-        try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
-            mapWindow.setJumpRoute(jumpRoute=jumpRoute)
-        except Exception as ex:
-            message = 'Failed to show jump route on map'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _showWorldsOnMap(
-            self,
-            worlds: typing.Iterable[traveller.World]
-            ) -> None:
-        hexes = [world.hex() for world in worlds]
-        try:
-            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
-            mapWindow.clearOverlays()
-            mapWindow.highlightHexes(hexes=hexes)
-        except Exception as ex:
-            message = 'Failed to show world(s) on map'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
     def _playerBrokerDmChanged(
             self,
             brokerSkill: int
@@ -788,72 +733,18 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
 
     def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
-        selectedTradeOptions = self._tradeOptionsTable.selectedTradeOptions()
-        selectedPurchaseWorlds = None
-        selectedSaleWorlds = None
-        selectedSaleAndPurchaseWorlds = None
-        if selectedTradeOptions:
-            selectedPurchaseWorlds = set([tradeOption.purchaseWorld() for tradeOption in selectedTradeOptions])
-            selectedSaleWorlds = set([tradeOption.saleWorld() for tradeOption in selectedTradeOptions])
-            selectedSaleAndPurchaseWorlds = selectedPurchaseWorlds.union(selectedSaleWorlds)
+        singleRowSelected = len(self._tradeOptionsTable.selectedRows()) == 1
+        currentOption = self._tradeOptionsTable.currentTradeOption()
 
-        menuItems = [
-            gui.MenuItem(
-                text='Plan Jump Route Between Worlds...',
-                callback=lambda: self._planJumpRoute(clickedTradeOption),
-                enabled=clickedTradeOption != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Purchase World Details...',
-                callback=lambda: self._showWorldDetails(selectedPurchaseWorlds),
-                enabled=selectedPurchaseWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Sale World Details...',
-                callback=lambda: self._showWorldDetails(selectedSaleWorlds),
-                enabled=selectedSaleWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Purchase && Sale World Details...',
-                callback=lambda: self._showWorldDetails(selectedSaleAndPurchaseWorlds),
-                enabled=selectedSaleAndPurchaseWorlds != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Purchase Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(selectedPurchaseWorlds),
-                enabled=selectedPurchaseWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Sale Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(selectedSaleWorlds),
-                enabled=selectedSaleWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Selected Sale && Purchase Worlds on Map...',
-                callback=lambda: self._showWorldsOnMap(selectedSaleAndPurchaseWorlds),
-                enabled=selectedSaleAndPurchaseWorlds != None
-            ),
-            gui.MenuItem(
-                text='Show Jump Route on Map...',
-                callback=lambda: self._showJumpRouteOnMap(clickedTradeOption.jumpRoute()),
-                enabled=clickedTradeOption != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Trade Option Calculations...',
-                callback=lambda: self._showTradeOptionCalculations(clickedTradeOption),
-                enabled=clickedTradeOption != None
-            )
-        ]
+        planJumpRouteAction = QtWidgets.QAction('Plan Jump Route Between Worlds...', self)
+        planJumpRouteAction.setEnabled(singleRowSelected)
+        planJumpRouteAction.triggered.connect(lambda: self._planJumpRoute(currentOption))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._tradeOptionsTable.viewport().mapToGlobal(point)
-        )
+        menu = QtWidgets.QMenu()
+        menu.addAction(planJumpRouteAction)
+        menu.addSeparator()
+        self._tradeOptionsTable.fillContextMenu(menu)
+        menu.exec(self._tradeOptionsTable.viewport().mapToGlobal(point))
 
     def _createCargoManifest(self) -> None:
         # This should be implemented by the derived class
@@ -1177,6 +1068,31 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         super().saveSettings()
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._speculativeCargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedSpeculativeCargo()
+                    event.accept()
+                    return True
+        elif object == self._availableCargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedAvailableCargo()
+                    event.accept()
+                    return True
+        elif object == self._currentCargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._removeSelectedCurrentCargo()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _setupPurchaseWorldControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
@@ -1256,9 +1172,9 @@ class WorldTraderWindow(_BaseTraderWindow):
             outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.AllCaseColumns)
         self._speculativeCargoTable.setMinimumHeight(100)
+        self._speculativeCargoTable.installEventFilter(self)
         self._speculativeCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._speculativeCargoTable.customContextMenuRequested.connect(self._showSpeculativeCargoTableContextMenu)
-        self._speculativeCargoTable.keyPressed.connect(self._speculativeCargoTableKeyPressed)
 
         self._addWorldSpeculativeCargoButton = QtWidgets.QPushButton('Generate...')
         self._addWorldSpeculativeCargoButton.setSizePolicy(
@@ -1332,9 +1248,9 @@ class WorldTraderWindow(_BaseTraderWindow):
                 gui.CargoRecordTable.ColumnType.SetQuantity])
         self._availableCargoTable.setMinimumHeight(100)
         self._availableCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._availableCargoTable.installEventFilter(self)
         self._availableCargoTable.customContextMenuRequested.connect(self._showAvailableCargoTableContextMenu)
         self._availableCargoTable.doubleClicked.connect(self._promptEditAvailableCargo)
-        self._availableCargoTable.keyPressed.connect(self._availableCargoTableKeyPressed)
 
         self._importAvailableCargoButton = QtWidgets.QPushButton('Import...')
         self._importAvailableCargoButton.setSizePolicy(
@@ -1421,10 +1337,10 @@ class WorldTraderWindow(_BaseTraderWindow):
                 gui.CargoRecordTable.ColumnType.SetPricePerTon,
                 gui.CargoRecordTable.ColumnType.SetQuantity])
         self._currentCargoTable.setMinimumHeight(100)
+        self._currentCargoTable.installEventFilter(self)
         self._currentCargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._currentCargoTable.customContextMenuRequested.connect(self._showCurrentCargoTableContextMenu)
         self._currentCargoTable.doubleClicked.connect(self._promptEditCurrentCargo)
-        self._currentCargoTable.keyPressed.connect(self._currentCargoTableKeyPressed)
 
         self._importCurrentCargoButton = QtWidgets.QPushButton('Import...')
         self._importCurrentCargoButton.setSizePolicy(
@@ -1822,44 +1738,33 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._addSpeculativeCargo(cargoRecord)
 
     def _showSpeculativeCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Current World Cargo...',
-                callback=lambda: self._generateSpeculativeCargoForWorld(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._promptAddSpeculativeCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._removeSelectedSpeculativeCargo(),
-                enabled=self._speculativeCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._removeAllSpeculativeCargo(),
-                enabled=not self._speculativeCargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCargoRecordCalculations(self._speculativeCargoTable.currentCargoRecord()),
-                enabled=self._speculativeCargoTable.hasSelection()
-            )
-        ]
+        addCargoAction = QtWidgets.QAction('Add...', self)
+        addCargoAction.triggered.connect(
+            self._promptAddSpeculativeCargo)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._speculativeCargoTable.viewport().mapToGlobal(point)
-        )
+        addCurrentWorldCargoAction = QtWidgets.QAction('Generate for World...', self)
+        addCurrentWorldCargoAction.triggered.connect(
+            self._generateSpeculativeCargoForWorld)
 
-    def _speculativeCargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeSelectedSpeculativeCargo()
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
+        removeSelectedCargoAction.setEnabled(self._speculativeCargoTable.hasSelection())
+        removeSelectedCargoAction.triggered.connect(
+            self._removeSelectedSpeculativeCargo)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
+        removeAllCargoAction.setEnabled(not self._speculativeCargoTable.isEmpty())
+        removeAllCargoAction.triggered.connect(
+            self._removeAllSpeculativeCargo)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(addCurrentWorldCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        self._speculativeCargoTable.fillContextMenu(menu)
+        menu.exec(self._speculativeCargoTable.viewport().mapToGlobal(point))
 
     def _importAvailableCargo(self) -> None:
         if not self._availableCargoTable.isEmpty():
@@ -2011,50 +1916,40 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._availableFundsSpinBox.value() - int(totalCost))
 
     def _showAvailableCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._promptAddAvailableCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Cargo...',
-                callback=lambda: self._promptEditAvailableCargo(),
-                enabled=self._availableCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._removeSelectedAvailableCargo(),
-                enabled=self._availableCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._removeAllAvailableCargo(),
-                enabled=not self._availableCargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Purchase Cargo...',
-                callback=lambda: self._purchaseAvailableCargo(),
-                enabled=self._availableCargoTable.hasSelection()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCargoRecordCalculations(self._availableCargoTable.currentCargoRecord()),
-                enabled=self._availableCargoTable.hasSelection()
-            )
-        ]
+        hasContent = not self._availableCargoTable.isEmpty()
+        hasSelection = self._availableCargoTable.hasSelection()
+        hasSingleSelection = len(self._availableCargoTable.selectedRows()) == 1
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._availableCargoTable.viewport().mapToGlobal(point)
-        )
+        addCargoAction = QtWidgets.QAction('Add...', self)
+        addCargoAction.triggered.connect(self._promptAddAvailableCargo)
 
-    def _availableCargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeSelectedAvailableCargo()
+        editCargoAction = QtWidgets.QAction('Edit...', self)
+        editCargoAction.setEnabled(hasSingleSelection)
+        editCargoAction.triggered.connect(self._promptEditAvailableCargo)
+
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
+        removeSelectedCargoAction.setEnabled(hasSelection)
+        removeSelectedCargoAction.triggered.connect(self._removeSelectedAvailableCargo)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
+        removeAllCargoAction.setEnabled(hasContent)
+        removeAllCargoAction.triggered.connect(self._removeAllAvailableCargo)
+
+        purchaseCargoAction = QtWidgets.QAction('Purchase...', self)
+        purchaseCargoAction.setEnabled(hasContent)
+        purchaseCargoAction.triggered.connect(self._purchaseAvailableCargo)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(editCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        menu.addAction(purchaseCargoAction)
+        menu.addSeparator()
+        self._availableCargoTable.fillContextMenu(menu)
+        menu.exec(self._availableCargoTable.viewport().mapToGlobal(point))
 
     def _importCurrentCargo(self) -> None:
         if not self._currentCargoTable.isEmpty():
@@ -2163,44 +2058,34 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _showCurrentCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._promptAddCurrentCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Cargo...',
-                callback=lambda: self._promptEditCurrentCargo(),
-                enabled=self._currentCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._removeSelectedCurrentCargo(),
-                enabled=self._currentCargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._removeAllCurrentCargo(),
-                enabled=not self._currentCargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCargoRecordCalculations(self._currentCargoTable.currentCargoRecord()),
-                enabled=self._currentCargoTable.hasSelection()
-            )
-        ]
+        hasContent = not self._currentCargoTable.isEmpty()
+        hasSelection = self._currentCargoTable.hasSelection()
+        hasSingleSelection = len(self._currentCargoTable.selectedRows()) == 1
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._currentCargoTable.viewport().mapToGlobal(point)
-        )
+        addCargoAction = QtWidgets.QAction('Add...', self)
+        addCargoAction.triggered.connect(self._promptAddCurrentCargo)
 
-    def _currentCargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._removeSelectedCurrentCargo()
+        editCargoAction = QtWidgets.QAction('Edit...', self)
+        editCargoAction.setEnabled(hasSingleSelection)
+        editCargoAction.triggered.connect(self._promptEditCurrentCargo)
+
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
+        removeSelectedCargoAction.setEnabled(hasSelection)
+        removeSelectedCargoAction.triggered.connect(self._removeSelectedCurrentCargo)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
+        removeAllCargoAction.setEnabled(hasContent)
+        removeAllCargoAction.triggered.connect(self._removeAllCurrentCargo)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(editCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        self._currentCargoTable.fillContextMenu(menu)
+        menu.exec(self._currentCargoTable.viewport().mapToGlobal(point))
 
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:
@@ -2417,7 +2302,6 @@ class WorldTraderWindow(_BaseTraderWindow):
             tradeOptions=availableCargoTrades if availableCargoTrades else speculativeCargoTrades,
             speculativePurchase=not availableCargoTrades,
             parent=self)
-        dlg.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         dlg.finished.connect(lambda result: self._cargoManifestDialogClosed(dlg, result))
         dlg.open()
 
@@ -2702,8 +2586,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             allowHexCallback=self._allowSaleWorld)
         self._saleWorldsWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
-        self._saleWorldsWidget.enableContextMenuEvent(True)
-        self._saleWorldsWidget.contextMenuRequested.connect(self._showSaleWorldTableContextMenu)
+        self._saleWorldsWidget.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._saleWorldsWidget.customContextMenuRequested.connect(
+            self._showSaleWorldTableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._saleWorldsWidget)
@@ -2733,8 +2619,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             allowHexCallback=self._allowPurchaseWorld)
         self._purchaseWorldsWidget.setHexTooltipProvider(
             provider=self._hexTooltipProvider)
-        self._purchaseWorldsWidget.enableContextMenuEvent(True)
-        self._purchaseWorldsWidget.contextMenuRequested.connect(self._showPurchaseWorldTableContextMenu)
+        self._purchaseWorldsWidget.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._purchaseWorldsWidget.customContextMenuRequested.connect(
+            self._showPurchaseWorldTableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._purchaseWorldsWidget)
@@ -2807,125 +2695,53 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 dstWidget.removeAllRows()
         dstWidget.addHexes(hexes=srcWidget.hexes())
 
-    def _showPurchaseWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedWorld = self._purchaseWorldsWidget.worldAt(y=point.y())
+    def _showPurchaseWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
+        copyFromSaleWorldsAction = QtWidgets.QAction('Copy from Sale Worlds', self)
+        copyFromSaleWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
+        copyFromSaleWorldsAction.triggered.connect(
+            lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget))
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddLocations(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Add Nearby...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddNearby(initialHex=clickedWorld),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Remove Selected',
-                callback=lambda: self._purchaseWorldsWidget.removeSelectedRows(),
-                enabled=self._purchaseWorldsWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All',
-                callback=lambda: self._purchaseWorldsWidget.removeAllRows(),
-                enabled=not self._purchaseWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Copy Sale Worlds',
-                callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget),
-                enabled=not self._saleWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Details...',
-                callback=lambda: self._showWorldDetails(self._purchaseWorldsWidget.selectedWorlds()),
-                enabled=self._purchaseWorldsWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Details...',
-                callback=lambda: self._showWorldDetails(self._purchaseWorldsWidget.worlds()),
-                enabled=not self._purchaseWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected on Map...',
-                callback=lambda: self._showWorldsOnMap(self._purchaseWorldsWidget.selectedWorlds()),
-                enabled=self._purchaseWorldsWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All on Map...',
-                callback=lambda: self._showWorldsOnMap(self._purchaseWorldsWidget.worlds()),
-                enabled=not self._purchaseWorldsWidget.isEmpty()
-            )
-        ]
+        copyToSaleWorldsAction = QtWidgets.QAction('Copy to Sale Worlds', self)
+        copyToSaleWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
+        copyToSaleWorldsAction.triggered.connect(
+            lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._purchaseWorldsWidget.mapToGlobal(point)
-        )
+        menu = QtWidgets.QMenu()
+        self._purchaseWorldsWidget.fillContextMenu(menu)
+        beforeAction = self._purchaseWorldsWidget.menuAction(gui.HexTable.MenuAction.ShowSelectionDetails)
+        menu.insertAction(
+            beforeAction,
+            copyFromSaleWorldsAction)
+        menu.insertAction(
+            beforeAction,
+            copyToSaleWorldsAction)
+        menu.insertSeparator(
+            beforeAction)
+        menu.exec(self._purchaseWorldsWidget.mapToGlobal(pos))
 
-    def _showSaleWorldTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedWorld = self._saleWorldsWidget.worldAt(y=point.y())
+    def _showSaleWorldTableContextMenu(self, pos: QtCore.QPoint) -> None:
+        copyFromPurchaseWorldsAction = QtWidgets.QAction('Copy from Purchase Worlds', self)
+        copyFromPurchaseWorldsAction.setEnabled(not self._purchaseWorldsWidget.isEmpty())
+        copyFromPurchaseWorldsAction.triggered.connect(
+            lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget))
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add...',
-                callback=lambda: self._saleWorldsWidget.promptAddLocations(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Add Nearby...',
-                callback=lambda: self._saleWorldsWidget.promptAddNearby(initialHex=clickedWorld),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Remove Selected',
-                callback=lambda: self._saleWorldsWidget.removeSelectedRows(),
-                enabled=self._saleWorldsWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All',
-                callback=lambda: self._saleWorldsWidget.removeAllRows(),
-                enabled=not self._saleWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Copy Purchase Worlds',
-                callback=lambda: self._copyBetweenWorldWidgets(srcWidget=self._purchaseWorldsWidget, dstWidget=self._saleWorldsWidget),
-                enabled=not self._purchaseWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Details...',
-                callback=lambda: self._showWorldDetails(self._saleWorldsWidget.selectedWorlds()),
-                enabled=self._saleWorldsWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Details...',
-                callback=lambda: self._showWorldDetails(self._saleWorldsWidget.worlds()),
-                enabled=not self._saleWorldsWidget.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected on Map...',
-                callback=lambda: self._showWorldsOnMap(self._saleWorldsWidget.selectedWorlds()),
-                enabled=self._saleWorldsWidget.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All on Map...',
-                callback=lambda: self._showWorldsOnMap(self._saleWorldsWidget.worlds()),
-                enabled=not self._saleWorldsWidget.isEmpty()
-            )
-        ]
+        copyToPurchaseWorldsAction = QtWidgets.QAction('Copy to Purchase Worlds', self)
+        copyToPurchaseWorldsAction.setEnabled(not self._saleWorldsWidget.isEmpty())
+        copyToPurchaseWorldsAction.triggered.connect(
+            lambda: self._copyBetweenWorldWidgets(srcWidget=self._saleWorldsWidget, dstWidget=self._purchaseWorldsWidget))
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._saleWorldsWidget.mapToGlobal(point)
-        )
+        menu = QtWidgets.QMenu()
+        self._saleWorldsWidget.fillContextMenu(menu)
+        beforeAction = self._purchaseWorldsWidget.menuAction(gui.HexTable.MenuAction.ShowSelectionDetails)
+        menu.insertAction(
+            beforeAction,
+            copyFromPurchaseWorldsAction)
+        menu.insertAction(
+            beforeAction,
+            copyToPurchaseWorldsAction)
+        menu.insertSeparator(
+            beforeAction)
+        menu.exec(self._saleWorldsWidget.mapToGlobal(pos))
 
     def _calculateTradeOptions(self) -> None:
         if self._traderJob:

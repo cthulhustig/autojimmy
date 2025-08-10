@@ -1,6 +1,8 @@
 import app
+import csv
 import enum
 import gui
+import io
 import logging
 import logic
 import traveller
@@ -235,6 +237,12 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Atmosphere,
     ]
 
+    class MenuAction(enum.Enum):
+        ShowSelectionDetails = enum.auto()
+        ShowAllDetails = enum.auto()
+        ShowSelectionOnMap = enum.auto()
+        ShowAllOnMap = enum.auto()
+
     # Version 1 format used a world list rather than a hex list. Note that
     # this just used 'v1' for the version rather than 'WorldTable_v1'
     # Version 2 format was added when the table was switched from using worlds
@@ -257,6 +265,26 @@ class HexTable(gui.FrozenColumnListTable):
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
+
+        action =  QtWidgets.QAction('Show Details...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectionDetails)
+        self.setMenuAction(HexTable.MenuAction.ShowSelectionDetails, action)
+
+        action =  QtWidgets.QAction('Show All Details...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllDetails)
+        self.setMenuAction(HexTable.MenuAction.ShowAllDetails, action)
+
+        action =  QtWidgets.QAction('Show on Map...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectionOnMap)
+        self.setMenuAction(HexTable.MenuAction.ShowSelectionOnMap, action)
+
+        action =  QtWidgets.QAction('Show All on Map...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllOnMap)
+        self.setMenuAction(HexTable.MenuAction.ShowAllOnMap, action)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -422,9 +450,9 @@ class HexTable(gui.FrozenColumnListTable):
 
     def selectedHexes(self) -> typing.List[travellermap.HexPosition]:
         hexes = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                hex = self.hex(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                hex = self.hex(row)
                 if hex:
                     hexes.append(hex)
         return hexes
@@ -433,9 +461,9 @@ class HexTable(gui.FrozenColumnListTable):
     # selection indexing if the selection contains dead space hexes.
     def selectedWorlds(self) -> typing.List[traveller.World]:
         worlds = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                world = self.world(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                world = self.world(row)
                 if world:
                     worlds.append(world)
         return worlds
@@ -445,6 +473,88 @@ class HexTable(gui.FrozenColumnListTable):
             provider: typing.Optional[gui.HexTooltipProvider]
             ) -> None:
         self._hexTooltipProvider = provider
+
+    def showSelectionDetails(self) -> None:
+        self._showDetails(hexes=self.selectedHexes())
+
+    def showAllDetails(self) -> None:
+        self._showDetails(hexes=self.hexes())
+
+    def showSelectionOnMap(self) -> None:
+        self._showOnMap(hexes=self.selectedHexes())
+
+    def showAllOnMap(self) -> None:
+        self._showOnMap(hexes=self.hexes())
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        needsSeparator = False
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllDetails)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllOnMap)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        # Add base class menu options (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
+    # NOTE: Override base ListTable implementation of contentToCsv so that x/y
+    # hex positions can be inserted in the exported data. This is done so in
+    # the future I can add milieu independent import of the exported files by
+    # just using the x/y position and ignoring the rest of the details.
+    def contentToCsv(self) -> str:
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        header = []
+        for column in range(self.columnCount()):
+            if self.isColumnHidden(column):
+                continue
+            header.append(self._csvHeaderText(column))
+        header.extend(['Reference X', 'Reference Y'])
+        writer.writerow(header)
+
+        for row in range(self.rowCount()):
+            hex = self.hex(row)
+            if not hex:
+                continue
+
+            content = []
+            for column in range(self.columnCount()):
+                if self.isColumnHidden(column):
+                    continue
+                content.append(self._csvCellText(row, column))
+            content.extend([hex.absoluteX(), hex.absoluteY()])
+
+            writer.writerow(content)
+
+        content = output.getvalue()
+        # The csv writer inserts \r\n which get messed up if you try
+        # to write the content to a file, resulting in blank lines
+        # between every line of data
+        return content.replace('\r\n', '\n')
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -480,6 +590,18 @@ class HexTable(gui.FrozenColumnListTable):
         self.setHexes(hexes=hexes)
 
         return True
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncHexTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncHexTableActions()
 
     def _fillRow(
             self,
@@ -1104,6 +1226,14 @@ class HexTable(gui.FrozenColumnListTable):
 
         return None
 
+    def _taggingColour(
+            self,
+            level: typing.Optional[logic.TagLevel]
+            ) -> typing.Optional[str]:
+        if not level or not self._taggingColours:
+            return None
+        return self._taggingColours.colour(level=level)
+
     def _syncContent(self) -> None:
         # Disable sorting during sync then re-enable after so sort is
         # only performed once rather than per row
@@ -1116,10 +1246,45 @@ class HexTable(gui.FrozenColumnListTable):
         finally:
             self.setSortingEnabled(sortingEnabled)
 
-    def _taggingColour(
+    def _syncHexTableActions(self) -> None:
+        hasContent = not self.isEmpty()
+        hasSelection = self.hasSelection()
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionDetails)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllDetails)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(HexTable.MenuAction.ShowSelectionOnMap)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(HexTable.MenuAction.ShowAllOnMap)
+        if action:
+            action.setEnabled(hasContent)
+
+    def _showDetails(
             self,
-            level: typing.Optional[logic.TagLevel]
-            ) -> typing.Optional[str]:
-        if not level or not self._taggingColours:
-            return None
-        return self._taggingColours.colour(level=level)
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
+        detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
+        detailsWindow.addHexes(hexes=hexes)
+
+    def _showOnMap(
+            self,
+            hexes: typing.Iterable[travellermap.HexPosition]
+            ) -> None:
+        try:
+            mapWindow = gui.WindowManager.instance().showUniverseMapWindow()
+            mapWindow.clearOverlays()
+            mapWindow.highlightHexes(hexes=hexes)
+        except Exception as ex:
+            message = 'Failed to show hexes(s) on map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)

@@ -760,8 +760,10 @@ class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
             return r * (duration - dacc / 2 - ddec + tdec * (2 - pd) / 2)
 
 class LocalMapWidget(QtWidgets.QWidget):
-    leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
-    rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
+    centerChanged = QtCore.pyqtSignal(QtCore.QPointF) 
+    scaleChanged = QtCore.pyqtSignal(travellermap.Scale)
+    leftClicked = QtCore.pyqtSignal(travellermap.HexPosition)
+    rightClicked = QtCore.pyqtSignal(travellermap.HexPosition)
 
     _MinLogScale = -5
     _MaxLogScale = 10
@@ -855,14 +857,14 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._options = set(options)
         self._rendering = rendering
         self._animated = animated
+        self._locked = False
 
         scene = QtWidgets.QGraphicsScene()
         scene.setSceneRect(0, 0, self.width(), self.height())
 
-        self._worldCenterPos = QtCore.QPointF(
-            LocalMapWidget._DefaultCenterX,
-            LocalMapWidget._DefaultCenterY)
-        self._viewScale = travellermap.Scale(value=LocalMapWidget._DefaultLogScale, linear=False)
+        # NOTE: The view center is in world coordinates
+        self._viewCenter = QtCore.QPointF(LocalMapWidget._DefaultCenterX, LocalMapWidget._DefaultCenterY)
+        self._viewScale = travellermap.Scale(log=LocalMapWidget._DefaultLogScale)
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
@@ -983,7 +985,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
 
-        self._handleViewUpdate()
+        self._updateView()
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -1004,10 +1006,10 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def style(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.Style:
         return self._style
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
 
@@ -1016,10 +1018,10 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def options(self) -> typing.List[travellermap.Option]:
+    def mapOptions(self) -> typing.List[travellermap.Option]:
         return list(self._options)
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1037,6 +1039,33 @@ class LocalMapWidget(QtWidgets.QWidget):
             enabled=travellermap.Option.MainsOverlay in self._options)
 
         self.update() # Force redraw
+
+    def modifyMapOptions(
+            self,
+            add: typing.Optional[typing.Union[
+                travellermap.Option,
+                typing.Collection[travellermap.Option]]] = None,
+            remove: typing.Optional[typing.Union[
+                travellermap.Option,
+                typing.Collection[travellermap.Option]]] = None
+            ) -> None:
+        options = set(self._options)
+
+        if isinstance(add, travellermap.Option):
+            options.add(add)
+        elif add is not None:
+            for option in add:
+                options.add(option)
+
+        if isinstance(remove, travellermap.Option):
+            if remove in options:
+                options.remove(remove)
+        elif remove is not None:
+            for option in remove:
+                if option in options:
+                    options.remove(option)
+
+        self.setMapOptions(options=options)
 
     def rendering(self) -> app.MapRendering:
         return self._rendering
@@ -1058,41 +1087,82 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._animated = animated
 
+    def isLocked(self) -> bool:
+        return self._locked
+
+    def setLocked(self, locked: bool) -> None:
+        if locked == self._locked:
+            return
+
+        self._locked = locked
+        if self._locked:
+            self._pixelDragStart = self._worldDragAnchor = None
+            self._keyboardMovementTracker.clear()
+
     # TODO: When I finally remove WebMapWidget I should rework how
     # reloading work as it doesn't make conceptual sense whe there
     # is nothing to "load"
     def reload(self) -> None:
         self._renderer = self._newRenderer()
         self._clearTileCache()
-        self._handleViewUpdate()
+        self._updateView()
 
-    def centerOnHex(
+    def setView(
             self,
-            hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            center: typing.Optional[QtCore.QPointF] = None, # Center in World coordinates
+            scale: typing.Optional[travellermap.Scale] = None,
             immediate: bool = False
             ) -> None:
-        self._stopMoveAnimation()
+        center = self._viewCenter if center is None else QtCore.QPointF(center)
+        scale = self._viewScale if scale is None else travellermap.Scale(scale)
 
-        center = QtCore.QPointF(*hex.worldCenter())
-        logScale = \
-            travellermap.linearScaleToLogScale(linearScale) \
-            if linearScale is not None else \
-            self._viewScale.log
+        self._stopMoveAnimation()
 
         if not immediate:
             immediate = not self._shouldAnimateViewTransition(
                 newViewCenter=center,
-                newViewLogScale=logScale)
+                newViewScale=scale)
 
         if immediate:
-            self._worldCenterPos = center
-            self._viewScale.log = logScale
-            self._handleViewUpdate(forceAtomicRedraw=True)
+            self._updateView(
+                center=center,
+                scale=scale,
+                forceAtomicRedraw=True)
         else:
             self._startMoveAnimation(
                 newViewCenter=center,
-                newViewLogScale=logScale)
+                newViewScale=scale)
+
+    def viewCenter(self) -> QtCore.QPointF:
+        return QtCore.QPointF(self._viewCenter)
+
+    def setViewCenter(
+            self,
+            center: QtCore.QPointF, # Center in World coordinates
+            immediate: bool = False
+            ) -> None:
+        self.setView(center=center, immediate=immediate)
+
+    def viewScale(self) -> travellermap.Scale:
+        return travellermap.Scale(self._viewScale)
+
+    def setViewScale(
+            self,
+            scale: travellermap.Scale,
+            immediate: bool = False
+            ) -> None:
+        self.setView(scale=scale, immediate=immediate)
+
+    def centerOnHex(
+            self,
+            hex: travellermap.HexPosition,
+            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
+            immediate: bool = False
+            ) -> None:
+        self.setView(
+            center=QtCore.QPointF(*hex.worldCenter()),
+            scale=scale,
+            immediate=immediate)
 
     def centerOnHexes(
             self,
@@ -1128,19 +1198,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             minValue=LocalMapWidget._MinLogScale,
             maxValue=LocalMapWidget._MaxLogScale)
 
-        if not immediate:
-            immediate = not self._shouldAnimateViewTransition(
-                newViewCenter=center,
-                newViewLogScale=logScale)
-
-        if immediate:
-            self._worldCenterPos = center
-            self._viewScale.log = logScale
-            self._handleViewUpdate(forceAtomicRedraw=True)
-        else:
-            self._startMoveAnimation(
-                newViewCenter=center,
-                newViewLogScale=logScale)
+        self.setView(
+            center=center,
+            scale=travellermap.Scale(log=logScale),
+            immediate=immediate)
 
     def hasJumpRoute(self) -> bool:
         return self._jumpRoute is not None
@@ -1269,7 +1330,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
-    def createSnapshot(self) -> QtGui.QPixmap:
+    def createPixmap(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
 
         rendering = self._rendering
@@ -1287,8 +1348,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(LocalMapWidget._StateVersion)
-        stream.writeFloat(self._worldCenterPos.x())
-        stream.writeFloat(self._worldCenterPos.y())
+        stream.writeFloat(self._viewCenter.x())
+        stream.writeFloat(self._viewCenter.y())
         stream.writeFloat(self._viewScale.log)
         return state
 
@@ -1303,10 +1364,9 @@ class LocalMapWidget(QtWidgets.QWidget):
             logging.debug(f'Failed to restore LocalMapWidget state (Incorrect version)')
             return False
 
-        self._worldCenterPos.setX(stream.readFloat())
-        self._worldCenterPos.setY(stream.readFloat())
-        self._viewScale.log = stream.readFloat()
-        self._handleViewUpdate()
+        center = QtCore.QPointF(stream.readFloat(), stream.readFloat())
+        scale = travellermap.Scale(log=stream.readFloat())
+        self._updateView(center=center, scale=scale)
         return True
 
     def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
@@ -1331,56 +1391,66 @@ class LocalMapWidget(QtWidgets.QWidget):
     """
 
     def mousePressEvent(self, event: QtGui.QMouseEvent):
-        super().mousePressEvent(event)
-
         # The user is interacting with the view so stop any in progress
         # transition animation or they will just end up fighting it
         self._stopMoveAnimation()
 
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            self._pixelDragStart = event.pos()
-            self._worldDragAnchor = self._pixelSpaceToWorldSpace(self._pixelDragStart)
+            if not self._locked:
+                self._pixelDragStart = event.pos()
+                self._worldDragAnchor = self._pixelSpaceToWorldSpace(self._pixelDragStart)
+
+            event.accept()
+            return
+
+        #super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        super().mouseMoveEvent(event)
-        if self.isEnabled() and self._renderer and self._worldDragAnchor:
+        if not self._locked and self._worldDragAnchor:
             worldCurrentPos = self._pixelSpaceToWorldSpace(event.pos())
             worldDeltaX = worldCurrentPos.x() - self._worldDragAnchor.x()
             worldDeltaY = worldCurrentPos.y() - self._worldDragAnchor.y()
 
-            self._worldCenterPos.setX(
-                self._worldCenterPos.x() - worldDeltaX)
-            self._worldCenterPos.setY(
-                self._worldCenterPos.y() - worldDeltaY)
-            self._handleViewUpdate()
+            newViewCenter = QtCore.QPointF(
+                self._viewCenter.x() - worldDeltaX,
+                self._viewCenter.y() - worldDeltaY)
+            self._updateView(center=newViewCenter)
+
+        event.accept()
+
+        #super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
-        super().mouseReleaseEvent(event)
-
         leftRelease = event.button() == QtCore.Qt.MouseButton.LeftButton
         rightRelease = event.button() == QtCore.Qt.MouseButton.RightButton
-        if not (leftRelease or rightRelease):
+
+        if leftRelease or rightRelease:
+            if not self._locked:
+                pixelReleasePos = QtCore.QPointF(event.x(), event.y())
+
+                if leftRelease and self._pixelDragStart:
+                    clickRect = QtCore.QRectF(
+                        self._pixelDragStart.x() - self._LeftClickMoveThreshold,
+                        self._pixelDragStart.y() - self._LeftClickMoveThreshold,
+                        self._LeftClickMoveThreshold * 2,
+                        self._LeftClickMoveThreshold * 2)
+
+                    self._worldDragAnchor = self._pixelDragStart = None
+
+                    if not clickRect.contains(pixelReleasePos):
+                        event.accept()
+                        return # A drag was performed so it doesn't count as a click
+
+                hex = self._pixelSpaceToHex(pixelReleasePos)
+                if leftRelease:
+                    self._handleLeftClickEvent(hex)
+                else:
+                    self._handleRightClickEvent(hex)
+
+            event.accept()
             return
 
-        pixelReleasePos = QtCore.QPointF(event.x(), event.y())
-
-        if leftRelease and self._pixelDragStart:
-            clickRect = QtCore.QRectF(
-                self._pixelDragStart.x() - self._LeftClickMoveThreshold,
-                self._pixelDragStart.y() - self._LeftClickMoveThreshold,
-                self._LeftClickMoveThreshold * 2,
-                self._LeftClickMoveThreshold * 2)
-
-            self._worldDragAnchor = self._pixelDragStart = None
-
-            if not clickRect.contains(pixelReleasePos):
-                return # A drag was performed so it doesn't count as a click
-
-        hex = self._pixelSpaceToHex(pixelReleasePos)
-        if leftRelease:
-            self._handleLeftClickEvent(hex)
-        else:
-            self._handleRightClickEvent(hex)
+        super().mouseReleaseEvent(event)
 
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
@@ -1390,48 +1460,63 @@ class LocalMapWidget(QtWidgets.QWidget):
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self._handleViewUpdate()
+        self._updateView()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        # The user is interacting with the view so stop any in progress
+        # transition animation or they will just end up fighting it
+        self._stopMoveAnimation()
+
+        if not self._locked:
+            if self._keyboardMovementTracker.keyDown(event):
+                if not self._keyboardMovementTimer.isActive():
+                    self._keyboardMovementTimer.start()
+                event.accept()
+                return
+            elif event.key() == QtCore.Qt.Key.Key_Z:
+                self._zoomView(
+                    step=LocalMapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyboardZoomDelta)
+                event.accept()
+                return
+            elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
+                self._zoomView(step=LocalMapWidget._KeyboardZoomDelta)
+                event.accept()
+                return
+            elif event.key() == QtCore.Qt.Key.Key_Minus:
+                self._zoomView(step=-LocalMapWidget._KeyboardZoomDelta)
+                event.accept()
+                return
+
         super().keyPressEvent(event)
 
-        # The user is interacting with the view so stop any in progress
-        # transition animation or they will just end up fighting it
-        self._stopMoveAnimation()
-
-        if self._keyboardMovementTracker.keyDown(event):
-            if not self._keyboardMovementTimer.isActive():
-                self._keyboardMovementTimer.start()
-        elif event.key() == QtCore.Qt.Key.Key_Z:
-            self._zoomView(
-                step=LocalMapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyboardZoomDelta)
-        elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
-            self._zoomView(step=LocalMapWidget._KeyboardZoomDelta)
-        elif event.key() == QtCore.Qt.Key.Key_Minus:
-            self._zoomView(step=-LocalMapWidget._KeyboardZoomDelta)
-
     def keyReleaseEvent(self, event: QtGui.QKeyEvent):
+        if not self._locked:
+            if self._keyboardMovementTracker.keyUp(event):
+                if self._keyboardMovementTracker.isIdle():
+                    self._keyboardMovementTimer.stop()
+                event.accept()
+                return
+
         super().keyReleaseEvent(event)
 
-        if self._keyboardMovementTracker.keyUp(event):
-            if self._keyboardMovementTracker.isIdle():
-                self._keyboardMovementTimer.stop()
-
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
-        super().wheelEvent(event)
-
         # The user is interacting with the view so stop any in progress
         # transition animation or they will just end up fighting it
         self._stopMoveAnimation()
 
-        if self.isEnabled():
+        if not self._locked:
             self._zoomView(
                 step=LocalMapWidget._WheelZoomDelta if event.angleDelta().y() > 0 else -LocalMapWidget._WheelZoomDelta,
                 cursor=event.pos())
 
+        event.accept()
+        #super().wheelEvent(event)
+
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         if not self._graphics or not self._renderer:
             return super().paintEvent(event)
+
+        viewRect = event.rect()
 
         rendering = self._rendering
         if rendering is app.MapRendering.Tiled and self._forceAtomicRedraw:
@@ -1458,7 +1543,8 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._drawView(
             paintDevice=self._offscreenRenderImage if self._offscreenRenderImage is not None else self,
-            rendering=rendering)
+            rendering=rendering,
+            viewRect=viewRect)
 
         if rendering is app.MapRendering.Tiled or \
                 rendering is app.MapRendering.Hybrid:
@@ -1476,22 +1562,29 @@ class LocalMapWidget(QtWidgets.QWidget):
         if self._offscreenRenderImage is not None:
             painter = QtGui.QPainter()
             with gui.PainterDrawGuard(painter, self):
-                renderRect = QtCore.QRect(0, 0, self.width(), self.height())
-                painter.drawImage(renderRect, self._offscreenRenderImage)
+                painter.drawImage(
+                    viewRect,
+                    self._offscreenRenderImage,
+                    viewRect)
 
         self._forceAtomicRedraw = False
 
     def _drawView(
             self,
             paintDevice: QtGui.QPaintDevice,
-            rendering: app.MapRendering
+            rendering: app.MapRendering,
+            viewRect: typing.Optional[QtCore.QRect] = None
             ) -> None:
+        if viewRect is None:
+            viewRect = self.rect()
+
         painter = QtGui.QPainter()
         with gui.PainterDrawGuard(painter, paintDevice):
             painter.setBrush(QtCore.Qt.GlobalColor.black)
-            painter.drawRect(0, 0, self.width(), self.height())
+            painter.drawRect(viewRect)
+            painter.setClipRect(viewRect)
 
-            self._drawMap(painter, rendering)
+            self._drawMap(painter, rendering, viewRect)
             self._drawOverlays(painter)
             self._drawScale(painter)
             self._drawDirections(painter)
@@ -1499,11 +1592,13 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _drawMap(
             self,
             painter: QtGui.QPainter,
-            rendering: app.MapRendering
+            rendering: app.MapRendering,
+            viewRect: QtCore.QRect
             ) -> None:
         if rendering is app.MapRendering.Tiled or \
                 rendering is app.MapRendering.Hybrid:
             tiles = self._currentDrawTiles(
+                viewRect=viewRect,
                 createMissing=rendering is not app.MapRendering.Tiled)
 
             # This is disabled as I think it actually makes scaled tiles
@@ -1532,14 +1627,19 @@ class LocalMapWidget(QtWidgets.QWidget):
                 finally:
                     painter.restore()
         else:
+            clipRect = None
+            if viewRect != self.rect():
+                clipRect = (viewRect.x(), viewRect.y(), viewRect.width(), viewRect.height())
+
             self._graphics.setPainter(painter=painter)
             try:
                 self._renderer.setView(
-                    worldCenterX=self._worldCenterPos.x(),
-                    worldCenterY=self._worldCenterPos.y(),
+                    worldCenterX=self._viewCenter.x(),
+                    worldCenterY=self._viewCenter.y(),
                     scale=self._viewScale.linear,
-                    outputPixelX=self.width(),
-                    outputPixelY=self.height())
+                    outputPixelWidth=self.width(),
+                    outputPixelHeight=self.height(),
+                    clipRect=clipRect)
                 self._renderer.render()
             finally:
                 self._graphics.setPainter(painter=None)
@@ -1707,8 +1807,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         offsetY = pixelPos.y() / scaleY
 
         return QtCore.QPointF(
-            (self._worldCenterPos.x() - (width / 2)) + offsetX,
-            (self._worldCenterPos.y() - (height / 2)) + offsetY)
+            (self._viewCenter.x() - (width / 2)) + offsetX,
+            (self._viewCenter.y() - (height / 2)) + offsetY)
 
     def _worldSpaceToPixelSpace(
             self,
@@ -1720,8 +1820,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         width = self.width() / scaleX
         height = self.height() / scaleY
 
-        offsetX = worldPos.x() - (self._worldCenterPos.x() - (width / 2))
-        offsetY = worldPos.y() - (self._worldCenterPos.y() - (height / 2))
+        offsetX = worldPos.x() - (self._viewCenter.x() - (width / 2))
+        offsetY = worldPos.y() - (self._viewCenter.y() - (height / 2))
 
         return QtCore.QPointF(
             offsetX * scaleX,
@@ -1747,8 +1847,8 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _newRenderer(self) -> cartographer.RenderContext:
         return cartographer.RenderContext(
             graphics=self._graphics,
-            worldCenterX=self._worldCenterPos.x(),
-            worldCenterY=self._worldCenterPos.y(),
+            worldCenterX=self._viewCenter.x(),
+            worldCenterY=self._viewCenter.y(),
             scale=self._viewScale.linear,
             outputPixelX=self.width(),
             outputPixelY=self.height(),
@@ -1760,14 +1860,26 @@ class LocalMapWidget(QtWidgets.QWidget):
             labelCache=self._labelCache,
             styleCache=self._styleCache)
 
-    def _handleViewUpdate(
+    def _updateView(
             self,
+            center: typing.Optional[QtCore.QPointF] = None,
+            scale: typing.Optional[travellermap.Scale] = None,
             forceAtomicRedraw: bool = False
             ) -> None:
+        centerChanged = False
+        if center is not None:
+            centerChanged = center != self._viewCenter
+            self._viewCenter = center
+
+        scaleChanged = False
+        if scale is not None:
+            scaleChanged = scale != self._viewScale
+            self._viewScale = scale
+
         worldWidth = self.width() / (self._viewScale.linear * travellermap.ParsecScaleX)
         worldHeight = self.height() / (self._viewScale.linear * travellermap.ParsecScaleY)
-        worldLeft = self._worldCenterPos.x() - (worldWidth / 2)
-        worldTop = self._worldCenterPos.y() - (worldHeight / 2)
+        worldLeft = self._viewCenter.x() - (worldWidth / 2)
+        worldTop = self._viewCenter.y() - (worldHeight / 2)
 
         self._imageSpaceToWorldSpace = QtGui.QTransform()
         self._imageSpaceToWorldSpace.scale(
@@ -1793,6 +1905,12 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self.update() # Trigger redraw
 
+        if centerChanged:
+            self.centerChanged.emit(QtCore.QPointF(self._viewCenter))
+
+        if scaleChanged:
+            self.scaleChanged.emit(travellermap.Scale(self._viewScale))
+
     def _zoomView(
             self,
             step: float,
@@ -1806,20 +1924,37 @@ class LocalMapWidget(QtWidgets.QWidget):
         logViewScale = common.clamp(logViewScale, LocalMapWidget._MinLogScale, LocalMapWidget._MaxLogScale)
         if logViewScale == self._viewScale.log:
             return # Reached min/max zoom
-        self._viewScale.log = logViewScale
+        newViewScale = travellermap.Scale(log=logViewScale)
 
+        newViewCenter = None
         if cursor:
-            newWorldCursor = self._pixelSpaceToWorldSpace(cursor)
+            # This code is just doing _pixelSpaceToWorldSpace except it's
+            # using the scale that we are going to apply rather than the
+            # current scale
+            scaleX = (newViewScale.linear * travellermap.ParsecScaleX)
+            scaleY = (newViewScale.linear * travellermap.ParsecScaleY)
 
-            self._worldCenterPos.setX(
-                self._worldCenterPos.x() + (oldWorldCursor.x() - newWorldCursor.x()))
-            self._worldCenterPos.setY(
-                self._worldCenterPos.y() + (oldWorldCursor.y() - newWorldCursor.y()))
+            width = self.width() / scaleX
+            height = self.height() / scaleY
 
-        self._handleViewUpdate()
+            offsetX = cursor.x() / scaleX
+            offsetY = cursor.y() / scaleY
+
+            newWorldCursor = QtCore.QPointF(
+                (self._viewCenter.x() - (width / 2)) + offsetX,
+                (self._viewCenter.y() - (height / 2)) + offsetY)
+
+            # Calculate the new view center so that the cursor stays at
+            # the same world position
+            newViewCenter = QtCore.QPointF(
+                self._viewCenter.x() + (oldWorldCursor.x() - newWorldCursor.x()),
+                self._viewCenter.y() + (oldWorldCursor.y() - newWorldCursor.y()))
+
+        self._updateView(center=newViewCenter, scale=newViewScale)
 
     def _currentDrawTiles(
             self,
+            viewRect: QtCore.QRect,
             createMissing: bool = False
             ) -> typing.Iterable[typing.Tuple[
                 QtGui.QImage,
@@ -1836,12 +1971,16 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
-        worldViewWidth = self.width() / scaleX
-        worldViewHeight = self.height() / scaleY
-        worldViewLeft = self._worldCenterPos.x() - (worldViewWidth / 2)
-        worldViewRight = worldViewLeft + worldViewWidth
-        worldViewTop = self._worldCenterPos.y() - (worldViewHeight / 2)
-        worldViewBottom = worldViewTop + worldViewHeight
+
+        worldWidgetWidth = self.width() / scaleX
+        worldWidgetHeight = self.height() / scaleY
+        worldWidgetLeft = self._viewCenter.x() - (worldWidgetWidth / 2)
+        worldWidgetTop = self._viewCenter.y() - (worldWidgetHeight / 2)
+
+        worldViewLeft = worldWidgetLeft + (viewRect.x() / scaleX)
+        worldViewRight = worldViewLeft + (viewRect.width() / scaleX)
+        worldViewTop = worldWidgetTop + (viewRect.y() / scaleY)
+        worldViewBottom = worldViewTop + (viewRect.height() / scaleY)
 
         worldTileWidth = tileSize / scaleX
         worldTileHeight = tileSize / scaleY
@@ -1850,8 +1989,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         topTile = math.floor(worldViewTop / worldTileHeight)
         bottomTile = math.floor(worldViewBottom / worldTileHeight)
 
-        offsetX = (worldViewLeft - (leftTile * worldTileWidth)) * scaleX
-        offsetY = (worldViewTop - (topTile * worldTileHeight)) * scaleY
+        offsetX = ((worldWidgetLeft - (leftTile * worldTileWidth)) * scaleX)
+        offsetY = ((worldWidgetTop - (topTile * worldTileHeight)) * scaleY)
 
         tiles = []
         for x in range(leftTile, rightTile + 1):
@@ -1871,7 +2010,8 @@ class LocalMapWidget(QtWidgets.QWidget):
                 else:
                     placeholders = self._gatherPlaceholderTiles(
                         currentScale=tileScale,
-                        tileRect=renderRect)
+                        tileRect=renderRect,
+                        viewRect=viewRect)
                     if placeholders:
                         tiles.extend(placeholders)
 
@@ -1881,7 +2021,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         return tiles
 
     def _optimiseTileQueue(self) -> None:
-        targetWorld = self._worldCenterPos
+        targetWorld = self._viewCenter
 
         if not self._keyboardMovementTracker.isIdle():
             # If there are tiles needing rendered and the user is currently
@@ -1957,9 +2097,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
         worldViewWidth = self.width() / scaleX
         worldViewHeight = self.height() / scaleY
-        worldViewLeft = self._worldCenterPos.x() - (worldViewWidth / 2)
+        worldViewLeft = self._viewCenter.x() - (worldViewWidth / 2)
         worldViewRight = worldViewLeft + worldViewWidth
-        worldViewTop = self._worldCenterPos.y() - (worldViewHeight / 2)
+        worldViewTop = self._viewCenter.y() - (worldViewHeight / 2)
         worldViewBottom = worldViewTop + worldViewHeight
 
         worldTileWidth = tileSize / scaleX
@@ -2034,18 +2174,19 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _gatherPlaceholderTiles(
             self,
             currentScale: int,
-            tileRect: QtCore.QRectF
+            tileRect: QtCore.QRectF,
+            viewRect: QtCore.QRect
             ) -> typing.List[typing.Tuple[
                 QtGui.QImage,
                 QtCore.QRectF, # Render rect
                 typing.Optional[QtCore.QRectF]]]: # Clip rect
-        viewRect = QtCore.QRectF(0, 0, self.width(), self.height())
-        clipRect = tileRect.intersected(viewRect)
+        clipRect = tileRect.intersected(QtCore.QRectF(viewRect))
 
         placeholders = self._findPlaceholderTiles(
             currentScale=currentScale,
             tileRect=tileRect,
             clipRect=clipRect,
+            viewRect=viewRect,
             lookLower=True)
         if placeholders:
             return placeholders
@@ -2054,6 +2195,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             currentScale=currentScale,
             tileRect=tileRect,
             clipRect=clipRect,
+            viewRect=viewRect,
             lookLower=False)
         if placeholders:
             return placeholders
@@ -2066,6 +2208,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             currentScale: int,
             tileRect: QtCore.QRectF, # Pixel space
             clipRect: QtCore.QRectF, # Pixel space
+            viewRect: QtCore.QRect, # Pixel space
             lookLower: bool
             ) -> typing.Iterable[typing.Tuple[
                 QtGui.QImage,
@@ -2080,10 +2223,14 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
-        worldViewWidth = self.width() / scaleX
-        worldViewHeight = self.height() / scaleY
-        worldViewLeft = self._worldCenterPos.x() - (worldViewWidth / 2)
-        worldViewTop = self._worldCenterPos.y() - (worldViewHeight / 2)
+
+        worldWidgetWidth = self.width() / scaleX
+        worldWidgetHeight = self.height() / scaleY
+        worldWidgetLeft = self._viewCenter.x() - (worldWidgetWidth / 2)
+        worldWidgetTop = self._viewCenter.y() - (worldWidgetHeight / 2)
+
+        worldViewLeft = worldWidgetLeft + (viewRect.x() / scaleX)
+        worldViewTop = worldWidgetTop + (viewRect.y() / scaleY)
 
         worldTileWidth = tileSize / scaleX
         worldTileHeight = tileSize / scaleY
@@ -2092,8 +2239,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         topTile = math.floor((((clipRect.top() / scaleY) + worldViewTop) / worldTileHeight))
         bottomTile = math.floor((((clipRect.bottom() / scaleY) + worldViewTop) / worldTileHeight))
 
-        offsetX = (worldViewLeft - (leftTile * worldTileWidth)) * scaleX
-        offsetY = (worldViewTop - (topTile * worldTileHeight)) * scaleY
+        offsetX = (worldWidgetLeft - (leftTile * worldTileWidth)) * scaleX
+        offsetY = (worldWidgetTop - (topTile * worldTileHeight)) * scaleY
 
         placeholders = []
         missing = []
@@ -2127,6 +2274,7 @@ class LocalMapWidget(QtWidgets.QWidget):
                             currentScale=placeholderScale,
                             tileRect=tileRect,
                             clipRect=placeholderClipRect,
+                            viewRect=viewRect,
                             lookLower=lookLower)
                         if lowerPlaceholders:
                             placeholders.extend(lowerPlaceholders)
@@ -2175,8 +2323,8 @@ class LocalMapWidget(QtWidgets.QWidget):
                 worldCenterX=worldTileCenterX,
                 worldCenterY=worldTileCenterY,
                 scale=tileScale,
-                outputPixelX=LocalMapWidget._TileSize,
-                outputPixelY=LocalMapWidget._TileSize)
+                outputPixelWidth=LocalMapWidget._TileSize,
+                outputPixelHeight=LocalMapWidget._TileSize)
             self._renderer.render()
         finally:
             self._graphics.setPainter(painter=None)
@@ -2219,16 +2367,16 @@ class LocalMapWidget(QtWidgets.QWidget):
                 deltaX = (deltaX / length) * horzStep
                 deltaY = (deltaY / length) * vertStep
 
-            self._worldCenterPos.setX(self._worldCenterPos.x() + deltaX)
-            self._worldCenterPos.setY(self._worldCenterPos.y() + deltaY)
-            self._handleViewUpdate()
+            newViewCenter = QtCore.QPointF(
+                self._viewCenter.x() + deltaX,
+                self._viewCenter.y() + deltaY)
+            self._updateView(center=newViewCenter)
 
     def _animateViewCenterGetter(self) -> QtCore.QPointF:
-        return self._worldCenterPos
+        return self._viewCenter
 
-    def _animateViewCenterSetter(self, pos: QtCore.QPointF) -> None:
-        self._worldCenterPos = pos
-        self._handleViewUpdate()
+    def _animateViewCenterSetter(self, worldCenter: QtCore.QPointF) -> None:
+        self._updateView(center=worldCenter)
 
     _viewCenterAnimationProp = QtCore.pyqtProperty(
         QtCore.QPointF,
@@ -2238,13 +2386,13 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _shouldAnimateViewTransition(
             self,
             newViewCenter: QtCore.QPointF,
-            newViewLogScale: float
+            newViewScale: travellermap.Scale
             ) -> bool:
         if self.isHidden() or not self._animated:
             return False
 
-        deltaX = newViewCenter.x() - self._worldCenterPos.x()
-        deltaY = newViewCenter.y() - self._worldCenterPos.y()
+        deltaX = newViewCenter.x() - self._viewCenter.x()
+        deltaY = newViewCenter.y() - self._viewCenter.y()
         xyDistance = math.sqrt(
             (deltaX * deltaX) + (deltaY * deltaY))
         # Traveller Map uses a value of 64 for the multiplier but I've
@@ -2256,7 +2404,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _startMoveAnimation(
             self,
             newViewCenter: QtCore.QPointF,
-            newViewLogScale: float
+            newViewScale: travellermap.Scale
             ) -> None:
         self._stopMoveAnimation()
 
@@ -2268,9 +2416,10 @@ class LocalMapWidget(QtWidgets.QWidget):
                 self._viewCenterAnimationEasing = self._viewScaleAnimationEasing = None
 
                 # Fall back to immediate move
-                self._worldCenterPos = newViewCenter
-                self._viewScale.log = newViewLogScale
-                self._handleViewUpdate(forceAtomicRedraw=True)
+                self._updateView(
+                    center=newViewCenter,
+                    scale=newViewScale,
+                    forceAtomicRedraw=True)
                 return
 
             self._viewCenterAnimation = QtCore.QPropertyAnimation(
@@ -2278,13 +2427,13 @@ class LocalMapWidget(QtWidgets.QWidget):
                 b"_viewCenterAnimationProp")
             self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
             self._viewCenterAnimation.setEasingCurve(self._viewCenterAnimationEasing)
-            self._viewCenterAnimation.setStartValue(self._worldCenterPos)
+            self._viewCenterAnimation.setStartValue(self._viewCenter)
             self._viewCenterAnimation.setEndValue(newViewCenter)
-            if newViewLogScale == self._viewScale.log:
+            if newViewScale == self._viewScale:
                 self._viewCenterAnimationEasing.setPeriods(
                     normAccelPeriod=0.25,
                     normDecelPeriod=0.25)
-            elif newViewLogScale < self._viewScale.log:
+            elif newViewScale < self._viewScale:
                 # Zooming out
                 self._viewCenterAnimationEasing.setPeriods(
                     normAccelPeriod=0.75,
@@ -2301,7 +2450,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
             self._viewScaleAnimation.setEasingCurve(self._viewScaleAnimationEasing)
             self._viewScaleAnimation.setStartValue(self._viewScale.log)
-            self._viewScaleAnimation.setEndValue(newViewLogScale)
+            self._viewScaleAnimation.setEndValue(newViewScale.log)
             self._viewScaleAnimationEasing.setPeriods(
                 normAccelPeriod=0.25,
                 normDecelPeriod=0.25)
@@ -2321,9 +2470,9 @@ class LocalMapWidget(QtWidgets.QWidget):
     def _animateViewScaleGetter(self) -> QtCore.QPointF:
         return self._viewScale.log
 
-    def _animateViewScaleSetter(self, scale: float) -> None:
-        self._viewScale.log = scale
-        self._handleViewUpdate()
+    def _animateViewScaleSetter(self, logScale: float) -> None:
+        newViewScale = travellermap.Scale(log=logScale)
+        self._updateView(scale=newViewScale)
 
     def _stopMoveAnimation(self):
         if self._viewAnimationGroup:

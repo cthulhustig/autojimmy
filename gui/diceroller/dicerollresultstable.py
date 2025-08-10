@@ -25,16 +25,12 @@ class DiceRollResultsTable(gui.ListTable):
         self.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.verticalHeader().setMinimumSectionSize(1)
-        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self._showContextMenu)
         self.setWordWrap(True)
 
         self.setAlternatingRowColors(False)
 
         # Disable sorting as manifests should be kept in the order the occurred in
         self.setSortingEnabled(False)
-
-        self.installEventFilter(self)
 
     def setResults(
             self,
@@ -104,17 +100,6 @@ class DiceRollResultsTable(gui.ListTable):
             self._fillEffectRow(
                 row=row,
                 effect=effect)
-
-    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        if object == self:
-            if event.type() == QtCore.QEvent.Type.KeyPress:
-                assert(isinstance(event, QtGui.QKeyEvent))
-                if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self._copyToClipboard()
-                    event.accept()
-                    return True
-
-        return super().eventFilter(object, event)
 
     def _fillRollRow(
             self,
@@ -258,28 +243,3 @@ class DiceRollResultsTable(gui.ListTable):
                 tableItem.setBackground(bkColour)
                 self.setItem(row, column, tableItem)
         self.resizeRowToContents(row)
-
-    def _showContextMenu(
-            self,
-            point: QtCore.QPoint
-            ) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboard
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self.viewport().mapToGlobal(point))
-
-    def _copyToClipboard(self) -> None:
-        clipboard = QtWidgets.QApplication.clipboard()
-        if not clipboard:
-            return
-
-        content = self.contentToHtml()
-        if content:
-            clipboard.setText(content)

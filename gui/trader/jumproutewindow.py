@@ -1147,11 +1147,23 @@ class JumpRouteWindow(gui.WindowWidget):
             provider=self._hexTooltipProvider)
         self._waypointsWidget.enableDeadSpace(
             enable=routingType is logic.RoutingType.DeadSpace)
-        self._waypointsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._waypointsWidget.enableDisplayModeChangedEvent(enable=True)
-        self._waypointsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
-        self._waypointsWidget.enableShowOnMapEvent(enable=True)
-        self._waypointsWidget.showOnMapRequested.connect(self._showHexesOnMap)
+        self._waypointsWidget.contentChanged.connect(self._waypointTableContentChanged)
+
+        # Override the tables actions for showing selected/all worlds on a popup map
+        # window with actions that will show them on the main map for this window
+        showSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
+        showSelectionOnMapAction.setEnabled(False) # No selection
+        showSelectionOnMapAction.triggered.connect(self._showWaypointsTableSelectionOnMap)
+        self._waypointsWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showSelectionOnMapAction)
+
+        showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showAllOnMapAction.setEnabled(False) # No content
+        showAllOnMapAction.triggered.connect(self._showWaypointsTableContentOnMap)
+        self._waypointsWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showAllOnMapAction)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._waypointsWidget)
@@ -1186,24 +1198,31 @@ class JumpRouteWindow(gui.WindowWidget):
             provider=self._hexTooltipProvider)
         self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
-        self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._avoidHexesWidget.enableShowOnMapEvent(enable=True)
-        self._avoidHexesWidget.showOnMapRequested.connect(self._showHexesOnMap)
+        self._avoidHexesWidget.contentChanged.connect(self._avoidHexesTableContentChanged)
         self._avoidLocationsTabWidget.addTab(self._avoidHexesWidget, 'Hexes')
         self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidHexesWidget, 0)
-        self._avoidHexesWidget.contentChanged.connect(
-            lambda: self._avoidLocationsTabWidget.setWidgetItemCount(
-                self._avoidHexesWidget,
-                self._avoidHexesWidget.rowCount()))
+
+        # Override the tables actions for showing selected/all worlds on a popup map
+        # window with actions that will show them on the main map for this window
+        showSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
+        showSelectionOnMapAction.setEnabled(False) # No selection
+        showSelectionOnMapAction.triggered.connect(self._showAvoidHexesTableSelectionOnMap)
+        self._avoidHexesWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showSelectionOnMapAction)
+
+        showAllOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showAllOnMapAction.setEnabled(False) # No content
+        showAllOnMapAction.triggered.connect(self._showAvoidHexesTableContentOnMap)
+        self._avoidHexesWidget.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showAllOnMapAction)
 
         self._avoidFiltersWidget = gui.WorldFilterTableManagerWidget(
             taggingColours=taggingColours)
+        self._avoidFiltersWidget.contentChanged.connect(self._avoidFiltersTableContentChange)
         self._avoidLocationsTabWidget.addTab(self._avoidFiltersWidget, 'Filters')
         self._avoidLocationsTabWidget.setWidgetItemCount(self._avoidFiltersWidget, 0)
-        self._avoidFiltersWidget.contentChanged.connect(
-            lambda: self._avoidLocationsTabWidget.setWidgetItemCount(
-                self._avoidFiltersWidget,
-                self._avoidFiltersWidget.filterCount()))
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._avoidLocationsTabWidget)
@@ -1272,6 +1291,22 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._jumpRouteTable.customContextMenuRequested.connect(self._showJumpRouteTableContextMenu)
 
+        # Override the tables actions for showing selected/all worlds on a popup map
+        # window with actions that will show them on the main map for this window
+        showJumpRouteSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
+        showJumpRouteSelectionOnMapAction.setEnabled(False) # No selection
+        showJumpRouteSelectionOnMapAction.triggered.connect(self._showJumpRouteTableSelectionOnMap)
+        self._jumpRouteTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showJumpRouteSelectionOnMapAction)
+
+        showJumpRouteContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showJumpRouteContentOnMapAction.setEnabled(False) # No content
+        showJumpRouteContentOnMapAction.triggered.connect(self._showJumpRouteContentOnMap)
+        self._jumpRouteTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showJumpRouteContentOnMapAction)
+
         jumpRouteLayout = QtWidgets.QVBoxLayout()
         jumpRouteLayout.setContentsMargins(0, 0, 0, 0)
         jumpRouteLayout.setSpacing(0) # No spacing between tabs and table
@@ -1289,6 +1324,22 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingPlanTable.setHexTooltipProvider(provider=self._hexTooltipProvider)
         self._refuellingPlanTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._refuellingPlanTable.customContextMenuRequested.connect(self._showRefuellingPlanTableContextMenu)
+
+        # Override the tables actions for showing selected/all worlds on a popup map
+        # window with actions that will show them on the main map for this window
+        showRefuellingSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
+        showRefuellingSelectionOnMapAction.setEnabled(False) # No selection
+        showRefuellingSelectionOnMapAction.triggered.connect(self._showRefuellingTableSelectionOnMap)
+        self._refuellingPlanTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowSelectionOnMap,
+            showRefuellingSelectionOnMapAction)
+
+        showRefuellingContentOnMapAction = QtWidgets.QAction('Show All on Map...', self)
+        showRefuellingContentOnMapAction.setEnabled(False) # No content
+        showRefuellingContentOnMapAction.triggered.connect(self._showRefuellingTableContentOnMap)
+        self._refuellingPlanTable.setMenuAction(
+            gui.HexTable.MenuAction.ShowAllOnMap,
+            showRefuellingContentOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
             milieu=milieu,
@@ -1389,24 +1440,6 @@ class JumpRouteWindow(gui.WindowWidget):
         # something like adding a waypoint world
         self._shouldZoomToNewRoute = True
 
-    def _waypointsTableDisplayModeChanged(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
-        columns = None
-        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
-            columns = gui.WaypointTable.AllColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
-            columns = gui.WaypointTable.SystemColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
-            columns = gui.WaypointTable.UWPColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
-            columns = gui.WaypointTable.EconomicsColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
-            columns = gui.WaypointTable.CultureColumns
-        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
-            columns = gui.WaypointTable.RefuellingColumns
-        else:
-            assert(False) # I missed a case
-        self._waypointsWidget.setActiveColumns(columns)
-
     def _appConfigChanged(
             self,
             option: app.ConfigOption,
@@ -1436,13 +1469,13 @@ class JumpRouteWindow(gui.WindowWidget):
             self._selectStartFinishWidget.setMapStyle(style=newValue)
             self._waypointsWidget.setMapStyle(style=newValue)
             self._avoidHexesWidget.setMapStyle(style=newValue)
-            self._mapWidget.setStyle(style=newValue)
+            self._mapWidget.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
             self._selectStartFinishWidget.setMapOptions(options=newValue)
             self._waypointsWidget.setMapOptions(options=newValue)
             self._avoidHexesWidget.setMapOptions(options=newValue)
-            self._mapWidget.setOptions(options=newValue)
+            self._mapWidget.setMapOptions(options=newValue)
         elif option is app.ConfigOption.MapRendering:
             self._selectStartFinishWidget.setMapRendering(rendering=newValue)
             self._waypointsWidget.setMapRendering(rendering=newValue)
@@ -1827,109 +1860,75 @@ class JumpRouteWindow(gui.WindowWidget):
             assert(False) # I missed a case
 
     def _showJumpRouteTableContextMenu(self, point: QtCore.QPoint) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Add Selection to Waypoints',
-                callback=lambda: [self._waypointsWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()],
-                enabled=self._jumpRouteTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Add Selection to Avoid List',
-                callback=lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()],
-                enabled=self._jumpRouteTable.hasSelection()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Location Details...',
-                callback=lambda: self._showHexDetails(self._jumpRouteTable.selectedHexes()),
-                enabled=self._jumpRouteTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Location Details...',
-                callback=lambda: self._showHexDetails(self._jumpRouteTable.hexes()),
-                enabled=not self._jumpRouteTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selection on Map',
-                callback=lambda: self._showHexesOnMap(self._jumpRouteTable.selectedHexes()),
-                enabled=self._jumpRouteTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All on Map',
-                callback=lambda: self._showHexesOnMap(self._jumpRouteTable.hexes()),
-                enabled=not self._jumpRouteTable.isEmpty()
-            )
-        ]
+        hasSelection = self._jumpRouteTable.hasSelection()
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._jumpRouteTable.viewport().mapToGlobal(point)
-        )
+        addSelectionToWaypointsAction = QtWidgets.QAction('Add to Waypoints', self)
+        addSelectionToWaypointsAction.setEnabled(hasSelection)
+        addSelectionToWaypointsAction.triggered.connect(
+            lambda: [self._waypointsWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()])
+
+        addSelectionToAvoidListAction = QtWidgets.QAction('Add to Avoid List', self)
+        addSelectionToAvoidListAction.setEnabled(hasSelection)
+        addSelectionToAvoidListAction.triggered.connect(
+            lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()])
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addSelectionToWaypointsAction)
+        menu.addAction(addSelectionToAvoidListAction)
+        menu.addSeparator()
+        self._jumpRouteTable.fillContextMenu(menu)
+        menu.exec(self._jumpRouteTable.viewport().mapToGlobal(point))
 
     def _showRefuellingPlanTableContextMenu(self, point: QtCore.QPoint) -> None:
-        pitStop = self._refuellingPlanTable.pitStopAt(point.y())
+        hasSelection = self._refuellingPlanTable.hasSelection()
+        clickedPitStop = self._refuellingPlanTable.pitStopAt(point.y())
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add Selection to Waypoints',
-                callback=lambda: [self._waypointsWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()],
-                enabled=self._refuellingPlanTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Add Selection to Avoid List',
-                callback=lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()],
-                enabled=self._refuellingPlanTable.hasSelection()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selected Location Details...',
-                callback=lambda: self._showHexDetails(self._refuellingPlanTable.selectedHexes()),
-                enabled=self._refuellingPlanTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All Location Details...',
-                callback=lambda: self._showHexDetails(self._refuellingPlanTable.hexes()),
-                enabled=not self._refuellingPlanTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Selection on Map',
-                callback=lambda: self._showHexesOnMap(self._refuellingPlanTable.selectedHexes()),
-                enabled=self._refuellingPlanTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Show All on Map',
-                callback=lambda: self._showHexesOnMap(self._refuellingPlanTable.hexes()),
-                enabled=not self._refuellingPlanTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Pit Stop Calculations...',
-                callback=lambda: self._showCalculations(pitStop.totalCost()),
-                enabled=pitStop != None
-            ),
-            gui.MenuItem(
-                text='Show All Refuelling Calculations...',
-                callback=lambda: self._showCalculations(self._routeLogistics.totalCosts()),
-                enabled=self._routeLogistics != None
-            ),
-        ]
+        addSelectionToWaypointsAction = QtWidgets.QAction('Add to Waypoints', self)
+        addSelectionToWaypointsAction.setEnabled(hasSelection)
+        addSelectionToWaypointsAction.triggered.connect(
+            lambda: [self._waypointsWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()])
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._refuellingPlanTable.viewport().mapToGlobal(point)
-        )
+        addSelectionToAvoidListAction = QtWidgets.QAction('Add to Avoid List', self)
+        addSelectionToAvoidListAction.setEnabled(hasSelection)
+        addSelectionToAvoidListAction.triggered.connect(
+            lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()])
 
+        showPitStopCalculationsAction = QtWidgets.QAction('Show Pit Stop Calculations...', self)
+        showPitStopCalculationsAction.setEnabled(clickedPitStop is not None)
+        showPitStopCalculationsAction.triggered.connect(
+            lambda: self._showCalculations(clickedPitStop.totalCost()))
+
+        showAllRefuellingCalculationsAction = QtWidgets.QAction('Show All Refuelling Calculations...', self)
+        showAllRefuellingCalculationsAction.setEnabled(self._routeLogistics is not None)
+        showAllRefuellingCalculationsAction.triggered.connect(
+            lambda: self._showCalculations(self._routeLogistics.totalCosts()))
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addSelectionToWaypointsAction)
+        menu.addAction(addSelectionToAvoidListAction)
+        menu.addSeparator()
+        self._refuellingPlanTable.fillContextMenu(menu)
+        menu.addSeparator()
+        menu.addAction(showPitStopCalculationsAction)
+        menu.addAction(showAllRefuellingCalculationsAction)
+        menu.exec(self._refuellingPlanTable.viewport().mapToGlobal(point))
+
+    # TODO: When I get rid of the web map widget I can switch this to use
+    # the standard custom context menu rather than the maps right click
+    # event. It can't be done now as it would require an non-async way
+    # to resolve the widget position to a hex which isn't possible with
+    # the web map widget.
+    # - I think I would need to implement a hexAt function for the local map
+    # widget but it should be pretty straight forward
+    # - I would also need to update this function to handle the fact the
+    # hex could in theory be null (menu should still display, just with
+    # some options disabled)
     def _showTravellerMapContextMenu(
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if not hex:
             return
-
         isCurrentWaypoint = self._waypointsWidget.containsHex(hex=hex)
         isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
 
@@ -1941,79 +1940,108 @@ class JumpRouteWindow(gui.WindowWidget):
         isValidAvoidHex = not isCurrentAvoidHex
 
         startHex, finishHex = self._selectStartFinishWidget.hexes()
-        menuItems = []
+        actions: typing.List[QtWidgets.QAction] = []
 
         action = QtWidgets.QAction('Recalculate Jump Route', self)
-        menuItems.append(action)
-        action.triggered.connect(self._calculateJumpRoute)
         action.setEnabled(startHex != None and finishHex != None)
+        action.triggered.connect(self._calculateJumpRoute)
+        actions.append(action)
 
         action = QtWidgets.QAction('Show Location Details...', self)
-        menuItems.append(action)
         action.triggered.connect(lambda: self._showHexDetails([hex]))
+        actions.append(action)
 
-        menu = QtWidgets.QMenu('Start/Finish', self)
-        menuItems.append(menu)
-        action = menu.addAction('Set Start Location')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Set Start Location', self)
+        action.setEnabled(isValidStartFinish)
         action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(hex=hex))
+        actions.append(action)
+
+        action = QtWidgets.QAction('Set Finish Location', self)
         action.setEnabled(isValidStartFinish)
-        action = menu.addAction('Set Finish Location')
         action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(hex=hex))
-        action.setEnabled(isValidStartFinish)
-        action = menu.addAction('Swap Start && Finish Locations')
+        actions.append(action)
+
+        action = QtWidgets.QAction('Swap Start && Finish Locations', self)
+        action.setEnabled(startHex != None and finishHex != None)
         action.triggered.connect(
             lambda: self._selectStartFinishWidget.setHexes(startHex=finishHex, finishHex=startHex))
-        action.setEnabled(startHex != None and finishHex != None)
+        actions.append(action)
 
-        menu = QtWidgets.QMenu('Waypoints', self)
-        menuItems.append(menu)
-        action = menu.addAction('Add Location')
-        action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Add Waypoint Location', self)
         action.setEnabled(isValidWaypoint)
-        action = menu.addAction('Remove Location')
-        action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
+        action.triggered.connect(lambda: self._waypointsWidget.addHex(hex=hex))
+        actions.append(action)
+
+        action = QtWidgets.QAction('Remove Waypoint Location', self)
         action.setEnabled(isCurrentWaypoint)
+        action.triggered.connect(lambda: self._waypointsWidget.removeHex(hex=hex))
+        actions.append(action)
 
-        menu = QtWidgets.QMenu('Avoid List', self)
-        menuItems.append(menu)
-        action = menu.addAction('Add Location')
-        action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Add Avoid Location', self)
         action.setEnabled(isValidAvoidHex)
-        action = menu.addAction('Remove Location')
-        action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
+        action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
+        actions.append(action)
+
+        action = QtWidgets.QAction('Remove Avoid Location', self)
         action.setEnabled(isCurrentAvoidHex)
+        action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
+        actions.append(action)
 
-        menu = QtWidgets.QMenu('Zoom To', self)
-        menuItems.append(menu)
-        action = menu.addAction('Start Location')
-        action.triggered.connect(lambda: self._showHexOnMap(hex=startHex))
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Show Start Location', self)
         action.setEnabled(startHex != None)
-        action = menu.addAction('Finish Location')
-        action.triggered.connect(lambda: self._showHexOnMap(hex=finishHex))
+        action.triggered.connect(lambda: self._showHexOnMap(hex=startHex))
+        actions.append(action)
+
+        action = QtWidgets.QAction('Show Finish Location', self)
         action.setEnabled(finishHex != None)
-        action = menu.addAction('Jump Route')
+        action.triggered.connect(lambda: self._showHexOnMap(hex=finishHex))
+        actions.append(action)
+
+        action = QtWidgets.QAction('Show Jump Route', self)
+        action.setEnabled(self._jumpRoute != None)
         action.triggered.connect(lambda: self._showJumpRouteOnMap())
-        action.setEnabled(self._jumpRoute != None)
+        actions.append(action)
 
-        menu = QtWidgets.QMenu('Import', self)
-        menuItems.append(menu)
-        action = menu.addAction('Jump Route...')
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Import Jump Route...', self)
         action.triggered.connect(self._importJumpRoute)
+        actions.append(action)
 
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
 
-        menu = QtWidgets.QMenu('Export', self)
-        menuItems.append(menu)
-        action = menu.addAction('Jump Route...')
-        action.triggered.connect(self._exportJumpRoute)
+        action = QtWidgets.QAction('Export Jump Route...', self)
         action.setEnabled(self._jumpRoute != None)
-        action = menu.addAction('Screenshot...')
-        action.setEnabled(True)
-        action.triggered.connect(self._exportMapScreenshot)
+        action.triggered.connect(self._exportJumpRoute)
+        actions.append(action)
 
-        gui.displayMenu(
-            parent=self,
-            items=menuItems,
-            globalPoint=QtGui.QCursor.pos())
+        menu = QtWidgets.QMenu()
+        self._mapWidget.fillContextMenu(menu)
+
+        helper = gui.MenuHelper(menu)
+        helper.prependActions(actions)
+
+        menu.exec(QtGui.QCursor.pos())
 
     def _formatMapToolTip(
             self,
@@ -2206,57 +2234,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _exportMapScreenshot(self) -> None:
-        try:
-            snapshot = self._mapWidget.createSnapshot()
-        except Exception as ex:
-            message = 'An exception occurred while generating the snapshot'
-            logging.error(msg=message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        # https://doc.qt.io/qt-5/qpixmap.html#reading-and-writing-image-files
-        _SupportedFormats = {
-            'Bitmap (*.bmp)': 'bmp',
-            'JPEG (*.jpg *.jpeg)': 'jpg',
-            'PNG (*.png)': 'png',
-            'Portable Pixmap (*.ppm)': 'ppm',
-            'X11 Bitmap (*.xbm)': 'xbm',
-            'X11 Pixmap (*.xpm)': 'xpm'}
-
-        path, filter = QtWidgets.QFileDialog.getSaveFileName(
-            parent=self,
-            caption='Export Snapshot',
-            filter=';;'.join(_SupportedFormats.keys()))
-        if not path:
-            return # User cancelled
-
-        format = _SupportedFormats.get(filter)
-        if format is None:
-            message = f'Unable to save unknown format "{filter}"'
-            logging.error(msg=message)
-            gui.MessageBoxEx.critical(message)
-            return
-
-        try:
-            if not snapshot.save(path, format):
-                gui.MessageBoxEx.critical(f'Failed to save snapshot to "{path}"')
-        except Exception as ex:
-            message = f'An exception occurred while saving the snapshot to "{path}"'
-            logging.error(msg=message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
     def _showHexDetails(
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=hexes)
 
     def _showCalculations(
@@ -2300,6 +2282,9 @@ class JumpRouteWindow(gui.WindowWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
+        if not hexes:
+            return
+
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._mapWrapperWidget)
             self._mapWidget.centerOnHexes(hexes=hexes)
@@ -2310,6 +2295,30 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _showWaypointsTableSelectionOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._waypointsWidget.selectedHexes())
+
+    def _showWaypointsTableContentOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._waypointsWidget.hexes())
+
+    def _showAvoidHexesTableSelectionOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._avoidHexesWidget.selectedHexes())
+
+    def _showAvoidHexesTableContentOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._avoidHexesWidget.hexes())
+
+    def _showJumpRouteTableSelectionOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._jumpRouteTable.selectedHexes())
+
+    def _showJumpRouteContentOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._jumpRouteTable.hexes())
+
+    def _showRefuellingTableSelectionOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._refuellingPlanTable.selectedHexes())
+
+    def _showRefuellingTableContentOnMap(self) -> None:
+        self._showHexesOnMap(hexes=self._refuellingPlanTable.hexes())
 
     def _updateJumpOverlays(self) -> None:
         for handle in self._jumpOverlayHandles:
@@ -2451,6 +2460,20 @@ class JumpRouteWindow(gui.WindowWidget):
                 self._mapWidget.centerOnJumpRoute()
 
         self._updateJumpOverlays()
+
+    def _waypointTableContentChanged(self) -> None:
+        self._updateTravellerMapOverlays()
+
+    def _avoidHexesTableContentChanged(self) -> None:
+        self._updateTravellerMapOverlays()
+        self._avoidLocationsTabWidget.setWidgetItemCount(
+                self._avoidHexesWidget,
+                self._avoidHexesWidget.rowCount())
+
+    def _avoidFiltersTableContentChange(self) -> None:
+        self._avoidLocationsTabWidget.setWidgetItemCount(
+                self._avoidFiltersWidget,
+                self._avoidFiltersWidget.filterCount())
 
     def _perJumpOverheadsChanged(self, jumpOverheads: int) -> None:
         app.Config.instance().setValue(

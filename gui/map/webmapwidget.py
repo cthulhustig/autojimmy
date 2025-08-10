@@ -235,14 +235,14 @@ class WebMapWidget(QtWidgets.QWidget):
         self._milieu = milieu
         self.reload()
 
-    def setStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.Style) -> None:
         if style is self._style:
             return
 
         self._style = style
         self.reload()
 
-    def setOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -260,14 +260,14 @@ class WebMapWidget(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
-            linearScale: typing.Optional[float] = 64, # None keeps current scale
+            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
             # This class doesn't support skipping animations but it needs to take
             # the value for comparability with LocalMapWidget
             immediate: bool = False
             ) -> None:
         sectorX, sectorY, offsetX, offsetY = hex.relative()
-        if linearScale != None:
-            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {offsetX}, {offsetY}, {{scale: {linearScale}}})'
+        if scale != None:
+            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {offsetX}, {offsetY}, {{scale: {scale.linear}}})'
         else:
             # When keeping the current scale, it's important to use map.scale rather than extracting
             # the scale from the current url. This is required in order for movements to be animated
@@ -365,7 +365,7 @@ class WebMapWidget(QtWidgets.QWidget):
         if not self._jumpRoute:
             return
 
-        hexes = [nodeHex for nodeHex, _ in self._jumpRoute]
+        hexes = [nodeHex for nodeHex in self._jumpRoute]
         self.centerOnHexes(
             hexes=hexes,
             immediate=immediate)
@@ -524,7 +524,7 @@ class WebMapWidget(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
-    def createSnapshot(self) -> QtGui.QPixmap:
+    def createPixmap(self) -> QtGui.QPixmap:
         view = self._mapWidget.page().view()
         size = view.size()
 

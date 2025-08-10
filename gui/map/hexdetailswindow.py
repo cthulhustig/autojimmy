@@ -176,8 +176,24 @@ class HexDetailsWindow(gui.WindowWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
+        if not hexes:
+            return
+
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        currentHexes = set(self._hexes)
         for hex in hexes:
-            self.addHex(hex)
+            if hex not in currentHexes:
+                tabName = traveller.WorldManager.instance().canonicalHexName(
+                    milieu=milieu,
+                    hex=hex)
+                self._hexes.append(hex)
+                self._tabBar.addTab(tabName)
+
+        firstHex = hexes[0]
+        index = self._hexes.index(firstHex)
+        if index >= 0:
+            self._tabBar.setCurrentIndex(index)
+            self._hexDetails.setHex(firstHex)
 
     def _tabChanged(self) -> None:
         index = self._tabBar.currentIndex()

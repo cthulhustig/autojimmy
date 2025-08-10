@@ -1,4 +1,3 @@
-import app
 import common
 import construction
 import enum
@@ -11,6 +10,10 @@ class ManifestTable(gui.ListTable):
     class StdColumnType(enum.Enum):
         Component = 'Component'
         Factors = 'Other Factors'
+
+    class MenuAction(enum.Enum):
+        ShowSelectedCalculations = enum.auto()
+        ShowAllCalculations = enum.auto()
 
     # I've disabled this for now as I'm not sure I like it. I think it makes
     # the table look uglier and I'm not sure it makes it any more readable
@@ -30,6 +33,16 @@ class ManifestTable(gui.ListTable):
         columns.extend(self._costType)
         columns.append(ManifestTable.StdColumnType.Factors)
 
+        action = QtWidgets.QAction('Show Calculations...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(ManifestTable.MenuAction.ShowSelectedCalculations, action)
+
+        action = QtWidgets.QAction('Show All Calculations...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllCalculations)
+        self.setMenuAction(ManifestTable.MenuAction.ShowAllCalculations, action)
+
         self.setColumnHeaders(columns)
         self.setColumnsMoveable(False)
         self.resizeColumnsToContents() # Size columns to header text
@@ -38,16 +51,12 @@ class ManifestTable(gui.ListTable):
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.verticalHeader().setMinimumSectionSize(1)
-        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self._showContextMenu)
         self.setWordWrap(True)
 
         self.setAlternatingRowColors(False)
 
         # Disable sorting as manifests should be kept in the order the occurred in
         self.setSortingEnabled(False)
-
-        self.installEventFilter(self)
 
     def setManifest(
             self,
@@ -100,16 +109,44 @@ class ManifestTable(gui.ListTable):
     def decimalPlaces(self) -> int:
         return 2
 
-    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
-        if object == self:
-            if event.type() == QtCore.QEvent.Type.KeyPress:
-                assert(isinstance(event, QtGui.QKeyEvent))
-                if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self._copyToClipboard()
-                    event.accept()
-                    return True
+    def showSelectedCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=True)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
 
-        return super().eventFilter(object, event)
+    def showAllCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=False)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        # Add base classes context menu (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
+        if not menu.isEmpty():
+            menu.addSeparator()
+
+        action = self.menuAction(ManifestTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(ManifestTable.MenuAction.ShowAllCalculations)
+        if action:
+            menu.addAction(action)
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncManifestTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncManifestTableActions()
 
     def _fillManifestEntryRow(
             self,
@@ -229,52 +266,58 @@ class ManifestTable(gui.ListTable):
         self.setRowHeight(row, height)
         self.verticalHeader().resizeSection(row, height)
 
-    def _showContextMenu(
-            self,
-            point: QtCore.QPoint
-            ) -> None:
-        item = self.itemAt(point)
-        calculations = []
-        if item:
-            column = self.columnHeader(column=item.column())
+    def _syncManifestTableActions(self):
+        action = self.menuAction(ManifestTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(self._hasSelectedCalculations())
+
+        action = self.menuAction(ManifestTable.MenuAction.ShowAllCalculations)
+        if action:
+            action.setEnabled(self._hasCalculations())
+
+    def _hasCalculations(self) -> bool:
+        # NOTE: This odd implementation is so that we can bail as soon as we
+        # find any calculation rather than iterating over them all with
+        # something like checking the length is greater than 0
+        for _ in self._yieldCalculations(selectedOnly=False):
+            return True
+        return False
+
+    def _hasSelectedCalculations(self) -> bool:
+        # NOTE: This odd implementation is so that we can bail as soon as we
+        # find any calculation rather than iterating over them all with
+        # something like checking the length is greater than 0
+        for _ in self._yieldCalculations(selectedOnly=True):
+            return True
+        return False
+
+    def _gatherCalculations(self, selectedOnly: bool) -> typing.List[common.Calculation]:
+        return [c for c in self._yieldCalculations(selectedOnly=selectedOnly)]
+
+    def _yieldCalculations(self, selectedOnly: bool) -> typing.Generator[common.Calculation, None, None]:
+        for row in range(self.rowCount()):
+            if selectedOnly and not self.isRowSelected(row):
+                continue
+
+            item = self.item(row, 0)
+            if not item:
+                continue
             rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
 
             for costId in self._costType:
-                if column != costId and column != ManifestTable.StdColumnType.Component:
-                    continue
-
                 if isinstance(rowObject, construction.ManifestEntry):
                     costModifier = rowObject.cost(costId=costId)
                     if costModifier:
-                        calculations.append(costModifier.numericModifier())
+                        yield costModifier.numericModifier()
                 elif isinstance(rowObject, construction.ManifestSection):
-                    calculations.append(rowObject.totalCost(costId=costId))
+                    yield rowObject.totalCost(costId=costId)
                 elif isinstance(rowObject, construction.Manifest):
-                    calculations.append(rowObject.totalCost(costId=costId))
+                    yield rowObject.totalCost(costId=costId)
 
-            if column == ManifestTable.StdColumnType.Factors or \
-                    column == ManifestTable.StdColumnType.Component:
-                if isinstance(rowObject, construction.ManifestEntry):
-                    for factor in rowObject.factors():
-                        calculations.extend(factor.calculations())
-
-        menuItems = [
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCalculations(calculations=calculations),
-                enabled=len(calculations) > 0
-            ),
-            None,
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboard,
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self.viewport().mapToGlobal(point))
+            if isinstance(rowObject, construction.ManifestEntry):
+                for factor in rowObject.factors():
+                    for calculation in factor.calculations():
+                        yield calculation
 
     def _showCalculations(
             self,
@@ -292,12 +335,3 @@ class ManifestTable(gui.ListTable):
                 parent=self,
                 text=message,
                 exception=ex)
-
-    def _copyToClipboard(self) -> None:
-        clipboard = QtWidgets.QApplication.clipboard()
-        if not clipboard:
-            return
-
-        content = self.contentToHtml()
-        if content:
-            clipboard.setText(content)

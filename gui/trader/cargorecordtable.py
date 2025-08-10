@@ -1,4 +1,5 @@
 import app
+import common
 import enum
 import gui
 import json
@@ -68,6 +69,10 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         ColumnType.SetQuantity
     ]
 
+    class MenuAction(enum.Enum):
+        ShowSelectedCalculations = enum.auto()
+        ShowAllCalculations = enum.auto()
+
     # v1: Initial version
     # v2: Updated cargo record (de)serialization to include rule system
     # as part of config overhaul that made rules changeable at runtime
@@ -81,6 +86,16 @@ class CargoRecordTable(gui.FrozenColumnListTable):
         super().__init__()
 
         self._outcomeColours = app.OutcomeColours(outcomeColours)
+
+        action = QtWidgets.QAction('Show Calculations...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations, action)
+
+        action = QtWidgets.QAction('Show All Calculations...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllCalculations)
+        self.setMenuAction(CargoRecordTable.MenuAction.ShowAllCalculations, action)
 
         self.setColumnHeaders(columns)
         self.setUserColumnHiding(True)
@@ -200,12 +215,39 @@ class CargoRecordTable(gui.FrozenColumnListTable):
 
     def selectedCargoRecords(self) -> typing.List[logic.CargoRecord]:
         cargoRecords = []
-        for index in self.selectedIndexes():
-            if index.column() == 0:
-                cargoRecord = self.cargoRecord(index.row())
+        for row in range(self.rowCount()):
+            if self.isRowSelected(row):
+                cargoRecord = self.cargoRecord(row)
                 if cargoRecord:
                     cargoRecords.append(cargoRecord)
         return cargoRecords
+
+    def showSelectedCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=True)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def showAllCalculations(self) -> None:
+        calculations = self._gatherCalculations(selectedOnly=False)
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        # Add base classes context menu (export, copy to clipboard etc)
+        super().fillContextMenu(menu)
+
+        if not menu.isEmpty():
+            menu.addSeparator()
+
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowAllCalculations)
+        if action:
+            menu.addAction(action)
 
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -238,6 +280,18 @@ class CargoRecordTable(gui.FrozenColumnListTable):
             return False
 
         return True
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncCargoRecordTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncCargoRecordTableActions()
 
     def _fillRow(
             self,
@@ -333,3 +387,42 @@ class CargoRecordTable(gui.FrozenColumnListTable):
                 self._fillRow(row=row, cargoRecord=self.cargoRecord(row=row))
         finally:
             self.setSortingEnabled(sortingEnabled)
+
+    def _syncCargoRecordTableActions(self):
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(self.hasSelection())
+
+        action = self.menuAction(CargoRecordTable.MenuAction.ShowAllCalculations)
+        if action:
+            action.setEnabled(not self.isEmpty())
+
+    def _gatherCalculations(
+            self,
+            selectedOnly: bool
+            ) -> typing.List[common.Calculation]:
+        rowIter = self.selectedRows() if selectedOnly else range(self.rowCount())
+        calculations = []
+        for row in rowIter:
+            cargoRecord = self.cargoRecord(row)
+            if cargoRecord:
+                calculations.append(cargoRecord.pricePerTon())
+                calculations.append(cargoRecord.quantity())
+        return calculations
+
+    def _showCalculations(
+            self,
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
+        try:
+            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
+            calculationWindow.showCalculations(
+                calculations=calculations,
+                decimalPlaces=2)
+        except Exception as ex:
+            message = 'Failed to show calculations'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)

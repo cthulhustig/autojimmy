@@ -271,23 +271,14 @@ class RobotSheetWidget(QtWidgets.QWidget):
             self,
             point: QtCore.QPoint
             ) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=self._showCalculations),
-            None,
-            gui.MenuItem(
-                text='Copy as Bitmap',
-                callback=self._copyToClipboardBitmap),
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboardHtml)
-        ]
+        showCalculationsAction = QtWidgets.QAction('Show Calculations...', self)
+        showCalculationsAction.triggered.connect(self._showCalculations)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._table.viewport().mapToGlobal(point))
+        menu = QtWidgets.QMenu()
+        self._table.fillContextMenu(menu)
+        menu.addSeparator()
+        menu.addAction(showCalculationsAction)
+        menu.exec(self._table.viewport().mapToGlobal(point))
 
     def _showCalculations(self) -> None:
         try:

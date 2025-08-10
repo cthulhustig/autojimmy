@@ -1,9 +1,10 @@
 import app
+import enum
 import gui
 import logging
 import logic
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _FilterLogicComboBox(gui.EnumComboBox):
     _TextMap = {
@@ -54,6 +55,12 @@ class _FilterLogicComboBox(gui.EnumComboBox):
 class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
 
+    class MenuAction(enum.Enum):
+        AddNew = enum.auto()
+        EditSelection = enum.auto()
+        RemoveSelection = enum.auto()
+        RemoveAll = enum.auto()
+
     _StateVersion = 'WorldFilterTableManagerWidget_v1'
 
     def __init__(
@@ -69,41 +76,69 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             value=logic.FilterLogic.MatchesAll)
 
         self._filterTable = gui.WorldFilterTable()
-        self._filterTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._filterTable.customContextMenuRequested.connect(self._showFilterTableContextMenu)
-        self._filterTable.keyPressed.connect(self._worldTableKeyPressed)
-        self._filterTable.doubleClicked.connect(self.promptEditFilter)
+        self._filterTable.installEventFilter(self)
+        self._filterTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
+        self._filterTable.doubleClicked.connect(self.promptEditSelected)
+        self._filterTable.itemSelectionChanged.connect(self._tableSelectionChanged)
 
-        self._addButton = QtWidgets.QPushButton('Add...')
-        self._addButton.setSizePolicy(
+        addNewAction = QtWidgets.QAction('Add...', self)
+        addNewAction.triggered.connect(self.promptAddNew)
+        self._filterTable.setMenuAction(
+            WorldFilterTableManagerWidget.MenuAction.AddNew,
+            addNewAction)
+
+        editSelectedAction = QtWidgets.QAction('Edit...', self)
+        editSelectedAction.setEnabled(False) # No selection
+        editSelectedAction.triggered.connect(self.promptEditSelected)
+        self._filterTable.setMenuAction(
+            WorldFilterTableManagerWidget.MenuAction.EditSelection,
+            editSelectedAction)
+
+        removeSelectedAction = QtWidgets.QAction('Remove', self)
+        removeSelectedAction.setEnabled(False) # No selection
+        removeSelectedAction.triggered.connect(self.removeSelectedFilters)
+        self._filterTable.setMenuAction(
+            WorldFilterTableManagerWidget.MenuAction.RemoveSelection,
+            removeSelectedAction)
+
+        removeAllAction = QtWidgets.QAction('Remove All', self)
+        removeAllAction.setEnabled(False) # No content
+        removeAllAction.triggered.connect(self.removeAllFilters)
+        self._filterTable.setMenuAction(
+            WorldFilterTableManagerWidget.MenuAction.RemoveAll,
+            removeAllAction)
+
+        self._addNewButton = gui.ActionButton(
+            action=addNewAction)
+        self._addNewButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self.promptAddFilter)
 
-        self._editButton = QtWidgets.QPushButton('Edit...')
-        self._editButton.setSizePolicy(
+        self._editSelectionButton = gui.ActionButton(
+            action=editSelectedAction)
+        self._editSelectionButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editButton.clicked.connect(self.promptEditFilter)
 
-        self._removeButton = QtWidgets.QPushButton('Remove')
-        self._removeButton.setSizePolicy(
+        self._removeSelectedButton = gui.ActionButton(
+            action=removeSelectedAction,
+            text='Remove')
+        self._removeSelectedButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeButton.clicked.connect(self.removeSelectedFilters)
 
-        self._removeAllButton = QtWidgets.QPushButton('Remove All')
+        self._removeAllButton = gui.ActionButton(
+            action=removeAllAction)
         self._removeAllButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeAllButton.clicked.connect(self.removeAllFilters)
 
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._addButton)
-        buttonLayout.addWidget(self._editButton)
-        buttonLayout.addWidget(self._removeButton)
+        buttonLayout.addWidget(self._addNewButton)
+        buttonLayout.addWidget(self._editSelectionButton)
+        buttonLayout.addWidget(self._removeSelectedButton)
         buttonLayout.addWidget(self._removeAllButton)
         buttonWidget = QtWidgets.QWidget()
         buttonWidget.setLayout(buttonLayout)
@@ -115,6 +150,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         widgetLayout.addWidget(buttonWidget)
 
         self.setLayout(widgetLayout)
+        self.installEventFilter(self)
 
     def setTaggingColours(self, colours: app.TaggingColours) -> None:
         if colours == self._taggingColours:
@@ -129,22 +165,22 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
 
     def addFilter(self, filter: logic.WorldFilter) -> None:
         self._filterTable.addFilter(filter=filter)
-        self.contentChanged.emit()
+        self._notifyContentChangeObservers()
 
     def addFilters(self, filters: typing.Iterable[logic.WorldFilter]) -> None:
         self._filterTable.addFilters(filters=filters)
-        self.contentChanged.emit()
+        self._notifyContentChangeObservers()
 
     def removeFilters(self, filter: logic.WorldFilter) -> bool:
         removed = self._filterTable.removeFilter(filter=filter)
         if removed:
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
         return removed
 
     def removeAllFilters(self) -> None:
         if not self._filterTable.isEmpty():
             self._filterTable.removeAllRows()
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
 
     def isEmpty(self) -> bool:
         return self._filterTable.isEmpty()
@@ -173,7 +209,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def removeSelectedFilters(self) -> None:
         if self._filterTable.hasSelection():
             self._filterTable.removeSelectedRows()
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
 
     def setActiveColumns(
             self,
@@ -232,10 +268,10 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             ) -> bool:
         result = self._filterTable.restoreContent(state=state)
         if not self._filterTable.isEmpty():
-            self.contentChanged.emit()
+            self._notifyContentChangeObservers()
         return result
 
-    def promptAddFilter(self) -> None:
+    def promptAddNew(self) -> None:
         dlg = gui.WorldFilterDialog(
             title='Add Filter',
             taggingColours=self._taggingColours,
@@ -244,7 +280,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             return
         self.addFilter(dlg.filter())
 
-    def promptEditFilter(self) -> None:
+    def promptEditSelected(self) -> None:
         filter = self._filterTable.currentFilter()
         if not filter:
             gui.MessageBoxEx.information(
@@ -261,40 +297,130 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             return
         index = self._filterTable.currentIndex()
         self._filterTable.setFilter(index.row(), dlg.filter())
+        self._notifyContentChangeObservers()
+
+    def menuAction(
+            self,
+            id: enum.Enum
+            ) -> typing.Optional[QtWidgets.QAction]:
+        return self._filterTable.menuAction(id)
+
+    def setMenuAction(
+            self,
+            id: enum.Enum,
+            action: typing.Optional[QtWidgets.QAction]
+            ) -> None:
+        self._filterTable.setMenuAction(id, action)
+
+        if id is WorldFilterTableManagerWidget.MenuAction.AddNew:
+            self._addNewButton.setAction(action=action)
+        elif id is WorldFilterTableManagerWidget.MenuAction.EditSelection:
+            self._editSelectionButton.setAction(action=action)
+        elif id is WorldFilterTableManagerWidget.MenuAction.RemoveSelection:
+            self._removeSelectedButton.setAction(action=action)
+        elif id is WorldFilterTableManagerWidget.MenuAction.RemoveAll:
+            self._removeAllButton.setAction(action=action)
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        needsSeparator = False
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.AddNew)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.EditSelection)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.RemoveSelection)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.RemoveAll)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        # Add table menu options
+        self._filterTable.fillContextMenu(menu)
+
+    def contextMenuEvent(self, event: typing.Optional[QtGui.QContextMenuEvent]) -> None:
+        if self.contextMenuPolicy() != QtCore.Qt.ContextMenuPolicy.DefaultContextMenu:
+            super().contextMenuEvent(event)
+            return
+
+        if not event or not self._filterTable:
+            return
+
+        globalPos = event.globalPos()
+        tablePos = self._filterTable.mapFromGlobal(globalPos)
+        viewport = self._filterTable.viewport()
+        tableGeometry = viewport.geometry() if viewport else self._filterTable.geometry()
+        if tableGeometry.contains(tablePos):
+            menu = QtWidgets.QMenu(self)
+            self.fillContextMenu(menu=menu)
+            menu.exec(globalPos)
+
+        #super().contextMenuEvent(event)
+
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self:
+            if event.type() == QtCore.QEvent.Type.ContextMenu:
+                if self.contextMenuPolicy() == QtCore.Qt.ContextMenuPolicy.CustomContextMenu:
+                    assert(isinstance(event, QtGui.QContextMenuEvent))
+                    if self._filterTable:
+                        globalPos = event.globalPos()
+                        tablePos = self._filterTable.mapFromGlobal(globalPos)
+
+                        # Only allow context menu if mouse is over the table viewport
+                        viewport = self._filterTable.viewport()
+                        tableGeometry = viewport.geometry() if viewport else self._filterTable.geometry()
+                        if tableGeometry.contains(tablePos):
+                            self.customContextMenuRequested.emit(event.pos())
+
+                    event.accept()
+                    return True
+        elif object == self._filterTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self.removeSelectedFilters()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
+    def _syncActions(self) -> None:
+        hasContent = not self.isEmpty()
+        hasSelection = self.hasSelection()
+        hasSingleSelection = len(self.selectedFilters()) == 1
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.EditSelection)
+        if action:
+            action.setEnabled(hasSingleSelection)
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.RemoveSelection)
+        if action:
+            action.setEnabled(hasSelection)
+
+        action = self.menuAction(WorldFilterTableManagerWidget.MenuAction.RemoveAll)
+        if action:
+            action.setEnabled(hasContent)
+
+    def _notifyContentChangeObservers(self) -> None:
+        self._syncActions()
         self.contentChanged.emit()
 
-    def _worldTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self.removeSelectedFilters()
-
-    def _showFilterTableContextMenu(self, point: QtCore.QPoint) -> None:
-        filter = self._filterTable.filterAt(point.y())
-
-        menuItems = [
-            gui.MenuItem(
-                text='Add Filter...',
-                callback=self.promptAddFilter,
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Filter...',
-                callback=self.promptEditFilter,
-                enabled=filter != None
-            ),
-            gui.MenuItem(
-                text='Remove Selected Filters',
-                callback=self.removeSelectedFilters,
-                enabled=self._filterTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Filters',
-                callback=self.removeAllFilters,
-                enabled=not self._filterTable.isEmpty()
-            )
-        ]
-
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._filterTable.viewport().mapToGlobal(point)
-        )
+    def _tableSelectionChanged(self) -> None:
+        self._syncActions()

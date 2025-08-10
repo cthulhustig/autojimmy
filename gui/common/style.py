@@ -158,6 +158,13 @@ def configureAppStyle(
         darkTabStyle = f'background: {gui.colourToString(highlightColour)}'
     style += f'QTabBar::tab:selected {{font-weight: bold; {darkTabStyle}}}\n'
 
+    if darkModeEnabled:
+        # With dark mode disabled the colour used for menu separators ends up
+        # being so dark and close to the menu colour that it's basically
+        # impossible to see.
+        separatorColour = palette.color(QtGui.QPalette.ColorRole.AlternateBase)
+        style += f'QMenu::separator {{height: 1px; background: {gui.colourToString(separatorColour)}}}\n'
+
     application.setStyleSheet(style)
 
     # For reasons I don't understand, this needs to be done AFTER the style sheet is set. If it's

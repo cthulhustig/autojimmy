@@ -310,28 +310,15 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             self,
             point: QtCore.QPoint
             ) -> None:
-        menuItems = [
-            gui.MenuItem(
-                text='Copy as HTML',
-                callback=self._copyToClipboard),
-            None,
-            gui.MenuItem(
-                text='Clear History...',
-                callback=self._promptClearResults)]
+        clearHistoryAction = QtWidgets.QAction('Clear History...', self)
+        clearHistoryAction.setEnabled(self._historyTable.rowCount() > 0)
+        clearHistoryAction.triggered.connect(self._promptClearResults)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._historyTable.viewport().mapToGlobal(point))
-
-    def _copyToClipboard(self) -> None:
-        clipboard = QtWidgets.QApplication.clipboard()
-        if not clipboard:
-            return
-
-        content = self._historyTable.contentToHtml()
-        if content:
-            clipboard.setText(content)
+        menu = QtWidgets.QMenu(self)
+        self._historyTable.fillContextMenu(menu)
+        menu.addSeparator()
+        menu.addAction(clearHistoryAction)
+        menu.exec(self._historyTable.viewport().mapToGlobal(point))
 
     def _promptClearResults(self) -> None:
         results = self.results()

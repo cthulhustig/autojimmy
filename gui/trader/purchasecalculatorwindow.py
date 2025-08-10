@@ -4,7 +4,6 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -176,6 +175,17 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         super().saveSettings()
 
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        if object == self._cargoTable:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.key() == QtCore.Qt.Key.Key_Delete:
+                    self._cargoTable.removeSelectedRows()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
+
     def _setupWorldSelectControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
@@ -265,10 +275,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             outcomeColours=outcomeColours,
             columns=gui.CargoRecordTable.KnownValueColumns)
         self._cargoTable.setMinimumHeight(200)
+        self._cargoTable.installEventFilter(self)
         self._cargoTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._cargoTable.customContextMenuRequested.connect(self._showCargoTableContextMenu)
-        self._cargoTable.keyPressed.connect(self._cargoTableKeyPressed)
-        self._cargoTable.doubleClicked.connect(self._editCargo)
+        self._cargoTable.doubleClicked.connect(self._promptEditCargo)
 
         self._exportButton = QtWidgets.QPushButton('Export...')
         self._exportButton.setSizePolicy(
@@ -280,13 +290,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self._addCargo)
+        self._addButton.clicked.connect(self._promptAddCargo)
 
         self._editButton = QtWidgets.QPushButton('Edit...')
         self._editButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._editButton.clicked.connect(self._editCargo)
+        self._editButton.clicked.connect(self._promptEditCargo)
 
         self._removeButton = QtWidgets.QPushButton('Remove')
         self._removeButton.setSizePolicy(
@@ -442,7 +452,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 parent=self,
                 text=f'The seller has no goods available at this time.\nThis can happen due to world specific modifiers (e.g. for low population worlds).')
 
-    def _addCargo(self) -> None:
+    def _promptAddCargo(self) -> None:
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if not purchaseWorld:
             return
@@ -479,7 +489,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 pricePerTon=dlg.pricePerTon(),
                 quantity=dlg.quantity()))
 
-    def _editCargo(self) -> None:
+    def _promptEditCargo(self) -> None:
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if not purchaseWorld:
             return
@@ -567,57 +577,51 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollTable.removeAllRows()
 
     def _showCargoTableContextMenu(self, point: QtCore.QPoint) -> None:
-        cargoRecord = self._cargoTable.cargoRecordAt(point.y())
+        hasContent = not self._cargoTable.isEmpty()
+        hasSelection = self._cargoTable.hasSelection()
+        hasSingleSelection = len(self._cargoTable.selectedRows()) == 1
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add Cargo...',
-                callback=lambda: self._addCargo(),
-                enabled=True
-            ),
-            gui.MenuItem(
-                text='Edit Cargo...',
-                callback=lambda: self._editCargo(),
-                enabled=cargoRecord != None
-            ),
-            gui.MenuItem(
-                text='Remove Selected Cargo',
-                callback=lambda: self._cargoTable.removeSelectedRows(),
-                enabled=self._cargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Remove All Cargo',
-                callback=lambda: self._cargoTable.removeAllRows(),
-                enabled=not self._cargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Find Trade Options for Selected Cargo...',
-                callback=lambda: self._findTradeOptionsForCargo(self._cargoTable.selectedCargoRecords()),
-                enabled=self._cargoTable.hasSelection()
-            ),
-            gui.MenuItem(
-                text='Find Trade Options for All Cargo...',
-                callback=lambda: self._findTradeOptionsForCargo(self._cargoTable.cargoRecords()),
-                enabled=not self._cargoTable.isEmpty()
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show Calculations...',
-                callback=lambda: self._showCalculations(cargoRecord),
-                enabled=cargoRecord != None
-            )
-        ]
+        addCargoAction = QtWidgets.QAction('Add...', self)
+        addCargoAction.triggered.connect(self._promptAddCargo)
 
-        gui.displayMenu(
-            self,
-            menuItems,
-            self._cargoTable.viewport().mapToGlobal(point)
-        )
+        editCargoAction = QtWidgets.QAction('Edit...', self)
+        editCargoAction.setEnabled(hasSingleSelection)
+        editCargoAction.triggered.connect(self._promptEditCargo)
 
-    def _cargoTableKeyPressed(self, key: int) -> None:
-        if key == QtCore.Qt.Key.Key_Delete:
-            self._cargoTable.removeSelectedRows()
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
+        removeSelectedCargoAction.setEnabled(hasSelection)
+        removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
+
+        removeAllCargoAction = QtWidgets.QAction('Remove All', self)
+        removeAllCargoAction.setEnabled(hasContent)
+        removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
+
+        findTradeOptionsForSelectedCargoAction = QtWidgets.QAction(
+            'Find Trade Options...',
+            self)
+        findTradeOptionsForSelectedCargoAction.setEnabled(hasSelection)
+        findTradeOptionsForSelectedCargoAction.triggered.connect(
+            lambda: self._findTradeOptionsForCargo(self._cargoTable.selectedCargoRecords()))
+
+        findTradeOptionsForAllCargoAction = QtWidgets.QAction(
+            'Find Trade Options for All...',
+            self)
+        findTradeOptionsForAllCargoAction.setEnabled(hasContent)
+        findTradeOptionsForAllCargoAction.triggered.connect(
+            lambda: self._findTradeOptionsForCargo(self._cargoTable.cargoRecords()))
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(addCargoAction)
+        menu.addAction(editCargoAction)
+        menu.addSeparator()
+        menu.addAction(removeSelectedCargoAction)
+        menu.addAction(removeAllCargoAction)
+        menu.addSeparator()
+        menu.addAction(findTradeOptionsForSelectedCargoAction)
+        menu.addAction(findTradeOptionsForAllCargoAction)
+        menu.addSeparator()
+        self._cargoTable.fillContextMenu(menu)
+        menu.exec(self._cargoTable.viewport().mapToGlobal(point))
 
     def _showCalculations(
             self,

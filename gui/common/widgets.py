@@ -1,4 +1,3 @@
-import app
 import common
 import gui
 import logging
@@ -1087,165 +1086,6 @@ class ComboBoxEx(QtWidgets.QComboBox):
     def _delayedUserEditedFired(self) -> None:
         self.delayedUserEdited.emit(self.currentText())
 
-class TableWidgetEx(QtWidgets.QTableWidget):
-    _FocusRectStyle = 'QTableWidget:focus{{border:{width}px solid {colour};}}'
-    _FocusRectRegex = re.compile(r'QTableWidget:focus\s*{.*?}')
-    _FocusRectWidth = 4
-
-    @typing.overload
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
-    @typing.overload
-    def __init__(self, rows: int, columns: int, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
-
-    def __init__(
-            self,
-            *args,
-            **kwargs
-            ) -> None:
-        super().__init__(*args, **kwargs)
-        self._showFocusRect = False
-
-    def showFocusRect(self) -> bool:
-        return self._showFocusRect
-
-    def setShowFocusRect(self, enabled: bool) -> None:
-        self._showFocusRect = enabled
-        styleSheet = TableWidgetEx._FocusRectRegex.sub(self.styleSheet(), '')
-        styleSheet.strip()
-        self.setStyleSheet(styleSheet)
-
-    def setStyleSheet(self, styleSheet: str) -> None:
-        if self._showFocusRect and not TableWidgetEx._FocusRectRegex.match(styleSheet):
-            palette = self.palette()
-            focusColour = palette.color(QtGui.QPalette.ColorRole.Highlight)
-            if styleSheet:
-                styleSheet += ' '
-
-            styleSheet += TableWidgetEx._FocusRectStyle.format(
-                width=int(TableWidgetEx._FocusRectWidth * gui.interfaceScale()),
-                colour=gui.colourToString(focusColour, includeAlpha=False))
-        super().setStyleSheet(styleSheet)
-
-    def contentToHtml(self) -> str:
-        horzHeader = self.horizontalHeader()
-        vertHeader = self.verticalHeader()
-        hasHorzHeader = horzHeader and not horzHeader.isHidden()
-        hasVertHeader = vertHeader and not vertHeader.isHidden()
-        model = self.model()
-
-        content = '<html>\n'
-        content += '<head>\n'
-        content += '<style>\n'
-        content += 'table, th, td {\n'
-        content += 'border: 1px solid black;\n'
-        content += 'border-collapse: collapse;\n'
-        content += '}\n'
-        content += 'th, td {\n'
-        content += 'padding: 2px;\n'
-        content += '}\n'
-        content += '</style>\n'
-        content += '</head>\n'
-        content += '<body>\n'
-        content += '<table style="border: 1px solid black; border-collapse: collapse;">\n'
-
-        if hasHorzHeader:
-            content += '<tr>\n'
-            for column in range(model.columnCount()):
-                if self.isColumnHidden(column):
-                    continue
-
-                tableHeader = TableWidgetEx._formatTableHeader(
-                    model=model,
-                    index=column,
-                    orientation=QtCore.Qt.Orientation.Horizontal)
-                content += f'{tableHeader}\n'
-            content += '</tr>\n'
-
-        rowSpans = [0] * self.columnCount()
-        row = 0
-        while row < self.rowCount():
-            rowHidden = self.isRowHidden(row)
-            column = 0
-
-            if not rowHidden:
-                content += '<tr>\n'
-
-            if hasVertHeader and not rowHidden:
-                tableHeader = TableWidgetEx._formatTableHeader(
-                    model=model,
-                    index=column,
-                    orientation=QtCore.Qt.Orientation.Vertical)
-                content += f'{tableHeader}\n'
-
-            while column < self.columnCount():
-                rowSpan = rowSpans[column]
-                if rowSpan > 0:
-                    rowSpans[column] = rowSpan - 1
-                    continue
-
-                columnSpan = self.columnSpan(row, column)
-                assert(columnSpan > 0)
-                rowSpan = self.rowSpan(row, column)
-                assert(rowSpan > 0)
-                if not rowHidden and not self.isColumnHidden(column):
-                    item = self.item(row, column)
-                    itemText = item.text() if item else ''
-                    itemAlignment = item.textAlignment() if item else None
-                    itemFont = item.font() if item else None
-
-                    itemText = gui.textToHtmlContent(text=itemText, font=itemFont)
-                    itemAlignment = gui.alignmentToHtmlStyle(alignment=itemAlignment)
-
-                    content += '<td{style}{columnSpan}{rowSpan}>{itemText}</td>\n'.format(
-                        style=f' style="{itemAlignment}"' if itemAlignment else '',
-                        columnSpan=f' colspan="{columnSpan}"' if columnSpan > 1 else '',
-                        rowSpan=f' rowspan="{rowSpan}"' if rowSpan > 1 else '',
-                        itemText=itemText)
-
-                if rowSpan > 1:
-                    columnSpanEnd = column + columnSpan
-                    while column < columnSpanEnd:
-                        rowSpans[column] = rowSpan - 1
-                        column += 1
-                else:
-                    column += columnSpan
-
-            if not rowHidden:
-                content += '</tr>\n'
-            row += 1
-
-        content += '</table>\n'
-        content += '</body>\n'
-        content += '</html>\n'
-
-        return content
-
-    @staticmethod
-    def _formatTableHeader(
-            model: QtCore.QAbstractItemModel,
-            index: int,
-            orientation: QtCore.Qt.Orientation
-            ) -> str:
-        headerText = model.headerData(
-            index,
-            orientation,
-            QtCore.Qt.ItemDataRole.DisplayRole)
-        headerAlignment = model.headerData(
-            index,
-            orientation,
-            QtCore.Qt.ItemDataRole.TextAlignmentRole)
-        headerFont = model.headerData(
-            index,
-            orientation,
-            QtCore.Qt.ItemDataRole.FontRole)
-
-        headerText = gui.textToHtmlContent(text=headerText, font=headerFont)
-        headerAlignment = gui.alignmentToHtmlStyle(alignment=headerAlignment)
-
-        return '<th{style}>{headerText}</th>\n'.format(
-            style=f' style="{headerAlignment}"' if headerAlignment else '',
-            headerText=headerText)
-
 class TreeWidgetEx(QtWidgets.QTreeWidget):
     # https://stackoverflow.com/questions/20203443/right-align-a-button-in-a-qtreeview-column
     def setAlignedIndexWidget(
@@ -1276,7 +1116,17 @@ class TreeWidgetEx(QtWidgets.QTreeWidget):
         self.setItemWidget(item, column, container)
 
 class ScrollAreaEx(QtWidgets.QScrollArea):
+    viewportChanged = QtCore.pyqtSignal(QtCore.QRect)
+
     _StateVersion = 'ScrollAreaEx_v1'
+
+    def resizeEvent(self, event: typing.Optional[QtGui.QResizeEvent]):
+        if event:
+            viewport = self.viewport()
+            if viewport:
+                self.viewportChanged.emit(viewport.rect())
+
+        return super().resizeEvent(event)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()

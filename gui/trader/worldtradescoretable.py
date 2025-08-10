@@ -1,11 +1,13 @@
 import app
+import common
 import enum
 import gui
+import logging
 import logic
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 class WorldTradeScoreTableColumnType(enum.Enum):
     PurchaseScore = 'Purchase Score'
@@ -31,6 +33,10 @@ class WorldTradeScoreTable(gui.HexTable):
     CultureColumns = _customWorldTableColumns(gui.HexTable.CultureColumns)
     RefuellingColumns = _customWorldTableColumns(gui.HexTable.RefuellingColumns)
 
+    class MenuAction(enum.Enum):
+        ShowSelectedCalculations = enum.auto()
+        ShowAllCalculations = enum.auto()
+
     def __init__(
             self,
             milieu: travellermap.Milieu,
@@ -48,6 +54,16 @@ class WorldTradeScoreTable(gui.HexTable):
 
         self._tradeGoods = set()
         self._tradeScoreMap = {}
+
+        action = QtWidgets.QAction('Show Calculations...', self)
+        action.setEnabled(False) # No selection
+        action.triggered.connect(self.showSelectedCalculations)
+        self.setMenuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations, action)
+
+        action = QtWidgets.QAction('Show All Calculations...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.showAllCalculations)
+        self.setMenuAction(WorldTradeScoreTable.MenuAction.ShowAllCalculations, action)
 
     def setRules(self, rules: traveller.Rules) -> None:
         if rules == self._rules:
@@ -90,6 +106,55 @@ class WorldTradeScoreTable(gui.HexTable):
     def removeAllRows(self) -> None:
         self._tradeScoreMap.clear()
         super().removeAllRows()
+
+    def showSelectedCalculations(self) -> None:
+        calculations = []
+        for row in self.selectedRows():
+            tradeScore = self.tradeScore(row)
+            if tradeScore:
+                calculations.append(tradeScore.totalPurchaseScore())
+                calculations.append(tradeScore.totalSaleScore())
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def showAllCalculations(self) -> None:
+        calculations = []
+        for row in range(self.rowCount()):
+            tradeScore = self.tradeScore(row)
+            if tradeScore:
+                calculations.append(tradeScore.totalPurchaseScore())
+                calculations.append(tradeScore.totalSaleScore())
+        if not calculations:
+            return
+        self._showCalculations(calculations=calculations)
+
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        # Add base class menu options (export, show on map etc)
+        super().fillContextMenu(menu)
+
+        if not menu.isEmpty():
+            menu.addSeparator()
+
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowAllCalculations)
+        if action:
+            menu.addAction(action)
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncWorldTradeScoreTableActions()
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+        self._syncWorldTradeScoreTableActions()
 
     def _createToolTip(
             self,
@@ -166,3 +231,29 @@ class WorldTradeScoreTable(gui.HexTable):
         # underlying table triggers a refill of all rows as part of the sync
         self._tradeScoreMap.clear()
         return super()._syncContent()
+
+    def _syncWorldTradeScoreTableActions(self) -> None:
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations)
+        if action:
+            action.setEnabled(self.hasSelection())
+
+        action = self.menuAction(WorldTradeScoreTable.MenuAction.ShowAllCalculations)
+        if action:
+            action.setEnabled(not self.isEmpty())
+
+    def _showCalculations(
+            self,
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
+        try:
+            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
+            calculationWindow.showCalculations(
+                calculations=calculations,
+                decimalPlaces=2)
+        except Exception as ex:
+            message = 'Failed to show Trade Score calculations'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)

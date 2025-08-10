@@ -80,8 +80,9 @@ class RenderContext(object):
         self._worldCenterX = worldCenterX
         self._worldCenterY = worldCenterY
         self._scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
-        self._outputPixelX = outputPixelX
-        self._outputPixelY = outputPixelY
+        self._outputPixelWidth = outputPixelX
+        self._outputPixelHeight = outputPixelY
+        self._outputClipRect = None
         self._options = options
         self._milieu = milieu
         self._styleSheet = cartographer.StyleSheet(
@@ -106,6 +107,7 @@ class RenderContext(object):
             graphics=self._graphics)
         self._selector = cartographer.RectSelector(
             milieu=self._milieu)
+        self._worldOutputRect = None
         self._worldViewRect = None
         self._imageSpaceToWorldSpace = None
         self._worldSpaceToImageSpace = None
@@ -130,21 +132,14 @@ class RenderContext(object):
         self._createLayers()
         self._updateView()
 
-    def view(
-            self
-            ) -> typing.Tuple[
-                float, float, # World center x/y
-                float, # Scale (linear)
-                int, int]: # Pixel output x/y
-        return (self._worldCenterX, self._worldCenterY, self._scale, self._outputPixelX, self._outputPixelY)
-
     def setView(
             self,
             worldCenterX: float,
             worldCenterY: float,
             scale: float,
-            outputPixelX: int,
-            outputPixelY: int,
+            outputPixelWidth: int,
+            outputPixelHeight: int,
+            clipRect: typing.Optional[typing.Tuple[int, int, int, int]] = None
             ) -> None:
         scale = common.clamp(scale, RenderContext._MinScale, RenderContext._MaxScale)
         scaleUpdated = scale != self._scale
@@ -152,8 +147,13 @@ class RenderContext(object):
         self._worldCenterX = worldCenterX
         self._worldCenterY = worldCenterY
         self._scale = scale
-        self._outputPixelX = outputPixelX
-        self._outputPixelY = outputPixelY
+        self._outputPixelWidth = outputPixelWidth
+        self._outputPixelHeight = outputPixelHeight
+
+        if clipRect:
+            self._outputClipRect = cartographer.RectangleF(*clipRect)
+        else:
+            self._outputClipRect = None
 
         # NOTE: Updating the style sheet must be done before updating the view
         # as it needs to know if it should create a new parsec grid
@@ -196,6 +196,9 @@ class RenderContext(object):
 
     def render(self) -> None:
         with self._graphics.save():
+            if self._outputClipRect:
+                self._graphics.intersectClipRect(self._outputClipRect)
+
             # Overall, rendering is all in world-space; individual steps may transform back
             # to image-space as needed.
             self._graphics.multiplyTransform(self._imageSpaceToWorldSpace)
@@ -256,17 +259,29 @@ class RenderContext(object):
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder.index(l.id))
 
     def _updateView(self):
-        worldWidth = self._outputPixelX / (self._scale * travellermap.ParsecScaleX)
-        worldHeight = self._outputPixelY / (self._scale * travellermap.ParsecScaleY)
-        viewAreaChanged = (self._worldViewRect is None) or \
-            (worldWidth != self._worldViewRect.width()) or \
-            (worldHeight != self._worldViewRect.height())
+        worldOutputWidth = self._outputPixelWidth / (self._scale * travellermap.ParsecScaleX)
+        worldOutputHeight = self._outputPixelHeight / (self._scale * travellermap.ParsecScaleY)
+        viewAreaChanged = (self._worldOutputRect is None) or \
+            (worldOutputWidth != self._worldOutputRect.width()) or \
+            (worldOutputHeight != self._worldOutputRect.height())
 
-        self._worldViewRect = cartographer.RectangleF(
-            x=self._worldCenterX - (worldWidth / 2),
-            y=self._worldCenterY - (worldHeight / 2),
-            width=worldWidth,
-            height=worldHeight)
+        self._worldOutputRect = cartographer.RectangleF(
+            x=self._worldCenterX - (worldOutputWidth / 2),
+            y=self._worldCenterY - (worldOutputHeight / 2),
+            width=worldOutputWidth,
+            height=worldOutputHeight)
+
+        self._worldViewRect = self._worldOutputRect
+        if self._outputClipRect:
+            worldClipOffsetX = self._outputClipRect.x() / (self._scale * travellermap.ParsecScaleX)
+            worldClipOffsetY = self._outputClipRect.y() / (self._scale * travellermap.ParsecScaleY)
+            worldClipWidth = self._outputClipRect.width() / (self._scale * travellermap.ParsecScaleX)
+            worldClipHeight = self._outputClipRect.height() / (self._scale * travellermap.ParsecScaleY)
+            self._worldViewRect = cartographer.RectangleF(
+                x=self._worldOutputRect.x() + worldClipOffsetX,
+                y=self._worldOutputRect.y() + worldClipOffsetY,
+                width=worldClipWidth,
+                height=worldClipHeight)
 
         # This needs to be done after _worldViewRect is calculated
         self._selector.setRect(self._worldViewRect)
@@ -276,8 +291,8 @@ class RenderContext(object):
             sx=self._scale * travellermap.ParsecScaleX,
             sy=self._scale * travellermap.ParsecScaleY)
         m.translatePrepend(
-            dx=-self._worldViewRect.left(),
-            dy=-self._worldViewRect.top())
+            dx=-self._worldOutputRect.left(),
+            dy=-self._worldOutputRect.top())
         self._imageSpaceToWorldSpace = self._graphics.copyMatrix(other=m)
         m.invert()
         self._worldSpaceToImageSpace = self._graphics.copyMatrix(other=m)
@@ -285,8 +300,8 @@ class RenderContext(object):
         if self._styleSheet.parsecGrid.visible:
             if viewAreaChanged or not self._parsecGrid:
                 self._parsecGrid = self._gridCache.grid(
-                    parsecWidth=int(math.ceil(self._worldViewRect.width())),
-                    parsecHeight=int(math.ceil(self._worldViewRect.height())))
+                    parsecWidth=int(math.ceil(self._worldOutputRect.width())),
+                    parsecHeight=int(math.ceil(self._worldOutputRect.height())))
         else:
             self._parsecGrid = None
 

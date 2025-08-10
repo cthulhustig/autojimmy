@@ -8,14 +8,16 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-class _CentredCheckBoxWidget(QtWidgets.QWidget):
+class _BerthingCheckWidget(QtWidgets.QWidget):
     stateChanged = QtCore.pyqtSignal([int])
+    clicked = QtCore.pyqtSignal([bool])
 
     def __init__(self) -> None:
         super().__init__()
 
         self._checkBox = gui.CheckBoxEx()
-        self._checkBox.stateChanged.connect(lambda state: self.stateChanged.emit(state))
+        self._checkBox.stateChanged.connect(self.stateChanged.emit)
+        self._checkBox.clicked.connect(self.clicked.emit)
 
         if gui.isDarkModeEnabled():
             # In dark mode put an outline around the check box as they have a tendency to blend into
@@ -34,11 +36,11 @@ class _CentredCheckBoxWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def setCheckState(self, state: QtCore.Qt.CheckState) -> None:
-        self._checkBox.setCheckState(state)
+    def isChecked(self) -> bool:
+        return self._checkBox.isChecked()
 
-    def checkState(self) -> QtCore.Qt.CheckState:
-        return self._checkBox.checkState()
+    def setChecked(self, checked: bool) -> None:
+        self._checkBox.setChecked(checked)
 
 class WaypointTableColumnType(enum.Enum):
     BerthingRequired = 'Berthing'
@@ -93,10 +95,10 @@ class WaypointTable(gui.HexTable):
             return False
 
         column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
-        checkBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(row, column)
+        checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
         if not checkBox:
             return False
-        return checkBox.checkState() == QtCore.Qt.CheckState.Checked
+        return checkBox.isChecked()
 
     def setBerthingChecked(
             self,
@@ -107,9 +109,9 @@ class WaypointTable(gui.HexTable):
             return
 
         column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
-        checkBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(row, column)
+        checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
         if checkBox:
-            checkBox.setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
+            checkBox.setChecked(checked)
 
     def moveSelectionUp(self) -> typing.Iterable[typing.Tuple[int, int]]:
         swappedRows = super().moveSelectionUp()
@@ -246,8 +248,9 @@ class WaypointTable(gui.HexTable):
         if not world:
             return # Don't create check box for dead space
 
-        checkBox = _CentredCheckBoxWidget()
-        checkBox.setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
+        checkBox = _BerthingCheckWidget()
+        checkBox.setChecked(checked)
+        checkBox.clicked.connect(self._berthingCheckboxClicked)
         self.setCellWidget(row, column, checkBox)
 
     def _swapBerthingChecks(
@@ -259,26 +262,55 @@ class WaypointTable(gui.HexTable):
             return
 
         for oldRow, newRow in swappedRows:
-            newRowCheckBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(newRow, column)
-            oldRowCheckBox: typing.Optional[_CentredCheckBoxWidget] = self.cellWidget(oldRow, column)
+            newRowCheckBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(newRow, column)
+            oldRowCheckBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(oldRow, column)
 
-            newRowState = oldRowCheckBox.checkState() if oldRowCheckBox else QtCore.Qt.CheckState.Unchecked
-            oldRowState = newRowCheckBox.checkState() if newRowCheckBox else QtCore.Qt.CheckState.Unchecked
+            newRowIsChecked = oldRowCheckBox and oldRowCheckBox.isChecked()
+            oldRowIsChecked = newRowCheckBox and newRowCheckBox.isChecked()
 
             newRowWorld = self.world(newRow)
             if newRowWorld:
                 if newRowCheckBox:
-                    newRowCheckBox.setCheckState(newRowState)
+                    newRowCheckBox.setChecked(newRowIsChecked)
                 else:
-                    self._createBerthingCheckBox(newRow, column, checked=newRowState == QtCore.Qt.CheckState.Checked)
+                    self._createBerthingCheckBox(newRow, column, checked=newRowIsChecked)
             elif newRowCheckBox:
                 self.removeCellWidget(newRow, column)
 
             oldRowWorld = self.world(oldRow)
             if oldRowWorld:
                 if oldRowCheckBox:
-                    oldRowCheckBox.setCheckState(oldRowState)
+                    oldRowCheckBox.setChecked(oldRowIsChecked)
                 else:
-                    self._createBerthingCheckBox(oldRow, column, checked=oldRowState == QtCore.Qt.CheckState.Checked)
+                    self._createBerthingCheckBox(oldRow, column, checked=oldRowIsChecked)
             elif oldRowCheckBox:
                 self.removeCellWidget(oldRow, column)
+
+    def _htmlCellText(self, row, column):
+        berthingColumn = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        if column == berthingColumn:
+            checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
+            return 'Yes' if checkBox and checkBox.isChecked() else 'No'
+
+        return super()._htmlCellText(row, column)
+
+    def _csvCellText(self, row: int, column: int) -> str:
+        berthingColumn = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        if column == berthingColumn:
+            checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
+            return 'Yes' if checkBox and checkBox.isChecked() else 'No'
+
+        return super()._csvCellText(row, column)
+
+    # When the user checks/unchecks berthing for one row, all selected rows should
+    # have their state set to the same value. It's important this handler is hooked
+    # up to the check boxes clicked handler rather than stateChanged so it's only
+    # triggered in response to the user clicking a check box and not a check box
+    # being set programmatically
+    def _berthingCheckboxClicked(self, checked: bool) -> None:
+        sourceCheckBox = self.sender()
+        column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
+        for row in self.selectedRows():
+            checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
+            if checkBox and checkBox is not sourceCheckBox:
+                checkBox.setChecked(checked)

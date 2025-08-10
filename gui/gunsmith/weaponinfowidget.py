@@ -30,7 +30,7 @@ class _CalculationLineEdit(gui.ContentSizedLineEdit):
 
         calculations = self._calculations()
         if calculations:
-            action = QtWidgets.QAction('Show Calculations...')
+            action = QtWidgets.QAction('Show Calculations...', self)
             action.triggered.connect(lambda: self._showCalculations(calculations))
 
             existingActions = menu.actions()

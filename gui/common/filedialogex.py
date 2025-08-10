@@ -89,11 +89,13 @@ class FileDialogEx(QtWidgets.QFileDialog):
             lastDirKey: typing.Optional[str] = None,
             defaultFileName: typing.Optional[str] = None,
             ) -> typing.Optional[str]:
-        path = directory
-        if not path and lastDirKey:
+        path = QtCore.QDir.homePath()
+        if not directory and lastDirKey:
             path = FileDialogEx._lastDir(key=lastDirKey)
             if not path:
                 path = QtCore.QDir.homePath()
+        elif directory:
+            path = directory
         if defaultFileName:
             path = os.path.join(path, defaultFileName)
         return path

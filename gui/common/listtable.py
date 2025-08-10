@@ -1,7 +1,9 @@
 import common
+import csv
 import enum
 import functools
 import gui
+import io
 import logging
 import math
 import typing
@@ -80,8 +82,11 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
             option.text)
 
 class ListTable(gui.TableWidgetEx):
-    keyPressed = QtCore.pyqtSignal(int)
     iconClicked = QtCore.pyqtSignal(int)
+
+    class MenuAction(enum.Enum):
+        CopyAsCsv = enum.auto()
+        ExportAsCsv = enum.auto()
 
     _StateVersion = 'ListTable_v2'
 
@@ -99,6 +104,16 @@ class ListTable(gui.TableWidgetEx):
         self._userHiddenColumns: typing.Set[str] = set()
 
         self._columnWidths: typing.Dict[str, int] = {}
+
+        action = QtWidgets.QAction('Copy as CSV', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.copyToClipboardAsCsv)
+        self.setMenuAction(ListTable.MenuAction.CopyAsCsv, action)
+
+        action = QtWidgets.QAction('Export as CSV...', self)
+        action.setEnabled(False) # No content
+        action.triggered.connect(self.promptExportAsCsv)
+        self.setMenuAction(ListTable.MenuAction.ExportAsCsv, action)
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -282,9 +297,6 @@ class ListTable(gui.TableWidgetEx):
                 shouldHide = self._userColumnHidingEnabled and (key in self._userHiddenColumns)
                 self.setColumnHidden(columnIndex, shouldHide)
 
-    def isEmpty(self) -> bool:
-        return self.rowCount() <= 0
-
     def addRow(self) -> int:
         index = self.rowCount()
         self.insertRow(index)
@@ -311,13 +323,9 @@ class ListTable(gui.TableWidgetEx):
         return selectedRows
 
     def removeSelectedRows(self) -> None:
-        selection = self.selectedIndexes()
-        if not selection:
-            return
-        selection.sort(key=lambda x: -1 * x.row())
-        for index in selection:
-            if index.column() == 0:
-                self.removeRow(index.row())
+        for row in range(self.rowCount() - 1, -1, -1):
+            if self.isRowSelected(row):
+                self.removeRow(row)
 
     def removeAllRows(self) -> None:
         self.setRowCount(0)
@@ -409,6 +417,60 @@ class ListTable(gui.TableWidgetEx):
         for row in range(self.rowCount()):
             self._checkRowFiltering(row=row)
 
+    def contentToCsv(self) -> str:
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        header = []
+        for column in range(self.columnCount()):
+            if self.isColumnHidden(column):
+                continue
+            header.append(self._csvHeaderText(column))
+        writer.writerow(header)
+
+        for row in range(self.rowCount()):
+            content = []
+            for column in range(self.columnCount()):
+                if self.isColumnHidden(column):
+                    continue
+                content.append(self._csvCellText(row, column))
+            writer.writerow(content)
+
+        content = output.getvalue()
+        # The csv writer inserts \r\n which get messed up if you try
+        # to write the content to a file, resulting in blank lines
+        # between every line of data
+        return content.replace('\r\n', '\n')
+
+    def copyToClipboardAsCsv(self) -> None:
+        gui.setClipboardContent(content=self.contentToCsv())
+
+    def promptExportAsCsv(self) -> None:
+        content = self.contentToCsv()
+
+        path, _ = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Export as CSV',
+            filter=f'{gui.CSVFileFilter};;{gui.AllFileFilter}')
+        if not path:
+            return # User cancelled
+
+        try:
+            with open(path, 'w', encoding='UTF8') as file:
+                file.write(content)
+        except Exception as ex:
+            message = f'Failed to export content to "{path}"'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+    def isEmptyChanged(self) -> None:
+        super().isEmptyChanged()
+        self._syncListTableActions()
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
             if event.type() == QtCore.QEvent.Type.ToolTip:
@@ -453,9 +515,64 @@ class ListTable(gui.TableWidgetEx):
 
         return super().eventFilter(object, event)
 
-    def keyPressEvent(self, event) -> None:
+    def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]) -> None:
+        if event is not None and event.matches(QtGui.QKeySequence.StandardKey.Copy):
+            # Override the base implementation so the clipboard format
+            # is csv rather than html. I think it's more likely to be
+            # what the user actually wants
+            if self.rowCount() > 0:
+                self.copyToClipboardAsCsv()
+            return
+
         super().keyPressEvent(event)
-        self.keyPressed.emit(event.key())
+
+    # NOTE: This function intentionally doesn't call the base implementation. In
+    # order to group like options, this implementation inserts its action and
+    # the base classes actions
+    def fillContextMenu(self, menu: QtWidgets.QMenu) -> None:
+        needsSeparator = False
+
+        action = self.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.CopyAsHtml)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.CopyAsImage)
+        if action:
+            menu.addAction(action)
+            needsSeparator = True
+
+        if needsSeparator:
+            menu.addSeparator()
+            needsSeparator = False
+
+        action = self.menuAction(gui.ListTable.MenuAction.ExportAsCsv)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.ExportAsHtml)
+        if action:
+            menu.addAction(action)
+
+        action = self.menuAction(gui.TableWidgetEx.MenuAction.ExportAsImage)
+        if action:
+            menu.addAction(action)
+
+    def _syncListTableActions(self) -> None:
+        hasContent = self.rowCount() > 0
+
+        action = self.menuAction(gui.ListTable.MenuAction.CopyAsCsv)
+        if action:
+            action.setEnabled(hasContent)
+
+        action = self.menuAction(gui.ListTable.MenuAction.ExportAsCsv)
+        if action:
+            action.setEnabled(hasContent)
 
     def _cacheColumnWidth(
             self,
@@ -666,6 +783,15 @@ class ListTable(gui.TableWidgetEx):
         # triggering an icon click. This is necessary as the hit box for column resize gripper
         # overlaps the icon rect
         self._headerIconClickIndex = None
+
+    def _csvHeaderText(self, column: int) -> str:
+        text = self.columnHeaderText(column)
+        # Replacing returns with spaces just makes the csv a little nicer to read
+        return text.replace('\n', ' ')
+
+    def _csvCellText(self, row: int, column: int) -> str:
+        item = self.item(row, column)
+        return item.text() if item else ''
 
 # Based on code from here
 # https://github.com/baoboa/pyqt5/blob/master/examples/itemviews/frozencolumn/frozencolumn.py
