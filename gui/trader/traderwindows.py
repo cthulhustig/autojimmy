@@ -733,11 +733,12 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionsTable.setActiveColumns(self._tradeOptionColumns())
 
     def _showTradeOptionsTableContextMenu(self, point: QtCore.QPoint) -> None:
-        clickedTradeOption = self._tradeOptionsTable.tradeOptionAt(point.y())
+        singleRowSelected = len(self._tradeOptionsTable.selectedRows()) == 1
+        currentOption = self._tradeOptionsTable.currentTradeOption()
 
         planJumpRouteAction = QtWidgets.QAction('Plan Jump Route Between Worlds...', self)
-        planJumpRouteAction.setEnabled(clickedTradeOption is not None)
-        planJumpRouteAction.triggered.connect(lambda: self._planJumpRoute(clickedTradeOption))
+        planJumpRouteAction.setEnabled(singleRowSelected)
+        planJumpRouteAction.triggered.connect(lambda: self._planJumpRoute(currentOption))
 
         menu = QtWidgets.QMenu()
         menu.addAction(planJumpRouteAction)
@@ -1745,7 +1746,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         addCurrentWorldCargoAction.triggered.connect(
             self._generateSpeculativeCargoForWorld)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
         removeSelectedCargoAction.setEnabled(self._speculativeCargoTable.hasSelection())
         removeSelectedCargoAction.triggered.connect(
             self._removeSelectedSpeculativeCargo)
@@ -1926,7 +1927,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditAvailableCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
         removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._removeSelectedAvailableCargo)
 
@@ -2068,7 +2069,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditCurrentCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
         removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._removeSelectedCurrentCargo)
 

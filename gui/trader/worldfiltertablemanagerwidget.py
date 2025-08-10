@@ -94,7 +94,7 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
             WorldFilterTableManagerWidget.MenuAction.EditSelection,
             editSelectedAction)
 
-        removeSelectedAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectedAction = QtWidgets.QAction('Remove', self)
         removeSelectedAction.setEnabled(False) # No selection
         removeSelectedAction.triggered.connect(self.removeSelectedFilters)
         self._filterTable.setMenuAction(

@@ -33,7 +33,7 @@ class ManifestTable(gui.ListTable):
         columns.extend(self._costType)
         columns.append(ManifestTable.StdColumnType.Factors)
 
-        action = QtWidgets.QAction('Show Selected Calculations...', self)
+        action = QtWidgets.QAction('Show Calculations...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedCalculations)
         self.setMenuAction(ManifestTable.MenuAction.ShowSelectedCalculations, action)

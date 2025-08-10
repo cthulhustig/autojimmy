@@ -55,7 +55,7 @@ class WorldTradeScoreTable(gui.HexTable):
         self._tradeGoods = set()
         self._tradeScoreMap = {}
 
-        action = QtWidgets.QAction('Show Selected Calculations...', self)
+        action = QtWidgets.QAction('Show Calculations...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedCalculations)
         self.setMenuAction(WorldTradeScoreTable.MenuAction.ShowSelectedCalculations, action)

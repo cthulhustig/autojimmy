@@ -1151,7 +1151,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
-        showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
+        showSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
         showSelectionOnMapAction.setEnabled(False) # No selection
         showSelectionOnMapAction.triggered.connect(self._showWaypointsTableSelectionOnMap)
         self._waypointsWidget.setMenuAction(
@@ -1204,7 +1204,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
-        showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
+        showSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
         showSelectionOnMapAction.setEnabled(False) # No selection
         showSelectionOnMapAction.triggered.connect(self._showAvoidHexesTableSelectionOnMap)
         self._avoidHexesWidget.setMenuAction(
@@ -1293,7 +1293,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
-        showJumpRouteSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
+        showJumpRouteSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
         showJumpRouteSelectionOnMapAction.setEnabled(False) # No selection
         showJumpRouteSelectionOnMapAction.triggered.connect(self._showJumpRouteTableSelectionOnMap)
         self._jumpRouteTable.setMenuAction(
@@ -1327,7 +1327,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
-        showRefuellingSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
+        showRefuellingSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
         showRefuellingSelectionOnMapAction.setEnabled(False) # No selection
         showRefuellingSelectionOnMapAction.triggered.connect(self._showRefuellingTableSelectionOnMap)
         self._refuellingPlanTable.setMenuAction(
@@ -1862,12 +1862,12 @@ class JumpRouteWindow(gui.WindowWidget):
     def _showJumpRouteTableContextMenu(self, point: QtCore.QPoint) -> None:
         hasSelection = self._jumpRouteTable.hasSelection()
 
-        addSelectionToWaypointsAction = QtWidgets.QAction('Add Selection to Waypoints', self)
+        addSelectionToWaypointsAction = QtWidgets.QAction('Add to Waypoints', self)
         addSelectionToWaypointsAction.setEnabled(hasSelection)
         addSelectionToWaypointsAction.triggered.connect(
             lambda: [self._waypointsWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()])
 
-        addSelectionToAvoidListAction = QtWidgets.QAction('Add Selection to Avoid List', self)
+        addSelectionToAvoidListAction = QtWidgets.QAction('Add to Avoid List', self)
         addSelectionToAvoidListAction.setEnabled(hasSelection)
         addSelectionToAvoidListAction.triggered.connect(
             lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._jumpRouteTable.selectedHexes()])
@@ -1883,12 +1883,12 @@ class JumpRouteWindow(gui.WindowWidget):
         hasSelection = self._refuellingPlanTable.hasSelection()
         clickedPitStop = self._refuellingPlanTable.pitStopAt(point.y())
 
-        addSelectionToWaypointsAction = QtWidgets.QAction('Add Selection to Waypoints', self)
+        addSelectionToWaypointsAction = QtWidgets.QAction('Add to Waypoints', self)
         addSelectionToWaypointsAction.setEnabled(hasSelection)
         addSelectionToWaypointsAction.triggered.connect(
             lambda: [self._waypointsWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()])
 
-        addSelectionToAvoidListAction = QtWidgets.QAction('Add Selection to Avoid List', self)
+        addSelectionToAvoidListAction = QtWidgets.QAction('Add to Avoid List', self)
         addSelectionToAvoidListAction.setEnabled(hasSelection)
         addSelectionToAvoidListAction.triggered.connect(
             lambda: [self._avoidHexesWidget.addHex(hex) for hex in self._refuellingPlanTable.selectedHexes()])

@@ -706,7 +706,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
         removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._removeSelectedCargo)
 
@@ -862,16 +862,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
         editSalePriceAction.setEnabled(hasSingleSelection)
         editSalePriceAction.triggered.connect(self._promptEditSalePrice)
 
-        removeSelectedSalePriceAction = QtWidgets.QAction(
-            'Remove Selected',
-            self)
+        removeSelectedSalePriceAction = QtWidgets.QAction('Remove', self)
         removeSelectedSalePriceAction.setEnabled(hasSelection)
         removeSelectedSalePriceAction.triggered.connect(
             self._removeSelectedSalePrices)
 
-        removeAllSalePriceAction = QtWidgets.QAction(
-            'Remove All',
-            self)
+        removeAllSalePriceAction = QtWidgets.QAction('Remove All', self)
         removeAllSalePriceAction.setEnabled(hasContent)
         removeAllSalePriceAction.triggered.connect(
             self._removeAllSalePrices)

@@ -588,7 +588,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         editCargoAction.setEnabled(hasSingleSelection)
         editCargoAction.triggered.connect(self._promptEditCargo)
 
-        removeSelectedCargoAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectedCargoAction = QtWidgets.QAction('Remove', self)
         removeSelectedCargoAction.setEnabled(hasSelection)
         removeSelectedCargoAction.triggered.connect(self._cargoTable.removeSelectedRows)
 
@@ -597,7 +597,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         removeAllCargoAction.triggered.connect(self._cargoTable.removeAllRows)
 
         findTradeOptionsForSelectedCargoAction = QtWidgets.QAction(
-            'Find Trade Options for Selected...',
+            'Find Trade Options...',
             self)
         findTradeOptionsForSelectedCargoAction.setEnabled(hasSelection)
         findTradeOptionsForSelectedCargoAction.triggered.connect(

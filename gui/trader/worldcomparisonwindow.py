@@ -219,7 +219,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
         # Override the tables actions for showing selected/all worlds on a popup map
         # window with actions that will show them on the main map for this window
-        showSelectionOnMapAction = QtWidgets.QAction('Show Selection on Map...', self)
+        showSelectionOnMapAction = QtWidgets.QAction('Show on Map...', self)
         showSelectionOnMapAction.setEnabled(False) # No selection
         showSelectionOnMapAction.triggered.connect(self._showTableSelectionOnMap)
         self._worldManagementWidget.setMenuAction(
@@ -401,7 +401,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         hasSelection = self._worldManagementWidget.hasSelection()
         hasContent = not self._worldManagementWidget.isEmpty()
 
-        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options for Selected...', self)
+        findTradeOptionsForSelectedAction = QtWidgets.QAction('Find Trade Options...', self)
         findTradeOptionsForSelectedAction.setEnabled(hasSelection)
         findTradeOptionsForSelectedAction.triggered.connect(
             lambda: self._findTradeOptions(self._worldManagementWidget.selectedWorlds()))

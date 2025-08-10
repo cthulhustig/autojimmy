@@ -266,7 +266,7 @@ class HexTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
-        action =  QtWidgets.QAction('Show Selection Details...', self)
+        action =  QtWidgets.QAction('Show Details...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectionDetails)
         self.setMenuAction(HexTable.MenuAction.ShowSelectionDetails, action)
@@ -276,7 +276,7 @@ class HexTable(gui.FrozenColumnListTable):
         action.triggered.connect(self.showAllDetails)
         self.setMenuAction(HexTable.MenuAction.ShowAllDetails, action)
 
-        action =  QtWidgets.QAction('Show Selection on Map...', self)
+        action =  QtWidgets.QAction('Show on Map...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectionOnMap)
         self.setMenuAction(HexTable.MenuAction.ShowSelectionOnMap, action)

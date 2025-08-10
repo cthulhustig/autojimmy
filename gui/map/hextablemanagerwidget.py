@@ -83,7 +83,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         addNearbyAction.triggered.connect(self.promptAddNearby)
         self._hexTable.setMenuAction(HexTableManagerWidget.MenuAction.AddNearby, addNearbyAction)
 
-        removeSelectionAction = QtWidgets.QAction('Remove Selected', self)
+        removeSelectionAction = QtWidgets.QAction('Remove', self)
         removeSelectionAction.setEnabled(False) # No selection
         removeSelectionAction.triggered.connect(self.removeSelectedRows)
         self._hexTable.setMenuAction(HexTableManagerWidget.MenuAction.RemoveSelected, removeSelectionAction)
