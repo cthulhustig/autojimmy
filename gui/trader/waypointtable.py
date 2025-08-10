@@ -8,7 +8,7 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-class _BerthingBoxWidget(QtWidgets.QWidget):
+class _BerthingCheckWidget(QtWidgets.QWidget):
     stateChanged = QtCore.pyqtSignal([int])
     clicked = QtCore.pyqtSignal([bool])
 
@@ -95,7 +95,7 @@ class WaypointTable(gui.HexTable):
             return False
 
         column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
-        checkBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(row, column)
+        checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
         if not checkBox:
             return False
         return checkBox.isChecked()
@@ -109,7 +109,7 @@ class WaypointTable(gui.HexTable):
             return
 
         column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
-        checkBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(row, column)
+        checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
         if checkBox:
             checkBox.setChecked(checked)
 
@@ -248,7 +248,7 @@ class WaypointTable(gui.HexTable):
         if not world:
             return # Don't create check box for dead space
 
-        checkBox = _BerthingBoxWidget()
+        checkBox = _BerthingCheckWidget()
         checkBox.setChecked(checked)
         checkBox.clicked.connect(self._berthingCheckboxClicked)
         self.setCellWidget(row, column, checkBox)
@@ -262,8 +262,8 @@ class WaypointTable(gui.HexTable):
             return
 
         for oldRow, newRow in swappedRows:
-            newRowCheckBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(newRow, column)
-            oldRowCheckBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(oldRow, column)
+            newRowCheckBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(newRow, column)
+            oldRowCheckBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(oldRow, column)
 
             newRowIsChecked = oldRowCheckBox and oldRowCheckBox.isChecked()
             oldRowIsChecked = newRowCheckBox and newRowCheckBox.isChecked()
@@ -289,7 +289,7 @@ class WaypointTable(gui.HexTable):
     def _htmlCellText(self, row, column):
         berthingColumn = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
         if column == berthingColumn:
-            checkBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(row, column)
+            checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
             return 'Yes' if checkBox and checkBox.isChecked() else 'No'
 
         return super()._htmlCellText(row, column)
@@ -297,7 +297,7 @@ class WaypointTable(gui.HexTable):
     def _csvCellText(self, row: int, column: int) -> str:
         berthingColumn = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
         if column == berthingColumn:
-            checkBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(row, column)
+            checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
             return 'Yes' if checkBox and checkBox.isChecked() else 'No'
 
         return super()._csvCellText(row, column)
@@ -311,6 +311,6 @@ class WaypointTable(gui.HexTable):
         sourceCheckBox = self.sender()
         column = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
         for row in self.selectedRows():
-            checkBox: typing.Optional[_BerthingBoxWidget] = self.cellWidget(row, column)
+            checkBox: typing.Optional[_BerthingCheckWidget] = self.cellWidget(row, column)
             if checkBox and checkBox is not sourceCheckBox:
                 checkBox.setChecked(checked)
