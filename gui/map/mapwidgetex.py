@@ -488,7 +488,7 @@ class _InfoWidget(QtWidgets.QWidget):
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
-                hexImage=False,
+                includeHexImage=False,
                 hexImageStyle=None,
                 hexImageOptions=None)
             self._label.setText(text)
@@ -990,24 +990,13 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        mapEngine = app.Config.instance().value(
-            option=app.ConfigOption.MapEngine)
-        useInAppRendering = mapEngine is app.MapEngine.InApp
-
-        if useInAppRendering:
-            self._mapWidget = gui.LocalMapWidget(
-                milieu=self._milieu,
-                style=self._style,
-                options=self._options,
-                rendering=rendering,
-                animated=animated,
-                parent=self)
-        else:
-            self._mapWidget = gui.WebMapWidget(
-                milieu=self._milieu,
-                style=self._style,
-                options=self._options,
-                parent=self)
+        self._mapWidget = gui.LocalMapWidget(
+            milieu=self._milieu,
+            style=self._style,
+            options=self._options,
+            rendering=rendering,
+            animated=animated,
+            parent=self)
         self._mapWidget.leftClicked.connect(self._handleLeftClick)
         self._mapWidget.rightClicked.connect(self._handleRightClick)
 
@@ -1100,28 +1089,25 @@ class MapWidgetEx(QtWidgets.QWidget):
         #
         # Rendering
         #
-        self._renderingActionGroup = None
-        self._animatedAction = None
-        if useInAppRendering:
-            renderingConfigLayout = _ConfigSectionLayout()
+        renderingConfigLayout = _ConfigSectionLayout()
 
-            self._renderingActionGroup = _RenderingTypeActionGroup(
-                current=self._rendering)
-            self._renderingActionGroup.selectionChanged.connect(
-                self._renderingChanged)
-            renderingConfigLayout.addWidget(
-                _ActionGroupComboBox(self._renderingActionGroup),
-                renderingConfigLayout.rowCount(), 0, 1, 2)
+        self._renderingActionGroup = _RenderingTypeActionGroup(
+            current=self._rendering)
+        self._renderingActionGroup.selectionChanged.connect(
+            self._renderingChanged)
+        renderingConfigLayout.addWidget(
+            _ActionGroupComboBox(self._renderingActionGroup),
+            renderingConfigLayout.rowCount(), 0, 1, 2)
 
-            self._animatedAction = QtWidgets.QAction('Animations', self)
-            self._animatedAction.setCheckable(True)
-            self._animatedAction.setChecked(self._animated)
-            self._animatedAction.toggled.connect(self._animatedChanged)
-            renderingConfigLayout.addToggleAction(self._animatedAction)
+        self._animatedAction = QtWidgets.QAction('Animations', self)
+        self._animatedAction.setCheckable(True)
+        self._animatedAction.setChecked(self._animated)
+        self._animatedAction.toggled.connect(self._animatedChanged)
+        renderingConfigLayout.addToggleAction(self._animatedAction)
 
-            self._configWidget.addSection(
-                section='Rendering',
-                content=renderingConfigLayout)
+        self._configWidget.addSection(
+            section='Rendering',
+            content=renderingConfigLayout)
 
         #
         # Features

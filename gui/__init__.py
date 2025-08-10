@@ -52,7 +52,6 @@ from .map.tooltips import *
 from .map.hextooltipprovider import *
 from .map.hexselectcombobox import *
 from .map.localmapwidget import *
-from .map.webmapwidget import *
 from .map.mapwidgetex import *
 from .map.mapwindow import *
 from .map.hexradiusselectdialog import *
