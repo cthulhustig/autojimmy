@@ -1096,7 +1096,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         self._locked = locked
         if self._locked:
-            self._pixelDragStart = None
+            self._pixelDragStart = self._worldDragAnchor = None
             self._keyboardMovementTracker.clear()
 
     # TODO: When I finally remove WebMapWidget I should rework how
