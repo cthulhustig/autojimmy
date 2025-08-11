@@ -3,7 +3,7 @@ import gui
 import logic
 import travellermap
 import typing
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 class MapWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -73,7 +73,7 @@ class MapWindow(gui.WindowWidget):
             self,
             hex: travellermap.HexPosition,
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHex(
             hex=hex,
@@ -87,7 +87,7 @@ class MapWindow(gui.WindowWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHexes(
             hexes=hexes,

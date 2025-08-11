@@ -697,8 +697,8 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         self._filePathLineEdit.setText(path)
 
 class JumpRouteWindow(gui.WindowWidget):
-    _JumpRatingOverlayDarkStyleColour = '#9D03FC'
-    _JumpRatingOverlayLightStyleColour = '#4A03FC'
+    _JumpRatingOverlayDarkStyleColour = QtGui.QColor('#7F9D03FC')
+    _JumpRatingOverlayLightStyleColour = QtGui.QColor('#7F4A03FC')
     _JumpRatingOverlayLineWidth = 6
 
     def __init__(self) -> None:
@@ -2360,11 +2360,10 @@ class JumpRouteWindow(gui.WindowWidget):
                     continue
 
                 colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
-                tagColour = gui.colourToString(
-                    colour=colour,
-                    includeAlpha=False) # Remove alpha from colour
+                colour.setAlpha(128) # TODO: Check this works
+
                 taggedHexes.append(world.hex())
-                colourMap[world.hex()] = tagColour
+                colourMap[world.hex()] = colour
 
             if taggedHexes:
                 handle = self._mapWidget.createHexOverlay(
@@ -2407,19 +2406,19 @@ class JumpRouteWindow(gui.WindowWidget):
         if startHex:
             self._mapWidget.highlightHex(
                 hex=startHex,
-                colour='#00FF00',
+                colour=QtGui.QColor('#7F00FF00'),
                 radius=0.5)
         if finishHex:
             self._mapWidget.highlightHex(
                 hex=finishHex,
-                colour='#00FF00',
+                colour=QtGui.QColor('#7F00FF00'),
                 radius=0.5)
 
         waypointHexes = self._waypointsWidget.hexes()
         if waypointHexes:
             self._mapWidget.highlightHexes(
                 hexes=waypointHexes,
-                colour='#0066FF',
+                colour=QtGui.QColor('#7F0066FF'),
                 radius=0.3)
 
         filteredAvoidHexes = []
@@ -2429,7 +2428,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if filteredAvoidHexes:
             self._mapWidget.highlightHexes(
                 hexes=filteredAvoidHexes,
-                colour='#FF0000',
+                colour=QtGui.QColor('#7FFF0000'),
                 radius=0.3)
 
         if self._jumpRoute:

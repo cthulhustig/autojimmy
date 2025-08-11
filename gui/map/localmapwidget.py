@@ -46,8 +46,8 @@ class _MapOverlay(object):
         raise RuntimeError(f'{type(self)} is derived from _MapOverlay so must implement draw')
 
 class _JumpRouteOverlay(_MapOverlay):
-    _JumpRouteColour = '#7F048104'
-    _PitStopColour = '#7F8080FF'
+    _JumpRouteColour = QtGui.QColor('#7F048104')
+    _PitStopColour = QtGui.QColor('#7F8080FF')
     _PitStopRadius = 0.4 # Default to slightly larger than the size of the highlights Traveller Map puts on jump worlds
 
     def __init__(self) -> None:
@@ -56,17 +56,17 @@ class _JumpRouteOverlay(_MapOverlay):
         self._pitStopPoints = None
 
         self._jumpRoutePen = QtGui.QPen(
-            QtGui.QColor(_JumpRouteOverlay._JumpRouteColour),
+            _JumpRouteOverlay._JumpRouteColour,
             1, # Width will be set when rendering as it's dependant on scale
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.FlatCap)
         self._jumpNodePen = QtGui.QPen(
-            QtGui.QColor(_JumpRouteOverlay._JumpRouteColour),
+            _JumpRouteOverlay._JumpRouteColour,
             1, # Width will be set when rendering as it's dependant on scale
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.RoundCap)
         self._pitStopPen = QtGui.QPen(
-            QtGui.QColor(_JumpRouteOverlay._PitStopColour),
+            _JumpRouteOverlay._PitStopColour,
             _JumpRouteOverlay._PitStopRadius * 2,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.RoundCap)
@@ -132,12 +132,6 @@ class _JumpRouteOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _HexHighlightOverlay(_MapOverlay):
-    # This alpha value matches the hard coded (global) alpha used by Traveller Map
-    # when drawing it renders overlays (drawOverlay in map.js)
-    # TODO: When I get eventually get rid of the web map widget I should drop this
-    # constant and instead have alpha specified by the colour passed in
-    _HighlightAlpha = 0.5
-
     _HexPolygon = QtGui.QPolygonF([
         # Upper left
         QtCore.QPointF(
@@ -180,7 +174,7 @@ class _HexHighlightOverlay(_MapOverlay):
         self._styleMap: typing.Dict[
             typing.Tuple[
                 gui.MapPrimitiveType,
-                str, # Colour
+                typing.Tuple[int, int, int, int], # Colour
                 # Integer radius in 100ths of a parsec for Circle primitive type
                 # or 0 for Hex
                 int],
@@ -194,7 +188,7 @@ class _HexHighlightOverlay(_MapOverlay):
             travellermap.HexPosition,
             typing.Set[typing.Tuple[
                 gui.MapPrimitiveType,
-                str, # Colour
+                typing.Tuple[int, int, int, int], # Colour
                 # Integer radius in 100ths of a parsec for Circle primitive type
                 # or 0 for Hex
                 int]],
@@ -204,11 +198,11 @@ class _HexHighlightOverlay(_MapOverlay):
             self,
             hex: travellermap.HexPosition,
             type: gui.MapPrimitiveType,
-            colour: str,
+            colour: QtGui.QColor,
             radius: float = 0.0 # Only valid if primitive type is Circle
             ) -> None:
         radius = int(round(radius * 100))
-        styleKey = (type, colour, radius)
+        styleKey = (type, colour.getRgb(), radius)
 
         hexStyleKeys = self._hexMap.get(hex)
         if hexStyleKeys and styleKey in hexStyleKeys:
@@ -240,8 +234,8 @@ class _HexHighlightOverlay(_MapOverlay):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             type: gui.MapPrimitiveType,
-            colour: typing.Optional[str],
-            colourMap: typing.Optional[typing.Mapping[travellermap.HexPosition, str]] = None,
+            colour: typing.Optional[QtGui.QColor],
+            colourMap: typing.Optional[typing.Mapping[travellermap.HexPosition, QtGui.QColor]] = None,
             radius: float = 0.0 # Only valid if primitive type is Circle
             ) -> None:
         radius = int(round(radius * 100)) if type is gui.MapPrimitiveType.Circle else 0
@@ -256,7 +250,7 @@ class _HexHighlightOverlay(_MapOverlay):
             # There is no colour map so all hexes are going to have
             # the same style. Do the lookup once rather than for
             # every hex
-            styleKey = (type, colour, radius)
+            styleKey = (type, colour.getRgb(), radius)
             renderData = self._styleMap.get(styleKey)
             if renderData is None:
                 renderData = (
@@ -274,7 +268,7 @@ class _HexHighlightOverlay(_MapOverlay):
                     # No specific colour for this hex and no default so nothing
                     # to draw
                     continue
-                styleKey = (type, hexColour, radius)
+                styleKey = (type, hexColour.getRgb(), radius)
                 renderData = self._styleMap.get(styleKey)
                 if renderData is None:
                     renderData = (
@@ -358,14 +352,9 @@ class _HexHighlightOverlay(_MapOverlay):
     @staticmethod
     def _createTool(
             type: gui.MapPrimitiveType,
-            colour: str,
+            colour: QtGui.QColor,
             radius: float
             ) -> typing.Union[QtGui.QPen, QtGui.QBrush]:
-        colour = QtGui.QColor(cartographer.makeAlphaColour(
-            alpha=_HexHighlightOverlay._HighlightAlpha,
-            colour=colour,
-            isNormalised=True))
-
         if type is gui.MapPrimitiveType.Circle:
             return QtGui.QPen(
                 colour,
@@ -378,18 +367,12 @@ class _HexHighlightOverlay(_MapOverlay):
             raise RuntimeError(f'Invalid map primitive type {type}')
 
 class _HexBorderOverlay(_MapOverlay):
-    # This alpha value matches the hard coded (global) alpha used by Traveller Map
-    # when drawing it renders overlays (drawOverlay in map.js)
-    # TODO: When I get eventually get rid of the web map widget I should drop this
-    # constant and instead have alpha specified by the colour passed in
-    _HighlightAlpha = 0.5
-
     def __init__(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            lineColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             includeInterior: bool = True,
             ) -> None:
         super().__init__()
@@ -413,18 +396,11 @@ class _HexBorderOverlay(_MapOverlay):
         self._pen = self._brush = None
         if lineColour:
             self._pen = QtGui.QPen(
-                QtGui.QColor(cartographer.makeAlphaColour(
-                    alpha=_HexBorderOverlay._HighlightAlpha,
-                    colour=lineColour,
-                    isNormalised=True)),
+                lineColour,
                 0) # Line width set at draw time as it's dependent on scale
             self._lineWidth = lineWidth
         if fillColour:
-            self._brush = QtGui.QBrush(
-                QtGui.QColor(cartographer.makeAlphaColour(
-                    alpha=_HexBorderOverlay._HighlightAlpha,
-                    colour=fillColour,
-                    isNormalised=True)))
+            self._brush = QtGui.QBrush(fillColour)
 
     def draw(
             self,
@@ -447,8 +423,9 @@ class _HexBorderOverlay(_MapOverlay):
 
         return True # Something was drawn
 
+# TODO: Why isn't this working
 class _EmpressWaveOverlay(_MapOverlay):
-    _WaveColour = '#4CFFCC00'
+    _WaveColour = QtGui.QColor('#4CFFCC00')
     _WaveVelocity = math.pi / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
     def __init__(
@@ -458,7 +435,7 @@ class _EmpressWaveOverlay(_MapOverlay):
         super().__init__()
         self._milieu = milieu
         self._pen = QtGui.QPen(
-            QtGui.QColor(_EmpressWaveOverlay._WaveColour),
+            _EmpressWaveOverlay._WaveColour,
             0) # Width will be set at render time
 
     def setMilieu(self, milieu: travellermap.Milieu) -> None:
@@ -503,12 +480,12 @@ class _EmpressWaveOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _QrekrshaZoneOverlay(_MapOverlay):
-    _ZoneColour = '#4CFFCC00'
+    _ZoneColour = QtGui.QColor('#4CFFCC00')
 
     def __init__(self) -> None:
         super().__init__()
         self._pen = QtGui.QPen(
-            QtGui.QColor(_QrekrshaZoneOverlay._ZoneColour),
+            _QrekrshaZoneOverlay._ZoneColour,
             0) # Width will be set at render time
 
     # This code is based on the Traveller Map drawQZ code (map.js)
@@ -539,7 +516,7 @@ class _QrekrshaZoneOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _AntaresSupernovaOverlay(_MapOverlay):
-    _SupernovaColour = '#26FFCC00'
+    _SupernovaColour = QtGui.QColor('#26FFCC00')
     _SupernovaCenter = travellermap.HexPosition(55, -59) # Antares
     _SupernovaVelocity = 1 / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
@@ -550,7 +527,7 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         super().__init__()
         self._milieu = milieu
         self._brush = QtGui.QBrush(
-            QtGui.QColor(_AntaresSupernovaOverlay._SupernovaColour))
+            _AntaresSupernovaOverlay._SupernovaColour)
 
     def setMilieu(self, milieu: travellermap.Milieu) -> None:
         self._milieu = milieu
@@ -589,10 +566,9 @@ class _AntaresSupernovaOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _MainsOverlay(_MapOverlay):
-    _SmallMainColour = common.HtmlColours.Pink
-    _MediumMainColour = '#FFCC00'
-    _LargeMainColour = common.HtmlColours.Cyan
-    _MainAlpha = 0.25
+    _SmallMainColour = QtGui.QColor('#3FFFC0CB')
+    _MediumMainColour = QtGui.QColor('#3FFFCC00')
+    _LargeMainColour = QtGui.QColor('#3F00FFFF')
     _PointSize = 1.15
 
     def __init__(self) -> None:
@@ -620,10 +596,7 @@ class _MainsOverlay(_MapOverlay):
             colour = _MainsOverlay._LargeMainColour
 
         self._pen = QtGui.QPen(
-            QtGui.QColor(cartographer.makeAlphaColour(
-                colour=colour,
-                alpha=_MainsOverlay._MainAlpha,
-                isNormalised=True)),
+            colour,
             _MainsOverlay._PointSize,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.RoundCap)
@@ -1237,7 +1210,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             hex: travellermap.HexPosition,
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: str = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._hexHighlightOverlay.addHex(
             hex=hex,
@@ -1250,7 +1223,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._hexHighlightOverlay.addHexes(
             hexes=hexes,
@@ -1275,10 +1248,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             primitive: gui.MapPrimitiveType,
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
-                str # Colour string
+                QtGui.QColor
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
             ) -> str:
@@ -1297,9 +1270,9 @@ class LocalMapWidget(QtWidgets.QWidget):
     def createHexBordersOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            lineColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             includeInterior: bool = True
             ) -> str:
         overlay = _HexBorderOverlay(

@@ -945,10 +945,10 @@ class MapWidgetEx(QtWidgets.QWidget):
     _ControlWidgetInset = 20
     _ControlWidgetSpacing = 5
 
-    _SelectionFillDarkStyleColour = '#8080FF'
-    _SelectionFillLightStyleColour = '#8080FF'
-    _SelectionOutlineDarkStyleColour = '#42d7f5'
-    _SelectionOutlineLightStyleColour = '#5442f5'
+    _SelectionFillDarkStyleColour = QtGui.QColor('#7F8080FF')
+    _SelectionFillLightStyleColour = QtGui.QColor('#7F8080FF')
+    _SelectionOutlineDarkStyleColour = QtGui.QColor('#7F42d7f5')
+    _SelectionOutlineLightStyleColour = QtGui.QColor('#7F5442f5')
     _SelectionOutlineWidth = 6
 
     _HomeLinearScale = 1
@@ -1500,7 +1500,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hex: travellermap.HexPosition,
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHex(
             hex=hex,
@@ -1511,7 +1511,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHexes(
             hexes=hexes,
@@ -1532,10 +1532,10 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             primitive: gui.MapPrimitiveType,
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
-                str # Colour string
+                QtGui.QColor
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
             ) -> str:
@@ -1549,9 +1549,9 @@ class MapWidgetEx(QtWidgets.QWidget):
     def createHexBordersOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            lineColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             includeInterior: bool = True
             ) -> str:
         return self._mapWidget.createHexBordersOverlay(
@@ -1565,9 +1565,9 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             center: travellermap.HexPosition,
             radius: int,
-            lineColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             ) -> str:
         radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
@@ -1993,12 +1993,12 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         return True
 
-    def selectionFillColour(self) -> str:
+    def selectionFillColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionFillDarkStyleColour \
             if travellermap.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionFillLightStyleColour
 
-    def selectionOutlineColour(self) -> str:
+    def selectionOutlineColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionOutlineDarkStyleColour \
             if travellermap.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionOutlineLightStyleColour
