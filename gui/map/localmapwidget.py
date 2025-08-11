@@ -1071,14 +1071,6 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._pixelDragStart = self._worldDragAnchor = None
             self._keyboardMovementTracker.clear()
 
-    # TODO: When I finally remove WebMapWidget I should rework how
-    # reloading work as it doesn't make conceptual sense whe there
-    # is nothing to "load"
-    def reload(self) -> None:
-        self._renderer = self._newRenderer()
-        self._clearTileCache()
-        self._updateView()
-
     def setView(
             self,
             center: typing.Optional[QtCore.QPointF] = None, # Center in World coordinates

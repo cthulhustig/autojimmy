@@ -1452,9 +1452,6 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._taggingColours = app.TaggingColours(colours) if colours else None
         self._infoWidget.setTaggingColours(colours=self._taggingColours)
 
-    def reload(self) -> None:
-        self._mapWidget.reload()
-
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
