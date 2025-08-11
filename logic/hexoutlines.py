@@ -56,28 +56,28 @@ def _floodRemove(
 
 
 _AntiClockwiseOffsets = {
-    travellermap.HexEdge.Upper: (-_HalfHexMinWidth, _HalfHexHeight),
-    travellermap.HexEdge.UpperRight: (_HalfHexMinWidth, _HalfHexHeight),
+    travellermap.HexEdge.Upper: (-_HalfHexMinWidth, -_HalfHexHeight),
+    travellermap.HexEdge.UpperRight: (_HalfHexMinWidth, -_HalfHexHeight),
     travellermap.HexEdge.LowerRight: (_HalfHexMaxWidth, 0),
-    travellermap.HexEdge.Lower: (_HalfHexMinWidth, -_HalfHexHeight),
-    travellermap.HexEdge.LowerLeft: (-_HalfHexMinWidth, -_HalfHexHeight),
+    travellermap.HexEdge.Lower: (_HalfHexMinWidth, _HalfHexHeight),
+    travellermap.HexEdge.LowerLeft: (-_HalfHexMinWidth, _HalfHexHeight),
     travellermap.HexEdge.UpperLeft: (-_HalfHexMaxWidth, 0)
 }
 
-# Return the most anticlockwise point on the given edge
+# Return the most anticlockwise point on the given edge in isotropic space
 def _getAntiClockwisePoint(
         hex: travellermap.HexPosition,
         edge: travellermap.HexEdge
         ) -> typing.Tuple[float, float]:
-    x, y = hex.mapSpace()
+    x, y = hex.isotropicSpace()
     offsetX, offsetY = _AntiClockwiseOffsets[edge]
     return (x + offsetX, y + offsetY)
 
-# Return the outline of a single hex in map space
+# Return the outline of a single hex in isotropic space
 def _getHexOutline(
         hex: travellermap.HexPosition
         ) -> typing.Iterable[typing.Tuple[float, float]]:
-    x, y = hex.mapSpace()
+    x, y = hex.isotropicSpace()
     return [
         (x - _HalfHexMinWidth, y - _HalfHexHeight),
         (x + _HalfHexMinWidth, y - _HalfHexHeight),

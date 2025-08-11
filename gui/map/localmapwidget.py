@@ -385,12 +385,7 @@ class _HexBorderOverlay(_MapOverlay):
         for outline in outlines:
             polygon = QtGui.QPolygonF()
             for x, y in outline:
-                # NOTE: Negate the Y as calculateCompleteHexOutlines returns
-                # Traveller Map map space coordinates whereas this overlay
-                # will render in my isotropic space
-                # TODO: When I finally get rid of the Traveller Map web widget I
-                # should update these functions to work in my coordinate space
-                polygon.append(QtCore.QPointF(x, -y))
+                polygon.append(QtCore.QPointF(x, y))
             self._polygons.append(polygon)
 
         self._pen = self._brush = None
@@ -423,8 +418,9 @@ class _HexBorderOverlay(_MapOverlay):
 
         return True # Something was drawn
 
-# TODO: Why isn't this working
 class _EmpressWaveOverlay(_MapOverlay):
+    # The origin is taken from Traveller Map where it's 0, 10000 in its map space
+    _WaveOriginHex = travellermap.HexPosition(0, -10000)
     _WaveColour = QtGui.QColor('#4CFFCC00')
     _WaveVelocity = math.pi / 3.26 # Velocity of effect is light speed (so 1 ly/y)
 
@@ -455,7 +451,7 @@ class _EmpressWaveOverlay(_MapOverlay):
         w = 1 #pc
 
         # Per MWM: center is 10000pc coreward
-        x, y = travellermap.mapSpaceToAbsoluteSpace((0, 10000))
+        x, y = _EmpressWaveOverlay._WaveOriginHex.absolute()
         x *= travellermap.ParsecScaleX
         y *= travellermap.ParsecScaleY
 
@@ -480,6 +476,9 @@ class _EmpressWaveOverlay(_MapOverlay):
         return True # Something was drawn
 
 class _QrekrshaZoneOverlay(_MapOverlay):
+    # This center position was taken from Traveller Map where it's
+    # -179.4, 131 in its map space
+    _CenterHex = travellermap.HexPosition(-207,  -131)
     _ZoneColour = QtGui.QColor('#4CFFCC00')
 
     def __init__(self) -> None:
@@ -497,7 +496,7 @@ class _QrekrshaZoneOverlay(_MapOverlay):
         if not self.isEnabled():
             return False
 
-        x, y = travellermap.mapSpaceToAbsoluteSpace((-179.4, 131))
+        x, y = _QrekrshaZoneOverlay._CenterHex.absolute()
         x *= travellermap.ParsecScaleX
         y *= travellermap.ParsecScaleY
 
