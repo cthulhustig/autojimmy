@@ -1337,7 +1337,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._mapWidget.setToolTipCallback(self._formatMapToolTip)
         self._mapWidget.enableDeadSpaceSelection(
             enable=routingType is logic.RoutingType.DeadSpace)
-        self._mapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
+        self._mapWidget.customContextMenuRequested.connect(self._showTravellerMapContextMenu)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
@@ -1896,22 +1896,12 @@ class JumpRouteWindow(gui.WindowWidget):
         menu.addAction(showAllRefuellingCalculationsAction)
         menu.exec(self._refuellingPlanTable.viewport().mapToGlobal(point))
 
-    # TODO: When I get rid of the web map widget I can switch this to use
-    # the standard custom context menu rather than the maps right click
-    # event. It can't be done now as it would require an non-async way
-    # to resolve the widget position to a hex which isn't possible with
-    # the web map widget.
-    # - I think I would need to implement a hexAt function for the local map
-    # widget but it should be pretty straight forward
-    # - I would also need to update this function to handle the fact the
-    # hex could in theory be null (menu should still display, just with
-    # some options disabled)
     def _showTravellerMapContextMenu(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            pos: QtCore.QPoint
             ) -> None:
-        if not hex:
-            return
+        hex = self._mapWidget.hexAt(pos=pos)
+
         isCurrentWaypoint = self._waypointsWidget.containsHex(hex=hex)
         isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
 

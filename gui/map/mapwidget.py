@@ -1120,6 +1120,21 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         self.setView(scale=scale, immediate=immediate)
 
+    def hexAt(
+            self,
+            pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
+            ) -> travellermap.HexPosition:
+        return self._pixelSpaceToHex(pixelPos=pos)
+
+    def worldAt(
+            self,
+            pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
+            ) -> typing.Optional[traveller.World]:
+        hex = self._pixelSpaceToHex(pixelPos=pos)
+        return traveller.WorldManager.instance().worldByPosition(
+            milieu=self._milieu,
+            hex=hex)
+
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,

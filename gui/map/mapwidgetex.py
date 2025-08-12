@@ -1452,6 +1452,20 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._taggingColours = app.TaggingColours(colours) if colours else None
         self._infoWidget.setTaggingColours(colours=self._taggingColours)
 
+    def hexAt(
+            self,
+            pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
+            ) -> travellermap.HexPosition:
+        pos = self._mapWidget.mapFrom(self, pos)
+        return self._mapWidget.hexAt(pos=pos)
+
+    def worldAt(
+            self,
+            pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
+            ) -> typing.Optional[traveller.World]:
+        pos = self._mapWidget.mapFrom(self, pos)
+        return self._mapWidget.worldAt(pos=pos)
+
     def centerOnHex(
             self,
             hex: travellermap.HexPosition,
