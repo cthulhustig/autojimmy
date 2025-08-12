@@ -990,7 +990,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        self._mapWidget = gui.LocalMapWidget(
+        self._mapWidget = gui.MapWidget(
             milieu=self._milieu,
             style=self._style,
             options=self._options,
@@ -1408,7 +1408,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             return False
 
         self._rendering = rendering
-        if isinstance(self._mapWidget, gui.LocalMapWidget):
+        if isinstance(self._mapWidget, gui.MapWidget):
             self._mapWidget.setRendering(
                 rendering=self._rendering)
         if self._renderingActionGroup:
@@ -1425,7 +1425,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             return
 
         self._animated = animated
-        if isinstance(self._mapWidget, gui.LocalMapWidget):
+        if isinstance(self._mapWidget, gui.MapWidget):
             self._mapWidget.setAnimated(animated=self._animated)
         if self._animatedAction:
             self._animatedAction.setChecked(self._animated)

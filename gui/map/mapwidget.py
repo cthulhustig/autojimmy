@@ -731,8 +731,8 @@ class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
             pd = tdec / ddec
             return r * (duration - dacc / 2 - ddec + tdec * (2 - pd) / 2)
 
-class LocalMapWidget(QtWidgets.QWidget):
-    centerChanged = QtCore.pyqtSignal(QtCore.QPointF) 
+class MapWidget(QtWidgets.QWidget):
+    centerChanged = QtCore.pyqtSignal(QtCore.QPointF)
     scaleChanged = QtCore.pyqtSignal(travellermap.Scale)
     leftClicked = QtCore.pyqtSignal(travellermap.HexPosition)
     rightClicked = QtCore.pyqtSignal(travellermap.HexPosition)
@@ -778,6 +778,9 @@ class LocalMapWidget(QtWidgets.QWidget):
     # missed
     _LeftClickMoveThreshold = 3
 
+    # NOTE: This is LocalMapWidget for legacy reasons. The class was renamed as
+    # part of the work to remove the legacy web map widget but the state
+    # structure didn't change
     _StateVersion = 'LocalMapWidget_v1'
 
     _sharedTileCache = common.LRUCache[
@@ -819,10 +822,10 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent=parent)
 
-        if LocalMapWidget._sharedEasingCurves is None:
-            LocalMapWidget._sharedEasingCurves = []
-            for _ in range(LocalMapWidget._sharedEasingCurveMaxCount):
-                LocalMapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
+        if MapWidget._sharedEasingCurves is None:
+            MapWidget._sharedEasingCurves = []
+            for _ in range(MapWidget._sharedEasingCurveMaxCount):
+                MapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
 
         self._milieu = milieu
         self._style = style
@@ -835,8 +838,8 @@ class LocalMapWidget(QtWidgets.QWidget):
         scene.setSceneRect(0, 0, self.width(), self.height())
 
         # NOTE: The view center is in world coordinates
-        self._viewCenter = QtCore.QPointF(LocalMapWidget._DefaultCenterX, LocalMapWidget._DefaultCenterY)
-        self._viewScale = travellermap.Scale(log=LocalMapWidget._DefaultLogScale)
+        self._viewCenter = QtCore.QPointF(MapWidget._DefaultCenterX, MapWidget._DefaultCenterY)
+        self._viewScale = travellermap.Scale(log=MapWidget._DefaultLogScale)
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
@@ -859,7 +862,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._offscreenRenderImage: typing.Optional[QtGui.QImage] = None
 
         self._tileRenderTimer = QtCore.QTimer()
-        self._tileRenderTimer.setInterval(LocalMapWidget._TileRenderTimerMs)
+        self._tileRenderTimer.setInterval(MapWidget._TileRenderTimerMs)
         self._tileRenderTimer.setSingleShot(True)
         self._tileRenderTimer.timeout.connect(self._handleRenderTileTimer)
         self._tileRenderQueue: typing.List[typing.Tuple[
@@ -869,22 +872,22 @@ class LocalMapWidget(QtWidgets.QWidget):
             ]] = []
         self._forceAtomicRedraw = False
 
-        self._placeholderTile = LocalMapWidget._createPlaceholderTile()
+        self._placeholderTile = MapWidget._createPlaceholderTile()
 
         self._directionTextFont = QtGui.QFont(
-            LocalMapWidget._DirectionTextFontFamily,
-            LocalMapWidget._DirectionTextFontSize)
+            MapWidget._DirectionTextFontFamily,
+            MapWidget._DirectionTextFontSize)
         self._directionTextFont.setBold(True)
         self._directionTextPen = QtGui.QPen(
             QtGui.QColor(common.HtmlColours.TravellerRed),
             0)
 
         self._scaleFont = QtGui.QFont(
-            LocalMapWidget._ScaleTextFontFamily,
-            LocalMapWidget._ScaleTextFontSize)
+            MapWidget._ScaleTextFontFamily,
+            MapWidget._ScaleTextFontSize)
         self._scalePen = QtGui.QPen(
             QtGui.QColor(common.HtmlColours.Black), # Colour will be updated when drawn
-            LocalMapWidget._ScaleLineWidth,
+            MapWidget._ScaleLineWidth,
             QtCore.Qt.PenStyle.SolidLine,
             QtCore.Qt.PenCapStyle.FlatCap)
 
@@ -948,7 +951,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         # by holding down multiple keys at once
         self._keyboardMovementTracker = _MoveKeyTracker()
         self._keyboardMovementTimer = QtCore.QTimer()
-        self._keyboardMovementTimer.setInterval(LocalMapWidget._KeyboardMovementTimerMs)
+        self._keyboardMovementTimer.setInterval(MapWidget._KeyboardMovementTimerMs)
         self._keyboardMovementTimer.setSingleShot(False)
         self._keyboardMovementTimer.timeout.connect(self._handleKeyboardMovementTimer)
 
@@ -1159,8 +1162,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             value=min(
                 travellermap.linearScaleToLogScale(self.width() / width),
                 travellermap.linearScaleToLogScale(self.height() / height)),
-            minValue=LocalMapWidget._MinLogScale,
-            maxValue=LocalMapWidget._MaxLogScale)
+            minValue=MapWidget._MinLogScale,
+            maxValue=MapWidget._MaxLogScale)
 
         self.setView(
             center=center,
@@ -1311,7 +1314,7 @@ class LocalMapWidget(QtWidgets.QWidget):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(LocalMapWidget._StateVersion)
+        stream.writeQString(MapWidget._StateVersion)
         stream.writeFloat(self._viewCenter.x())
         stream.writeFloat(self._viewCenter.y())
         stream.writeFloat(self._viewScale.log)
@@ -1323,7 +1326,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != LocalMapWidget._StateVersion:
+        if version != MapWidget._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore LocalMapWidget state (Incorrect version)')
             return False
@@ -1439,15 +1442,15 @@ class LocalMapWidget(QtWidgets.QWidget):
                 return
             elif event.key() == QtCore.Qt.Key.Key_Z:
                 self._zoomView(
-                    step=LocalMapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -LocalMapWidget._KeyboardZoomDelta)
+                    step=MapWidget._KeyboardZoomDelta if not gui.isShiftKeyDown() else -MapWidget._KeyboardZoomDelta)
                 event.accept()
                 return
             elif event.key() == QtCore.Qt.Key.Key_Plus or event.key() == QtCore.Qt.Key.Key_Equal:
-                self._zoomView(step=LocalMapWidget._KeyboardZoomDelta)
+                self._zoomView(step=MapWidget._KeyboardZoomDelta)
                 event.accept()
                 return
             elif event.key() == QtCore.Qt.Key.Key_Minus:
-                self._zoomView(step=-LocalMapWidget._KeyboardZoomDelta)
+                self._zoomView(step=-MapWidget._KeyboardZoomDelta)
                 event.accept()
                 return
 
@@ -1470,7 +1473,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         if not self._locked:
             self._zoomView(
-                step=LocalMapWidget._WheelZoomDelta if event.angleDelta().y() > 0 else -LocalMapWidget._WheelZoomDelta,
+                step=MapWidget._WheelZoomDelta if event.angleDelta().y() > 0 else -MapWidget._WheelZoomDelta,
                 cursor=event.pos())
 
         event.accept()
@@ -1512,7 +1515,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         if rendering is app.MapRendering.Tiled or \
                 rendering is app.MapRendering.Hybrid:
-            if not self._tileRenderQueue and LocalMapWidget._LookaheadBorderTiles:
+            if not self._tileRenderQueue and MapWidget._LookaheadBorderTiles:
                 # If there are no tiles needing loaded, pre-load tiles just
                 # outside the current view area.
                 self._loadLookaheadTiles()
@@ -1652,9 +1655,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         label = common.formatNumber(number=distance, decimalPlaces=1, suffix=' pc')
         distance *= self._viewScale.linear
 
-        scaleRight = self.width() - LocalMapWidget._ScaleLineIndent
+        scaleRight = self.width() - MapWidget._ScaleLineIndent
         scaleLeft = scaleRight - int(distance)
-        scaleY = self.height() - LocalMapWidget._ScaleLineIndent
+        scaleY = self.height() - MapWidget._ScaleLineIndent
 
         fontMetrics = QtGui.QFontMetricsF(self._scaleFont)
         labelRect = fontMetrics.tightBoundingRect(label)
@@ -1670,18 +1673,18 @@ class LocalMapWidget(QtWidgets.QWidget):
             painter.drawText(
                 QtCore.QPointF(
                     scaleLeft + ((distance / 2) - (labelRect.width() / 2)),
-                    scaleY - LocalMapWidget._ScaleLineIndent),
+                    scaleY - MapWidget._ScaleLineIndent),
                 label)
 
             painter.drawLine(
-                QtCore.QPointF(scaleLeft - (LocalMapWidget._ScaleLineWidth / 2), scaleY),
-                QtCore.QPointF(scaleRight + (LocalMapWidget._ScaleLineWidth / 2), scaleY))
+                QtCore.QPointF(scaleLeft - (MapWidget._ScaleLineWidth / 2), scaleY),
+                QtCore.QPointF(scaleRight + (MapWidget._ScaleLineWidth / 2), scaleY))
             painter.drawLine(
                 QtCore.QPointF(scaleLeft, scaleY),
-                QtCore.QPointF(scaleLeft, scaleY - LocalMapWidget._ScaleLineTickHeight))
+                QtCore.QPointF(scaleLeft, scaleY - MapWidget._ScaleLineTickHeight))
             painter.drawLine(
                 QtCore.QPointF(scaleRight, scaleY),
-                QtCore.QPointF(scaleRight, scaleY - LocalMapWidget._ScaleLineTickHeight))
+                QtCore.QPointF(scaleRight, scaleY - MapWidget._ScaleLineTickHeight))
 
     _DirectionLabels = [
         # Text, Rotation, X View Alignment, Y View Alignment
@@ -1705,7 +1708,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         with gui.PainterStateGuard(painter):
             painter.setFont(self._directionTextFont)
             painter.setPen(self._directionTextPen)
-            for text, angle, alignX, alignY in LocalMapWidget._DirectionLabels:
+            for text, angle, alignX, alignY in MapWidget._DirectionLabels:
                 textRect = fontMetrics.boundingRect(text)
                 textRect.moveTo(
                     -textRect.width() / 2,
@@ -1713,14 +1716,14 @@ class LocalMapWidget(QtWidgets.QWidget):
                 textHeight = textRect.height()
                 with gui.PainterStateGuard(painter):
                     if alignX:
-                        offsetX = (textHeight / 2) + LocalMapWidget._DirectionTextIndent
+                        offsetX = (textHeight / 2) + MapWidget._DirectionTextIndent
                         if alignX > 0:
                             offsetX = viewWidth - offsetX
                     else:
                         offsetX = (viewWidth / 2)
 
                     if alignY:
-                        offsetY = (textHeight / 2) + LocalMapWidget._DirectionTextIndent
+                        offsetY = (textHeight / 2) + MapWidget._DirectionTextIndent
                         if alignY > 0:
                             offsetY = viewHeight - offsetY
                     else:
@@ -1885,7 +1888,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         logViewScale = self._viewScale.log
         logViewScale += step
-        logViewScale = common.clamp(logViewScale, LocalMapWidget._MinLogScale, LocalMapWidget._MaxLogScale)
+        logViewScale = common.clamp(logViewScale, MapWidget._MinLogScale, MapWidget._MaxLogScale)
         if logViewScale == self._viewScale.log:
             return # Reached min/max zoom
         newViewScale = travellermap.Scale(log=logViewScale)
@@ -1931,7 +1934,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         tileScale = int(math.floor(self._viewScale.log + 0.5))
 
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
-        tileSize = LocalMapWidget._TileSize * tileMultiplier
+        tileSize = MapWidget._TileSize * tileMultiplier
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
@@ -2013,7 +2016,7 @@ class LocalMapWidget(QtWidgets.QWidget):
 
         tileScale = int(math.floor(self._viewScale.log + 0.5))
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
-        tilePixelSize = LocalMapWidget._TileSize * tileMultiplier
+        tilePixelSize = MapWidget._TileSize * tileMultiplier
         tileWorldWidth = tilePixelSize / (self._viewScale.linear * travellermap.ParsecScaleX)
         tileWorldHeight = tilePixelSize / (self._viewScale.linear * travellermap.ParsecScaleY)
         targetTileX = int(math.floor(targetWorld.x() / tileWorldWidth))
@@ -2036,7 +2039,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             worldTarget: QtCore.QPointF
             ) -> float:
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
-        tileSize = LocalMapWidget._TileSize * tileMultiplier
+        tileSize = MapWidget._TileSize * tileMultiplier
 
         pixelTileCenter = QtCore.QPointF(
             (tileX * tileSize) + (tileSize / 2),
@@ -2055,7 +2058,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         tileScale = int(math.floor(self._viewScale.log + 0.5))
 
         tileMultiplier = math.pow(2, self._viewScale.log - tileScale)
-        tileSize = LocalMapWidget._TileSize * tileMultiplier
+        tileSize = MapWidget._TileSize * tileMultiplier
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
@@ -2073,7 +2076,7 @@ class LocalMapWidget(QtWidgets.QWidget):
         topTile = math.floor(worldViewTop / worldTileHeight)
         bottomTile = math.floor(worldViewBottom / worldTileHeight)
 
-        for _ in range(LocalMapWidget._LookaheadBorderTiles):
+        for _ in range(MapWidget._LookaheadBorderTiles):
             leftTile -= 1
             rightTile += 1
             topTile -= 1
@@ -2179,11 +2182,11 @@ class LocalMapWidget(QtWidgets.QWidget):
                 QtCore.QRectF, # Render rect
                 typing.Optional[QtCore.QRectF]]]: # Clip rect
         placeholderScale = currentScale + (-1 if lookLower else 1)
-        if placeholderScale < LocalMapWidget._MinLogScale or placeholderScale > LocalMapWidget._MaxLogScale:
+        if placeholderScale < MapWidget._MinLogScale or placeholderScale > MapWidget._MaxLogScale:
             return[]
 
         tileMultiplier = math.pow(2, self._viewScale.log - placeholderScale)
-        tileSize = LocalMapWidget._TileSize * tileMultiplier
+        tileSize = MapWidget._TileSize * tileMultiplier
 
         scaleX = (self._viewScale.linear * travellermap.ParsecScaleX)
         scaleY = (self._viewScale.linear * travellermap.ParsecScaleY)
@@ -2268,16 +2271,16 @@ class LocalMapWidget(QtWidgets.QWidget):
         tileScale = travellermap.logScaleToLinearScale(tileScale)
         scaleX = (tileScale * travellermap.ParsecScaleX)
         scaleY = (tileScale * travellermap.ParsecScaleY)
-        worldTileWidth = LocalMapWidget._TileSize / scaleX
-        worldTileHeight = LocalMapWidget._TileSize / scaleY
+        worldTileWidth = MapWidget._TileSize / scaleX
+        worldTileHeight = MapWidget._TileSize / scaleY
 
-        worldTileCenterX = ((tileX * LocalMapWidget._TileSize) / scaleX) + (worldTileWidth / 2)
-        worldTileCenterY = ((tileY * LocalMapWidget._TileSize) / scaleY) + (worldTileHeight / 2)
+        worldTileCenterX = ((tileX * MapWidget._TileSize) / scaleX) + (worldTileWidth / 2)
+        worldTileCenterY = ((tileY * MapWidget._TileSize) / scaleY) + (worldTileHeight / 2)
 
         if not image:
             image = QtGui.QImage(
-                LocalMapWidget._TileSize,
-                LocalMapWidget._TileSize,
+                MapWidget._TileSize,
+                MapWidget._TileSize,
                 QtGui.QImage.Format.Format_ARGB32)
         painter = QtGui.QPainter()
         painter.begin(image)
@@ -2287,8 +2290,8 @@ class LocalMapWidget(QtWidgets.QWidget):
                 worldCenterX=worldTileCenterX,
                 worldCenterY=worldTileCenterY,
                 scale=tileScale,
-                outputPixelWidth=LocalMapWidget._TileSize,
-                outputPixelHeight=LocalMapWidget._TileSize)
+                outputPixelWidth=MapWidget._TileSize,
+                outputPixelHeight=MapWidget._TileSize)
             self._renderer.render()
         finally:
             self._graphics.setPainter(painter=None)
@@ -2326,8 +2329,8 @@ class LocalMapWidget(QtWidgets.QWidget):
             # Normalize the delta and translate it to world space
             length = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
             if length:
-                horzStep = LocalMapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleX)
-                vertStep = LocalMapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleY)
+                horzStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleX)
+                vertStep = MapWidget._KeyboardMoveDelta / (self._viewScale.linear * travellermap.ParsecScaleY)
                 deltaX = (deltaX / length) * horzStep
                 deltaY = (deltaY / length) * vertStep
 
@@ -2373,9 +2376,9 @@ class LocalMapWidget(QtWidgets.QWidget):
         self._stopMoveAnimation()
 
         try:
-            if len(LocalMapWidget._sharedEasingCurves) >= 2:
-                self._viewCenterAnimationEasing = LocalMapWidget._sharedEasingCurves.pop()
-                self._viewScaleAnimationEasing = LocalMapWidget._sharedEasingCurves.pop()
+            if len(MapWidget._sharedEasingCurves) >= 2:
+                self._viewCenterAnimationEasing = MapWidget._sharedEasingCurves.pop()
+                self._viewScaleAnimationEasing = MapWidget._sharedEasingCurves.pop()
             else:
                 self._viewCenterAnimationEasing = self._viewScaleAnimationEasing = None
 
@@ -2389,7 +2392,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._viewCenterAnimation = QtCore.QPropertyAnimation(
                 self,
                 b"_viewCenterAnimationProp")
-            self._viewCenterAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
+            self._viewCenterAnimation.setDuration(MapWidget._MoveAnimationTimeMs)
             self._viewCenterAnimation.setEasingCurve(self._viewCenterAnimationEasing)
             self._viewCenterAnimation.setStartValue(self._viewCenter)
             self._viewCenterAnimation.setEndValue(newViewCenter)
@@ -2411,7 +2414,7 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._viewScaleAnimation = QtCore.QPropertyAnimation(
                 self,
                 b"_viewScaleAnimationProp")
-            self._viewScaleAnimation.setDuration(LocalMapWidget._MoveAnimationTimeMs)
+            self._viewScaleAnimation.setDuration(MapWidget._MoveAnimationTimeMs)
             self._viewScaleAnimation.setEasingCurve(self._viewScaleAnimationEasing)
             self._viewScaleAnimation.setStartValue(self._viewScale.log)
             self._viewScaleAnimation.setEndValue(newViewScale.log)
@@ -2457,11 +2460,11 @@ class LocalMapWidget(QtWidgets.QWidget):
             self._viewScaleAnimation = None
 
         if self._viewCenterAnimationEasing:
-            LocalMapWidget._sharedEasingCurves.append(self._viewCenterAnimationEasing)
+            MapWidget._sharedEasingCurves.append(self._viewCenterAnimationEasing)
             self._viewCenterAnimationEasing = None
 
         if self._viewScaleAnimationEasing:
-            LocalMapWidget._sharedEasingCurves.append(self._viewScaleAnimationEasing)
+            MapWidget._sharedEasingCurves.append(self._viewScaleAnimationEasing)
             self._viewScaleAnimationEasing = None
 
     def _handleMoveAnimationFinished(self):
@@ -2475,23 +2478,23 @@ class LocalMapWidget(QtWidgets.QWidget):
     @staticmethod
     def _createPlaceholderTile() -> QtGui.QImage:
         image = QtGui.QImage(
-            LocalMapWidget._TileSize,
-            LocalMapWidget._TileSize,
+            MapWidget._TileSize,
+            MapWidget._TileSize,
             QtGui.QImage.Format.Format_ARGB32)
-        rectsPerSize = math.ceil(LocalMapWidget._TileSize / LocalMapWidget._CheckerboardRectSize)
+        rectsPerSize = math.ceil(MapWidget._TileSize / MapWidget._CheckerboardRectSize)
 
         painter = QtGui.QPainter()
         with gui.PainterDrawGuard(painter, image):
-            painter.setBrush(QtGui.QColor(LocalMapWidget._CheckerboardColourA))
-            painter.drawRect(0, 0, LocalMapWidget._TileSize, LocalMapWidget._TileSize)
+            painter.setBrush(QtGui.QColor(MapWidget._CheckerboardColourA))
+            painter.drawRect(0, 0, MapWidget._TileSize, MapWidget._TileSize)
 
-            painter.setBrush(QtGui.QColor(LocalMapWidget._CheckerboardColourB))
+            painter.setBrush(QtGui.QColor(MapWidget._CheckerboardColourB))
             for x in range(rectsPerSize):
                 for y in range(1 if x % 2 else 0, rectsPerSize, 2):
                     painter.drawRect(
-                        x * LocalMapWidget._CheckerboardRectSize,
-                        y * LocalMapWidget._CheckerboardRectSize,
-                        LocalMapWidget._CheckerboardRectSize,
-                        LocalMapWidget._CheckerboardRectSize)
+                        x * MapWidget._CheckerboardRectSize,
+                        y * MapWidget._CheckerboardRectSize,
+                        MapWidget._CheckerboardRectSize,
+                        MapWidget._CheckerboardRectSize)
 
         return image
