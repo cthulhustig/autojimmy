@@ -27,6 +27,8 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 # - It would be really nice if I could get some way of making sector imports live
 # rather than needing a restart
 # TODO: Drop libcairo stuff from docs
+# - Maybe leave the around for a bit but make it clear they're only needed for
+# older versions
 
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
 

@@ -2360,7 +2360,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     continue
 
                 colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
-                colour.setAlpha(128) # TODO: Check this works
+                colour.setAlpha(128)
 
                 taggedHexes.append(world.hex())
                 colourMap[world.hex()] = colour
