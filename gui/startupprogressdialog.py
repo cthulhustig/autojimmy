@@ -11,17 +11,14 @@ class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
         jobs.LoadSectorsJob: 'Loading: ',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
-        jobs.LoadRobotsJob: 'Loading: Robot - ',
-        jobs.StartProxyJob: 'Proxy: '}
+        jobs.LoadRobotsJob: 'Loading: Robot - '}
 
     def __init__(
             self,
-            startProxy: bool,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
 
-        self._startProxy = startProxy
         self._jobQueue: typing.List[typing.Type[jobs.StartupJobBase]] = [] # NOTE: This is a queue of job types
         self._currentJob = None
         self._exception = None
@@ -53,8 +50,6 @@ class StartupProgressDialog(QtWidgets.QDialog):
         self._jobQueue.append(jobs.LoadSectorsJob)
         self._jobQueue.append(jobs.LoadWeaponsJob)
         self._jobQueue.append(jobs.LoadRobotsJob)
-        if self._startProxy:
-            self._jobQueue.append(jobs.StartProxyJob)
 
         self._startNextJob()
 
@@ -100,17 +95,8 @@ class StartupProgressDialog(QtWidgets.QDialog):
             result: typing.Union[str, Exception]
             ) -> None:
         if isinstance(result, Exception):
-            if isinstance(self._currentJob, jobs.StartProxyJob) :
-                logging.error(
-                    'An exception occurred while starting the proxy',
-                    exc_info=result)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text='The proxy failed to start. Custom sectors won\'t be displayed on the map',
-                    exception=result)
-            else:
-                self._exception = result
-                self.close()
+            self._exception = result
+            self.close()
 
         # Wait for thread to finish to prevent "QThread: Destroyed while thread is still running"
         # and a crash on Linux

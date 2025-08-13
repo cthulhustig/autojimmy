@@ -21,14 +21,6 @@ class ColourTheme(enum.Enum):
     LightMode = 'Light Mode'
     UseOSSetting = 'Use OS Setting'
 
-# NOTE: If I ever change the name of these enums I'll need some mapping
-# as they're written to the config file. This only applies to the name
-# not the value
-class MapEngine(enum.Enum):
-    InApp = app.AppName
-    WebProxy = 'Web (Proxy)'
-    WebDirect = 'Web (Direct)'
-
 class MapRendering(enum.Enum):
     Tiled = 'Tiled' # Tiles rendered in background (i.e. the same as Traveller Map)
     Hybrid = 'Hybrid' # Tiles rendered in foreground
@@ -42,17 +34,8 @@ class ConfigOption(enum.Enum):
     Milieu = 200
     MapStyle = 201
     MapOptions = 202
-    MapEngine = 203
     MapRendering = 204
     MapAnimations = 205
-
-    # Proxy
-    ProxyPort = 400
-    ProxyHostPoolSize = 401
-    ProxyMapUrl = 402
-    ProxyTileCacheSize = 403
-    ProxyTileCacheLifetime = 404
-    ProxySvgComposition = 405
 
     # Game
     Rules = 500
@@ -1112,12 +1095,6 @@ class Config(QtCore.QObject):
                 travellermap.Option.FilledBorders]))
 
         self._addConfigItem(EnumConfigItem(
-            option=ConfigOption.MapEngine,
-            key='TravellerMap/MapEngine',
-            restart=True,
-            enumType=MapEngine,
-            default=MapEngine.InApp))
-        self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapRendering,
             key='TravellerMap/MapRenderingType',
             restart=False,
@@ -1128,43 +1105,6 @@ class Config(QtCore.QObject):
             key='TravellerMap/MapAnimations',
             restart=False,
             default=True))
-
-        self._addConfigItem(IntConfigItem(
-            option=ConfigOption.ProxyPort,
-            key='Proxy/Port',
-            restart=True,
-            default=61977,
-            min=1024, # Don't allow system ports
-            max=65535))
-        self._addConfigItem(IntConfigItem(
-            option=ConfigOption.ProxyHostPoolSize,
-            key='Proxy/HostPoolSize',
-            restart=True,
-            default=1 if common.isMacOS() else 4,
-            min=1,
-            max=10))
-        self._addConfigItem(UrlConfigItem(
-            option=ConfigOption.ProxyMapUrl,
-            key='Proxy/MapUrl',
-            restart=True,
-            default=travellermap.TravellerMapBaseUrl))
-        self._addConfigItem(IntConfigItem(
-            option=ConfigOption.ProxyTileCacheSize,
-            key='Proxy/TileCacheSize',
-            restart=True,
-            default=500 * 1000 * 1000, # 500MB
-            min=0)) # 0 means disable cache
-        self._addConfigItem(IntConfigItem(
-            option=ConfigOption.ProxyTileCacheLifetime,
-            key='Proxy/TileCacheLifetime',
-            restart=True,
-            default=14, # Days
-            min=0)) # 0 means never expire
-        self._addConfigItem(BoolConfigItem(
-            option=ConfigOption.ProxySvgComposition,
-            key='Proxy/SvgComposition',
-            restart=True,
-            default=False))
 
         self._addConfigItem(RulesConfigItem(
             option=ConfigOption.Rules,
@@ -1441,23 +1381,9 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[travellermap.Option]: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapEngine], futureValue: bool = False) -> MapEngine: ...
-    @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapRendering], futureValue: bool = False) -> MapRendering: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapAnimations], futureValue: bool = False) -> bool: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ProxyPort], futureValue: bool = False) -> int: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ProxyHostPoolSize], futureValue: bool = False) -> int: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ProxyMapUrl], futureValue: bool = False) -> str: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ProxyTileCacheSize], futureValue: bool = False) -> int: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ProxyTileCacheLifetime], futureValue: bool = False) -> int: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ProxyTileCacheLifetime], futureValue: bool = False) -> bool: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.Rules], futureValue: bool = False) -> traveller.Rules: ...
     @typing.overload

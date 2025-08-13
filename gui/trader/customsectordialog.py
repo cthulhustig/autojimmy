@@ -1,6 +1,5 @@
 import app
 import common
-import depschecker
 import enum
 import gui
 import jobs
@@ -103,7 +102,9 @@ _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
 # NOTE: SVGs put less load on Traveller Map so I've added an extra scale to make the
 # compositing more seamless
 _BitmapCustomMapScales = [128, 64, 32, 16, 4]
-_SvgCustomMapScales = [128, 64, 32, 16, 8, 4]
+
+# TODO: This should go away as part of these changes
+_TravellerMapUrl = 'https://www.travellermap.com'
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
@@ -781,11 +782,6 @@ class _NewSectorDialog(gui.DialogEx):
         renderStyle = self._renderStyleComboBox.currentEnum()
         renderOptions = self._renderOptionList()
 
-        # Always send poster requests directly to the configured traveller map instance.
-        # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
-        # to add support for proxying multipart/form-data
-        mapUrl = app.Config.instance().value(option=app.ConfigOption.ProxyMapUrl)
-
         xmlMetadata = None
         try:
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
@@ -853,16 +849,14 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            scales = \
-                _SvgCustomMapScales if depschecker.DetectedCairoSvgState else _BitmapCustomMapScales
             posterJob = jobs.PosterJobAsync(
                 parent=self,
-                mapUrl=mapUrl,
+                mapUrl=_TravellerMapUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata, # Poster API always uses XML metadata
                 style=renderStyle,
                 options=renderOptions,
-                scales=scales,
+                scales=_BitmapCustomMapScales,
                 compositing=True)
             progressDlg = _PosterJobDialog(
                 parent=self,
@@ -901,11 +895,6 @@ class _NewSectorDialog(gui.DialogEx):
 
     def _lintClicked(self) -> None:
         try:
-            # Always send linter requests directly to the configured traveller map instance.
-            # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
-            # to add support for proxying multipart/form-data
-            mapUrl = app.Config.instance().value(option=app.ConfigOption.ProxyMapUrl)
-
             try:
                 sectorFilePath = self._sectorFileLineEdit.text()
                 with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
@@ -956,7 +945,7 @@ class _NewSectorDialog(gui.DialogEx):
 
             lintJob = jobs.LintJobAsync(
                 parent=self,
-                mapUrl=mapUrl,
+                mapUrl=_TravellerMapUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata)
             progressDlg = _LintJobDialog(

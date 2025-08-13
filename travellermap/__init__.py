@@ -8,6 +8,5 @@ from .url import *
 from .sectorparsers import *
 from .mapimage import *
 from .datastore import *
-from .tileclient import *
 from .mains import *
 from .cssreader import *

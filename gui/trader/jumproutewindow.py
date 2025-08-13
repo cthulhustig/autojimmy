@@ -697,8 +697,8 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         self._filePathLineEdit.setText(path)
 
 class JumpRouteWindow(gui.WindowWidget):
-    _JumpRatingOverlayDarkStyleColour = '#9D03FC'
-    _JumpRatingOverlayLightStyleColour = '#4A03FC'
+    _JumpRatingOverlayDarkStyleColour = QtGui.QColor('#7F9D03FC')
+    _JumpRatingOverlayLightStyleColour = QtGui.QColor('#7F4A03FC')
     _JumpRatingOverlayLineWidth = 6
 
     def __init__(self) -> None:
@@ -943,10 +943,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._updateTravellerMapOverlays()
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
-        # Schedule the Traveller Map init fix to be run shortly after the window is displayed. We
-        # can't run it directly here as the window won't have finished being resized (after loading
-        # the saved window layout) so the fix won't work.
-        QtCore.QTimer.singleShot(1000, self._travellerMapInitFix)
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         return super().firstShowEvent(e)
 
@@ -955,19 +951,6 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteJob.cancel(block=True)
             self._jumpRouteJob = None
         return super().closeEvent(e)
-
-    # This is a MASSIVE hack. It works around the fact the Traveller Map widget isn't resized until
-    # its tab is displayed. This caused zooming to the jump route to not zoom to the correct area
-    # if the route was calculated before the widget was displayed for the first time. The hack works
-    # by checking if the Traveller Map widget is not the displayed widget and forces a resize if
-    # it's not.
-    # TODO: This can be removed when I finally ditch the web map widget
-    def _travellerMapInitFix(self) -> None:
-        currentWidget = self._resultsDisplayModeTabView.currentWidget()
-        if currentWidget != self._mapWidget:
-            size = currentWidget.size()
-            self._mapWidget.resize(size)
-            self._mapWidget.show()
 
     def _setupStartFinishControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
@@ -1354,7 +1337,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._mapWidget.setToolTipCallback(self._formatMapToolTip)
         self._mapWidget.enableDeadSpaceSelection(
             enable=routingType is logic.RoutingType.DeadSpace)
-        self._mapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
+        self._mapWidget.customContextMenuRequested.connect(self._showTravellerMapContextMenu)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
@@ -1913,22 +1896,12 @@ class JumpRouteWindow(gui.WindowWidget):
         menu.addAction(showAllRefuellingCalculationsAction)
         menu.exec(self._refuellingPlanTable.viewport().mapToGlobal(point))
 
-    # TODO: When I get rid of the web map widget I can switch this to use
-    # the standard custom context menu rather than the maps right click
-    # event. It can't be done now as it would require an non-async way
-    # to resolve the widget position to a hex which isn't possible with
-    # the web map widget.
-    # - I think I would need to implement a hexAt function for the local map
-    # widget but it should be pretty straight forward
-    # - I would also need to update this function to handle the fact the
-    # hex could in theory be null (menu should still display, just with
-    # some options disabled)
     def _showTravellerMapContextMenu(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            pos: QtCore.QPoint
             ) -> None:
-        if not hex:
-            return
+        hex = self._mapWidget.hexAt(pos=pos)
+
         isCurrentWaypoint = self._waypointsWidget.containsHex(hex=hex)
         isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
 
@@ -2377,11 +2350,10 @@ class JumpRouteWindow(gui.WindowWidget):
                     continue
 
                 colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
-                tagColour = gui.colourToString(
-                    colour=colour,
-                    includeAlpha=False) # Remove alpha from colour
+                colour.setAlpha(128)
+
                 taggedHexes.append(world.hex())
-                colourMap[world.hex()] = tagColour
+                colourMap[world.hex()] = colour
 
             if taggedHexes:
                 handle = self._mapWidget.createHexOverlay(
@@ -2424,19 +2396,19 @@ class JumpRouteWindow(gui.WindowWidget):
         if startHex:
             self._mapWidget.highlightHex(
                 hex=startHex,
-                colour='#00FF00',
+                colour=QtGui.QColor('#7F00FF00'),
                 radius=0.5)
         if finishHex:
             self._mapWidget.highlightHex(
                 hex=finishHex,
-                colour='#00FF00',
+                colour=QtGui.QColor('#7F00FF00'),
                 radius=0.5)
 
         waypointHexes = self._waypointsWidget.hexes()
         if waypointHexes:
             self._mapWidget.highlightHexes(
                 hexes=waypointHexes,
-                colour='#0066FF',
+                colour=QtGui.QColor('#7F0066FF'),
                 radius=0.3)
 
         filteredAvoidHexes = []
@@ -2446,7 +2418,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if filteredAvoidHexes:
             self._mapWidget.highlightHexes(
                 hexes=filteredAvoidHexes,
-                colour='#FF0000',
+                colour=QtGui.QColor('#7FFF0000'),
                 radius=0.3)
 
         if self._jumpRoute:

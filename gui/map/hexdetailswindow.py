@@ -116,7 +116,7 @@ class _CustomTextEdit(gui.TextEditEx):
                 rules=self._rules,
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,
-                hexImage=True, # Always show image of the hex in hex detail window
+                includeHexImage=True, # Always show image of the hex in hex detail window
                 hexImageStyle=self._mapStyle,
                 hexImageOptions=self._mapOptions))
         else:

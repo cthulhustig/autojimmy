@@ -9,7 +9,6 @@ import traveller
 import travellermap
 import typing
 
-_DisableHexToolTipImages = False
 def createHexToolTip(
         hex: travellermap.HexPosition,
         milieu: travellermap.Milieu,
@@ -17,12 +16,10 @@ def createHexToolTip(
         width: int = 512, # 0 means no fixed width
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None,
-        hexImage: bool = True,
+        includeHexImage: bool = True,
         hexImageStyle: typing.Optional[travellermap.Style] = None,
         hexImageOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
         ) -> str:
-    global _DisableHexToolTipImages
-
     world = traveller.WorldManager.instance().worldByPosition(
         milieu=milieu,
         hex=hex)
@@ -38,9 +35,7 @@ def createHexToolTip(
     #
     # Image
     #
-    if hexImage and not _DisableHexToolTipImages:
-        mapEngine = app.Config.instance().value(
-            option=app.ConfigOption.MapEngine)
+    if includeHexImage:
         try:
             tileBytes, tileFormat = gui.generateThumbnail(
                 milieu=milieu,
@@ -49,8 +44,7 @@ def createHexToolTip(
                 height=256,
                 linearScale=64,
                 style=hexImageStyle,
-                options=hexImageOptions,
-                engine=mapEngine)
+                options=hexImageOptions)
             if tileBytes:
                 mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()
@@ -59,10 +53,7 @@ def createHexToolTip(
                 toolTip += f'<p style="vertical-align:middle"><img src=data:{mineType};base64,{tileString} width="256" height="256"></p>'
                 toolTip += '</td>'
         except Exception as ex:
-            logging.error(f'Failed to retrieve tool tip image for hex {hex}', exc_info=ex)
-            if isinstance(ex, TimeoutError):
-                logging.warning(f'Showing world images in tool tips has been temporarily disabled')
-                _DisableHexToolTipImages = True
+            logging.error(f'Failed to generate tool tip image for hex {hex}', exc_info=ex)
 
     widthString = '' if not width else f'width="{width}"'
     toolTip += f'<td style="padding-left:10" {widthString}>'

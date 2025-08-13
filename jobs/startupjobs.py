@@ -1,6 +1,5 @@
 import gunsmith
 import traveller
-import proxy
 import robots
 import typing
 from PyQt5 import QtCore
@@ -57,9 +56,4 @@ class LoadRobotsJob(StartupJobBase):
 class LoadWeaponsJob(StartupJobBase):
     def executeJob(self) -> None:
         gunsmith.WeaponStore.instance().loadWeapons(
-            progressCallback=self._handleProgressUpdate)
-
-class StartProxyJob(StartupJobBase):
-    def executeJob(self) -> None:
-        proxy.MapProxy.instance().start(
             progressCallback=self._handleProgressUpdate)

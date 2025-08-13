@@ -61,49 +61,6 @@ def absoluteSpaceToSectorPos(
     absoluteY = pos[1] + (ReferenceHexY - 1)
     return (absoluteX // SectorWidth, absoluteY // SectorHeight)
 
-def absoluteSpaceToMapSpace(
-        pos: typing.Tuple[int, int]
-        ) -> typing.Tuple[float, float]:
-    ix = pos[0] - 0.5
-    iy = pos[1] - 0.5 if (pos[0] % 2) == 0 else pos[1]
-    x = ix * ParsecScaleX
-    y = iy * -ParsecScaleY
-    return x, y
-
-def relativeSpaceToMapSpace(
-        pos: typing.Tuple[int, int, int, int]
-        ) -> typing.Tuple[float, float]:
-    return absoluteSpaceToMapSpace(pos=relativeSpaceToAbsoluteSpace(pos=pos))
-
-# NOTE: This function doesn't always give the results I'd expect, however
-# the behaviour does seem consistent with traveller map. If you click very
-# close to the left/right most point of a hex then it won't return the
-# absolution position of the hex you clicked in but will instead return the
-# position of the neighbour hex. This seems consistent with the Traveller Map
-# web interface (verified by hacking javascript run by _hexAt so it would
-# convert the map position for the click to the absolute position (world
-# position in traveller map parlance) then log it to the console)
-def mapSpaceToAbsoluteSpace(
-        pos: typing.Tuple[float, float]
-        ) -> typing.Tuple[int, int]:
-    x = int(round((pos[0] / ParsecScaleX) + 0.5))
-    y = int(round((-pos[1] / ParsecScaleY) + (0.5 if (x % 2 == 0) else 0)))
-    return (x, y)
-
-def mapSpaceToTileSpace(
-        pos: typing.Tuple[float, float],
-        scale: float
-        ) -> typing.Tuple[float, float]:
-    scalar = scale / TravellerMapTileSize
-    return (pos[0] * scalar, -pos[1] * scalar)
-
-def tileSpaceToMapSpace(
-        pos: typing.Tuple[float, float],
-        scale: float
-        ) -> typing.Tuple[float, float]:
-    scalar = scale / TravellerMapTileSize
-    return (pos[0] / scalar, -pos[1] / scalar)
-
 # This gets the bounding rect of a sector in world space coordinates. It's based
 # on Bounds from Traveller Map (Sector.cs) but I've updated it so it returns a
 # bounding box that contains the full extent of all hexes in the sector.
@@ -370,7 +327,7 @@ class HexPosition(object):
             raise ValueError('Invalid hex position arguments')
 
         self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
-        self._mapSpace: typing.Optional[typing.Tuple[float, float]] = None
+        self._isotropicSpace: typing.Optional[typing.Tuple[float, float]] = None
 
     def __eq__(self, other):
         if isinstance(other, HexPosition):
@@ -441,16 +398,17 @@ class HexPosition(object):
             self._calculateRelative()
         return self._relative
 
-    # TODO: When I get rid of map rendering I should be able to get rid
-    # of this and any other map space stuff this file
-    def mapSpace(self) -> typing.Tuple[float, float]:
-        if self._mapSpace:
-            return self._mapSpace
-
-        if not self._absolute:
-            self._calculateAbsolute()
-        self._mapSpace = absoluteSpaceToMapSpace(pos=self._absolute)
-        return self._mapSpace
+    # This gets the center of the hex in an coordinate space where the x & y
+    # axis scale the same, unlike world space where they scale differently (I
+    # think the term isotropic is correct). It's my equivalent of Traveller Map
+    # 'Map Space'. It's basically identical except I don't invert the y axis.
+    def isotropicSpace(self) -> typing.Tuple[float, float]:
+        if not self._isotropicSpace:
+            worldCenter = self.worldCenter()
+            self._isotropicSpace = (
+                worldCenter[0] * ParsecScaleX,
+                worldCenter[1] * ParsecScaleY)
+        return self._isotropicSpace
 
     # Reimplementation of code from Traveller Map source code.
     # HexDistance in Astrometrics.cs
