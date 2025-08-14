@@ -233,25 +233,6 @@ class AllegianceManager(object):
 
         return codeInfo.uniqueCode(sectorName)
 
-    def formatAllegianceString(
-            self,
-            milieu: travellermap.Milieu,
-            code: str,
-            sectorName: str
-            ) -> str:
-        if code:
-            allegianceName = self.allegianceName(
-                milieu=milieu,
-                code=code,
-                sectorName=sectorName)
-            if allegianceName:
-                allegianceString = f'{code} - {allegianceName}'
-            else:
-                allegianceString = f'{code} - Unknown'
-        else:
-            allegianceString = 'Unknown'
-        return allegianceString
-
     def addSectorAllegiances(
             self,
             milieu: travellermap.Milieu,
