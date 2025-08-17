@@ -97,6 +97,8 @@ class RenderContext(object):
         self._labelCache = labelCache
         self._styleCache = styleCache
         self._sectorCache = cartographer.SectorCache(
+            milieu=self._milieu,
+            universe=self._universe,
             graphics=self._graphics,
             styleCache=self._styleCache)
         self._worldCache = cartographer.WorldCache(
@@ -175,9 +177,12 @@ class RenderContext(object):
             self,
             milieu: travellermap.Milieu
             ) -> None:
+        if milieu is self._milieu:
+            return
         self._milieu = milieu
-        self._worldCache.setMilieu(milieu=milieu)
-        self._selector.setMilieu(milieu=milieu)
+        self._sectorCache.setMilieu(milieu=self._milieu)
+        self._worldCache.setMilieu(milieu=self._milieu)
+        self._selector.setMilieu(milieu=self._milieu)
 
     def style(self) -> travellermap.Style:
         return self._styleSheet.style
@@ -639,9 +644,7 @@ class RenderContext(object):
 
             for sector in self._selector.sectors():
                 sectorRoutes = self._sectorCache.routeLines(
-                    milieu=self._milieu,
-                    x=sector.x(),
-                    y=sector.y())
+                    index=sector.index())
                 for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()
@@ -1158,17 +1161,13 @@ class RenderContext(object):
 
                 for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
-                        milieu=self._milieu,
-                        x=sector.x(),
-                        y=sector.y())
+                        index=sector.index())
                     if worlds:
                         self._graphics.drawPoints(points=worlds, pen=pen)
 
                 for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
-                        milieu=self._milieu,
-                        x=sector.x(),
-                        y=sector.y())
+                        index=sector.index())
                     if worlds:
                         self._graphics.drawPoints(points=worlds, pen=pen)
 
@@ -1583,8 +1582,7 @@ class RenderContext(object):
             for sector in self._selector.sectors(tight=True):
                 if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
                     clipPath = self._sectorCache.clipPath(
-                        sectorX=sector.x(),
-                        sectorY=sector.y())
+                        index=sector.index())
 
                     self._graphics.drawPath(
                         path=clipPath,
@@ -1616,8 +1614,7 @@ class RenderContext(object):
                     continue
 
                 clipPath = self._sectorCache.clipPath(
-                    sectorX=sector.x(),
-                    sectorY=sector.y())
+                    index=sector.index())
 
                 self._graphics.drawPath(
                     path=clipPath,
@@ -1810,8 +1807,7 @@ class RenderContext(object):
 
         for sector in self._selector.sectors():
             sectorClipPath = self._sectorCache.clipPath(
-                sectorX=sector.x(),
-                sectorY=sector.y())
+                index=sector.index())
             sectorClipRect = sectorClipPath.bounds()
             if drawCurvedBorders and self._scale >= 16:
                 # HACK: Inflate the sector clip bounds slightly when drawing
@@ -1862,9 +1858,7 @@ class RenderContext(object):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(
-                milieu=self._milieu,
-                x=sector.x(),
-                y=sector.y())
+                index=sector.index())
             regionOutlines: typing.List[cartographer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
@@ -1876,9 +1870,7 @@ class RenderContext(object):
                         regionOutlines.append(outline)
 
             sectorBorders = self._sectorCache.borderPaths(
-                milieu=self._milieu,
-                x=sector.x(),
-                y=sector.y())
+                index=sector.index())
             borderOutlines: typing.List[cartographer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:

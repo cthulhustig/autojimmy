@@ -16,7 +16,7 @@ class WorldManager(object):
             self.sectorList: typing.List[traveller.Sector] = []
             self.canonicalNameMap: typing.Dict[str, traveller.Sector] = {}
             self.alternateNameMap: typing.Dict[str, typing.List[traveller.Sector]] = {}
-            self.sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
+            self.sectorIndexMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
             self.subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
             self.subsectorSectorMap: typing.Dict[traveller.Subsector, traveller.Sector] = {}
             self.worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
@@ -141,7 +141,7 @@ class WorldManager(object):
                     logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} in {milieu.value}')
 
                     milieuData.sectorList.append(sector)
-                    milieuData.sectorPositionMap[(sectorInfo.x(), sectorInfo.y())] = sector
+                    milieuData.sectorIndexMap[(sectorInfo.x(), sectorInfo.y())] = sector
 
                     # Add canonical name to the main name map. The name is added lower case as lookups are
                     # case insensitive
@@ -246,7 +246,7 @@ class WorldManager(object):
         world = milieuData.worldPositionMap.get(hex.absolute())
         if not world and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             sectorPos = travellermap.absoluteSpaceToSectorPos(hex.absolute())
-            if sectorPos not in milieuData.sectorPositionMap:
+            if sectorPos not in milieuData.sectorIndexMap:
                 world = self.worldByPosition(
                     milieu=WorldManager._PlaceholderMilieu,
                     hex=hex,
@@ -260,7 +260,7 @@ class WorldManager(object):
             includePlaceholders: bool = False
             ) -> typing.Optional[traveller.Sector]:
         milieuData = self._milieuDataMap[milieu]
-        sector = milieuData.sectorPositionMap.get((hex.sectorX(), hex.sectorY()))
+        sector = milieuData.sectorIndexMap.get(hex.sectorIndex().components())
         if not sector and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             sector = self.sectorByPosition(
                 milieu=WorldManager._PlaceholderMilieu,
@@ -268,14 +268,15 @@ class WorldManager(object):
                 includePlaceholders=False)
         return sector
 
+    # TODO: This should use the new SectorIndex class
     def sectorBySectorIndex(
             self,
             milieu: travellermap.Milieu,
-            index: typing.Tuple[int, int],
+            index: travellermap.SectorIndex,
             includePlaceholders: bool = False
             ) -> typing.Optional[traveller.Sector]:
         milieuData = self._milieuDataMap[milieu]
-        sector = milieuData.sectorPositionMap.get(index)
+        sector = milieuData.sectorIndexMap.get(index.components())
         if not sector and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             sector = self.sectorBySectorIndex(
                 milieu=WorldManager._PlaceholderMilieu,
@@ -401,11 +402,11 @@ class WorldManager(object):
 
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sectorPos = (sectorX, sectorY)
-        sector = milieuData.sectorPositionMap.get(sectorPos)
+        sector = milieuData.sectorIndexMap.get(sectorPos)
 
         if not sector and includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
-            sector = placeholderData.sectorPositionMap.get(sectorPos)
+            sector = placeholderData.sectorIndexMap.get(sectorPos)
 
         return traveller.formatSectorHex(
             sectorName=sector.name() if sector else f'{sectorX}:{sectorY}',
@@ -567,7 +568,7 @@ class WorldManager(object):
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
             for sector in placeholderData.sectorList:
                 sectorPos = (sector.x(), sector.y())
-                if sectorPos not in milieuData.sectorPositionMap:
+                if sectorPos not in milieuData.sectorIndexMap:
                     if not filterCallback or filterCallback(sector):
                         yield sector
 
@@ -593,9 +594,9 @@ class WorldManager(object):
             y = startY
             while y <= finishY:
                 key = (x, y)
-                sector = milieuData.sectorPositionMap.get(key)
+                sector = milieuData.sectorIndexMap.get(key)
                 if not sector and placeholderData:
-                    sector = placeholderData.sectorPositionMap.get(key)
+                    sector = placeholderData.sectorIndexMap.get(key)
 
                 if sector and (not filterCallback or filterCallback(sector)):
                     yield sector
@@ -618,7 +619,7 @@ class WorldManager(object):
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
             for sector in placeholderData.sectorList:
                 sectorPos = (sector.x(), sector.y())
-                if sectorPos not in milieuData.sectorPositionMap:
+                if sectorPos not in milieuData.sectorIndexMap:
                     for subsector in sector.yieldSubsectors():
                         if not filterCallback or filterCallback(subsector):
                             yield subsector
@@ -646,9 +647,9 @@ class WorldManager(object):
                     travellermap.absoluteSpaceToRelativeSpace((x, y))
 
                 key = (sectorX, sectorY)
-                sector = milieuData.sectorPositionMap.get(key)
+                sector = milieuData.sectorIndexMap.get(key)
                 if not sector and placeholderData:
-                    sector = placeholderData.sectorPositionMap.get(key)
+                    sector = placeholderData.sectorIndexMap.get(key)
 
                 if not sector:
                     continue
@@ -673,7 +674,7 @@ class WorldManager(object):
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
             for sector in placeholderData.sectorList:
                 sectorPos = (sector.x(), sector.y())
-                if sectorPos not in milieuData.sectorPositionMap:
+                if sectorPos not in milieuData.sectorIndexMap:
                     for world in sector.yieldWorlds():
                         if not filterCallback or filterCallback(world):
                             yield world
@@ -703,7 +704,7 @@ class WorldManager(object):
                 world = milieuData.worldPositionMap.get(key)
                 if not world and placeholderData:
                     sectorPos = travellermap.absoluteSpaceToSectorPos(key)
-                    if sectorPos not in milieuData.sectorPositionMap:
+                    if sectorPos not in milieuData.sectorIndexMap:
                         world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
@@ -759,7 +760,7 @@ class WorldManager(object):
                 world = milieuData.worldPositionMap.get(key)
                 if not world and placeholderData:
                     sectorPos = travellermap.absoluteSpaceToSectorPos(key)
-                    if sectorPos not in milieuData.sectorPositionMap:
+                    if sectorPos not in milieuData.sectorIndexMap:
                         world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
@@ -782,7 +783,7 @@ class WorldManager(object):
         world = milieuData.worldPositionMap.get(key)
         if not world and placeholderData:
             sectorPos = travellermap.absoluteSpaceToSectorPos(key)
-            if sectorPos not in milieuData.sectorPositionMap:
+            if sectorPos not in milieuData.sectorIndexMap:
                 world = placeholderData.worldPositionMap.get(key)
         if not world:
             return
@@ -802,7 +803,7 @@ class WorldManager(object):
                 adjacentWorld = milieuData.worldPositionMap.get(key)
                 if not adjacentWorld and placeholderData:
                     sectorPos = travellermap.absoluteSpaceToSectorPos(key)
-                    if sectorPos not in milieuData.sectorPositionMap:
+                    if sectorPos not in milieuData.sectorIndexMap:
                         adjacentWorld = placeholderData.worldPositionMap.get(key)
 
                 if adjacentWorld and (adjacentWorld not in seen):

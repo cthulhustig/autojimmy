@@ -303,6 +303,80 @@ def yieldAbsoluteRadiusHexes(
             current = neighbourAbsoluteHex(current, HexEdge.LowerRight)
             yield current
 
+# NOTE: There is a LOT of code that assumes instances of this
+# class are immutable
+class SectorIndex(object):
+    def __init__(self, sectorX: int, sectorY: int) -> None:
+        self._sectorX = int(sectorX)
+        self._sectorY = int(sectorY)
+        self._hash = None
+
+    def __eq__(self, other):
+        if isinstance(other, SectorIndex):
+            return self._sectorX == other._sectorX and \
+                self._sectorY == other._sectorY
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._sectorX, self._sectorY))
+        return self._hash
+
+    def __str__(self) -> str:
+        return f'{self._sectorX},{self._sectorY}'
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
+
+    def components(self) -> typing.Tuple[int, int]:
+        return (self._sectorX, self._sectorY)
+
+class SubsectorIndex(object):
+    def __init__(self, sectorX: int, sectorY: int, code: str) -> None:
+        self._sectorX = int(sectorX)
+        self._sectorY = int(sectorY)
+        self._code = str(code).upper()
+
+        self._sectorIndex: typing.Optional[SectorIndex] = None
+        self._hash = None
+
+    def __eq__(self, other):
+        if isinstance(other, SubsectorIndex):
+            return self._sectorX == other._sectorX and \
+                self._sectorY == other._sectorY and \
+                self._code == other._code
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._sectorX, self._sectorY, self._code))
+        return self._hash
+
+    def __str__(self) -> str:
+        return f'{self._sectorX},{self._sectorY},{self._code}'
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
+
+    def code(self) -> str:
+        return self._code
+
+    def components(self) -> typing.Tuple[int, int, str]:
+        return (self._sectorX, self._sectorY, self._code)
+
+    def sectorIndex(self) -> SectorIndex:
+        if not self._sectorIndex:
+            self._sectorIndex = SectorIndex(sectorX=self._sectorX, sectorY=self._sectorY)
+        return self._sectorIndex
+
+# NOTE: There is a LOT of code that assumes instances of this
+# class are immutable
 class HexPosition(object):
     @typing.overload
     def __init__(self, absoluteX: int, absoluteY: int) -> None: ...
@@ -326,8 +400,11 @@ class HexPosition(object):
         else:
             raise ValueError('Invalid hex position arguments')
 
+        self._sectorIndex: typing.Optional[SectorIndex] = None
+        self._subsectorIndex: typing.Optional[SubsectorIndex] = None
         self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
         self._isotropicSpace: typing.Optional[typing.Tuple[float, float]] = None
+        self._hash = None
 
     def __eq__(self, other):
         if isinstance(other, HexPosition):
@@ -347,7 +424,9 @@ class HexPosition(object):
         return super().__lt__(other)
 
     def __hash__(self) -> int:
-        return hash(self.absolute())
+        if self._hash is None:
+            self._hash = hash(self.absolute())
+        return self._hash
 
     def __str__(self) -> str:
         absoluteX, absoluteY = self.absolute()
@@ -372,6 +451,25 @@ class HexPosition(object):
         if not self._relative:
             self._calculateRelative()
         return (self._relative[0], self._relative[1])
+
+    def sectorIndex(self) -> SectorIndex:
+        if not self._sectorIndex:
+            sectorX, sectorY, _, _ = self.relative()
+            self._sectorIndex = SectorIndex(
+                sectorX=sectorX,
+                sectorY=sectorY)
+        return self._sectorIndex
+
+    def subsectorIndex(self) -> SubsectorIndex:
+        if not self._subsectorIndex:
+            sectorX, sectorY, offsetX, offsetY = self.relative()
+            codeX = (offsetX - 1) // SubsectorWidth
+            codeY = (offsetY - 1) // SubsectorHeight
+            self._subsectorIndex = SubsectorIndex(
+                sectorX=sectorX,
+                sectorY=sectorY,
+                code=chr(ord('A') + (codeY * 4) + codeX))
+        return self._subsectorIndex
 
     def sectorX(self) -> int:
         if not self._relative:

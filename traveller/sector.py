@@ -26,6 +26,10 @@ class Subsector(object):
         index = ord(code) - ord('A')
         self._indexX = index % 4
         self._indexY = index // 4
+        self._index = travellermap.SubsectorIndex(
+            sectorX=self._sectorX,
+            sectorY=self._sectorY,
+            code=self._code)
 
         ulHex = travellermap.HexPosition(
             sectorX=self._sectorX,
@@ -42,6 +46,7 @@ class Subsector(object):
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
 
+    # TODO: I should be able to get rid of sector x/y & code once I've finished
     def sectorX(self) -> int:
         return self._sectorX
 
@@ -50,6 +55,9 @@ class Subsector(object):
 
     def code(self) -> str:
         return self._code
+
+    def index(self) -> travellermap.SubsectorIndex:
+        return self._index
 
     def name(self) -> str:
         return self._name
@@ -115,6 +123,7 @@ class Sector(object):
         self._milieu = milieu
         self._x = x
         self._y = y
+        self._index = travellermap.SectorIndex(sectorX=self._x, sectorY=self._y)
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
@@ -152,11 +161,15 @@ class Sector(object):
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
 
+    # TODO: I should be able to remove the x/y functions when I'm finished
     def x(self) -> int:
         return self._x
 
     def y(self) -> int:
         return self._y
+
+    def index(self) -> travellermap.SectorIndex:
+        return self._index
 
     def name(self) -> str:
         return self._name
@@ -202,7 +215,7 @@ class Sector(object):
     def regions(self) -> typing.Collection[traveller.Region]:
         return list(self._regions)
 
-    def yieldBorders(self) -> typing.Generator[traveller.Region, None, None]:
+    def yieldRegions(self) -> typing.Generator[traveller.Region, None, None]:
         for region in self._regions:
             yield region
 

@@ -102,54 +102,65 @@ class SectorCache(object):
 
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            universe: cartographer.AbstractUniverse,
             graphics: cartographer.AbstractGraphics,
             styleCache: cartographer.StyleCache
             ) -> None:
+        self._milieu = milieu
+        self._universe = universe
         self._graphics = graphics
         self._styleCache = styleCache
         self._worldsCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            travellermap.SectorIndex,
             cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            travellermap.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            travellermap.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._routeCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            travellermap.SectorIndex,
             typing.List[SectorLines]
         ] = {}
-        self._clipCache: typing.Mapping[
-            typing.Tuple[int, int], # Sector x/y
+        self._clipCache: typing.Dict[
+            travellermap.SectorIndex,
             cartographer.AbstractPath
         ] = {}
 
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._worldsCache.clear()
+        self._borderCache.clear()
+        self._regionCache.clear()
+        self._routeCache.clear()
+        # NOTE: No need to clear clip cache as it's not dependant on milieu
+        #self._clipCache.clear()
+
     def isotropicWorldPoints(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: travellermap.SectorIndex
             ) -> typing.Optional[cartographer.AbstractPointList]:
-        key = (milieu, x, y)
-        worlds = self._worldsCache.get(key)
+        worlds = self._worldsCache.get(index)
         if worlds is not None:
             return worlds
 
-        pos = (x, y)
-        sector = traveller.WorldManager.instance().sectorBySectorIndex(
-            milieu=milieu,
-            index=pos,
+        sector = self._universe.sectorAt(
+            milieu=self._milieu,
+            index=index,
             includePlaceholders=True)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
 
         points = []
-        for world in sector:
+        for world in sector.worlds():
             hex = world.hex()
             centerX, centerY = hex.worldCenter()
             points.append(cartographer.PointF(
@@ -158,23 +169,20 @@ class SectorCache(object):
                 y=centerY * travellermap.ParsecScaleY))
 
         worlds = self._graphics.createPointList(points=points)
-        self._worldsCache[key] = worlds
+        self._worldsCache[index] = worlds
         return worlds
 
     def borderPaths(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: travellermap.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
-        key = (milieu, x, y)
-        borders = self._borderCache.get(key)
+        borders = self._borderCache.get(index)
         if borders is not None:
             return borders
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            milieu=milieu,
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = self._universe.sectorAt(
+            milieu=self._milieu,
+            index=index)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -182,23 +190,20 @@ class SectorCache(object):
         borders = []
         for border in sector.borders():
             borders.append(self._createOutline(source=border))
-        self._borderCache[key] = borders
+        self._borderCache[index] = borders
         return borders
 
     def regionPaths(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: travellermap.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
-        key = (milieu, x, y)
-        regions = self._regionCache.get(key)
+        regions = self._regionCache.get(index)
         if regions is not None:
             return regions
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            milieu=milieu,
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = self._universe.sectorAt(
+            milieu=self._milieu,
+            index=index)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -206,23 +211,20 @@ class SectorCache(object):
         regions = []
         for region in sector.regions():
             regions.append(self._createOutline(source=region))
-        self._regionCache[key] = regions
+        self._regionCache[index] = regions
         return regions
 
     def routeLines(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: travellermap.SectorIndex
             ) -> typing.Optional[typing.List[SectorLines]]:
-        key = (milieu, x, y)
-        routes = self._routeCache.get(key)
+        routes = self._routeCache.get(index)
         if routes is not None:
             return routes
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            milieu=milieu,
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = self._universe.sectorAt(
+            milieu=self._milieu,
+            index=index)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -278,22 +280,20 @@ class SectorCache(object):
                 style=style,
                 type=type,
                 allegiance=allegiance))
-        self._routeCache[key] = routes
+        self._routeCache[index] = routes
 
         return routes
 
     def clipPath(
             self,
-            sectorX: int,
-            sectorY: int
+            index: travellermap.SectorIndex
             ) -> cartographer.AbstractPath:
-        key = (sectorX, sectorY)
-        clipPath = self._clipCache.get(key)
+        clipPath = self._clipCache.get(index)
         if clipPath:
             return clipPath
 
         absoluteOriginX, absoluteOriginY = travellermap.relativeSpaceToAbsoluteSpace(
-            (sectorX, sectorY, 1, 1))
+            (index.sectorX(), index.sectorY(), 1, 1))
 
         points = []
 
@@ -340,7 +340,7 @@ class SectorCache(object):
                     y=((absoluteOriginY + y) - 0.5) + offsetY))
 
         path = self._graphics.createPath(points=points, closed=True)
-        self._clipCache[key] = path
+        self._clipCache[index] = path
         return path
 
     def _createOutline(

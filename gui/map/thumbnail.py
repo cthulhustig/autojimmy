@@ -29,7 +29,7 @@ def _initThumbnailRenderer():
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageCache(graphics=_thumbnailGraphics)
     _thumbnailVectorCache = cartographer.VectorObjectCache(graphics=_thumbnailGraphics)
-    _thumbnailLabelCache = cartographer.LabelCache()
+    _thumbnailLabelCache = cartographer.LabelCache(universe=_thumbnailUniverse)
     _thumbnailStyleCache = cartographer.StyleCache()
     _thumbnailRenderInitialised = True
 

@@ -85,11 +85,31 @@ class AbstractWorld(object):
         return False # TODO: Should this be not implemented?
 
 class AbstractSubsector(object):
-    def AbstractSubsector(self, subsector: traveller.Subsector) -> None:
+    def __init__(
+            self,
+            universe: 'AbstractUniverse',
+            subsector: traveller.Subsector
+            ) -> None:
+        self._universe = universe
         self._subsector = subsector
 
-    def name(self) -> str:
-        return self._subsector.name()
+    def index(self) -> travellermap.SubsectorIndex:
+        return self._subsector.index()
+
+    def name(self) -> typing.Optional[str]:
+        return self._subsector.name() if not self._subsector.isNameGenerated() else None
+
+    def worlds(
+            self,
+            includePlaceholders: bool = False
+            ) -> typing.Iterable[AbstractWorld]:
+        for world in self._subsector.yieldWorlds():
+            wrapper = self._universe.worldAt(
+                milieu=world.milieu(),
+                hex=world.hex(),
+                includePlaceholders=includePlaceholders)
+            if wrapper:
+                yield wrapper
 
     # NOTE: It's important that different instances of this class wrapping
     # the same object are seen as the same. This allows the the universe
@@ -105,11 +125,44 @@ class AbstractSubsector(object):
         return False # TODO: Should this be not implemented?
 
 class AbstractSector(object):
-    def AbstractSubsector(self, sector: traveller.Sector) -> None:
+    def __init__(
+            self,
+            universe: 'AbstractUniverse',
+            sector: traveller.Sector
+            ) -> None:
+        self._universe = universe
         self._sector = sector
+
+    def index(self) -> travellermap.SectorIndex:
+        return self._sector.index()
 
     def name(self) -> str:
         return self._sector.name()
+
+    def worlds(
+            self,
+            includePlaceholders: bool = False
+            ) -> typing.Iterable[AbstractWorld]:
+        for world in self._sector.yieldWorlds():
+            wrapper = self._universe.worldAt(
+                milieu=world.milieu(),
+                hex=world.hex(),
+                includePlaceholders=includePlaceholders)
+            if wrapper:
+                yield wrapper
+
+    # TODO: The region, border etc functions should use abstract types
+    def regions(self) -> typing.Iterable[traveller.Region]:
+        return self._sector.yieldRegions()
+
+    def borders(self) -> typing.Iterable[traveller.Border]:
+        return self._sector.yieldBorders()
+
+    def routes(self) -> typing.Iterable[traveller.Route]:
+        return self._sector.yieldRoutes()
+
+    def labels(self) -> typing.Iterable[traveller.Label]:
+        return self._sector.yieldLabels()
 
     # NOTE: It's important that different instances of this class wrapping
     # the same object are seen as the same. This allows the the universe
@@ -126,23 +179,63 @@ class AbstractSector(object):
 
 class AbstractUniverse(object):
     def __init__(self) -> None:
+        self._sectorWrappers: typing.Mapping[
+            typing.Tuple[
+                travellermap.Milieu,
+                travellermap.SectorIndex],
+            AbstractSector] = {}
+
         # TODO: Need to limit the number of wrappers maintained at any one time
-        self._worldWrappers: typing.Mapping[travellermap.HexPosition, AbstractWorld] = {}
+        self._worldWrappers: typing.Mapping[
+            typing.Tuple[
+                travellermap.Milieu,
+                travellermap.HexPosition],
+            AbstractWorld] = {}
+
+    def sectorAt(
+            self,
+            milieu: travellermap.Milieu,
+            index: travellermap.SectorIndex,
+            includePlaceholders: bool = False
+            ) -> typing.Optional[AbstractSector]:
+        key = (milieu, index)
+        wrapper = self._sectorWrappers.get(key)
+        if not wrapper:
+            sector = traveller.WorldManager.instance().sectorBySectorIndex(
+                milieu=milieu,
+                index=index,
+                includePlaceholders=includePlaceholders)
+            wrapper = AbstractSector(
+                universe=self,
+                sector=sector)
+            self._sectorWrappers[key] = wrapper
+        return wrapper
 
     def worldAt(
             self,
             milieu: travellermap.Milieu,
-            hex: travellermap.HexPosition
+            hex: travellermap.HexPosition,
+            includePlaceholders: bool = False
             ) -> typing.Optional[AbstractWorld]:
         key = (milieu, hex)
         wrapper = self._worldWrappers.get(key)
         if not wrapper:
             world = traveller.WorldManager.instance().worldByPosition(
                 milieu=milieu,
-                hex=hex)
+                hex=hex,
+                includePlaceholders=includePlaceholders)
             wrapper = AbstractWorld(world=world)
             self._worldWrappers[key] = wrapper
         return wrapper
+
+    def sectorHexToPosition(
+            self,
+            milieu: travellermap.Milieu,
+            sectorHex: str
+            ) -> travellermap.HexPosition:
+        return traveller.WorldManager.instance().sectorHexToPosition(
+            milieu=milieu,
+            sectorHex=sectorHex)
 
 class AbstractPointList(object):
     def points(self) -> typing.Sequence[cartographer.PointF]:

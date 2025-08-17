@@ -850,7 +850,8 @@ class MapWidget(QtWidgets.QWidget):
             graphics=self._graphics)
         self._vectorCache = cartographer.VectorObjectCache(
             graphics=self._graphics)
-        self._labelCache = cartographer.LabelCache()
+        self._labelCache = cartographer.LabelCache(
+            universe=self._universe)
         self._styleCache = cartographer.StyleCache()
         self._renderer = self._newRenderer()
 
