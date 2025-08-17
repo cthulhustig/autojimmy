@@ -43,10 +43,10 @@ class WorldInfo(object):
 
     def __init__(
             self,
-            world: traveller.World,
+            world: cartographer.AbstractWorld,
             imageCache: cartographer.ImageCache
             ) -> None:
-        self.name = world.name() if not world.isNameGenerated() else ''
+        self.name = world.name() if world.name() else ''
         self.upperName = self.name.upper()
 
         hex = world.hex()
@@ -61,25 +61,21 @@ class WorldInfo(object):
         uwp = world.uwp()
         self.uwpString = uwp.string()
 
-        self.isPlaceholder = self.uwpString == "XXXXXXX-X" or self.uwpString == "???????-?"
-
+        self.isPlaceholder = WorldInfo._calcIsPlaceholder(world)
         self.isCapital = WorldInfo._calcIsCapital(world)
         self.isHiPop = WorldInfo._calcIsHighPopulation(world)
         self.isAgricultural = WorldInfo._calcIsAgricultural(world)
         self.isRich = WorldInfo._calcIsRich(world)
         self.isIndustrial = WorldInfo._calcIsIndustrial(world)
-
         self.isVacuum = WorldInfo._calcIsVacuum(world)
-        self.isHarshAtmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1) > 10
+        self.isHarshAtmosphere = WorldInfo._calcIsHarshAtmosphere(world)
+        self.isAnomaly = WorldInfo._calcIsAnomaly(world)
+        self.isAsteroids = WorldInfo._calcIsAsteroid(world)
 
-        self.isAnomaly = world.isAnomaly()
-
-        self.isAsteroids = not self.isAnomaly and \
-            uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1) <= 0
         self.asteroidRectangles = None
         if self.isAsteroids:
             # Random generator is seeded with world location so it is always the same
-            rand = random.Random(world.hex().absoluteX() ^ world.hex().absoluteY())
+            rand = random.Random(hex.absoluteX() ^ hex.absoluteY())
             self.asteroidRectangles = []
             for i in range(len(WorldInfo._AsteroidXPositions)):
                 if rand.random() < WorldInfo._AsteroidRadii[i]:
@@ -105,22 +101,19 @@ class WorldInfo(object):
         self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
 
         self.t5Allegiance = world.allegiance()
-        self.legacyAllegiance = traveller.AllegianceManager.instance().legacyCode(
-            milieu=world.milieu(),
-            code=self.t5Allegiance)
+        self.legacyAllegiance = world.legacyAllegiance()
         if not self.legacyAllegiance:
             # Using the T5 allegiance if there is no legacy one seems odd
             # but it's consistent with the Traveller Map implementation of
             # T5AllegianceCodeToLegacyCode
             self.legacyAllegiance = self.t5Allegiance
-        self.basesAllegiance = traveller.AllegianceManager.instance().basesCode(
-            milieu=world.milieu(),
-            code=self.t5Allegiance)
-        if not self.basesAllegiance:
+
+        basesAllegiance = world.basesAllegiance()
+        if not basesAllegiance:
             # Using the T5 allegiance if there is no bases one seems odd
             # but it's consistent with the Traveller Map implementation of
             # AllegianceCodeToBaseAllegianceCode
-            self.basesAllegiance = self.t5Allegiance
+            basesAllegiance = self.t5Allegiance
 
         bases = world.bases()
         self.primaryBaseGlyph = self.secondaryBaseGlyph = self.tertiaryBaseGlyph = self.specialFeatureGlyph = None
@@ -135,12 +128,12 @@ class WorldInfo(object):
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
             # Special case: Show Zho Naval+Military as diamond
-            if self.basesAllegiance == 'Zh' and bases.string() == 'KM':
+            if basesAllegiance == 'Zh' and bases.string() == 'KM':
                 baseCode = 'Z'
                 ignoreSecondBase = True
 
             self.primaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
-                allegiance=self.basesAllegiance,
+                allegiance=basesAllegiance,
                 code=baseCode)
 
         if bases.count() >= 2 and not ignoreSecondBase:
@@ -153,51 +146,57 @@ class WorldInfo(object):
                 allegiance=self.legacyAllegiance,
                 code=traveller.Bases.code(bases[2]))
 
-        if world.hasTradeCode(traveller.TradeCode.ResearchStation):
-            remarks = world.remarks()
+        remarks = world.remarks()
+        if remarks.hasTradeCode(traveller.TradeCode.ResearchStation):
             self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(
                 remarks.researchStation())
-        elif world.hasTradeCode(traveller.TradeCode.Reserve):
+        elif remarks.hasTradeCode(traveller.TradeCode.Reserve):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
-        elif world.hasTradeCode(traveller.TradeCode.PenalColony):
+        elif remarks.hasTradeCode(traveller.TradeCode.PenalColony):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Prison
-        elif world.hasTradeCode(traveller.TradeCode.PrisonCamp):
+        elif remarks.hasTradeCode(traveller.TradeCode.PrisonCamp):
             self.specialFeatureGlyph = cartographer.GlyphDefs.ExileCamp
 
-        self.worldSize = world.physicalSize()
+        self.worldSize = uwp.numeric(traveller.UWP.Element.WorldSize)
         self.worldImage = WorldInfo._calcWorldImage(
             world=world,
             images=imageCache)
         self.imageRadius = (0.6 if self.worldSize <= 0 else (0.3 * (self.worldSize / 5.0 + 0.2))) / 2
 
+        population = world.population()
         self.populationOverlayRadius = \
-            self.populationOverlayRadius = math.sqrt(world.population() / math.pi) * 0.00002 \
-            if world.population() > 0 else \
+            math.sqrt(population / math.pi) * 0.00002 \
+            if population > 0 else \
             0
 
-        self.importance = world.importance()
-        self.isImportant = world.importance() >= 4
+        importance = world.importance()
+        self.isImportant = importance >= 4
         self.importanceOverlayRadius = \
-            (self.importance - 0.5) * travellermap.ParsecScaleX \
-            if self.importance > 0 else \
+            (importance - 0.5) * travellermap.ParsecScaleX \
+            if importance > 0 else \
             0
 
     @staticmethod
-    def _calcHasWater(world: traveller.World) -> bool:
+    def _calcIsPlaceholder(world: cartographer.AbstractWorld) -> bool:
+        uwp = world.uwp()
+        return uwp.sanitised() == '???????-?'
+
+    @staticmethod
+    def _calcHasWater(world: cartographer.AbstractWorld) -> bool:
         return world.hasWaterRefuelling()
 
     @staticmethod
-    def _calcHasGasGiants(world: traveller.World) -> bool:
+    def _calcHasGasGiants(world: cartographer.AbstractWorld) -> bool:
         return world.hasGasGiantRefuelling()
 
     @staticmethod
-    def _calcIsHighPopulation(world: traveller.World) -> bool:
+    def _calcIsHighPopulation(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
         population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
         return population >= WorldInfo._HighPopulation
 
     @staticmethod
-    def _calcIsAgricultural(world: traveller.World) -> bool:
+    def _calcIsAgricultural(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
         hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
@@ -207,7 +206,7 @@ class WorldInfo(object):
             population in WorldInfo._AgriculturalPopulations
 
     @staticmethod
-    def _calcIsIndustrial(world: traveller.World) -> bool:
+    def _calcIsIndustrial(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
         population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
@@ -215,7 +214,7 @@ class WorldInfo(object):
             population >= WorldInfo._IndustrialMinPopulation
 
     @staticmethod
-    def _calcIsRich(world: traveller.World) -> bool:
+    def _calcIsRich(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
         population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
@@ -223,21 +222,40 @@ class WorldInfo(object):
             population in WorldInfo._RichPopulations
 
     @staticmethod
-    def _calcIsVacuum(world: traveller.World) -> bool:
+    def _calcIsVacuum(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
         return atmosphere == 0
 
     @staticmethod
-    def _calcIsCapital(world: traveller.World) -> bool:
-        return world.hasTradeCode(traveller.TradeCode.SectorCapital) or \
-            world.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
-            world.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
-            world.hasRemark('Capital')
+    def _calcIsHarshAtmosphere(world: cartographer.AbstractWorld) -> bool:
+        uwp = world.uwp()
+        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        return atmosphere > 10
+
+    @staticmethod
+    def _calcIsAnomaly(world: cartographer.AbstractWorld) -> bool:
+        return world.isAnomaly()
+
+    @staticmethod
+    def _calcIsAsteroid(world: cartographer.AbstractWorld) -> bool:
+        if world.isAnomaly():
+            return False
+        uwp = world.uwp()
+        worldSize = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
+        return worldSize == 0
+
+    @staticmethod
+    def _calcIsCapital(world: cartographer.AbstractWorld) -> bool:
+        remarks = world.remarks()
+        return remarks.hasTradeCode(traveller.TradeCode.SectorCapital) or \
+            remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
+            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
+            remarks.hasRemark('Capital')
 
     @staticmethod
     def _calcWorldImage(
-            world: traveller.World,
+            world: cartographer.AbstractWorld,
             images: cartographer.ImageCache
             ) -> cartographer.AbstractImage:
         uwp = world.uwp()
@@ -252,25 +270,40 @@ class WorldInfo(object):
 class WorldCache(object):
     def __init__(
             self,
+            milieu: travellermap.Milieu,
+            universe: cartographer.AbstractUniverse,
             imageCache: cartographer.ImageCache,
             capacity: int
             ) -> None:
+        self._milieu = milieu
+        self._universe = universe
         self._imageCache = imageCache
         self._infoCache = common.LRUCache[
-            traveller.World,
+            travellermap.HexPosition,
             WorldInfo](capacity=capacity)
+
+    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._infoCache.clear()
 
     def ensureCapacity(self, capacity) -> None:
         self._infoCache.ensureCapacity(capacity=capacity)
 
     def worldInfo(
             self,
-            world: traveller.World
+            hex: travellermap.HexPosition
             ) -> WorldInfo:
-        worldInfo = self._infoCache.get(world)
+        worldInfo = self._infoCache.get(hex)
         if not worldInfo:
+            world = self._universe.worldAt(
+                milieu=self._milieu,
+                hex=hex)
+            if not world:
+                return None
             worldInfo = WorldInfo(
                 world=world,
                 imageCache=self._imageCache)
-            self._infoCache[world] = worldInfo
+            self._infoCache[hex] = worldInfo
         return worldInfo

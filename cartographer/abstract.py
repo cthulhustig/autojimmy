@@ -1,6 +1,148 @@
 import enum
 import cartographer
+import travellermap
 import typing
+
+# TODO: I think I want to do some reshuffling so this isn't needed
+# 1. Move WorldManager, World, Sector & Subsector into a new universe namespace
+#   - Probably other stuff as well (Borders, Allegiances etc)
+#   - Basically I want to get all the higher level universe related stuff into it's own namespace
+# 2. Move what is currently in the travellermap namespace into what is left of the traveller namespace
+import traveller
+
+# TODO:I think this is a rough order of attack
+# 1. Update WorldCache to use AbstractUniverse & AbstractWorld to populate WorldInfo.
+#   - This will need AbstractUniverse to wrap WorldManager adn AllegianceManger
+# 2. Update SectorCache to use AbstractUniverse & AbstractSector to generate the sector data
+# 3. Update LabelCache to use AbstractUniverse (it has one call to WorldManager)
+# 4. Update Selector to use AbstractUniverse & AbstractWorld/AbstractSector/AbstractSubsector
+
+# TODO: While I'm sorting out the interfaces these abstract classes are going to have a
+# real implementation as it will be much easier to test. Once I'm finished I'll split
+# the implementation out from the abstract classes.
+
+class AbstractWorld(object):
+    def __init__(self, world: traveller.World) -> None:
+        self._world = world
+
+    def hex(self) -> travellermap.HexPosition:
+        return self._world.hex()
+
+    def name(self) -> typing.Optional[str]:
+        return self._world.name() if not self._world.isNameGenerated() else None
+
+    def uwp(self) -> traveller.UWP:
+        return self._world.uwp()
+
+    def population(self) -> int:
+        return self._world.population()
+
+    def zone(self) -> typing.Optional[traveller.ZoneType]:
+        return self._world.zone()
+
+    def importance(self) -> int:
+        return self._world.importance()
+
+    def isAnomaly(self) -> bool:
+        return self._world.isAnomaly()
+
+    def allegiance(self) -> str:
+        return self._world.allegiance()
+
+    def legacyAllegiance(self) -> typing.Optional[str]:
+        return traveller.AllegianceManager.instance().legacyCode(
+            milieu=self._world.milieu(),
+            code=self._world.allegiance())
+
+    def basesAllegiance(self) -> typing.Optional[str]:
+        return traveller.AllegianceManager.instance().basesCode(
+            milieu=self._world.milieu(),
+            code=self._world.allegiance())
+
+    def bases(self) -> traveller.Bases:
+        return self._world.bases()
+
+    def remarks(self) -> traveller.Remarks:
+        return self._world.remarks()
+
+    def hasWaterRefuelling(self) -> bool:
+        return self._world.hasWaterRefuelling()
+
+    def hasGasGiantRefuelling(self) -> bool:
+        return self._world.hasGasGiantRefuelling()
+
+    # NOTE: It's important that different instances of this class wrapping
+    # the same object are seen as the same. This allows the the universe
+    # implementation to discard instances of the wrapper that it doesn't
+    # need and recreate them later without worrying about caches in the
+    # renderer getting messed up
+    def __hash__(self) -> int:
+        return self._world.__hash__()
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if isinstance(other, AbstractWorld):
+            return self._world == other._world
+        return False # TODO: Should this be not implemented?
+
+class AbstractSubsector(object):
+    def AbstractSubsector(self, subsector: traveller.Subsector) -> None:
+        self._subsector = subsector
+
+    def name(self) -> str:
+        return self._subsector.name()
+
+    # NOTE: It's important that different instances of this class wrapping
+    # the same object are seen as the same. This allows the the universe
+    # implementation to discard instances of the wrapper that it doesn't
+    # need and recreate them later without worrying about caches in the
+    # renderer getting messed up
+    def __hash__(self) -> int:
+        return self._subsector.__hash__()
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if isinstance(other, AbstractSubsector):
+            return self._subsector == other._subsector
+        return False # TODO: Should this be not implemented?
+
+class AbstractSector(object):
+    def AbstractSubsector(self, sector: traveller.Sector) -> None:
+        self._sector = sector
+
+    def name(self) -> str:
+        return self._sector.name()
+
+    # NOTE: It's important that different instances of this class wrapping
+    # the same object are seen as the same. This allows the the universe
+    # implementation to discard instances of the wrapper that it doesn't
+    # need and recreate them later without worrying about caches in the
+    # renderer getting messed up
+    def __hash__(self) -> int:
+        return self._sector.__hash__()
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if isinstance(other, AbstractSector):
+            return self._sector == other._sector
+        return False # TODO: Should this be not implemented?
+
+class AbstractUniverse(object):
+    def __init__(self) -> None:
+        # TODO: Need to limit the number of wrappers maintained at any one time
+        self._worldWrappers: typing.Mapping[travellermap.HexPosition, AbstractWorld] = {}
+
+    def worldAt(
+            self,
+            milieu: travellermap.Milieu,
+            hex: travellermap.HexPosition
+            ) -> typing.Optional[AbstractWorld]:
+        key = (milieu, hex)
+        wrapper = self._worldWrappers.get(key)
+        if not wrapper:
+            world = traveller.WorldManager.instance().worldByPosition(
+                milieu=milieu,
+                hex=hex)
+            wrapper = AbstractWorld(world=world)
+            self._worldWrappers[key] = wrapper
+        return wrapper
 
 class AbstractPointList(object):
     def points(self) -> typing.Sequence[cartographer.PointF]:

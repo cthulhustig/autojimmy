@@ -843,6 +843,8 @@ class MapWidget(QtWidgets.QWidget):
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
+        # TODO: this shouldn't be creating an Abstract object when I'm finished
+        self._universe = cartographer.AbstractUniverse()
         self._graphics = gui.MapGraphics()
         self._imageCache = cartographer.ImageCache(
             graphics=self._graphics)
@@ -1828,6 +1830,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def _newRenderer(self) -> cartographer.RenderContext:
         return cartographer.RenderContext(
+            universe=self._universe,
             graphics=self._graphics,
             worldCenterX=self._viewCenter.x(),
             worldCenterY=self._viewCenter.y(),

@@ -5,6 +5,8 @@ import typing
 from PyQt5 import QtCore, QtGui
 
 _thumbnailRenderInitialised = False
+# TODO: This shouldn't be using an abstract type by the time I'm finished
+_thumbnailUniverse: typing.Optional[cartographer.AbstractUniverse] = None
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
 _thumbnailImageCache: typing.Optional[cartographer.ImageCache] = None
 _thumbnailVectorCache: typing.Optional[cartographer.VectorObjectCache] = None
@@ -13,6 +15,7 @@ _thumbnailStyleCache: typing.Optional[cartographer.StyleCache] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
+    global _thumbnailUniverse
     global _thumbnailGraphics
     global _thumbnailImageCache
     global _thumbnailVectorCache
@@ -21,6 +24,8 @@ def _initThumbnailRenderer():
 
     if _thumbnailRenderInitialised:
         return
+    # TODO: This shouldn't be using an abstract type by the time I'm finished
+    _thumbnailUniverse = cartographer.AbstractUniverse()
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageCache(graphics=_thumbnailGraphics)
     _thumbnailVectorCache = cartographer.VectorObjectCache(graphics=_thumbnailGraphics)
@@ -43,6 +48,7 @@ def generateThumbnail(
 
     centerX, centerY = hex.worldCenter()
     renderer = cartographer.RenderContext(
+        universe=_thumbnailUniverse,
         graphics=_thumbnailGraphics,
         worldCenterX=centerX,
         worldCenterY=centerY,

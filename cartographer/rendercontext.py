@@ -62,6 +62,7 @@ class RenderContext(object):
 
     def __init__(
             self,
+            universe: cartographer.AbstractUniverse,
             graphics: cartographer.AbstractGraphics,
             worldCenterX: float,
             worldCenterY: float,
@@ -76,6 +77,7 @@ class RenderContext(object):
             labelCache: cartographer.LabelCache,
             styleCache: cartographer.StyleCache
             ) -> None:
+        self._universe = universe
         self._graphics = graphics
         self._worldCenterX = worldCenterX
         self._worldCenterY = worldCenterY
@@ -98,6 +100,8 @@ class RenderContext(object):
             graphics=self._graphics,
             styleCache=self._styleCache)
         self._worldCache = cartographer.WorldCache(
+            milieu=self._milieu,
+            universe=self._universe,
             imageCache=self._imageCache,
             capacity=RenderContext._WorldCacheCapacity)
         self._gridCache = cartographer.GridCache(
@@ -172,6 +176,7 @@ class RenderContext(object):
             milieu: travellermap.Milieu
             ) -> None:
         self._milieu = milieu
+        self._worldCache.setMilieu(milieu=milieu)
         self._selector.setMilieu(milieu=milieu)
 
     def style(self) -> travellermap.Style:
@@ -1001,7 +1006,7 @@ class RenderContext(object):
 
             rect = cartographer.RectangleF()
             for world in worlds:
-                worldInfo = self._worldCache.worldInfo(world=world)
+                worldInfo = self._worldCache.worldInfo(hex=world.hex())
 
                 renderName = False
                 if renderAllNames or renderKeyNames:
@@ -1200,7 +1205,7 @@ class RenderContext(object):
             self._graphics.scaleTransform(scaleX=scaleX, scaleY=scaleY)
 
             for world in worlds:
-                worldInfo = self._worldCache.worldInfo(world=world)
+                worldInfo = self._worldCache.worldInfo(hex=world.hex())
                 renderName = False
                 if renderAllNames or renderKeyNames:
                     renderName = renderAllNames or worldInfo.isCapital or worldInfo.isHiPop
@@ -1481,7 +1486,7 @@ class RenderContext(object):
             self._selector.setWorldSlop(max(oldSlop, math.log2(self._scale) - 2))
             try:
                 for world in self._selector.worlds():
-                    worldInfo = self._worldCache.worldInfo(world=world)
+                    worldInfo = self._worldCache.worldInfo(hex=world.hex())
 
                     with self._graphics.save():
                         self._graphics.setSmoothingMode(

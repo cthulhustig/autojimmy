@@ -393,6 +393,11 @@ class HexPosition(object):
             self._calculateRelative()
         return self._relative[3]
 
+    def offset(self) -> typing.Tuple[int, int]:
+        if not self._relative:
+            self._calculateRelative()
+        return (self._relative[2], self._relative[3])
+
     def relative(self) -> typing.Tuple[int, int, int, int]:
         if not self._relative:
             self._calculateRelative()
