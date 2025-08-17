@@ -220,7 +220,7 @@ class PointF(object):
 
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, PointF):
-            return self._x == other._y and self.y == other.y
+            return self._x == other._x and self._y == other._y
         return super().__eq__(other)
 
     def x(self) -> float:
