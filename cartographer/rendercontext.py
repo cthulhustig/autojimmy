@@ -112,7 +112,8 @@ class RenderContext(object):
         self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
         self._selector = cartographer.RectSelector(
-            milieu=self._milieu)
+            milieu=self._milieu,
+            universe=self._universe)
         self._worldOutputRect = None
         self._worldViewRect = None
         self._imageSpaceToWorldSpace = None
@@ -601,10 +602,13 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for subsector in self._selector.subsectors():
-            if subsector.isNameGenerated():
+            name = subsector.name()
+            if not name:
                 continue
 
-            ulHex, brHex = subsector.extent()
+            index = subsector.index()
+
+            ulHex, brHex = index.hexExtent()
             left = ulHex.absoluteX() - 1
             top = ulHex.absoluteY() - 1
             right = brHex.absoluteX()
@@ -791,13 +795,14 @@ class RenderContext(object):
         for sector in self._selector.sectors():
             sectorLabel = sector.sectorLabel()
 
-            if not self._styleSheet.showAllSectorNames and not sector.selected() \
+            if not self._styleSheet.showAllSectorNames and not sector.isSelected() \
                     and not sectorLabel:
                 continue
 
+            index = sector.index()
             centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
-                sector.x(),
-                sector.y(),
+                index.sectorX(),
+                index.sectorY(),
                 int(travellermap.SectorWidth // 2),
                 int(travellermap.SectorHeight // 2)))
 
@@ -1532,9 +1537,10 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             allegiance = world.allegiance()
+            remarks = world.remarks()
 
-            droyne = allegiance == 'Dr' or allegiance == 'NaDr' or world.hasRemark('Droy')
-            chirpers = world.hasRemark('Chir')
+            droyne = allegiance == 'Dr' or allegiance == 'NaDr' or remarks.hasRemark('Droy')
+            chirpers = remarks.hasRemark('Chir')
 
             if droyne or chirpers:
                 glyph = self._styleSheet.droyneWorlds.content[0 if droyne else 1]
@@ -1551,7 +1557,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            if world.isMinorHomeworld():
+            remarks = world.remarks()
+            if remarks.isMinorHomeworld():
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.minorHomeWorlds.content,
                     font=self._styleSheet.minorHomeWorlds.font,
@@ -1565,7 +1572,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
+            remarks = world.remarks()
+            if remarks.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,
@@ -1580,7 +1588,12 @@ class RenderContext(object):
                 alpha=128,
                 colour=self._styleSheet.backgroundBrush.colour()))
             for sector in self._selector.sectors(tight=True):
-                if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
+                tagging = sector.tagging()
+                shouldDim = \
+                    not tagging.contains(traveller.SectorTagging.Tag.Official) and \
+                    not tagging.contains(traveller.SectorTagging.Tag.Preserve) and \
+                    not tagging.contains(traveller.SectorTagging.Tag.InReview)
+                if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         index=sector.index())
 
@@ -1590,23 +1603,24 @@ class RenderContext(object):
 
         if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
-                if sector.hasTag('Official'):
+                tagging = sector.tagging()
+                if tagging.contains(traveller.SectorTagging.Tag.Official):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif sector.hasTag('InReview'):
+                elif tagging.contains(traveller.SectorTagging.Tag.InReview):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif sector.hasTag('Unreviewed'):
+                elif tagging.contains(traveller.SectorTagging.Tag.Unreviewed):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif sector.hasTag('Apocryphal'):
+                elif tagging.contains(traveller.SectorTagging.Tag.Apocryphal):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif sector.hasTag('Preserve'):
+                elif tagging.contains(traveller.SectorTagging.Tag.Preserve):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))
@@ -1691,7 +1705,7 @@ class RenderContext(object):
             y=position.y(),
             format=cartographer.TextAlignment.Centered)
 
-    def _drawStars(self, world: traveller.World) -> None:
+    def _drawStars(self, world: cartographer.AbstractWorld) -> None:
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
@@ -2251,7 +2265,7 @@ class RenderContext(object):
         'V': 0}
 
     @staticmethod
-    def _worldStarProps(world: traveller.World) -> typing.Iterable[typing.Tuple[
+    def _worldStarProps(world: cartographer.AbstractWorld) -> typing.Iterable[typing.Tuple[
             str, # Fill Colour,
             str, # Border Colour
             float]]: # Radius

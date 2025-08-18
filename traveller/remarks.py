@@ -106,6 +106,7 @@ class Remarks(object):
         return self._colonyWorlds
 
     """
+    Research Stations:
     'A' == Alpha
     'B' == Beta
     'G' == Gamma
@@ -116,7 +117,6 @@ class Remarks(object):
     'T' == Theta
     'O' == Omicron
     """
-
     def researchStation(self) -> typing.Optional[str]:
         return self._researchStation
 

@@ -757,7 +757,7 @@ class MapWidget(QtWidgets.QWidget):
     _TileSize = 256 # Pixels
     _TileCacheSize = 1000 # Number of tiles
     _TileRenderTimerMs = 1
-    _LookaheadBorderTiles = 4
+    _LookaheadBorderTiles = 2
 
     _CheckerboardColourA = '#000000'
     _CheckerboardColourB = '#404040'

@@ -10,26 +10,36 @@ import typing
 # 2. Move what is currently in the travellermap namespace into what is left of the traveller namespace
 import traveller
 
-# TODO:I think this is a rough order of attack
-# 1. Update WorldCache to use AbstractUniverse & AbstractWorld to populate WorldInfo.
-#   - This will need AbstractUniverse to wrap WorldManager adn AllegianceManger
-# 2. Update SectorCache to use AbstractUniverse & AbstractSector to generate the sector data
-# 3. Update LabelCache to use AbstractUniverse (it has one call to WorldManager)
-# 4. Update Selector to use AbstractUniverse & AbstractWorld/AbstractSector/AbstractSubsector
-
 # TODO: While I'm sorting out the interfaces these abstract classes are going to have a
 # real implementation as it will be much easier to test. Once I'm finished I'll split
 # the implementation out from the abstract classes.
 
+# TODO: It feels like something has made map rendering a fair bit more sluggish than the
+# 0.9.3.1 release. Not sure if it was this PR or one of the previous ones. Need to look
+# into it
+
 class AbstractWorld(object):
-    def __init__(self, world: traveller.World) -> None:
+    def __init__(
+            self,
+            universe: 'AbstractUniverse',
+            world: traveller.World
+            ) -> None:
+        self._universe = universe
         self._world = world
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._world.milieu()
 
     def hex(self) -> travellermap.HexPosition:
         return self._world.hex()
 
     def name(self) -> typing.Optional[str]:
         return self._world.name() if not self._world.isNameGenerated() else None
+
+    def sector(self) -> 'AbstractSector':
+        return self._universe.sectorAt(
+            milieu=self._world.milieu(),
+            index=self._world.hex().sectorIndex())
 
     def uwp(self) -> traveller.UWP:
         return self._world.uwp()
@@ -62,6 +72,9 @@ class AbstractWorld(object):
     def bases(self) -> traveller.Bases:
         return self._world.bases()
 
+    def stellar(self) -> traveller.Stellar:
+        return self._world.stellar()
+
     def remarks(self) -> traveller.Remarks:
         return self._world.remarks()
 
@@ -93,8 +106,16 @@ class AbstractSubsector(object):
         self._universe = universe
         self._subsector = subsector
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._subsector.milieu()
+
     def index(self) -> travellermap.SubsectorIndex:
         return self._subsector.index()
+
+    def sector(self) -> 'AbstractSector':
+        return self._universe.sectorAt(
+            milieu=self._subsector.milieu(),
+            index=self._subsector.index().sectorIndex())
 
     def name(self) -> typing.Optional[str]:
         return self._subsector.name() if not self._subsector.isNameGenerated() else None
@@ -133,11 +154,36 @@ class AbstractSector(object):
         self._universe = universe
         self._sector = sector
 
+    def milieu(self) -> travellermap.Milieu:
+        return self._sector.milieu()
+
     def index(self) -> travellermap.SectorIndex:
         return self._sector.index()
 
     def name(self) -> str:
         return self._sector.name()
+
+    # TODO: I really don't like this name (or the one on traveller.Sector).
+    # It can't be named label as that would get confused with the other
+    # sector labels. Having a sector label has two effects.
+    # - It will be used instead of the sector name when drawing sector names
+    # - If rendering is set to show only selected sector names, sectors with
+    #   labels will always have their label drawn even if not marked as
+    #   selected.
+    #       - Need to find out if there are any sectors that have a label but
+    #         aren't marked as selected. If not then I can just return the
+    #         sector label instead of the name
+    def sectorLabel(self) -> typing.Optional[str]:
+        return self._sector.sectorLabel()
+
+    # TODO: I really don't like the name of this function (or the equivalent
+    # on traveller.Sector). It's used to specify if a sector should have its
+    # name drawn when drawing sector names is set to "only selected"
+    def isSelected(self) -> bool:
+        return self._sector.selected()
+
+    def tagging(self) -> traveller.SectorTagging:
+        return self._sector.tagging()
 
     def worlds(
             self,
@@ -179,13 +225,19 @@ class AbstractSector(object):
 
 class AbstractUniverse(object):
     def __init__(self) -> None:
+        # TODO: Need to limit the number of wrappers maintained at any one time
         self._sectorWrappers: typing.Mapping[
             typing.Tuple[
                 travellermap.Milieu,
                 travellermap.SectorIndex],
             AbstractSector] = {}
 
-        # TODO: Need to limit the number of wrappers maintained at any one time
+        self._subsectorWrappers: typing.Mapping[
+            typing.Tuple[
+                travellermap.Milieu,
+                travellermap.SubsectorIndex],
+            AbstractSubsector] = {}
+
         self._worldWrappers: typing.Mapping[
             typing.Tuple[
                 travellermap.Milieu,
@@ -200,15 +252,15 @@ class AbstractUniverse(object):
             ) -> typing.Optional[AbstractSector]:
         key = (milieu, index)
         wrapper = self._sectorWrappers.get(key)
-        if not wrapper:
-            sector = traveller.WorldManager.instance().sectorBySectorIndex(
-                milieu=milieu,
-                index=index,
-                includePlaceholders=includePlaceholders)
-            wrapper = AbstractSector(
-                universe=self,
-                sector=sector)
-            self._sectorWrappers[key] = wrapper
+        if wrapper:
+            return wrapper
+
+        sector = traveller.WorldManager.instance().sectorBySectorIndex(
+            milieu=milieu,
+            index=index,
+            includePlaceholders=includePlaceholders)
+        wrapper = AbstractSector(universe=self, sector=sector)
+        self._sectorWrappers[key] = wrapper
         return wrapper
 
     def worldAt(
@@ -219,14 +271,82 @@ class AbstractUniverse(object):
             ) -> typing.Optional[AbstractWorld]:
         key = (milieu, hex)
         wrapper = self._worldWrappers.get(key)
-        if not wrapper:
-            world = traveller.WorldManager.instance().worldByPosition(
-                milieu=milieu,
-                hex=hex,
-                includePlaceholders=includePlaceholders)
-            wrapper = AbstractWorld(world=world)
-            self._worldWrappers[key] = wrapper
+        if wrapper:
+            return wrapper
+
+        world = traveller.WorldManager.instance().worldByPosition(
+            milieu=milieu,
+            hex=hex,
+            includePlaceholders=includePlaceholders)
+        wrapper = AbstractWorld(universe=self, world=world)
+        self._worldWrappers[key] = wrapper
         return wrapper
+
+    def sectorsInArea(
+            self,
+            milieu: travellermap.Milieu,
+            ulHex: travellermap.HexPosition,
+            lrHex: travellermap.HexPosition,
+            includePlaceholders: bool = False
+            ) -> typing.List[AbstractSector]:
+        generator = traveller.WorldManager.instance().yieldSectorsInArea(
+            milieu=milieu,
+            upperLeft=ulHex,
+            lowerRight=lrHex,
+            includePlaceholders=includePlaceholders)
+        wrappers = []
+        for sector in generator:
+            key = (milieu, sector.index())
+            wrapper = self._sectorWrappers.get(key)
+            if not wrapper:
+                wrapper = AbstractSector(universe=self, sector=sector)
+                self._sectorWrappers[key] = wrapper
+            wrappers.append(wrapper)
+        return wrappers
+
+    def subsectorsInArea(
+            self,
+            milieu: travellermap.Milieu,
+            ulHex: travellermap.HexPosition,
+            lrHex: travellermap.HexPosition,
+            includePlaceholders: bool = False
+            ) -> typing.List[AbstractSubsector]:
+        generator = traveller.WorldManager.instance().yieldSubsectorsInArea(
+            milieu=milieu,
+            upperLeft=ulHex,
+            lowerRight=lrHex,
+            includePlaceholders=includePlaceholders)
+        wrappers = []
+        for subsector in generator:
+            key = (milieu, subsector.index())
+            wrapper = self._subsectorWrappers.get(key)
+            if not wrapper:
+                wrapper = AbstractSubsector(universe=self, subsector=subsector)
+                self._subsectorWrappers[key] = wrapper
+            wrappers.append(wrapper)
+        return wrappers
+
+    def worldsInArea(
+            self,
+            milieu: travellermap.Milieu,
+            ulHex: travellermap.HexPosition,
+            lrHex: travellermap.HexPosition,
+            includePlaceholders: bool = False
+            ) -> typing.List[AbstractWorld]:
+        generator = traveller.WorldManager.instance().yieldWorldsInArea(
+            milieu=milieu,
+            upperLeft=ulHex,
+            lowerRight=lrHex,
+            includePlaceholders=includePlaceholders)
+        wrappers = []
+        for world in generator:
+            key = (milieu, world.hex())
+            wrapper = self._worldWrappers.get(key)
+            if not wrapper:
+                wrapper = AbstractWorld(universe=self, world=world)
+                self._worldWrappers[key] = wrapper
+            wrappers.append(wrapper)
+        return wrappers
 
     def sectorHexToPosition(
             self,

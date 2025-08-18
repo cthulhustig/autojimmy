@@ -1,4 +1,3 @@
-import common
 import enum
 import math
 import typing
@@ -61,63 +60,6 @@ def absoluteSpaceToSectorPos(
     absoluteY = pos[1] + (ReferenceHexY - 1)
     return (absoluteX // SectorWidth, absoluteY // SectorHeight)
 
-# This gets the bounding rect of a sector in world space coordinates. It's based
-# on Bounds from Traveller Map (Sector.cs) but I've updated it so it returns a
-# bounding box that contains the full extent of all hexes in the sector.
-def sectorBoundingRect(
-        sector: typing.Tuple[int, int],
-        ) -> typing.Tuple[float, float, float, float]:
-    left = (sector[0] * SectorWidth) - ReferenceHexX
-    top = (sector[1] * SectorHeight) - ReferenceHexY
-    width = SectorWidth
-    height = SectorHeight
-
-    # Adjust to completely contain all hexes in the sector
-    height += 0.5
-    left -= HexWidthOffset
-    width += HexWidthOffset * 2
-
-    return (left, top, width, height)
-
-def subsectorBoundingRect(
-        subsector: typing.Tuple[
-            int, int, # Sector x/y
-            int, int], # Subsector index x/y
-        ) -> typing.Tuple[float, float, float, float]:
-    left = ((subsector[0] * SectorWidth) - ReferenceHexX) + \
-        (subsector[2] * SubsectorWidth)
-    top = ((subsector[1] * SectorHeight) - ReferenceHexY) + \
-        (subsector[3] * SubsectorHeight)
-    width = SubsectorWidth
-    height = SubsectorHeight
-
-    # Adjust to completely contain all hexes in the sector
-    height += 0.5
-    left -= HexWidthOffset
-    width += HexWidthOffset * 2
-
-    return (left, top, width, height)
-
-# Similar to sectorBoundingRect but gets the largest world space coordinate rect
-# that can fit inside the sector without overlapping any hexes from adjacent
-# sectors. This is useful as any rect that falls completely inside this rect is
-# guaranteed to only cover this sector
-def sectorInteriorRect(
-        sector: typing.Tuple[int, int],
-        ) -> typing.Tuple[float, float, float, float]:
-    left = (sector[0] * SectorWidth) - ReferenceHexX
-    bottom = (sector[1] * SectorHeight) - ReferenceHexY
-    width = SectorWidth
-    height = SectorHeight
-
-    # Shrink to fit within the hexes of this sector
-    bottom += 0.5
-    height -= 0.5
-    left += HexWidthOffset
-    width -= (HexWidthOffset * 2)
-
-    return (left, bottom, width, height)
-
 # These are orientated visually as seen in Traveller Map
 class HexEdge(enum.Enum):
     Upper = 0
@@ -126,7 +68,6 @@ class HexEdge(enum.Enum):
     Lower = 3
     LowerLeft = 4
     UpperLeft = 5
-
 
 _OppositeEdgeTransitions = {
     HexEdge.Upper: HexEdge.Lower,
@@ -309,6 +250,9 @@ class SectorIndex(object):
     def __init__(self, sectorX: int, sectorY: int) -> None:
         self._sectorX = int(sectorX)
         self._sectorY = int(sectorY)
+
+        self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._hexExtent: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
         self._hash = None
 
     def __eq__(self, other):
@@ -334,13 +278,51 @@ class SectorIndex(object):
     def components(self) -> typing.Tuple[int, int]:
         return (self._sectorX, self._sectorY)
 
+    def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if self._worldBounds is None:
+            left = (self._sectorX * SectorWidth) - ReferenceHexX
+            top = (self._sectorY * SectorHeight) - ReferenceHexY
+            width = SectorWidth
+            height = SectorHeight
+
+            # Adjust to completely contain all hexes in the sector
+            height += 0.5
+            left -= HexWidthOffset
+            width += HexWidthOffset * 2
+
+            self._worldBounds = (left, top, width, height)
+        return self._worldBounds
+
+    def hexExtent(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
+        if self._hexExtent is None:
+            topLeft = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=1,
+                offsetY=1)
+            bottomRight = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=SectorWidth,
+                offsetY=SectorHeight)
+            self._hexExtent = (topLeft, bottomRight)
+        return self._hexExtent
+
+# NOTE: There is a LOT of code that assumes instances of this
+# class are immutable
 class SubsectorIndex(object):
     def __init__(self, sectorX: int, sectorY: int, code: str) -> None:
         self._sectorX = int(sectorX)
         self._sectorY = int(sectorY)
         self._code = str(code).upper()
 
+        index = ord(self._code) - ord('A')
+        self._indexX = index % 4
+        self._indexY = index // 4
+
         self._sectorIndex: typing.Optional[SectorIndex] = None
+        self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._hexExtent: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
         self._hash = None
 
     def __eq__(self, other):
@@ -367,6 +349,12 @@ class SubsectorIndex(object):
     def code(self) -> str:
         return self._code
 
+    def indexX(self) -> int:
+        return self._indexX
+
+    def indexY(self) -> int:
+        return self._indexY
+
     def components(self) -> typing.Tuple[int, int, str]:
         return (self._sectorX, self._sectorY, self._code)
 
@@ -374,6 +362,38 @@ class SubsectorIndex(object):
         if not self._sectorIndex:
             self._sectorIndex = SectorIndex(sectorX=self._sectorX, sectorY=self._sectorY)
         return self._sectorIndex
+
+    def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if self._worldBounds is None:
+            left = ((self._sectorX * SectorWidth) - ReferenceHexX) + \
+                (self._indexX * SubsectorWidth)
+            top = ((self._sectorY * SectorHeight) - ReferenceHexY) + \
+                (self._indexY * SubsectorHeight)
+            width = SubsectorWidth
+            height = SubsectorHeight
+
+            # Adjust to completely contain all hexes in the sector
+            height += 0.5
+            left -= HexWidthOffset
+            width += HexWidthOffset * 2
+
+            self._worldBounds = (left, top, width, height)
+        return self._worldBounds
+
+    def hexExtent(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
+        if self._hexExtent is None:
+            topLeft = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=(self._indexX * SubsectorWidth) + 1,
+                offsetY=(self._indexY * SubsectorHeight) + 1)
+            bottomRight = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=topLeft.offsetX() + (SubsectorWidth - 1),
+                offsetY=topLeft.offsetY() + (SubsectorHeight - 1))
+            self._hexExtent = (topLeft, bottomRight)
+        return self._hexExtent
 
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable

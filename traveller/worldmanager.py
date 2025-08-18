@@ -1400,11 +1400,6 @@ class WorldManager(object):
                         f'Failed to process label {rawLabel.fileIndex()} in metadata for sector {sectorName}',
                         exc_info=ex)
 
-        rawTags = rawMetadata.tags()
-        tags = []
-        if rawTags:
-            tags.extend(rawTags.split())
-
         return traveller.Sector(
             name=sectorName,
             milieu=milieu,
@@ -1419,7 +1414,7 @@ class WorldManager(object):
             regions=regions,
             labels=labels,
             selected=rawMetadata.selected() if rawMetadata.selected() else False,
-            tags=tags)
+            tags=rawMetadata.tags())
 
     _RouteStyleMap = {
         'solid': traveller.Route.Style.Solid,

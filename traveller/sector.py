@@ -118,7 +118,7 @@ class Sector(object):
             regions: typing.Iterable[traveller.Region],
             labels: typing.Iterable[traveller.Label],
             selected: bool,
-            tags: typing.Iterable[str]
+            tags: typing.Optional[str] = None
             ) -> None:
         self._milieu = milieu
         self._x = x
@@ -133,7 +133,7 @@ class Sector(object):
         self._regions = list(regions)
         self._labels = list(labels)
         self._selected = selected
-        self._tags = set(tags)
+        self._tags = traveller.SectorTagging(tags)
 
         self._subsectorNameMap: typing.Dict[str, Subsector] = {}
         self._subsectorIndexMap: typing.Dict[
@@ -233,15 +233,11 @@ class Sector(object):
     def selected(self) -> bool:
         return self._selected
 
-    def tags(self) -> typing.Iterable[str]:
-        return list(self._tags)
+    def tagging(self) -> traveller.SectorTagging:
+        return self._tags
 
-    def yieldTags(self) -> typing.Generator[str, None, None]:
-        for tag in self._tags:
-            yield tag
-
-    def hasTag(self, tag: str) -> bool:
-        return tag in self._tags
+    def hasTag(self, tag: traveller.SectorTagging.Tag) -> bool:
+        return self._tags.contains(tag)
 
     def subsectorNames(self) -> typing.Sequence[str]:
         return list(self._subsectorNameMap.keys())

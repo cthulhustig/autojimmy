@@ -123,12 +123,6 @@ class World(object):
         starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
-    def isMajorHomeworld(self) -> bool:
-        return self._remarks.isMajorHomeworld()
-
-    def isMinorHomeworld(self) -> bool:
-        return self._remarks.isMinorHomeworld()
-
     def hasOwner(self) -> bool:
         return self._remarks.hasOwner()
 
@@ -143,9 +137,6 @@ class World(object):
 
     def colonySectorHexes(self) -> typing.Optional[typing.Iterable[str]]:
         return self._remarks.colonySectorHexes()
-
-    def physicalSize(self) -> int:
-        return self._uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
 
     # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:
@@ -264,6 +255,8 @@ class World(object):
 
     # This is based on code from Traveller Map which I believe is
     # based on the T5.10 rules
+    # TODO: This should probably be moved into WorldCache as it's not something
+    # I think I'll ever use outside of Traveller Map rendering
     def importance(self) -> int:
         if self._importance is None:
             self._importance = 0
