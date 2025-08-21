@@ -226,23 +226,23 @@ class AbstractSector(object):
 class AbstractUniverse(object):
     def __init__(self) -> None:
         # TODO: Need to limit the number of wrappers maintained at any one time
-        self._sectorWrappers: typing.Mapping[
-            typing.Tuple[
-                travellermap.Milieu,
-                travellermap.SectorIndex],
-            AbstractSector] = {}
+        self._sectorWrappers: typing.Dict[
+            travellermap.Milieu,
+            typing.Dict[
+                travellermap.SectorIndex,
+                AbstractSector]] = {}
 
-        self._subsectorWrappers: typing.Mapping[
-            typing.Tuple[
-                travellermap.Milieu,
-                travellermap.SubsectorIndex],
-            AbstractSubsector] = {}
+        self._subsectorWrappers: typing.Dict[
+            travellermap.Milieu,
+            typing.Dict[
+                travellermap.SubsectorIndex,
+                AbstractSubsector]] = {}
 
-        self._worldWrappers: typing.Mapping[
-            typing.Tuple[
-                travellermap.Milieu,
-                travellermap.HexPosition],
-            AbstractWorld] = {}
+        self._worldWrappers: typing.Dict[
+            travellermap.Milieu,
+            typing.Dict[
+                travellermap.HexPosition,
+                AbstractWorld]] = {}
 
     def sectorAt(
             self,
@@ -250,17 +250,24 @@ class AbstractUniverse(object):
             index: travellermap.SectorIndex,
             includePlaceholders: bool = False
             ) -> typing.Optional[AbstractSector]:
-        key = (milieu, index)
-        wrapper = self._sectorWrappers.get(key)
-        if wrapper:
-            return wrapper
+        milieuSectors = self._sectorWrappers.get(milieu)
+        if milieuSectors is not None:
+            wrapper = milieuSectors.get(index)
+            if wrapper:
+                return wrapper if includePlaceholders or wrapper.milieu() is milieu else None
+        else:
+            milieuSectors = {}
+            self._sectorWrappers[milieu] = milieuSectors
 
         sector = traveller.WorldManager.instance().sectorBySectorIndex(
             milieu=milieu,
             index=index,
             includePlaceholders=includePlaceholders)
+        if not sector:
+            return None
+
         wrapper = AbstractSector(universe=self, sector=sector)
-        self._sectorWrappers[key] = wrapper
+        milieuSectors[index] = wrapper
         return wrapper
 
     def worldAt(
@@ -269,17 +276,24 @@ class AbstractUniverse(object):
             hex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.Optional[AbstractWorld]:
-        key = (milieu, hex)
-        wrapper = self._worldWrappers.get(key)
-        if wrapper:
-            return wrapper
+        milieuWorlds = self._worldWrappers.get(milieu)
+        if milieuWorlds is not None:
+            wrapper = milieuWorlds.get(hex)
+            if wrapper:
+                return wrapper if includePlaceholders or wrapper.milieu() is milieu else None
+        else:
+            milieuWorlds = {}
+            self._worldWrappers[milieu] = milieuWorlds
 
         world = traveller.WorldManager.instance().worldByPosition(
             milieu=milieu,
             hex=hex,
             includePlaceholders=includePlaceholders)
+        if not world:
+            return None
+
         wrapper = AbstractWorld(universe=self, world=world)
-        self._worldWrappers[key] = wrapper
+        milieuWorlds[hex] = wrapper
         return wrapper
 
     def sectorsInArea(
@@ -289,20 +303,25 @@ class AbstractUniverse(object):
             lrHex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSector]:
+        milieuSectors = self._sectorWrappers.get(milieu)
+        if milieuSectors is None:
+            milieuSectors = {}
+            self._sectorWrappers[milieu] = milieuSectors
+
         generator = traveller.WorldManager.instance().yieldSectorsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
             includePlaceholders=includePlaceholders)
-        wrappers = []
+        results = []
         for sector in generator:
-            key = (milieu, sector.index())
-            wrapper = self._sectorWrappers.get(key)
+            index = sector.index()
+            wrapper = milieuSectors.get(index)
             if not wrapper:
                 wrapper = AbstractSector(universe=self, sector=sector)
-                self._sectorWrappers[key] = wrapper
-            wrappers.append(wrapper)
-        return wrappers
+                milieuSectors[index] = wrapper
+            results.append(wrapper)
+        return results
 
     def subsectorsInArea(
             self,
@@ -311,20 +330,25 @@ class AbstractUniverse(object):
             lrHex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSubsector]:
+        milieuSubsectors = self._subsectorWrappers.get(milieu)
+        if milieuSubsectors is None:
+            milieuSubsectors = {}
+            self._subsectorWrappers[milieu] = milieuSubsectors
+
         generator = traveller.WorldManager.instance().yieldSubsectorsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
             includePlaceholders=includePlaceholders)
-        wrappers = []
+        results = []
         for subsector in generator:
-            key = (milieu, subsector.index())
-            wrapper = self._subsectorWrappers.get(key)
+            index = subsector.index()
+            wrapper = milieuSubsectors.get(index)
             if not wrapper:
                 wrapper = AbstractSubsector(universe=self, subsector=subsector)
-                self._subsectorWrappers[key] = wrapper
-            wrappers.append(wrapper)
-        return wrappers
+                milieuSubsectors[index] = wrapper
+            results.append(wrapper)
+        return results
 
     def worldsInArea(
             self,
@@ -333,20 +357,25 @@ class AbstractUniverse(object):
             lrHex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractWorld]:
+        milieuWorlds = self._worldWrappers.get(milieu)
+        if milieuWorlds is None:
+            milieuWorlds = {}
+            self._worldWrappers[milieu] = milieuWorlds
+
         generator = traveller.WorldManager.instance().yieldWorldsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
             includePlaceholders=includePlaceholders)
-        wrappers = []
+        results = []
         for world in generator:
-            key = (milieu, world.hex())
-            wrapper = self._worldWrappers.get(key)
+            hex = world.hex()
+            wrapper = milieuWorlds.get(hex)
             if not wrapper:
                 wrapper = AbstractWorld(universe=self, world=world)
-                self._worldWrappers[key] = wrapper
-            wrappers.append(wrapper)
-        return wrappers
+                milieuWorlds[hex] = wrapper
+            results.append(wrapper)
+        return results
 
     def sectorHexToPosition(
             self,
