@@ -1,16 +1,11 @@
 import app
-import asyncio
-import depschecker
 import enum
 import gui
-import json
 import logging
 import logic
-import proxy
 import traveller
 import travellermap
 import typing
-import urllib.parse
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 _WelcomeMessage = """
@@ -64,135 +59,6 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     unrefined fuel.</p>
     """ + _RestartRequiredParagraph,
     escape=False)
-
-# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
-# can cause incorrect sizing if the font scaling is increased then decreased
-class _ClearTileCacheDialog(QtWidgets.QDialog):
-    _WorkingDotCount = 5
-
-    def __init__(
-            self,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(parent=parent)
-
-        self._request = None
-
-        self._workingLabel = gui.PrefixLabel(
-            prefix='Communicating with proxy')
-
-        self._workingTimer = QtCore.QTimer()
-        self._workingTimer.timeout.connect(self._workingTimerFired)
-        self._workingTimer.setInterval(500)
-        self._workingTimer.setSingleShot(False)
-
-        self._cancelButton = QtWidgets.QPushButton('Cancel')
-        self._cancelButton.clicked.connect(self._cancelRequest)
-
-        windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._workingLabel)
-        windowLayout.addWidget(self._cancelButton)
-
-        self.setWindowTitle('Clearing Cache')
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
-        self.setSizeGripEnabled(False)
-        self.setLayout(windowLayout)
-
-        # Setting up the title bar needs to be done before the window is show to take effect. It
-        # needs to be done every time the window is shown as the setting is lost if the window is
-        # closed then reshown
-        gui.configureWindowTitleBar(widget=self)
-
-    def exec(self) -> int:
-        try:
-            clearCacheUrl = urllib.parse.urljoin(
-                proxy.MapProxy.instance().accessUrl(),
-                '/proxy/clearcache')
-            self._request = app.AsyncRequest(parent=self)
-            self._request.complete.connect(self._requestComplete)
-            self._request.get(
-                url=clearCacheUrl,
-                loop=asyncio.get_event_loop())
-        except Exception as ex:
-            message = 'Failed to initiate request to clear cache'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            # Closing a dialog from showEvent doesn't work so schedule it to happen immediately after
-            # the window is shown
-            QtCore.QTimer.singleShot(0, self.close)
-
-        return super().exec()
-
-    def showEvent(self, e: QtGui.QShowEvent) -> None:
-        if not e.spontaneous():
-            # Setting up the title bar needs to be done before the window is show to take effect. It
-            # needs to be done every time the window is shown as the setting is lost if the window is
-            # closed then reshown
-            gui.configureWindowTitleBar(widget=self)
-
-        return super().showEvent(e)
-
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        if self._request:
-            self._request.cancel()
-            self._request = None
-        return super().closeEvent(a0)
-
-    def _cancelRequest(self) -> None:
-        if self._request:
-            self._request.cancel()
-            self._request = None
-        self.close()
-
-    def _requestComplete(
-            self,
-            result: typing.Union[app.AsyncResponse, Exception]
-            ) -> None:
-        self._workingTimer.stop()
-
-        if isinstance(result, app.AsyncResponse):
-            try:
-                response = json.loads(result.content().decode())
-                message = 'Cleared {memTiles} tiles from memory and {diskTiles} from disk'.format(
-                    memTiles=response["memoryTiles"],
-                    diskTiles=response["diskTiles"])
-                gui.MessageBoxEx.information(
-                    parent=self,
-                    text=message)
-            except Exception as ex:
-                message = 'Clearing the tile cache succeeded but parsing response failed'
-                logging.warning(message, exc_info=ex)
-                gui.MessageBoxEx.warning(
-                    parent=self,
-                    text=message,
-                    exception=ex)
-            self.accept()
-        elif isinstance(result, Exception):
-            message = 'Request to clear tile cache failed'
-            logging.error(message, exc_info=result)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=result)
-            self.close()
-        else:
-            message = 'Request to clear tile cache returned an unexpected result'
-            logging.critical(message, exc_info=result)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=result)
-            self.close()
-
-    def _workingTimerFired(self) -> None:
-        text = self._workingLabel.text()
-        if (len(text) % _ClearTileCacheDialog._WorkingDotCount) == 0:
-            text = ''
-        text += '.'
-        self._workingLabel.setText(text)
 
 class _InPlaceTagLevelComboBox(gui.TagLevelComboBox):
     def __init__(self, colours, parent = None, value = None):
@@ -391,8 +257,6 @@ class ConfigDialog(gui.DialogEx):
         super().firstShowEvent(e)
 
     def accept(self) -> None:
-        if not self._validateConfig():
-            return
         self._saveConfig()
         super().accept()
 
@@ -465,184 +329,6 @@ class ConfigDialog(gui.DialogEx):
 
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
-
-        self._mapEngineComboBox = gui.EnumComboBox(
-            type=app.MapEngine,
-            value=app.Config.instance().value(
-                option=app.ConfigOption.MapEngine,
-                futureValue=True))
-        self._mapEngineComboBox.currentIndexChanged.connect(
-            self._renderingTypeChanged)
-        self._mapEngineComboBox.setToolTip(gui.createStringToolTip(
-            '<p>Select how the map will be rendered.</p>'
-            '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
-            '<li><b>Local</b> - By default, {app} uses its own map rendering '
-            'code to draw the map. This is a reimplementation of the Traveller '
-            'Map rendering code (in Python) and is intended to replicate the '
-            'look of the Traveller Map website as closely as possible, '
-            'however, it\'s not a pixel perfect recreation, so there may be '
-            'some very minor differences. As this rendering is done locally, '
-            'on most systems, it will be the fastest option. Local rendering '
-            'is also the recommended type when using custom sectors, as it '
-            'doesn\'t suffer from any of the compositing artifacts seen when '
-            'using the Web (Proxy) rendering.</li>'
-            '<li><b>Web (Proxy)</b> - When using Web (Proxy) rendering, {app} '
-            'uses a built-in web browser to display the Traveller Map website '
-            'with, access to it going through a local proxy. This proxy is '
-            'used to cache map tiles for faster access and overlay custom '
-            'sectors on those map tiles.</li>'
-            '<li><b>Web (Direct)</b> - When using Web (Direct) rendering, '
-            '{app} uses a built-in web browser to display the Traveller Map '
-            'website. Custom sectors are not supported when using Web (Direct) '
-            'rendering.</li>'
-            '</ul>'.format(app=app.AppName) +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        # Proxy Widgets
-        isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
-        isCairoDetected = depschecker.DetectedCairoSvgState is depschecker.CairoSvgState.Working
-
-        self._proxyPortSpinBox = gui.SpinBoxEx()
-        self._proxyPortSpinBox.setRange(1024, 65535)
-        self._proxyPortSpinBox.setValue(app.Config.instance().value(
-            option=app.ConfigOption.ProxyPort,
-            futureValue=True))
-        self._proxyPortSpinBox.setEnabled(isProxyEnabled)
-        self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the port the local Traveller Map proxy will listen '
-            'on.</p>' \
-            '<p>You may need to change the port the proxy listens on if there '
-            'is a conflict with another service running on your system.</p>' +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
-        self._proxyHostPoolSizeSpinBox.setRange(1, 10)
-        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().value(
-            option=app.ConfigOption.ProxyHostPoolSize,
-            futureValue=True))
-        self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyHostPoolSizeSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the number of localhost addresses the proxy will '
-            'listen on.</p>'
-            '<p>The Chromium browser that {app} uses to display Traveller Map '
-            'has a hard coded limit of 6 simultaneous connections to a single '
-            'host. This is a standard feature of browsers to prevent excessive '
-            'load being put on a site. However, this limitation can reduce '
-            'rendering performance as the browser may delay requests for tiles '
-            'that the proxy could satisfy using its tile cache. To work around '
-            'this issue, the proxy can listen on multiple localhost addresses '
-            '(e.g. 127.0.0.1, 127.0.0.2), with requests for tiles are then '
-            'spread evenly over all these addresses.</p>'
-            '<p><b>This setting only affects the number of simultaneous '
-            'connections made to the proxy in order to allow better use of the '
-            'tile cache. The proxy will enforce a limit of 6 simultaneous '
-            'outgoing connections to travellermap.com so as not to place '
-            'additional load on the site.</b></p>'.format(app=app.AppName) +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        self._proxyMapUrlLineEdit = gui.LineEditEx()
-        self._proxyMapUrlLineEdit.setText(app.Config.instance().value(
-            option=app.ConfigOption.ProxyMapUrl,
-            futureValue=True))
-        self._proxyMapUrlLineEdit.setMaximumWidth(200)
-        self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
-        self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
-            '<p>Specify the URL the proxy will use to access Traveller Map.</p>'
-            '<p>If you run your own copy of Traveller Map, you can specify its '
-            'URL here.</p>' +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        # The proxy mode control is only shown if CairoSVG is detected. It's used
-        # to set the flag to indicate if SVG composition is enabled. It's shown as a
-        # combo box to make it easier to explain to the user what the difference is
-        # between having it enabled and disabled.
-        self._proxyCompositionModeComboBox = gui.ComboBoxEx()
-        self._proxyCompositionModeComboBox.addItem('Hybrid', False)
-        self._proxyCompositionModeComboBox.addItem('SVG', True)
-        self._proxyCompositionModeComboBox.setCurrentByUserData(
-            userData=app.Config.instance().value(
-                option=app.ConfigOption.ProxySvgComposition,
-                futureValue=True))
-        self._proxyCompositionModeComboBox.setEnabled(
-            isProxyEnabled and isCairoDetected)
-        self._proxyCompositionModeComboBox.currentIndexChanged.connect(
-            self._proxyModeChanged)
-        self._proxyCompositionModeComboBox.setToolTip(gui.createStringToolTip(
-            '<p>Change the type of composition used when overlaying custom '
-            'sectors onto tiles from Traveller Map.</p>'
-            '<p>When CairoSVG is installed, there are multiple ways the proxy '
-            'can composite tiles.</p>'
-            '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
-            '<li><b>Hybrid</b> - Traveller map is used to generate SVG posters '
-            'of the custom sectors, however, these posters are processed to '
-            'split them into multiple bitmap layers prior to composition. '
-            'These bitmap layers are then used to composite individual tiles. '
-            'This method is fast but can result in slight blockiness at '
-            'higher zoom levels.'
-            '<li><b>SVG</b> - Traveller map is used to generate SVG posters of '
-            'the custom sectors and these SVG are composited directly onto '
-            'tiles. This prevents blockiness at high zoom levels, however, '
-            'it\'s <b>significantly</b> more CPU intensive than Hybrid '
-            'composition and should only be used on systems with high core '
-            'counts (and even then I don\'t really recommend it).</ul> '
-            '</ul>' +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        # NOTE: The tile cache size is shown in MB but is actually stored in bytes
-        self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
-        self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
-        self._proxyTileCacheSizeSpinBox.setValue(
-            int(app.Config.instance().value(
-                option=app.ConfigOption.ProxyTileCacheSize,
-                futureValue=True) / (1000 * 1000)))
-        self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the amount of disk space to use to cache tiles.</p>'
-            '<p>When the cache size reaches the specified limit, tiles will be '
-            'automatically removed starting with the least recently used. A '
-            'size of 0 will disable the disk cache.' +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
-        self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
-        self._proxyTileCacheLifetimeSpinBox.setValue(
-            app.Config.instance().value(
-                option=app.ConfigOption.ProxyTileCacheLifetime,
-                futureValue=True))
-        self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the max time the proxy will cache a tile on disk.</p>'
-            '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
-            _RestartRequiredParagraph,
-            escape=False))
-
-        # NOTE: The button for clearing the tile cache is enabled/disabled
-        # based on if the proxy is currently running not if the enable check
-        # box is currently checked. Clearing the cache is an immediate operation
-        # that requires sending a request to the proxy process so it only makes
-        # sense when it's actually running
-        self._clearTileCacheButton = QtWidgets.QPushButton('Clear')
-        self._clearTileCacheButton.setEnabled(proxy.MapProxy.instance().isRunning())
-        self._clearTileCacheButton.clicked.connect(self._clearTileCacheClicked)
-
-        proxyLayout = gui.FormLayoutEx()
-        proxyLayout.addRow('Map Engine:', self._mapEngineComboBox)
-        proxyLayout.addRow('Port:', self._proxyPortSpinBox)
-        proxyLayout.addRow('Host Pool Size:', self._proxyHostPoolSizeSpinBox)
-        proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
-        proxyLayout.addRow('Composition Mode:', self._proxyCompositionModeComboBox)
-        proxyLayout.addRow('Tile Cache Size (MB):', self._proxyTileCacheSizeSpinBox)
-        proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
-        proxyLayout.addRow('Clear Tile Cache:', self._clearTileCacheButton)
-
-        proxyGroupBox = QtWidgets.QGroupBox('Map Rendering')
-        proxyGroupBox.setLayout(proxyLayout)
 
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
@@ -751,7 +437,6 @@ class ConfigDialog(gui.DialogEx):
         tabLayout = QtWidgets.QVBoxLayout()
         tabLayout.setContentsMargins(0, 0, 0, 0)
         tabLayout.addWidget(travellerGroupBox)
-        tabLayout.addWidget(proxyGroupBox)
         tabLayout.addWidget(guiGroupBox)
         tabLayout.addWidget(taggingGroupBox)
         tabLayout.addStretch()
@@ -977,21 +662,6 @@ class ConfigDialog(gui.DialogEx):
         self._buttonLayout.addWidget(self._okButton)
         self._buttonLayout.addWidget(self._cancelButton)
 
-    def _validateConfig(self) -> bool:
-        mapUrl = QtCore.QUrl(self._proxyMapUrlLineEdit.text())
-        # Map URL must have a scheme but no path or options
-        if mapUrl.scheme() != 'http' and mapUrl.scheme() != 'https':
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text='The Traveller Map URL must use http or https')
-            return False
-        if (mapUrl.path() != '' and mapUrl.path() != '/') or mapUrl.query():
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text='The Traveller Map URL can\'t have a path or query')
-            return False
-        return True
-
     def _saveConfig(self) -> None:
         try:
             app.Config.instance().setValue(
@@ -1006,27 +676,6 @@ class ConfigDialog(gui.DialogEx):
                     classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                     classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
                     classEStarPortFuelType=self._classEStarPortFuelType.currentEnum()))
-            app.Config.instance().setValue(
-                option=app.ConfigOption.MapEngine,
-                value=self._mapEngineComboBox.currentEnum())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ProxyPort,
-                value=self._proxyPortSpinBox.value())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ProxyHostPoolSize,
-                value=self._proxyHostPoolSizeSpinBox.value())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ProxyMapUrl,
-                value=self._proxyMapUrlLineEdit.text())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ProxyTileCacheSize,
-                value=self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000)) # Convert MB to bytes
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ProxyTileCacheLifetime,
-                value=self._proxyTileCacheLifetimeSpinBox.value())
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ProxySvgComposition,
-                value=self._proxyCompositionModeComboBox.currentUserData())
 
             app.Config.instance().setValue(
                 option=app.ConfigOption.ColourTheme,
@@ -1099,29 +748,6 @@ class ConfigDialog(gui.DialogEx):
         if table:
             table.setContent(
                 keyDescriptions=self._generateAllegianceDescriptions())
-
-    def _renderingTypeChanged(self) -> None:
-        isProxyEnabled = self._mapEngineComboBox.currentEnum() is app.MapEngine.WebProxy
-        isCairoDetected = depschecker.DetectedCairoSvgState is depschecker.CairoSvgState.Working
-        self._proxyPortSpinBox.setEnabled(isProxyEnabled)
-        self._proxyHostPoolSizeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyMapUrlLineEdit.setEnabled(isProxyEnabled)
-        self._proxyTileCacheSizeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyTileCacheLifetimeSpinBox.setEnabled(isProxyEnabled)
-        self._proxyCompositionModeComboBox.setEnabled(isProxyEnabled and isCairoDetected)
-
-    def _proxyModeChanged(self) -> None:
-        if not self._proxyCompositionModeComboBox.currentUserData():
-            return # Hybrid is selected, nothing to do
-        gui.AutoSelectMessageBox.warning(
-            parent=self,
-            text='SVG composition is VERY processor intensive and should only '
-            'be used on systems with high core counts.',
-            stateKey='SvgCompositionPerformanceWarning')
-
-    def _clearTileCacheClicked(self) -> None:
-        dlg = _ClearTileCacheDialog(parent=self)
-        dlg.exec()
 
     def _taggingColourChanged(self) -> None:
         colours = app.TaggingColours(

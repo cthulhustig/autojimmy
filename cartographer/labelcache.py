@@ -41,7 +41,11 @@ class LabelCache(object):
     # sectors using the M1105 names
     _SectorHexMilieu = travellermap.Milieu.M1105
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            universe: cartographer.AbstractUniverse
+            ) -> None:
+        self._universe = universe
         self.minorLabels = self._parseMapLabels(
             travellermap.DataStore.instance().loadTextResource(
                 filePath=LabelCache._MinorLabelsPath))
@@ -92,7 +96,7 @@ class LabelCache(object):
                 hex = locationElement.attrib.get('Hex')
                 if hex is None:
                     raise RuntimeError('Location element has no Hex attribute')
-                location = traveller.WorldManager.instance().sectorHexToPosition(
+                location = self._universe.sectorHexToPosition(
                     milieu=LabelCache._SectorHexMilieu,
                     sectorHex=f'{sector} {hex}')
                 centerX, centerY = location.worldCenter()

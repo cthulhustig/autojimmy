@@ -488,7 +488,7 @@ class _InfoWidget(QtWidgets.QWidget):
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
-                hexImage=False,
+                includeHexImage=False,
                 hexImageStyle=None,
                 hexImageOptions=None)
             self._label.setText(text)
@@ -945,10 +945,10 @@ class MapWidgetEx(QtWidgets.QWidget):
     _ControlWidgetInset = 20
     _ControlWidgetSpacing = 5
 
-    _SelectionFillDarkStyleColour = '#8080FF'
-    _SelectionFillLightStyleColour = '#8080FF'
-    _SelectionOutlineDarkStyleColour = '#42d7f5'
-    _SelectionOutlineLightStyleColour = '#5442f5'
+    _SelectionFillDarkStyleColour = QtGui.QColor('#7F8080FF')
+    _SelectionFillLightStyleColour = QtGui.QColor('#7F8080FF')
+    _SelectionOutlineDarkStyleColour = QtGui.QColor('#7F42d7f5')
+    _SelectionOutlineLightStyleColour = QtGui.QColor('#7F5442f5')
     _SelectionOutlineWidth = 6
 
     _HomeLinearScale = 1
@@ -990,24 +990,13 @@ class MapWidgetEx(QtWidgets.QWidget):
         searchWidth = fontMetrics.width('_' * 40)
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
-        mapEngine = app.Config.instance().value(
-            option=app.ConfigOption.MapEngine)
-        useInAppRendering = mapEngine is app.MapEngine.InApp
-
-        if useInAppRendering:
-            self._mapWidget = gui.LocalMapWidget(
-                milieu=self._milieu,
-                style=self._style,
-                options=self._options,
-                rendering=rendering,
-                animated=animated,
-                parent=self)
-        else:
-            self._mapWidget = gui.WebMapWidget(
-                milieu=self._milieu,
-                style=self._style,
-                options=self._options,
-                parent=self)
+        self._mapWidget = gui.MapWidget(
+            milieu=self._milieu,
+            style=self._style,
+            options=self._options,
+            rendering=rendering,
+            animated=animated,
+            parent=self)
         self._mapWidget.leftClicked.connect(self._handleLeftClick)
         self._mapWidget.rightClicked.connect(self._handleRightClick)
 
@@ -1100,28 +1089,25 @@ class MapWidgetEx(QtWidgets.QWidget):
         #
         # Rendering
         #
-        self._renderingActionGroup = None
-        self._animatedAction = None
-        if useInAppRendering:
-            renderingConfigLayout = _ConfigSectionLayout()
+        renderingConfigLayout = _ConfigSectionLayout()
 
-            self._renderingActionGroup = _RenderingTypeActionGroup(
-                current=self._rendering)
-            self._renderingActionGroup.selectionChanged.connect(
-                self._renderingChanged)
-            renderingConfigLayout.addWidget(
-                _ActionGroupComboBox(self._renderingActionGroup),
-                renderingConfigLayout.rowCount(), 0, 1, 2)
+        self._renderingActionGroup = _RenderingTypeActionGroup(
+            current=self._rendering)
+        self._renderingActionGroup.selectionChanged.connect(
+            self._renderingChanged)
+        renderingConfigLayout.addWidget(
+            _ActionGroupComboBox(self._renderingActionGroup),
+            renderingConfigLayout.rowCount(), 0, 1, 2)
 
-            self._animatedAction = QtWidgets.QAction('Animations', self)
-            self._animatedAction.setCheckable(True)
-            self._animatedAction.setChecked(self._animated)
-            self._animatedAction.toggled.connect(self._animatedChanged)
-            renderingConfigLayout.addToggleAction(self._animatedAction)
+        self._animatedAction = QtWidgets.QAction('Animations', self)
+        self._animatedAction.setCheckable(True)
+        self._animatedAction.setChecked(self._animated)
+        self._animatedAction.toggled.connect(self._animatedChanged)
+        renderingConfigLayout.addToggleAction(self._animatedAction)
 
-            self._configWidget.addSection(
-                section='Rendering',
-                content=renderingConfigLayout)
+        self._configWidget.addSection(
+            section='Rendering',
+            content=renderingConfigLayout)
 
         #
         # Features
@@ -1422,7 +1408,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             return False
 
         self._rendering = rendering
-        if isinstance(self._mapWidget, gui.LocalMapWidget):
+        if isinstance(self._mapWidget, gui.MapWidget):
             self._mapWidget.setRendering(
                 rendering=self._rendering)
         if self._renderingActionGroup:
@@ -1439,7 +1425,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             return
 
         self._animated = animated
-        if isinstance(self._mapWidget, gui.LocalMapWidget):
+        if isinstance(self._mapWidget, gui.MapWidget):
             self._mapWidget.setAnimated(animated=self._animated)
         if self._animatedAction:
             self._animatedAction.setChecked(self._animated)
@@ -1466,8 +1452,19 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._taggingColours = app.TaggingColours(colours) if colours else None
         self._infoWidget.setTaggingColours(colours=self._taggingColours)
 
-    def reload(self) -> None:
-        self._mapWidget.reload()
+    def hexAt(
+            self,
+            pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
+            ) -> travellermap.HexPosition:
+        pos = self._mapWidget.mapFrom(self, pos)
+        return self._mapWidget.hexAt(pos=pos)
+
+    def worldAt(
+            self,
+            pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
+            ) -> typing.Optional[traveller.World]:
+        pos = self._mapWidget.mapFrom(self, pos)
+        return self._mapWidget.worldAt(pos=pos)
 
     def centerOnHex(
             self,
@@ -1514,7 +1511,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hex: travellermap.HexPosition,
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHex(
             hex=hex,
@@ -1525,7 +1522,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHexes(
             hexes=hexes,
@@ -1546,10 +1543,10 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
             primitive: gui.MapPrimitiveType,
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             fillMap: typing.Optional[typing.Mapping[
                 travellermap.HexPosition,
-                str # Colour string
+                QtGui.QColor
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
             ) -> str:
@@ -1563,9 +1560,9 @@ class MapWidgetEx(QtWidgets.QWidget):
     def createHexBordersOverlay(
             self,
             hexes: typing.Iterable[travellermap.HexPosition],
-            lineColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             includeInterior: bool = True
             ) -> str:
         return self._mapWidget.createHexBordersOverlay(
@@ -1579,9 +1576,9 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             center: travellermap.HexPosition,
             radius: int,
-            lineColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
-            fillColour: typing.Optional[str] = None,
+            fillColour: typing.Optional[QtGui.QColor] = None,
             ) -> str:
         radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
@@ -2007,12 +2004,12 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         return True
 
-    def selectionFillColour(self) -> str:
+    def selectionFillColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionFillDarkStyleColour \
             if travellermap.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionFillLightStyleColour
 
-    def selectionOutlineColour(self) -> str:
+    def selectionOutlineColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionOutlineDarkStyleColour \
             if travellermap.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionOutlineLightStyleColour

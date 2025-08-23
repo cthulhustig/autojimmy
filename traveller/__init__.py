@@ -12,6 +12,7 @@ from .nobility import *
 from .sophont import *
 from .remarks import *
 from .stellar import *
+from .sectortagging import *
 from .world import *
 from .region import *
 from .border import *

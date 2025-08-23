@@ -62,6 +62,7 @@ class RenderContext(object):
 
     def __init__(
             self,
+            universe: cartographer.AbstractUniverse,
             graphics: cartographer.AbstractGraphics,
             worldCenterX: float,
             worldCenterY: float,
@@ -76,6 +77,7 @@ class RenderContext(object):
             labelCache: cartographer.LabelCache,
             styleCache: cartographer.StyleCache
             ) -> None:
+        self._universe = universe
         self._graphics = graphics
         self._worldCenterX = worldCenterX
         self._worldCenterY = worldCenterY
@@ -95,9 +97,13 @@ class RenderContext(object):
         self._labelCache = labelCache
         self._styleCache = styleCache
         self._sectorCache = cartographer.SectorCache(
+            milieu=self._milieu,
+            universe=self._universe,
             graphics=self._graphics,
             styleCache=self._styleCache)
         self._worldCache = cartographer.WorldCache(
+            milieu=self._milieu,
+            universe=self._universe,
             imageCache=self._imageCache,
             capacity=RenderContext._WorldCacheCapacity)
         self._gridCache = cartographer.GridCache(
@@ -106,7 +112,8 @@ class RenderContext(object):
         self._starfieldCache = cartographer.StarfieldCache(
             graphics=self._graphics)
         self._selector = cartographer.RectSelector(
-            milieu=self._milieu)
+            milieu=self._milieu,
+            universe=self._universe)
         self._worldOutputRect = None
         self._worldViewRect = None
         self._imageSpaceToWorldSpace = None
@@ -171,8 +178,12 @@ class RenderContext(object):
             self,
             milieu: travellermap.Milieu
             ) -> None:
+        if milieu is self._milieu:
+            return
         self._milieu = milieu
-        self._selector.setMilieu(milieu=milieu)
+        self._sectorCache.setMilieu(milieu=self._milieu)
+        self._worldCache.setMilieu(milieu=self._milieu)
+        self._selector.setMilieu(milieu=self._milieu)
 
     def style(self) -> travellermap.Style:
         return self._styleSheet.style
@@ -591,10 +602,13 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
         for subsector in self._selector.subsectors():
-            if subsector.isNameGenerated():
+            name = subsector.name()
+            if not name:
                 continue
 
-            ulHex, brHex = subsector.extent()
+            index = subsector.index()
+
+            ulHex, brHex = index.hexExtent()
             left = ulHex.absoluteX() - 1
             top = ulHex.absoluteY() - 1
             right = brHex.absoluteX()
@@ -634,9 +648,7 @@ class RenderContext(object):
 
             for sector in self._selector.sectors():
                 sectorRoutes = self._sectorCache.routeLines(
-                    milieu=self._milieu,
-                    x=sector.x(),
-                    y=sector.y())
+                    index=sector.index())
                 for route in sectorRoutes:
                     routeColour = route.colour()
                     routeWidth = route.width()
@@ -783,13 +795,14 @@ class RenderContext(object):
         for sector in self._selector.sectors():
             sectorLabel = sector.sectorLabel()
 
-            if not self._styleSheet.showAllSectorNames and not sector.selected() \
+            if not self._styleSheet.showAllSectorNames and not sector.isSelected() \
                     and not sectorLabel:
                 continue
 
+            index = sector.index()
             centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
-                sector.x(),
-                sector.y(),
+                index.sectorX(),
+                index.sectorY(),
                 int(travellermap.SectorWidth // 2),
                 int(travellermap.SectorHeight // 2)))
 
@@ -1001,7 +1014,7 @@ class RenderContext(object):
 
             rect = cartographer.RectangleF()
             for world in worlds:
-                worldInfo = self._worldCache.worldInfo(world=world)
+                worldInfo = self._worldCache.worldInfo(hex=world.hex())
 
                 renderName = False
                 if renderAllNames or renderKeyNames:
@@ -1153,17 +1166,13 @@ class RenderContext(object):
 
                 for sector in self._selector.sectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
-                        milieu=self._milieu,
-                        x=sector.x(),
-                        y=sector.y())
+                        index=sector.index())
                     if worlds:
                         self._graphics.drawPoints(points=worlds, pen=pen)
 
                 for sector in self._selector.placeholderSectors(tight=True):
                     worlds = self._sectorCache.isotropicWorldPoints(
-                        milieu=self._milieu,
-                        x=sector.x(),
-                        y=sector.y())
+                        index=sector.index())
                     if worlds:
                         self._graphics.drawPoints(points=worlds, pen=pen)
 
@@ -1200,7 +1209,7 @@ class RenderContext(object):
             self._graphics.scaleTransform(scaleX=scaleX, scaleY=scaleY)
 
             for world in worlds:
-                worldInfo = self._worldCache.worldInfo(world=world)
+                worldInfo = self._worldCache.worldInfo(hex=world.hex())
                 renderName = False
                 if renderAllNames or renderKeyNames:
                     renderName = renderAllNames or worldInfo.isCapital or worldInfo.isHiPop
@@ -1481,7 +1490,7 @@ class RenderContext(object):
             self._selector.setWorldSlop(max(oldSlop, math.log2(self._scale) - 2))
             try:
                 for world in self._selector.worlds():
-                    worldInfo = self._worldCache.worldInfo(world=world)
+                    worldInfo = self._worldCache.worldInfo(hex=world.hex())
 
                     with self._graphics.save():
                         self._graphics.setSmoothingMode(
@@ -1528,9 +1537,10 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             allegiance = world.allegiance()
+            remarks = world.remarks()
 
-            droyne = allegiance == 'Dr' or allegiance == 'NaDr' or world.hasRemark('Droy')
-            chirpers = world.hasRemark('Chir')
+            droyne = allegiance == 'Dr' or allegiance == 'NaDr' or remarks.hasRemark('Droy')
+            chirpers = remarks.hasRemark('Chir')
 
             if droyne or chirpers:
                 glyph = self._styleSheet.droyneWorlds.content[0 if droyne else 1]
@@ -1547,7 +1557,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            if world.isMinorHomeworld():
+            remarks = world.remarks()
+            if remarks.isMinorHomeworld():
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.minorHomeWorlds.content,
                     font=self._styleSheet.minorHomeWorlds.font,
@@ -1561,7 +1572,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            if world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
+            remarks = world.remarks()
+            if remarks.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,
@@ -1576,10 +1588,14 @@ class RenderContext(object):
                 alpha=128,
                 colour=self._styleSheet.backgroundBrush.colour()))
             for sector in self._selector.sectors(tight=True):
-                if not sector.hasTag('Official') and not sector.hasTag('Preserve') and not sector.hasTag('InReview'):
+                tagging = sector.tagging()
+                shouldDim = \
+                    not tagging.contains(traveller.SectorTagging.Tag.Official) and \
+                    not tagging.contains(traveller.SectorTagging.Tag.Preserve) and \
+                    not tagging.contains(traveller.SectorTagging.Tag.InReview)
+                if shouldDim:
                     clipPath = self._sectorCache.clipPath(
-                        sectorX=sector.x(),
-                        sectorY=sector.y())
+                        index=sector.index())
 
                     self._graphics.drawPath(
                         path=clipPath,
@@ -1587,23 +1603,24 @@ class RenderContext(object):
 
         if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
-                if sector.hasTag('Official'):
+                tagging = sector.tagging()
+                if tagging.contains(traveller.SectorTagging.Tag.Official):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif sector.hasTag('InReview'):
+                elif tagging.contains(traveller.SectorTagging.Tag.InReview):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif sector.hasTag('Unreviewed'):
+                elif tagging.contains(traveller.SectorTagging.Tag.Unreviewed):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif sector.hasTag('Apocryphal'):
+                elif tagging.contains(traveller.SectorTagging.Tag.Apocryphal):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif sector.hasTag('Preserve'):
+                elif tagging.contains(traveller.SectorTagging.Tag.Preserve):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))
@@ -1611,8 +1628,7 @@ class RenderContext(object):
                     continue
 
                 clipPath = self._sectorCache.clipPath(
-                    sectorX=sector.x(),
-                    sectorY=sector.y())
+                    index=sector.index())
 
                 self._graphics.drawPath(
                     path=clipPath,
@@ -1689,7 +1705,7 @@ class RenderContext(object):
             y=position.y(),
             format=cartographer.TextAlignment.Centered)
 
-    def _drawStars(self, world: traveller.World) -> None:
+    def _drawStars(self, world: cartographer.AbstractWorld) -> None:
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
@@ -1805,8 +1821,7 @@ class RenderContext(object):
 
         for sector in self._selector.sectors():
             sectorClipPath = self._sectorCache.clipPath(
-                sectorX=sector.x(),
-                sectorY=sector.y())
+                index=sector.index())
             sectorClipRect = sectorClipPath.bounds()
             if drawCurvedBorders and self._scale >= 16:
                 # HACK: Inflate the sector clip bounds slightly when drawing
@@ -1857,9 +1872,7 @@ class RenderContext(object):
                 continue
 
             sectorRegions = self._sectorCache.regionPaths(
-                milieu=self._milieu,
-                x=sector.x(),
-                y=sector.y())
+                index=sector.index())
             regionOutlines: typing.List[cartographer.SectorPath] = []
             if sectorRegions and drawRegions:
                 for outline in sectorRegions:
@@ -1871,9 +1884,7 @@ class RenderContext(object):
                         regionOutlines.append(outline)
 
             sectorBorders = self._sectorCache.borderPaths(
-                milieu=self._milieu,
-                x=sector.x(),
-                y=sector.y())
+                index=sector.index())
             borderOutlines: typing.List[cartographer.SectorPath] = []
             if sectorBorders and drawBorders:
                 for outline in sectorBorders:
@@ -2254,7 +2265,7 @@ class RenderContext(object):
         'V': 0}
 
     @staticmethod
-    def _worldStarProps(world: traveller.World) -> typing.Iterable[typing.Tuple[
+    def _worldStarProps(world: cartographer.AbstractWorld) -> typing.Iterable[typing.Tuple[
             str, # Fill Colour,
             str, # Border Colour
             float]]: # Radius

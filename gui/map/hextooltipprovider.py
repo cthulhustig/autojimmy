@@ -73,7 +73,7 @@ class HexTooltipProvider(object):
             hex=hex,
             milieu=self._milieu,
             rules=self._rules,
-            hexImage=self._showImages,
+            includeHexImage=self._showImages,
             hexImageStyle=self._mapStyle,
             hexImageOptions=self._mapOptions,
             worldTagging=self._worldTagging,

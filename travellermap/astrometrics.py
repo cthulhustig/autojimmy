@@ -1,4 +1,3 @@
-import common
 import enum
 import math
 import typing
@@ -61,106 +60,6 @@ def absoluteSpaceToSectorPos(
     absoluteY = pos[1] + (ReferenceHexY - 1)
     return (absoluteX // SectorWidth, absoluteY // SectorHeight)
 
-def absoluteSpaceToMapSpace(
-        pos: typing.Tuple[int, int]
-        ) -> typing.Tuple[float, float]:
-    ix = pos[0] - 0.5
-    iy = pos[1] - 0.5 if (pos[0] % 2) == 0 else pos[1]
-    x = ix * ParsecScaleX
-    y = iy * -ParsecScaleY
-    return x, y
-
-def relativeSpaceToMapSpace(
-        pos: typing.Tuple[int, int, int, int]
-        ) -> typing.Tuple[float, float]:
-    return absoluteSpaceToMapSpace(pos=relativeSpaceToAbsoluteSpace(pos=pos))
-
-# NOTE: This function doesn't always give the results I'd expect, however
-# the behaviour does seem consistent with traveller map. If you click very
-# close to the left/right most point of a hex then it won't return the
-# absolution position of the hex you clicked in but will instead return the
-# position of the neighbour hex. This seems consistent with the Traveller Map
-# web interface (verified by hacking javascript run by _hexAt so it would
-# convert the map position for the click to the absolute position (world
-# position in traveller map parlance) then log it to the console)
-def mapSpaceToAbsoluteSpace(
-        pos: typing.Tuple[float, float]
-        ) -> typing.Tuple[int, int]:
-    x = int(round((pos[0] / ParsecScaleX) + 0.5))
-    y = int(round((-pos[1] / ParsecScaleY) + (0.5 if (x % 2 == 0) else 0)))
-    return (x, y)
-
-def mapSpaceToTileSpace(
-        pos: typing.Tuple[float, float],
-        scale: float
-        ) -> typing.Tuple[float, float]:
-    scalar = scale / TravellerMapTileSize
-    return (pos[0] * scalar, -pos[1] * scalar)
-
-def tileSpaceToMapSpace(
-        pos: typing.Tuple[float, float],
-        scale: float
-        ) -> typing.Tuple[float, float]:
-    scalar = scale / TravellerMapTileSize
-    return (pos[0] / scalar, -pos[1] / scalar)
-
-# This gets the bounding rect of a sector in world space coordinates. It's based
-# on Bounds from Traveller Map (Sector.cs) but I've updated it so it returns a
-# bounding box that contains the full extent of all hexes in the sector.
-def sectorBoundingRect(
-        sector: typing.Tuple[int, int],
-        ) -> typing.Tuple[float, float, float, float]:
-    left = (sector[0] * SectorWidth) - ReferenceHexX
-    top = (sector[1] * SectorHeight) - ReferenceHexY
-    width = SectorWidth
-    height = SectorHeight
-
-    # Adjust to completely contain all hexes in the sector
-    height += 0.5
-    left -= HexWidthOffset
-    width += HexWidthOffset * 2
-
-    return (left, top, width, height)
-
-def subsectorBoundingRect(
-        subsector: typing.Tuple[
-            int, int, # Sector x/y
-            int, int], # Subsector index x/y
-        ) -> typing.Tuple[float, float, float, float]:
-    left = ((subsector[0] * SectorWidth) - ReferenceHexX) + \
-        (subsector[2] * SubsectorWidth)
-    top = ((subsector[1] * SectorHeight) - ReferenceHexY) + \
-        (subsector[3] * SubsectorHeight)
-    width = SubsectorWidth
-    height = SubsectorHeight
-
-    # Adjust to completely contain all hexes in the sector
-    height += 0.5
-    left -= HexWidthOffset
-    width += HexWidthOffset * 2
-
-    return (left, top, width, height)
-
-# Similar to sectorBoundingRect but gets the largest world space coordinate rect
-# that can fit inside the sector without overlapping any hexes from adjacent
-# sectors. This is useful as any rect that falls completely inside this rect is
-# guaranteed to only cover this sector
-def sectorInteriorRect(
-        sector: typing.Tuple[int, int],
-        ) -> typing.Tuple[float, float, float, float]:
-    left = (sector[0] * SectorWidth) - ReferenceHexX
-    bottom = (sector[1] * SectorHeight) - ReferenceHexY
-    width = SectorWidth
-    height = SectorHeight
-
-    # Shrink to fit within the hexes of this sector
-    bottom += 0.5
-    height -= 0.5
-    left += HexWidthOffset
-    width -= (HexWidthOffset * 2)
-
-    return (left, bottom, width, height)
-
 # These are orientated visually as seen in Traveller Map
 class HexEdge(enum.Enum):
     Upper = 0
@@ -169,7 +68,6 @@ class HexEdge(enum.Enum):
     Lower = 3
     LowerLeft = 4
     UpperLeft = 5
-
 
 _OppositeEdgeTransitions = {
     HexEdge.Upper: HexEdge.Lower,
@@ -346,6 +244,159 @@ def yieldAbsoluteRadiusHexes(
             current = neighbourAbsoluteHex(current, HexEdge.LowerRight)
             yield current
 
+# NOTE: There is a LOT of code that assumes instances of this
+# class are immutable
+class SectorIndex(object):
+    def __init__(self, sectorX: int, sectorY: int) -> None:
+        self._sectorX = int(sectorX)
+        self._sectorY = int(sectorY)
+
+        self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._hexExtent: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
+        self._hash = None
+
+    def __eq__(self, other):
+        if isinstance(other, SectorIndex):
+            return self._sectorX == other._sectorX and \
+                self._sectorY == other._sectorY
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._sectorX, self._sectorY))
+        return self._hash
+
+    def __str__(self) -> str:
+        return f'{self._sectorX},{self._sectorY}'
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
+
+    def components(self) -> typing.Tuple[int, int]:
+        return (self._sectorX, self._sectorY)
+
+    def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if self._worldBounds is None:
+            left = (self._sectorX * SectorWidth) - ReferenceHexX
+            top = (self._sectorY * SectorHeight) - ReferenceHexY
+            width = SectorWidth
+            height = SectorHeight
+
+            # Adjust to completely contain all hexes in the sector
+            height += 0.5
+            left -= HexWidthOffset
+            width += HexWidthOffset * 2
+
+            self._worldBounds = (left, top, width, height)
+        return self._worldBounds
+
+    def hexExtent(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
+        if self._hexExtent is None:
+            topLeft = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=1,
+                offsetY=1)
+            bottomRight = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=SectorWidth,
+                offsetY=SectorHeight)
+            self._hexExtent = (topLeft, bottomRight)
+        return self._hexExtent
+
+# NOTE: There is a LOT of code that assumes instances of this
+# class are immutable
+class SubsectorIndex(object):
+    def __init__(self, sectorX: int, sectorY: int, code: str) -> None:
+        self._sectorX = int(sectorX)
+        self._sectorY = int(sectorY)
+        self._code = str(code).upper()
+
+        index = ord(self._code) - ord('A')
+        self._indexX = index % 4
+        self._indexY = index // 4
+
+        self._sectorIndex: typing.Optional[SectorIndex] = None
+        self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
+        self._hexExtent: typing.Optional[typing.Tuple['HexPosition', 'HexPosition']] = None
+        self._hash = None
+
+    def __eq__(self, other):
+        if isinstance(other, SubsectorIndex):
+            return self._sectorX == other._sectorX and \
+                self._sectorY == other._sectorY and \
+                self._code == other._code
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._sectorX, self._sectorY, self._code))
+        return self._hash
+
+    def __str__(self) -> str:
+        return f'{self._sectorX},{self._sectorY},{self._code}'
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
+
+    def code(self) -> str:
+        return self._code
+
+    def indexX(self) -> int:
+        return self._indexX
+
+    def indexY(self) -> int:
+        return self._indexY
+
+    def components(self) -> typing.Tuple[int, int, str]:
+        return (self._sectorX, self._sectorY, self._code)
+
+    def sectorIndex(self) -> SectorIndex:
+        if not self._sectorIndex:
+            self._sectorIndex = SectorIndex(sectorX=self._sectorX, sectorY=self._sectorY)
+        return self._sectorIndex
+
+    def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
+        if self._worldBounds is None:
+            left = ((self._sectorX * SectorWidth) - ReferenceHexX) + \
+                (self._indexX * SubsectorWidth)
+            top = ((self._sectorY * SectorHeight) - ReferenceHexY) + \
+                (self._indexY * SubsectorHeight)
+            width = SubsectorWidth
+            height = SubsectorHeight
+
+            # Adjust to completely contain all hexes in the sector
+            height += 0.5
+            left -= HexWidthOffset
+            width += HexWidthOffset * 2
+
+            self._worldBounds = (left, top, width, height)
+        return self._worldBounds
+
+    def hexExtent(self) -> typing.Tuple['HexPosition', 'HexPosition']: # (top left hex, bottom right hex)
+        if self._hexExtent is None:
+            topLeft = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=(self._indexX * SubsectorWidth) + 1,
+                offsetY=(self._indexY * SubsectorHeight) + 1)
+            bottomRight = HexPosition(
+                sectorX=self._sectorX,
+                sectorY=self._sectorY,
+                offsetX=topLeft.offsetX() + (SubsectorWidth - 1),
+                offsetY=topLeft.offsetY() + (SubsectorHeight - 1))
+            self._hexExtent = (topLeft, bottomRight)
+        return self._hexExtent
+
+# NOTE: There is a LOT of code that assumes instances of this
+# class are immutable
 class HexPosition(object):
     @typing.overload
     def __init__(self, absoluteX: int, absoluteY: int) -> None: ...
@@ -369,8 +420,11 @@ class HexPosition(object):
         else:
             raise ValueError('Invalid hex position arguments')
 
+        self._sectorIndex: typing.Optional[SectorIndex] = None
+        self._subsectorIndex: typing.Optional[SubsectorIndex] = None
         self._worldCenter: typing.Optional[typing.Tuple[float, float]] = None
-        self._mapSpace: typing.Optional[typing.Tuple[float, float]] = None
+        self._isotropicSpace: typing.Optional[typing.Tuple[float, float]] = None
+        self._hash = None
 
     def __eq__(self, other):
         if isinstance(other, HexPosition):
@@ -390,7 +444,9 @@ class HexPosition(object):
         return super().__lt__(other)
 
     def __hash__(self) -> int:
-        return hash(self.absolute())
+        if self._hash is None:
+            self._hash = hash(self.absolute())
+        return self._hash
 
     def __str__(self) -> str:
         absoluteX, absoluteY = self.absolute()
@@ -416,6 +472,25 @@ class HexPosition(object):
             self._calculateRelative()
         return (self._relative[0], self._relative[1])
 
+    def sectorIndex(self) -> SectorIndex:
+        if not self._sectorIndex:
+            sectorX, sectorY, _, _ = self.relative()
+            self._sectorIndex = SectorIndex(
+                sectorX=sectorX,
+                sectorY=sectorY)
+        return self._sectorIndex
+
+    def subsectorIndex(self) -> SubsectorIndex:
+        if not self._subsectorIndex:
+            sectorX, sectorY, offsetX, offsetY = self.relative()
+            codeX = (offsetX - 1) // SubsectorWidth
+            codeY = (offsetY - 1) // SubsectorHeight
+            self._subsectorIndex = SubsectorIndex(
+                sectorX=sectorX,
+                sectorY=sectorY,
+                code=chr(ord('A') + (codeY * 4) + codeX))
+        return self._subsectorIndex
+
     def sectorX(self) -> int:
         if not self._relative:
             self._calculateRelative()
@@ -436,21 +511,27 @@ class HexPosition(object):
             self._calculateRelative()
         return self._relative[3]
 
+    def offset(self) -> typing.Tuple[int, int]:
+        if not self._relative:
+            self._calculateRelative()
+        return (self._relative[2], self._relative[3])
+
     def relative(self) -> typing.Tuple[int, int, int, int]:
         if not self._relative:
             self._calculateRelative()
         return self._relative
 
-    # TODO: When I get rid of map rendering I should be able to get rid
-    # of this and any other map space stuff this file
-    def mapSpace(self) -> typing.Tuple[float, float]:
-        if self._mapSpace:
-            return self._mapSpace
-
-        if not self._absolute:
-            self._calculateAbsolute()
-        self._mapSpace = absoluteSpaceToMapSpace(pos=self._absolute)
-        return self._mapSpace
+    # This gets the center of the hex in an coordinate space where the x & y
+    # axis scale the same, unlike world space where they scale differently (I
+    # think the term isotropic is correct). It's my equivalent of Traveller Map
+    # 'Map Space'. It's basically identical except I don't invert the y axis.
+    def isotropicSpace(self) -> typing.Tuple[float, float]:
+        if not self._isotropicSpace:
+            worldCenter = self.worldCenter()
+            self._isotropicSpace = (
+                worldCenter[0] * ParsecScaleX,
+                worldCenter[1] * ParsecScaleY)
+        return self._isotropicSpace
 
     # Reimplementation of code from Traveller Map source code.
     # HexDistance in Astrometrics.cs

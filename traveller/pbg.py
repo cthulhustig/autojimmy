@@ -47,6 +47,9 @@ class PBG(object):
     def string(self) -> str:
         return self._string
 
+    def sanitised(self) -> str:
+        return self._sanitised
+
     def code(
             self,
             element: Element
