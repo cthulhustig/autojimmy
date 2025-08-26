@@ -227,7 +227,6 @@ class VectorObjectCache(object):
 
                 if (isStartPoint and sectionPoints) or isClosed or isLastPoint:
                     isFirstVector = not vectorObjects
-                    nextIndex = currentIndex + (0 if isStartPoint else 1)
                     vectorObjects.append(VectorObject(
                         name=name if isFirstVector else '', # Only set name on first to avoid multiple rendering
                         originX=originX,
