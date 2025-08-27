@@ -843,8 +843,7 @@ class MapWidget(QtWidgets.QWidget):
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
-        # TODO: this shouldn't be creating an Abstract object when I'm finished
-        self._universe = cartographer.AbstractUniverse()
+        self._universe = gui.MapUniverse()
         self._graphics = gui.MapGraphics()
         self._imageCache = cartographer.ImageCache(
             graphics=self._graphics)

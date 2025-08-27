@@ -268,7 +268,6 @@ class WorldManager(object):
                 includePlaceholders=False)
         return sector
 
-    # TODO: This should use the new SectorIndex class
     def sectorBySectorIndex(
             self,
             milieu: travellermap.Milieu,

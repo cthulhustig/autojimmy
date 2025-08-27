@@ -1,163 +1,89 @@
 import enum
 import cartographer
 import travellermap
+import traveller
 import typing
 
-# TODO: I think I want to do some reshuffling so this isn't needed
-# 1. Move WorldManager, World, Sector & Subsector into a new universe namespace
-#   - Probably other stuff as well (Borders, Allegiances etc)
-#   - Basically I want to get all the higher level universe related stuff into it's own namespace
-# 2. Move what is currently in the travellermap namespace into what is left of the traveller namespace
-import traveller
-
-# TODO: While I'm sorting out the interfaces these abstract classes are going to have a
-# real implementation as it will be much easier to test. Once I'm finished I'll split
-# the implementation out from the abstract classes.
-
 class AbstractWorld(object):
-    def __init__(
-            self,
-            universe: 'AbstractUniverse',
-            world: traveller.World
-            ) -> None:
-        self._universe = universe
-        self._world = world
-
     def milieu(self) -> travellermap.Milieu:
-        return self._world.milieu()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement milieu')
 
     def hex(self) -> travellermap.HexPosition:
-        return self._world.hex()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hex')
 
     def name(self) -> typing.Optional[str]:
-        return self._world.name() if not self._world.isNameGenerated() else None
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement name')
 
     def sector(self) -> 'AbstractSector':
-        return self._universe.sectorAt(
-            milieu=self._world.milieu(),
-            index=self._world.hex().sectorIndex())
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement sector')
 
     def uwp(self) -> traveller.UWP:
-        return self._world.uwp()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement uwp')
 
     def population(self) -> int:
-        return self._world.population()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement population')
 
     def zone(self) -> typing.Optional[traveller.ZoneType]:
-        return self._world.zone()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement zone')
 
     def importance(self) -> int:
-        return self._world.importance()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement importance')
 
     def isAnomaly(self) -> bool:
-        return self._world.isAnomaly()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement isAnomaly')
 
     def allegiance(self) -> str:
-        return self._world.allegiance()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement allegiance')
 
     def legacyAllegiance(self) -> typing.Optional[str]:
-        return traveller.AllegianceManager.instance().legacyCode(
-            milieu=self._world.milieu(),
-            code=self._world.allegiance())
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement legacyAllegiance')
 
     def basesAllegiance(self) -> typing.Optional[str]:
-        return traveller.AllegianceManager.instance().basesCode(
-            milieu=self._world.milieu(),
-            code=self._world.allegiance())
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement basesAllegiance')
 
     def bases(self) -> traveller.Bases:
-        return self._world.bases()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement bases')
 
     def stellar(self) -> traveller.Stellar:
-        return self._world.stellar()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement stellar')
 
     def remarks(self) -> traveller.Remarks:
-        return self._world.remarks()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement remarks')
 
     def hasWaterRefuelling(self) -> bool:
-        return self._world.hasWaterRefuelling()
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hasWaterRefuelling')
 
     def hasGasGiantRefuelling(self) -> bool:
-        return self._world.hasGasGiantRefuelling()
-
-    # NOTE: It's important that different instances of this class wrapping
-    # the same object are seen as the same. This allows the the universe
-    # implementation to discard instances of the wrapper that it doesn't
-    # need and recreate them later without worrying about caches in the
-    # renderer getting messed up
-    def __hash__(self) -> int:
-        return self._world.__hash__()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, AbstractWorld):
-            return self._world == other._world
-        return NotImplemented
+        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hasGasGiantRefuelling')
 
 class AbstractSubsector(object):
-    def __init__(
-            self,
-            universe: 'AbstractUniverse',
-            subsector: traveller.Subsector
-            ) -> None:
-        self._universe = universe
-        self._subsector = subsector
-
     def milieu(self) -> travellermap.Milieu:
-        return self._subsector.milieu()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement milieu')
 
     def index(self) -> travellermap.SubsectorIndex:
-        return self._subsector.index()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement index')
 
     def sector(self) -> 'AbstractSector':
-        return self._universe.sectorAt(
-            milieu=self._subsector.milieu(),
-            index=self._subsector.index().sectorIndex())
+        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement sector')
 
     def name(self) -> typing.Optional[str]:
-        return self._subsector.name() if not self._subsector.isNameGenerated() else None
+        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement name')
 
     def worlds(self) -> typing.Iterable[AbstractWorld]:
-        for world in self._subsector.yieldWorlds():
-            wrapper = self._universe.worldAt(
-                milieu=world.milieu(),
-                hex=world.hex())
-            if wrapper:
-                yield wrapper
+        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement worlds')
 
     def worldHexes(self) -> typing.Iterable[travellermap.HexPosition]:
-        for world in self._subsector.yieldWorlds():
-            yield world.hex()
-
-    # NOTE: It's important that different instances of this class wrapping
-    # the same object are seen as the same. This allows the the universe
-    # implementation to discard instances of the wrapper that it doesn't
-    # need and recreate them later without worrying about caches in the
-    # renderer getting messed up
-    def __hash__(self) -> int:
-        return self._subsector.__hash__()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, AbstractSubsector):
-            return self._subsector == other._subsector
-        return NotImplemented
+        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement worldHexes')
 
 class AbstractSector(object):
-    def __init__(
-            self,
-            universe: 'AbstractUniverse',
-            sector: traveller.Sector
-            ) -> None:
-        self._universe = universe
-        self._sector = sector
-
     def milieu(self) -> travellermap.Milieu:
-        return self._sector.milieu()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement milieu')
 
     def index(self) -> travellermap.SectorIndex:
-        return self._sector.index()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement index')
 
     def name(self) -> str:
-        return self._sector.name()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement name')
 
     # TODO: I really don't like this name (or the one on traveller.Sector).
     # It can't be named label as that would get confused with the other
@@ -170,101 +96,44 @@ class AbstractSector(object):
     #         aren't marked as selected. If not then I can just return the
     #         sector label instead of the name
     def sectorLabel(self) -> typing.Optional[str]:
-        return self._sector.sectorLabel()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement sectorLabel')
 
     # TODO: I really don't like the name of this function (or the equivalent
     # on traveller.Sector). It's used to specify if a sector should have its
     # name drawn when drawing sector names is set to "only selected"
     def isSelected(self) -> bool:
-        return self._sector.selected()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement isSelected')
 
     def tagging(self) -> traveller.SectorTagging:
-        return self._sector.tagging()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement tagging')
 
     def worlds(self) -> typing.Iterable[AbstractWorld]:
-        for world in self._sector.yieldWorlds():
-            wrapper = self._universe.worldAt(
-                milieu=world.milieu(),
-                hex=world.hex())
-            if wrapper:
-                yield wrapper
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement worlds')
 
     def worldHexes(self) -> typing.Iterable[travellermap.HexPosition]:
-        for world in self._sector.yieldWorlds():
-            yield world.hex()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement worldHexes')
 
     # TODO: The region, border etc functions should use abstract types
     def regions(self) -> typing.Iterable[traveller.Region]:
-        return self._sector.yieldRegions()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement regions')
 
     def borders(self) -> typing.Iterable[traveller.Border]:
-        return self._sector.yieldBorders()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement borders')
 
     def routes(self) -> typing.Iterable[traveller.Route]:
-        return self._sector.yieldRoutes()
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement routes')
 
     def labels(self) -> typing.Iterable[traveller.Label]:
-        return self._sector.yieldLabels()
-
-    # NOTE: It's important that different instances of this class wrapping
-    # the same object are seen as the same. This allows the the universe
-    # implementation to discard instances of the wrapper that it doesn't
-    # need and recreate them later without worrying about caches in the
-    # renderer getting messed up
-    def __hash__(self) -> int:
-        return self._sector.__hash__()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, AbstractSector):
-            return self._sector == other._sector
-        return NotImplemented
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement labels')
 
 class AbstractUniverse(object):
-    def __init__(self) -> None:
-        # TODO: Need to limit the number of wrappers maintained at any one time
-        self._sectorWrappers: typing.Dict[
-            travellermap.Milieu,
-            typing.Dict[
-                travellermap.SectorIndex,
-                AbstractSector]] = {}
-
-        self._subsectorWrappers: typing.Dict[
-            travellermap.Milieu,
-            typing.Dict[
-                travellermap.SubsectorIndex,
-                AbstractSubsector]] = {}
-
-        self._worldWrappers: typing.Dict[
-            travellermap.Milieu,
-            typing.Dict[
-                travellermap.HexPosition,
-                AbstractWorld]] = {}
-
     def sectorAt(
             self,
             milieu: travellermap.Milieu,
             index: travellermap.SectorIndex,
             includePlaceholders: bool = False
             ) -> typing.Optional[AbstractSector]:
-        milieuSectors = self._sectorWrappers.get(milieu)
-        if milieuSectors is not None:
-            wrapper = milieuSectors.get(index)
-            if wrapper:
-                return wrapper if includePlaceholders or wrapper.milieu() is milieu else None
-        else:
-            milieuSectors = {}
-            self._sectorWrappers[milieu] = milieuSectors
-
-        sector = traveller.WorldManager.instance().sectorBySectorIndex(
-            milieu=milieu,
-            index=index,
-            includePlaceholders=includePlaceholders)
-        if not sector:
-            return None
-
-        wrapper = AbstractSector(universe=self, sector=sector)
-        milieuSectors[index] = wrapper
-        return wrapper
+        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorAt')
 
     def worldAt(
             self,
@@ -272,25 +141,7 @@ class AbstractUniverse(object):
             hex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.Optional[AbstractWorld]:
-        milieuWorlds = self._worldWrappers.get(milieu)
-        if milieuWorlds is not None:
-            wrapper = milieuWorlds.get(hex)
-            if wrapper:
-                return wrapper if includePlaceholders or wrapper.milieu() is milieu else None
-        else:
-            milieuWorlds = {}
-            self._worldWrappers[milieu] = milieuWorlds
-
-        world = traveller.WorldManager.instance().worldByPosition(
-            milieu=milieu,
-            hex=hex,
-            includePlaceholders=includePlaceholders)
-        if not world:
-            return None
-
-        wrapper = AbstractWorld(universe=self, world=world)
-        milieuWorlds[hex] = wrapper
-        return wrapper
+        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement worldAt')
 
     def sectorsInArea(
             self,
@@ -299,25 +150,7 @@ class AbstractUniverse(object):
             lrHex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSector]:
-        milieuSectors = self._sectorWrappers.get(milieu)
-        if milieuSectors is None:
-            milieuSectors = {}
-            self._sectorWrappers[milieu] = milieuSectors
-
-        generator = traveller.WorldManager.instance().yieldSectorsInArea(
-            milieu=milieu,
-            upperLeft=ulHex,
-            lowerRight=lrHex,
-            includePlaceholders=includePlaceholders)
-        results = []
-        for sector in generator:
-            index = sector.index()
-            wrapper = milieuSectors.get(index)
-            if not wrapper:
-                wrapper = AbstractSector(universe=self, sector=sector)
-                milieuSectors[index] = wrapper
-            results.append(wrapper)
-        return results
+        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorsInArea')
 
     def subsectorsInArea(
             self,
@@ -326,25 +159,7 @@ class AbstractUniverse(object):
             lrHex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSubsector]:
-        milieuSubsectors = self._subsectorWrappers.get(milieu)
-        if milieuSubsectors is None:
-            milieuSubsectors = {}
-            self._subsectorWrappers[milieu] = milieuSubsectors
-
-        generator = traveller.WorldManager.instance().yieldSubsectorsInArea(
-            milieu=milieu,
-            upperLeft=ulHex,
-            lowerRight=lrHex,
-            includePlaceholders=includePlaceholders)
-        results = []
-        for subsector in generator:
-            index = subsector.index()
-            wrapper = milieuSubsectors.get(index)
-            if not wrapper:
-                wrapper = AbstractSubsector(universe=self, subsector=subsector)
-                milieuSubsectors[index] = wrapper
-            results.append(wrapper)
-        return results
+        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement subsectorsInArea')
 
     def worldsInArea(
             self,
@@ -353,34 +168,14 @@ class AbstractUniverse(object):
             lrHex: travellermap.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractWorld]:
-        milieuWorlds = self._worldWrappers.get(milieu)
-        if milieuWorlds is None:
-            milieuWorlds = {}
-            self._worldWrappers[milieu] = milieuWorlds
-
-        generator = traveller.WorldManager.instance().yieldWorldsInArea(
-            milieu=milieu,
-            upperLeft=ulHex,
-            lowerRight=lrHex,
-            includePlaceholders=includePlaceholders)
-        results = []
-        for world in generator:
-            hex = world.hex()
-            wrapper = milieuWorlds.get(hex)
-            if not wrapper:
-                wrapper = AbstractWorld(universe=self, world=world)
-                milieuWorlds[hex] = wrapper
-            results.append(wrapper)
-        return results
+        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement worldsInArea')
 
     def sectorHexToPosition(
             self,
             milieu: travellermap.Milieu,
             sectorHex: str
             ) -> travellermap.HexPosition:
-        return traveller.WorldManager.instance().sectorHexToPosition(
-            milieu=milieu,
-            sectorHex=sectorHex)
+        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorHexToPosition')
 
 class AbstractPointList(object):
     def points(self) -> typing.Sequence[cartographer.PointF]:
