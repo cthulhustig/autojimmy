@@ -844,24 +844,12 @@ class MapGraphics(cartographer.AbstractGraphics):
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
         newClip.addPolygon(path.qtPolygon())
-        # TODO: I don't think manually intersecting with the current clip
-        # path is needed as using IntersectClip when setting the new clip
-        # path will intersect it with the current clip path
-        currentClip = self._painter.clipPath()
-        if not currentClip.isEmpty():
-            newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     def intersectClipRect(self, rect: cartographer.RectangleF) -> None:
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
         newClip.addRect(QtCore.QRectF(*rect.rect()))
-        # TODO: I don't think manually intersecting with the current clip
-        # path is needed as using IntersectClip when setting the new clip
-        # path will intersect it with the current clip path
-        currentClip = self._painter.clipPath()
-        if not currentClip.isEmpty():
-            newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     def drawPoint(self, point: cartographer.PointF, pen: MapPen) -> None:
