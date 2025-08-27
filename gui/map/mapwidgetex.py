@@ -1891,6 +1891,10 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self._searchWidget.setFocus()
                 event.accept()
                 return
+            elif event.key() == QtCore.Qt.Key.Key_F5:
+                self._mapWidget.fullRedraw()
+                event.accept()
+                return
         elif event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier:
             if event.key() == QtCore.Qt.Key.Key_F:
                 self._searchWidget.setFocus()

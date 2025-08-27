@@ -72,6 +72,7 @@ class RenderContext(object):
             milieu: travellermap.Milieu,
             style: travellermap.Style,
             options: cartographer.RenderOptions,
+            # TODO: These aren't really caches so should probably be renamed
             imageCache: cartographer.ImageCache,
             vectorCache: cartographer.VectorObjectCache,
             labelCache: cartographer.LabelCache,
@@ -218,6 +219,12 @@ class RenderContext(object):
                 #with common.DebugTimer(string=str(layer.action)):
                 if True:
                     layer.action()
+
+    def clearCaches(self) -> None:
+        self._sectorCache.clear()
+        self._worldCache.clear()
+        self._gridCache.clear()
+        self._starfieldCache.clear()
 
     def _createLayers(self) -> None:
         self._layers: typing.List[RenderContext.LayerAction] = [

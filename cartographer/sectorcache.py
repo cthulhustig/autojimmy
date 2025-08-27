@@ -160,8 +160,7 @@ class SectorCache(object):
             return None
 
         points = []
-        for world in sector.worlds():
-            hex = world.hex()
+        for hex in sector.worldHexes():
             centerX, centerY = hex.worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
@@ -342,6 +341,13 @@ class SectorCache(object):
         path = self._graphics.createPath(points=points, closed=True)
         self._clipCache[index] = path
         return path
+
+    def clear(self) -> None:
+        self._worldsCache.clear()
+        self._borderCache.clear()
+        self._regionCache.clear()
+        self._routeCache.clear()
+        self._clipCache.clear()
 
     def _createOutline(
             self,

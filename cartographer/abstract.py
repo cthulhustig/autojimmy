@@ -14,10 +14,6 @@ import traveller
 # real implementation as it will be much easier to test. Once I'm finished I'll split
 # the implementation out from the abstract classes.
 
-# TODO: It feels like something has made map rendering a fair bit more sluggish than the
-# 0.9.3.1 release. Not sure if it was this PR or one of the previous ones. Need to look
-# into it
-
 class AbstractWorld(object):
     def __init__(
             self,
@@ -120,17 +116,17 @@ class AbstractSubsector(object):
     def name(self) -> typing.Optional[str]:
         return self._subsector.name() if not self._subsector.isNameGenerated() else None
 
-    def worlds(
-            self,
-            includePlaceholders: bool = False
-            ) -> typing.Iterable[AbstractWorld]:
+    def worlds(self) -> typing.Iterable[AbstractWorld]:
         for world in self._subsector.yieldWorlds():
             wrapper = self._universe.worldAt(
                 milieu=world.milieu(),
-                hex=world.hex(),
-                includePlaceholders=includePlaceholders)
+                hex=world.hex())
             if wrapper:
                 yield wrapper
+
+    def worldHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+        for world in self._subsector.yieldWorlds():
+            yield world.hex()
 
     # NOTE: It's important that different instances of this class wrapping
     # the same object are seen as the same. This allows the the universe
@@ -185,17 +181,17 @@ class AbstractSector(object):
     def tagging(self) -> traveller.SectorTagging:
         return self._sector.tagging()
 
-    def worlds(
-            self,
-            includePlaceholders: bool = False
-            ) -> typing.Iterable[AbstractWorld]:
+    def worlds(self) -> typing.Iterable[AbstractWorld]:
         for world in self._sector.yieldWorlds():
             wrapper = self._universe.worldAt(
                 milieu=world.milieu(),
-                hex=world.hex(),
-                includePlaceholders=includePlaceholders)
+                hex=world.hex())
             if wrapper:
                 yield wrapper
+
+    def worldHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+        for world in self._sector.yieldWorlds():
+            yield world.hex()
 
     # TODO: The region, border etc functions should use abstract types
     def regions(self) -> typing.Iterable[traveller.Region]:

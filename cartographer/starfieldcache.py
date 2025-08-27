@@ -57,3 +57,6 @@ class StarfieldCache(object):
             for _ in range(intensity):
                 points.append(point)
         return self._graphics.createPointList(points=points)
+
+    def clear(self) -> None:
+        self._starfieldCache.clear()

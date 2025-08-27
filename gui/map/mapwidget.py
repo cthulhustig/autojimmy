@@ -1123,6 +1123,11 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         self.setView(scale=scale, immediate=immediate)
 
+    def fullRedraw(self) -> None:
+        if self._renderer:
+            self._renderer.clearCaches()
+        self._clearTileCache()
+
     def hexAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]

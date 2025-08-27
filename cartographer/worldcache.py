@@ -307,3 +307,6 @@ class WorldCache(object):
                 imageCache=self._imageCache)
             self._infoCache[hex] = worldInfo
         return worldInfo
+
+    def clear(self) -> None:
+        self._infoCache.clear()

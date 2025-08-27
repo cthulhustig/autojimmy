@@ -52,3 +52,6 @@ class GridCache(object):
         grid = self._graphics.createPointList(points=points)
         self._cache[key] = grid
         return grid
+
+    def clear(self) -> None:
+        self._cache.clear()
