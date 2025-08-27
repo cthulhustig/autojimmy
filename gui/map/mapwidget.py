@@ -1599,9 +1599,10 @@ class MapWidget(QtWidgets.QWidget):
                 painter.save()
                 try:
                     if clipRect:
-                        clipPath = painter.clipPath()
+                        clipPath = QtGui.QPainterPath()
                         clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
                         clipPath.addRect(clipRect)
+                        # Add the new clip path, intersecting it with any current clip path
                         painter.setClipPath(clipPath, operation=QtCore.Qt.ClipOperation.IntersectClip)
                     else:
                         # Manually scale the image if needed as drawImage does a piss poor job.
