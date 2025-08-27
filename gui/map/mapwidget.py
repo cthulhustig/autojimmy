@@ -1596,8 +1596,7 @@ class MapWidget(QtWidgets.QWidget):
             #painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
 
             for image, renderRect, clipRect in tiles:
-                painter.save()
-                try:
+                with gui.PainterStateGuard(painter):
                     if clipRect:
                         clipPath = QtGui.QPainterPath()
                         clipPath.setFillRule(QtCore.Qt.FillRule.WindingFill)
@@ -1615,8 +1614,6 @@ class MapWidget(QtWidgets.QWidget):
                                 round(renderRect.height()))
 
                     painter.drawImage(renderRect, image)
-                finally:
-                    painter.restore()
         else:
             clipRect = None
             if viewRect != self.rect():
