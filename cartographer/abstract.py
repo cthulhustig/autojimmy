@@ -91,7 +91,7 @@ class AbstractWorld(object):
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, AbstractWorld):
             return self._world == other._world
-        return False # TODO: Should this be not implemented?
+        return NotImplemented
 
 class AbstractSubsector(object):
     def __init__(
@@ -139,7 +139,7 @@ class AbstractSubsector(object):
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, AbstractSubsector):
             return self._subsector == other._subsector
-        return False # TODO: Should this be not implemented?
+        return NotImplemented
 
 class AbstractSector(object):
     def __init__(
@@ -217,7 +217,7 @@ class AbstractSector(object):
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, AbstractSector):
             return self._sector == other._sector
-        return False # TODO: Should this be not implemented?
+        return NotImplemented
 
 class AbstractUniverse(object):
     def __init__(self) -> None:
