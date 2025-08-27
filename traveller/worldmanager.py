@@ -448,8 +448,7 @@ class WorldManager(object):
 
         if sector:
             return travellermap.HexPosition(
-                sectorX=sector.x(),
-                sectorY=sector.y(),
+                sectorIndex=sector.index(),
                 offsetX=offsetX,
                 offsetY=offsetY)
 
@@ -567,7 +566,8 @@ class WorldManager(object):
         if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
             for sector in placeholderData.sectorList:
-                sectorPos = (sector.x(), sector.y())
+                sectorIndex = sector.index()
+                sectorPos = sectorIndex.components()
                 if sectorPos not in milieuData.sectorIndexMap:
                     if not filterCallback or filterCallback(sector):
                         yield sector
@@ -618,7 +618,8 @@ class WorldManager(object):
         if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
             for sector in placeholderData.sectorList:
-                sectorPos = (sector.x(), sector.y())
+                sectorIndex = sector.index()
+                sectorPos = sectorIndex.components()
                 if sectorPos not in milieuData.sectorIndexMap:
                     for subsector in sector.yieldSubsectors():
                         if not filterCallback or filterCallback(subsector):
@@ -673,7 +674,8 @@ class WorldManager(object):
         if includePlaceholders and milieu is not WorldManager._PlaceholderMilieu:
             placeholderData = self._milieuDataMap[WorldManager._PlaceholderMilieu]
             for sector in placeholderData.sectorList:
-                sectorPos = (sector.x(), sector.y())
+                sectorIndex = sector.index()
+                sectorPos = sectorIndex.components()
                 if sectorPos not in milieuData.sectorIndexMap:
                     for world in sector.yieldWorlds():
                         if not filterCallback or filterCallback(world):
@@ -1129,9 +1131,10 @@ class WorldManager(object):
             subsectorWorlds = subsectorWorldsMap[subsectorCode]
             subsectors.append(traveller.Subsector(
                 milieu=milieu,
-                sectorX=sectorX,
-                sectorY=sectorY,
-                code=subsectorCode,
+                index=travellermap.SubsectorIndex(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    code=subsectorCode),
                 subsectorName=subsectorName,
                 isNameGenerated=isNameGenerated,
                 sectorName=sectorName,
@@ -1403,8 +1406,9 @@ class WorldManager(object):
         return traveller.Sector(
             name=sectorName,
             milieu=milieu,
-            x=sectorX,
-            y=sectorY,
+            index=travellermap.SectorIndex(
+                sectorX=sectorX,
+                sectorY=sectorY),
             alternateNames=rawMetadata.alternateNames(),
             abbreviation=rawMetadata.abbreviation(),
             sectorLabel=rawMetadata.sectorLabel(),

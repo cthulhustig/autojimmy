@@ -402,6 +402,8 @@ class HexPosition(object):
     def __init__(self, absoluteX: int, absoluteY: int) -> None: ...
     @typing.overload
     def __init__(self, sectorX: int, sectorY: int, offsetX: int, offsetY: int) -> None: ...
+    @typing.overload
+    def __init__(self, sectorIndex, offsetX: int, offsetY: int) -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         argCount = len(args) + len(kwargs)
@@ -410,6 +412,14 @@ class HexPosition(object):
             absoluteY = int(args[1] if len(args) > 1 else kwargs['absoluteY'])
             self._absolute = (absoluteX, absoluteY)
             self._relative = None
+        elif argCount == 3:
+            sectorIndex = args[0] if len(args) > 0 else kwargs['sectorIndex']
+            offsetX = int(args[1] if len(args) > 1 else kwargs['offsetX'])
+            offsetY = int(args[2] if len(args) > 2 else kwargs['offsetY'])
+            if not isinstance(sectorIndex, SectorIndex):
+                raise ValueError('The sectorIndex argument must be a SectorIndex')
+            self._relative = (sectorIndex.sectorX(), sectorIndex.sectorY(), offsetX, offsetY)
+            self._absolute = None
         elif argCount == 4:
             sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
             sectorY = int(args[1] if len(args) > 1 else kwargs['sectorY'])

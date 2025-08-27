@@ -6,55 +6,24 @@ class Subsector(object):
     def __init__(
             self,
             milieu: travellermap.Milieu,
-            sectorX: int,
-            sectorY: int,
-            code: str,
+            index: travellermap.SubsectorIndex,
             subsectorName: str,
             isNameGenerated: bool,
             sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
         self._milieu = milieu
-        self._sectorX = sectorX
-        self._sectorY = sectorY
-        self._code = code
+        self._index = index
         self._name = subsectorName
         self._isNameGenerated = isNameGenerated
         self._sectorName = sectorName
         self._worlds = list(worlds)
 
-        index = ord(code) - ord('A')
-        self._indexX = index % 4
-        self._indexY = index // 4
-        self._index = travellermap.SubsectorIndex(
-            sectorX=self._sectorX,
-            sectorY=self._sectorY,
-            code=self._code)
-
-        ulHex = travellermap.HexPosition(
-            sectorX=self._sectorX,
-            sectorY=self._sectorY,
-            offsetX=(self._indexX * travellermap.SubsectorWidth) + 1,
-            offsetY=(self._indexY * travellermap.SubsectorHeight) + 1)
-        brHex = travellermap.HexPosition(
-            sectorX=self._sectorX,
-            sectorY=self._sectorY,
-            offsetX=ulHex.offsetX() + (travellermap.SubsectorWidth - 1),
-            offsetY=ulHex.offsetY() + (travellermap.SubsectorHeight - 1))
-        self._extent = (ulHex, brHex)
-
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
 
-    # TODO: I should be able to get rid of sector x/y & code once I've finished
-    def sectorX(self) -> int:
-        return self._sectorX
-
-    def sectorY(self) -> int:
-        return self._sectorY
-
     def code(self) -> str:
-        return self._code
+        return self._index.code()
 
     def index(self) -> travellermap.SubsectorIndex:
         return self._index
@@ -68,12 +37,6 @@ class Subsector(object):
     def isNameGenerated(self) -> bool:
         return self._isNameGenerated
 
-    def indexX(self) -> int:
-        return self._indexX
-
-    def indexY(self) -> int:
-        return self._indexY
-
     def worldCount(self) -> int:
         return len(self._worlds)
 
@@ -83,11 +46,6 @@ class Subsector(object):
     def yieldWorlds(self) -> typing.Generator[traveller.World, None, None]:
         for world in self._worlds:
             yield world
-
-    def extent(self) -> typing.Tuple[
-            travellermap.HexPosition,
-            travellermap.HexPosition]:
-        return self._extent
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)
@@ -105,8 +63,7 @@ class Sector(object):
     def __init__(
             self,
             milieu: travellermap.Milieu,
-            x: int,
-            y: int,
+            index: travellermap.SubsectorIndex,
             name: str,
             alternateNames: typing.Optional[typing.Iterable[str]],
             abbreviation: typing.Optional[str],
@@ -121,9 +78,7 @@ class Sector(object):
             tags: typing.Optional[str] = None
             ) -> None:
         self._milieu = milieu
-        self._x = x
-        self._y = y
-        self._index = travellermap.SectorIndex(sectorX=self._x, sectorY=self._y)
+        self._index = index
         self._name = name
         self._alternateNames = alternateNames
         self._abbreviation = abbreviation
@@ -141,32 +96,14 @@ class Sector(object):
             Subsector] = {}
         self._worlds: typing.List[traveller.World] = []
         for subsector in subsectors:
+            subsectorIndex = subsector.index()
             self._subsectorNameMap[subsector.name()] = subsector
-            self._subsectorIndexMap[(subsector.indexX(), subsector.indexY())] = subsector
+            self._subsectorIndexMap[(subsectorIndex.indexX(), subsectorIndex.indexY())] = subsector
             for world in subsector.worlds():
                 self._worlds.append(world)
 
-        self._extent = (
-            travellermap.HexPosition(
-                sectorX=x,
-                sectorY=y,
-                offsetX=1,
-                offsetY=1),
-            travellermap.HexPosition(
-                sectorX=x,
-                sectorY=y,
-                offsetX=travellermap.SectorWidth,
-                offsetY=travellermap.SectorHeight))
-
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
-
-    # TODO: I should be able to remove the x/y functions when I'm finished
-    def x(self) -> int:
-        return self._x
-
-    def y(self) -> int:
-        return self._y
 
     def index(self) -> travellermap.SectorIndex:
         return self._index
@@ -258,9 +195,6 @@ class Sector(object):
     def yieldSubsectors(self) -> typing.Generator[Subsector, None, None]:
         for subsector in self._subsectorIndexMap.values():
             yield subsector
-
-    def extent(self) -> typing.Tuple[travellermap.HexPosition, travellermap.HexPosition]:
-        return self._extent
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)
