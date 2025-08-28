@@ -269,7 +269,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
+            mapStyle: travellermap.MapStyle,
             mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
@@ -322,7 +322,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         self._startWidget.setRules(rules=rules)
         self._finishWidget.setRules(rules=rules)
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.MapStyle) -> None:
         self._startWidget.setMapStyle(style=style)
         self._finishWidget.setMapStyle(style=style)
 
@@ -1552,7 +1552,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: travellermap.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,

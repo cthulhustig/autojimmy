@@ -23,7 +23,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
+            mapStyle: travellermap.MapStyle,
             mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
@@ -193,10 +193,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._hexTable.setRules(rules=self._rules)
 
-    def mapStyle(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.MapStyle:
         return self._mapStyle
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.MapStyle) -> None:
         if style == self._mapStyle:
             return
         self._mapStyle = style

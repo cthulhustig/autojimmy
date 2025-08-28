@@ -11,7 +11,7 @@ class _CustomTextEdit(gui.TextEditEx):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
+            mapStyle: travellermap.MapStyle,
             mapOptions: typing.Collection[travellermap.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -50,7 +50,7 @@ class _CustomTextEdit(gui.TextEditEx):
         self._rules = traveller.Rules(rules)
         self._updateContent()
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.MapStyle) -> None:
         if style is self._mapStyle:
             return
 

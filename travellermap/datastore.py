@@ -103,7 +103,7 @@ class SectorInfo(object):
             modifiedTimestamp: datetime.datetime,
             isCustomSector: bool,
             # TODO: These options should go as part of this work
-            customMapStyle: typing.Optional[travellermap.Style],
+            customMapStyle: typing.Optional[travellermap.MapStyle],
             customMapOptions: typing.Optional[typing.Iterable[travellermap.MapOption]],
             customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]
             ) -> None:
@@ -149,7 +149,7 @@ class SectorInfo(object):
     def customMapLevel(self, scale: int) -> typing.Optional[CustomMapLevel]:
         return self._customMapLevels.get(scale) if self._customMapLevels else None
 
-    def customMapStyle(self) -> typing.Optional[travellermap.Style]:
+    def customMapStyle(self) -> typing.Optional[travellermap.MapStyle]:
         return self._customMapStyle
 
     def customMapOptions(self) -> typing.Optional[typing.List[travellermap.MapOption]]:
@@ -842,7 +842,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             sectorContent: str,
             metadataContent: str,
-            customMapStyle: typing.Optional[travellermap.Style],
+            customMapStyle: typing.Optional[travellermap.MapStyle],
             customMapOptions: typing.Optional[typing.Iterable[travellermap.MapOption]],
             customMapImages: typing.Mapping[int, travellermap.MapImage]
             ) -> SectorInfo:
@@ -1282,7 +1282,7 @@ class DataStore(object):
                     customMapStyleTag = sectorElement.get('CustomMapStyle')
                     if customMapStyleTag == None:
                         raise RuntimeError('Sector has no custom map style')
-                    customMapStyle = travellermap.Style.__members__.get(str(customMapStyleTag))
+                    customMapStyle = travellermap.MapStyle.__members__.get(str(customMapStyleTag))
                     if customMapStyle == None:
                         raise RuntimeError(f'Sector has an unknown map style {str(customMapStyleTag)}')
 

@@ -1079,8 +1079,8 @@ class Config(QtCore.QObject):
             option=ConfigOption.MapStyle,
             key='TravellerMap/MapStyle',
             restart=False,
-            enumType=travellermap.Style,
-            default=travellermap.Style.Poster))
+            enumType=travellermap.MapStyle,
+            default=travellermap.MapStyle.Poster))
         self._addConfigItem(MapOptionsConfigItem(
             option=ConfigOption.MapOptions,
             section='TravellerMap',
@@ -1378,7 +1378,7 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> travellermap.Milieu: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> travellermap.Style: ...
+    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> travellermap.MapStyle: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[travellermap.MapOption]: ...
     @typing.overload

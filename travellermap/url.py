@@ -29,14 +29,14 @@ _WorldColoursOption = 0x4000
 _FilledBordersOption = 0x8000
 
 _StyleOptionMap = {
-    travellermap.Style.Poster: 'poster',
-    travellermap.Style.Print: 'print',
-    travellermap.Style.Atlas: 'atlas',
-    travellermap.Style.Candy: 'candy',
-    travellermap.Style.Draft: 'draft',
-    travellermap.Style.Fasa: 'fasa',
-    travellermap.Style.Terminal: 'terminal',
-    travellermap.Style.Mongoose: 'mongoose'
+    travellermap.MapStyle.Poster: 'poster',
+    travellermap.MapStyle.Print: 'print',
+    travellermap.MapStyle.Atlas: 'atlas',
+    travellermap.MapStyle.Candy: 'candy',
+    travellermap.MapStyle.Draft: 'draft',
+    travellermap.MapStyle.Fasa: 'fasa',
+    travellermap.MapStyle.Terminal: 'terminal',
+    travellermap.MapStyle.Mongoose: 'mongoose'
 }
 
 # NOTE: This only supports generating full sector posters from custom sector data, it doesn't
@@ -44,7 +44,7 @@ _StyleOptionMap = {
 # custom sectors as those features aren't used by the app
 def formatPosterUrl(
         baseMapUrl: str,
-        style: travellermap.Style,
+        style: travellermap.MapStyle,
         options: typing.Optional[typing.Collection[travellermap.MapOption]] = None,
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         compositing: bool = True,
@@ -72,7 +72,7 @@ def formatMetadataLintUrl(baseMapUrl: str) -> str:
 
 def _createCommonQueryList(
         milieu: typing.Optional[travellermap.Milieu] = None,
-        style: typing.Optional[travellermap.Style] = None,
+        style: typing.Optional[travellermap.MapStyle] = None,
         options: typing.Optional[typing.Collection[travellermap.MapOption]] = None,
         minimal: bool = False
         ) -> typing.List[str]:

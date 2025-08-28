@@ -70,7 +70,7 @@ class RenderContext(object):
             outputPixelX: int,
             outputPixelY: int,
             milieu: travellermap.Milieu,
-            style: travellermap.Style,
+            style: travellermap.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
             styleStore: cartographer.StyleStore,
@@ -185,12 +185,12 @@ class RenderContext(object):
         self._worldCache.setMilieu(milieu=self._milieu)
         self._selector.setMilieu(milieu=self._milieu)
 
-    def style(self) -> travellermap.Style:
+    def style(self) -> travellermap.MapStyle:
         return self._styleSheet.style
 
     def setStyle(
             self,
-            style: travellermap.Style
+            style: travellermap.MapStyle
             ) -> None:
         self._styleSheet.style = style
         self._updateLayerOrder()

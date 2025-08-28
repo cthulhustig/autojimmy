@@ -613,9 +613,9 @@ class _NewSectorDialog(gui.DialogEx):
         style = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         options = app.Config.instance().value(option=app.ConfigOption.MapOptions)
 
-        supportedStyles = [s for s in travellermap.Style if s is not travellermap.Style.Candy]
+        supportedStyles = [s for s in travellermap.MapStyle if s is not travellermap.MapStyle.Candy]
         self._renderStyleComboBox = gui.EnumComboBox(
-            type=travellermap.Style,
+            type=travellermap.MapStyle,
             value=style,
             options=supportedStyles)
 

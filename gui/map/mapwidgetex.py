@@ -106,7 +106,7 @@ class _EnumSelectActionGroup(QtWidgets.QActionGroup):
 class _MapStyleActionGroup(_EnumSelectActionGroup):
     def __init__(self, current, parent = None):
         super().__init__(
-            enumType=travellermap.Style,
+            enumType=travellermap.MapStyle,
             current=current,
             parent=parent)
 
@@ -513,7 +513,7 @@ class _InfoWidget(QtWidgets.QWidget):
 class _LegendWidget(QtWidgets.QWidget):
     def __init__(
             self,
-            style: travellermap.Style,
+            style: travellermap.MapStyle,
             options: typing.Collection[travellermap.MapOption],
             parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
@@ -548,7 +548,7 @@ class _LegendWidget(QtWidgets.QWidget):
         self.syncContent()
         self.adjustSize()
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.MapStyle) -> None:
         if style is self._style:
             return
         self._style = style
@@ -589,12 +589,12 @@ class _LegendWidget(QtWidgets.QWidget):
 
         worldGlyphSize = int(12 * gui.interfaceScale())
 
-        if self._style is travellermap.Style.Print:
+        if self._style is travellermap.MapStyle.Print:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
             noWaterFillColour = '#FFFFFF'
             noWaterOutlineColour = '#6F6F6F'
-        elif self._style is travellermap.Style.Draft:
+        elif self._style is travellermap.MapStyle.Draft:
             textStyle = 'color: #B0000000;' # Note that this is alpha blended
             backgroundStyle = 'background-color: #FAEBD7;'
             highlightColour = '#B0FF0000' # Note that this is alpha blended
@@ -606,7 +606,7 @@ class _LegendWidget(QtWidgets.QWidget):
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; text-decoration: underline;'
             capitalStyle = 'text-transform: uppercase;'
-        elif self._style is travellermap.Style.Atlas:
+        elif self._style is travellermap.MapStyle.Atlas:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
             highlightColour = '#808080'
@@ -615,7 +615,7 @@ class _LegendWidget(QtWidgets.QWidget):
             noWaterOutlineColour = '#000000'
             amberZoneColour = '#C0C0C0'
             redZoneColour = '#000000'
-        elif self._style is travellermap.Style.Mongoose:
+        elif self._style is travellermap.MapStyle.Mongoose:
             textStyle = 'color: #000000;'
             backgroundStyle = 'background-color: #E6E7E8;'
             hasWaterFillColour = '#0000CD'
@@ -625,12 +625,12 @@ class _LegendWidget(QtWidgets.QWidget):
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; font-weight: bold;'
             capitalStyle = 'text-transform: uppercase;'
-        elif self._style is travellermap.Style.Fasa:
+        elif self._style is travellermap.MapStyle.Fasa:
             textStyle = 'color: #5C4033;'
             backgroundStyle = 'background-color: #FFFFFF;'
             amberZoneColour = '#5C4033'
             redZoneColour = '#805C4033' # Note that this is alpha blended
-        elif self._style is travellermap.Style.Terminal:
+        elif self._style is travellermap.MapStyle.Terminal:
             textStyle = 'color: #00FFFF; font-family: "Courier New", "Courier", monospace;'
             hasWaterFillColour = '#000000'
             hasWaterOutlineColour = '#00FFFF'
@@ -638,7 +638,7 @@ class _LegendWidget(QtWidgets.QWidget):
 
         characteristicItems = []
         if travellermap.MapOption.WorldColours in self._options and \
-                self._style is not travellermap.Style.Atlas:
+                self._style is not travellermap.MapStyle.Atlas:
             characteristicItems.extend([
                 ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
                 ('Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#6AA84F'), ''),
@@ -674,7 +674,7 @@ class _LegendWidget(QtWidgets.QWidget):
         ]
 
         zoneItems = []
-        if self._style is travellermap.Style.Mongoose:
+        if self._style is travellermap.MapStyle.Mongoose:
             zoneItems.append(('Green Zone', '&#x25AC;', f'{largeGlyphStyle} color: {greenZoneColour};'))
         zoneItems.extend([
             ('Amber Zone', '&#x25AC;', f'{largeGlyphStyle} color: {amberZoneColour};'),
@@ -700,8 +700,8 @@ class _LegendWidget(QtWidgets.QWidget):
         if imageData:
             legendContent += f'<center><img src=data:image/png;base64,{imageData}></center>'
 
-        if self._style is not travellermap.Style.Candy and \
-                self._style is not travellermap.Style.Fasa:
+        if self._style is not travellermap.MapStyle.Candy and \
+                self._style is not travellermap.MapStyle.Fasa:
             legendContent += self._createLegendSection(
                 title='World Characteristics',
                 items=characteristicItems)
@@ -712,7 +712,7 @@ class _LegendWidget(QtWidgets.QWidget):
             title='Travel Zones',
             items=zoneItems)
 
-        if self._style is not travellermap.Style.Fasa:
+        if self._style is not travellermap.MapStyle.Fasa:
             legendContent += self._createLegendSection(
                 title='Population',
                 items=populationItems)
@@ -925,7 +925,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
 
-    mapStyleChanged = QtCore.pyqtSignal([travellermap.Style])
+    mapStyleChanged = QtCore.pyqtSignal([travellermap.MapStyle])
     mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of travellermap.Options
     mapRenderingChanged = QtCore.pyqtSignal([app.MapRendering])
     mapAnimationChanged = QtCore.pyqtSignal([bool])
@@ -957,7 +957,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
-            style: travellermap.Style,
+            style: travellermap.MapStyle,
             options: typing.Collection[travellermap.MapOption],
             rendering: app.MapRendering,
             animated: bool,
@@ -1326,10 +1326,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._infoWidget.setRules(rules=self._rules)
 
-    def mapStyle(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.MapStyle:
         return self._style
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.MapStyle) -> None:
         if style is self._style:
             return
 
@@ -2067,7 +2067,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             scale=travellermap.Scale(
                 linear=MapWidgetEx._HomeLinearScale))
 
-    def _mapStyleChanged(self, style: travellermap.Style) -> None:
+    def _mapStyleChanged(self, style: travellermap.MapStyle) -> None:
         self.setMapStyle(style=style)
 
     def _mapOptionChanged(self, option: travellermap.MapOption, enabled: bool) -> None:

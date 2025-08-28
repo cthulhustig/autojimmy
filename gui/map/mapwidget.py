@@ -789,7 +789,7 @@ class MapWidget(QtWidgets.QWidget):
             int, # Tile Y
             int,
             travellermap.Milieu,
-            travellermap.Style,
+            travellermap.MapStyle,
             int], # MapOptions as an int
         QtGui.QImage](capacity=_TileCacheSize)
 
@@ -814,7 +814,7 @@ class MapWidget(QtWidgets.QWidget):
     def __init__(
             self,
             milieu: travellermap.Milieu,
-            style: travellermap.Style,
+            style: travellermap.MapStyle,
             options: typing.Collection[travellermap.MapOption],
             rendering: app.MapRendering,
             animated: bool,
@@ -979,10 +979,10 @@ class MapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def mapStyle(self) -> travellermap.Style:
+    def mapStyle(self) -> travellermap.MapStyle:
         return self._style
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: travellermap.MapStyle) -> None:
         if style is self._style:
             return
 

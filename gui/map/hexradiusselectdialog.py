@@ -12,7 +12,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self,
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
+            mapStyle: travellermap.MapStyle,
             mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
@@ -176,7 +176,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: travellermap.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,

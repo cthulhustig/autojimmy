@@ -29,7 +29,7 @@ class PosterJobAsync(QtCore.QObject):
             mapUrl: str,
             sectorData: str,
             xmlMetadata: typing.Optional[str], # Must be XML format metadata
-            style: typing.Optional[travellermap.Style],
+            style: typing.Optional[travellermap.MapStyle],
             options: typing.Optional[typing.Iterable[travellermap.MapOption]],
             scales: typing.Iterable[typing.Union[float, int]],
             compositing: bool
