@@ -70,7 +70,7 @@ class UniverseDataFormat(object):
             return self._minor >= other._minor
         return NotImplemented
 
-
+# TODO: This shouldn't be needed when I'm finished
 class CustomMapLevel(object):
     def __init__(
             self,

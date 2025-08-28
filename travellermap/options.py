@@ -1,5 +1,8 @@
 import enum
 
+# TODO: Part of this work should probably be to consolidate this
+# version of the map options and the one used by the cartographer
+
 # NOTE: If I ever change the name of any of these enums I'll
 # need to add a mapping to the code that loads CustomMapOptions
 # from the custom universe.json format I use for custom sectors.

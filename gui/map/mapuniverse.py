@@ -5,9 +5,15 @@ import typing
 
 # TODO: I think I want to do some reshuffling so this isn't needed
 # 1. Move WorldManager, World, Sector & Subsector into a new universe namespace
-#   - Probably other stuff as well (Borders, Allegiances etc)
-#   - Basically I want to get all the higher level universe related stuff into it's own namespace
-# 2. Move what is currently in the travellermap namespace into what is left of the traveller namespace
+#   - Probably other stuff as well (Borders, Allegiances, UWP, PBG etc)
+#   - Basically everything that's used to define the universe data
+# 2. What's left in the current traveller & travellermap directories will be
+#    split between logic and a new rules directory
+#   - Stuff that is just capturing the traveller rules (berthing, refuelling etc)
+#     should go in rules
+#   - Stuff built on top of the rules and universe should go in logic
+# 3. I'm not sure where the abstract universe should live, probably outside of
+#    the cartographer (probably in the new universe directory)
 
 class MapWorld(cartographer.AbstractWorld):
     def __init__(

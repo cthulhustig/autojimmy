@@ -3,6 +3,10 @@ import travellermap
 import typing
 import urllib.parse
 
+# TODO: The majority of this should be removed as part of the current
+# work. I'll still need to format linter URLs but that could probably
+# be moved into whichever code is currently calling it
+
 TravellerMapBaseUrl = 'https://travellermap.com'
 
 _SectorGridOption = 0x0001
@@ -34,58 +38,6 @@ _StyleOptionMap = {
     travellermap.Style.Terminal: 'terminal',
     travellermap.Style.Mongoose: 'mongoose'
 }
-
-def formatMapUrl(
-        baseMapUrl: str,
-        milieu: travellermap.Milieu,
-        style: travellermap.Style,
-        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
-        mapPosition: typing.Optional[typing.Tuple[float, float]] = None,
-        linearScale: typing.Optional[float] = None, # Pixels per parsec
-        minimal: bool = False
-        ) -> str:
-    # It's important the file name doesn't start with a slash as, in the case of a file url,
-    # it will cause it to be take as the located in the root of the filesystem and any part
-    # in baseMapUrl will be deleted
-    url = urllib.parse.urljoin(baseMapUrl, 'index.html')
-
-    queryList = _createCommonQueryList(
-        milieu=milieu,
-        style=style,
-        options=options,
-        minimal=minimal)
-    if (mapPosition != None) and (linearScale != None):
-        logScale = travellermap.linearScaleToLogScale(linearScale=linearScale)
-        queryList.append(f'p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}')
-
-    if queryList:
-        url += '?' + ('&'.join(queryList))
-    return url
-
-def formatTileUrl(
-        baseMapUrl: str,
-        tilePosition: typing.Tuple[float, float],
-        milieu: travellermap.Milieu,
-        style: travellermap.Style,
-        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
-        linearScale: typing.Optional[float] = None, # Pixels per parsec
-        minimal: bool = False
-        ) -> str:
-    url = urllib.parse.urljoin(baseMapUrl, 'api/tile')
-
-    queryList = _createCommonQueryList(
-        milieu=milieu,
-        style=style,
-        options=options,
-        minimal=minimal)
-    queryList.append(f'x={tilePosition[0]:.4f}')
-    queryList.append(f'y={tilePosition[1]:.4f}')
-    if linearScale != None:
-        queryList.append('scale=' + str(linearScale))
-
-    if queryList:
-        url += '?' + ('&'.join(queryList))
-    return url
 
 # NOTE: This only supports generating full sector posters from custom sector data, it doesn't
 # support generating posters from standard sector data or subsector/quadrant posters of
@@ -240,27 +192,3 @@ def _createCommonQueryList(
         optionList.append('as=') # Empty to clear rather than 0
 
     return optionList
-
-def parsePosFromMapUrl(
-        url: str
-        ) -> typing.Optional[typing.Tuple[float, float]]:
-    paramMap = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
-    paramValues = paramMap.get('p')
-    if not paramValues:
-        return None
-    tokens = paramValues[0].split('!')
-    if len(tokens) != 3:
-        return None
-    return (float(tokens[0]), float(tokens[1]))
-
-def parseScaleFromMapUrl(
-        url: str
-        ) -> typing.Optional[float]: # Pixels per parsec
-    paramMap = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
-    paramValues = paramMap.get('p')
-    if not paramValues:
-        return None
-    tokens = paramValues[0].split('!')
-    if len(tokens) != 3:
-        return None
-    return travellermap.logScaleToLinearScale(float(tokens[2]))

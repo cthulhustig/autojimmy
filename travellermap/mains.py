@@ -3,6 +3,8 @@ import logging
 import travellermap
 import typing
 
+# TODO: I don't think any of this code is used any more
+
 class MainsFinder(object):
     # This is the value used by Traveller Map (tools\mains.js)
     _MinMainWorlds = 5
