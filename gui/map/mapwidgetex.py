@@ -1596,12 +1596,6 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._mapWidget.removeOverlay(handle=handle)
 
-    def setToolTipCallback(
-            self,
-            callback: typing.Optional[typing.Callable[[typing.Optional[travellermap.HexPosition]], typing.Optional[str]]],
-            ) -> None:
-        self._mapWidget.setToolTipCallback(callback=callback)
-
     def createPixmap(self) -> QtGui.QPixmap:
         return self._mapWidget.createPixmap()
 

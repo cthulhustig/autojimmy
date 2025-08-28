@@ -952,6 +952,22 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteJob = None
         return super().closeEvent(e)
 
+    def eventFilter(
+            self,
+            obj: typing.Optional[QtCore.QObject],
+            event: typing.Optional[QtCore.QEvent]
+            ) -> bool:
+        if obj == self._mapWidget:
+            if event.type() == QtCore.QEvent.Type.ToolTip:
+                assert(isinstance(event, QtGui.QHelpEvent))
+                toolTip = self._formatMapToolTip(self._mapWidget.hexAt(event.pos()))
+                if toolTip:
+                    QtWidgets.QToolTip.showText(event.globalPos(), toolTip)
+                    event.accept()
+                    return True
+
+        return super().eventFilter(obj, event)
+
     def _setupStartFinishControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
@@ -1333,10 +1349,9 @@ class JumpRouteWindow(gui.WindowWidget):
             animated=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
+        self._mapWidget.enableDeadSpaceSelection(routingType is logic.RoutingType.DeadSpace)
         self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._mapWidget.setToolTipCallback(self._formatMapToolTip)
-        self._mapWidget.enableDeadSpaceSelection(
-            enable=routingType is logic.RoutingType.DeadSpace)
+        self._mapWidget.installEventFilter(self)
         self._mapWidget.customContextMenuRequested.connect(self._showTravellerMapContextMenu)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
@@ -2069,12 +2084,12 @@ class JumpRouteWindow(gui.WindowWidget):
 
                     tonsOfFuel = pitStop.tonsOfFuel()
                     if tonsOfFuel:
-                        toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
+                        toolTip += '<li><nobr>Refuelling Amount: {} tons</nobr></li>'.format(
                             common.formatNumber(number=tonsOfFuel.value()))
 
                     fuelCost = pitStop.fuelCost()
                     if fuelCost:
-                        toolTip += '<li><nobr>Fuel Cost: Cr{}</nobr></li>'.format(
+                        toolTip += '<li><nobr>Refuelling Cost: Cr{}</nobr></li>'.format(
                             common.formatNumber(number=fuelCost.value()))
 
                 berthingCost = pitStop.berthingCost()

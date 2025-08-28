@@ -933,8 +933,6 @@ class MapWidget(QtWidgets.QWidget):
             enabled=travellermap.Option.MainsOverlay in self._options)
         self._overlayMap[self._mainsOverlay.handle()] = self._mainsOverlay
 
-        self._toolTipCallback = None
-
         # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
         # objects for the entire app so need to create them when needed
         # (which means creating the animations when needed) and make sure
@@ -956,8 +954,6 @@ class MapWidget(QtWidgets.QWidget):
         self._keyboardMovementTimer.setInterval(MapWidget._KeyboardMovementTimerMs)
         self._keyboardMovementTimer.setSingleShot(False)
         self._keyboardMovementTimer.timeout.connect(self._handleKeyboardMovementTimer)
-
-        self.installEventFilter(self)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
@@ -1311,14 +1307,6 @@ class MapWidget(QtWidgets.QWidget):
         del self._overlayMap[handle]
         self.update() # Trigger redraw
 
-    # TODO: When I finally remove WebMapWidget I should rework how tooltips
-    # are handled to make them more Qt like
-    def setToolTipCallback(
-            self,
-            callback: typing.Optional[typing.Callable[[typing.Optional[travellermap.HexPosition]], typing.Optional[str]]],
-            ) -> None:
-        self._toolTipCallback = callback
-
     def createPixmap(self) -> QtGui.QPixmap:
         image = QtGui.QPixmap(self.size())
 
@@ -1357,14 +1345,6 @@ class MapWidget(QtWidgets.QWidget):
         scale = travellermap.Scale(log=stream.readFloat())
         self._updateView(center=center, scale=scale)
         return True
-
-    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
-        if obj is self and event.type() == QtCore.QEvent.Type.ToolTip:
-            assert(isinstance(event, QtGui.QHelpEvent))
-            hex = self._pixelSpaceToHex(event.pos())
-            text = self._toolTipCallback(hex) if self._toolTipCallback else ''
-            self.setToolTip(text)
-        return super().eventFilter(obj, event)
 
     # I've disabled doing a full redraw on first show as it's to slow at some
     # scales so causes windows that contain the widget to display all white
