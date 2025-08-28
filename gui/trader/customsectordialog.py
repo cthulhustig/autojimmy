@@ -103,9 +103,6 @@ _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
 # compositing more seamless
 _BitmapCustomMapScales = [128, 64, 32, 16, 4]
 
-# TODO: This should go away as part of these changes
-_TravellerMapUrl = 'https://www.travellermap.com'
-
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
 class _PosterJobDialog(QtWidgets.QDialog):
@@ -851,7 +848,7 @@ class _NewSectorDialog(gui.DialogEx):
         try:
             posterJob = jobs.PosterJobAsync(
                 parent=self,
-                mapUrl=_TravellerMapUrl,
+                mapUrl=travellermap.TravellerMapBaseUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata, # Poster API always uses XML metadata
                 style=renderStyle,
@@ -945,7 +942,7 @@ class _NewSectorDialog(gui.DialogEx):
 
             lintJob = jobs.LintJobAsync(
                 parent=self,
-                mapUrl=_TravellerMapUrl,
+                mapUrl=travellermap.TravellerMapBaseUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata)
             progressDlg = _LintJobDialog(
