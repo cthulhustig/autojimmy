@@ -72,11 +72,10 @@ class RenderContext(object):
             milieu: travellermap.Milieu,
             style: travellermap.Style,
             options: cartographer.RenderOptions,
-            # TODO: These aren't really caches so should probably be renamed
-            imageCache: cartographer.ImageCache,
-            vectorCache: cartographer.VectorObjectCache,
-            labelCache: cartographer.LabelCache,
-            styleCache: cartographer.StyleCache
+            imageStore: cartographer.ImageStore,
+            styleStore: cartographer.StyleStore,
+            vectorStore: cartographer.VectorStore,
+            labelStore: cartographer.LabelStore
             ) -> None:
         self._universe = universe
         self._graphics = graphics
@@ -93,19 +92,19 @@ class RenderContext(object):
             options=self._options,
             style=style,
             graphics=self._graphics)
-        self._imageCache = imageCache
-        self._vectorCache = vectorCache
-        self._labelCache = labelCache
-        self._styleCache = styleCache
+        self._imageStore = imageStore
+        self._styleStore = styleStore
+        self._vectorStore = vectorStore
+        self._labelStore = labelStore
         self._sectorCache = cartographer.SectorCache(
             milieu=self._milieu,
             universe=self._universe,
             graphics=self._graphics,
-            styleCache=self._styleCache)
+            styleStore=self._styleStore)
         self._worldCache = cartographer.WorldCache(
             milieu=self._milieu,
             universe=self._universe,
-            imageCache=self._imageCache,
+            imageStore=self._imageStore,
             capacity=RenderContext._WorldCacheCapacity)
         self._gridCache = cartographer.GridCache(
             graphics=self._graphics,
@@ -383,7 +382,7 @@ class RenderContext(object):
                     width=nebulaWidth,
                     height=nebulaHeight)
                 self._graphics.drawImage(
-                    image=self._imageCache.nebulaImage,
+                    image=self._imageStore.nebulaImage,
                     rect=rect)
 
     def _drawGalaxyBackground(self) -> None:
@@ -393,9 +392,9 @@ class RenderContext(object):
         if self._styleSheet.deepBackgroundOpacity > 0 and \
                 self._galaxyImageRect.intersects(self._worldViewRect):
             galaxyImage = \
-                self._imageCache.galaxyImageGray \
+                self._imageStore.galaxyImageGray \
                 if self._styleSheet.lightBackground else \
-                self._imageCache.galaxyImage
+                self._imageStore.galaxyImage
             self._graphics.drawImageAlpha(
                 self._styleSheet.deepBackgroundOpacity,
                 galaxyImage,
@@ -452,28 +451,28 @@ class RenderContext(object):
                 self._riftImageRect.intersects(self._worldViewRect):
             self._graphics.drawImageAlpha(
                 alpha=self._styleSheet.riftOpacity,
-                image=self._imageCache.riftImage,
+                image=self._imageStore.riftImage,
                 rect=self._riftImageRect)
 
     def _drawMacroBorders(self) -> None:
-        if not self._styleSheet.macroBorders.visible:
+        if not self._vectorStore or not self._styleSheet.macroBorders.visible:
             return
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
-        for vectorObject in self._vectorCache.borders:
+        for vectorObject in self._vectorStore.borders:
             if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
                     vectorObject=vectorObject,
                     pen=self._styleSheet.macroBorders.linePen)
 
     def _drawMacroRoutes(self) -> None:
-        if not self._styleSheet.macroRoutes.visible:
+        if not self._vectorStore or not self._styleSheet.macroRoutes.visible:
             return
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
-        for vectorObject in self._vectorCache.routes:
+        for vectorObject in self._vectorStore.routes:
             if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.BordersMask) != 0:
                 self._drawVectorObjectOutline(
                     vectorObject=vectorObject,
@@ -671,7 +670,7 @@ class RenderContext(object):
                     if not routeWidth or not routeColour or not routeStyle:
                         precedence = [route.allegiance(), route.type(), 'Im']
                         for key in precedence:
-                            defaultColour, defaultStyle, defaultWidth = self._styleCache.routeStyle(key)
+                            defaultColour, defaultStyle, defaultWidth = self._styleStore.routeStyle(key)
                             if not routeColour:
                                 routeColour = defaultColour
                             if not routeStyle:
@@ -827,44 +826,46 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        for vectorObject in self._vectorCache.borders:
-            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
-                continue
-            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-            labelStyle = cartographer.LabelStyle(uppercase=major)
-            font = \
-                self._styleSheet.macroNames.font \
-                if major else \
-                self._styleSheet.macroNames.smallFont
-            brush = \
-                self._styleSheet.macroNames.textBrush \
-                if major else \
-                self._styleSheet.macroNames.textHighlightBrush
-            self._drawVectorObjectName(
-                vectorObject=vectorObject,
-                font=font,
-                textBrush=brush,
-                labelStyle=labelStyle)
+        if self._vectorStore:
+            for vectorObject in self._vectorStore.borders:
+                if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
+                    continue
+                major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
+                labelStyle = cartographer.LabelStyle(uppercase=major)
+                font = \
+                    self._styleSheet.macroNames.font \
+                    if major else \
+                    self._styleSheet.macroNames.smallFont
+                brush = \
+                    self._styleSheet.macroNames.textBrush \
+                    if major else \
+                    self._styleSheet.macroNames.textHighlightBrush
+                self._drawVectorObjectName(
+                    vectorObject=vectorObject,
+                    font=font,
+                    textBrush=brush,
+                    labelStyle=labelStyle)
 
-        for vectorObject in self._vectorCache.rifts:
-            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-            labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
-            font = \
-                self._styleSheet.macroNames.font \
-                if major else \
-                self._styleSheet.macroNames.smallFont
-            brush = \
-                self._styleSheet.macroNames.textBrush \
-                if major else \
-                self._styleSheet.macroNames.textHighlightBrush
-            self._drawVectorObjectName(
-                vectorObject=vectorObject,
-                font=font,
-                textBrush=brush,
-                labelStyle=labelStyle)
+        if self._vectorStore:
+            for vectorObject in self._vectorStore.rifts:
+                major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
+                labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
+                font = \
+                    self._styleSheet.macroNames.font \
+                    if major else \
+                    self._styleSheet.macroNames.smallFont
+                brush = \
+                    self._styleSheet.macroNames.textBrush \
+                    if major else \
+                    self._styleSheet.macroNames.textHighlightBrush
+                self._drawVectorObjectName(
+                    vectorObject=vectorObject,
+                    font=font,
+                    textBrush=brush,
+                    labelStyle=labelStyle)
 
-        if self._styleSheet.macroRoutes.visible:
-            for vectorObject in self._vectorCache.routes:
+        if self._vectorStore and self._styleSheet.macroRoutes.visible:
+            for vectorObject in self._vectorStore.routes:
                 if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
                     continue
                 major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
@@ -883,8 +884,8 @@ class RenderContext(object):
                     textBrush=brush,
                     labelStyle=labelStyle)
 
-        if (self._options & cartographer.RenderOptions.NamesMinor) != 0:
-            for label in self._labelCache.minorLabels:
+        if self._labelStore and (self._options & cartographer.RenderOptions.NamesMinor) != 0:
+            for label in self._labelStore.minorLabels:
                 font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
                     self._styleSheet.macroRoutes.textBrush \
@@ -902,8 +903,8 @@ class RenderContext(object):
                         y=label.position.y() * travellermap.ParsecScaleY)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
-        if (not self._styleSheet.capitals.visible) or \
-                ((self._options & cartographer.RenderOptions.WorldsMask) == 0):
+        if not self._labelStore or not self._styleSheet.capitals.visible or \
+            (self._options & cartographer.RenderOptions.WorldsMask) == 0:
             return
 
         dotPen = self._graphics.createPen(
@@ -920,7 +921,7 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.HighQuality)
-            for worldLabel in self._labelCache.worldLabels:
+            for worldLabel in self._labelStore.worldLabels:
                 if (worldLabel.options & self._options) == 0:
                     continue
 
@@ -968,12 +969,12 @@ class RenderContext(object):
                         format=format)
 
     def _drawMegaLabels(self) -> None:
-        if not self._styleSheet.megaNames.visible:
+        if not self._labelStore or not self._styleSheet.megaNames.visible:
             return
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
-        for label in self._labelCache.megaLabels:
+        for label in self._labelStore.megaLabels:
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.scaleTransform(

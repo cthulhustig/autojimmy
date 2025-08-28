@@ -1,7 +1,6 @@
 import common
 import logging
 import cartographer
-import traveller
 import travellermap
 import typing
 import xml.etree.ElementTree
@@ -32,7 +31,7 @@ class WorldLabel(object):
         self.biasX = biasX
         self.biasY = biasY
 
-class LabelCache(object):
+class LabelStore(object):
     _MinorLabelsPath = 'labels/minor_labels.tab'
     _MajorLabelsPath = 'labels/mega_labels.tab'
     _WorldLabelPath = 'labels/Worlds.xml'
@@ -48,13 +47,13 @@ class LabelCache(object):
         self._universe = universe
         self.minorLabels = self._parseMapLabels(
             travellermap.DataStore.instance().loadTextResource(
-                filePath=LabelCache._MinorLabelsPath))
+                filePath=LabelStore._MinorLabelsPath))
         self.megaLabels = self._parseMapLabels(
             travellermap.DataStore.instance().loadTextResource(
-                filePath=LabelCache._MajorLabelsPath))
+                filePath=LabelStore._MajorLabelsPath))
         self.worldLabels = self._parseWorldLabels(
             travellermap.DataStore.instance().loadTextResource(
-                filePath=LabelCache._WorldLabelPath))
+                filePath=LabelStore._WorldLabelPath))
 
     def _parseMapLabels(self, content: str) -> typing.List[MapLabel]:
         _, rows = travellermap.parseTabContent(content=content)
@@ -97,7 +96,7 @@ class LabelCache(object):
                 if hex is None:
                     raise RuntimeError('Location element has no Hex attribute')
                 location = self._universe.sectorHexToPosition(
-                    milieu=LabelCache._SectorHexMilieu,
+                    milieu=LabelStore._SectorHexMilieu,
                     sectorHex=f'{sector} {hex}')
                 centerX, centerY = location.worldCenter()
                 location = cartographer.PointF(x=centerX, y=centerY)

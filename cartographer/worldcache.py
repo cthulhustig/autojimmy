@@ -44,7 +44,7 @@ class WorldInfo(object):
     def __init__(
             self,
             world: cartographer.AbstractWorld,
-            imageCache: cartographer.ImageCache
+            imageCache: cartographer.ImageStore
             ) -> None:
         self.name = world.name() if world.name() else ''
         self.upperName = self.name.upper()
@@ -256,7 +256,7 @@ class WorldInfo(object):
     @staticmethod
     def _calcWorldImage(
             world: cartographer.AbstractWorld,
-            images: cartographer.ImageCache
+            images: cartographer.ImageStore
             ) -> cartographer.AbstractImage:
         uwp = world.uwp()
         size = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
@@ -272,12 +272,12 @@ class WorldCache(object):
             self,
             milieu: travellermap.Milieu,
             universe: cartographer.AbstractUniverse,
-            imageCache: cartographer.ImageCache,
+            imageStore: cartographer.ImageStore,
             capacity: int
             ) -> None:
         self._milieu = milieu
         self._universe = universe
-        self._imageCache = imageCache
+        self._imageStore = imageStore
         self._infoCache = common.LRUCache[
             travellermap.HexPosition,
             WorldInfo](capacity=capacity)
@@ -304,7 +304,7 @@ class WorldCache(object):
                 return None
             worldInfo = WorldInfo(
                 world=world,
-                imageCache=self._imageCache)
+                imageCache=self._imageStore)
             self._infoCache[hex] = worldInfo
         return worldInfo
 

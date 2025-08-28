@@ -3,7 +3,7 @@ import re
 import travellermap
 import typing
 
-class StyleCache(object):
+class StyleStore(object):
     _BorderPattern = re.compile(r'border\.(\w+)')
     _RoutePattern = re.compile(r'route\.(\w+)')
 
@@ -20,24 +20,24 @@ class StyleCache(object):
 
         content = travellermap.readCssContent(
             travellermap.DataStore.instance().loadTextResource(
-                filePath=StyleCache._DefaultStylePath))
+                filePath=StyleStore._DefaultStylePath))
         for group, properties in content.items():
-            match = StyleCache._BorderPattern.match(group)
+            match = StyleStore._BorderPattern.match(group)
             if match:
                 key = match.group(1)
                 colour = properties.get('color')
                 style = properties.get('style')
                 if style:
-                    style = StyleCache._StyleMap.get(style.lower())
+                    style = StyleStore._StyleMap.get(style.lower())
                 self._borderStyles[key] = (colour, style)
 
-            match = StyleCache._RoutePattern.match(group)
+            match = StyleStore._RoutePattern.match(group)
             if match:
                 key = match.group(1)
                 colour = properties.get('color')
                 style = properties.get('style')
                 if style:
-                    style = StyleCache._StyleMap.get(style.lower())
+                    style = StyleStore._StyleMap.get(style.lower())
                 width = properties.get('width')
                 if width:
                     width = float(width)

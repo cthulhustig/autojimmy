@@ -74,7 +74,7 @@ class VectorObject(object):
 # unconnected polygons. To simplify rendering I split these so a single file
 # can result in multiple vector objects, each of which represents a single
 # polygon.
-class VectorObjectCache(object):
+class VectorStore(object):
     _BorderFiles = [
         'vectors/Imperium.xml',
         'vectors/Aslan.xml',
@@ -109,9 +109,9 @@ class VectorObjectCache(object):
             graphics: cartographer.AbstractGraphics
             ) -> None:
         self._graphics = graphics
-        self.borders = self._loadFiles(VectorObjectCache._BorderFiles)
-        self.rifts = self._loadFiles(VectorObjectCache._RiftFiles)
-        self.routes = self._loadFiles(VectorObjectCache._RouteFiles)
+        self.borders = self._loadFiles(VectorStore._BorderFiles)
+        self.rifts = self._loadFiles(VectorStore._RiftFiles)
+        self.routes = self._loadFiles(VectorStore._RouteFiles)
 
     def _loadFiles(
             self,
@@ -216,11 +216,11 @@ class VectorObjectCache(object):
             vectorObjects = []
 
             for currentIndex, (point, type) in enumerate(zip(points, types)):
-                isStartPoint = (type & VectorObjectCache._PointTypeMask) == \
-                    VectorObjectCache._PointTypeStart
+                isStartPoint = (type & VectorStore._PointTypeMask) == \
+                    VectorStore._PointTypeStart
                 isLastPoint = currentIndex == finishIndex
-                isClosed = (type & VectorObjectCache._PointTypeCloseSubpath) == \
-                    VectorObjectCache._PointTypeCloseSubpath
+                isClosed = (type & VectorStore._PointTypeCloseSubpath) == \
+                    VectorStore._PointTypeCloseSubpath
 
                 if isClosed or isLastPoint:
                     sectionPoints.append(point)

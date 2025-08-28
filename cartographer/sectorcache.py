@@ -105,12 +105,12 @@ class SectorCache(object):
             milieu: travellermap.Milieu,
             universe: cartographer.AbstractUniverse,
             graphics: cartographer.AbstractGraphics,
-            styleCache: cartographer.StyleCache
+            styleStore: cartographer.StyleStore
             ) -> None:
         self._milieu = milieu
         self._universe = universe
         self._graphics = graphics
-        self._styleCache = styleCache
+        self._styleStore = styleStore
         self._worldsCache: typing.Dict[
             travellermap.SectorIndex,
             cartographer.AbstractPointList
@@ -365,7 +365,7 @@ class SectorCache(object):
                 style = cartographer.LineStyle.Dot
 
             if not colour or not style:
-                defaultColour, defaultStyle = self._styleCache.borderStyle(source.allegiance())
+                defaultColour, defaultStyle = self._styleStore.borderStyle(source.allegiance())
                 if not colour:
                     colour = defaultColour
                 if not style:

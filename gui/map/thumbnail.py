@@ -7,10 +7,10 @@ from PyQt5 import QtCore, QtGui
 _thumbnailRenderInitialised = False
 _thumbnailUniverse: typing.Optional[gui.MapUniverse] = None
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
-_thumbnailImageCache: typing.Optional[cartographer.ImageCache] = None
-_thumbnailVectorCache: typing.Optional[cartographer.VectorObjectCache] = None
-_thumbnailLabelCache: typing.Optional[cartographer.LabelCache] = None
-_thumbnailStyleCache: typing.Optional[cartographer.StyleCache] = None
+_thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
+_thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
+_thumbnailLabelCache: typing.Optional[cartographer.LabelStore] = None
+_thumbnailStyleCache: typing.Optional[cartographer.StyleStore] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
@@ -26,10 +26,10 @@ def _initThumbnailRenderer():
 
     _thumbnailUniverse = gui.MapUniverse()
     _thumbnailGraphics = gui.MapGraphics()
-    _thumbnailImageCache = cartographer.ImageCache(graphics=_thumbnailGraphics)
-    _thumbnailVectorCache = cartographer.VectorObjectCache(graphics=_thumbnailGraphics)
-    _thumbnailLabelCache = cartographer.LabelCache(universe=_thumbnailUniverse)
-    _thumbnailStyleCache = cartographer.StyleCache()
+    _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
+    _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
+    _thumbnailLabelCache = cartographer.LabelStore(universe=_thumbnailUniverse)
+    _thumbnailStyleCache = cartographer.StyleStore()
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
@@ -57,10 +57,10 @@ def generateThumbnail(
         milieu=milieu,
         style=style,
         options=cartographer.mapOptionsToRenderOptions(options),
-        imageCache=_thumbnailImageCache,
-        vectorCache=_thumbnailVectorCache,
-        labelCache=_thumbnailLabelCache,
-        styleCache=_thumbnailStyleCache)
+        imageStore=_thumbnailImageCache,
+        styleStore=_thumbnailStyleCache,
+        vectorStore=_thumbnailVectorCache,
+        labelStore=_thumbnailLabelCache)
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
     painter = QtGui.QPainter()

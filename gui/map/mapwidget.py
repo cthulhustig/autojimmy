@@ -845,13 +845,13 @@ class MapWidget(QtWidgets.QWidget):
 
         self._universe = gui.MapUniverse()
         self._graphics = gui.MapGraphics()
-        self._imageCache = cartographer.ImageCache(
+        self._imageCache = cartographer.ImageStore(
             graphics=self._graphics)
-        self._vectorCache = cartographer.VectorObjectCache(
+        self._vectorCache = cartographer.VectorStore(
             graphics=self._graphics)
-        self._labelCache = cartographer.LabelCache(
+        self._labelCache = cartographer.LabelStore(
             universe=self._universe)
-        self._styleCache = cartographer.StyleCache()
+        self._styleCache = cartographer.StyleStore()
         self._renderer = self._newRenderer()
 
         self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
@@ -1843,10 +1843,10 @@ class MapWidget(QtWidgets.QWidget):
             milieu=self._milieu,
             style=self._style,
             options=cartographer.mapOptionsToRenderOptions(self._options),
-            imageCache=self._imageCache,
-            vectorCache=self._vectorCache,
-            labelCache=self._labelCache,
-            styleCache=self._styleCache)
+            imageStore=self._imageCache,
+            styleStore=self._styleCache,
+            vectorStore=self._vectorCache,
+            labelStore=self._labelCache)
 
     def _updateView(
             self,

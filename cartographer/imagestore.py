@@ -2,7 +2,7 @@ import cartographer
 import travellermap
 import typing
 
-class ImageCache(object):
+class ImageStore(object):
     def __init__(
             self,
             graphics: cartographer.AbstractGraphics

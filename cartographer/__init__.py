@@ -3,10 +3,10 @@ from .utils import *
 from .glyphs import *
 from .abstract import *
 from .selector import *
-from .imagecache import *
-from .labelcache import *
-from .vectorobjectcache import *
-from .stylecache import *
+from .imagestore import *
+from .labelstore import *
+from .vectorstore import *
+from .stylestore import *
 from .sectorcache import *
 from .worldcache import *
 from .gridcache import *
