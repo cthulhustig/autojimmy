@@ -182,7 +182,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -245,7 +245,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def setMapStyle(self, style: travellermap.Style) -> None:
         self._hexWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Iterable[travellermap.MapOption]) -> None:
         self._hexWidget.setMapOptions(options=options)
 
     def setMapRendering(self, rendering: app.MapRendering) -> None:
@@ -828,7 +828,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[travellermap.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

@@ -12,7 +12,7 @@ class HexSelectDialog(gui.DialogEx):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: logic.WorldTagging,
@@ -151,7 +151,7 @@ class HexSelectDialog(gui.DialogEx):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[travellermap.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

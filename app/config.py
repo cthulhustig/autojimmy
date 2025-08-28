@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import darkdetect
 import enum
@@ -391,28 +392,28 @@ class ColourConfigItem(StringConfigItem):
 
 class MapOptionsConfigItem(ConfigItem):
     _MapOptionToSettingsKey = {
-        travellermap.Option.GalacticDirections: '/GalacticDirections',
-        travellermap.Option.SectorGrid: '/SectorGrid',
-        travellermap.Option.SelectedSectorNames: '/SelectedSectorNames',
-        travellermap.Option.SectorNames: '/AllSectorNames',
-        travellermap.Option.Borders: '/Borders',
-        travellermap.Option.Routes: '/Routes',
-        travellermap.Option.RegionNames: '/RegionNames',
-        travellermap.Option.ImportantWorlds: '/ImportantWorlds',
-        travellermap.Option.WorldColours: '/WorldColours',
-        travellermap.Option.FilledBorders: '/FilledBorders',
-        travellermap.Option.DimUnofficial: '/DimUnofficial',
-        travellermap.Option.ImportanceOverlay: '/ImportanceOverlay',
-        travellermap.Option.PopulationOverlay: '/PopulationOverlay',
-        travellermap.Option.CapitalsOverlay: '/CapitalsOverlay',
-        travellermap.Option.MinorRaceOverlay: '/MinorRaceOverlay',
-        travellermap.Option.DroyneWorldOverlay: '/DroyneWorldOverlay',
-        travellermap.Option.AncientSitesOverlay: '/AncientSitesOverlay',
-        travellermap.Option.StellarOverlay: '/StellarOverlay',
-        travellermap.Option.EmpressWaveOverlay: '/EmpressWaveOverlay',
-        travellermap.Option.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
-        travellermap.Option.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
-        travellermap.Option.MainsOverlay: '/MainsOverlay'
+        travellermap.MapOption.GalacticDirections: '/GalacticDirections',
+        travellermap.MapOption.SectorGrid: '/SectorGrid',
+        travellermap.MapOption.SelectedSectorNames: '/SelectedSectorNames',
+        travellermap.MapOption.SectorNames: '/AllSectorNames',
+        travellermap.MapOption.Borders: '/Borders',
+        travellermap.MapOption.Routes: '/Routes',
+        travellermap.MapOption.RegionNames: '/RegionNames',
+        travellermap.MapOption.ImportantWorlds: '/ImportantWorlds',
+        travellermap.MapOption.WorldColours: '/WorldColours',
+        travellermap.MapOption.FilledBorders: '/FilledBorders',
+        travellermap.MapOption.DimUnofficial: '/DimUnofficial',
+        travellermap.MapOption.ImportanceOverlay: '/ImportanceOverlay',
+        travellermap.MapOption.PopulationOverlay: '/PopulationOverlay',
+        travellermap.MapOption.CapitalsOverlay: '/CapitalsOverlay',
+        travellermap.MapOption.MinorRaceOverlay: '/MinorRaceOverlay',
+        travellermap.MapOption.DroyneWorldOverlay: '/DroyneWorldOverlay',
+        travellermap.MapOption.AncientSitesOverlay: '/AncientSitesOverlay',
+        travellermap.MapOption.StellarOverlay: '/StellarOverlay',
+        travellermap.MapOption.EmpressWaveOverlay: '/EmpressWaveOverlay',
+        travellermap.MapOption.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
+        travellermap.MapOption.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
+        travellermap.MapOption.MainsOverlay: '/MainsOverlay'
     }
 
     def __init__(
@@ -420,17 +421,17 @@ class MapOptionsConfigItem(ConfigItem):
             option: ConfigOption,
             section: str,
             restart: bool,
-            default: typing.Iterable[travellermap.Option] = None
+            default: typing.Iterable[travellermap.MapOption] = None
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
         self._default = set(default) if default else set()
         self._currentValue = self._futureValue = self._default
 
-    def value(self, futureValue: bool = False) -> typing.Iterable[travellermap.Option]:
+    def value(self, futureValue: bool = False) -> typing.Iterable[travellermap.MapOption]:
         return list(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: typing.Iterable[travellermap.Option]) -> None:
+    def setValue(self, value: typing.Iterable[travellermap.MapOption]) -> None:
         if value == self._futureValue:
             return
 
@@ -1085,14 +1086,14 @@ class Config(QtCore.QObject):
             section='TravellerMap',
             restart=False,
             default=[
-                travellermap.Option.GalacticDirections,
-                travellermap.Option.SectorGrid,
-                travellermap.Option.SelectedSectorNames,
-                travellermap.Option.Borders,
-                travellermap.Option.Routes,
-                travellermap.Option.RegionNames,
-                travellermap.Option.ImportantWorlds,
-                travellermap.Option.FilledBorders]))
+                travellermap.MapOption.GalacticDirections,
+                travellermap.MapOption.SectorGrid,
+                travellermap.MapOption.SelectedSectorNames,
+                travellermap.MapOption.Borders,
+                travellermap.MapOption.Routes,
+                travellermap.MapOption.RegionNames,
+                travellermap.MapOption.ImportantWorlds,
+                travellermap.MapOption.FilledBorders]))
 
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapRendering,
@@ -1379,7 +1380,7 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> travellermap.Style: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[travellermap.Option]: ...
+    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[travellermap.MapOption]: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapRendering], futureValue: bool = False) -> MapRendering: ...
     @typing.overload

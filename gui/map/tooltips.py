@@ -18,7 +18,7 @@ def createHexToolTip(
         taggingColours: typing.Optional[app.TaggingColours] = None,
         includeHexImage: bool = True,
         hexImageStyle: typing.Optional[travellermap.Style] = None,
-        hexImageOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
+        hexImageOptions: typing.Optional[typing.Collection[travellermap.MapOption]] = None
         ) -> str:
     world = traveller.WorldManager.instance().worldByPosition(
         milieu=milieu,

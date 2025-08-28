@@ -111,11 +111,11 @@ class _MapStyleActionGroup(_EnumSelectActionGroup):
             parent=parent)
 
 class _MapOptionAction(QtWidgets.QAction):
-    optionChanged = QtCore.pyqtSignal([travellermap.Option, bool])
+    optionChanged = QtCore.pyqtSignal([travellermap.MapOption, bool])
 
     def __init__(
             self,
-            option: travellermap.Option,
+            option: travellermap.MapOption,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(option.value, parent)
@@ -137,12 +137,12 @@ class _MapOptionAction(QtWidgets.QAction):
         self.optionChanged.emit(self._option, checked)
 
 class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
-    optionChanged = QtCore.pyqtSignal([travellermap.Option, bool])
+    optionChanged = QtCore.pyqtSignal([travellermap.MapOption, bool])
 
     def __init__(
             self,
-            options: typing.Iterable[travellermap.Option],
-            current: travellermap.Option,
+            options: typing.Iterable[travellermap.MapOption],
+            current: travellermap.MapOption,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -157,7 +157,7 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.setExclusionPolicy(
                 QtWidgets.QActionGroup.ExclusionPolicy.ExclusiveOptional)
 
-        self._optionActions: typing.Dict[travellermap.Option, _MapOptionAction] = {}
+        self._optionActions: typing.Dict[travellermap.MapOption, _MapOptionAction] = {}
         for option in options:
             action = _MapOptionAction(option=option)
             action.setChecked(option is current)
@@ -165,13 +165,13 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.addAction(action)
             self._optionActions[option] = action
 
-    def setSelection(self, option: typing.Optional[travellermap.Option]) -> None:
+    def setSelection(self, option: typing.Optional[travellermap.MapOption]) -> None:
         for actionOption, action in self._optionActions.items():
             action.setChecked(option is actionOption)
 
     def _optionChanged(
             self,
-            option: travellermap.Option,
+            option: travellermap.MapOption,
             checked: bool
             ) -> None:
         self.optionChanged.emit(option, checked)
@@ -514,7 +514,7 @@ class _LegendWidget(QtWidgets.QWidget):
     def __init__(
             self,
             style: travellermap.Style,
-            options: typing.Collection[travellermap.Option],
+            options: typing.Collection[travellermap.MapOption],
             parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -554,7 +554,7 @@ class _LegendWidget(QtWidgets.QWidget):
         self._style = style
         self.syncContent()
 
-    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -637,7 +637,7 @@ class _LegendWidget(QtWidgets.QWidget):
             noWaterFillColour = '#00FFFF'
 
         characteristicItems = []
-        if travellermap.Option.WorldColours in self._options and \
+        if travellermap.MapOption.WorldColours in self._options and \
                 self._style is not travellermap.Style.Atlas:
             characteristicItems.extend([
                 ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
@@ -958,7 +958,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             style: travellermap.Style,
-            options: typing.Collection[travellermap.Option],
+            options: typing.Collection[travellermap.MapOption],
             rendering: app.MapRendering,
             animated: bool,
             worldTagging: logic.WorldTagging,
@@ -1115,28 +1115,28 @@ class MapWidgetEx(QtWidgets.QWidget):
         featuresConfigLayout = _ConfigSectionLayout()
 
         self._galacticDirectionsAction = _MapOptionAction(
-                option=travellermap.Option.GalacticDirections)
+                option=travellermap.MapOption.GalacticDirections)
         self._galacticDirectionsAction.setChecked(
-            travellermap.Option.GalacticDirections in self._options)
+            travellermap.MapOption.GalacticDirections in self._options)
         self._galacticDirectionsAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._galacticDirectionsAction)
 
         self._sectorGridAction = _MapOptionAction(
-            option=travellermap.Option.SectorGrid)
+            option=travellermap.MapOption.SectorGrid)
         self._sectorGridAction.setChecked(
-            travellermap.Option.SectorGrid in self._options)
+            travellermap.MapOption.SectorGrid in self._options)
         self._sectorGridAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._sectorGridAction)
 
         currentNames = None
-        if travellermap.Option.SelectedSectorNames in self._options:
-            currentNames = travellermap.Option.SelectedSectorNames
-        elif travellermap.Option.SectorNames in self._options:
-            currentNames = travellermap.Option.SectorNames
+        if travellermap.MapOption.SelectedSectorNames in self._options:
+            currentNames = travellermap.MapOption.SelectedSectorNames
+        elif travellermap.MapOption.SectorNames in self._options:
+            currentNames = travellermap.MapOption.SectorNames
         self._sectorNamesActionGroup = _ExclusiveMapOptionsActionGroup(
             options=[
-                travellermap.Option.SelectedSectorNames,
-                travellermap.Option.SectorNames],
+                travellermap.MapOption.SelectedSectorNames,
+                travellermap.MapOption.SectorNames],
             current=currentNames)
         self._sectorNamesActionGroup.optionChanged.connect(self._mapOptionChanged)
         sectorNamesLayout = _ConfigSectionLayout()
@@ -1147,30 +1147,30 @@ class MapWidgetEx(QtWidgets.QWidget):
             sectorNamesLayout.rowCount(), 0, 1, 2)
 
         self._bordersAction = _MapOptionAction(
-            option=travellermap.Option.Borders)
+            option=travellermap.MapOption.Borders)
         self._bordersAction.setChecked(
-            travellermap.Option.Borders in self._options)
+            travellermap.MapOption.Borders in self._options)
         self._bordersAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._bordersAction)
 
         self._routesAction = _MapOptionAction(
-            option=travellermap.Option.Routes)
+            option=travellermap.MapOption.Routes)
         self._routesAction.setChecked(
-            travellermap.Option.Routes in self._options)
+            travellermap.MapOption.Routes in self._options)
         self._routesAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._routesAction)
 
         self._regionNamesAction = _MapOptionAction(
-            option=travellermap.Option.RegionNames)
+            option=travellermap.MapOption.RegionNames)
         self._regionNamesAction.setChecked(
-            travellermap.Option.RegionNames in self._options)
+            travellermap.MapOption.RegionNames in self._options)
         self._regionNamesAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._regionNamesAction)
 
         self._importantWorldsAction = _MapOptionAction(
-            option=travellermap.Option.ImportantWorlds)
+            option=travellermap.MapOption.ImportantWorlds)
         self._importantWorldsAction.setChecked(
-            travellermap.Option.ImportantWorlds in self._options)
+            travellermap.MapOption.ImportantWorlds in self._options)
         self._importantWorldsAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._importantWorldsAction)
 
@@ -1184,23 +1184,23 @@ class MapWidgetEx(QtWidgets.QWidget):
         appearanceConfigLayout = _ConfigSectionLayout()
 
         self._worldColoursAction = _MapOptionAction(
-            option=travellermap.Option.WorldColours)
+            option=travellermap.MapOption.WorldColours)
         self._worldColoursAction.setChecked(
-            travellermap.Option.WorldColours in self._options)
+            travellermap.MapOption.WorldColours in self._options)
         self._worldColoursAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._worldColoursAction)
 
         self._filledBordersAction = _MapOptionAction(
-            option=travellermap.Option.FilledBorders)
+            option=travellermap.MapOption.FilledBorders)
         self._filledBordersAction.setChecked(
-            travellermap.Option.FilledBorders in self._options)
+            travellermap.MapOption.FilledBorders in self._options)
         self._filledBordersAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._filledBordersAction)
 
         self._dimUnofficialAction = _MapOptionAction(
-            option=travellermap.Option.DimUnofficial)
+            option=travellermap.MapOption.DimUnofficial)
         self._dimUnofficialAction.setChecked(
-            travellermap.Option.DimUnofficial in self._options)
+            travellermap.MapOption.DimUnofficial in self._options)
         self._dimUnofficialAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._dimUnofficialAction)
 
@@ -1214,79 +1214,79 @@ class MapWidgetEx(QtWidgets.QWidget):
         overlayConfigLayout = _ConfigSectionLayout()
 
         self._mainsOverlayAction = _MapOptionAction(
-            option=travellermap.Option.MainsOverlay)
+            option=travellermap.MapOption.MainsOverlay)
         self._mainsOverlayAction.setChecked(
-            travellermap.Option.MainsOverlay in self._options)
+            travellermap.MapOption.MainsOverlay in self._options)
         self._mainsOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._mainsOverlayAction)
 
         self._importanceOverlayAction = _MapOptionAction(
-            option=travellermap.Option.ImportanceOverlay)
+            option=travellermap.MapOption.ImportanceOverlay)
         self._importanceOverlayAction.setChecked(
-            travellermap.Option.ImportanceOverlay in self._options)
+            travellermap.MapOption.ImportanceOverlay in self._options)
         self._importanceOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._importanceOverlayAction)
 
         self._populationOverlayAction = _MapOptionAction(
-            option=travellermap.Option.PopulationOverlay)
+            option=travellermap.MapOption.PopulationOverlay)
         self._populationOverlayAction.setChecked(
-            travellermap.Option.PopulationOverlay in self._options)
+            travellermap.MapOption.PopulationOverlay in self._options)
         self._populationOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._populationOverlayAction)
 
         self._capitalsOverlayAction = _MapOptionAction(
-            option=travellermap.Option.CapitalsOverlay)
+            option=travellermap.MapOption.CapitalsOverlay)
         self._capitalsOverlayAction.setChecked(
-            travellermap.Option.CapitalsOverlay in self._options)
+            travellermap.MapOption.CapitalsOverlay in self._options)
         self._capitalsOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._capitalsOverlayAction)
 
         self._minorRaceOverlayAction = _MapOptionAction(
-            option=travellermap.Option.MinorRaceOverlay)
+            option=travellermap.MapOption.MinorRaceOverlay)
         self._minorRaceOverlayAction.setChecked(
-            travellermap.Option.MinorRaceOverlay in self._options)
+            travellermap.MapOption.MinorRaceOverlay in self._options)
         self._minorRaceOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._minorRaceOverlayAction)
 
         self._droyneWorldOverlayAction = _MapOptionAction(
-            option=travellermap.Option.DroyneWorldOverlay)
+            option=travellermap.MapOption.DroyneWorldOverlay)
         self._droyneWorldOverlayAction.setChecked(
-            travellermap.Option.DroyneWorldOverlay in self._options)
+            travellermap.MapOption.DroyneWorldOverlay in self._options)
         self._droyneWorldOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._droyneWorldOverlayAction)
 
         self._ancientSitesOverlayAction = _MapOptionAction(
-            option=travellermap.Option.AncientSitesOverlay)
+            option=travellermap.MapOption.AncientSitesOverlay)
         self._ancientSitesOverlayAction.setChecked(
-            travellermap.Option.AncientSitesOverlay in self._options)
+            travellermap.MapOption.AncientSitesOverlay in self._options)
         self._ancientSitesOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._ancientSitesOverlayAction)
 
         self._stellarOverlayAction = _MapOptionAction(
-            option=travellermap.Option.StellarOverlay)
+            option=travellermap.MapOption.StellarOverlay)
         self._stellarOverlayAction.setChecked(
-            travellermap.Option.StellarOverlay in self._options)
+            travellermap.MapOption.StellarOverlay in self._options)
         self._stellarOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._stellarOverlayAction)
 
         self._empressWaveOverlayAction = _MapOptionAction(
-            option=travellermap.Option.EmpressWaveOverlay)
+            option=travellermap.MapOption.EmpressWaveOverlay)
         self._empressWaveOverlayAction.setChecked(
-            travellermap.Option.EmpressWaveOverlay in self._options)
+            travellermap.MapOption.EmpressWaveOverlay in self._options)
         self._empressWaveOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._empressWaveOverlayAction)
 
         self._qrekrshaZoneOverlayAction = _MapOptionAction(
-            option=travellermap.Option.QrekrshaZoneOverlay)
+            option=travellermap.MapOption.QrekrshaZoneOverlay)
         self._qrekrshaZoneOverlayAction.setChecked(
-            travellermap.Option.QrekrshaZoneOverlay in self._options)
+            travellermap.MapOption.QrekrshaZoneOverlay in self._options)
         self._qrekrshaZoneOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._qrekrshaZoneOverlayAction)
 
         self._antaresSupernovaOverlayAction = _MapOptionAction(
-            option=travellermap.Option.AntaresSupernovaOverlay)
+            option=travellermap.MapOption.AntaresSupernovaOverlay)
         self._antaresSupernovaOverlayAction.setChecked(
-            travellermap.Option.AntaresSupernovaOverlay in self._options)
+            travellermap.MapOption.AntaresSupernovaOverlay in self._options)
         self._antaresSupernovaOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._antaresSupernovaOverlayAction)
 
@@ -1340,10 +1340,10 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self.mapStyleChanged.emit(self._style)
 
-    def mapOptions(self) -> typing.List[travellermap.Option]:
+    def mapOptions(self) -> typing.List[travellermap.MapOption]:
         return list(self._options)
 
-    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1352,51 +1352,51 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._mapWidget.setMapOptions(options=self._options)
         self._legendWidget.setMapOptions(options=self._options)
         self._galacticDirectionsAction.setChecked(
-            travellermap.Option.GalacticDirections in self._options)
+            travellermap.MapOption.GalacticDirections in self._options)
         self._sectorGridAction.setChecked(
-            travellermap.Option.SectorGrid in self._options)
-        if travellermap.Option.SelectedSectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(travellermap.Option.SelectedSectorNames)
-        elif travellermap.Option.SectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(travellermap.Option.SectorNames)
+            travellermap.MapOption.SectorGrid in self._options)
+        if travellermap.MapOption.SelectedSectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(travellermap.MapOption.SelectedSectorNames)
+        elif travellermap.MapOption.SectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(travellermap.MapOption.SectorNames)
         else:
             self._sectorNamesActionGroup.setSelection(None)
         self._bordersAction.setChecked(
-            travellermap.Option.Borders in self._options)
+            travellermap.MapOption.Borders in self._options)
         self._routesAction.setChecked(
-            travellermap.Option.Routes in self._options)
+            travellermap.MapOption.Routes in self._options)
         self._regionNamesAction.setChecked(
-            travellermap.Option.RegionNames in self._options)
+            travellermap.MapOption.RegionNames in self._options)
         self._importantWorldsAction.setChecked(
-            travellermap.Option.ImportantWorlds in self._options)
+            travellermap.MapOption.ImportantWorlds in self._options)
         self._worldColoursAction.setChecked(
-            travellermap.Option.WorldColours in self._options)
+            travellermap.MapOption.WorldColours in self._options)
         self._filledBordersAction.setChecked(
-            travellermap.Option.FilledBorders in self._options)
+            travellermap.MapOption.FilledBorders in self._options)
         self._dimUnofficialAction.setChecked(
-            travellermap.Option.DimUnofficial in self._options)
+            travellermap.MapOption.DimUnofficial in self._options)
         self._mainsOverlayAction.setChecked(
-            travellermap.Option.MainsOverlay in self._options)
+            travellermap.MapOption.MainsOverlay in self._options)
         self._importanceOverlayAction.setChecked(
-            travellermap.Option.ImportanceOverlay in self._options)
+            travellermap.MapOption.ImportanceOverlay in self._options)
         self._populationOverlayAction.setChecked(
-            travellermap.Option.PopulationOverlay in self._options)
+            travellermap.MapOption.PopulationOverlay in self._options)
         self._capitalsOverlayAction.setChecked(
-            travellermap.Option.CapitalsOverlay in self._options)
+            travellermap.MapOption.CapitalsOverlay in self._options)
         self._minorRaceOverlayAction.setChecked(
-            travellermap.Option.MinorRaceOverlay in self._options)
+            travellermap.MapOption.MinorRaceOverlay in self._options)
         self._droyneWorldOverlayAction.setChecked(
-            travellermap.Option.DroyneWorldOverlay in self._options)
+            travellermap.MapOption.DroyneWorldOverlay in self._options)
         self._ancientSitesOverlayAction.setChecked(
-            travellermap.Option.AncientSitesOverlay in self._options)
+            travellermap.MapOption.AncientSitesOverlay in self._options)
         self._stellarOverlayAction.setChecked(
-            travellermap.Option.StellarOverlay in self._options)
+            travellermap.MapOption.StellarOverlay in self._options)
         self._empressWaveOverlayAction.setChecked(
-            travellermap.Option.EmpressWaveOverlay in self._options)
+            travellermap.MapOption.EmpressWaveOverlay in self._options)
         self._qrekrshaZoneOverlayAction.setChecked(
-            travellermap.Option.QrekrshaZoneOverlay in self._options)
+            travellermap.MapOption.QrekrshaZoneOverlay in self._options)
         self._antaresSupernovaOverlayAction.setChecked(
-            travellermap.Option.AntaresSupernovaOverlay in self._options)
+            travellermap.MapOption.AntaresSupernovaOverlay in self._options)
 
         self.mapOptionsChanged.emit(self._options)
 
@@ -2070,7 +2070,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     def _mapStyleChanged(self, style: travellermap.Style) -> None:
         self.setMapStyle(style=style)
 
-    def _mapOptionChanged(self, option: travellermap.Option, enabled: bool) -> None:
+    def _mapOptionChanged(self, option: travellermap.MapOption, enabled: bool) -> None:
         if (enabled and option in self._options) or (not enabled and option not in self._options):
             return
 

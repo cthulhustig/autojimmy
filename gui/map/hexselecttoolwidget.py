@@ -28,7 +28,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -127,10 +127,10 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             return
         self._mapStyle = style
 
-    def mapOptions(self) -> typing.Iterable[travellermap.Option]:
+    def mapOptions(self) -> typing.Iterable[travellermap.MapOption]:
         return list(self._mapStyle)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Iterable[travellermap.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return

@@ -270,7 +270,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapOptions: typing.Iterable[travellermap.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -326,7 +326,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         self._startWidget.setMapStyle(style=style)
         self._finishWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Iterable[travellermap.MapOption]) -> None:
         self._startWidget.setMapOptions(options=options)
         self._finishWidget.setMapOptions(options=options)
 
@@ -1560,7 +1560,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[travellermap.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

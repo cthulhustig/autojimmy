@@ -23,29 +23,29 @@ def makeAlphaColour(
 
 
 _MapOptionsToRenderOptions: typing.Dict[
-    travellermap.Option,
+    travellermap.MapOption,
     cartographer.RenderOptions
     ] = {
-        travellermap.Option.SectorGrid: cartographer.RenderOptions.GridMask,
-        travellermap.Option.SelectedSectorNames: cartographer.RenderOptions.SectorsSelected,
-        travellermap.Option.SectorNames: cartographer.RenderOptions.SectorsAll,
-        travellermap.Option.Borders: cartographer.RenderOptions.BordersMask,
-        travellermap.Option.Routes: cartographer.RenderOptions.RoutesMask,
-        travellermap.Option.RegionNames: cartographer.RenderOptions.NamesMask,
-        travellermap.Option.ImportantWorlds: cartographer.RenderOptions.WorldsMask,
-        travellermap.Option.WorldColours: cartographer.RenderOptions.WorldColours,
-        travellermap.Option.FilledBorders: cartographer.RenderOptions.FilledBorders,
-        travellermap.Option.DimUnofficial: cartographer.RenderOptions.DimUnofficial,
-        travellermap.Option.ImportanceOverlay: cartographer.RenderOptions.ImportanceOverlay,
-        travellermap.Option.PopulationOverlay: cartographer.RenderOptions.PopulationOverlay,
-        travellermap.Option.CapitalsOverlay: cartographer.RenderOptions.CapitalOverlay,
-        travellermap.Option.MinorRaceOverlay: cartographer.RenderOptions.MinorHomeWorlds,
-        travellermap.Option.DroyneWorldOverlay: cartographer.RenderOptions.DroyneWorlds,
-        travellermap.Option.AncientSitesOverlay: cartographer.RenderOptions.AncientWorlds,
-        travellermap.Option.StellarOverlay: cartographer.RenderOptions.StellarOverlay
+        travellermap.MapOption.SectorGrid: cartographer.RenderOptions.GridMask,
+        travellermap.MapOption.SelectedSectorNames: cartographer.RenderOptions.SectorsSelected,
+        travellermap.MapOption.SectorNames: cartographer.RenderOptions.SectorsAll,
+        travellermap.MapOption.Borders: cartographer.RenderOptions.BordersMask,
+        travellermap.MapOption.Routes: cartographer.RenderOptions.RoutesMask,
+        travellermap.MapOption.RegionNames: cartographer.RenderOptions.NamesMask,
+        travellermap.MapOption.ImportantWorlds: cartographer.RenderOptions.WorldsMask,
+        travellermap.MapOption.WorldColours: cartographer.RenderOptions.WorldColours,
+        travellermap.MapOption.FilledBorders: cartographer.RenderOptions.FilledBorders,
+        travellermap.MapOption.DimUnofficial: cartographer.RenderOptions.DimUnofficial,
+        travellermap.MapOption.ImportanceOverlay: cartographer.RenderOptions.ImportanceOverlay,
+        travellermap.MapOption.PopulationOverlay: cartographer.RenderOptions.PopulationOverlay,
+        travellermap.MapOption.CapitalsOverlay: cartographer.RenderOptions.CapitalOverlay,
+        travellermap.MapOption.MinorRaceOverlay: cartographer.RenderOptions.MinorHomeWorlds,
+        travellermap.MapOption.DroyneWorldOverlay: cartographer.RenderOptions.DroyneWorlds,
+        travellermap.MapOption.AncientSitesOverlay: cartographer.RenderOptions.AncientWorlds,
+        travellermap.MapOption.StellarOverlay: cartographer.RenderOptions.StellarOverlay
     }
 def mapOptionsToRenderOptions(
-        mapOptions: typing.Iterable[travellermap.Option],
+        mapOptions: typing.Iterable[travellermap.MapOption],
         ) -> cartographer.RenderOptions:
     renderOptions = 0
     for option in mapOptions:

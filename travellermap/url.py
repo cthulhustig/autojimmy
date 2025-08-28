@@ -45,7 +45,7 @@ _StyleOptionMap = {
 def formatPosterUrl(
         baseMapUrl: str,
         style: travellermap.Style,
-        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
+        options: typing.Optional[typing.Collection[travellermap.MapOption]] = None,
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         compositing: bool = True,
         minimal: bool = False
@@ -73,7 +73,7 @@ def formatMetadataLintUrl(baseMapUrl: str) -> str:
 def _createCommonQueryList(
         milieu: typing.Optional[travellermap.Milieu] = None,
         style: typing.Optional[travellermap.Style] = None,
-        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
+        options: typing.Optional[typing.Collection[travellermap.MapOption]] = None,
         minimal: bool = False
         ) -> typing.List[str]:
     optionList = []
@@ -88,105 +88,105 @@ def _createCommonQueryList(
         options = []
 
     optionBitMask = _ForceHexesOption # Always enabled
-    if travellermap.Option.SectorGrid in options:
+    if travellermap.MapOption.SectorGrid in options:
         optionBitMask |= _GridMaskOption
 
-    if travellermap.Option.SectorNames in options:
+    if travellermap.MapOption.SectorNames in options:
         optionBitMask |= _SectorsAllOption
-    elif travellermap.Option.SelectedSectorNames in options:
+    elif travellermap.MapOption.SelectedSectorNames in options:
         optionBitMask |= _SectorsSelectedOption
 
-    if travellermap.Option.Borders in options:
+    if travellermap.MapOption.Borders in options:
         optionBitMask |= _BordersMaskOption
 
-    if travellermap.Option.RegionNames in options:
+    if travellermap.MapOption.RegionNames in options:
         optionBitMask |= _NamesMaskOption
 
-    if travellermap.Option.ImportantWorlds in options:
+    if travellermap.MapOption.ImportantWorlds in options:
         optionBitMask |= _WorldsMaskOption
 
-    if travellermap.Option.WorldColours in options:
+    if travellermap.MapOption.WorldColours in options:
         optionBitMask |= _WorldColoursOption
 
-    if travellermap.Option.FilledBorders in options:
+    if travellermap.MapOption.FilledBorders in options:
         optionBitMask |= _FilledBordersOption
 
     optionList.append('options=' + str(optionBitMask)) # Always add this as ForcedHexes is always set
 
-    if travellermap.Option.HideUI in options:
+    if travellermap.MapOption.HideUI in options:
         optionList.append('hideui=1')
     elif not minimal:
         optionList.append('hideui=0')
 
     # Galactic directors are on by default so this logic is different to most other options
-    if travellermap.Option.GalacticDirections not in options:
+    if travellermap.MapOption.GalacticDirections not in options:
         optionList.append('galdir=0')
     elif not minimal:
         optionList.append('galdir=1')
 
     # Routes are on by default so this logic is different to most other options
-    if travellermap.Option.Routes not in options:
+    if travellermap.MapOption.Routes not in options:
         optionList.append('routes=0')
     elif not minimal:
         optionList.append('routes=1')
 
-    if travellermap.Option.DimUnofficial in options:
+    if travellermap.MapOption.DimUnofficial in options:
         optionList.append('dimunofficial=1')
     elif not minimal:
         optionList.append('dimunofficial=0')
 
-    if travellermap.Option.ImportanceOverlay in options:
+    if travellermap.MapOption.ImportanceOverlay in options:
         optionList.append('im=1')
     elif not minimal:
         optionList.append('im=0')
 
-    if travellermap.Option.PopulationOverlay in options:
+    if travellermap.MapOption.PopulationOverlay in options:
         optionList.append('po=1')
     elif not minimal:
         optionList.append('po=0')
 
-    if travellermap.Option.CapitalsOverlay in options:
+    if travellermap.MapOption.CapitalsOverlay in options:
         optionList.append('cp=1')
     elif not minimal:
         optionList.append('cp=0')
 
-    if travellermap.Option.MinorRaceOverlay in options:
+    if travellermap.MapOption.MinorRaceOverlay in options:
         optionList.append('mh=1')
     elif not minimal:
         optionList.append('mh=0')
 
-    if travellermap.Option.DroyneWorldOverlay in options:
+    if travellermap.MapOption.DroyneWorldOverlay in options:
         optionList.append('dw=1')
     elif not minimal:
         optionList.append('dw=0')
 
-    if travellermap.Option.AncientSitesOverlay in options:
+    if travellermap.MapOption.AncientSitesOverlay in options:
         optionList.append('an=1')
     elif not minimal:
         optionList.append('an=0')
 
-    if travellermap.Option.StellarOverlay in options:
+    if travellermap.MapOption.StellarOverlay in options:
         optionList.append('stellar=1')
     elif not minimal:
         optionList.append('stellar=0')
 
-    if travellermap.Option.MainsOverlay in options:
+    if travellermap.MapOption.MainsOverlay in options:
         optionList.append('mains=1')
     elif not minimal:
         optionList.append('mains=0')
 
     # Note that ew and qz use an empty argument to clear rather than 0
-    if travellermap.Option.EmpressWaveOverlay in options:
+    if travellermap.MapOption.EmpressWaveOverlay in options:
         optionList.append('ew=milieu') # Show for current milieu
     elif not minimal:
         optionList.append('ew=') # Empty to clear rather than 0
 
-    if travellermap.Option.QrekrshaZoneOverlay in options:
+    if travellermap.MapOption.QrekrshaZoneOverlay in options:
         optionList.append('qz=1')
     elif not minimal:
         optionList.append('qz=') # Empty to clear rather than 0
 
-    if travellermap.Option.AntaresSupernovaOverlay in options:
+    if travellermap.MapOption.AntaresSupernovaOverlay in options:
         optionList.append('as=milieu') # Show for current milieu
     elif not minimal:
         optionList.append('as=') # Empty to clear rather than 0

@@ -624,43 +624,43 @@ class _NewSectorDialog(gui.DialogEx):
 
         self._renderSectorGridCheckBox = gui.CheckBoxEx()
         self._renderSectorGridCheckBox.setChecked(
-            travellermap.Option.SectorGrid in options)
+            travellermap.MapOption.SectorGrid in options)
 
         renderSectorNames = None
-        if travellermap.Option.SectorNames in options:
-            renderSectorNames = travellermap.Option.SectorNames
-        elif travellermap.Option.SelectedSectorNames in options:
-            renderSectorNames = travellermap.Option.SelectedSectorNames
+        if travellermap.MapOption.SectorNames in options:
+            renderSectorNames = travellermap.MapOption.SectorNames
+        elif travellermap.MapOption.SelectedSectorNames in options:
+            renderSectorNames = travellermap.MapOption.SelectedSectorNames
         self._renderSectorNamesComboBox = gui.EnumComboBox(
-            type=travellermap.Option,
+            type=travellermap.MapOption,
             value=renderSectorNames,
             isOptional=True,
             options=[
-                travellermap.Option.SelectedSectorNames,
-                travellermap.Option.SectorNames],
+                travellermap.MapOption.SelectedSectorNames,
+                travellermap.MapOption.SectorNames],
             textMap={
-                travellermap.Option.SelectedSectorNames: 'Selected',
-                travellermap.Option.SectorNames: 'All'})
+                travellermap.MapOption.SelectedSectorNames: 'Selected',
+                travellermap.MapOption.SectorNames: 'All'})
 
         self._renderRegionNamesCheckBox = gui.CheckBoxEx()
         self._renderRegionNamesCheckBox.setChecked(
-            travellermap.Option.RegionNames in options)
+            travellermap.MapOption.RegionNames in options)
 
         self._renderBordersCheckBox = gui.CheckBoxEx()
         self._renderBordersCheckBox.setChecked(
-            travellermap.Option.Borders in options)
+            travellermap.MapOption.Borders in options)
 
         self._renderFilledBordersCheckBox = gui.CheckBoxEx()
         self._renderFilledBordersCheckBox.setChecked(
-            travellermap.Option.FilledBorders in options)
+            travellermap.MapOption.FilledBorders in options)
 
         self._renderRoutesCheckBox = gui.CheckBoxEx()
         self._renderRoutesCheckBox.setChecked(
-            travellermap.Option.Routes in options)
+            travellermap.MapOption.Routes in options)
 
         self._renderWorldColoursCheckBox = gui.CheckBoxEx()
         self._renderWorldColoursCheckBox.setChecked(
-            travellermap.Option.WorldColours in options)
+            travellermap.MapOption.WorldColours in options)
 
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
@@ -974,29 +974,29 @@ class _NewSectorDialog(gui.DialogEx):
                 results=results)
             dlg.exec()
 
-    def _renderOptionList(self) -> typing.Iterable[travellermap.Option]:
+    def _renderOptionList(self) -> typing.Iterable[travellermap.MapOption]:
         renderOptions = []
 
         if self._renderSectorGridCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.SectorGrid)
+            renderOptions.append(travellermap.MapOption.SectorGrid)
 
         if self._renderSectorNamesComboBox.currentEnum():
             renderOptions.append(self._renderSectorNamesComboBox.currentEnum())
 
         if self._renderRegionNamesCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.RegionNames)
+            renderOptions.append(travellermap.MapOption.RegionNames)
 
         if self._renderBordersCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.Borders)
+            renderOptions.append(travellermap.MapOption.Borders)
 
         if self._renderFilledBordersCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.FilledBorders)
+            renderOptions.append(travellermap.MapOption.FilledBorders)
 
         if self._renderRoutesCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.Routes)
+            renderOptions.append(travellermap.MapOption.Routes)
 
         if self._renderWorldColoursCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.WorldColours)
+            renderOptions.append(travellermap.MapOption.WorldColours)
 
         return renderOptions
 

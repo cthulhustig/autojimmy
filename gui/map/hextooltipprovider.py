@@ -12,7 +12,7 @@ class HexTooltipProvider(object):
             rules: traveller.Rules,
             showImages: bool,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Collection[travellermap.Option],
+            mapOptions: typing.Collection[travellermap.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None
             ) -> None:
@@ -50,10 +50,10 @@ class HexTooltipProvider(object):
     def setMapStyle(self, style: travellermap.Style) -> None:
         self._mapStyle = style
 
-    def mapOptions(self) -> typing.Iterable[travellermap.Option]:
+    def mapOptions(self) -> typing.Iterable[travellermap.MapOption]:
         return list(self._mapOptions)
 
-    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
         self._mapOptions = set(options)
 
     def worldTagging(self) -> typing.Optional[logic.WorldTagging]:

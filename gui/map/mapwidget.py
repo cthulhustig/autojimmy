@@ -815,7 +815,7 @@ class MapWidget(QtWidgets.QWidget):
             self,
             milieu: travellermap.Milieu,
             style: travellermap.Style,
-            options: typing.Collection[travellermap.Option],
+            options: typing.Collection[travellermap.MapOption],
             rendering: app.MapRendering,
             animated: bool,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -915,22 +915,22 @@ class MapWidget(QtWidgets.QWidget):
 
         self._empressWaveOverlay = _EmpressWaveOverlay(milieu=self._milieu)
         self._empressWaveOverlay.setEnabled(
-            enabled=travellermap.Option.EmpressWaveOverlay in self._options)
+            enabled=travellermap.MapOption.EmpressWaveOverlay in self._options)
         self._overlayMap[self._empressWaveOverlay.handle()] = self._empressWaveOverlay
 
         self._qrekrshaZoneOverlay = _QrekrshaZoneOverlay()
         self._qrekrshaZoneOverlay.setEnabled(
-            enabled=travellermap.Option.QrekrshaZoneOverlay in self._options)
+            enabled=travellermap.MapOption.QrekrshaZoneOverlay in self._options)
         self._overlayMap[self._qrekrshaZoneOverlay.handle()] = self._qrekrshaZoneOverlay
 
         self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(milieu=self._milieu)
         self._antaresSupernovaOverlay.setEnabled(
-            enabled=travellermap.Option.AntaresSupernovaOverlay in self._options)
+            enabled=travellermap.MapOption.AntaresSupernovaOverlay in self._options)
         self._overlayMap[self._antaresSupernovaOverlay.handle()] = self._antaresSupernovaOverlay
 
         self._mainsOverlay = _MainsOverlay()
         self._mainsOverlay.setEnabled(
-            enabled=travellermap.Option.MainsOverlay in self._options)
+            enabled=travellermap.MapOption.MainsOverlay in self._options)
         self._overlayMap[self._mainsOverlay.handle()] = self._mainsOverlay
 
         # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
@@ -991,10 +991,10 @@ class MapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def mapOptions(self) -> typing.List[travellermap.Option]:
+    def mapOptions(self) -> typing.List[travellermap.MapOption]:
         return list(self._options)
 
-    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1003,34 +1003,34 @@ class MapWidget(QtWidgets.QWidget):
         self._renderer = self._newRenderer()
 
         self._empressWaveOverlay.setEnabled(
-            enabled=travellermap.Option.EmpressWaveOverlay in self._options)
+            enabled=travellermap.MapOption.EmpressWaveOverlay in self._options)
         self._qrekrshaZoneOverlay.setEnabled(
-            enabled=travellermap.Option.QrekrshaZoneOverlay in self._options)
+            enabled=travellermap.MapOption.QrekrshaZoneOverlay in self._options)
         self._antaresSupernovaOverlay.setEnabled(
-            enabled=travellermap.Option.AntaresSupernovaOverlay in self._options)
+            enabled=travellermap.MapOption.AntaresSupernovaOverlay in self._options)
         self._mainsOverlay.setEnabled(
-            enabled=travellermap.Option.MainsOverlay in self._options)
+            enabled=travellermap.MapOption.MainsOverlay in self._options)
 
         self.update() # Force redraw
 
     def modifyMapOptions(
             self,
             add: typing.Optional[typing.Union[
-                travellermap.Option,
-                typing.Collection[travellermap.Option]]] = None,
+                travellermap.MapOption,
+                typing.Collection[travellermap.MapOption]]] = None,
             remove: typing.Optional[typing.Union[
-                travellermap.Option,
-                typing.Collection[travellermap.Option]]] = None
+                travellermap.MapOption,
+                typing.Collection[travellermap.MapOption]]] = None
             ) -> None:
         options = set(self._options)
 
-        if isinstance(add, travellermap.Option):
+        if isinstance(add, travellermap.MapOption):
             options.add(add)
         elif add is not None:
             for option in add:
                 options.add(option)
 
-        if isinstance(remove, travellermap.Option):
+        if isinstance(remove, travellermap.MapOption):
             if remove in options:
                 options.remove(remove)
         elif remove is not None:
@@ -1697,7 +1697,7 @@ class MapWidget(QtWidgets.QWidget):
             self,
             painter: QtGui.QPainter
             ) -> None:
-        if not self._directionTextFont or travellermap.Option.GalacticDirections not in self._options:
+        if not self._directionTextFont or travellermap.MapOption.GalacticDirections not in self._options:
             return
 
         viewWidth = self.width()
@@ -1744,7 +1744,7 @@ class MapWidget(QtWidgets.QWidget):
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
-            if travellermap.Option.MainsOverlay in self._options:
+            if travellermap.MapOption.MainsOverlay in self._options:
                 main = traveller.WorldManager.instance().mainByPosition(
                     milieu=self._milieu,
                     hex=hex)

@@ -39,7 +39,7 @@ def generateThumbnail(
         height: int,
         linearScale: float,
         style: travellermap.Style,
-        options: typing.Collection[travellermap.Option]
+        options: typing.Collection[travellermap.MapOption]
         ) -> typing.Tuple[
             typing.Optional[bytes],
             typing.Optional[travellermap.MapFormat]]:

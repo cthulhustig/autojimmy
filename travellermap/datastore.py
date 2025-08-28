@@ -104,7 +104,7 @@ class SectorInfo(object):
             isCustomSector: bool,
             # TODO: These options should go as part of this work
             customMapStyle: typing.Optional[travellermap.Style],
-            customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
+            customMapOptions: typing.Optional[typing.Iterable[travellermap.MapOption]],
             customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]
             ) -> None:
         self._canonicalName = canonicalName
@@ -152,7 +152,7 @@ class SectorInfo(object):
     def customMapStyle(self) -> typing.Optional[travellermap.Style]:
         return self._customMapStyle
 
-    def customMapOptions(self) -> typing.Optional[typing.List[travellermap.Option]]:
+    def customMapOptions(self) -> typing.Optional[typing.List[travellermap.MapOption]]:
         return self._customMapOptions.copy() if self._customMapOptions else None
 
 class SectorLookupMaps(object):
@@ -843,7 +843,7 @@ class DataStore(object):
             sectorContent: str,
             metadataContent: str,
             customMapStyle: typing.Optional[travellermap.Style],
-            customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
+            customMapOptions: typing.Optional[typing.Iterable[travellermap.MapOption]],
             customMapImages: typing.Mapping[int, travellermap.MapImage]
             ) -> SectorInfo:
         self._loadSectors(milieu=milieu)
@@ -1291,7 +1291,7 @@ class DataStore(object):
                         customMapOptions = []
                         for optionTag in customMapOptionsElement:
                             optionTag = str(optionTag)
-                            option = travellermap.Option.__members__.get(optionTag)
+                            option = travellermap.MapOption.__members__.get(optionTag)
                             if option == None:
                                 raise RuntimeError(f'Sector has unknown custom map option {optionTag}')
                             customMapOptions.append(option)

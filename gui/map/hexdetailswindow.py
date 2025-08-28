@@ -12,7 +12,7 @@ class _CustomTextEdit(gui.TextEditEx):
             milieu: travellermap.Milieu,
             rules: traveller.Rules,
             mapStyle: travellermap.Style,
-            mapOptions: typing.Collection[travellermap.Option],
+            mapOptions: typing.Collection[travellermap.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -57,7 +57,7 @@ class _CustomTextEdit(gui.TextEditEx):
         self._mapStyle = style
         self._updateContent()
 
-    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return
