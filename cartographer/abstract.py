@@ -26,9 +26,6 @@ class AbstractWorld(object):
     def zone(self) -> typing.Optional[traveller.ZoneType]:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement zone')
 
-    def importance(self) -> int:
-        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement importance')
-
     def isAnomaly(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement isAnomaly')
 

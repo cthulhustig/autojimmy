@@ -169,7 +169,7 @@ class WorldInfo(object):
             if population > 0 else \
             0
 
-        importance = world.importance()
+        importance = WorldInfo._calcImportance(world=world)
         self.isImportant = importance >= 4
         self.importanceOverlayRadius = \
             (importance - 0.5) * travellermap.ParsecScaleX \
@@ -252,6 +252,78 @@ class WorldInfo(object):
             remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
             remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
             remarks.hasRemark('Capital')
+
+    # This is based on code from Traveller Map which I believe is
+    # based on the T5.10 rules
+    @staticmethod
+    def _calcImportance(world: cartographer.AbstractWorld) -> int:
+        importance = 0
+
+        uwp = world.uwp()
+        starportCode = uwp.code(traveller.UWP.Element.StarPort)
+        techLevel = uwp.numeric(traveller.UWP.Element.TechLevel, default=0)
+        population = uwp.numeric(traveller.UWP.Element.Population, default=0)
+        atmosphere = uwp.numeric(traveller.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(traveller.UWP.Element.Hydrographics, default=-1)
+
+        if 'AB'.find(starportCode) >= 0:
+            importance += 1
+        elif 'DEX'.find(starportCode) >= 0:
+            importance -= 1
+
+        if techLevel >= 16:
+            importance += 2
+        elif techLevel >= 10:
+            importance += 1
+        elif techLevel <= 8:
+            importance -= 1
+
+        if population >= 9:
+            importance += 1
+        elif population <= 6:
+            importance -= 1
+
+        isAgricultural = \
+            (atmosphere >= 4 and atmosphere <= 9) and \
+            (hydrographics >= 4 and hydrographics <= 8) and \
+            (population >= 5 and population <= 7)
+        isRich = \
+            (atmosphere == 6 or atmosphere == 8) and \
+            (population >= 6 and population <= 8)
+        isIndustrial = \
+            ((atmosphere >= 0 and atmosphere <= 2) or \
+                (atmosphere == 4) or \
+                (atmosphere == 7) or
+                (atmosphere >= 9 and atmosphere <= 12)) and \
+            (population >= 9)
+        if isAgricultural:
+            importance += 1
+        if isRich:
+            importance += 1
+        if isIndustrial:
+            importance += 1
+
+        # NOTE: The definition of hasNavalBase intentionally doesn't include
+        # things like VargrNavalBase as Traveller Map doesn't
+        bases = world.bases()
+        hasNavalBase = bases.hasBase(traveller.BaseType.ImperialNavalBase) or \
+            bases.hasBase(traveller.BaseType.NavalBase)
+        hasOtherServiceBase = bases.hasBase(traveller.BaseType.ImperialScoutBase) or \
+            bases.hasBase(traveller.BaseType.MilitaryBase) or \
+            bases.hasBase(traveller.BaseType.ExplorationBase) or \
+            bases.hasBase(traveller.BaseType.VargrCorsairBase)
+        hasServiceSpecialBase = bases.hasBase(traveller.BaseType.WayStation) or \
+            bases.hasBase(traveller.BaseType.NavalDepot)
+        hasAslanAndTlaukhuBase = bases.hasBase(traveller.BaseType.AslanClanBase) and \
+            bases.hasBase(traveller.BaseType.AslanTlaukhuBase)
+        if hasNavalBase and hasOtherServiceBase:
+            importance += 1
+        if hasServiceSpecialBase:
+            importance += 1
+        if hasAslanAndTlaukhuBase:
+            importance += 1
+
+        return importance
 
     @staticmethod
     def _calcWorldImage(

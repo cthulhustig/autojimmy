@@ -47,9 +47,6 @@ class MapWorld(cartographer.AbstractWorld):
     def zone(self) -> typing.Optional[traveller.ZoneType]:
         return self._world.zone()
 
-    def importance(self) -> int:
-        return self._world.importance()
-
     def isAnomaly(self) -> bool:
         return self._world.isAnomaly()
 
