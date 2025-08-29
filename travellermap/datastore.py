@@ -517,10 +517,10 @@ class DataStore(object):
             ) -> int:
         self._loadSectors(milieu=milieu)
         with self._lock:
-            universe = self._universeMap[milieu]
-            if not universe:
+            universeInfo = self._universeMap[milieu]
+            if not universeInfo:
                 return 0
-            return universe.sectorCount(stockOnly=stockOnly)
+            return universeInfo.sectorCount(stockOnly=stockOnly)
 
     def sectors(
             self,
@@ -529,10 +529,10 @@ class DataStore(object):
             ) -> typing.Iterable[SectorInfo]:
         self._loadSectors(milieu=milieu)
         with self._lock:
-            universe = self._universeMap[milieu]
-            if not universe:
+            universeInfo = self._universeMap[milieu]
+            if not universeInfo:
                 return []
-            return universe.sectors(stockOnly=stockOnly)
+            return universeInfo.sectors(stockOnly=stockOnly)
 
     def sector(
             self,
@@ -542,10 +542,10 @@ class DataStore(object):
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors(milieu=milieu)
         with self._lock:
-            universe = self._universeMap[milieu]
-            if not universe:
+            universeInfo = self._universeMap[milieu]
+            if not universeInfo:
                 return None
-            return universe.lookupName(
+            return universeInfo.lookupName(
                 name=sectorName,
                 stockOnly=stockOnly)
 
@@ -558,10 +558,10 @@ class DataStore(object):
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors(milieu=milieu)
         with self._lock:
-            universe = self._universeMap[milieu]
-            if not universe:
+            universeInfo = self._universeMap[milieu]
+            if not universeInfo:
                 return None
-            return universe.lookupPosition(
+            return universeInfo.lookupPosition(
                 position=(sectorX, sectorY),
                 stockOnly=stockOnly)
 
@@ -574,16 +574,16 @@ class DataStore(object):
         self._loadSectors(milieu=milieu)
 
         with self._lock:
-            universe = self._universeMap[milieu]
-            sector = universe.lookupName(name=sectorName, stockOnly=stockOnly)
-        if not sector:
+            universeInfo = self._universeMap[milieu]
+            sectorInfo = universeInfo.lookupName(name=sectorName, stockOnly=stockOnly)
+        if not sectorInfo:
             raise RuntimeError(f'Unable to retrieve sector file data for unknown sector {sectorName}')
-        escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
-        extension = DataStore._SectorFormatExtensions[sector.sectorFormat()]
+        escapedSectorName = common.encodeFileName(rawFileName=sectorInfo.canonicalName())
+        extension = DataStore._SectorFormatExtensions[sectorInfo.sectorFormat()]
         return self._bytesToString(bytes=self._readMilieuFile(
             fileName=f'{escapedSectorName}.{extension}',
             milieu=milieu,
-            useCustomMapDir=sector.isCustomSector()))
+            useCustomMapDir=sectorInfo.isCustomSector()))
 
     def sectorMetaData(
             self,
@@ -812,10 +812,10 @@ class DataStore(object):
         milieuList = [milieu] if milieu else travellermap.Milieu
         with self._lock:
             for milieu in milieuList:
-                universe = self._universeMap[milieu]
-                if not universe:
+                universeInfo = self._universeMap[milieu]
+                if not universeInfo:
                     continue
-                if universe.hasCustomSectors():
+                if universeInfo.hasCustomSectors():
                     return True
         return False
 
@@ -830,8 +830,8 @@ class DataStore(object):
         self._loadSectors(milieu=milieu)
 
         with self._lock:
-            universe = self._universeMap[milieu]
-            return universe.conflictCheck(
+            universeInfo = self._universeMap[milieu]
+            return universeInfo.conflictCheck(
                 sectorName=sectorName,
                 sectorX=sectorX,
                 sectorY=sectorY,
@@ -877,11 +877,11 @@ class DataStore(object):
         os.makedirs(milieuDirPath, exist_ok=True)
 
         with self._lock:
-            universe = self._universeMap[milieu]
+            universeInfo = self._universeMap[milieu]
 
             # This will throw if the custom sector has a name/position conflicts with an existing sector.
             # It's done now to prevent files being updated if the sector isn't going to be addable
-            universe.conflictCheck(
+            universeInfo.conflictCheck(
                 sectorName=metadata.canonicalName(),
                 sectorX=metadata.x(),
                 sectorY=metadata.y(),
@@ -917,7 +917,7 @@ class DataStore(object):
                     path=mapLevelFilePath,
                     data=mapImage.bytes())
 
-            sector = SectorInfo(
+            sectorInfo = SectorInfo(
                 canonicalName=metadata.canonicalName(),
                 abbreviation=metadata.abbreviation(),
                 x=metadata.x(),
@@ -929,11 +929,11 @@ class DataStore(object):
                 customMapStyle=customMapStyle,
                 customMapOptions=customMapOptions,
                 customMapLevels=mapLevels)
-            universe.addSector(sector)
+            universeInfo.addSector(sectorInfo)
 
             self._saveCustomSectors(milieu=milieu)
 
-            return sector
+            return sectorInfo
 
     def deleteCustomSector(
             self,
@@ -948,9 +948,9 @@ class DataStore(object):
             milieu.value)
 
         with self._lock:
-            universe = self._universeMap[milieu]
-            sector = universe.lookupName(name=sectorName, stockOnly=False)
-            if not sector:
+            universeInfo = self._universeMap[milieu]
+            sectorInfo = universeInfo.lookupName(name=sectorName, stockOnly=False)
+            if not sectorInfo:
                 raise RuntimeError(
                     'Failed to delete custom sector {name} from {milieu} as it doesn\'t exist'.format(
                         name=sectorName,
@@ -958,16 +958,16 @@ class DataStore(object):
 
             # Remove the sector from the custom universe file first. That way we don't leave a partially
             # populated sector if deleting a file fails
-            universe.removeSector(sector)
+            universeInfo.removeSector(sectorInfo)
             self._saveCustomSectors(milieu=milieu)
 
-            escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
-            sectorExtension = DataStore._SectorFormatExtensions[sector.sectorFormat()]
-            metadataExtension = DataStore._MetadataFormatExtensions[sector.metadataFormat()]
+            escapedSectorName = common.encodeFileName(rawFileName=sectorInfo.canonicalName())
+            sectorExtension = DataStore._SectorFormatExtensions[sectorInfo.sectorFormat()]
+            metadataExtension = DataStore._MetadataFormatExtensions[sectorInfo.metadataFormat()]
             files = [
                 f'{escapedSectorName}.{sectorExtension}',
                 f'{escapedSectorName}.{metadataExtension}']
-            mapLevels = sector.customMapLevels()
+            mapLevels = sectorInfo.customMapLevels()
             if mapLevels:
                 for mapLevel in mapLevels.values():
                     files.append(mapLevel.fileName())
@@ -1039,12 +1039,12 @@ class DataStore(object):
                     operation='Reloading' if reload else 'Loading',
                     milieu=milieu.value))
 
-                universe = self._universeMap.get(milieu)
-                if universe:
-                    universe.clear()
+                universeInfo = self._universeMap.get(milieu)
+                if universeInfo:
+                    universeInfo.clear()
                 else:
-                    universe = UniverseInfo(milieu=milieu)
-                    self._universeMap[milieu] = universe
+                    universeInfo = UniverseInfo(milieu=milieu)
+                    self._universeMap[milieu] = universeInfo
 
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
@@ -1053,7 +1053,7 @@ class DataStore(object):
                     logging.debug(
                         f'Loaded custom sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
                     try:
-                        universe.addSector(sector)
+                        universeInfo.addSector(sector)
                     except SectorConflictException as ex:
                         logging.error(
                             f'Failed to add custom sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value} ({ex})')
@@ -1068,7 +1068,7 @@ class DataStore(object):
                     logging.debug(
                         f'Loaded stock sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
                     try:
-                        universe.addSector(sector)
+                        universeInfo.addSector(sector)
                     except SectorConflictException as ex:
                         logging.error(
                             f'Failed to add stock sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value} ({ex})')
@@ -1363,9 +1363,9 @@ class DataStore(object):
             self._TimestampFileName)
 
         with self._lock:
-            universe = self._universeMap[milieu]
+            universeInfo = self._universeMap[milieu]
             sectorListData = []
-            for sectorInfo in universe.sectors(stockOnly=False):
+            for sectorInfo in universeInfo.sectors(stockOnly=False):
                 if not sectorInfo.isCustomSector():
                     continue
 
