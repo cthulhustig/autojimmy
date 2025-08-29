@@ -149,30 +149,6 @@ class World(object):
     def isFuelCache(self) -> bool:
         return self._isFuelCache
 
-    # This method of detecting if the system has water is based on Traveller Maps (WaterPresent in
-    # World.cs). I've added the check for the water world trade code as it gives a quick out.
-    # There are a couple of things i'm not entirely convinced by about the Traveller Map algorithm
-    # but i've gone with them anyway for consistency
-    # - It counts anything with a hydrographics > 0 as having water. My concern is that this could be
-    # as low as 6% water, such a low parentage could cause issues if you're trying to do water refuelling
-    # - It includes worlds with atmosphere code 15. This is 'Unusual (Varies)' which doesn't sound like
-    # it would guarantee accessible water for refuelling
-    def waterPresent(self) -> bool:
-        if self.hasTradeCode(traveller.TradeCode.WaterWorld):
-            return True
-
-        try:
-            hydrographics = traveller.ehexToInteger(
-                value=self._uwp.code(traveller.UWP.Element.Hydrographics),
-                default=-1)
-            atmosphere = traveller.ehexToInteger(
-                value=self._uwp.code(traveller.UWP.Element.Atmosphere),
-                default=-1)
-        except ValueError:
-            return 0
-
-        return (hydrographics > 0) and ((2 <= atmosphere <= 9) or (13 <= atmosphere <= 15))
-
     def stellar(self) -> traveller.Stellar:
         return self._stellar
 
@@ -214,31 +190,6 @@ class World(object):
 
     def numberOfSystemWorlds(self) -> int:
         return self._systemWorlds
-
-    def hasStarPortRefuelling(
-            self,
-            rules: traveller.Rules,
-            includeRefined: bool = True,
-            includeUnrefined: bool = True
-            ) -> bool:
-        starPortFuelType = rules.starPortFuelType(
-            code=self._uwp.code(traveller.UWP.Element.StarPort))
-        if starPortFuelType == traveller.StarPortFuelType.AllTypes:
-            return includeRefined or includeUnrefined
-        elif starPortFuelType == traveller.StarPortFuelType.RefinedOnly:
-            return includeRefined
-        elif starPortFuelType == traveller.StarPortFuelType.UnrefinedOnly:
-            return includeUnrefined
-        return False
-
-    def hasGasGiantRefuelling(self) -> bool:
-        return self.numberOfGasGiants() > 0
-
-    def hasWaterRefuelling(self) -> bool:
-        return self.waterPresent()
-
-    def hasWildernessRefuelling(self) -> bool:
-        return self.hasGasGiantRefuelling() or self.hasWaterRefuelling()
 
     def parsecsTo(
             self,

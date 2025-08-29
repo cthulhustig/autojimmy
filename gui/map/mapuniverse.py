@@ -73,10 +73,10 @@ class MapWorld(cartographer.AbstractWorld):
         return self._world.remarks()
 
     def hasWaterRefuelling(self) -> bool:
-        return self._world.hasWaterRefuelling()
+        return traveller.worldHasWaterRefuelling(world=self._world)
 
     def hasGasGiantRefuelling(self) -> bool:
-        return self._world.hasGasGiantRefuelling()
+        return traveller.worldHasGasGiantRefuelling(world=self._world)
 
     # NOTE: It's important that different instances of this class wrapping
     # the same object are seen as the same. This allows the the universe

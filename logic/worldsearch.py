@@ -509,17 +509,19 @@ class RefuellingFilter(WorldFilter):
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
-                match = world.hasStarPortRefuelling(
+                match = traveller.worldHasStarPortRefuelling(
                     includeUnrefined=False,
+                    world=world,
                     rules=rules)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
-                match = world.hasStarPortRefuelling(
+                match = traveller.worldHasStarPortRefuelling(
                     includeRefined=False,
+                    world=world,
                     rules=rules)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
-                match = world.hasGasGiantRefuelling()
+                match = traveller.worldHasGasGiantRefuelling(world=world)
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:
-                match = world.hasWaterRefuelling()
+                match = traveller.worldHasWaterRefuelling(world=world)
             elif refuelling == RefuellingFilter.Type.FuelCacheRefuelling:
                 match = world.isFuelCache()
             elif refuelling == RefuellingFilter.Type.AnomalyRefuelling:

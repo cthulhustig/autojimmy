@@ -734,9 +734,9 @@ class HexTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         text = ''
-                        if world.hasStarPortRefuelling(rules=self._rules, includeUnrefined=False):
+                        if traveller.worldHasStarPortRefuelling(world=world, rules=self._rules, includeUnrefined=False):
                             text += 'refined'
-                        if world.hasStarPortRefuelling(rules=self._rules, includeRefined=False):
+                        if traveller.worldHasStarPortRefuelling(world=world, rules=self._rules, includeRefined=False):
                             if text:
                                 text += ' & '
                             text += 'unrefined'
@@ -746,11 +746,13 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.GasGiantRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setText('yes' if world.hasGasGiantRefuelling() else 'no' )
+                        hasRefuelling = traveller.worldHasGasGiantRefuelling(world=world)
+                        tableItem.setText('yes' if hasRefuelling else 'no' )
                 elif columnType == self.ColumnType.WaterRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setText('yes' if world.hasWaterRefuelling() else 'no' )
+                        hasRefuelling = traveller.worldHasWaterRefuelling(world=world)
+                        tableItem.setText('yes' if hasRefuelling else 'no' )
                 elif columnType == self.ColumnType.FuelCache:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:

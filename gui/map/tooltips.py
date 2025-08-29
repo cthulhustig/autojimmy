@@ -93,12 +93,12 @@ def createHexToolTip(
 
     refuellingTypes = []
     if world:
-        if world.hasStarPortRefuelling(rules=rules):
+        if traveller.worldHasStarPortRefuelling(world=world, rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
                 code=uwp.code(traveller.UWP.Element.StarPort)))
-        if world.hasGasGiantRefuelling():
+        if traveller.worldHasGasGiantRefuelling(world=world):
             refuellingTypes.append('Gas Giant(s)')
-        if world.hasWaterRefuelling():
+        if traveller.worldHasWaterRefuelling(world=world):
             refuellingTypes.append('Water')
         if world.isFuelCache():
             refuellingTypes.append('Fuel Cache')

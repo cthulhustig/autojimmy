@@ -1,4 +1,5 @@
 import common
+import traveller
 import typing
 
 # Fuel costs are the same for Mongoose 1e (p140), 2e (p226) & 2022 (p154)
@@ -43,3 +44,62 @@ def calculateFuelRequiredForJump(
         name='Jump Fuel')
     assert(isinstance(calculation, common.ScalarCalculation))
     return calculation
+
+def worldHasStarPortRefuelling(
+        world: traveller.World,
+        rules: traveller.Rules,
+        includeRefined: bool = True,
+        includeUnrefined: bool = True
+        ) -> bool:
+    uwp = world.uwp()
+    starPortFuelType = rules.starPortFuelType(
+        code=uwp.code(traveller.UWP.Element.StarPort))
+
+    if starPortFuelType is traveller.StarPortFuelType.AllTypes:
+        return includeRefined or includeUnrefined
+    elif starPortFuelType is traveller.StarPortFuelType.RefinedOnly:
+        return includeRefined
+    elif starPortFuelType is traveller.StarPortFuelType.UnrefinedOnly:
+        return includeUnrefined
+
+    return False
+
+def worldHasGasGiantRefuelling(world: traveller.World) -> bool:
+    return world.numberOfGasGiants() > 0
+
+# This method of detecting if the system has water is based on Traveller Maps (WaterPresent in
+# World.cs). I've added the check for the water world trade code as it gives a quick out.
+# There are a couple of things i'm not entirely convinced by about the Traveller Map algorithm
+# but i've gone with them anyway for consistency
+# - It counts anything with a hydrographics > 0 as having water. My concern is that this could be
+# as low as 6% water, such a low parentage could cause issues if you're trying to do water refuelling
+# - It includes worlds with atmosphere code 15. This is 'Unusual (Varies)' which doesn't sound like
+# it would guarantee accessible water for refuelling
+def worldHasWaterRefuelling(world: traveller.World) -> bool:
+    if world.hasTradeCode(traveller.TradeCode.WaterWorld):
+        return True
+
+    uwp = world.uwp()
+    try:
+        hydrographics = traveller.ehexToInteger(
+            value=uwp.code(traveller.UWP.Element.Hydrographics),
+            default=-1)
+        atmosphere = traveller.ehexToInteger(
+            value=uwp.code(traveller.UWP.Element.Atmosphere),
+            default=-1)
+    except ValueError:
+        return False
+
+    return (hydrographics > 0) and ((2 <= atmosphere <= 9) or (13 <= atmosphere <= 15))
+
+def worldHasWildernessRefuelling(world: traveller.World) -> bool:
+    return worldHasGasGiantRefuelling(world=world) or \
+        worldHasWaterRefuelling(world=world)
+
+def worldHasRefuelling(
+        world: traveller.World,
+        rules: traveller.Rules
+        ) -> bool:
+    return worldHasWildernessRefuelling() or \
+        worldHasStarPortRefuelling(world=world, rules=rules) or \
+        world.isFuelCache()
