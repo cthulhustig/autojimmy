@@ -1,6 +1,5 @@
 import cartographer
 import math
-import traveller
 import travellermap
 import typing
 
@@ -351,17 +350,17 @@ class SectorCache(object):
 
     def _createOutline(
             self,
-            source: typing.Union[traveller.Region, traveller.Border]
+            source: typing.Union[travellermap.Region, travellermap.Border]
             ) -> SectorPath:
         colour = source.colour()
         style = None
 
-        if isinstance(source, traveller.Border):
-            if source.style() is traveller.Border.Style.Solid:
+        if isinstance(source, travellermap.Border):
+            if source.style() is travellermap.Border.Style.Solid:
                 style = cartographer.LineStyle.Solid
-            elif source.style() is traveller.Border.Style.Dashed:
+            elif source.style() is travellermap.Border.Style.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif source.style() is traveller.Border.Style.Dotted:
+            elif source.style() is travellermap.Border.Style.Dotted:
                 style = cartographer.LineStyle.Dot
 
             if not colour or not style:

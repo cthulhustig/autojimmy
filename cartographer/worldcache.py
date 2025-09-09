@@ -2,9 +2,7 @@ import common
 import cartographer
 import math
 import random
-import traveller
 import travellermap
-import typing
 
 class WorldInfo(object):
     # Traveller Map doesn't use trade codes for things you might expect it
@@ -89,16 +87,16 @@ class WorldInfo(object):
         # Unabsorbed/Forbidden are equivalent is base do the Traveller Map
         # implementation is IsAmber/IsRed
         zone = world.zone()
-        self.isAmberZone = zone is traveller.ZoneType.AmberZone or \
-            zone is traveller.ZoneType.Unabsorbed
-        self.isRedZone = zone is traveller.ZoneType.RedZone or \
-            zone is traveller.ZoneType.Forbidden
+        self.isAmberZone = zone is travellermap.ZoneType.AmberZone or \
+            zone is travellermap.ZoneType.Unabsorbed
+        self.isRedZone = zone is travellermap.ZoneType.RedZone or \
+            zone is travellermap.ZoneType.Forbidden
 
         self.hasWater = WorldInfo._calcHasWater(world)
         self.hasGasGiant = WorldInfo._calcHasGasGiants(world)
 
-        self.starport = uwp.code(traveller.UWP.Element.StarPort)
-        self.techLevel = uwp.code(traveller.UWP.Element.TechLevel)
+        self.starport = uwp.code(travellermap.UWP.Element.StarPort)
+        self.techLevel = uwp.code(travellermap.UWP.Element.TechLevel)
 
         self.t5Allegiance = world.allegiance()
         self.legacyAllegiance = world.legacyAllegiance()
@@ -124,7 +122,7 @@ class WorldInfo(object):
         # base glyphs. This is consistent with Traveller Map (although I've no idea
         # why it's done like this)
         if bases.count() >= 1:
-            baseCode = traveller.Bases.code(bases[0])
+            baseCode = travellermap.Bases.code(bases[0])
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
             # Special case: Show Zho Naval+Military as diamond
@@ -139,25 +137,25 @@ class WorldInfo(object):
         if bases.count() >= 2 and not ignoreSecondBase:
             self.secondaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
-                code=traveller.Bases.code(bases[1]))
+                code=travellermap.Bases.code(bases[1]))
 
         if bases.count() >= 3:
             self.tertiaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
-                code=traveller.Bases.code(bases[2]))
+                code=travellermap.Bases.code(bases[2]))
 
         remarks = world.remarks()
-        if remarks.hasTradeCode(traveller.TradeCode.ResearchStation):
+        if remarks.hasTradeCode(travellermap.TradeCode.ResearchStation):
             self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(
                 remarks.researchStation())
-        elif remarks.hasTradeCode(traveller.TradeCode.Reserve):
+        elif remarks.hasTradeCode(travellermap.TradeCode.Reserve):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
-        elif remarks.hasTradeCode(traveller.TradeCode.PenalColony):
+        elif remarks.hasTradeCode(travellermap.TradeCode.PenalColony):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Prison
-        elif remarks.hasTradeCode(traveller.TradeCode.PrisonCamp):
+        elif remarks.hasTradeCode(travellermap.TradeCode.PrisonCamp):
             self.specialFeatureGlyph = cartographer.GlyphDefs.ExileCamp
 
-        self.worldSize = uwp.numeric(traveller.UWP.Element.WorldSize)
+        self.worldSize = uwp.numeric(travellermap.UWP.Element.WorldSize)
         self.worldImage = WorldInfo._calcWorldImage(
             world=world,
             images=imageCache)
@@ -192,15 +190,15 @@ class WorldInfo(object):
     @staticmethod
     def _calcIsHighPopulation(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
-        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        population = uwp.numeric(element=travellermap.UWP.Element.Population, default=-1)
         return population >= WorldInfo._HighPopulation
 
     @staticmethod
     def _calcIsAgricultural(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
-        hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
-        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        atmosphere = uwp.numeric(element=travellermap.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(element=travellermap.UWP.Element.Hydrographics, default=-1)
+        population = uwp.numeric(element=travellermap.UWP.Element.Population, default=-1)
         return atmosphere in WorldInfo._AgriculturalAtmospheres and \
             hydrographics in WorldInfo._AgriculturalHydrographics and \
             population in WorldInfo._AgriculturalPopulations
@@ -208,29 +206,29 @@ class WorldInfo(object):
     @staticmethod
     def _calcIsIndustrial(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
-        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        atmosphere = uwp.numeric(element=travellermap.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=travellermap.UWP.Element.Population, default=-1)
         return atmosphere in WorldInfo._IndustrialAtmospheres and \
             population >= WorldInfo._IndustrialMinPopulation
 
     @staticmethod
     def _calcIsRich(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
-        population = uwp.numeric(element=traveller.UWP.Element.Population, default=-1)
+        atmosphere = uwp.numeric(element=travellermap.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=travellermap.UWP.Element.Population, default=-1)
         return atmosphere in WorldInfo._RichAtmospheres and \
             population in WorldInfo._RichPopulations
 
     @staticmethod
     def _calcIsVacuum(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        atmosphere = uwp.numeric(element=travellermap.UWP.Element.Atmosphere, default=-1)
         return atmosphere == 0
 
     @staticmethod
     def _calcIsHarshAtmosphere(world: cartographer.AbstractWorld) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=traveller.UWP.Element.Atmosphere, default=-1)
+        atmosphere = uwp.numeric(element=travellermap.UWP.Element.Atmosphere, default=-1)
         return atmosphere > 10
 
     @staticmethod
@@ -242,15 +240,15 @@ class WorldInfo(object):
         if world.isAnomaly():
             return False
         uwp = world.uwp()
-        worldSize = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
+        worldSize = uwp.numeric(element=travellermap.UWP.Element.WorldSize, default=-1)
         return worldSize == 0
 
     @staticmethod
     def _calcIsCapital(world: cartographer.AbstractWorld) -> bool:
         remarks = world.remarks()
-        return remarks.hasTradeCode(traveller.TradeCode.SectorCapital) or \
-            remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
-            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
+        return remarks.hasTradeCode(travellermap.TradeCode.SectorCapital) or \
+            remarks.hasTradeCode(travellermap.TradeCode.SubsectorCapital) or \
+            remarks.hasTradeCode(travellermap.TradeCode.ImperialCapital) or \
             remarks.hasRemark('Capital')
 
     # This is based on code from Traveller Map which I believe is
@@ -260,11 +258,11 @@ class WorldInfo(object):
         importance = 0
 
         uwp = world.uwp()
-        starportCode = uwp.code(traveller.UWP.Element.StarPort)
-        techLevel = uwp.numeric(traveller.UWP.Element.TechLevel, default=0)
-        population = uwp.numeric(traveller.UWP.Element.Population, default=0)
-        atmosphere = uwp.numeric(traveller.UWP.Element.Atmosphere, default=-1)
-        hydrographics = uwp.numeric(traveller.UWP.Element.Hydrographics, default=-1)
+        starportCode = uwp.code(travellermap.UWP.Element.StarPort)
+        techLevel = uwp.numeric(travellermap.UWP.Element.TechLevel, default=0)
+        population = uwp.numeric(travellermap.UWP.Element.Population, default=0)
+        atmosphere = uwp.numeric(travellermap.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(travellermap.UWP.Element.Hydrographics, default=-1)
 
         if 'AB'.find(starportCode) >= 0:
             importance += 1
@@ -306,16 +304,16 @@ class WorldInfo(object):
         # NOTE: The definition of hasNavalBase intentionally doesn't include
         # things like VargrNavalBase as Traveller Map doesn't
         bases = world.bases()
-        hasNavalBase = bases.hasBase(traveller.BaseType.ImperialNavalBase) or \
-            bases.hasBase(traveller.BaseType.NavalBase)
-        hasOtherServiceBase = bases.hasBase(traveller.BaseType.ImperialScoutBase) or \
-            bases.hasBase(traveller.BaseType.MilitaryBase) or \
-            bases.hasBase(traveller.BaseType.ExplorationBase) or \
-            bases.hasBase(traveller.BaseType.VargrCorsairBase)
-        hasServiceSpecialBase = bases.hasBase(traveller.BaseType.WayStation) or \
-            bases.hasBase(traveller.BaseType.NavalDepot)
-        hasAslanAndTlaukhuBase = bases.hasBase(traveller.BaseType.AslanClanBase) and \
-            bases.hasBase(traveller.BaseType.AslanTlaukhuBase)
+        hasNavalBase = bases.hasBase(travellermap.BaseType.ImperialNavalBase) or \
+            bases.hasBase(travellermap.BaseType.NavalBase)
+        hasOtherServiceBase = bases.hasBase(travellermap.BaseType.ImperialScoutBase) or \
+            bases.hasBase(travellermap.BaseType.MilitaryBase) or \
+            bases.hasBase(travellermap.BaseType.ExplorationBase) or \
+            bases.hasBase(travellermap.BaseType.VargrCorsairBase)
+        hasServiceSpecialBase = bases.hasBase(travellermap.BaseType.WayStation) or \
+            bases.hasBase(travellermap.BaseType.NavalDepot)
+        hasAslanAndTlaukhuBase = bases.hasBase(travellermap.BaseType.AslanClanBase) and \
+            bases.hasBase(travellermap.BaseType.AslanTlaukhuBase)
         if hasNavalBase and hasOtherServiceBase:
             importance += 1
         if hasServiceSpecialBase:
@@ -331,11 +329,11 @@ class WorldInfo(object):
             images: cartographer.ImageStore
             ) -> cartographer.AbstractImage:
         uwp = world.uwp()
-        size = uwp.numeric(element=traveller.UWP.Element.WorldSize, default=-1)
+        size = uwp.numeric(element=travellermap.UWP.Element.WorldSize, default=-1)
         if size <= 0:
             return images.worldImages['Belt']
 
-        hydrographics = uwp.numeric(element=traveller.UWP.Element.Hydrographics, default=-1)
+        hydrographics = uwp.numeric(element=travellermap.UWP.Element.Hydrographics, default=-1)
         return images.worldImages[
             WorldInfo._HydrographicsImageMap.get(hydrographics, WorldInfo._HydrographicsDefaultImage)]
 

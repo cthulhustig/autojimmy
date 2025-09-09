@@ -26,8 +26,8 @@ class Trader(object):
 
     def calculateTradeOptionsForSingleWorld(
             self,
-            purchaseWorld: traveller.World,
-            saleWorlds: typing.Iterable[traveller.World],
+            purchaseWorld: travellermap.World,
+            saleWorlds: typing.Iterable[travellermap.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
             possibleCargo: typing.Iterable[logic.CargoRecord],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
@@ -172,8 +172,8 @@ class Trader(object):
 
     def calculateTradeOptionsForMultipleWorlds(
             self,
-            purchaseWorlds: typing.Iterable[traveller.World],
-            saleWorlds: typing.Iterable[traveller.World],
+            purchaseWorlds: typing.Iterable[travellermap.World],
+            saleWorlds: typing.Iterable[travellermap.World],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
             minSellerDm: typing.Union[int, common.ScalarCalculation],
             maxSellerDm: typing.Union[int, common.ScalarCalculation],
@@ -363,8 +363,8 @@ class Trader(object):
     def _calculateTradeOptions(
             self,
             milieu: travellermap.Milieu,
-            purchaseWorld: traveller.World,
-            saleWorlds: typing.Iterable[traveller.World],
+            purchaseWorld: travellermap.World,
+            saleWorlds: typing.Iterable[travellermap.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
             possibleCargo: typing.Iterable[logic.CargoRecord],
             playerBrokerDm: common.ScalarCalculation,
@@ -528,8 +528,8 @@ class Trader(object):
             self,
             cargoRecord: logic.CargoRecord,
             alreadyOwned: bool,
-            purchaseWorld: traveller.World,
-            saleWorld: traveller.World,
+            purchaseWorld: travellermap.World,
+            saleWorld: travellermap.World,
             routeLogistics: logic.RouteLogistics,
             playerBrokerDm: common.ScalarCalculation,
             buyerDm: typing.Union[common.ScalarCalculation, common.RangeCalculation],
@@ -713,10 +713,10 @@ class Trader(object):
                     percentageOfProfit = math.ceil((fuelCostToGetOffWorld / netProfit.averageCaseValue()) * 100)
                     notes.append(f'On the sale world the cost of buying the fuel for jump-1 will be Cr{fuelCostToGetOffWorld}. With average dice rolls, this will be {percentageOfProfit}% of the profits from the trade.')
 
-        if purchaseWorld.hasTradeCode(traveller.TradeCode.LowPopulationWorld):
+        if purchaseWorld.hasTradeCode(travellermap.TradeCode.LowPopulationWorld):
             notes.append(f'The purchase world has the Low Population trade code, you may struggle to find a seller')
 
-        if saleWorld.hasTradeCode(traveller.TradeCode.LowPopulationWorld):
+        if saleWorld.hasTradeCode(travellermap.TradeCode.LowPopulationWorld):
             notes.append(f'The sale world has the Low Population trade code, you may struggle to find a buyer')
 
         if notes:

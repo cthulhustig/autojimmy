@@ -308,7 +308,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def hex(self, row: int) -> typing.Optional[travellermap.HexPosition]:
         return self._hexTable.hex(row=row)
 
-    def world(self, row: int) -> typing.Optional[traveller.World]:
+    def world(self, row: int) -> typing.Optional[travellermap.World]:
         return self._hexTable.world(row)
 
     def hexes(self) -> typing.List[travellermap.HexPosition]:
@@ -316,7 +316,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     # NOTE: Indexing into the list of returned worlds does not match
     # table row indexing if the table contains dead space hexes.
-    def worlds(self) -> typing.List[traveller.World]:
+    def worlds(self) -> typing.List[travellermap.World]:
         return self._hexTable.worlds()
 
     def rowAt(self, y: int) -> int:
@@ -328,7 +328,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         row = self.rowAt(y)
         return self.hex(row) if row >= 0 else None
 
-    def worldAt(self, y: int) -> typing.Optional[traveller.World]:
+    def worldAt(self, y: int) -> typing.Optional[travellermap.World]:
         row = self.rowAt(y)
         return self.world(row) if row >= 0 else None
 
@@ -340,7 +340,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     # NOTE: Indexing into the list of returned worlds does not match table
     # selection indexing if the selection contains dead space hexes.
-    def selectedWorlds(self) -> typing.List[traveller.World]:
+    def selectedWorlds(self) -> typing.List[travellermap.World]:
         return self._hexTable.selectedWorlds()
 
     def removeSelectedRows(self) -> None:
@@ -352,15 +352,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def setRelativeHex(
             self,
-            hex: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, travellermap.World]
             ) -> None:
-        if isinstance(hex, traveller.World):
+        if isinstance(hex, travellermap.World):
             hex = hex.hex()
         self._relativeHex = hex
 
     def setRelativeWorld(
             self,
-            world: traveller.World
+            world: travellermap.World
             ) -> None:
         self.setRelativeHex(world)
 
@@ -446,7 +446,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             # the table
             contentChanged = False
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
-                world = traveller.WorldManager.instance().worldByPosition(
+                world = travellermap.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=self.hex(row=row))
                 if not world:
@@ -522,10 +522,10 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             initialHex: typing.Optional[typing.Union[
                 travellermap.HexPosition,
-                traveller.World
+                travellermap.World
                 ]] = None
             ) -> None:
-        centerHex = initialHex.hex() if isinstance(initialHex, traveller.World) else initialHex
+        centerHex = initialHex.hex() if isinstance(initialHex, travellermap.World) else initialHex
         if not centerHex and self._relativeHex:
             centerHex = self._relativeHex
 

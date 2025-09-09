@@ -1,13 +1,13 @@
 import common
 import logic
-import traveller
+import travellermap
 import typing
 
 class CargoManifest(object):
     def __init__(
             self,
-            purchaseWorld: traveller.World,
-            saleWorld: traveller.World,
+            purchaseWorld: travellermap.World,
+            saleWorld: travellermap.World,
             routeLogistics: logic.RouteLogistics,
             tradeOptions: typing.Iterable[logic.TradeOption]
             ) -> None:
@@ -53,10 +53,10 @@ class CargoManifest(object):
             rhs=self._routeLogistics.totalCosts(),
             name='Net Profit')
 
-    def purchaseWorld(self) -> traveller.World:
+    def purchaseWorld(self) -> travellermap.World:
         return self._purchaseWorld
 
-    def saleWorld(self) -> traveller.World:
+    def saleWorld(self) -> travellermap.World:
         return self._saleWorld
 
     def routeLogistics(self) -> logic.RouteLogistics:

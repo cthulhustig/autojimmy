@@ -2,7 +2,6 @@ import common
 import enum
 import cartographer
 import math
-import traveller
 import travellermap
 import typing
 
@@ -660,11 +659,11 @@ class RenderContext(object):
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
-                        if route.style() is traveller.Route.Style.Solid:
+                        if route.style() is travellermap.Route.Style.Solid:
                             routeStyle = cartographer.LineStyle.Solid
-                        elif route.style() is traveller.Route.Style.Dashed:
+                        elif route.style() is travellermap.Route.Style.Dashed:
                             routeStyle = cartographer.LineStyle.Dash
-                        elif route.style() is traveller.Route.Style.Dotted:
+                        elif route.style() is travellermap.Route.Style.Dotted:
                             routeStyle = cartographer.LineStyle.Dot
 
                     if not routeWidth or not routeColour or not routeStyle:
@@ -769,9 +768,9 @@ class RenderContext(object):
                     if label.offsetY():
                         labelPos.setY(labelPos.y() - (label.offsetY() * 0.7))
 
-                    if label.size() is traveller.Label.Size.Small:
+                    if label.size() is travellermap.Label.Size.Small:
                         font = self._styleSheet.microBorders.smallFont
-                    elif label.size() is traveller.Label.Size.Large:
+                    elif label.size() is travellermap.Label.Size.Large:
                         font = self._styleSheet.microBorders.largeFont
                     else:
                         font = self._styleSheet.microBorders.font
@@ -1581,7 +1580,7 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             remarks = world.remarks()
-            if remarks.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
+            if remarks.hasTradeCode(travellermap.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,
@@ -1598,9 +1597,9 @@ class RenderContext(object):
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
                 shouldDim = \
-                    not tagging.contains(traveller.SectorTagging.Tag.Official) and \
-                    not tagging.contains(traveller.SectorTagging.Tag.Preserve) and \
-                    not tagging.contains(traveller.SectorTagging.Tag.InReview)
+                    not tagging.contains(travellermap.SectorTagging.Tag.Official) and \
+                    not tagging.contains(travellermap.SectorTagging.Tag.Preserve) and \
+                    not tagging.contains(travellermap.SectorTagging.Tag.InReview)
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         index=sector.index())
@@ -1612,23 +1611,23 @@ class RenderContext(object):
         if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                if tagging.contains(traveller.SectorTagging.Tag.Official):
+                if tagging.contains(travellermap.SectorTagging.Tag.Official):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif tagging.contains(traveller.SectorTagging.Tag.InReview):
+                elif tagging.contains(travellermap.SectorTagging.Tag.InReview):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif tagging.contains(traveller.SectorTagging.Tag.Unreviewed):
+                elif tagging.contains(travellermap.SectorTagging.Tag.Unreviewed):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif tagging.contains(traveller.SectorTagging.Tag.Apocryphal):
+                elif tagging.contains(travellermap.SectorTagging.Tag.Apocryphal):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif tagging.contains(traveller.SectorTagging.Tag.Preserve):
+                elif tagging.contains(travellermap.SectorTagging.Tag.Preserve):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))
@@ -2289,10 +2288,10 @@ class RenderContext(object):
                 props.append((common.HtmlColours.Brown, common.HtmlColours.Black, 0.3))
             else:
                 colour, radius = RenderContext._StarPropsMap.get(
-                    star.code(element=traveller.Star.Element.SpectralClass),
+                    star.code(element=travellermap.Star.Element.SpectralClass),
                     (None, None))
                 if colour:
-                    luminance = star.code(element=traveller.Star.Element.LuminosityClass)
+                    luminance = star.code(element=travellermap.Star.Element.LuminosityClass)
                     if luminance == 'VII':
                         # The second survey format spec says that some data uses VII to indicate
                         # a white dwarf (i.e. classification D).

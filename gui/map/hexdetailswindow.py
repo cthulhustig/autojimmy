@@ -164,7 +164,7 @@ class HexDetailsWindow(gui.WindowWidget):
                 self._hexDetails.setHex(hex)
                 return
 
-        tabName = traveller.WorldManager.instance().canonicalHexName(
+        tabName = travellermap.WorldManager.instance().canonicalHexName(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             hex=hex)
         self._hexes.append(hex)
@@ -183,7 +183,7 @@ class HexDetailsWindow(gui.WindowWidget):
         currentHexes = set(self._hexes)
         for hex in hexes:
             if hex not in currentHexes:
-                tabName = traveller.WorldManager.instance().canonicalHexName(
+                tabName = travellermap.WorldManager.instance().canonicalHexName(
                     milieu=milieu,
                     hex=hex)
                 self._hexes.append(hex)
@@ -236,7 +236,7 @@ class HexDetailsWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             for index, hex in enumerate(self._hexes):
-                tabName = traveller.WorldManager.instance().canonicalHexName(
+                tabName = travellermap.WorldManager.instance().canonicalHexName(
                     milieu=newValue,
                     hex=hex)
                 self._tabBar.setTabText(index, tabName)

@@ -18,7 +18,7 @@ class _RouteNode(object):
             self,
             targetIndex: int,
             hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World],
+            world: typing.Optional[travellermap.World],
             gScore: float,
             fScore: float,
             isFuelWorld: bool,
@@ -42,7 +42,7 @@ class _RouteNode(object):
     def hex(self) -> travellermap.HexPosition:
         return self._hex
 
-    def world(self) -> typing.Optional[traveller.World]:
+    def world(self) -> typing.Optional[travellermap.World]:
         return self._world
 
     def gScore(self) -> float:
@@ -84,7 +84,7 @@ class JumpCostCalculatorInterface(object):
     def initialise(
             self,
             startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[traveller.World]
+            startWorld: typing.Optional[travellermap.World]
             ) -> typing.Any:
         raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement initialise')
 
@@ -92,9 +92,9 @@ class JumpCostCalculatorInterface(object):
     def calculate(
             self,
             currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[traveller.World],
+            currentWorld: typing.Optional[travellermap.World],
             nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[traveller.World],
+            nextWorld: typing.Optional[travellermap.World],
             jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -116,7 +116,7 @@ class HexFilterInterface(object):
     def match(
             self,
             hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            world: typing.Optional[travellermap.World]
             ) -> float:
         raise RuntimeError(f'{type(self)} is derived from HexFilterInterface so must implement match')
 
@@ -276,7 +276,7 @@ class RoutePlanner(object):
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
 
         # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
-        worldManager = traveller.WorldManager.instance()
+        worldManager = travellermap.WorldManager.instance()
 
         sequenceLength = len(hexSequence)
         finishWorldIndex = sequenceLength - 1
@@ -556,14 +556,14 @@ class RoutePlanner(object):
                     int, # Best remaining fuel for a route reaching this hex
                     int # Parsecs from hex to target (note target not necessarily finish)
                 ]],
-            worldManager: traveller.WorldManager,
+            worldManager: travellermap.WorldManager,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator],
             hexFilter: typing.Optional[HexFilterInterface] = None,
             filterResultCache: typing.Optional[typing.Dict[travellermap.HexPosition, bool]] = None
             ) -> typing.Generator[
                 typing.Tuple[
                     travellermap.HexPosition, # Potential next hex
-                    typing.Optional[traveller.World], # World at hex
+                    typing.Optional[travellermap.World], # World at hex
                     int, # Parsecs from current hex to potential hex
                     bool, # True if potential hex is a fuel world
                     float, # Current best score for potential hex

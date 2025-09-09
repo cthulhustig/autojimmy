@@ -426,7 +426,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[travellermap.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -459,7 +459,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[travellermap.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])

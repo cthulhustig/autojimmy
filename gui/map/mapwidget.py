@@ -5,7 +5,6 @@ import logic
 import logging
 import cartographer
 import math
-import traveller
 import travellermap
 import typing
 import uuid
@@ -575,7 +574,7 @@ class _MainsOverlay(_MapOverlay):
         self._points = None
         self._pen = None
 
-    def setMain(self, main: typing.Optional[traveller.Main]) -> None:
+    def setMain(self, main: typing.Optional[travellermap.Main]) -> None:
         if not main:
             self._points = self._pen = None
             return
@@ -1132,9 +1131,9 @@ class MapWidget(QtWidgets.QWidget):
     def worldAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[traveller.World]:
+            ) -> typing.Optional[travellermap.World]:
         hex = self._pixelSpaceToHex(pixelPos=pos)
-        return traveller.WorldManager.instance().worldByPosition(
+        return travellermap.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -1745,7 +1744,7 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         if hex and self.isEnabled():
             if travellermap.MapOption.MainsOverlay in self._options:
-                main = traveller.WorldManager.instance().mainByPosition(
+                main = travellermap.WorldManager.instance().mainByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 self._mainsOverlay.setMain(main)

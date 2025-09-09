@@ -1,5 +1,4 @@
 import app
-import cartographer
 import common
 import darkdetect
 import enum
@@ -840,7 +839,7 @@ class TaggingColoursConfigItem(ConfigItem):
 
 class WorldTaggingConfigItem(ConfigItem):
     _PropertyConfig = [
-        ('ZoneTagging', traveller.ZoneType, logic.TaggingProperty.Zone),
+        ('ZoneTagging', travellermap.ZoneType, logic.TaggingProperty.Zone),
         ('StarPortTagging', str, logic.TaggingProperty.StarPort),
         ('WorldSizeTagging', str, logic.TaggingProperty.WorldSize),
         ('AtmosphereTagging', str, logic.TaggingProperty.Atmosphere),
@@ -849,8 +848,8 @@ class WorldTaggingConfigItem(ConfigItem):
         ('GovernmentTagging', str, logic.TaggingProperty.Government),
         ('LawLevelTagging', str, logic.TaggingProperty.LawLevel),
         ('TechLevelTagging', str, logic.TaggingProperty.TechLevel),
-        ('BaseTypeTagging', traveller.BaseType, logic.TaggingProperty.BaseType),
-        ('TradeCodeTagging', traveller.TradeCode, logic.TaggingProperty.TradeCode),
+        ('BaseTypeTagging', travellermap.BaseType, logic.TaggingProperty.BaseType),
+        ('TradeCodeTagging', travellermap.TradeCode, logic.TaggingProperty.TradeCode),
         ('ResourcesTagging', str, logic.TaggingProperty.Resources),
         ('LabourTagging', str, logic.TaggingProperty.Labour),
         ('InfrastructureTagging', str, logic.TaggingProperty.Infrastructure),
@@ -859,7 +858,7 @@ class WorldTaggingConfigItem(ConfigItem):
         ('AcceptanceTagging', str, logic.TaggingProperty.Acceptance),
         ('StrangenessTagging', str, logic.TaggingProperty.Strangeness),
         ('SymbolsTagging', str, logic.TaggingProperty.Symbols),
-        ('NobilityTagging', traveller.NobilityType, logic.TaggingProperty.Nobility),
+        ('NobilityTagging', travellermap.NobilityType, logic.TaggingProperty.Nobility),
         ('AllegianceTagging', str, logic.TaggingProperty.Allegiance),
         ('SpectralTagging', str, logic.TaggingProperty.Spectral),
         ('LuminosityTagging', str, logic.TaggingProperty.Luminosity)]
@@ -1345,10 +1344,10 @@ class Config(QtCore.QObject):
             default=logic.WorldTagging(
                 config={
                     logic.TaggingProperty.Zone: {
-                        traveller.ZoneType.AmberZone: logic.TagLevel.Warning,
-                        traveller.ZoneType.RedZone: logic.TagLevel.Danger,
-                        traveller.ZoneType.Unabsorbed: logic.TagLevel.Warning,
-                        traveller.ZoneType.Forbidden: logic.TagLevel.Danger},
+                        travellermap.ZoneType.AmberZone: logic.TagLevel.Warning,
+                        travellermap.ZoneType.RedZone: logic.TagLevel.Danger,
+                        travellermap.ZoneType.Unabsorbed: logic.TagLevel.Warning,
+                        travellermap.ZoneType.Forbidden: logic.TagLevel.Danger},
                     logic.TaggingProperty.StarPort: {
                         'X': logic.TagLevel.Warning},
                     logic.TaggingProperty.Atmosphere: {
@@ -1363,14 +1362,14 @@ class Config(QtCore.QObject):
                     logic.TaggingProperty.LawLevel: {
                         '0': logic.TagLevel.Danger},
                     logic.TaggingProperty.TradeCode: {
-                        traveller.TradeCode.AmberZone: logic.TagLevel.Warning,
-                        traveller.TradeCode.RedZone: logic.TagLevel.Danger,
-                        traveller.TradeCode.HellWorld: logic.TagLevel.Danger,
-                        traveller.TradeCode.PenalColony: logic.TagLevel.Danger,
-                        traveller.TradeCode.PrisonCamp: logic.TagLevel.Danger,
-                        traveller.TradeCode.Reserve: logic.TagLevel.Danger,
-                        traveller.TradeCode.DangerousWorld: logic.TagLevel.Danger,
-                        traveller.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
+                        travellermap.TradeCode.AmberZone: logic.TagLevel.Warning,
+                        travellermap.TradeCode.RedZone: logic.TagLevel.Danger,
+                        travellermap.TradeCode.HellWorld: logic.TagLevel.Danger,
+                        travellermap.TradeCode.PenalColony: logic.TagLevel.Danger,
+                        travellermap.TradeCode.PrisonCamp: logic.TagLevel.Danger,
+                        travellermap.TradeCode.Reserve: logic.TagLevel.Danger,
+                        travellermap.TradeCode.DangerousWorld: logic.TagLevel.Danger,
+                        travellermap.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
                 })))
 
     @typing.overload

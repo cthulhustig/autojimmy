@@ -1,5 +1,5 @@
 import enum
-import traveller
+import travellermap
 import typing
 
 # Descriptions in these mappings are taken from the 2e core rules, https://travellermap.com/doc/secondsurvey
@@ -324,7 +324,7 @@ class UWP(object):
             default: int = -1
             ) -> int:
         code = self.code(element=element)
-        return traveller.ehexToInteger(code, default)
+        return travellermap.ehexToInteger(code, default)
 
     def description(
             self,

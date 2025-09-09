@@ -1,9 +1,8 @@
 import enum
-import traveller
 import travellermap
 import typing
 
-class Border(traveller.Region):
+class Border(travellermap.Region):
     class Style(enum.Enum):
         Solid = 0
         Dashed = 1

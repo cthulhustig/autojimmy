@@ -1,6 +1,5 @@
 import common
 import logic
-import traveller
 import travellermap
 import typing
 
@@ -110,7 +109,7 @@ def calculateRouteLogistics(
             mandatoryFinishBerthing = jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1)
             if mandatoryStartBerthing or mandatoryFinishBerthing:
                 startHex = jumpRoute.startNode()
-                startWorld = traveller.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
+                startWorld = travellermap.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
                     berthingCost = pitCostCalculator.berthingCost(
                         world=startWorld,

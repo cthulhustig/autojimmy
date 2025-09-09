@@ -188,11 +188,11 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
-    def selectedWorld(self) -> typing.Optional[traveller.World]:
+    def selectedWorld(self) -> typing.Optional[travellermap.World]:
         hex = self.selectedHex()
         if not hex:
             return None
-        return traveller.WorldManager.instance().worldByPosition(
+        return travellermap.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 

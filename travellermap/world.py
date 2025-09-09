@@ -1,5 +1,4 @@
 import math
-import traveller
 import travellermap
 import typing
 
@@ -31,22 +30,22 @@ class World(object):
         self._sectorName = sectorName
         self._subsectorName = subsectorName
         self._allegiance = allegiance
-        self._uwp = traveller.UWP(uwp)
-        self._economics = traveller.Economics(economics)
-        self._culture = traveller.Culture(culture)
-        self._nobilities = traveller.Nobilities(nobilities)
-        self._zone = traveller.parseZoneString(zone)
-        self._remarks = traveller.Remarks(
+        self._uwp = travellermap.UWP(uwp)
+        self._economics = travellermap.Economics(economics)
+        self._culture = travellermap.Culture(culture)
+        self._nobilities = travellermap.Nobilities(nobilities)
+        self._zone = travellermap.parseZoneString(zone)
+        self._remarks = travellermap.Remarks(
             string=remarks,
             sectorName=sectorName,
             zone=self._zone)
         self._isAnomaly = self._remarks.hasRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasRemark('{Fuel}')
-        self._stellar = traveller.Stellar(stellar)
-        self._pbg = traveller.PBG(pbg)
+        self._stellar = travellermap.Stellar(stellar)
+        self._pbg = travellermap.PBG(pbg)
         # There is always 1 system world (the main world)
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
-        self._bases = traveller.Bases(bases)
+        self._bases = travellermap.Bases(bases)
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
@@ -72,7 +71,7 @@ class World(object):
         return self._subsectorName
 
     def sectorHex(self) -> str:
-        return traveller.formatSectorHex(
+        return travellermap.formatSectorHex(
             sectorName=self._sectorName,
             offsetX=self._hex.offsetX(),
             offsetY=self._hex.offsetY())
@@ -80,44 +79,44 @@ class World(object):
     def allegiance(self) -> str:
         return self._allegiance
 
-    def uwp(self) -> traveller.UWP:
+    def uwp(self) -> travellermap.UWP:
         return self._uwp
 
-    def economics(self) -> traveller.Economics:
+    def economics(self) -> travellermap.Economics:
         return self._economics
 
-    def culture(self) -> traveller.Culture:
+    def culture(self) -> travellermap.Culture:
         return self._culture
 
-    def remarks(self) -> traveller.Remarks:
+    def remarks(self) -> travellermap.Remarks:
         return self._remarks
 
     def hasRemark(self, remark: str) -> None:
         return self._remarks.hasRemark(remark=remark)
 
-    def zone(self) -> typing.Optional[traveller.ZoneType]:
+    def zone(self) -> typing.Optional[travellermap.ZoneType]:
         return self._zone
 
-    def nobilities(self) -> traveller.Nobilities:
+    def nobilities(self) -> travellermap.Nobilities:
         return self._nobilities
 
     def hasNobility(self, nobilityType: str) -> bool:
         return nobilityType in self._nobilities
 
-    def bases(self) -> traveller.Bases:
+    def bases(self) -> travellermap.Bases:
         return self._bases
 
-    def hasBase(self, baseType: traveller.BaseType) -> bool:
+    def hasBase(self, baseType: travellermap.BaseType) -> bool:
         return self._bases.hasBase(baseType)
 
-    def tradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
+    def tradeCodes(self) -> typing.Iterable[travellermap.TradeCode]:
         return self._remarks.tradeCodes()
 
-    def hasTradeCode(self, tradeCode: traveller.TradeCode) -> bool:
+    def hasTradeCode(self, tradeCode: travellermap.TradeCode) -> bool:
         return self._remarks.hasTradeCode(tradeCode)
 
     def hasStarPort(self):
-        starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
+        starPortCode = self._uwp.code(travellermap.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
     def hasOwner(self) -> bool:
@@ -149,21 +148,21 @@ class World(object):
     def isFuelCache(self) -> bool:
         return self._isFuelCache
 
-    def stellar(self) -> traveller.Stellar:
+    def stellar(self) -> travellermap.Stellar:
         return self._stellar
 
     def numberOfStars(self) -> int:
         return self._stellar.starCount()
 
-    def pbg(self) -> traveller.PBG:
+    def pbg(self) -> travellermap.PBG:
         return self._pbg
 
     def population(self) -> int:
-        multiplier = traveller.ehexToInteger(
-            value=self._pbg.code(traveller.PBG.Element.PopulationMultiplier),
+        multiplier = travellermap.ehexToInteger(
+            value=self._pbg.code(travellermap.PBG.Element.PopulationMultiplier),
             default=None)
-        exponent = traveller.ehexToInteger(
-            value=self._uwp.code(traveller.UWP.Element.Population),
+        exponent = travellermap.ehexToInteger(
+            value=self._uwp.code(travellermap.UWP.Element.Population),
             default=None)
 
         if multiplier == None or exponent == None:
@@ -179,13 +178,13 @@ class World(object):
         return int(math.pow(10, exponent)) * multiplier
 
     def numberOfPlanetoidBelts(self) -> int:
-        return traveller.ehexToInteger(
-            value=self._pbg.code(traveller.PBG.Element.PlanetoidBelts),
+        return travellermap.ehexToInteger(
+            value=self._pbg.code(travellermap.PBG.Element.PlanetoidBelts),
             default=-1)
 
     def numberOfGasGiants(self) -> int:
-        return traveller.ehexToInteger(
-            value=self._pbg.code(traveller.PBG.Element.GasGiants),
+        return travellermap.ehexToInteger(
+            value=self._pbg.code(travellermap.PBG.Element.GasGiants),
             default=-1)
 
     def numberOfSystemWorlds(self) -> int:

@@ -3,29 +3,28 @@ import gui
 import html
 import logging
 import math
-import traveller
 import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def _formatWorldName(world: traveller.World) -> str:
+def _formatWorldName(world: travellermap.World) -> str:
     return world.name(includeSubsector=True)
 
 def _formatHexName(
         milieu: travellermap.Milieu,
         hex: travellermap.HexPosition
         ) -> str:
-    world = traveller.WorldManager.instance().worldByPosition(
+    world = travellermap.WorldManager.instance().worldByPosition(
         milieu=milieu,
         hex=hex)
     if world:
         return _formatWorldName(world=world)
 
-    sectorHex = traveller.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
-    subsector = traveller.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
+    sectorHex = travellermap.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
+    subsector = travellermap.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
     return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
 
-def _formatWorldHtml(world: traveller.World) -> str:
+def _formatWorldHtml(world: travellermap.World) -> str:
     return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
         worldName=html.escape(_formatWorldName(world=world)),
         sectorHex=html.escape(world.sectorHex()),
@@ -35,7 +34,7 @@ def _formatHexHtml(
         milieu: travellermap.Milieu,
         hex: travellermap.HexPosition
         ) -> str:
-    world = traveller.WorldManager.instance().worldByPosition(
+    world = travellermap.WorldManager.instance().worldByPosition(
         milieu=milieu,
         hex=hex)
     if world:
@@ -171,7 +170,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if selectedHex and not self._enableDeadSpaceSelection:
             # Dead space selection is not enabled so clear the currently selected
             # hex if there isn't a world at that location
-            world = traveller.WorldManager.instance().worldByPosition(
+            world = travellermap.WorldManager.instance().worldByPosition(
                 milieu=self._milieu,
                 hex=selectedHex)
             if not world:
@@ -229,7 +228,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # if it's a dead space hex
             hex = self.currentHex()
             if hex:
-                world = traveller.WorldManager.instance().worldByPosition(
+                world = travellermap.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -356,7 +355,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
-                    world = traveller.WorldManager.instance().worldByPosition(
+                    world = travellermap.WorldManager.instance().worldByPosition(
                         milieu=self._milieu,
                         hex=hex)
                     if not world:
@@ -528,7 +527,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # can be sorted. The limiting of the number of results added to
             # the completer should be done on the sorted list.
             try:
-                worlds = traveller.WorldManager.instance().searchForWorlds(
+                worlds = travellermap.WorldManager.instance().searchForWorlds(
                     milieu=self._milieu,
                     searchString=searchString)
                 for world in worlds:
@@ -541,7 +540,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             if self._enableDeadSpaceSelection:
                 try:
-                    hex = traveller.WorldManager.instance().stringToPosition(
+                    hex = travellermap.WorldManager.instance().stringToPosition(
                         milieu=self._milieu,
                         string=searchString)
                     isDuplicate = False

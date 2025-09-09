@@ -1,7 +1,6 @@
 import enum
 import cartographer
 import travellermap
-import traveller
 import typing
 
 class AbstractWorld(object):
@@ -17,13 +16,13 @@ class AbstractWorld(object):
     def sector(self) -> 'AbstractSector':
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement sector')
 
-    def uwp(self) -> traveller.UWP:
+    def uwp(self) -> travellermap.UWP:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement uwp')
 
     def population(self) -> int:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement population')
 
-    def zone(self) -> typing.Optional[traveller.ZoneType]:
+    def zone(self) -> typing.Optional[travellermap.ZoneType]:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement zone')
 
     def isAnomaly(self) -> bool:
@@ -38,13 +37,13 @@ class AbstractWorld(object):
     def basesAllegiance(self) -> typing.Optional[str]:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement basesAllegiance')
 
-    def bases(self) -> traveller.Bases:
+    def bases(self) -> travellermap.Bases:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement bases')
 
-    def stellar(self) -> traveller.Stellar:
+    def stellar(self) -> travellermap.Stellar:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement stellar')
 
-    def remarks(self) -> traveller.Remarks:
+    def remarks(self) -> travellermap.Remarks:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement remarks')
 
     def hasWaterRefuelling(self) -> bool:
@@ -82,7 +81,7 @@ class AbstractSector(object):
     def name(self) -> str:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement name')
 
-    # TODO: I really don't like this name (or the one on traveller.Sector).
+    # TODO: I really don't like this name (or the one on travellermap.Sector).
     # It can't be named label as that would get confused with the other
     # sector labels. Having a sector label has two effects.
     # - It will be used instead of the sector name when drawing sector names
@@ -96,12 +95,12 @@ class AbstractSector(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement sectorLabel')
 
     # TODO: I really don't like the name of this function (or the equivalent
-    # on traveller.Sector). It's used to specify if a sector should have its
+    # on travellermap.Sector). It's used to specify if a sector should have its
     # name drawn when drawing sector names is set to "only selected"
     def isSelected(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement isSelected')
 
-    def tagging(self) -> traveller.SectorTagging:
+    def tagging(self) -> travellermap.SectorTagging:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement tagging')
 
     def worlds(self) -> typing.Iterable[AbstractWorld]:
@@ -111,16 +110,16 @@ class AbstractSector(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement worldHexes')
 
     # TODO: The region, border etc functions should use abstract types
-    def regions(self) -> typing.Iterable[traveller.Region]:
+    def regions(self) -> typing.Iterable[travellermap.Region]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement regions')
 
-    def borders(self) -> typing.Iterable[traveller.Border]:
+    def borders(self) -> typing.Iterable[travellermap.Border]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement borders')
 
-    def routes(self) -> typing.Iterable[traveller.Route]:
+    def routes(self) -> typing.Iterable[travellermap.Route]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement routes')
 
-    def labels(self) -> typing.Iterable[traveller.Label]:
+    def labels(self) -> typing.Iterable[travellermap.Label]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement labels')
 
 class AbstractUniverse(object):

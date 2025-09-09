@@ -89,7 +89,7 @@ class WorldFilter(object):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -142,7 +142,7 @@ class NameFiler(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -190,7 +190,7 @@ class TagLevelFiler(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -211,7 +211,7 @@ class ZoneFiler(WorldFilter):
     def __init__(
             self,
             operation: ComparisonFilterOperation,
-            value: traveller.ZoneType
+            value: travellermap.ZoneType
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -221,7 +221,7 @@ class ZoneFiler(WorldFilter):
     def operation(self) -> ComparisonFilterOperation:
         return self._operation
 
-    def value(self) -> traveller.ZoneType:
+    def value(self) -> travellermap.ZoneType:
         return self._value
 
     def description(self) -> str:
@@ -229,11 +229,11 @@ class ZoneFiler(WorldFilter):
         if not operationString:
             return None
 
-        return f'Zone {operationString} {traveller.zoneTypeName(self._value)}'
+        return f'Zone {operationString} {travellermap.zoneTypeName(self._value)}'
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -248,16 +248,16 @@ class ZoneFiler(WorldFilter):
     # thinking that Forbidden/Unabsorbed are equivalent to Red/Amber zones
     # respectively (at least the Traveller Map IsAmber/IsRed treat them that way).
     @staticmethod
-    def _zoneToInt(zone: traveller.ZoneType) -> int:
-        if zone == traveller.ZoneType.RedZone:
+    def _zoneToInt(zone: travellermap.ZoneType) -> int:
+        if zone == travellermap.ZoneType.RedZone:
             return 5
-        elif zone == traveller.ZoneType.Forbidden:
+        elif zone == travellermap.ZoneType.Forbidden:
             return 4
-        elif zone == traveller.ZoneType.AmberZone:
+        elif zone == travellermap.ZoneType.AmberZone:
             return 3
-        elif zone == traveller.ZoneType.Unabsorbed:
+        elif zone == travellermap.ZoneType.Unabsorbed:
             return 2
-        elif zone == traveller.ZoneType.Balkanized:
+        elif zone == travellermap.ZoneType.Balkanized:
             return 1
         else:
             return 0
@@ -265,7 +265,7 @@ class ZoneFiler(WorldFilter):
 class UWPFilter(WorldFilter):
     def __init__(
             self,
-            element: traveller.UWP.Element,
+            element: travellermap.UWP.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -273,9 +273,9 @@ class UWPFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = traveller.ehexToInteger(value=self._value, default=None)
+        self._integer = travellermap.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> traveller.UWP.Element:
+    def element(self) -> travellermap.UWP.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -285,21 +285,21 @@ class UWPFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == traveller.UWP.Element.StarPort:
+        if self._element == travellermap.UWP.Element.StarPort:
             elementString = 'Star Port'
-        elif self._element == traveller.UWP.Element.WorldSize:
+        elif self._element == travellermap.UWP.Element.WorldSize:
             elementString = 'World size'
-        elif self._element == traveller.UWP.Element.Atmosphere:
+        elif self._element == travellermap.UWP.Element.Atmosphere:
             elementString = 'Atmosphere'
-        elif self._element == traveller.UWP.Element.Hydrographics:
+        elif self._element == travellermap.UWP.Element.Hydrographics:
             elementString = 'Hydrographics'
-        elif self._element == traveller.UWP.Element.Population:
+        elif self._element == travellermap.UWP.Element.Population:
             elementString = 'Population'
-        elif self._element == traveller.UWP.Element.Government:
+        elif self._element == travellermap.UWP.Element.Government:
             elementString = 'Government'
-        elif self._element == traveller.UWP.Element.LawLevel:
+        elif self._element == travellermap.UWP.Element.LawLevel:
             elementString = 'Law Level'
-        elif self._element == traveller.UWP.Element.TechLevel:
+        elif self._element == travellermap.UWP.Element.TechLevel:
             elementString = 'Tech Level'
         else:
             return None
@@ -312,13 +312,13 @@ class UWPFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=traveller.ehexToInteger(
+            worldValue=travellermap.ehexToInteger(
                 value=world.uwp().code(self._element),
                 default=None),
             compareValue=self._integer)
@@ -326,7 +326,7 @@ class UWPFilter(WorldFilter):
 class EconomicsFilter(WorldFilter):
     def __init__(
             self,
-            element: traveller.Economics.Element,
+            element: travellermap.Economics.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -335,12 +335,12 @@ class EconomicsFilter(WorldFilter):
         self._operation = operation
         self._value = value
 
-        if self._element == traveller.Economics.Element.Efficiency:
+        if self._element == travellermap.Economics.Element.Efficiency:
             self._integer = int(self._value) if self._value != '?' else None
         else:
-            self._integer = traveller.ehexToInteger(value=self._value, default=None)
+            self._integer = travellermap.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> traveller.Economics.Element:
+    def element(self) -> travellermap.Economics.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -350,13 +350,13 @@ class EconomicsFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == traveller.Economics.Element.Resources:
+        if self._element == travellermap.Economics.Element.Resources:
             elementString = 'Resources'
-        elif self._element == traveller.Economics.Element.Labour:
+        elif self._element == travellermap.Economics.Element.Labour:
             elementString = 'Labour'
-        elif self._element == traveller.Economics.Element.Infrastructure:
+        elif self._element == travellermap.Economics.Element.Infrastructure:
             elementString = 'Infrastructure'
-        elif self._element == traveller.Economics.Element.Efficiency:
+        elif self._element == travellermap.Economics.Element.Efficiency:
             elementString = 'Efficiency'
         else:
             return None
@@ -369,15 +369,15 @@ class EconomicsFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         code = world.economics().code(self._element)
-        if self._element == traveller.Economics.Element.Efficiency:
+        if self._element == travellermap.Economics.Element.Efficiency:
             worldValue = int(code) if code != '?' else None
         else:
-            worldValue = traveller.ehexToInteger(
+            worldValue = travellermap.ehexToInteger(
                 value=code,
                 default=None)
 
@@ -389,7 +389,7 @@ class EconomicsFilter(WorldFilter):
 class CultureFilter(WorldFilter):
     def __init__(
             self,
-            element: traveller.Culture.Element,
+            element: travellermap.Culture.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -397,9 +397,9 @@ class CultureFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = traveller.ehexToInteger(value=self._value, default=None)
+        self._integer = travellermap.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> traveller.Culture.Element:
+    def element(self) -> travellermap.Culture.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -409,13 +409,13 @@ class CultureFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == traveller.Culture.Element.Heterogeneity:
+        if self._element == travellermap.Culture.Element.Heterogeneity:
             elementString = 'Heterogeneity'
-        elif self._element == traveller.Culture.Element.Acceptance:
+        elif self._element == travellermap.Culture.Element.Acceptance:
             elementString = 'Acceptance'
-        elif self._element == traveller.Culture.Element.Strangeness:
+        elif self._element == travellermap.Culture.Element.Strangeness:
             elementString = 'Strangeness'
-        elif self._element == traveller.Culture.Element.Symbols:
+        elif self._element == travellermap.Culture.Element.Symbols:
             elementString = 'Symbols'
         else:
             return None
@@ -428,13 +428,13 @@ class CultureFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=traveller.ehexToInteger(
+            worldValue=travellermap.ehexToInteger(
                 value=world.culture().code(self._element),
                 default=None),
             compareValue=self._integer)
@@ -501,7 +501,7 @@ class RefuellingFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -570,7 +570,7 @@ class AllegianceFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -585,7 +585,7 @@ class AllegianceFilter(WorldFilter):
             else:
                 raise ValueError('Invalid allegiance filter operation')
 
-            allegianceName = traveller.AllegianceManager.instance().allegianceName(
+            allegianceName = travellermap.AllegianceManager.instance().allegianceName(
                 milieu=world.milieu(),
                 code=world.allegiance(),
                 sectorName=world.sectorName())
@@ -626,7 +626,7 @@ class SophontFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -649,7 +649,7 @@ class BaseFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[traveller.BaseType]
+            value: typing.Iterable[travellermap.BaseType]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -658,7 +658,7 @@ class BaseFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[traveller.BaseType]:
+    def value(self) -> typing.Iterable[travellermap.BaseType]:
         return self._value
 
     def description(self) -> str:
@@ -671,7 +671,7 @@ class BaseFilter(WorldFilter):
 
         listString = ''
         for index, base in enumerate(self._value):
-            typeString = traveller.Bases.description(baseType=base)
+            typeString = travellermap.Bases.description(baseType=base)
 
             if index == 0:
                 listString = typeString
@@ -686,11 +686,11 @@ class BaseFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = traveller.BaseType if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = travellermap.BaseType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldBases = world.bases()
         for base in checkList:
             match = base in worldBases
@@ -713,7 +713,7 @@ class NobilityFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[traveller.NobilityType]
+            value: typing.Iterable[travellermap.NobilityType]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -722,7 +722,7 @@ class NobilityFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[traveller.NobilityType]:
+    def value(self) -> typing.Iterable[travellermap.NobilityType]:
         return self._value
 
     def description(self) -> str:
@@ -735,7 +735,7 @@ class NobilityFilter(WorldFilter):
 
         listString = ''
         for index, nobility in enumerate(self._value):
-            typeString = traveller.Nobilities.description(nobilityType=nobility)
+            typeString = travellermap.Nobilities.description(nobilityType=nobility)
 
             if index == 0:
                 listString = typeString
@@ -750,11 +750,11 @@ class NobilityFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = traveller.NobilityType if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = travellermap.NobilityType if self._operation == ListFilterOperation.ContainsOnly else self._value
         worldNobilities = world.nobilities()
         for nobility in checkList:
             match = nobility in worldNobilities
@@ -799,7 +799,7 @@ class RemarksFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
@@ -819,7 +819,7 @@ class TradeCodeFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[traveller.TradeCode]
+            value: typing.Iterable[travellermap.TradeCode]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -828,7 +828,7 @@ class TradeCodeFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[traveller.TradeCode]:
+    def value(self) -> typing.Iterable[travellermap.TradeCode]:
         return self._value
 
     def description(self) -> str:
@@ -841,7 +841,7 @@ class TradeCodeFilter(WorldFilter):
 
         listString = ''
         for index, tradeCode in enumerate(self._value):
-            typeString = traveller.tradeCodeName(tradeCode=tradeCode)
+            typeString = travellermap.tradeCodeName(tradeCode=tradeCode)
 
             if index == 0:
                 listString = typeString
@@ -856,11 +856,11 @@ class TradeCodeFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = traveller.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = travellermap.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
         for tradeCode in checkList:
             match = world.hasTradeCode(tradeCode)
             if self._operation == ListFilterOperation.ContainsAny:
@@ -881,7 +881,7 @@ class TradeCodeFilter(WorldFilter):
 class PBGFilter(WorldFilter):
     def __init__(
             self,
-            element: traveller.PBG.Element,
+            element: travellermap.PBG.Element,
             operation: ComparisonFilterOperation,
             value: str
             ) -> None:
@@ -889,9 +889,9 @@ class PBGFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = traveller.ehexToInteger(value=self._value, default=None)
+        self._integer = travellermap.ehexToInteger(value=self._value, default=None)
 
-    def element(self) -> traveller.UWP.Element:
+    def element(self) -> travellermap.UWP.Element:
         return self._element
 
     def operation(self) -> ComparisonFilterOperation:
@@ -901,11 +901,11 @@ class PBGFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        if self._element == traveller.PBG.Element.PopulationMultiplier:
+        if self._element == travellermap.PBG.Element.PopulationMultiplier:
             elementString = 'Population Multiplier'
-        elif self._element == traveller.PBG.Element.PlanetoidBelts:
+        elif self._element == travellermap.PBG.Element.PlanetoidBelts:
             elementString = 'Planetoid Belt Count'
-        elif self._element == traveller.PBG.Element.GasGiants:
+        elif self._element == travellermap.PBG.Element.GasGiants:
             elementString = 'Gas Giant Count'
         else:
             return None
@@ -918,13 +918,13 @@ class PBGFilter(WorldFilter):
 
     def match(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=traveller.ehexToInteger(
+            worldValue=travellermap.ehexToInteger(
                 value=world.pbg().code(self._element),
                 default=None),
             compareValue=self._integer)
@@ -964,7 +964,7 @@ class WorldSearch(object):
 
     def checkWorld(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool: # # True if matched, False if ignored
@@ -993,9 +993,9 @@ class WorldSearch(object):
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             maxResults: int = 1000
-            ) -> typing.Iterable[traveller.World]:
+            ) -> typing.Iterable[travellermap.World]:
         results = []
-        for sector in traveller.WorldManager.instance().yieldSectors(milieu=milieu):
+        for sector in travellermap.WorldManager.instance().yieldSectors(milieu=milieu):
             self._searchWorlds(
                 worlds=sector.yieldWorlds(),
                 rules=rules,
@@ -1014,8 +1014,8 @@ class WorldSearch(object):
             sectorName: str,
             subsectorName: typing.Optional[str] = None,
             maxResults: int = 1000
-            ) -> typing.Iterable[traveller.World]:
-        sector = traveller.WorldManager.instance().sectorByName(
+            ) -> typing.Iterable[travellermap.World]:
+        sector = travellermap.WorldManager.instance().sectorByName(
             milieu=milieu,
             name=sectorName)
         if not sector:
@@ -1044,8 +1044,8 @@ class WorldSearch(object):
             tagging: logic.WorldTagging,
             centerHex: travellermap.HexPosition,
             searchRadius: int
-            ) -> typing.Iterable[traveller.World]:
-        return traveller.WorldManager.instance().worldsInRadius(
+            ) -> typing.Iterable[travellermap.World]:
+        return travellermap.WorldManager.instance().worldsInRadius(
             milieu=milieu,
             center=centerHex,
             searchRadius=searchRadius,
@@ -1053,12 +1053,12 @@ class WorldSearch(object):
 
     def _searchWorlds(
             self,
-            worlds: typing.Iterable[traveller.World],
+            worlds: typing.Iterable[travellermap.World],
             rules: traveller.Rules,
             tagging: logic.WorldTagging,
             maxResults: int,
-            inPlaceResults: typing.Optional[typing.Iterable[traveller.World]] = None
-            ) -> typing.Iterable[traveller.World]:
+            inPlaceResults: typing.Optional[typing.Iterable[travellermap.World]] = None
+            ) -> typing.Iterable[travellermap.World]:
         if inPlaceResults != None:
             results = inPlaceResults
         else:

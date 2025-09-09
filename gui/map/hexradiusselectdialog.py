@@ -233,7 +233,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._overlays.append(handle)
             else:
                 try:
-                    worlds = traveller.WorldManager.instance().worldsInRadius(
+                    worlds = travellermap.WorldManager.instance().worldsInRadius(
                         milieu=self._mapWidget.milieu(),
                         center=centerHex,
                         searchRadius=searchRadius)

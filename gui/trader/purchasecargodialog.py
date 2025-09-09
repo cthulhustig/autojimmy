@@ -3,6 +3,7 @@ import common
 import gui
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore, QtWidgets
 
@@ -14,7 +15,7 @@ class PurchaseCargoDialog(gui.DialogEx):
 
     def __init__(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             rules: traveller.Rules,
             availableCargo: typing.Iterable[logic.CargoRecord],
             availableFunds: typing.Union[int, float, common.ScalarCalculation],

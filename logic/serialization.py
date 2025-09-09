@@ -4,7 +4,6 @@ import logic
 import json
 import packaging
 import packaging.version
-import traveller
 import travellermap
 import typing
 
@@ -174,7 +173,7 @@ def deserialiseWorldFilter(
 
         return logic.ZoneFiler(
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
-            value=deserialiseEnum(type=traveller.ZoneType, data=value))
+            value=deserialiseEnum(type=travellermap.ZoneType, data=value))
     elif filterType == 'uwp':
         element = data.get('element')
         if not element:
@@ -189,7 +188,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('UWP filter is missing the value element')
 
         return logic.UWPFilter(
-            element=deserialiseEnum(type=traveller.UWP.Element, data=element),
+            element=deserialiseEnum(type=travellermap.UWP.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
     elif filterType == 'economics':
@@ -206,7 +205,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('Economics filter is missing the value element')
 
         return logic.EconomicsFilter(
-            element=deserialiseEnum(type=traveller.Economics.Element, data=element),
+            element=deserialiseEnum(type=travellermap.Economics.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
     elif filterType == 'culture':
@@ -223,7 +222,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('Culture filter is missing the value element')
 
         return logic.CultureFilter(
-            element=deserialiseEnum(type=traveller.Culture.Element, data=element),
+            element=deserialiseEnum(type=travellermap.Culture.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
     elif filterType == 'refuelling':
@@ -273,7 +272,7 @@ def deserialiseWorldFilter(
 
         return logic.BaseFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=traveller.BaseType, data=value))
+            value=deserialiseEnumList(type=travellermap.BaseType, data=value))
     elif filterType == 'nobility':
         operation = data.get('operation')
         if not operation:
@@ -285,7 +284,7 @@ def deserialiseWorldFilter(
 
         return logic.NobilityFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=traveller.NobilityType, data=value))
+            value=deserialiseEnumList(type=travellermap.NobilityType, data=value))
     elif filterType == 'remarks':
         operation = data.get('operation')
         if not operation:
@@ -309,7 +308,7 @@ def deserialiseWorldFilter(
 
         return logic.TradeCodeFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=traveller.TradeCode, data=value))
+            value=deserialiseEnumList(type=travellermap.TradeCode, data=value))
     elif filterType == 'pbg':
         element = data.get('element')
         if not element:
@@ -324,7 +323,7 @@ def deserialiseWorldFilter(
             raise RuntimeError('PBG filter is missing the value element')
 
         return logic.PBGFilter(
-            element=deserialiseEnum(type=traveller.PBG.Element, data=element),
+            element=deserialiseEnum(type=travellermap.PBG.Element, data=element),
             operation=deserialiseEnum(type=logic.ComparisonFilterOperation, data=operation),
             value=value)
 
@@ -487,7 +486,7 @@ def _deserialiseLogistics(
             if berthingCost is not None:
                 berthingCost = common.deserialiseCalculation(jsonData=berthingCost)
 
-            world = traveller.WorldManager.instance().worldByPosition(
+            world = travellermap.WorldManager.instance().worldByPosition(
                 milieu=milieu,
                 hex=route.nodeAt(routeIndex))
 

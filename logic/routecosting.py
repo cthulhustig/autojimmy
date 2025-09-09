@@ -24,16 +24,16 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
     def initialise(
             self,
             startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[traveller.World]
+            startWorld: typing.Optional[travellermap.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
             currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[traveller.World],
+            currentWorld: typing.Optional[travellermap.World],
             nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[traveller.World],
+            nextWorld: typing.Optional[travellermap.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -63,16 +63,16 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
     def initialise(
             self,
             startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[traveller.World]
+            startWorld: typing.Optional[travellermap.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
             currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[traveller.World],
+            currentWorld: typing.Optional[travellermap.World],
             nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[traveller.World],
+            nextWorld: typing.Optional[travellermap.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -93,7 +93,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def __init__(
                 self,
                 currentFuel: float,
-                lastFuelWorld: traveller.World,
+                lastFuelWorld: travellermap.World,
                 lastFuelParsecs: int,
                 lastFuelType: logic.RefuellingType,
                 lastFuelCost: int,
@@ -109,7 +109,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def currentFuel(self) -> float:
             return self._currentFuel
 
-        def lastFuelWorld(self) -> traveller.World:
+        def lastFuelWorld(self) -> travellermap.World:
             return self._lastFuelWorld
 
         def lastFuelParsecs(self) -> int:
@@ -153,7 +153,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
     def initialise(
             self,
             startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[traveller.World]
+            startWorld: typing.Optional[travellermap.World]
             ) -> typing.Any:
         if not self._pitCostCalculator:
             # Fuel based route calculation is disabled so the context isn't used
@@ -178,9 +178,9 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
     def calculate(
             self,
             currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[traveller.World],
+            currentWorld: typing.Optional[travellermap.World],
             nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[traveller.World],
+            nextWorld: typing.Optional[travellermap.World],
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[

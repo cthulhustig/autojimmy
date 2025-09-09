@@ -2,7 +2,6 @@ import common
 import enum
 import logic
 import functools
-import random
 import time
 import traveller
 import travellermap
@@ -138,7 +137,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = traveller.WorldManager.instance().worldByPosition(
+        currentWorld = travellermap.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=self._currentHex)
 
@@ -148,7 +147,7 @@ class Simulator(object):
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
-            self._nearbyWorlds = traveller.WorldManager.instance().worldsInRadius(
+            self._nearbyWorlds = travellermap.WorldManager.instance().worldsInRadius(
                 milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
@@ -221,13 +220,13 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = traveller.WorldManager.instance().worldByPosition(
+                nextWorld = travellermap.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=nextHex)
-                currentString = traveller.WorldManager.instance().canonicalHexName(
+                currentString = travellermap.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=self._currentHex)
-                nextString = traveller.WorldManager.instance().canonicalHexName(
+                nextString = travellermap.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=nextHex)
                 self._logMessage(
@@ -305,7 +304,7 @@ class Simulator(object):
 
     def _sellerFound(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -409,7 +408,7 @@ class Simulator(object):
 
     def _buyerFound(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -504,8 +503,8 @@ class Simulator(object):
 
     def _runTradeLoop(
             self,
-            world: traveller.World,
-            onTraderCallback: typing.Callable[[traveller.World, int, bool], bool],
+            world: travellermap.World,
+            onTraderCallback: typing.Callable[[travellermap.World, int, bool], bool],
             lookingForSeller: bool
             ) -> None:
         class MethodState(object):
@@ -560,7 +559,7 @@ class Simulator(object):
                 False, # Not online
                 True, # Black market buyer/seller
                 0))
-        if self._playerAdminDm != None and traveller.ehexToInteger(value=world.uwp().code(traveller.UWP.Element.TechLevel), default=-1) >= 8:
+        if self._playerAdminDm != None and travellermap.ehexToInteger(value=world.uwp().code(travellermap.UWP.Element.TechLevel), default=-1) >= 8:
             if lookForLegalTrader:
                 methods.append(MethodState(
                     self._playerAdminDm,
@@ -637,8 +636,8 @@ class Simulator(object):
                 lastTraderFoundTime = tradeTime
 
     @staticmethod
-    def _starPortModifier(world: traveller.World) -> int:
-        starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
+    def _starPortModifier(world: travellermap.World) -> int:
+        starPortCode = world.uwp().code(travellermap.UWP.Element.StarPort)
         return 0 if starPortCode not in Simulator.StarPortModifiers else Simulator.StarPortModifiers[starPortCode]
 
     def _traderSearchStep(

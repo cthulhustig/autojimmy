@@ -1,11 +1,12 @@
 import common
 import traveller
+import travellermap
 import typing
 
 class TradeScore(object):
     def __init__(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             ruleSystem: traveller.RuleSystem,
             tradeGoods: typing.Optional[typing.Iterable[traveller.TradeGood]] = None
             ) -> None:
@@ -43,7 +44,7 @@ class TradeScore(object):
             values=list(self._saleScores.values()) + self._quantityModifiers,
             name=f'Sale Trade Score for {worldName}')
 
-    def world(self) -> traveller.World:
+    def world(self) -> travellermap.World:
         return self._world
 
     def ruleSystem(self) -> traveller.RuleSystem:
@@ -85,7 +86,7 @@ class TradeScore(object):
 
     @staticmethod
     def _calculatePurchaseScore(
-            world: traveller.World,
+            world: travellermap.World,
             tradeGood: traveller.TradeGood
             ) -> typing.Optional[common.ScalarCalculation]:
         purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
@@ -111,7 +112,7 @@ class TradeScore(object):
 
     @staticmethod
     def _calculateSaleScore(
-            world: traveller.World,
+            world: travellermap.World,
             tradeGood: traveller.TradeGood
             ) -> common.ScalarCalculation:
         purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)

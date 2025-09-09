@@ -1,6 +1,6 @@
 import logging
 import re
-import traveller
+import travellermap
 import typing
 
 class Remarks(object):
@@ -25,13 +25,13 @@ class Remarks(object):
             self,
             string: str,
             sectorName: str,
-            zone: traveller.ZoneType
+            zone: travellermap.ZoneType
             ) -> None:
         self._string = string
         self._tokenSet: typing.Set[str] = set()
         self._sectorName = sectorName
         self._zone = zone
-        self._tradeCodes: typing.Set[traveller.TradeCode] = set()
+        self._tradeCodes: typing.Set[travellermap.TradeCode] = set()
         self._isMajorHomeworld = False
         self._isMinorHomeworld = False
         self._sophontPercentages: typing.Dict[str, int] = dict()
@@ -44,10 +44,10 @@ class Remarks(object):
         # Add custom trade codes for red/amber zone as it simplifies the
         # trade calculation logic as it can just deal with trade codes and
         # doesn't need to understand zones
-        if self._zone == traveller.ZoneType.AmberZone:
-            self._tradeCodes.add(traveller.TradeCode.AmberZone)
-        elif self._zone == traveller.ZoneType.RedZone:
-            self._tradeCodes.add(traveller.TradeCode.RedZone)
+        if self._zone == travellermap.ZoneType.AmberZone:
+            self._tradeCodes.add(travellermap.TradeCode.AmberZone)
+        elif self._zone == travellermap.ZoneType.RedZone:
+            self._tradeCodes.add(travellermap.TradeCode.RedZone)
 
     def string(self) -> str:
         return self._string
@@ -58,12 +58,12 @@ class Remarks(object):
     def hasRemark(self, remark: str) -> bool:
         return remark in self._tokenSet
 
-    def tradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
+    def tradeCodes(self) -> typing.Iterable[travellermap.TradeCode]:
         return self._tradeCodes
 
     def hasTradeCode(
             self,
-            tradeCode: traveller.TradeCode
+            tradeCode: travellermap.TradeCode
             ) -> bool:
         return tradeCode in self._tradeCodes
 
@@ -131,21 +131,21 @@ class Remarks(object):
             result = self._TradeCodePattern.match(remark)
             if result:
                 tradeCodeGlyph = result.group(1)
-                tradeCode = traveller.tradeCode(tradeCodeGlyph)
+                tradeCode = travellermap.tradeCode(tradeCodeGlyph)
                 if not tradeCode:
                     # Only log this at debug as it can happen a lot in some sectors
                     logging.debug(f'Ignoring unknown Trade Code glyph "{tradeCodeGlyph}"')
                     continue
                 self._tradeCodes.add(tradeCode)
 
-                if tradeCode == traveller.TradeCode.ResearchStation:
+                if tradeCode == travellermap.TradeCode.ResearchStation:
                     self._researchStation = Remarks._DefaultResearchStation
                 continue
 
             result = self._MilitaryRulePattern.match(remark)
             if result:
                 # TODO: Handle ruling world
-                self._tradeCodes.add(traveller.TradeCode.MilitaryRule)
+                self._tradeCodes.add(travellermap.TradeCode.MilitaryRule)
                 continue
 
             result = self._ResearchStationPattern.match(remark)
@@ -154,7 +154,7 @@ class Remarks(object):
                 if not self._researchStation:
                     self._researchStation = Remarks._DefaultResearchStation
 
-                self._tradeCodes.add(traveller.TradeCode.ResearchStation)
+                self._tradeCodes.add(travellermap.TradeCode.ResearchStation)
                 continue
 
             result = self._OwnershipPattern.match(remark)
@@ -203,14 +203,14 @@ class Remarks(object):
             result = self._SophontDiebackWorldPattern.match(remark)
             if result:
                 # TODO: Handle die back sophont
-                self._tradeCodes.add(traveller.TradeCode.DieBackWorld)
+                self._tradeCodes.add(travellermap.TradeCode.DieBackWorld)
                 continue
 
             result = self._SophontShortCodePattern.match(remark)
             if result:
                 sophontShortCode = result.group(1)
                 sophontPercentageCode = result.group(2)
-                sophontName = traveller.SophontManager.instance().sophontName(sophontShortCode)
+                sophontName = travellermap.SophontManager.instance().sophontName(sophontShortCode)
                 if not sophontName:
                     # We didn't manage to resolve the short code a name so use the code as the name
                     sophontName = sophontShortCode

@@ -858,8 +858,8 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorld: typing.Optional[traveller.World] = None,
-            saleWorlds: typing.Optional[typing.Iterable[traveller.World]] = None,
+            purchaseWorld: typing.Optional[travellermap.World] = None,
+            saleWorlds: typing.Optional[typing.Iterable[travellermap.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -2433,8 +2433,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorlds: typing.Optional[typing.Iterable[traveller.World]] = None,
-            saleWorlds: typing.Optional[typing.Iterable[traveller.World]] = None,
+            purchaseWorlds: typing.Optional[typing.Iterable[travellermap.World]] = None,
+            saleWorlds: typing.Optional[typing.Iterable[travellermap.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,

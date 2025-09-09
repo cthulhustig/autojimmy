@@ -1,6 +1,6 @@
 import cartographer
-import travellermap
 import traveller
+import travellermap
 import typing
 
 # TODO: I think I want to do some reshuffling so this isn't needed
@@ -19,7 +19,7 @@ class MapWorld(cartographer.AbstractWorld):
     def __init__(
             self,
             universe: 'MapUniverse',
-            world: traveller.World
+            world: travellermap.World
             ) -> None:
         self._universe = universe
         self._world = world
@@ -38,13 +38,13 @@ class MapWorld(cartographer.AbstractWorld):
             milieu=self._world.milieu(),
             index=self._world.hex().sectorIndex())
 
-    def uwp(self) -> traveller.UWP:
+    def uwp(self) -> travellermap.UWP:
         return self._world.uwp()
 
     def population(self) -> int:
         return self._world.population()
 
-    def zone(self) -> typing.Optional[traveller.ZoneType]:
+    def zone(self) -> typing.Optional[travellermap.ZoneType]:
         return self._world.zone()
 
     def isAnomaly(self) -> bool:
@@ -54,22 +54,22 @@ class MapWorld(cartographer.AbstractWorld):
         return self._world.allegiance()
 
     def legacyAllegiance(self) -> typing.Optional[str]:
-        return traveller.AllegianceManager.instance().legacyCode(
+        return travellermap.AllegianceManager.instance().legacyCode(
             milieu=self._world.milieu(),
             code=self._world.allegiance())
 
     def basesAllegiance(self) -> typing.Optional[str]:
-        return traveller.AllegianceManager.instance().basesCode(
+        return travellermap.AllegianceManager.instance().basesCode(
             milieu=self._world.milieu(),
             code=self._world.allegiance())
 
-    def bases(self) -> traveller.Bases:
+    def bases(self) -> travellermap.Bases:
         return self._world.bases()
 
-    def stellar(self) -> traveller.Stellar:
+    def stellar(self) -> travellermap.Stellar:
         return self._world.stellar()
 
-    def remarks(self) -> traveller.Remarks:
+    def remarks(self) -> travellermap.Remarks:
         return self._world.remarks()
 
     def hasWaterRefuelling(self) -> bool:
@@ -95,7 +95,7 @@ class MapSubsector(cartographer.AbstractSubsector):
     def __init__(
             self,
             universe: 'MapUniverse',
-            subsector: traveller.Subsector
+            subsector: travellermap.Subsector
             ) -> None:
         self._universe = universe
         self._subsector = subsector
@@ -143,7 +143,7 @@ class MapSector(cartographer.AbstractSector):
     def __init__(
             self,
             universe: 'MapUniverse',
-            sector: traveller.Sector
+            sector: travellermap.Sector
             ) -> None:
         self._universe = universe
         self._sector = sector
@@ -163,7 +163,7 @@ class MapSector(cartographer.AbstractSector):
     def isSelected(self) -> bool:
         return self._sector.selected()
 
-    def tagging(self) -> traveller.SectorTagging:
+    def tagging(self) -> travellermap.SectorTagging:
         return self._sector.tagging()
 
     def worlds(self) -> typing.Iterable[MapWorld]:
@@ -178,16 +178,16 @@ class MapSector(cartographer.AbstractSector):
         for world in self._sector.yieldWorlds():
             yield world.hex()
 
-    def regions(self) -> typing.Iterable[traveller.Region]:
+    def regions(self) -> typing.Iterable[travellermap.Region]:
         return self._sector.yieldRegions()
 
-    def borders(self) -> typing.Iterable[traveller.Border]:
+    def borders(self) -> typing.Iterable[travellermap.Border]:
         return self._sector.yieldBorders()
 
-    def routes(self) -> typing.Iterable[traveller.Route]:
+    def routes(self) -> typing.Iterable[travellermap.Route]:
         return self._sector.yieldRoutes()
 
-    def labels(self) -> typing.Iterable[traveller.Label]:
+    def labels(self) -> typing.Iterable[travellermap.Label]:
         return self._sector.yieldLabels()
 
     # NOTE: It's important that different instances of this class wrapping
@@ -239,7 +239,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuSectors = {}
             self._sectorWrappers[milieu] = milieuSectors
 
-        sector = traveller.WorldManager.instance().sectorBySectorIndex(
+        sector = travellermap.WorldManager.instance().sectorBySectorIndex(
             milieu=milieu,
             index=index,
             includePlaceholders=includePlaceholders)
@@ -265,7 +265,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuWorlds = {}
             self._worldWrappers[milieu] = milieuWorlds
 
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = travellermap.WorldManager.instance().worldByPosition(
             milieu=milieu,
             hex=hex,
             includePlaceholders=includePlaceholders)
@@ -288,7 +288,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuSectors = {}
             self._sectorWrappers[milieu] = milieuSectors
 
-        generator = traveller.WorldManager.instance().yieldSectorsInArea(
+        generator = travellermap.WorldManager.instance().yieldSectorsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
@@ -315,7 +315,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuSubsectors = {}
             self._subsectorWrappers[milieu] = milieuSubsectors
 
-        generator = traveller.WorldManager.instance().yieldSubsectorsInArea(
+        generator = travellermap.WorldManager.instance().yieldSubsectorsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
@@ -342,7 +342,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuWorlds = {}
             self._worldWrappers[milieu] = milieuWorlds
 
-        generator = traveller.WorldManager.instance().yieldWorldsInArea(
+        generator = travellermap.WorldManager.instance().yieldWorldsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
@@ -362,6 +362,6 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieu: travellermap.Milieu,
             sectorHex: str
             ) -> travellermap.HexPosition:
-        return traveller.WorldManager.instance().sectorHexToPosition(
+        return travellermap.WorldManager.instance().sectorHexToPosition(
             milieu=milieu,
             sectorHex=sectorHex)

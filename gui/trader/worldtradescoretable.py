@@ -173,7 +173,7 @@ class WorldTradeScoreTable(gui.HexTable):
             row: int,
             hex: travellermap.HexPosition
             ) -> int:
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = travellermap.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 

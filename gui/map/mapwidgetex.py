@@ -1462,7 +1462,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     def worldAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[traveller.World]:
+            ) -> typing.Optional[travellermap.World]:
         pos = self._mapWidget.mapFrom(self, pos)
         return self._mapWidget.worldAt(pos=pos)
 
@@ -1618,7 +1618,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self.setInfoHex(hex=hex)
             return
 
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = travellermap.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
         if not world and not self._enableDeadSpaceSelection:
@@ -1650,7 +1650,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for hex in hexes:
-                world = traveller.WorldManager.instance().worldByPosition(
+                world = travellermap.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if world:
@@ -1740,7 +1740,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Deselect any dead space
             selectionChanged = False
             for hex in list(self._selectedHexes.keys()):
-                world = traveller.WorldManager.instance().worldByPosition(
+                world = travellermap.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -2023,7 +2023,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if self._enableDeadSpaceSelection:
             shouldSelect = hex != None
         elif hex:
-            shouldSelect = traveller.WorldManager.instance().worldByPosition(
+            shouldSelect = travellermap.WorldManager.instance().worldByPosition(
                 milieu=self._milieu,
                 hex=hex) != None
 
@@ -2037,7 +2037,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
                 if self._selectionMode == MapWidgetEx.SelectionMode.MultiSelect and \
                         gui.isShiftKeyDown():
-                    worlds = traveller.WorldManager.instance().worldsInFlood(
+                    worlds = travellermap.WorldManager.instance().worldsInFlood(
                         milieu=self._milieu,
                         hex=hex)
                     self.selectHexes(hexes=[world.hex() for world in worlds])

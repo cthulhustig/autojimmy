@@ -2,7 +2,7 @@ import app
 import enum
 import gui
 import logic
-import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -59,34 +59,34 @@ _RefuellingFilterTypeTextMap = {
 }
 
 _UWPElementTextMap = {
-    traveller.UWP.Element.StarPort: 'Star Port',
-    traveller.UWP.Element.WorldSize: 'World Size',
-    traveller.UWP.Element.Atmosphere: 'Atmosphere',
-    traveller.UWP.Element.Hydrographics: 'Hydrographics',
-    traveller.UWP.Element.Population: 'Population',
-    traveller.UWP.Element.Government: 'Government',
-    traveller.UWP.Element.LawLevel: 'Law Level',
-    traveller.UWP.Element.TechLevel: 'Tech Level'
+    travellermap.UWP.Element.StarPort: 'Star Port',
+    travellermap.UWP.Element.WorldSize: 'World Size',
+    travellermap.UWP.Element.Atmosphere: 'Atmosphere',
+    travellermap.UWP.Element.Hydrographics: 'Hydrographics',
+    travellermap.UWP.Element.Population: 'Population',
+    travellermap.UWP.Element.Government: 'Government',
+    travellermap.UWP.Element.LawLevel: 'Law Level',
+    travellermap.UWP.Element.TechLevel: 'Tech Level'
 }
 
 _EconomicsElementTextMap = {
-    traveller.Economics.Element.Resources: 'Resources',
-    traveller.Economics.Element.Labour: 'Labour',
-    traveller.Economics.Element.Infrastructure: 'Infrastructure',
-    traveller.Economics.Element.Efficiency: 'Efficiency'
+    travellermap.Economics.Element.Resources: 'Resources',
+    travellermap.Economics.Element.Labour: 'Labour',
+    travellermap.Economics.Element.Infrastructure: 'Infrastructure',
+    travellermap.Economics.Element.Efficiency: 'Efficiency'
 }
 
 _CultureElementTextMap = {
-    traveller.Culture.Element.Heterogeneity: 'Heterogeneity',
-    traveller.Culture.Element.Acceptance: 'Acceptance',
-    traveller.Culture.Element.Strangeness: 'Strangeness',
-    traveller.Culture.Element.Symbols: 'Symbols'
+    travellermap.Culture.Element.Heterogeneity: 'Heterogeneity',
+    travellermap.Culture.Element.Acceptance: 'Acceptance',
+    travellermap.Culture.Element.Strangeness: 'Strangeness',
+    travellermap.Culture.Element.Symbols: 'Symbols'
 }
 
 _PBGElementTextMap = {
-    traveller.PBG.Element.PopulationMultiplier: 'Population Multiplier',
-    traveller.PBG.Element.PlanetoidBelts: 'Planetoid Belts',
-    traveller.PBG.Element.GasGiants: 'Gas Giants'
+    travellermap.PBG.Element.PopulationMultiplier: 'Population Multiplier',
+    travellermap.PBG.Element.PlanetoidBelts: 'Planetoid Belts',
+    travellermap.PBG.Element.GasGiants: 'Gas Giants'
 }
 
 class _CodeComboBox(QtWidgets.QComboBox):
@@ -110,27 +110,27 @@ class _CodeComboBox(QtWidgets.QComboBox):
                 return
 
 class _UWPCodeComboBox(_CodeComboBox):
-    def setElement(self, element: traveller.UWP.Element) -> None:
+    def setElement(self, element: travellermap.UWP.Element) -> None:
         self.clear()
-        for code, description in traveller.UWP.descriptionMap(element=element).items():
+        for code, description in travellermap.UWP.descriptionMap(element=element).items():
             self.addItem(f'{code} - {description}', code)
 
 class _EconomicsCodeComboBox(_CodeComboBox):
-    def setElement(self, element: traveller.Economics.Element) -> None:
+    def setElement(self, element: travellermap.Economics.Element) -> None:
         self.clear()
-        for code, description in traveller.Economics.descriptionMap(element=element).items():
+        for code, description in travellermap.Economics.descriptionMap(element=element).items():
             self.addItem(f'{code} - {description}', code)
 
 class _CultureCodeComboBox(_CodeComboBox):
-    def setElement(self, element: traveller.Culture.Element) -> None:
+    def setElement(self, element: travellermap.Culture.Element) -> None:
         self.clear()
-        for code, description in traveller.Culture.descriptionMap(element=element).items():
+        for code, description in travellermap.Culture.descriptionMap(element=element).items():
             self.addItem(f'{code} - {description}', code)
 
 class _PBGCodeComboBox(_CodeComboBox):
-    def setElement(self, element: traveller.PBG.Element) -> None:
+    def setElement(self, element: travellermap.PBG.Element) -> None:
         self.clear()
-        for code in traveller.PBG.codeList(element=element):
+        for code in travellermap.PBG.codeList(element=element):
             self.addItem(f'{code}', code)
 
 class _VerticallyResizingStackWidget(QtWidgets.QStackedWidget):
@@ -439,8 +439,8 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ComparisonFilterOperationTextMap)
 
         self._zoneFilterValueComboBox = gui.EnumComboBox(
-            type=traveller.ZoneType,
-            textMap=traveller.zoneTypeNameMap())
+            type=travellermap.ZoneType,
+            textMap=travellermap.zoneTypeNameMap())
 
         layout = gui.FormLayoutEx()
         layout.addRow('Operation:', self._zoneFilterOperationComboBox)
@@ -452,7 +452,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupUWPFilterLayout(self) -> None:
         self._uwpFilterElementComboBox = gui.EnumComboBox(
-            type=traveller.UWP.Element,
+            type=travellermap.UWP.Element,
             textMap=_UWPElementTextMap)
         self._uwpFilterElementComboBox.currentIndexChanged.connect(self._uwpElementChanged)
 
@@ -474,7 +474,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupEconomicsFilterLayout(self) -> None:
         self._economicsFilterElementComboBox = gui.EnumComboBox(
-            type=traveller.Economics.Element,
+            type=travellermap.Economics.Element,
             textMap=_EconomicsElementTextMap)
         self._economicsFilterElementComboBox.currentIndexChanged.connect(self._economicsElementChanged)
 
@@ -496,7 +496,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupCultureFilterLayout(self) -> None:
         self._cultureFilterElementComboBox = gui.EnumComboBox(
-            type=traveller.Culture.Element,
+            type=travellermap.Culture.Element,
             textMap=_CultureElementTextMap)
         self._cultureFilterElementComboBox.currentIndexChanged.connect(self._cultureElementChanged)
 
@@ -578,9 +578,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._basesFilterValuesList = _EnumOptionWidget(
-            type=traveller.BaseType,
+            type=travellermap.BaseType,
             columnCount=2,
-            textMap=traveller.Bases.descriptionMap(),
+            textMap=travellermap.Bases.descriptionMap(),
             sortAlphabetically=True)
 
         layout = gui.FormLayoutEx()
@@ -597,9 +597,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._nobilityFilterValuesList = _EnumOptionWidget(
-            type=traveller.NobilityType,
+            type=travellermap.NobilityType,
             columnCount=3,
-            textMap=traveller.Nobilities.descriptionMap(),
+            textMap=travellermap.Nobilities.descriptionMap(),
             sortAlphabetically=False) # Show nobility in priority order rather than alphabetic
 
         layout = gui.FormLayoutEx()
@@ -635,9 +635,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._tradeCodeFilterValuesList = _EnumOptionWidget(
-            type=traveller.TradeCode,
+            type=travellermap.TradeCode,
             columnCount=3,
-            textMap=traveller.tradeCodeNameMap(),
+            textMap=travellermap.tradeCodeNameMap(),
             sortAlphabetically=True)
 
         layout = gui.FormLayoutEx()
@@ -650,7 +650,7 @@ class WorldFilterDialog(gui.DialogEx):
 
     def _setupPBGFilterLayout(self) -> None:
         self._pbgFilterElementComboBox = gui.EnumComboBox(
-            type=traveller.PBG.Element,
+            type=travellermap.PBG.Element,
             textMap=_PBGElementTextMap)
         self._pbgFilterElementComboBox.currentIndexChanged.connect(self._pbgElementChanged)
 

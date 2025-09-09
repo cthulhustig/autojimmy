@@ -1,6 +1,5 @@
 import logic
 import time
-import traveller
 import travellermap
 import typing
 from PyQt5 import QtCore
@@ -20,7 +19,7 @@ class RoutePlannerJob(QtCore.QThread):
             parent: QtCore.QObject,
             routingType: logic.RoutingType,
             milieu: travellermap.Milieu,
-            hexSequence: typing.Sequence[traveller.World],
+            hexSequence: typing.Sequence[travellermap.World],
             shipTonnage: int,
             shipJumpRating: int,
             shipFuelCapacity: int,

@@ -81,7 +81,7 @@ class PitStopCostCalculator(object):
 
     def refuellingType(
             self,
-            world: traveller.World
+            world: travellermap.World
             ) -> typing.Optional[RefuellingType]:
         if world in self._worldFuelTypes:
             return self._worldFuelTypes[world]
@@ -92,7 +92,7 @@ class PitStopCostCalculator(object):
 
     def fuelCost(
             self,
-            world: traveller.World
+            world: travellermap.World
             ) -> typing.Optional[common.ScalarCalculation]:
         refuellingType = self.refuellingType(world=world)
         if refuellingType is logic.RefuellingType.Refined:
@@ -109,7 +109,7 @@ class PitStopCostCalculator(object):
 
     def berthingCost(
             self,
-            world: traveller.World,
+            world: travellermap.World,
             mandatory: bool = False, # Is berthing mandatory rather than based
                                      # on the refuelling type for the world
             diceRoller: typing.Optional[common.DiceRoller] = None
@@ -140,7 +140,7 @@ class PitStopCostCalculator(object):
 
     def _selectRefuellingType(
             self,
-            world: traveller.World
+            world: travellermap.World
             ) -> typing.Optional[RefuellingType]:
         if self._refuellingStrategy == RefuellingStrategy.RefinedFuelOnly:
             if traveller.worldHasStarPortRefuelling(
@@ -226,7 +226,7 @@ class PitStopCostCalculator(object):
     # fuel they purchase.
     def _fallbackRefuellingType(
             self,
-            world: traveller.World
+            world: travellermap.World
             ) -> typing.Optional[RefuellingType]:
         if traveller.worldHasStarPortRefuelling(
                 includeRefined=False, # Only check for unrefined fuel
@@ -244,7 +244,7 @@ class PitStop(object):
     def __init__(
             self,
             routeIndex: int, # Intentionally not a calculation as it's not used to calculate values
-            world: traveller.World,
+            world: travellermap.World,
             refuellingType: typing.Optional[RefuellingType],
             tonsOfFuel: typing.Optional[common.ScalarCalculation],
             fuelCost: typing.Optional[common.ScalarCalculation],
@@ -281,7 +281,7 @@ class PitStop(object):
     def routeIndex(self) -> int:
         return self._routeIndex
 
-    def world(self) -> traveller.World:
+    def world(self) -> travellermap.World:
         return self._world
 
     def hex(self) -> travellermap.HexPosition:
@@ -395,7 +395,7 @@ class _NodeContext(object):
     def __init__(
             self,
             index: int,
-            world: typing.Optional[traveller.World],
+            world: typing.Optional[travellermap.World],
             refuellingType: typing.Optional[RefuellingType],
             fuelCostPerTon: typing.Optional[int], # Only used if world and refuelling type is not None
             berthingCost: typing.Optional[int], # Only used if world is not None
@@ -420,7 +420,7 @@ class _NodeContext(object):
     def index(self) -> int:
         return self._index
 
-    def world(self) -> typing.Optional[traveller.World]:
+    def world(self) -> typing.Optional[travellermap.World]:
         return self._world
 
     def isFinish(self) -> bool:
@@ -658,7 +658,7 @@ def _processRoute(
         while reachableNodeIndex <= finishNodeIndex:
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
-            toWorld = traveller.WorldManager.instance().worldByPosition(
+            toWorld = travellermap.WorldManager.instance().worldByPosition(
                 milieu=milieu,
                 hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
@@ -677,7 +677,7 @@ def _processRoute(
             reachableNodeIndex += 1
 
         nodePos = jumpRoute.nodeAt(index=nodeIndex)
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = travellermap.WorldManager.instance().worldByPosition(
             milieu=milieu,
             hex=nodePos)
         refuellingType = None
