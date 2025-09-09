@@ -52,6 +52,13 @@ class AbstractWorld(object):
     def hasGasGiantRefuelling(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hasGasGiantRefuelling')
 
+# TODO: I think it should be possible to rework stuff a bit so that
+# I can get rid of this class and all the subsector code from the
+# selector. It's only really needed for _drawSubsectorNames. I think
+# it should be possible to update that code so that it iterates over
+# the visible sectors and works out which subsector indexes are visible.
+# It would probably need an extra method added to AbstractSector to get
+# the subsector name by the subsector code
 class AbstractSubsector(object):
     def milieu(self) -> multiverse.Milieu:
         raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement milieu')

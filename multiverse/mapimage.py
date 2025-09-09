@@ -3,7 +3,7 @@ import typing
 
 # TODO: Most/all off this shouldn't be needed by the time I'm finished. There
 # might be a couple of bits that are used in the tooltip code but it could
-# probably be moved there
+# probably be moved there (it definitely shouldn't live in multiverse)
 
 # NOTE: The values for this enum should be the standard file extension for that format
 class MapFormat(enum.Enum):

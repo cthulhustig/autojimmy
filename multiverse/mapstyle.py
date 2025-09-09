@@ -1,5 +1,10 @@
 import enum
 
+# TODO: Once the datastore has been updated to no longer read MapStyle
+# for custom sectors it should be possible to move this to cartographer/.
+# It probably means splitting it so the enum goes into primitives.py and
+# the functions got into utils.py
+
 class MapStyle(enum.Enum):
     Poster = 'Poster'
     Print = 'Print'

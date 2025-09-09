@@ -1,5 +1,12 @@
 import enum
 
+# TODO: Once the datastore has been updated to not load map options
+# for custom sectors. It should be possible to move this class into
+# app\. Ideally it should probably go into gui\map\ but it's needed
+# in app as it's used by app.Config. As part of this change the code
+# that converts these map options to cartographer render options
+# should be moved into gui\map
+
 # NOTE: If I ever change the name of any of these enums I'll
 # need to add a mapping to the code that loads CustomMapOptions
 # from the custom universe.json format I use for custom sectors.
