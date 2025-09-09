@@ -1,12 +1,12 @@
 import cartographer
 import math
-import travellermap
+import multiverse
 import typing
 
 class RectSelector(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             universe: cartographer.AbstractUniverse,
             sectorSlop: int = 1, # Numbers of sectors
             subsectorSlop: int = 1, # Number of subsectors
@@ -43,10 +43,10 @@ class RectSelector(object):
         self._rect = cartographer.RectangleF(rect)
         self._invalidate()
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
@@ -133,21 +133,21 @@ class RectSelector(object):
             sloppyRect = cartographer.RectangleF(self._rect)
             if self._sectorSlop:
                 sloppyRect.inflate(
-                    x=self._sectorSlop * travellermap.SectorWidth,
-                    y=self._sectorSlop * travellermap.SectorHeight)
+                    x=self._sectorSlop * multiverse.SectorWidth,
+                    y=self._sectorSlop * multiverse.SectorHeight)
 
-            upperLeft = travellermap.HexPosition(
-                sectorX=int(math.floor((sloppyRect.left() + travellermap.ReferenceHexX) / travellermap.SectorWidth)),
-                sectorY=int(math.floor((sloppyRect.top() + travellermap.ReferenceHexY) / travellermap.SectorHeight)),
-                offsetX=travellermap.SectorWidth - 1,
-                offsetY=travellermap.SectorHeight - 1)
-            lowerRight = travellermap.HexPosition(
-                sectorX=int(math.floor((sloppyRect.right() + travellermap.ReferenceHexX) / travellermap.SectorWidth)),
-                sectorY=int(math.floor((sloppyRect.bottom() + travellermap.ReferenceHexY) / travellermap.SectorHeight)),
+            upperLeft = multiverse.HexPosition(
+                sectorX=int(math.floor((sloppyRect.left() + multiverse.ReferenceHexX) / multiverse.SectorWidth)),
+                sectorY=int(math.floor((sloppyRect.top() + multiverse.ReferenceHexY) / multiverse.SectorHeight)),
+                offsetX=multiverse.SectorWidth - 1,
+                offsetY=multiverse.SectorHeight - 1)
+            lowerRight = multiverse.HexPosition(
+                sectorX=int(math.floor((sloppyRect.right() + multiverse.ReferenceHexX) / multiverse.SectorWidth)),
+                sectorY=int(math.floor((sloppyRect.bottom() + multiverse.ReferenceHexY) / multiverse.SectorHeight)),
                 offsetX=0,
                 offsetY=0)
 
-            usePlaceholders = self._milieu is not travellermap.Milieu.M1105
+            usePlaceholders = self._milieu is not multiverse.Milieu.M1105
             sloppySectors = self._universe.sectorsInArea(
                 milieu=self._milieu,
                 ulHex=upperLeft,
@@ -196,13 +196,13 @@ class RectSelector(object):
             sloppyRect = cartographer.RectangleF(self._rect)
             if self._subsectorSlop:
                 sloppyRect.inflate(
-                    x=self._subsectorSlop * travellermap.SubsectorWidth,
-                    y=self._subsectorSlop * travellermap.SubsectorHeight)
+                    x=self._subsectorSlop * multiverse.SubsectorWidth,
+                    y=self._subsectorSlop * multiverse.SubsectorHeight)
 
-            upperLeft = travellermap.HexPosition(
+            upperLeft = multiverse.HexPosition(
                 absoluteX=int(math.floor(sloppyRect.left())),
                 absoluteY=int(math.floor(sloppyRect.top())))
-            lowerRight = travellermap.HexPosition(
+            lowerRight = multiverse.HexPosition(
                 absoluteX=int(math.ceil(sloppyRect.right())),
                 absoluteY=int(math.ceil(sloppyRect.bottom())))
 
@@ -233,14 +233,14 @@ class RectSelector(object):
             if self._worldSlop:
                 rect.inflate(x=self._worldSlop, y=self._worldSlop)
 
-            upperLeft = travellermap.HexPosition(
+            upperLeft = multiverse.HexPosition(
                 absoluteX=int(math.floor(rect.left())),
                 absoluteY=int(math.floor(rect.top())))
-            lowerRight = travellermap.HexPosition(
+            lowerRight = multiverse.HexPosition(
                 absoluteX=int(math.ceil(rect.right())),
                 absoluteY=int(math.ceil(rect.bottom())))
 
-            usePlaceholders = self._milieu is not travellermap.Milieu.M1105
+            usePlaceholders = self._milieu is not multiverse.Milieu.M1105
             sloppyWorlds = self._universe.worldsInArea(
                 milieu=self._milieu,
                 ulHex=upperLeft,

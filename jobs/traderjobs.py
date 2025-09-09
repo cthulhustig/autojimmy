@@ -3,7 +3,7 @@ import datetime
 import logic
 import time
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -17,7 +17,7 @@ class TraderJobBase(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             tradeOptionCallback: typing.Callable[[typing.List[logic.TradeOption]], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             tradeInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
@@ -103,9 +103,9 @@ class SingleWorldTraderJob(TraderJobBase):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
-            milieu: travellermap.Milieu,
-            purchaseWorld: travellermap.World,
-            saleWorlds: typing.Iterable[travellermap.World],
+            milieu: multiverse.Milieu,
+            purchaseWorld: multiverse.World,
+            saleWorlds: typing.Iterable[multiverse.World],
             currentCargo: typing.Iterable[logic.CargoRecord],
             possibleCargo: typing.Iterable[logic.CargoRecord],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
@@ -212,9 +212,9 @@ class MultiWorldTraderJob(TraderJobBase):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
-            milieu: travellermap.Milieu,
-            purchaseWorlds: typing.Iterable[travellermap.World],
-            saleWorlds: typing.Iterable[travellermap.World],
+            milieu: multiverse.Milieu,
+            purchaseWorlds: typing.Iterable[multiverse.World],
+            saleWorlds: typing.Iterable[multiverse.World],
             playerBrokerDm: typing.Union[int, common.ScalarCalculation],
             minSellerDm: typing.Union[int, common.ScalarCalculation],
             maxSellerDm: typing.Union[int, common.ScalarCalculation],

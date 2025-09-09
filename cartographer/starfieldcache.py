@@ -1,6 +1,6 @@
 import cartographer
 import random
-import travellermap
+import multiverse
 import typing
 
 class StarfieldCache(object):

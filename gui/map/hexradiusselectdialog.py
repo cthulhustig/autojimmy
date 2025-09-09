@@ -3,17 +3,17 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.MapStyle,
-            mapOptions: typing.Iterable[travellermap.MapOption],
+            mapStyle: multiverse.MapStyle,
+            mapOptions: typing.Iterable[multiverse.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: logic.WorldTagging,
@@ -26,7 +26,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._overlays: typing.List[str] = []
-        self._selectedHexes: typing.List[travellermap.HexPosition] = []
+        self._selectedHexes: typing.List[multiverse.HexPosition] = []
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(app.MinPossibleJumpRating, app.MaxSearchRadius)
@@ -108,14 +108,14 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         self._updateOverlay()
 
-    def selectedHexes(self) -> typing.Collection[travellermap.HexPosition]:
+    def selectedHexes(self) -> typing.Collection[multiverse.HexPosition]:
         return list(self._selectedHexes)
 
-    def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def centerHex(self) -> typing.Optional[multiverse.HexPosition]:
         selection = self._mapWidget.selectedHexes()
         return selection[0] if selection else None
 
-    def setCenterHex(self, hex: typing.Optional[travellermap.HexPosition]) -> None:
+    def setCenterHex(self, hex: typing.Optional[multiverse.HexPosition]) -> None:
         if hex == self.centerHex():
             return # Nothing to do
 
@@ -176,7 +176,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.MapStyle
+            style: multiverse.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -184,7 +184,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.MapOption]
+            options: typing.Iterable[multiverse.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -233,7 +233,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._overlays.append(handle)
             else:
                 try:
-                    worlds = travellermap.WorldManager.instance().worldsInRadius(
+                    worlds = multiverse.WorldManager.instance().worldsInRadius(
                         milieu=self._mapWidget.milieu(),
                         center=centerHex,
                         searchRadius=searchRadius)

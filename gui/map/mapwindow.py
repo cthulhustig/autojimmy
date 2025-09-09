@@ -1,7 +1,7 @@
 import app
 import gui
 import logic
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
@@ -42,8 +42,8 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHex(
             self,
-            hex: travellermap.HexPosition,
-            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
+            hex: multiverse.HexPosition,
+            scale: typing.Optional[multiverse.Scale] = multiverse.Scale(linear=64), # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
@@ -52,7 +52,7 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHexes(
             self,
-            hexes: travellermap.HexPosition
+            hexes: multiverse.HexPosition
             ) -> None:
         self._mapWidget.centerOnHexes(
             hexes=hexes,
@@ -71,7 +71,7 @@ class MapWindow(gui.WindowWidget):
 
     def highlightHex(
             self,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -85,7 +85,7 @@ class MapWindow(gui.WindowWidget):
 
     def highlightHexes(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition],
+            hexes: typing.Iterable[multiverse.HexPosition],
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -147,7 +147,7 @@ class MapWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.MapStyle
+            style: multiverse.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -155,7 +155,7 @@ class MapWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.MapOption]
+            options: typing.Iterable[multiverse.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

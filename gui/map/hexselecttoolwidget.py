@@ -3,13 +3,13 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore
 
 class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
-    showHex = QtCore.pyqtSignal(travellermap.HexPosition)
+    showHex = QtCore.pyqtSignal(multiverse.HexPosition)
 
     # This state version intentionally doesn't match the class name. This
     # was done for backwards compatibility when the class was renamed as
@@ -25,10 +25,10 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.MapStyle,
-            mapOptions: typing.Iterable[travellermap.MapOption],
+            mapStyle: multiverse.MapStyle,
+            mapOptions: typing.Iterable[multiverse.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -98,12 +98,12 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
         QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
     def setMilieu(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             ) -> None:
         if milieu is self._milieu:
             return
@@ -119,18 +119,18 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             return
         self._rules = traveller.Rules(rules)
 
-    def mapStyle(self) -> travellermap.MapStyle:
+    def mapStyle(self) -> multiverse.MapStyle:
         return self._mapStyle
 
-    def setMapStyle(self, style: travellermap.MapStyle) -> None:
+    def setMapStyle(self, style: multiverse.MapStyle) -> None:
         if style == self._mapStyle:
             return
         self._mapStyle = style
 
-    def mapOptions(self) -> typing.Iterable[travellermap.MapOption]:
+    def mapOptions(self) -> typing.Iterable[multiverse.MapOption]:
         return list(self._mapStyle)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Iterable[multiverse.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return
@@ -174,12 +174,12 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             return
         self._taggingColours = app.TaggingColours(colours) if colours else None
 
-    def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def selectedHex(self) -> typing.Optional[multiverse.HexPosition]:
         return self._searchComboBox.currentHex()
 
     def setSelectedHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition],
+            hex: typing.Optional[multiverse.HexPosition],
             updateHistory: bool = True
             ) -> None:
         self._searchComboBox.setCurrentHex(
@@ -188,11 +188,11 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
-    def selectedWorld(self) -> typing.Optional[travellermap.World]:
+    def selectedWorld(self) -> typing.Optional[multiverse.World]:
         hex = self.selectedHex()
         if not hex:
             return None
-        return travellermap.WorldManager.instance().worldByPosition(
+        return multiverse.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -258,7 +258,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
                 logging.warning(f'Failed to restore HexSelectToolWidget state (Invalid hex string "{value}")')
                 return False
             try:
-                hex = travellermap.HexPosition(
+                hex = multiverse.HexPosition(
                     absoluteX=int(tokens[0]),
                     absoluteY=int(tokens[1]))
             except Exception as ex:
@@ -272,7 +272,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def _selectionChanged(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self._showHexButton.setEnabled(hex != None)
         self._showInfoButton.setEnabled(hex != None)

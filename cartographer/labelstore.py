@@ -1,7 +1,7 @@
 import common
 import logging
 import cartographer
-import travellermap
+import multiverse
 import typing
 import xml.etree.ElementTree
 
@@ -38,7 +38,7 @@ class LabelStore(object):
 
     # The Traveller Map world labels use sector hex locations with the
     # sectors using the M1105 names
-    _SectorHexMilieu = travellermap.Milieu.M1105
+    _SectorHexMilieu = multiverse.Milieu.M1105
 
     def __init__(
             self,
@@ -46,17 +46,17 @@ class LabelStore(object):
             ) -> None:
         self._universe = universe
         self.minorLabels = self._parseMapLabels(
-            travellermap.DataStore.instance().loadTextResource(
+            multiverse.DataStore.instance().loadTextResource(
                 filePath=LabelStore._MinorLabelsPath))
         self.megaLabels = self._parseMapLabels(
-            travellermap.DataStore.instance().loadTextResource(
+            multiverse.DataStore.instance().loadTextResource(
                 filePath=LabelStore._MajorLabelsPath))
         self.worldLabels = self._parseWorldLabels(
-            travellermap.DataStore.instance().loadTextResource(
+            multiverse.DataStore.instance().loadTextResource(
                 filePath=LabelStore._WorldLabelPath))
 
     def _parseMapLabels(self, content: str) -> typing.List[MapLabel]:
-        _, rows = travellermap.parseTabContent(content=content)
+        _, rows = multiverse.parseTabContent(content=content)
         labels = []
         for data in rows:
             labels.append(MapLabel(

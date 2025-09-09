@@ -1,5 +1,5 @@
 import enum
-import travellermap
+import multiverse
 import typing
 
 # Types and ehex mappings taken from Traveller Map source code (world_utils.js).

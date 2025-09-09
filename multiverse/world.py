@@ -1,12 +1,12 @@
 import math
-import travellermap
+import multiverse
 import typing
 
 class World(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
-            hex: travellermap.HexPosition,
+            milieu: multiverse.Milieu,
+            hex: multiverse.HexPosition,
             worldName: str,
             isNameGenerated: bool,
             sectorName: str,
@@ -30,27 +30,27 @@ class World(object):
         self._sectorName = sectorName
         self._subsectorName = subsectorName
         self._allegiance = allegiance
-        self._uwp = travellermap.UWP(uwp)
-        self._economics = travellermap.Economics(economics)
-        self._culture = travellermap.Culture(culture)
-        self._nobilities = travellermap.Nobilities(nobilities)
-        self._zone = travellermap.parseZoneString(zone)
-        self._remarks = travellermap.Remarks(
+        self._uwp = multiverse.UWP(uwp)
+        self._economics = multiverse.Economics(economics)
+        self._culture = multiverse.Culture(culture)
+        self._nobilities = multiverse.Nobilities(nobilities)
+        self._zone = multiverse.parseZoneString(zone)
+        self._remarks = multiverse.Remarks(
             string=remarks,
             sectorName=sectorName,
             zone=self._zone)
         self._isAnomaly = self._remarks.hasRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasRemark('{Fuel}')
-        self._stellar = travellermap.Stellar(stellar)
-        self._pbg = travellermap.PBG(pbg)
+        self._stellar = multiverse.Stellar(stellar)
+        self._pbg = multiverse.PBG(pbg)
         # There is always 1 system world (the main world)
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
-        self._bases = travellermap.Bases(bases)
+        self._bases = multiverse.Bases(bases)
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def hex(self) -> travellermap.HexPosition:
+    def hex(self) -> multiverse.HexPosition:
         return self._hex
 
     def name(
@@ -71,7 +71,7 @@ class World(object):
         return self._subsectorName
 
     def sectorHex(self) -> str:
-        return travellermap.formatSectorHex(
+        return multiverse.formatSectorHex(
             sectorName=self._sectorName,
             offsetX=self._hex.offsetX(),
             offsetY=self._hex.offsetY())
@@ -79,44 +79,44 @@ class World(object):
     def allegiance(self) -> str:
         return self._allegiance
 
-    def uwp(self) -> travellermap.UWP:
+    def uwp(self) -> multiverse.UWP:
         return self._uwp
 
-    def economics(self) -> travellermap.Economics:
+    def economics(self) -> multiverse.Economics:
         return self._economics
 
-    def culture(self) -> travellermap.Culture:
+    def culture(self) -> multiverse.Culture:
         return self._culture
 
-    def remarks(self) -> travellermap.Remarks:
+    def remarks(self) -> multiverse.Remarks:
         return self._remarks
 
     def hasRemark(self, remark: str) -> None:
         return self._remarks.hasRemark(remark=remark)
 
-    def zone(self) -> typing.Optional[travellermap.ZoneType]:
+    def zone(self) -> typing.Optional[multiverse.ZoneType]:
         return self._zone
 
-    def nobilities(self) -> travellermap.Nobilities:
+    def nobilities(self) -> multiverse.Nobilities:
         return self._nobilities
 
     def hasNobility(self, nobilityType: str) -> bool:
         return nobilityType in self._nobilities
 
-    def bases(self) -> travellermap.Bases:
+    def bases(self) -> multiverse.Bases:
         return self._bases
 
-    def hasBase(self, baseType: travellermap.BaseType) -> bool:
+    def hasBase(self, baseType: multiverse.BaseType) -> bool:
         return self._bases.hasBase(baseType)
 
-    def tradeCodes(self) -> typing.Iterable[travellermap.TradeCode]:
+    def tradeCodes(self) -> typing.Iterable[multiverse.TradeCode]:
         return self._remarks.tradeCodes()
 
-    def hasTradeCode(self, tradeCode: travellermap.TradeCode) -> bool:
+    def hasTradeCode(self, tradeCode: multiverse.TradeCode) -> bool:
         return self._remarks.hasTradeCode(tradeCode)
 
     def hasStarPort(self):
-        starPortCode = self._uwp.code(travellermap.UWP.Element.StarPort)
+        starPortCode = self._uwp.code(multiverse.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
     def hasOwner(self) -> bool:
@@ -148,21 +148,21 @@ class World(object):
     def isFuelCache(self) -> bool:
         return self._isFuelCache
 
-    def stellar(self) -> travellermap.Stellar:
+    def stellar(self) -> multiverse.Stellar:
         return self._stellar
 
     def numberOfStars(self) -> int:
         return self._stellar.starCount()
 
-    def pbg(self) -> travellermap.PBG:
+    def pbg(self) -> multiverse.PBG:
         return self._pbg
 
     def population(self) -> int:
-        multiplier = travellermap.ehexToInteger(
-            value=self._pbg.code(travellermap.PBG.Element.PopulationMultiplier),
+        multiplier = multiverse.ehexToInteger(
+            value=self._pbg.code(multiverse.PBG.Element.PopulationMultiplier),
             default=None)
-        exponent = travellermap.ehexToInteger(
-            value=self._uwp.code(travellermap.UWP.Element.Population),
+        exponent = multiverse.ehexToInteger(
+            value=self._uwp.code(multiverse.UWP.Element.Population),
             default=None)
 
         if multiplier == None or exponent == None:
@@ -178,13 +178,13 @@ class World(object):
         return int(math.pow(10, exponent)) * multiplier
 
     def numberOfPlanetoidBelts(self) -> int:
-        return travellermap.ehexToInteger(
-            value=self._pbg.code(travellermap.PBG.Element.PlanetoidBelts),
+        return multiverse.ehexToInteger(
+            value=self._pbg.code(multiverse.PBG.Element.PlanetoidBelts),
             default=-1)
 
     def numberOfGasGiants(self) -> int:
-        return travellermap.ehexToInteger(
-            value=self._pbg.code(travellermap.PBG.Element.GasGiants),
+        return multiverse.ehexToInteger(
+            value=self._pbg.code(multiverse.PBG.Element.GasGiants),
             default=-1)
 
     def numberOfSystemWorlds(self) -> int:
@@ -194,7 +194,7 @@ class World(object):
             self,
             dest: typing.Union[
                 'World',
-                travellermap.HexPosition
+                multiverse.HexPosition
             ]
             ) -> int:
         return self._hex.parsecsTo(

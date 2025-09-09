@@ -4,7 +4,7 @@ import logic
 import functools
 import time
 import traveller
-import travellermap
+import multiverse
 import typing
 
 # Rules for finding a supplier (seller or buyer)
@@ -67,8 +67,8 @@ class Simulator(object):
 
     def run(
             self,
-            milieu: travellermap.Milieu,
-            startHex: travellermap.HexPosition,
+            milieu: multiverse.Milieu,
+            startHex: multiverse.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -137,7 +137,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = travellermap.WorldManager.instance().worldByPosition(
+        currentWorld = multiverse.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=self._currentHex)
 
@@ -147,7 +147,7 @@ class Simulator(object):
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
             worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
-            self._nearbyWorlds = travellermap.WorldManager.instance().worldsInRadius(
+            self._nearbyWorlds = multiverse.WorldManager.instance().worldsInRadius(
                 milieu=self._milieu,
                 center=self._currentHex,
                 searchRadius=self._searchRadius,
@@ -220,13 +220,13 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex = jumpRoute.nodeAt(self._jumpRouteIndex)
-                nextWorld = travellermap.WorldManager.instance().worldByPosition(
+                nextWorld = multiverse.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=nextHex)
-                currentString = travellermap.WorldManager.instance().canonicalHexName(
+                currentString = multiverse.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=self._currentHex)
-                nextString = travellermap.WorldManager.instance().canonicalHexName(
+                nextString = multiverse.WorldManager.instance().canonicalHexName(
                     milieu=self._milieu,
                     hex=nextHex)
                 self._logMessage(
@@ -271,7 +271,7 @@ class Simulator(object):
                 self._availableFunds,
                 self._simulationTime))
 
-    def _setCurrentHex(self, hex: travellermap.HexPosition) -> None:
+    def _setCurrentHex(self, hex: multiverse.HexPosition) -> None:
         self._currentHex = hex
         if self._eventCallback:
             self._eventCallback(Simulator.Event(
@@ -304,7 +304,7 @@ class Simulator(object):
 
     def _sellerFound(
             self,
-            world: travellermap.World,
+            world: multiverse.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -408,7 +408,7 @@ class Simulator(object):
 
     def _buyerFound(
             self,
-            world: travellermap.World,
+            world: multiverse.World,
             elapsedHours: int,
             blackMarket: bool,
             ) -> bool:
@@ -503,8 +503,8 @@ class Simulator(object):
 
     def _runTradeLoop(
             self,
-            world: travellermap.World,
-            onTraderCallback: typing.Callable[[travellermap.World, int, bool], bool],
+            world: multiverse.World,
+            onTraderCallback: typing.Callable[[multiverse.World, int, bool], bool],
             lookingForSeller: bool
             ) -> None:
         class MethodState(object):
@@ -559,7 +559,7 @@ class Simulator(object):
                 False, # Not online
                 True, # Black market buyer/seller
                 0))
-        if self._playerAdminDm != None and travellermap.ehexToInteger(value=world.uwp().code(travellermap.UWP.Element.TechLevel), default=-1) >= 8:
+        if self._playerAdminDm != None and multiverse.ehexToInteger(value=world.uwp().code(multiverse.UWP.Element.TechLevel), default=-1) >= 8:
             if lookForLegalTrader:
                 methods.append(MethodState(
                     self._playerAdminDm,
@@ -636,8 +636,8 @@ class Simulator(object):
                 lastTraderFoundTime = tradeTime
 
     @staticmethod
-    def _starPortModifier(world: travellermap.World) -> int:
-        starPortCode = world.uwp().code(travellermap.UWP.Element.StarPort)
+    def _starPortModifier(world: multiverse.World) -> int:
+        starPortCode = world.uwp().code(multiverse.UWP.Element.StarPort)
         return 0 if starPortCode not in Simulator.StarPortModifiers else Simulator.StarPortModifiers[starPortCode]
 
     def _traderSearchStep(

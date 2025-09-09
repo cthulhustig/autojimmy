@@ -1,7 +1,7 @@
 import base64
 import logging
 import cartographer
-import travellermap
+import multiverse
 import typing
 import xml.etree.ElementTree
 
@@ -121,7 +121,7 @@ class VectorStore(object):
         for path in paths:
             try:
                 vectors.extend(self._parseFile(
-                    content=travellermap.DataStore.instance().loadTextResource(
+                    content=multiverse.DataStore.instance().loadTextResource(
                         filePath=path)))
             except Exception as ex:
                 logging.warning(f'Failed to parse vector object file "{path}"', exc_info=ex)

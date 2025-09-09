@@ -5,7 +5,7 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -39,7 +39,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -171,9 +171,9 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> int:
-        world = travellermap.WorldManager.instance().worldByPosition(
+        world = multiverse.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 

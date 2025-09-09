@@ -1,12 +1,12 @@
 import common
 import logic
-import travellermap
+import multiverse
 import typing
 
 class RouteLogistics(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[logic.RefuellingPlan],
             perJumpOverheads: typing.Optional[typing.Union[int, common.ScalarCalculation]]
@@ -36,7 +36,7 @@ class RouteLogistics(object):
                 rhs=jumpCount,
                 name='Total Overheads')
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
     def jumpCount(self) -> int:
@@ -70,7 +70,7 @@ class RouteLogistics(object):
             name='Total Logistics Cost')
 
 def calculateRouteLogistics(
-        milieu: travellermap.Milieu,
+        milieu: multiverse.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -109,7 +109,7 @@ def calculateRouteLogistics(
             mandatoryFinishBerthing = jumpRoute.mandatoryBerthing(index=jumpRoute.nodeCount() - 1)
             if mandatoryStartBerthing or mandatoryFinishBerthing:
                 startHex = jumpRoute.startNode()
-                startWorld = travellermap.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
+                startWorld = multiverse.WorldManager.instance().worldByPosition(milieu=milieu, hex=startHex)
                 if startWorld:
                     berthingCost = pitCostCalculator.berthingCost(
                         world=startWorld,

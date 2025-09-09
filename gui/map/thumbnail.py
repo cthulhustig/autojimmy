@@ -1,6 +1,6 @@
 import gui
 import cartographer
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore, QtGui
 
@@ -33,16 +33,16 @@ def _initThumbnailRenderer():
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
-        milieu: travellermap.Milieu,
-        hex: travellermap.HexPosition,
+        milieu: multiverse.Milieu,
+        hex: multiverse.HexPosition,
         width: int,
         height: int,
         linearScale: float,
-        style: travellermap.MapStyle,
-        options: typing.Collection[travellermap.MapOption]
+        style: multiverse.MapStyle,
+        options: typing.Collection[multiverse.MapOption]
         ) -> typing.Tuple[
             typing.Optional[bytes],
-            typing.Optional[travellermap.MapFormat]]:
+            typing.Optional[multiverse.MapFormat]]:
     _initThumbnailRenderer()
 
     centerX, centerY = hex.worldCenter()
@@ -80,4 +80,4 @@ def generateThumbnail(
     finally:
         buffer.close()
 
-    return (byteArray.data(), travellermap.MapFormat.PNG)
+    return (byteArray.data(), multiverse.MapFormat.PNG)

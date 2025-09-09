@@ -3,7 +3,7 @@ import common
 import gui
 import logging
 import logic
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -322,7 +322,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[travellermap.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -404,7 +404,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[travellermap.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:

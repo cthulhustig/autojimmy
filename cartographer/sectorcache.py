@@ -1,6 +1,6 @@
 import cartographer
 import math
-import travellermap
+import multiverse
 import typing
 
 class SectorPath(object):
@@ -72,36 +72,36 @@ class SectorCache(object):
 
     # NOTE: These offsets assume a clockwise winding
     _TopClipOffsets = [
-        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
-        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
-        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + travellermap.HexWidthOffset, 0) # Center right
+        (-0.5 - multiverse.HexWidthOffset, 0), # Center left
+        (-0.5 + multiverse.HexWidthOffset, -0.5), # Upper left
+        (+0.5 - multiverse.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + multiverse.HexWidthOffset, 0) # Center right
     ]
 
     _RightClipOffsets = [
-        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
-        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
-        (+0.5 + travellermap.HexWidthOffset, 1) # Center right of next hex
+        (+0.5 - multiverse.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + multiverse.HexWidthOffset, 0), # Center right
+        (+0.5 - multiverse.HexWidthOffset, +0.5), # Lower right
+        (+0.5 + multiverse.HexWidthOffset, 1) # Center right of next hex
     ]
 
     _BottomClipOffsets = [
-        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
-        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
-        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
-        (-0.5 - travellermap.HexWidthOffset, 0) # Center left
+        (+0.5 + multiverse.HexWidthOffset, 0), # Center right
+        (+0.5 - multiverse.HexWidthOffset, +0.5), # Lower right
+        (-0.5 + multiverse.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - multiverse.HexWidthOffset, 0) # Center left
     ]
 
     _LeftClipOffsets = [
-        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
-        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
-        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
-        (-0.5 - travellermap.HexWidthOffset, -1) # Center left of next hex
+        (-0.5 + multiverse.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - multiverse.HexWidthOffset, 0), # Center left
+        (-0.5 + multiverse.HexWidthOffset, -0.5), # Upper left
+        (-0.5 - multiverse.HexWidthOffset, -1) # Center left of next hex
     ]
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             universe: cartographer.AbstractUniverse,
             graphics: cartographer.AbstractGraphics,
             styleStore: cartographer.StyleStore
@@ -111,27 +111,27 @@ class SectorCache(object):
         self._graphics = graphics
         self._styleStore = styleStore
         self._worldsCache: typing.Dict[
-            travellermap.SectorIndex,
+            multiverse.SectorIndex,
             cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
-            travellermap.SectorIndex,
+            multiverse.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
-            travellermap.SectorIndex,
+            multiverse.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._routeCache: typing.Dict[
-            travellermap.SectorIndex,
+            multiverse.SectorIndex,
             typing.List[SectorLines]
         ] = {}
         self._clipCache: typing.Dict[
-            travellermap.SectorIndex,
+            multiverse.SectorIndex,
             cartographer.AbstractPath
         ] = {}
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
@@ -144,7 +144,7 @@ class SectorCache(object):
 
     def isotropicWorldPoints(
             self,
-            index: travellermap.SectorIndex
+            index: multiverse.SectorIndex
             ) -> typing.Optional[cartographer.AbstractPointList]:
         worlds = self._worldsCache.get(index)
         if worlds is not None:
@@ -163,8 +163,8 @@ class SectorCache(object):
             centerX, centerY = hex.worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
-                x=centerX * travellermap.ParsecScaleX,
-                y=centerY * travellermap.ParsecScaleY))
+                x=centerX * multiverse.ParsecScaleX,
+                y=centerY * multiverse.ParsecScaleY))
 
         worlds = self._graphics.createPointList(points=points)
         self._worldsCache[index] = worlds
@@ -172,7 +172,7 @@ class SectorCache(object):
 
     def borderPaths(
             self,
-            index: travellermap.SectorIndex
+            index: multiverse.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
         borders = self._borderCache.get(index)
         if borders is not None:
@@ -193,7 +193,7 @@ class SectorCache(object):
 
     def regionPaths(
             self,
-            index: travellermap.SectorIndex
+            index: multiverse.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
         regions = self._regionCache.get(index)
         if regions is not None:
@@ -214,7 +214,7 @@ class SectorCache(object):
 
     def routeLines(
             self,
-            index: travellermap.SectorIndex
+            index: multiverse.SectorIndex
             ) -> typing.Optional[typing.List[SectorLines]]:
         routes = self._routeCache.get(index)
         if routes is not None:
@@ -284,30 +284,30 @@ class SectorCache(object):
 
     def clipPath(
             self,
-            index: travellermap.SectorIndex
+            index: multiverse.SectorIndex
             ) -> cartographer.AbstractPath:
         clipPath = self._clipCache.get(index)
         if clipPath:
             return clipPath
 
-        absoluteOriginX, absoluteOriginY = travellermap.relativeSpaceToAbsoluteSpace(
+        absoluteOriginX, absoluteOriginY = multiverse.relativeSpaceToAbsoluteSpace(
             (index.sectorX(), index.sectorY(), 1, 1))
 
         points = []
 
         count = len(SectorCache._TopClipOffsets)
         y = 0
-        for x in range(0, travellermap.SectorWidth, 2):
+        for x in range(0, multiverse.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._TopClipOffsets[i]
                 points.append(cartographer.PointF(
                     x=((absoluteOriginX + x) - 0.5) + offsetX,
                     y=((absoluteOriginY + y) - 0.5) + offsetY))
 
-        last = travellermap.SectorHeight - 2
+        last = multiverse.SectorHeight - 2
         count = len(SectorCache._RightClipOffsets)
-        x = travellermap.SectorWidth - 1
-        for y in range(0, travellermap.SectorHeight, 2):
+        x = multiverse.SectorWidth - 1
+        for y in range(0, multiverse.SectorHeight, 2):
             if y == last:
                 count -= 1
             for i in range(count):
@@ -317,18 +317,18 @@ class SectorCache(object):
                     y=(absoluteOriginY + y) + offsetY))
 
         count = len(SectorCache._BottomClipOffsets)
-        y = travellermap.SectorHeight - 1
-        for x in range(travellermap.SectorWidth - 1, -1, -2):
+        y = multiverse.SectorHeight - 1
+        for x in range(multiverse.SectorWidth - 1, -1, -2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._BottomClipOffsets[i]
                 points.append(cartographer.PointF(
                     x=((absoluteOriginX + x) - 0.5) + offsetX,
                     y=(absoluteOriginY + y) + offsetY))
 
-        last = travellermap.SectorHeight - 2
+        last = multiverse.SectorHeight - 2
         count = len(SectorCache._LeftClipOffsets)
         x = 0
-        for y in range(travellermap.SectorHeight - 1, -1, -2):
+        for y in range(multiverse.SectorHeight - 1, -1, -2):
             if y == last:
                 count -= 1
             for i in range(count):
@@ -350,17 +350,17 @@ class SectorCache(object):
 
     def _createOutline(
             self,
-            source: typing.Union[travellermap.Region, travellermap.Border]
+            source: typing.Union[multiverse.Region, multiverse.Border]
             ) -> SectorPath:
         colour = source.colour()
         style = None
 
-        if isinstance(source, travellermap.Border):
-            if source.style() is travellermap.Border.Style.Solid:
+        if isinstance(source, multiverse.Border):
+            if source.style() is multiverse.Border.Style.Solid:
                 style = cartographer.LineStyle.Solid
-            elif source.style() is travellermap.Border.Style.Dashed:
+            elif source.style() is multiverse.Border.Style.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif source.style() is travellermap.Border.Style.Dotted:
+            elif source.style() is multiverse.Border.Style.Dotted:
                 style = cartographer.LineStyle.Dot
 
             if not colour or not style:
@@ -391,13 +391,13 @@ class SectorCache(object):
             endPoint: cartographer.PointF,
             offset: float
             ) -> None:
-        dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX
-        dy = (endPoint.y() - startPoint.y()) * travellermap.ParsecScaleY
+        dx = (endPoint.x() - startPoint.x()) * multiverse.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * multiverse.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
         if not length:
             return # No offset
-        ddx = (dx * offset / length) / travellermap.ParsecScaleX
-        ddy = (dy * offset / length) / travellermap.ParsecScaleY
+        ddx = (dx * offset / length) / multiverse.ParsecScaleX
+        ddy = (dy * offset / length) / multiverse.ParsecScaleY
         startPoint.setX(startPoint.x() + ddx)
         startPoint.setY(startPoint.y() + ddy)
         endPoint.setX(endPoint.x() - ddx)

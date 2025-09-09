@@ -1,5 +1,5 @@
 import threading
-import travellermap
+import multiverse
 import typing
 
 class SophontManager(object):
@@ -34,8 +34,8 @@ class SophontManager(object):
     # This function assumes it's only called once when the singleton is created and that
     # the mutex is locked
     def _loadSophonts(self) -> None:
-        _, results = travellermap.parseTabContent(
-            content=travellermap.DataStore.instance().loadTextResource(
+        _, results = multiverse.parseTabContent(
+            content=multiverse.DataStore.instance().loadTextResource(
                 filePath=SophontManager._T5OfficialSophontsPath))
 
         for sophont in results:

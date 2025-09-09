@@ -7,7 +7,7 @@ import logic
 import logging
 import os
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -106,16 +106,16 @@ class _EnumSelectActionGroup(QtWidgets.QActionGroup):
 class _MapStyleActionGroup(_EnumSelectActionGroup):
     def __init__(self, current, parent = None):
         super().__init__(
-            enumType=travellermap.MapStyle,
+            enumType=multiverse.MapStyle,
             current=current,
             parent=parent)
 
 class _MapOptionAction(QtWidgets.QAction):
-    optionChanged = QtCore.pyqtSignal([travellermap.MapOption, bool])
+    optionChanged = QtCore.pyqtSignal([multiverse.MapOption, bool])
 
     def __init__(
             self,
-            option: travellermap.MapOption,
+            option: multiverse.MapOption,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(option.value, parent)
@@ -137,12 +137,12 @@ class _MapOptionAction(QtWidgets.QAction):
         self.optionChanged.emit(self._option, checked)
 
 class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
-    optionChanged = QtCore.pyqtSignal([travellermap.MapOption, bool])
+    optionChanged = QtCore.pyqtSignal([multiverse.MapOption, bool])
 
     def __init__(
             self,
-            options: typing.Iterable[travellermap.MapOption],
-            current: travellermap.MapOption,
+            options: typing.Iterable[multiverse.MapOption],
+            current: multiverse.MapOption,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -157,7 +157,7 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.setExclusionPolicy(
                 QtWidgets.QActionGroup.ExclusionPolicy.ExclusiveOptional)
 
-        self._optionActions: typing.Dict[travellermap.MapOption, _MapOptionAction] = {}
+        self._optionActions: typing.Dict[multiverse.MapOption, _MapOptionAction] = {}
         for option in options:
             action = _MapOptionAction(option=option)
             action.setChecked(option is current)
@@ -165,13 +165,13 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.addAction(action)
             self._optionActions[option] = action
 
-    def setSelection(self, option: typing.Optional[travellermap.MapOption]) -> None:
+    def setSelection(self, option: typing.Optional[multiverse.MapOption]) -> None:
         for actionOption, action in self._optionActions.items():
             action.setChecked(option is actionOption)
 
     def _optionChanged(
             self,
-            option: travellermap.MapOption,
+            option: multiverse.MapOption,
             checked: bool
             ) -> None:
         self.optionChanged.emit(option, checked)
@@ -189,7 +189,7 @@ class _RenderingTypeActionGroup(_EnumSelectActionGroup):
 class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(milieu=milieu, parent=parent)
@@ -301,7 +301,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -357,7 +357,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def setMilieu(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             ) -> None:
         if milieu is self._milieu:
             return
@@ -393,7 +393,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def setHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self._hex = hex
         self._updateContent(self._label.width())
@@ -513,8 +513,8 @@ class _InfoWidget(QtWidgets.QWidget):
 class _LegendWidget(QtWidgets.QWidget):
     def __init__(
             self,
-            style: travellermap.MapStyle,
-            options: typing.Collection[travellermap.MapOption],
+            style: multiverse.MapStyle,
+            options: typing.Collection[multiverse.MapOption],
             parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -548,13 +548,13 @@ class _LegendWidget(QtWidgets.QWidget):
         self.syncContent()
         self.adjustSize()
 
-    def setMapStyle(self, style: travellermap.MapStyle) -> None:
+    def setMapStyle(self, style: multiverse.MapStyle) -> None:
         if style is self._style:
             return
         self._style = style
         self.syncContent()
 
-    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -589,12 +589,12 @@ class _LegendWidget(QtWidgets.QWidget):
 
         worldGlyphSize = int(12 * gui.interfaceScale())
 
-        if self._style is travellermap.MapStyle.Print:
+        if self._style is multiverse.MapStyle.Print:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
             noWaterFillColour = '#FFFFFF'
             noWaterOutlineColour = '#6F6F6F'
-        elif self._style is travellermap.MapStyle.Draft:
+        elif self._style is multiverse.MapStyle.Draft:
             textStyle = 'color: #B0000000;' # Note that this is alpha blended
             backgroundStyle = 'background-color: #FAEBD7;'
             highlightColour = '#B0FF0000' # Note that this is alpha blended
@@ -606,7 +606,7 @@ class _LegendWidget(QtWidgets.QWidget):
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; text-decoration: underline;'
             capitalStyle = 'text-transform: uppercase;'
-        elif self._style is travellermap.MapStyle.Atlas:
+        elif self._style is multiverse.MapStyle.Atlas:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
             highlightColour = '#808080'
@@ -615,7 +615,7 @@ class _LegendWidget(QtWidgets.QWidget):
             noWaterOutlineColour = '#000000'
             amberZoneColour = '#C0C0C0'
             redZoneColour = '#000000'
-        elif self._style is travellermap.MapStyle.Mongoose:
+        elif self._style is multiverse.MapStyle.Mongoose:
             textStyle = 'color: #000000;'
             backgroundStyle = 'background-color: #E6E7E8;'
             hasWaterFillColour = '#0000CD'
@@ -625,20 +625,20 @@ class _LegendWidget(QtWidgets.QWidget):
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; font-weight: bold;'
             capitalStyle = 'text-transform: uppercase;'
-        elif self._style is travellermap.MapStyle.Fasa:
+        elif self._style is multiverse.MapStyle.Fasa:
             textStyle = 'color: #5C4033;'
             backgroundStyle = 'background-color: #FFFFFF;'
             amberZoneColour = '#5C4033'
             redZoneColour = '#805C4033' # Note that this is alpha blended
-        elif self._style is travellermap.MapStyle.Terminal:
+        elif self._style is multiverse.MapStyle.Terminal:
             textStyle = 'color: #00FFFF; font-family: "Courier New", "Courier", monospace;'
             hasWaterFillColour = '#000000'
             hasWaterOutlineColour = '#00FFFF'
             noWaterFillColour = '#00FFFF'
 
         characteristicItems = []
-        if travellermap.MapOption.WorldColours in self._options and \
-                self._style is not travellermap.MapStyle.Atlas:
+        if multiverse.MapOption.WorldColours in self._options and \
+                self._style is not multiverse.MapStyle.Atlas:
             characteristicItems.extend([
                 ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
                 ('Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#6AA84F'), ''),
@@ -674,7 +674,7 @@ class _LegendWidget(QtWidgets.QWidget):
         ]
 
         zoneItems = []
-        if self._style is travellermap.MapStyle.Mongoose:
+        if self._style is multiverse.MapStyle.Mongoose:
             zoneItems.append(('Green Zone', '&#x25AC;', f'{largeGlyphStyle} color: {greenZoneColour};'))
         zoneItems.extend([
             ('Amber Zone', '&#x25AC;', f'{largeGlyphStyle} color: {amberZoneColour};'),
@@ -700,8 +700,8 @@ class _LegendWidget(QtWidgets.QWidget):
         if imageData:
             legendContent += f'<center><img src=data:image/png;base64,{imageData}></center>'
 
-        if self._style is not travellermap.MapStyle.Candy and \
-                self._style is not travellermap.MapStyle.Fasa:
+        if self._style is not multiverse.MapStyle.Candy and \
+                self._style is not multiverse.MapStyle.Fasa:
             legendContent += self._createLegendSection(
                 title='World Characteristics',
                 items=characteristicItems)
@@ -712,7 +712,7 @@ class _LegendWidget(QtWidgets.QWidget):
             title='Travel Zones',
             items=zoneItems)
 
-        if self._style is not travellermap.MapStyle.Fasa:
+        if self._style is not multiverse.MapStyle.Fasa:
             legendContent += self._createLegendSection(
                 title='Population',
                 items=populationItems)
@@ -922,11 +922,11 @@ class _ConfigSectionLayout(QtWidgets.QGridLayout):
         self.addWidget(label, row, 1)
 
 class MapWidgetEx(QtWidgets.QWidget):
-    leftClicked = QtCore.pyqtSignal([travellermap.HexPosition])
-    rightClicked = QtCore.pyqtSignal([travellermap.HexPosition])
+    leftClicked = QtCore.pyqtSignal([multiverse.HexPosition])
+    rightClicked = QtCore.pyqtSignal([multiverse.HexPosition])
 
-    mapStyleChanged = QtCore.pyqtSignal([travellermap.MapStyle])
-    mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of travellermap.Options
+    mapStyleChanged = QtCore.pyqtSignal([multiverse.MapStyle])
+    mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of multiverse.Options
     mapRenderingChanged = QtCore.pyqtSignal([app.MapRendering])
     mapAnimationChanged = QtCore.pyqtSignal([bool])
 
@@ -955,10 +955,10 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            style: travellermap.MapStyle,
-            options: typing.Collection[travellermap.MapOption],
+            style: multiverse.MapStyle,
+            options: typing.Collection[multiverse.MapOption],
             rendering: app.MapRendering,
             animated: bool,
             worldTagging: logic.WorldTagging,
@@ -979,7 +979,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.Dict[
-            travellermap.HexPosition,
+            multiverse.HexPosition,
             str # Overlay key
             ] = {}
         self._selectionOutlineHandle = None
@@ -1115,28 +1115,28 @@ class MapWidgetEx(QtWidgets.QWidget):
         featuresConfigLayout = _ConfigSectionLayout()
 
         self._galacticDirectionsAction = _MapOptionAction(
-                option=travellermap.MapOption.GalacticDirections)
+                option=multiverse.MapOption.GalacticDirections)
         self._galacticDirectionsAction.setChecked(
-            travellermap.MapOption.GalacticDirections in self._options)
+            multiverse.MapOption.GalacticDirections in self._options)
         self._galacticDirectionsAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._galacticDirectionsAction)
 
         self._sectorGridAction = _MapOptionAction(
-            option=travellermap.MapOption.SectorGrid)
+            option=multiverse.MapOption.SectorGrid)
         self._sectorGridAction.setChecked(
-            travellermap.MapOption.SectorGrid in self._options)
+            multiverse.MapOption.SectorGrid in self._options)
         self._sectorGridAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._sectorGridAction)
 
         currentNames = None
-        if travellermap.MapOption.SelectedSectorNames in self._options:
-            currentNames = travellermap.MapOption.SelectedSectorNames
-        elif travellermap.MapOption.SectorNames in self._options:
-            currentNames = travellermap.MapOption.SectorNames
+        if multiverse.MapOption.SelectedSectorNames in self._options:
+            currentNames = multiverse.MapOption.SelectedSectorNames
+        elif multiverse.MapOption.SectorNames in self._options:
+            currentNames = multiverse.MapOption.SectorNames
         self._sectorNamesActionGroup = _ExclusiveMapOptionsActionGroup(
             options=[
-                travellermap.MapOption.SelectedSectorNames,
-                travellermap.MapOption.SectorNames],
+                multiverse.MapOption.SelectedSectorNames,
+                multiverse.MapOption.SectorNames],
             current=currentNames)
         self._sectorNamesActionGroup.optionChanged.connect(self._mapOptionChanged)
         sectorNamesLayout = _ConfigSectionLayout()
@@ -1147,30 +1147,30 @@ class MapWidgetEx(QtWidgets.QWidget):
             sectorNamesLayout.rowCount(), 0, 1, 2)
 
         self._bordersAction = _MapOptionAction(
-            option=travellermap.MapOption.Borders)
+            option=multiverse.MapOption.Borders)
         self._bordersAction.setChecked(
-            travellermap.MapOption.Borders in self._options)
+            multiverse.MapOption.Borders in self._options)
         self._bordersAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._bordersAction)
 
         self._routesAction = _MapOptionAction(
-            option=travellermap.MapOption.Routes)
+            option=multiverse.MapOption.Routes)
         self._routesAction.setChecked(
-            travellermap.MapOption.Routes in self._options)
+            multiverse.MapOption.Routes in self._options)
         self._routesAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._routesAction)
 
         self._regionNamesAction = _MapOptionAction(
-            option=travellermap.MapOption.RegionNames)
+            option=multiverse.MapOption.RegionNames)
         self._regionNamesAction.setChecked(
-            travellermap.MapOption.RegionNames in self._options)
+            multiverse.MapOption.RegionNames in self._options)
         self._regionNamesAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._regionNamesAction)
 
         self._importantWorldsAction = _MapOptionAction(
-            option=travellermap.MapOption.ImportantWorlds)
+            option=multiverse.MapOption.ImportantWorlds)
         self._importantWorldsAction.setChecked(
-            travellermap.MapOption.ImportantWorlds in self._options)
+            multiverse.MapOption.ImportantWorlds in self._options)
         self._importantWorldsAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._importantWorldsAction)
 
@@ -1184,23 +1184,23 @@ class MapWidgetEx(QtWidgets.QWidget):
         appearanceConfigLayout = _ConfigSectionLayout()
 
         self._worldColoursAction = _MapOptionAction(
-            option=travellermap.MapOption.WorldColours)
+            option=multiverse.MapOption.WorldColours)
         self._worldColoursAction.setChecked(
-            travellermap.MapOption.WorldColours in self._options)
+            multiverse.MapOption.WorldColours in self._options)
         self._worldColoursAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._worldColoursAction)
 
         self._filledBordersAction = _MapOptionAction(
-            option=travellermap.MapOption.FilledBorders)
+            option=multiverse.MapOption.FilledBorders)
         self._filledBordersAction.setChecked(
-            travellermap.MapOption.FilledBorders in self._options)
+            multiverse.MapOption.FilledBorders in self._options)
         self._filledBordersAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._filledBordersAction)
 
         self._dimUnofficialAction = _MapOptionAction(
-            option=travellermap.MapOption.DimUnofficial)
+            option=multiverse.MapOption.DimUnofficial)
         self._dimUnofficialAction.setChecked(
-            travellermap.MapOption.DimUnofficial in self._options)
+            multiverse.MapOption.DimUnofficial in self._options)
         self._dimUnofficialAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._dimUnofficialAction)
 
@@ -1214,79 +1214,79 @@ class MapWidgetEx(QtWidgets.QWidget):
         overlayConfigLayout = _ConfigSectionLayout()
 
         self._mainsOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.MainsOverlay)
+            option=multiverse.MapOption.MainsOverlay)
         self._mainsOverlayAction.setChecked(
-            travellermap.MapOption.MainsOverlay in self._options)
+            multiverse.MapOption.MainsOverlay in self._options)
         self._mainsOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._mainsOverlayAction)
 
         self._importanceOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.ImportanceOverlay)
+            option=multiverse.MapOption.ImportanceOverlay)
         self._importanceOverlayAction.setChecked(
-            travellermap.MapOption.ImportanceOverlay in self._options)
+            multiverse.MapOption.ImportanceOverlay in self._options)
         self._importanceOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._importanceOverlayAction)
 
         self._populationOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.PopulationOverlay)
+            option=multiverse.MapOption.PopulationOverlay)
         self._populationOverlayAction.setChecked(
-            travellermap.MapOption.PopulationOverlay in self._options)
+            multiverse.MapOption.PopulationOverlay in self._options)
         self._populationOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._populationOverlayAction)
 
         self._capitalsOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.CapitalsOverlay)
+            option=multiverse.MapOption.CapitalsOverlay)
         self._capitalsOverlayAction.setChecked(
-            travellermap.MapOption.CapitalsOverlay in self._options)
+            multiverse.MapOption.CapitalsOverlay in self._options)
         self._capitalsOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._capitalsOverlayAction)
 
         self._minorRaceOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.MinorRaceOverlay)
+            option=multiverse.MapOption.MinorRaceOverlay)
         self._minorRaceOverlayAction.setChecked(
-            travellermap.MapOption.MinorRaceOverlay in self._options)
+            multiverse.MapOption.MinorRaceOverlay in self._options)
         self._minorRaceOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._minorRaceOverlayAction)
 
         self._droyneWorldOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.DroyneWorldOverlay)
+            option=multiverse.MapOption.DroyneWorldOverlay)
         self._droyneWorldOverlayAction.setChecked(
-            travellermap.MapOption.DroyneWorldOverlay in self._options)
+            multiverse.MapOption.DroyneWorldOverlay in self._options)
         self._droyneWorldOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._droyneWorldOverlayAction)
 
         self._ancientSitesOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.AncientSitesOverlay)
+            option=multiverse.MapOption.AncientSitesOverlay)
         self._ancientSitesOverlayAction.setChecked(
-            travellermap.MapOption.AncientSitesOverlay in self._options)
+            multiverse.MapOption.AncientSitesOverlay in self._options)
         self._ancientSitesOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._ancientSitesOverlayAction)
 
         self._stellarOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.StellarOverlay)
+            option=multiverse.MapOption.StellarOverlay)
         self._stellarOverlayAction.setChecked(
-            travellermap.MapOption.StellarOverlay in self._options)
+            multiverse.MapOption.StellarOverlay in self._options)
         self._stellarOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._stellarOverlayAction)
 
         self._empressWaveOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.EmpressWaveOverlay)
+            option=multiverse.MapOption.EmpressWaveOverlay)
         self._empressWaveOverlayAction.setChecked(
-            travellermap.MapOption.EmpressWaveOverlay in self._options)
+            multiverse.MapOption.EmpressWaveOverlay in self._options)
         self._empressWaveOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._empressWaveOverlayAction)
 
         self._qrekrshaZoneOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.QrekrshaZoneOverlay)
+            option=multiverse.MapOption.QrekrshaZoneOverlay)
         self._qrekrshaZoneOverlayAction.setChecked(
-            travellermap.MapOption.QrekrshaZoneOverlay in self._options)
+            multiverse.MapOption.QrekrshaZoneOverlay in self._options)
         self._qrekrshaZoneOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._qrekrshaZoneOverlayAction)
 
         self._antaresSupernovaOverlayAction = _MapOptionAction(
-            option=travellermap.MapOption.AntaresSupernovaOverlay)
+            option=multiverse.MapOption.AntaresSupernovaOverlay)
         self._antaresSupernovaOverlayAction.setChecked(
-            travellermap.MapOption.AntaresSupernovaOverlay in self._options)
+            multiverse.MapOption.AntaresSupernovaOverlay in self._options)
         self._antaresSupernovaOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._antaresSupernovaOverlayAction)
 
@@ -1304,10 +1304,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         action.triggered.connect(self.promptExportImage)
         self.setMenuAction(MapWidgetEx.MenuAction.ExportImage, action)
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -1326,10 +1326,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._infoWidget.setRules(rules=self._rules)
 
-    def mapStyle(self) -> travellermap.MapStyle:
+    def mapStyle(self) -> multiverse.MapStyle:
         return self._style
 
-    def setMapStyle(self, style: travellermap.MapStyle) -> None:
+    def setMapStyle(self, style: multiverse.MapStyle) -> None:
         if style is self._style:
             return
 
@@ -1340,10 +1340,10 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self.mapStyleChanged.emit(self._style)
 
-    def mapOptions(self) -> typing.List[travellermap.MapOption]:
+    def mapOptions(self) -> typing.List[multiverse.MapOption]:
         return list(self._options)
 
-    def setMapOptions(self, options: typing.Collection[travellermap.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1352,51 +1352,51 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._mapWidget.setMapOptions(options=self._options)
         self._legendWidget.setMapOptions(options=self._options)
         self._galacticDirectionsAction.setChecked(
-            travellermap.MapOption.GalacticDirections in self._options)
+            multiverse.MapOption.GalacticDirections in self._options)
         self._sectorGridAction.setChecked(
-            travellermap.MapOption.SectorGrid in self._options)
-        if travellermap.MapOption.SelectedSectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(travellermap.MapOption.SelectedSectorNames)
-        elif travellermap.MapOption.SectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(travellermap.MapOption.SectorNames)
+            multiverse.MapOption.SectorGrid in self._options)
+        if multiverse.MapOption.SelectedSectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(multiverse.MapOption.SelectedSectorNames)
+        elif multiverse.MapOption.SectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(multiverse.MapOption.SectorNames)
         else:
             self._sectorNamesActionGroup.setSelection(None)
         self._bordersAction.setChecked(
-            travellermap.MapOption.Borders in self._options)
+            multiverse.MapOption.Borders in self._options)
         self._routesAction.setChecked(
-            travellermap.MapOption.Routes in self._options)
+            multiverse.MapOption.Routes in self._options)
         self._regionNamesAction.setChecked(
-            travellermap.MapOption.RegionNames in self._options)
+            multiverse.MapOption.RegionNames in self._options)
         self._importantWorldsAction.setChecked(
-            travellermap.MapOption.ImportantWorlds in self._options)
+            multiverse.MapOption.ImportantWorlds in self._options)
         self._worldColoursAction.setChecked(
-            travellermap.MapOption.WorldColours in self._options)
+            multiverse.MapOption.WorldColours in self._options)
         self._filledBordersAction.setChecked(
-            travellermap.MapOption.FilledBorders in self._options)
+            multiverse.MapOption.FilledBorders in self._options)
         self._dimUnofficialAction.setChecked(
-            travellermap.MapOption.DimUnofficial in self._options)
+            multiverse.MapOption.DimUnofficial in self._options)
         self._mainsOverlayAction.setChecked(
-            travellermap.MapOption.MainsOverlay in self._options)
+            multiverse.MapOption.MainsOverlay in self._options)
         self._importanceOverlayAction.setChecked(
-            travellermap.MapOption.ImportanceOverlay in self._options)
+            multiverse.MapOption.ImportanceOverlay in self._options)
         self._populationOverlayAction.setChecked(
-            travellermap.MapOption.PopulationOverlay in self._options)
+            multiverse.MapOption.PopulationOverlay in self._options)
         self._capitalsOverlayAction.setChecked(
-            travellermap.MapOption.CapitalsOverlay in self._options)
+            multiverse.MapOption.CapitalsOverlay in self._options)
         self._minorRaceOverlayAction.setChecked(
-            travellermap.MapOption.MinorRaceOverlay in self._options)
+            multiverse.MapOption.MinorRaceOverlay in self._options)
         self._droyneWorldOverlayAction.setChecked(
-            travellermap.MapOption.DroyneWorldOverlay in self._options)
+            multiverse.MapOption.DroyneWorldOverlay in self._options)
         self._ancientSitesOverlayAction.setChecked(
-            travellermap.MapOption.AncientSitesOverlay in self._options)
+            multiverse.MapOption.AncientSitesOverlay in self._options)
         self._stellarOverlayAction.setChecked(
-            travellermap.MapOption.StellarOverlay in self._options)
+            multiverse.MapOption.StellarOverlay in self._options)
         self._empressWaveOverlayAction.setChecked(
-            travellermap.MapOption.EmpressWaveOverlay in self._options)
+            multiverse.MapOption.EmpressWaveOverlay in self._options)
         self._qrekrshaZoneOverlayAction.setChecked(
-            travellermap.MapOption.QrekrshaZoneOverlay in self._options)
+            multiverse.MapOption.QrekrshaZoneOverlay in self._options)
         self._antaresSupernovaOverlayAction.setChecked(
-            travellermap.MapOption.AntaresSupernovaOverlay in self._options)
+            multiverse.MapOption.AntaresSupernovaOverlay in self._options)
 
         self.mapOptionsChanged.emit(self._options)
 
@@ -1455,21 +1455,21 @@ class MapWidgetEx(QtWidgets.QWidget):
     def hexAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> travellermap.HexPosition:
+            ) -> multiverse.HexPosition:
         pos = self._mapWidget.mapFrom(self, pos)
         return self._mapWidget.hexAt(pos=pos)
 
     def worldAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[travellermap.World]:
+            ) -> typing.Optional[multiverse.World]:
         pos = self._mapWidget.mapFrom(self, pos)
         return self._mapWidget.worldAt(pos=pos)
 
     def centerOnHex(
             self,
-            hex: travellermap.HexPosition,
-            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
+            hex: multiverse.HexPosition,
+            scale: typing.Optional[multiverse.Scale] = multiverse.Scale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHex(
@@ -1479,7 +1479,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[travellermap.HexPosition],
+            hexes: typing.Collection[multiverse.HexPosition],
             immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHexes(
@@ -1509,7 +1509,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def highlightHex(
             self,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -1520,7 +1520,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def highlightHexes(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition],
+            hexes: typing.Iterable[multiverse.HexPosition],
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -1531,7 +1531,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def clearHexHighlight(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> None:
         self._mapWidget.clearHexHighlight(hex=hex)
 
@@ -1541,11 +1541,11 @@ class MapWidgetEx(QtWidgets.QWidget):
     # Create an overlay with a primitive at each hex
     def createHexOverlay(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition],
+            hexes: typing.Iterable[multiverse.HexPosition],
             primitive: gui.MapPrimitiveType,
             fillColour: typing.Optional[QtGui.QColor] = None,
             fillMap: typing.Optional[typing.Mapping[
-                travellermap.HexPosition,
+                multiverse.HexPosition,
                 QtGui.QColor
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
@@ -1559,7 +1559,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def createHexBordersOverlay(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition],
+            hexes: typing.Iterable[multiverse.HexPosition],
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
             fillColour: typing.Optional[QtGui.QColor] = None,
@@ -1574,7 +1574,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def createRadiusOverlay(
             self,
-            center: travellermap.HexPosition,
+            center: multiverse.HexPosition,
             radius: int,
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
@@ -1602,12 +1602,12 @@ class MapWidgetEx(QtWidgets.QWidget):
     def hasSelection(self) -> bool:
         return len(self._selectedHexes) > 0
 
-    def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+    def selectedHexes(self) -> typing.Iterable[multiverse.HexPosition]:
         return list(self._selectedHexes.keys())
 
     def selectHex(
             self,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             setInfoHex: bool = True
             ) -> None:
         if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
@@ -1618,7 +1618,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self.setInfoHex(hex=hex)
             return
 
-        world = travellermap.WorldManager.instance().worldByPosition(
+        world = multiverse.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
         if not world and not self._enableDeadSpaceSelection:
@@ -1642,7 +1642,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def selectHexes(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
             return
@@ -1650,7 +1650,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for hex in hexes:
-                world = travellermap.WorldManager.instance().worldByPosition(
+                world = multiverse.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if world:
@@ -1682,7 +1682,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def deselectHex(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> None:
         if not self._removeSelectionHexOverlay(hex=hex):
             return # Hex wasn't selected
@@ -1740,7 +1740,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Deselect any dead space
             selectionChanged = False
             for hex in list(self._selectedHexes.keys()):
-                world = travellermap.WorldManager.instance().worldByPosition(
+                world = multiverse.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -1756,7 +1756,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def setInfoHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self._infoWidget.setHex(hex if self._infoButton.isChecked() else None)
         # Update the stored info hex even if the info widget isn't being shown. This is done so
@@ -2004,12 +2004,12 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def selectionFillColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionFillDarkStyleColour \
-            if travellermap.isDarkStyle(style=self._style) else \
+            if multiverse.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionFillLightStyleColour
 
     def selectionOutlineColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionOutlineDarkStyleColour \
-            if travellermap.isDarkStyle(style=self._style) else \
+            if multiverse.isDarkStyle(style=self._style) else \
             MapWidgetEx._SelectionOutlineLightStyleColour
 
     def selectionOutlineWidth(self) -> int:
@@ -2017,13 +2017,13 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _handleLeftClick(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         shouldSelect = False
         if self._enableDeadSpaceSelection:
             shouldSelect = hex != None
         elif hex:
-            shouldSelect = travellermap.WorldManager.instance().worldByPosition(
+            shouldSelect = multiverse.WorldManager.instance().worldByPosition(
                 milieu=self._milieu,
                 hex=hex) != None
 
@@ -2037,7 +2037,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
                 if self._selectionMode == MapWidgetEx.SelectionMode.MultiSelect and \
                         gui.isShiftKeyDown():
-                    worlds = travellermap.WorldManager.instance().worldsInFlood(
+                    worlds = multiverse.WorldManager.instance().worldsInFlood(
                         milieu=self._milieu,
                         hex=hex)
                     self.selectHexes(hexes=[world.hex() for world in worlds])
@@ -2053,24 +2053,24 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _handleRightClick(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self.rightClicked.emit(hex)
 
     def _gotoHome(self) -> None:
         self.centerOnHex(
-            hex=travellermap.HexPosition(
-                sectorX=travellermap.ReferenceSectorX,
-                sectorY=travellermap.ReferenceSectorY,
-                offsetX=travellermap.ReferenceHexX,
-                offsetY=travellermap.ReferenceHexY),
-            scale=travellermap.Scale(
+            hex=multiverse.HexPosition(
+                sectorX=multiverse.ReferenceSectorX,
+                sectorY=multiverse.ReferenceSectorY,
+                offsetX=multiverse.ReferenceHexX,
+                offsetY=multiverse.ReferenceHexY),
+            scale=multiverse.Scale(
                 linear=MapWidgetEx._HomeLinearScale))
 
-    def _mapStyleChanged(self, style: travellermap.MapStyle) -> None:
+    def _mapStyleChanged(self, style: multiverse.MapStyle) -> None:
         self.setMapStyle(style=style)
 
-    def _mapOptionChanged(self, option: travellermap.MapOption, enabled: bool) -> None:
+    def _mapOptionChanged(self, option: multiverse.MapOption, enabled: bool) -> None:
         if (enabled and option in self._options) or (not enabled and option not in self._options):
             return
 
@@ -2196,7 +2196,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _createSelectionHexOverlay(
             self,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             ) -> None:
         self._selectedHexes[hex] = self.createHexOverlay(
             hexes=[hex],
@@ -2205,7 +2205,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _removeSelectionHexOverlay(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> bool:
         overlayHandle = self._selectedHexes.get(hex)
         if not overlayHandle:
@@ -2240,7 +2240,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _searchHexSelected(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         if self._infoButton.isChecked():
             self.setInfoHex(hex=hex)

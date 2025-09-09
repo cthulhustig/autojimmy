@@ -1,6 +1,6 @@
 import cartographer
 import re
-import travellermap
+import multiverse
 import typing
 
 class StyleStore(object):
@@ -18,8 +18,8 @@ class StyleStore(object):
         self._borderStyles = {}
         self._routeStyles = {}
 
-        content = travellermap.readCssContent(
-            travellermap.DataStore.instance().loadTextResource(
+        content = multiverse.readCssContent(
+            multiverse.DataStore.instance().loadTextResource(
                 filePath=StyleStore._DefaultStylePath))
         for group, properties in content.items():
             match = StyleStore._BorderPattern.match(group)

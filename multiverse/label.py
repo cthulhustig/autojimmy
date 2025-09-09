@@ -1,5 +1,5 @@
 import enum
-import travellermap
+import multiverse
 import typing
 
 class Label(object):
@@ -10,7 +10,7 @@ class Label(object):
     def __init__(
             self,
             text: str,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             colour: typing.Optional[str],
             size: typing.Optional[Size],
             offsetX: typing.Optional[float],
@@ -26,7 +26,7 @@ class Label(object):
     def text(self) -> str:
         return self._text
 
-    def hex(self) -> travellermap.HexPosition:
+    def hex(self) -> multiverse.HexPosition:
         return self._hex
 
     def colour(self) -> typing.Optional[str]:

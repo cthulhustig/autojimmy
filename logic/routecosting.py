@@ -2,7 +2,7 @@ import enum
 import logic
 import math
 import traveller
-import travellermap
+import multiverse
 import typing
 
 # NOTE: The name of these enums is stored in the app config
@@ -23,17 +23,17 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[travellermap.World]
+            startHex: multiverse.HexPosition,
+            startWorld: typing.Optional[multiverse.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
-            currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[travellermap.World],
-            nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[travellermap.World],
+            currentHex: multiverse.HexPosition,
+            currentWorld: typing.Optional[multiverse.World],
+            nextHex: multiverse.HexPosition,
+            nextWorld: typing.Optional[multiverse.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -62,17 +62,17 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[travellermap.World]
+            startHex: multiverse.HexPosition,
+            startWorld: typing.Optional[multiverse.World]
             ) -> typing.Any:
         return None
 
     def calculate(
             self,
-            currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[travellermap.World],
-            nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[travellermap.World],
+            currentHex: multiverse.HexPosition,
+            currentWorld: typing.Optional[multiverse.World],
+            nextHex: multiverse.HexPosition,
+            nextWorld: typing.Optional[multiverse.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -93,7 +93,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def __init__(
                 self,
                 currentFuel: float,
-                lastFuelWorld: travellermap.World,
+                lastFuelWorld: multiverse.World,
                 lastFuelParsecs: int,
                 lastFuelType: logic.RefuellingType,
                 lastFuelCost: int,
@@ -109,7 +109,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def currentFuel(self) -> float:
             return self._currentFuel
 
-        def lastFuelWorld(self) -> travellermap.World:
+        def lastFuelWorld(self) -> multiverse.World:
             return self._lastFuelWorld
 
         def lastFuelParsecs(self) -> int:
@@ -152,8 +152,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startHex: travellermap.HexPosition,
-            startWorld: typing.Optional[travellermap.World]
+            startHex: multiverse.HexPosition,
+            startWorld: typing.Optional[multiverse.World]
             ) -> typing.Any:
         if not self._pitCostCalculator:
             # Fuel based route calculation is disabled so the context isn't used
@@ -177,10 +177,10 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def calculate(
             self,
-            currentHex: travellermap.HexPosition,
-            currentWorld: typing.Optional[travellermap.World],
-            nextHex: travellermap.HexPosition,
-            nextWorld: typing.Optional[travellermap.World],
+            currentHex: multiverse.HexPosition,
+            currentWorld: typing.Optional[multiverse.World],
+            nextHex: multiverse.HexPosition,
+            nextWorld: typing.Optional[multiverse.World],
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[

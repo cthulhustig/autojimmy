@@ -1,5 +1,5 @@
 import enum
-import travellermap
+import multiverse
 import typing
 
 class Route(object):
@@ -10,8 +10,8 @@ class Route(object):
 
     def __init__(
             self,
-            startHex: travellermap.HexPosition,
-            endHex: travellermap.HexPosition,
+            startHex: multiverse.HexPosition,
+            endHex: multiverse.HexPosition,
             allegiance: typing.Optional[str],
             type: typing.Optional[str],
             style: typing.Optional[Style],
@@ -26,10 +26,10 @@ class Route(object):
         self._colour = colour
         self._width = width
 
-    def startHex(self) -> travellermap.HexPosition:
+    def startHex(self) -> multiverse.HexPosition:
         return self._startHex
 
-    def endHex(self) -> travellermap.HexPosition:
+    def endHex(self) -> multiverse.HexPosition:
         return self._endHex
 
     def allegiance(self) -> typing.Optional[str]:

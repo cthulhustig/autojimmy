@@ -1,5 +1,5 @@
 import enum
-import travellermap
+import multiverse
 import typing
 
 class TextAlignment(enum.Enum):

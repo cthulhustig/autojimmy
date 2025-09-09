@@ -1,7 +1,7 @@
 import app
 import asyncio
 import typing
-import travellermap
+import multiverse
 import enum
 from PyQt5 import QtCore
 
@@ -64,7 +64,7 @@ class LintJobAsync(QtCore.QObject):
         return self._results
 
     def _primeSectorLint(self) -> None:
-        url = travellermap.formatPosterLintUrl(baseMapUrl=self._mapUrl)
+        url = multiverse.formatPosterLintUrl(baseMapUrl=self._mapUrl)
 
         self._results: typing.Dict[LintJobAsync.Stage, LintJobAsync.LinterResult] = {}
 
@@ -106,7 +106,7 @@ class LintJobAsync(QtCore.QObject):
         self._primeMetadataLint()
 
     def _primeMetadataLint(self) -> None:
-        url = travellermap.formatMetadataLintUrl(baseMapUrl=self._mapUrl)
+        url = multiverse.formatMetadataLintUrl(baseMapUrl=self._mapUrl)
 
         self._emitProgress(
             event=LintJobAsync.ProgressEvent.Uploading,

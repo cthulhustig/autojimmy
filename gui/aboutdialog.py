@@ -1,6 +1,6 @@
 import app
 import gui
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -35,7 +35,7 @@ class AboutDialog(gui.DialogEx):
 
         self._licenseDir = licenseDir
 
-        universeTimestamp = travellermap.DataStore.instance().universeTimestamp()
+        universeTimestamp = multiverse.DataStore.instance().universeTimestamp()
         if universeTimestamp:
             universeTimestamp = universeTimestamp.astimezone()
             universeTimestamp = universeTimestamp.strftime('%c')

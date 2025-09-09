@@ -1,13 +1,13 @@
 import enum
 import cartographer
-import travellermap
+import multiverse
 import typing
 
 class AbstractWorld(object):
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement milieu')
 
-    def hex(self) -> travellermap.HexPosition:
+    def hex(self) -> multiverse.HexPosition:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hex')
 
     def name(self) -> typing.Optional[str]:
@@ -16,13 +16,13 @@ class AbstractWorld(object):
     def sector(self) -> 'AbstractSector':
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement sector')
 
-    def uwp(self) -> travellermap.UWP:
+    def uwp(self) -> multiverse.UWP:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement uwp')
 
     def population(self) -> int:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement population')
 
-    def zone(self) -> typing.Optional[travellermap.ZoneType]:
+    def zone(self) -> typing.Optional[multiverse.ZoneType]:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement zone')
 
     def isAnomaly(self) -> bool:
@@ -37,13 +37,13 @@ class AbstractWorld(object):
     def basesAllegiance(self) -> typing.Optional[str]:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement basesAllegiance')
 
-    def bases(self) -> travellermap.Bases:
+    def bases(self) -> multiverse.Bases:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement bases')
 
-    def stellar(self) -> travellermap.Stellar:
+    def stellar(self) -> multiverse.Stellar:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement stellar')
 
-    def remarks(self) -> travellermap.Remarks:
+    def remarks(self) -> multiverse.Remarks:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement remarks')
 
     def hasWaterRefuelling(self) -> bool:
@@ -53,10 +53,10 @@ class AbstractWorld(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hasGasGiantRefuelling')
 
 class AbstractSubsector(object):
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement milieu')
 
-    def index(self) -> travellermap.SubsectorIndex:
+    def index(self) -> multiverse.SubsectorIndex:
         raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement index')
 
     def sector(self) -> 'AbstractSector':
@@ -68,20 +68,20 @@ class AbstractSubsector(object):
     def worlds(self) -> typing.Iterable[AbstractWorld]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement worlds')
 
-    def worldHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+    def worldHexes(self) -> typing.Iterable[multiverse.HexPosition]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement worldHexes')
 
 class AbstractSector(object):
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement milieu')
 
-    def index(self) -> travellermap.SectorIndex:
+    def index(self) -> multiverse.SectorIndex:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement index')
 
     def name(self) -> str:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement name')
 
-    # TODO: I really don't like this name (or the one on travellermap.Sector).
+    # TODO: I really don't like this name (or the one on multiverse.Sector).
     # It can't be named label as that would get confused with the other
     # sector labels. Having a sector label has two effects.
     # - It will be used instead of the sector name when drawing sector names
@@ -95,82 +95,82 @@ class AbstractSector(object):
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement sectorLabel')
 
     # TODO: I really don't like the name of this function (or the equivalent
-    # on travellermap.Sector). It's used to specify if a sector should have its
+    # on multiverse.Sector). It's used to specify if a sector should have its
     # name drawn when drawing sector names is set to "only selected"
     def isSelected(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement isSelected')
 
-    def tagging(self) -> travellermap.SectorTagging:
+    def tagging(self) -> multiverse.SectorTagging:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement tagging')
 
     def worlds(self) -> typing.Iterable[AbstractWorld]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement worlds')
 
-    def worldHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+    def worldHexes(self) -> typing.Iterable[multiverse.HexPosition]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement worldHexes')
 
     # TODO: The region, border etc functions should use abstract types
-    def regions(self) -> typing.Iterable[travellermap.Region]:
+    def regions(self) -> typing.Iterable[multiverse.Region]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement regions')
 
-    def borders(self) -> typing.Iterable[travellermap.Border]:
+    def borders(self) -> typing.Iterable[multiverse.Border]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement borders')
 
-    def routes(self) -> typing.Iterable[travellermap.Route]:
+    def routes(self) -> typing.Iterable[multiverse.Route]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement routes')
 
-    def labels(self) -> typing.Iterable[travellermap.Label]:
+    def labels(self) -> typing.Iterable[multiverse.Label]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement labels')
 
 class AbstractUniverse(object):
     def sectorAt(
             self,
-            milieu: travellermap.Milieu,
-            index: travellermap.SectorIndex,
+            milieu: multiverse.Milieu,
+            index: multiverse.SectorIndex,
             includePlaceholders: bool = False
             ) -> typing.Optional[AbstractSector]:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorAt')
 
     def worldAt(
             self,
-            milieu: travellermap.Milieu,
-            hex: travellermap.HexPosition,
+            milieu: multiverse.Milieu,
+            hex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.Optional[AbstractWorld]:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement worldAt')
 
     def sectorsInArea(
             self,
-            milieu: travellermap.Milieu,
-            ulHex: travellermap.HexPosition,
-            lrHex: travellermap.HexPosition,
+            milieu: multiverse.Milieu,
+            ulHex: multiverse.HexPosition,
+            lrHex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSector]:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorsInArea')
 
     def subsectorsInArea(
             self,
-            milieu: travellermap.Milieu,
-            ulHex: travellermap.HexPosition,
-            lrHex: travellermap.HexPosition,
+            milieu: multiverse.Milieu,
+            ulHex: multiverse.HexPosition,
+            lrHex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSubsector]:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement subsectorsInArea')
 
     def worldsInArea(
             self,
-            milieu: travellermap.Milieu,
-            ulHex: travellermap.HexPosition,
-            lrHex: travellermap.HexPosition,
+            milieu: multiverse.Milieu,
+            ulHex: multiverse.HexPosition,
+            lrHex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.List[AbstractWorld]:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement worldsInArea')
 
     def sectorHexToPosition(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             sectorHex: str
-            ) -> travellermap.HexPosition:
+            ) -> multiverse.HexPosition:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorHexToPosition')
 
 class AbstractPointList(object):

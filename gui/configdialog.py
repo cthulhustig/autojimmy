@@ -4,7 +4,7 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -296,11 +296,11 @@ class ConfigDialog(gui.DialogEx):
 
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
-            type=travellermap.Milieu,
+            type=multiverse.Milieu,
             value=app.Config.instance().value(
                 option=app.ConfigOption.Milieu,
                 futureValue=True),
-            textMap={milieu: travellermap.milieuDescription(milieu) for milieu in  travellermap.Milieu})
+            textMap={milieu: multiverse.milieuDescription(milieu) for milieu in  multiverse.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
             '<p>The milieu to use when determining sector and world information</p>' +
             _RestartRequiredParagraph,
@@ -508,106 +508,106 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Zone,
             displayName='Zone',
-            keyDescriptions={zone: travellermap.zoneTypeName(zone) for zone in travellermap.ZoneType},
-            keyAliases={zone: travellermap.zoneTypeCode(zone) for zone in travellermap.ZoneType})
+            keyDescriptions={zone: multiverse.zoneTypeName(zone) for zone in multiverse.ZoneType},
+            keyAliases={zone: multiverse.zoneTypeCode(zone) for zone in multiverse.ZoneType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.StarPort,
             displayName='Star Port',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.StarPort))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.StarPort))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.WorldSize,
             displayName='World Size',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.WorldSize))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.WorldSize))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Atmosphere,
             displayName='Atmosphere',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.Atmosphere))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Atmosphere))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Hydrographics,
             displayName='Hydrographics',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.Hydrographics))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Hydrographics))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Population,
             displayName='Population',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.Population))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Population))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Government,
             displayName='Government',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.Government))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Government))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.LawLevel,
             displayName='Law Level',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.LawLevel))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.LawLevel))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TechLevel,
             displayName='Tech Level',
-            keyDescriptions=travellermap.UWP.descriptionMap(travellermap.UWP.Element.TechLevel))
+            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.TechLevel))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.BaseType,
             displayName='Base',
-            keyDescriptions={base: travellermap.Bases.description(base) for base in  travellermap.BaseType},
-            keyAliases={base: travellermap.Bases.code(base) for base in  travellermap.BaseType})
+            keyDescriptions={base: multiverse.Bases.description(base) for base in  multiverse.BaseType},
+            keyAliases={base: multiverse.Bases.code(base) for base in  multiverse.BaseType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TradeCode,
             displayName='Trade Code',
-            keyDescriptions={code: f'{travellermap.tradeCodeName(code)} - {travellermap.tradeCodeDescription(code)}' for code in  travellermap.TradeCode},
-            keyAliases={code: travellermap.tradeCodeString(code) for code in  travellermap.TradeCode})
+            keyDescriptions={code: f'{multiverse.tradeCodeName(code)} - {multiverse.tradeCodeDescription(code)}' for code in  multiverse.TradeCode},
+            keyAliases={code: multiverse.tradeCodeString(code) for code in  multiverse.TradeCode})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Resources,
             displayName='Resources',
-            keyDescriptions=travellermap.Economics.descriptionMap(travellermap.Economics.Element.Resources))
+            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Resources))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Labour,
             displayName='Labour',
-            keyDescriptions=travellermap.Economics.descriptionMap(travellermap.Economics.Element.Labour))
+            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Labour))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Infrastructure,
             displayName='Infrastructure',
-            keyDescriptions=travellermap.Economics.descriptionMap(travellermap.Economics.Element.Infrastructure))
+            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Infrastructure))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Efficiency,
             displayName='Efficiency',
-            keyDescriptions=travellermap.Economics.descriptionMap(travellermap.Economics.Element.Efficiency))
+            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Efficiency))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Heterogeneity,
             displayName='Heterogeneity',
-            keyDescriptions=travellermap.Culture.descriptionMap(travellermap.Culture.Element.Heterogeneity))
+            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Heterogeneity))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Acceptance,
             displayName='Acceptance',
-            keyDescriptions=travellermap.Culture.descriptionMap(travellermap.Culture.Element.Acceptance))
+            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Acceptance))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Strangeness,
             displayName='Strangeness',
-            keyDescriptions=travellermap.Culture.descriptionMap(travellermap.Culture.Element.Strangeness))
+            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Strangeness))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Symbols,
             displayName='Symbols',
-            keyDescriptions=travellermap.Culture.descriptionMap(travellermap.Culture.Element.Symbols))
+            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Symbols))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Nobility,
             displayName='Nobility',
-            keyDescriptions={nobility: travellermap.Nobilities.description(nobility) for nobility in travellermap.NobilityType},
-            keyAliases={nobility: travellermap.Nobilities.code(nobility) for nobility in travellermap.NobilityType})
+            keyDescriptions={nobility: multiverse.Nobilities.description(nobility) for nobility in multiverse.NobilityType},
+            keyAliases={nobility: multiverse.Nobilities.code(nobility) for nobility in multiverse.NobilityType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Allegiance,
@@ -617,12 +617,12 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Spectral,
             displayName='Spectral Class',
-            keyDescriptions=travellermap.Star.descriptionMap(travellermap.Star.Element.SpectralClass))
+            keyDescriptions=multiverse.Star.descriptionMap(multiverse.Star.Element.SpectralClass))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Luminosity,
             displayName='Luminosity Class',
-            keyDescriptions=travellermap.Star.descriptionMap(travellermap.Star.Element.LuminosityClass))
+            keyDescriptions=multiverse.Star.descriptionMap(multiverse.Star.Element.LuminosityClass))
 
     def _setupTaggingTab(
             self,
@@ -759,7 +759,7 @@ class ConfigDialog(gui.DialogEx):
             table.setTaggingColours(colours=colours)
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
-        allegiances = travellermap.AllegianceManager.instance().allegiances(
+        allegiances = multiverse.AllegianceManager.instance().allegiances(
             milieu=self._milieuComboBox.currentEnum())
 
         # Create a copy of the allegiances list and sort it by code

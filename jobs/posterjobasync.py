@@ -6,7 +6,7 @@ import depschecker
 import enum
 import logging
 import typing
-import travellermap
+import multiverse
 from PyQt5 import QtCore
 
 class PosterJobAsync(QtCore.QObject):
@@ -29,8 +29,8 @@ class PosterJobAsync(QtCore.QObject):
             mapUrl: str,
             sectorData: str,
             xmlMetadata: typing.Optional[str], # Must be XML format metadata
-            style: typing.Optional[travellermap.MapStyle],
-            options: typing.Optional[typing.Iterable[travellermap.MapOption]],
+            style: typing.Optional[multiverse.MapStyle],
+            options: typing.Optional[typing.Iterable[multiverse.MapOption]],
             scales: typing.Iterable[typing.Union[float, int]],
             compositing: bool
             ) -> None:
@@ -52,7 +52,7 @@ class PosterJobAsync(QtCore.QObject):
         self._uploadSize = len(sectorBytes) + len(metadataBytes)
 
         self._request = None
-        self._posters: typing.Dict[float, travellermap.MapImage] = {}
+        self._posters: typing.Dict[float, multiverse.MapImage] = {}
 
     def run(self):
         self._primeNextRequest(index=0)
@@ -62,7 +62,7 @@ class PosterJobAsync(QtCore.QObject):
             self._request.cancel()
             self._request = None
 
-    def posters(self) -> typing.Mapping[float, travellermap.MapImage]:
+    def posters(self) -> typing.Mapping[float, multiverse.MapImage]:
         return self._posters
 
     def _primeNextRequest(
@@ -78,7 +78,7 @@ class PosterJobAsync(QtCore.QObject):
             style=self._style.value,
             options=common.humanFriendlyListString([op.value for op in self._options]) if self._options else ''))
 
-        url = travellermap.formatPosterUrl(
+        url = multiverse.formatPosterUrl(
             baseMapUrl=self._mapUrl,
             style=self._style,
             options=self._options,
@@ -88,7 +88,7 @@ class PosterJobAsync(QtCore.QObject):
 
         headers = None
         if requestSvg:
-            headers = {'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)}
+            headers = {'Accept': multiverse.mapFormatToMimeType(multiverse.MapFormat.SVG)}
 
         self._uploadHistory = 0
         self._emitProgress(
@@ -124,13 +124,13 @@ class PosterJobAsync(QtCore.QObject):
         if not contentType:
             self.complete[object].emit(RuntimeError('Response has no content-type'))
             return
-        mapFormat = travellermap.mimeTypeToMapFormat(contentType)
+        mapFormat = multiverse.mimeTypeToMapFormat(contentType)
         if not mapFormat:
             self.complete[object].emit(RuntimeError(f'Unknown content-type {contentType}'))
             return
 
         scale = self._scales[index]
-        self._posters[scale] = travellermap.MapImage(
+        self._posters[scale] = multiverse.MapImage(
             bytes=result.content(),
             format=mapFormat)
 

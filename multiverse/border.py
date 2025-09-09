@@ -1,8 +1,8 @@
 import enum
-import travellermap
+import multiverse
 import typing
 
-class Border(travellermap.Region):
+class Border(multiverse.Region):
     class Style(enum.Enum):
         Solid = 0
         Dashed = 1
@@ -10,10 +10,10 @@ class Border(travellermap.Region):
 
     def __init__(
             self,
-            hexList: typing.Iterable[travellermap.HexPosition],
+            hexList: typing.Iterable[multiverse.HexPosition],
             allegiance: typing.Optional[str],
             showLabel: bool,
-            labelHex: typing.Optional[travellermap.HexPosition],
+            labelHex: typing.Optional[multiverse.HexPosition],
             labelOffsetX: typing.Optional[float],
             labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],

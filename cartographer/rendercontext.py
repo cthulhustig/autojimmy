@@ -2,7 +2,7 @@ import common
 import enum
 import cartographer
 import math
-import travellermap
+import multiverse
 import typing
 
 class RenderContext(object):
@@ -68,8 +68,8 @@ class RenderContext(object):
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
-            milieu: travellermap.Milieu,
-            style: travellermap.MapStyle,
+            milieu: multiverse.Milieu,
+            style: multiverse.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
             styleStore: cartographer.StyleStore,
@@ -120,13 +120,13 @@ class RenderContext(object):
 
         self._hexOutlinePath = self._graphics.createPath(
             points=[
-                cartographer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5),
-                cartographer.PointF( 0.5 - travellermap.HexWidthOffset, -0.5),
-                cartographer.PointF( 0.5 + travellermap.HexWidthOffset, 0),
-                cartographer.PointF( 0.5 - travellermap.HexWidthOffset, 0.5),
-                cartographer.PointF(-0.5 + travellermap.HexWidthOffset, 0.5),
-                cartographer.PointF(-0.5 - travellermap.HexWidthOffset, 0),
-                cartographer.PointF(-0.5 + travellermap.HexWidthOffset, -0.5)],
+                cartographer.PointF(-0.5 + multiverse.HexWidthOffset, -0.5),
+                cartographer.PointF( 0.5 - multiverse.HexWidthOffset, -0.5),
+                cartographer.PointF( 0.5 + multiverse.HexWidthOffset, 0),
+                cartographer.PointF( 0.5 - multiverse.HexWidthOffset, 0.5),
+                cartographer.PointF(-0.5 + multiverse.HexWidthOffset, 0.5),
+                cartographer.PointF(-0.5 - multiverse.HexWidthOffset, 0),
+                cartographer.PointF(-0.5 + multiverse.HexWidthOffset, -0.5)],
             closed=True)
 
         # Chosen to match T5 pp.416
@@ -170,12 +170,12 @@ class RenderContext(object):
         if scaleUpdated:
             self._updateLayerOrder()
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
     def setMilieu(
             self,
-            milieu: travellermap.Milieu
+            milieu: multiverse.Milieu
             ) -> None:
         if milieu is self._milieu:
             return
@@ -184,12 +184,12 @@ class RenderContext(object):
         self._worldCache.setMilieu(milieu=self._milieu)
         self._selector.setMilieu(milieu=self._milieu)
 
-    def style(self) -> travellermap.MapStyle:
+    def style(self) -> multiverse.MapStyle:
         return self._styleSheet.style
 
     def setStyle(
             self,
-            style: travellermap.MapStyle
+            style: multiverse.MapStyle
             ) -> None:
         self._styleSheet.style = style
         self._updateLayerOrder()
@@ -275,8 +275,8 @@ class RenderContext(object):
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder.index(l.id))
 
     def _updateView(self):
-        worldOutputWidth = self._outputPixelWidth / (self._scale * travellermap.ParsecScaleX)
-        worldOutputHeight = self._outputPixelHeight / (self._scale * travellermap.ParsecScaleY)
+        worldOutputWidth = self._outputPixelWidth / (self._scale * multiverse.ParsecScaleX)
+        worldOutputHeight = self._outputPixelHeight / (self._scale * multiverse.ParsecScaleY)
         viewAreaChanged = (self._worldOutputRect is None) or \
             (worldOutputWidth != self._worldOutputRect.width()) or \
             (worldOutputHeight != self._worldOutputRect.height())
@@ -289,10 +289,10 @@ class RenderContext(object):
 
         self._worldViewRect = self._worldOutputRect
         if self._outputClipRect:
-            worldClipOffsetX = self._outputClipRect.x() / (self._scale * travellermap.ParsecScaleX)
-            worldClipOffsetY = self._outputClipRect.y() / (self._scale * travellermap.ParsecScaleY)
-            worldClipWidth = self._outputClipRect.width() / (self._scale * travellermap.ParsecScaleX)
-            worldClipHeight = self._outputClipRect.height() / (self._scale * travellermap.ParsecScaleY)
+            worldClipOffsetX = self._outputClipRect.x() / (self._scale * multiverse.ParsecScaleX)
+            worldClipOffsetY = self._outputClipRect.y() / (self._scale * multiverse.ParsecScaleY)
+            worldClipWidth = self._outputClipRect.width() / (self._scale * multiverse.ParsecScaleX)
+            worldClipHeight = self._outputClipRect.height() / (self._scale * multiverse.ParsecScaleY)
             self._worldViewRect = cartographer.RectangleF(
                 x=self._worldOutputRect.x() + worldClipOffsetX,
                 y=self._worldOutputRect.y() + worldClipOffsetY,
@@ -304,8 +304,8 @@ class RenderContext(object):
 
         m = self._graphics.createIdentityMatrix()
         m.scalePrepend(
-            sx=self._scale * travellermap.ParsecScaleX,
-            sy=self._scale * travellermap.ParsecScaleY)
+            sx=self._scale * multiverse.ParsecScaleX,
+            sy=self._scale * multiverse.ParsecScaleY)
         m.translatePrepend(
             dx=-self._worldOutputRect.left(),
             dy=-self._worldOutputRect.top())
@@ -362,8 +362,8 @@ class RenderContext(object):
         nebulaLogScale = int(math.floor(renderLogScale + 0.5))
         nebulaScale = math.pow(2, nebulaLogScale)
 
-        nebulaWidth = RenderContext._NebulaRenderWidth / (nebulaScale * travellermap.ParsecScaleX)
-        nebulaHeight = RenderContext._NebulaRenderHeight / (nebulaScale * travellermap.ParsecScaleY)
+        nebulaWidth = RenderContext._NebulaRenderWidth / (nebulaScale * multiverse.ParsecScaleX)
+        nebulaHeight = RenderContext._NebulaRenderHeight / (nebulaScale * multiverse.ParsecScaleY)
 
         nebulaLeft = (self._worldViewRect.left() // nebulaWidth) * nebulaWidth
         nebulaTop = (self._worldViewRect.top() // nebulaHeight) * nebulaHeight
@@ -488,28 +488,28 @@ class RenderContext(object):
         # sector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
-        left = ((self._worldViewRect.left() // travellermap.SectorWidth) * \
-                travellermap.SectorWidth) - travellermap.ReferenceHexX
+        left = ((self._worldViewRect.left() // multiverse.SectorWidth) * \
+                multiverse.SectorWidth) - multiverse.ReferenceHexX
         right = self._worldViewRect.right()
-        top = ((self._worldViewRect.top() // travellermap.SectorHeight) * \
-               travellermap.SectorHeight) - travellermap.ReferenceHexY
+        top = ((self._worldViewRect.top() // multiverse.SectorHeight) * \
+               multiverse.SectorHeight) - multiverse.ReferenceHexY
         bottom = self._worldViewRect.bottom()
 
-        x = left + travellermap.SectorWidth
+        x = left + multiverse.SectorWidth
         while x <= self._worldViewRect.right():
             self._graphics.drawLine(
                 pt1=cartographer.PointF(x, top),
                 pt2=cartographer.PointF(x, bottom),
                 pen=self._styleSheet.sectorGrid.linePen)
-            x += travellermap.SectorWidth
+            x += multiverse.SectorWidth
 
-        y = top + travellermap.SectorHeight
+        y = top + multiverse.SectorHeight
         while y <= self._worldViewRect.bottom():
             self._graphics.drawLine(
                 pt1=cartographer.PointF(left, y),
                 pt2=cartographer.PointF(right, y),
                 pen=self._styleSheet.sectorGrid.linePen)
-            y += travellermap.SectorHeight
+            y += multiverse.SectorHeight
 
     def _drawSubsectorGrid(self) -> None:
         if not self._styleSheet.subsectorGrid.visible:
@@ -522,33 +522,33 @@ class RenderContext(object):
         # subsector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
-        left = ((self._worldViewRect.left() // travellermap.SubsectorWidth) * \
-                travellermap.SubsectorWidth) - travellermap.ReferenceHexX
+        left = ((self._worldViewRect.left() // multiverse.SubsectorWidth) * \
+                multiverse.SubsectorWidth) - multiverse.ReferenceHexX
         right = self._worldViewRect.right()
-        top = ((self._worldViewRect.top() // travellermap.SubsectorHeight) * \
-               travellermap.SubsectorHeight) - travellermap.ReferenceHexY
+        top = ((self._worldViewRect.top() // multiverse.SubsectorHeight) * \
+               multiverse.SubsectorHeight) - multiverse.ReferenceHexY
         bottom = self._worldViewRect.bottom()
 
-        x = left + travellermap.SubsectorWidth
-        lineIndex = int(round(x / travellermap.SubsectorWidth))
+        x = left + multiverse.SubsectorWidth
+        lineIndex = int(round(x / multiverse.SubsectorWidth))
         while x <= self._worldViewRect.right():
             if lineIndex % 4:
                 self._graphics.drawLine(
                     pt1=cartographer.PointF(x, top),
                     pt2=cartographer.PointF(x, bottom),
                     pen=self._styleSheet.subsectorGrid.linePen)
-            x += travellermap.SubsectorWidth
+            x += multiverse.SubsectorWidth
             lineIndex += 1
 
-        y = top + travellermap.SubsectorHeight
-        lineIndex = int(round(y / travellermap.SubsectorHeight))
+        y = top + multiverse.SubsectorHeight
+        lineIndex = int(round(y / multiverse.SubsectorHeight))
         while y <= self._worldViewRect.bottom():
             if lineIndex % 4:
                 self._graphics.drawLine(
                     pt1=cartographer.PointF(left, y),
                     pt2=cartographer.PointF(right, y),
                     pen=self._styleSheet.subsectorGrid.linePen)
-            y += travellermap.SubsectorHeight
+            y += multiverse.SubsectorHeight
             lineIndex += 1
 
     def _drawParsecGrid(self) -> None:
@@ -575,19 +575,19 @@ class RenderContext(object):
             for px in range(hx - RenderContext._ParsecGridSlop, hx + hw + RenderContext._ParsecGridSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - RenderContext._ParsecGridSlop, hy + hh + RenderContext._ParsecGridSlop):
-                    relativePos = travellermap.absoluteSpaceToRelativeSpace((px + 1, py + 1))
+                    relativePos = multiverse.absoluteSpaceToRelativeSpace((px + 1, py + 1))
                     if self._styleSheet.hexCoordinateStyle == cartographer.HexCoordinateStyle.Subsector:
                         hex = '{hexX:02d}{hexY:02d}'.format(
-                            hexX=int((relativePos[2] - 1) % travellermap.SubsectorWidth) + 1,
-                            hexY=int((relativePos[3] - 1) % travellermap.SubsectorHeight) + 1)
+                            hexX=int((relativePos[2] - 1) % multiverse.SubsectorWidth) + 1,
+                            hexY=int((relativePos[3] - 1) % multiverse.SubsectorHeight) + 1)
                     else:
                         hex = '{hexX:02d}{hexY:02d}'.format(
                             hexX=relativePos[2],
                             hexY=relativePos[3])
 
                     with self._graphics.save():
-                        scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
-                        scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
+                        scaleX = self._styleSheet.hexContentScale / multiverse.ParsecScaleX
+                        scaleY = self._styleSheet.hexContentScale / multiverse.ParsecScaleY
                         self._graphics.scaleTransform(
                             scaleX=scaleX,
                             scaleY=scaleY)
@@ -659,11 +659,11 @@ class RenderContext(object):
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
-                        if route.style() is travellermap.Route.Style.Solid:
+                        if route.style() is multiverse.Route.Style.Solid:
                             routeStyle = cartographer.LineStyle.Solid
-                        elif route.style() is travellermap.Route.Style.Dashed:
+                        elif route.style() is multiverse.Route.Style.Dashed:
                             routeStyle = cartographer.LineStyle.Dash
-                        elif route.style() is travellermap.Route.Style.Dotted:
+                        elif route.style() is multiverse.Route.Style.Dotted:
                             routeStyle = cartographer.LineStyle.Dot
 
                     if not routeWidth or not routeColour or not routeStyle:
@@ -768,9 +768,9 @@ class RenderContext(object):
                     if label.offsetY():
                         labelPos.setY(labelPos.y() - (label.offsetY() * 0.7))
 
-                    if label.size() is travellermap.Label.Size.Small:
+                    if label.size() is multiverse.Label.Size.Small:
                         font = self._styleSheet.microBorders.smallFont
-                    elif label.size() is travellermap.Label.Size.Large:
+                    elif label.size() is multiverse.Label.Size.Large:
                         font = self._styleSheet.microBorders.largeFont
                     else:
                         font = self._styleSheet.microBorders.font
@@ -805,11 +805,11 @@ class RenderContext(object):
                 continue
 
             index = sector.index()
-            centerX, centerY = travellermap.relativeSpaceToAbsoluteSpace((
+            centerX, centerY = multiverse.relativeSpaceToAbsoluteSpace((
                 index.sectorX(),
                 index.sectorY(),
-                int(travellermap.SectorWidth // 2),
-                int(travellermap.SectorHeight // 2)))
+                int(multiverse.SectorWidth // 2),
+                int(multiverse.SectorHeight // 2)))
 
             self._drawLabel(
                 text=sectorLabel if sectorLabel else sector.name(),
@@ -892,14 +892,14 @@ class RenderContext(object):
                     self._styleSheet.macroRoutes.textHighlightBrush
                 with self._graphics.save():
                     self._graphics.scaleTransform(
-                        scaleX=1.0 / travellermap.ParsecScaleX,
-                        scaleY=1.0 / travellermap.ParsecScaleY)
+                        scaleX=1.0 / multiverse.ParsecScaleX,
+                        scaleY=1.0 / multiverse.ParsecScaleY)
                     self._drawMultiLineString(
                         text=label.text,
                         font=font,
                         brush=brush,
-                        x=label.position.x() * travellermap.ParsecScaleX,
-                        y=label.position.y() * travellermap.ParsecScaleY)
+                        x=label.position.x() * multiverse.ParsecScaleX,
+                        y=label.position.y() * multiverse.ParsecScaleY)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if not self._labelStore or not self._styleSheet.capitals.visible or \
@@ -929,8 +929,8 @@ class RenderContext(object):
                         dx=worldLabel.position.x(),
                         dy=worldLabel.position.y())
                     self._graphics.scaleTransform(
-                        scaleX=1.0 / travellermap.ParsecScaleX,
-                        scaleY=1.0 / travellermap.ParsecScaleY)
+                        scaleX=1.0 / multiverse.ParsecScaleX,
+                        scaleY=1.0 / multiverse.ParsecScaleY)
 
                     self._graphics.drawEllipse(
                         rect=dotRect,
@@ -977,14 +977,14 @@ class RenderContext(object):
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.scaleTransform(
-                    scaleX=1.0 / travellermap.ParsecScaleX,
-                    scaleY=1.0 / travellermap.ParsecScaleY)
+                    scaleX=1.0 / multiverse.ParsecScaleX,
+                    scaleY=1.0 / multiverse.ParsecScaleY)
                 self._drawMultiLineString(
                     text=label.text,
                     font=font,
                     brush=self._styleSheet.megaNames.textBrush,
-                    x=label.position.x() * travellermap.ParsecScaleX,
-                    y=label.position.y() * travellermap.ParsecScaleY)
+                    x=label.position.x() * multiverse.ParsecScaleX,
+                    y=label.position.y() * multiverse.ParsecScaleY)
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
@@ -1013,8 +1013,8 @@ class RenderContext(object):
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
-            scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
+            scaleX = self._styleSheet.hexContentScale / multiverse.ParsecScaleX
+            scaleY = self._styleSheet.hexContentScale / multiverse.ParsecScaleY
             self._graphics.scaleTransform(
                 scaleX=scaleX,
                 scaleY=scaleY)
@@ -1041,8 +1041,8 @@ class RenderContext(object):
                                 if self._styleSheet.showZonesAsPerimeters:
                                     with self._graphics.save():
                                         self._graphics.scaleTransform(
-                                            scaleX=0.95 * travellermap.ParsecScaleX,
-                                            scaleY=0.95 * travellermap.ParsecScaleY)
+                                            scaleX=0.95 * multiverse.ParsecScaleX,
+                                            scaleY=0.95 * multiverse.ParsecScaleY)
                                         self._graphics.drawPath(
                                             path=self._hexOutlinePath,
                                             pen=element.linePen)
@@ -1127,8 +1127,8 @@ class RenderContext(object):
                     if not self._styleSheet.numberAllHexes and renderHex:
                         if renderSubsector:
                             numberText = '{hexX:02d}{hexY:02d}'.format(
-                                hexX=int((placeholderHex.offsetX() - 1) % travellermap.SubsectorWidth) + 1,
-                                hexY=int((placeholderHex.offsetY() - 1) % travellermap.SubsectorHeight) + 1)
+                                hexX=int((placeholderHex.offsetX() - 1) % multiverse.SubsectorWidth) + 1,
+                                hexY=int((placeholderHex.offsetY() - 1) % multiverse.SubsectorHeight) + 1)
                         else:
                             numberText = '{hexX:02d}{hexY:02d}'.format(
                                 hexX=placeholderHex.offsetX(),
@@ -1162,8 +1162,8 @@ class RenderContext(object):
                 # coordinate space (where x & y don't scale the same) then the
                 # point would be drawn as an oval
                 self._graphics.scaleTransform(
-                    scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
-                    scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
+                    scaleX=self._styleSheet.hexContentScale / multiverse.ParsecScaleX,
+                    scaleY=self._styleSheet.hexContentScale / multiverse.ParsecScaleY)
 
                 pen = self._graphics.createPen(
                     colour=self._styleSheet.worlds.textBrush.colour(),
@@ -1211,8 +1211,8 @@ class RenderContext(object):
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            scaleX = self._styleSheet.hexContentScale / travellermap.ParsecScaleX
-            scaleY = self._styleSheet.hexContentScale / travellermap.ParsecScaleY
+            scaleX = self._styleSheet.hexContentScale / multiverse.ParsecScaleX
+            scaleY = self._styleSheet.hexContentScale / multiverse.ParsecScaleY
             self._graphics.scaleTransform(scaleX=scaleX, scaleY=scaleY)
 
             for world in worlds:
@@ -1507,8 +1507,8 @@ class RenderContext(object):
                             dx=worldInfo.hexCenter.x(),
                             dy=worldInfo.hexCenter.y())
                         self._graphics.scaleTransform(
-                            scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
-                            scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
+                            scaleX=self._styleSheet.hexContentScale / multiverse.ParsecScaleX,
+                            scaleY=self._styleSheet.hexContentScale / multiverse.ParsecScaleY)
 
                         if self._styleSheet.populationOverlay.visible and worldInfo.populationOverlayRadius > 0:
                             self._drawOverlay(
@@ -1524,15 +1524,15 @@ class RenderContext(object):
                             if worldInfo.isImportant and worldInfo.isCapital:
                                 self._drawOverlay(
                                     element=self._styleSheet.capitalOverlay,
-                                    radius=2 * travellermap.ParsecScaleX)
+                                    radius=2 * multiverse.ParsecScaleX)
                             elif worldInfo.isImportant:
                                 self._drawOverlay(
                                     element=self._styleSheet.capitalOverlayAltA,
-                                    radius=2 * travellermap.ParsecScaleX)
+                                    radius=2 * multiverse.ParsecScaleX)
                             elif worldInfo.isCapital:
                                 self._drawOverlay(
                                     element=self._styleSheet.capitalOverlayAltB,
-                                    radius=2 * travellermap.ParsecScaleX)
+                                    radius=2 * multiverse.ParsecScaleX)
             finally:
                 self._selector.setWorldSlop(oldSlop)
 
@@ -1580,7 +1580,7 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             remarks = world.remarks()
-            if remarks.hasTradeCode(travellermap.TradeCode.AncientsSiteWorld):
+            if remarks.hasTradeCode(multiverse.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,
@@ -1597,9 +1597,9 @@ class RenderContext(object):
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
                 shouldDim = \
-                    not tagging.contains(travellermap.SectorTagging.Tag.Official) and \
-                    not tagging.contains(travellermap.SectorTagging.Tag.Preserve) and \
-                    not tagging.contains(travellermap.SectorTagging.Tag.InReview)
+                    not tagging.contains(multiverse.SectorTagging.Tag.Official) and \
+                    not tagging.contains(multiverse.SectorTagging.Tag.Preserve) and \
+                    not tagging.contains(multiverse.SectorTagging.Tag.InReview)
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         index=sector.index())
@@ -1611,23 +1611,23 @@ class RenderContext(object):
         if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                if tagging.contains(travellermap.SectorTagging.Tag.Official):
+                if tagging.contains(multiverse.SectorTagging.Tag.Official):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif tagging.contains(travellermap.SectorTagging.Tag.InReview):
+                elif tagging.contains(multiverse.SectorTagging.Tag.InReview):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif tagging.contains(travellermap.SectorTagging.Tag.Unreviewed):
+                elif tagging.contains(multiverse.SectorTagging.Tag.Unreviewed):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif tagging.contains(travellermap.SectorTagging.Tag.Apocryphal):
+                elif tagging.contains(multiverse.SectorTagging.Tag.Apocryphal):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif tagging.contains(travellermap.SectorTagging.Tag.Preserve):
+                elif tagging.contains(multiverse.SectorTagging.Tag.Preserve):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))
@@ -1680,10 +1680,10 @@ class RenderContext(object):
             # Invert the current scaling transforms
             sx = 1.0 / self._styleSheet.hexContentScale
             sy = 1.0 / self._styleSheet.hexContentScale
-            sx *= travellermap.ParsecScaleX
-            sy *= travellermap.ParsecScaleY
-            sx /= self._scale * travellermap.ParsecScaleX
-            sy /= self._scale * travellermap.ParsecScaleY
+            sx *= multiverse.ParsecScaleX
+            sy *= multiverse.ParsecScaleY
+            sx /= self._scale * multiverse.ParsecScaleX
+            sy /= self._scale * multiverse.ParsecScaleY
 
             outlineSize = 2
             outlineSkip = 1
@@ -1720,8 +1720,8 @@ class RenderContext(object):
 
             self._graphics.translateTransform(dx=center.x(), dy=center.y())
             self._graphics.scaleTransform(
-                scaleX=self._styleSheet.hexContentScale / travellermap.ParsecScaleX,
-                scaleY=self._styleSheet.hexContentScale / travellermap.ParsecScaleY)
+                scaleX=self._styleSheet.hexContentScale / multiverse.ParsecScaleX,
+                scaleY=self._styleSheet.hexContentScale / multiverse.ParsecScaleY)
 
             pen = self._graphics.createPen()
             pen.setStyle(cartographer.LineStyle.Solid)
@@ -1873,8 +1873,8 @@ class RenderContext(object):
                 # the point where incorrect clipping of these internal borders
                 # is that noticeable.
                 sectorClipRect.inflate(
-                    travellermap.ParsecScaleX * 0.1,
-                    travellermap.ParsecScaleY * 0.1)
+                    multiverse.ParsecScaleX * 0.1,
+                    multiverse.ParsecScaleY * 0.1)
             if not self._worldViewRect.intersects(sectorClipRect):
                 continue
 
@@ -2053,8 +2053,8 @@ class RenderContext(object):
                     dx=vectorObject.namePosition.x(),
                     dy=vectorObject.namePosition.y())
                 self._graphics.scaleTransform(
-                    scaleX=1.0 / travellermap.ParsecScaleX,
-                    scaleY=1.0 / travellermap.ParsecScaleY)
+                    scaleX=1.0 / multiverse.ParsecScaleX,
+                    scaleY=1.0 / multiverse.ParsecScaleY)
                 self._graphics.rotateTransform(-labelStyle.rotation)
 
                 self._drawMultiLineString(
@@ -2103,19 +2103,19 @@ class RenderContext(object):
             glyph: str,
             font: cartographer.AbstractFont,
             brush: cartographer.AbstractBrush,
-            position: travellermap.HexPosition
+            position: multiverse.HexPosition
             ) -> None:
         centerX, centerY = position.worldCenter()
         with self._graphics.save():
             self._graphics.scaleTransform(
-                scaleX=1 / travellermap.ParsecScaleX,
-                scaleY=1 / travellermap.ParsecScaleY)
+                scaleX=1 / multiverse.ParsecScaleX,
+                scaleY=1 / multiverse.ParsecScaleY)
             self._graphics.drawString(
                 text=glyph,
                 font=font,
                 brush=brush,
-                x=centerX * travellermap.ParsecScaleX,
-                y=centerY * travellermap.ParsecScaleY,
+                x=centerX * multiverse.ParsecScaleX,
+                y=centerY * multiverse.ParsecScaleY,
                 format=cartographer.TextAlignment.Centered)
 
     def _drawLabel(
@@ -2136,8 +2136,8 @@ class RenderContext(object):
                 dx=center.x(),
                 dy=center.y())
             self._graphics.scaleTransform(
-                scaleX=1.0 / travellermap.ParsecScaleX,
-                scaleY=1.0 / travellermap.ParsecScaleY)
+                scaleX=1.0 / multiverse.ParsecScaleX,
+                scaleY=1.0 / multiverse.ParsecScaleY)
 
             self._graphics.translateTransform(
                 dx=labelStyle.translation.x(),
@@ -2288,10 +2288,10 @@ class RenderContext(object):
                 props.append((common.HtmlColours.Brown, common.HtmlColours.Black, 0.3))
             else:
                 colour, radius = RenderContext._StarPropsMap.get(
-                    star.code(element=travellermap.Star.Element.SpectralClass),
+                    star.code(element=multiverse.Star.Element.SpectralClass),
                     (None, None))
                 if colour:
-                    luminance = star.code(element=travellermap.Star.Element.LuminosityClass)
+                    luminance = star.code(element=multiverse.Star.Element.LuminosityClass)
                     if luminance == 'VII':
                         # The second survey format spec says that some data uses VII to indicate
                         # a white dwarf (i.e. classification D).
@@ -2321,19 +2321,19 @@ class RenderContext(object):
 
     @staticmethod
     def _offsetRouteSegment(startPoint: cartographer.PointF, endPoint: cartographer.PointF, offset: float) -> None:
-        dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX
-        dy = (endPoint.y() - startPoint.y()) * travellermap.ParsecScaleY
+        dx = (endPoint.x() - startPoint.x()) * multiverse.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * multiverse.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
         if not length:
             return # No offset
-        ddx = (dx * offset / length) / travellermap.ParsecScaleX
-        ddy = (dy * offset / length) / travellermap.ParsecScaleY
+        ddx = (dx * offset / length) / multiverse.ParsecScaleX
+        ddy = (dy * offset / length) / multiverse.ParsecScaleY
         startPoint.setX(startPoint.x() + ddx)
         startPoint.setY(startPoint.y() + ddy)
         endPoint.setX(endPoint.x() - ddx)
         endPoint.setY(endPoint.y() - ddy)
 
     @staticmethod
-    def _hexToCenter(hex: travellermap.HexPosition) -> cartographer.PointF:
+    def _hexToCenter(hex: multiverse.HexPosition) -> cartographer.PointF:
         centerX, centerY = hex.worldCenter()
         return cartographer.PointF(x=centerX, y=centerY)

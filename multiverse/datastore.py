@@ -9,7 +9,7 @@ import re
 import requests
 import shutil
 import threading
-import travellermap
+import multiverse
 import typing
 import xmlschema
 import xml.etree.ElementTree
@@ -76,7 +76,7 @@ class CustomMapLevel(object):
             self,
             scale: int,
             fileName: str,
-            format: travellermap.MapFormat
+            format: multiverse.MapFormat
             ) -> None:
         self._scale = scale
         self._fileName = fileName
@@ -88,7 +88,7 @@ class CustomMapLevel(object):
     def fileName(self) -> str:
         return self._fileName
 
-    def format(self) -> travellermap.MapFormat:
+    def format(self) -> multiverse.MapFormat:
         return self._format
 
 class SectorInfo(object):
@@ -98,13 +98,13 @@ class SectorInfo(object):
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            sectorFormat: travellermap.SectorFormat,
-            metadataFormat: travellermap.MetadataFormat,
+            sectorFormat: multiverse.SectorFormat,
+            metadataFormat: multiverse.MetadataFormat,
             modifiedTimestamp: datetime.datetime,
             isCustomSector: bool,
             # TODO: These options should go as part of this work
-            customMapStyle: typing.Optional[travellermap.MapStyle],
-            customMapOptions: typing.Optional[typing.Iterable[travellermap.MapOption]],
+            customMapStyle: typing.Optional[multiverse.MapStyle],
+            customMapOptions: typing.Optional[typing.Iterable[multiverse.MapOption]],
             customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]
             ) -> None:
         self._canonicalName = canonicalName
@@ -131,10 +131,10 @@ class SectorInfo(object):
     def y(self) -> int:
         return self._y
 
-    def sectorFormat(self) -> travellermap.SectorFormat:
+    def sectorFormat(self) -> multiverse.SectorFormat:
         return self._sectorFormat
 
-    def metadataFormat(self) -> travellermap.MetadataFormat:
+    def metadataFormat(self) -> multiverse.MetadataFormat:
         return self._metadataFormat
 
     def modifiedTimestamp(self) -> datetime.datetime:
@@ -149,10 +149,10 @@ class SectorInfo(object):
     def customMapLevel(self, scale: int) -> typing.Optional[CustomMapLevel]:
         return self._customMapLevels.get(scale) if self._customMapLevels else None
 
-    def customMapStyle(self) -> typing.Optional[travellermap.MapStyle]:
+    def customMapStyle(self) -> typing.Optional[multiverse.MapStyle]:
         return self._customMapStyle
 
-    def customMapOptions(self) -> typing.Optional[typing.List[travellermap.MapOption]]:
+    def customMapOptions(self) -> typing.Optional[typing.List[multiverse.MapOption]]:
         return self._customMapOptions.copy() if self._customMapOptions else None
 
 class SectorLookupMaps(object):
@@ -225,14 +225,14 @@ class SectorConflictException(RuntimeError):
 class UniverseInfo(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu
+            milieu: multiverse.Milieu
             ) -> None:
         self._milieu = milieu
         self._stockSectorMap = SectorLookupMaps()
         self._customSectorMap = SectorLookupMaps()
         self._mergedSectorMap = SectorLookupMaps()
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
     def conflictCheck(
@@ -468,11 +468,11 @@ class DataStore(object):
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
-        travellermap.SectorFormat.T5Column: 'sec',
-        travellermap.SectorFormat.T5Tab: 'tab'}
+        multiverse.SectorFormat.T5Column: 'sec',
+        multiverse.SectorFormat.T5Tab: 'tab'}
     _MetadataFormatExtensions = {
-        travellermap.MetadataFormat.JSON: 'json',
-        travellermap.MetadataFormat.XML: 'xml'}
+        multiverse.MetadataFormat.JSON: 'json',
+        multiverse.MetadataFormat.XML: 'xml'}
 
     _instance = None # Singleton instance
     _lock = threading.RLock() # Recursive lock
@@ -512,7 +512,7 @@ class DataStore(object):
 
     def sectorCount(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             stockOnly: bool = False
             ) -> int:
         self._loadSectors(milieu=milieu)
@@ -524,7 +524,7 @@ class DataStore(object):
 
     def sectors(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             stockOnly: bool = False
             ) -> typing.Iterable[SectorInfo]:
         self._loadSectors(milieu=milieu)
@@ -537,7 +537,7 @@ class DataStore(object):
     def sector(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors(milieu=milieu)
@@ -553,7 +553,7 @@ class DataStore(object):
             self,
             sectorX: int,
             sectorY: int,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors(milieu=milieu)
@@ -568,7 +568,7 @@ class DataStore(object):
     def sectorFileData(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             stockOnly: bool = False
             ) -> str:
         self._loadSectors(milieu=milieu)
@@ -588,7 +588,7 @@ class DataStore(object):
     def sectorMetaData(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             stockOnly: bool = False
             ) -> str:
         self._loadSectors(milieu=milieu)
@@ -609,9 +609,9 @@ class DataStore(object):
     def sectorMapImage(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             scale: int
-            ) -> travellermap.MapImage:
+            ) -> multiverse.MapImage:
         self._loadSectors(milieu=milieu)
 
         sector = self.sector(
@@ -628,7 +628,7 @@ class DataStore(object):
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector())
 
-        return travellermap.MapImage(
+        return multiverse.MapImage(
             bytes=mapData,
             format=mapLevel.format())
 
@@ -805,11 +805,11 @@ class DataStore(object):
 
     def hasCustomSectors(
             self,
-            milieu: typing.Optional[travellermap.Milieu] = None,
+            milieu: typing.Optional[multiverse.Milieu] = None,
             ) -> bool:
         self._loadSectors(milieu=milieu)
 
-        milieuList = [milieu] if milieu else travellermap.Milieu
+        milieuList = [milieu] if milieu else multiverse.Milieu
         with self._lock:
             for milieu in milieuList:
                 universeInfo = self._universeMap[milieu]
@@ -825,7 +825,7 @@ class DataStore(object):
             sectorName: str,
             sectorX: int,
             sectorY: int,
-            milieu: travellermap.Milieu
+            milieu: multiverse.Milieu
             ) -> None:
         self._loadSectors(milieu=milieu)
 
@@ -839,24 +839,24 @@ class DataStore(object):
 
     def createCustomSector(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             sectorContent: str,
             metadataContent: str,
-            customMapStyle: typing.Optional[travellermap.MapStyle],
-            customMapOptions: typing.Optional[typing.Iterable[travellermap.MapOption]],
-            customMapImages: typing.Mapping[int, travellermap.MapImage]
+            customMapStyle: typing.Optional[multiverse.MapStyle],
+            customMapOptions: typing.Optional[typing.Iterable[multiverse.MapOption]],
+            customMapImages: typing.Mapping[int, multiverse.MapImage]
             ) -> SectorInfo:
         self._loadSectors(milieu=milieu)
 
-        sectorFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
+        sectorFormat = multiverse.sectorFileFormatDetect(content=sectorContent)
         if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
 
-        metadataFormat = travellermap.metadataFileFormatDetect(content=metadataContent)
+        metadataFormat = multiverse.metadataFileFormatDetect(content=metadataContent)
         if not metadataFormat:
             raise RuntimeError('Sector metadata content has an unknown format')
 
-        metadata = travellermap.readMetadata(
+        metadata = multiverse.readMetadata(
             content=metadataContent,
             format=metadataFormat,
             identifier='Custom Metadata')
@@ -865,7 +865,7 @@ class DataStore(object):
         # format. If it fails an exception will be raised and allowed to pass
         # back to the called. Doing this check is important as it prevents bad
         # data causing the app to barf when loading
-        travellermap.readSector(
+        multiverse.readSector(
             content=sectorContent,
             format=sectorFormat,
             identifier=f'Custom Sector {metadata.canonicalName()}')
@@ -938,7 +938,7 @@ class DataStore(object):
     def deleteCustomSector(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu
+            milieu: multiverse.Milieu
             ) -> None:
         self._loadSectors(milieu=milieu)
 
@@ -1023,7 +1023,7 @@ class DataStore(object):
 
     def _loadSectors(
             self,
-            milieu: typing.Optional[travellermap.Milieu] = None,
+            milieu: typing.Optional[multiverse.Milieu] = None,
             reload: bool = False
             ) -> None:
         with self._lock:
@@ -1031,9 +1031,9 @@ class DataStore(object):
                 return # Already loaded
 
             if not self._universeMap:
-                self._universeMap: typing.Dict[travellermap.Milieu, UniverseInfo] = {}
+                self._universeMap: typing.Dict[multiverse.Milieu, UniverseInfo] = {}
 
-            milieuList = [milieu] if milieu else travellermap.Milieu
+            milieuList = [milieu] if milieu else multiverse.Milieu
             for milieu in milieuList:
                 logging.debug('{operation} sector info for {milieu}'.format(
                     operation='Reloading' if reload else 'Loading',
@@ -1169,7 +1169,7 @@ class DataStore(object):
     def _readMilieuFile(
             self,
             fileName: str,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             useCustomMapDir: bool
             ) -> bytes:
         relativePath = os.path.join(self._MilieuBaseDir, milieu.value, fileName)
@@ -1181,7 +1181,7 @@ class DataStore(object):
 
     def _loadMilieuSectors(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             customSectors: bool
             ) -> typing.List[SectorInfo]:
         sectorType = 'custom' if customSectors else 'base'
@@ -1249,18 +1249,18 @@ class DataStore(object):
                 # If the universe doesn't specify the sector format it must be a standard traveller map
                 # universe file which means the corresponding sectors files all use T5 column format
                 sectorFormatTag = sectorElement.get('SectorFormat')
-                sectorFormat = travellermap.SectorFormat.T5Column
+                sectorFormat = multiverse.SectorFormat.T5Column
                 if sectorFormatTag != None:
-                    sectorFormat = travellermap.SectorFormat.__members__.get(
+                    sectorFormat = multiverse.SectorFormat.__members__.get(
                         str(sectorFormatTag),
                         sectorFormat)
 
                 # If the universe doesn't specify the metadata format it must be a standard traveller map
                 # universe file which means the corresponding metadata files all use XML format
                 metadataFormatTag = sectorElement.get('MetadataFormat')
-                metadataFormat = travellermap.MetadataFormat.XML
+                metadataFormat = multiverse.MetadataFormat.XML
                 if metadataFormatTag != None:
-                    metadataFormat = travellermap.MetadataFormat.__members__.get(
+                    metadataFormat = multiverse.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
                         metadataFormat)
 
@@ -1282,7 +1282,7 @@ class DataStore(object):
                     customMapStyleTag = sectorElement.get('CustomMapStyle')
                     if customMapStyleTag == None:
                         raise RuntimeError('Sector has no custom map style')
-                    customMapStyle = travellermap.MapStyle.__members__.get(str(customMapStyleTag))
+                    customMapStyle = multiverse.MapStyle.__members__.get(str(customMapStyleTag))
                     if customMapStyle == None:
                         raise RuntimeError(f'Sector has an unknown map style {str(customMapStyleTag)}')
 
@@ -1291,7 +1291,7 @@ class DataStore(object):
                         customMapOptions = []
                         for optionTag in customMapOptionsElement:
                             optionTag = str(optionTag)
-                            option = travellermap.MapOption.__members__.get(optionTag)
+                            option = multiverse.MapOption.__members__.get(optionTag)
                             if option == None:
                                 raise RuntimeError(f'Sector has unknown custom map option {optionTag}')
                             customMapOptions.append(option)
@@ -1307,7 +1307,7 @@ class DataStore(object):
                             raise RuntimeError('Custom map level has no mime type')
                         mimeType = str(mimeType)
 
-                        mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
+                        mapFormat = multiverse.mimeTypeToMapFormat(mimeType=mimeType)
                         if mapFormat == None:
                             raise RuntimeError(f'Custom map level has unsupported mime type {mimeType}')
 
@@ -1351,7 +1351,7 @@ class DataStore(object):
 
     def _saveCustomSectors(
             self,
-            milieu: travellermap.Milieu
+            milieu: multiverse.Milieu
             ) -> None:
         universeFilePath = os.path.join(
             self._customDir,
@@ -1392,7 +1392,7 @@ class DataStore(object):
                         mapLevelListData.append({
                             'Scale': mapLevel.scale(),
                             'FileName': mapLevel.fileName(),
-                            'MimeType': travellermap.mapFormatToMimeType(format=mapLevel.format())
+                            'MimeType': multiverse.mapFormatToMimeType(format=mapLevel.format())
                         })
                 if mapLevelListData:
                     sectorData['CustomMapLevels'] = mapLevelListData

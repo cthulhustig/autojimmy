@@ -17,7 +17,7 @@ import pathlib
 import qasync
 import robots
 import sys
-import travellermap
+import multiverse
 import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -66,16 +66,16 @@ def _snapshotUpdateCheck(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
-    snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
+    snapshotAvailability = multiverse.DataStore.instance().checkForNewSnapshot()
 
-    if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
+    if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.NoNewSnapshot:
         return _SnapshotCheckResult.NoUpdate
 
-    if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+    if snapshotAvailability != multiverse.DataStore.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
-            age='old' if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld else 'new')
-        if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld:
+            age='old' if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld:
             promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
                 url=app.AppURL)
             stateKey = 'UniverseUpdateAppToOld'
@@ -386,7 +386,7 @@ def main() -> None:
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
         customMapsDir = os.path.join(appDir, 'custom_map')
-        travellermap.DataStore.setSectorDirs(
+        multiverse.DataStore.setSectorDirs(
             installDir=installMapsDir,
             overlayDir=overlayMapsDir,
             customDir=customMapsDir)

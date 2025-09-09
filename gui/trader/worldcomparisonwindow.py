@@ -3,7 +3,7 @@ import gui
 import logic
 import logging
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -279,7 +279,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._worldsGroupBox.setLayout(groupLayout)
 
-    def _allowWorld(self, hex: travellermap.HexPosition) -> bool:
+    def _allowWorld(self, hex: multiverse.HexPosition) -> bool:
         return not self._worldManagementWidget.containsHex(hex)
 
     def _tradeGoodTableItemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
@@ -367,7 +367,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.MapStyle
+            style: multiverse.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -375,7 +375,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.MapOption]
+            options: typing.Iterable[multiverse.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -426,7 +426,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[travellermap.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -459,14 +459,14 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[travellermap.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         if not hexes:
             return

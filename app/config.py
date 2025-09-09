@@ -9,7 +9,7 @@ import re
 import urllib
 import threading
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -391,28 +391,28 @@ class ColourConfigItem(StringConfigItem):
 
 class MapOptionsConfigItem(ConfigItem):
     _MapOptionToSettingsKey = {
-        travellermap.MapOption.GalacticDirections: '/GalacticDirections',
-        travellermap.MapOption.SectorGrid: '/SectorGrid',
-        travellermap.MapOption.SelectedSectorNames: '/SelectedSectorNames',
-        travellermap.MapOption.SectorNames: '/AllSectorNames',
-        travellermap.MapOption.Borders: '/Borders',
-        travellermap.MapOption.Routes: '/Routes',
-        travellermap.MapOption.RegionNames: '/RegionNames',
-        travellermap.MapOption.ImportantWorlds: '/ImportantWorlds',
-        travellermap.MapOption.WorldColours: '/WorldColours',
-        travellermap.MapOption.FilledBorders: '/FilledBorders',
-        travellermap.MapOption.DimUnofficial: '/DimUnofficial',
-        travellermap.MapOption.ImportanceOverlay: '/ImportanceOverlay',
-        travellermap.MapOption.PopulationOverlay: '/PopulationOverlay',
-        travellermap.MapOption.CapitalsOverlay: '/CapitalsOverlay',
-        travellermap.MapOption.MinorRaceOverlay: '/MinorRaceOverlay',
-        travellermap.MapOption.DroyneWorldOverlay: '/DroyneWorldOverlay',
-        travellermap.MapOption.AncientSitesOverlay: '/AncientSitesOverlay',
-        travellermap.MapOption.StellarOverlay: '/StellarOverlay',
-        travellermap.MapOption.EmpressWaveOverlay: '/EmpressWaveOverlay',
-        travellermap.MapOption.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
-        travellermap.MapOption.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
-        travellermap.MapOption.MainsOverlay: '/MainsOverlay'
+        multiverse.MapOption.GalacticDirections: '/GalacticDirections',
+        multiverse.MapOption.SectorGrid: '/SectorGrid',
+        multiverse.MapOption.SelectedSectorNames: '/SelectedSectorNames',
+        multiverse.MapOption.SectorNames: '/AllSectorNames',
+        multiverse.MapOption.Borders: '/Borders',
+        multiverse.MapOption.Routes: '/Routes',
+        multiverse.MapOption.RegionNames: '/RegionNames',
+        multiverse.MapOption.ImportantWorlds: '/ImportantWorlds',
+        multiverse.MapOption.WorldColours: '/WorldColours',
+        multiverse.MapOption.FilledBorders: '/FilledBorders',
+        multiverse.MapOption.DimUnofficial: '/DimUnofficial',
+        multiverse.MapOption.ImportanceOverlay: '/ImportanceOverlay',
+        multiverse.MapOption.PopulationOverlay: '/PopulationOverlay',
+        multiverse.MapOption.CapitalsOverlay: '/CapitalsOverlay',
+        multiverse.MapOption.MinorRaceOverlay: '/MinorRaceOverlay',
+        multiverse.MapOption.DroyneWorldOverlay: '/DroyneWorldOverlay',
+        multiverse.MapOption.AncientSitesOverlay: '/AncientSitesOverlay',
+        multiverse.MapOption.StellarOverlay: '/StellarOverlay',
+        multiverse.MapOption.EmpressWaveOverlay: '/EmpressWaveOverlay',
+        multiverse.MapOption.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
+        multiverse.MapOption.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
+        multiverse.MapOption.MainsOverlay: '/MainsOverlay'
     }
 
     def __init__(
@@ -420,17 +420,17 @@ class MapOptionsConfigItem(ConfigItem):
             option: ConfigOption,
             section: str,
             restart: bool,
-            default: typing.Iterable[travellermap.MapOption] = None
+            default: typing.Iterable[multiverse.MapOption] = None
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
         self._default = set(default) if default else set()
         self._currentValue = self._futureValue = self._default
 
-    def value(self, futureValue: bool = False) -> typing.Iterable[travellermap.MapOption]:
+    def value(self, futureValue: bool = False) -> typing.Iterable[multiverse.MapOption]:
         return list(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: typing.Iterable[travellermap.MapOption]) -> None:
+    def setValue(self, value: typing.Iterable[multiverse.MapOption]) -> None:
         if value == self._futureValue:
             return
 
@@ -839,7 +839,7 @@ class TaggingColoursConfigItem(ConfigItem):
 
 class WorldTaggingConfigItem(ConfigItem):
     _PropertyConfig = [
-        ('ZoneTagging', travellermap.ZoneType, logic.TaggingProperty.Zone),
+        ('ZoneTagging', multiverse.ZoneType, logic.TaggingProperty.Zone),
         ('StarPortTagging', str, logic.TaggingProperty.StarPort),
         ('WorldSizeTagging', str, logic.TaggingProperty.WorldSize),
         ('AtmosphereTagging', str, logic.TaggingProperty.Atmosphere),
@@ -848,8 +848,8 @@ class WorldTaggingConfigItem(ConfigItem):
         ('GovernmentTagging', str, logic.TaggingProperty.Government),
         ('LawLevelTagging', str, logic.TaggingProperty.LawLevel),
         ('TechLevelTagging', str, logic.TaggingProperty.TechLevel),
-        ('BaseTypeTagging', travellermap.BaseType, logic.TaggingProperty.BaseType),
-        ('TradeCodeTagging', travellermap.TradeCode, logic.TaggingProperty.TradeCode),
+        ('BaseTypeTagging', multiverse.BaseType, logic.TaggingProperty.BaseType),
+        ('TradeCodeTagging', multiverse.TradeCode, logic.TaggingProperty.TradeCode),
         ('ResourcesTagging', str, logic.TaggingProperty.Resources),
         ('LabourTagging', str, logic.TaggingProperty.Labour),
         ('InfrastructureTagging', str, logic.TaggingProperty.Infrastructure),
@@ -858,7 +858,7 @@ class WorldTaggingConfigItem(ConfigItem):
         ('AcceptanceTagging', str, logic.TaggingProperty.Acceptance),
         ('StrangenessTagging', str, logic.TaggingProperty.Strangeness),
         ('SymbolsTagging', str, logic.TaggingProperty.Symbols),
-        ('NobilityTagging', travellermap.NobilityType, logic.TaggingProperty.Nobility),
+        ('NobilityTagging', multiverse.NobilityType, logic.TaggingProperty.Nobility),
         ('AllegianceTagging', str, logic.TaggingProperty.Allegiance),
         ('SpectralTagging', str, logic.TaggingProperty.Spectral),
         ('LuminosityTagging', str, logic.TaggingProperty.Luminosity)]
@@ -1071,28 +1071,28 @@ class Config(QtCore.QObject):
             option=ConfigOption.Milieu,
             key='TravellerMap/Milieu',
             restart=False,
-            enumType=travellermap.Milieu,
-            default=travellermap.Milieu.M1105))
+            enumType=multiverse.Milieu,
+            default=multiverse.Milieu.M1105))
 
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapStyle,
             key='TravellerMap/MapStyle',
             restart=False,
-            enumType=travellermap.MapStyle,
-            default=travellermap.MapStyle.Poster))
+            enumType=multiverse.MapStyle,
+            default=multiverse.MapStyle.Poster))
         self._addConfigItem(MapOptionsConfigItem(
             option=ConfigOption.MapOptions,
             section='TravellerMap',
             restart=False,
             default=[
-                travellermap.MapOption.GalacticDirections,
-                travellermap.MapOption.SectorGrid,
-                travellermap.MapOption.SelectedSectorNames,
-                travellermap.MapOption.Borders,
-                travellermap.MapOption.Routes,
-                travellermap.MapOption.RegionNames,
-                travellermap.MapOption.ImportantWorlds,
-                travellermap.MapOption.FilledBorders]))
+                multiverse.MapOption.GalacticDirections,
+                multiverse.MapOption.SectorGrid,
+                multiverse.MapOption.SelectedSectorNames,
+                multiverse.MapOption.Borders,
+                multiverse.MapOption.Routes,
+                multiverse.MapOption.RegionNames,
+                multiverse.MapOption.ImportantWorlds,
+                multiverse.MapOption.FilledBorders]))
 
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapRendering,
@@ -1344,10 +1344,10 @@ class Config(QtCore.QObject):
             default=logic.WorldTagging(
                 config={
                     logic.TaggingProperty.Zone: {
-                        travellermap.ZoneType.AmberZone: logic.TagLevel.Warning,
-                        travellermap.ZoneType.RedZone: logic.TagLevel.Danger,
-                        travellermap.ZoneType.Unabsorbed: logic.TagLevel.Warning,
-                        travellermap.ZoneType.Forbidden: logic.TagLevel.Danger},
+                        multiverse.ZoneType.AmberZone: logic.TagLevel.Warning,
+                        multiverse.ZoneType.RedZone: logic.TagLevel.Danger,
+                        multiverse.ZoneType.Unabsorbed: logic.TagLevel.Warning,
+                        multiverse.ZoneType.Forbidden: logic.TagLevel.Danger},
                     logic.TaggingProperty.StarPort: {
                         'X': logic.TagLevel.Warning},
                     logic.TaggingProperty.Atmosphere: {
@@ -1362,24 +1362,24 @@ class Config(QtCore.QObject):
                     logic.TaggingProperty.LawLevel: {
                         '0': logic.TagLevel.Danger},
                     logic.TaggingProperty.TradeCode: {
-                        travellermap.TradeCode.AmberZone: logic.TagLevel.Warning,
-                        travellermap.TradeCode.RedZone: logic.TagLevel.Danger,
-                        travellermap.TradeCode.HellWorld: logic.TagLevel.Danger,
-                        travellermap.TradeCode.PenalColony: logic.TagLevel.Danger,
-                        travellermap.TradeCode.PrisonCamp: logic.TagLevel.Danger,
-                        travellermap.TradeCode.Reserve: logic.TagLevel.Danger,
-                        travellermap.TradeCode.DangerousWorld: logic.TagLevel.Danger,
-                        travellermap.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
+                        multiverse.TradeCode.AmberZone: logic.TagLevel.Warning,
+                        multiverse.TradeCode.RedZone: logic.TagLevel.Danger,
+                        multiverse.TradeCode.HellWorld: logic.TagLevel.Danger,
+                        multiverse.TradeCode.PenalColony: logic.TagLevel.Danger,
+                        multiverse.TradeCode.PrisonCamp: logic.TagLevel.Danger,
+                        multiverse.TradeCode.Reserve: logic.TagLevel.Danger,
+                        multiverse.TradeCode.DangerousWorld: logic.TagLevel.Danger,
+                        multiverse.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
                 })))
 
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.LogLevel], futureValue: bool = False) -> int: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> travellermap.Milieu: ...
+    def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> multiverse.Milieu: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> travellermap.MapStyle: ...
+    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> multiverse.MapStyle: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[travellermap.MapOption]: ...
+    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[multiverse.MapOption]: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapRendering], futureValue: bool = False) -> MapRendering: ...
     @typing.overload

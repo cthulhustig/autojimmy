@@ -1,6 +1,6 @@
 import enum
 import logic
-import travellermap
+import multiverse
 import typing
 
 class TaggingProperty(enum.Enum):
@@ -104,7 +104,7 @@ class WorldTagging(object):
 
     def calculateWorldTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         # Always tag Anomalies at warning level as they're not necessarily a danger
         if world.isAnomaly():
@@ -212,7 +212,7 @@ class WorldTagging(object):
 
     def calculateZoneTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Zone,
@@ -220,71 +220,71 @@ class WorldTagging(object):
 
     def calculateStarPortTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.StarPort,
-            code=world.uwp().code(travellermap.UWP.Element.StarPort))
+            code=world.uwp().code(multiverse.UWP.Element.StarPort))
 
     def calculateWorldSizeTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.WorldSize,
-            code=world.uwp().code(travellermap.UWP.Element.WorldSize))
+            code=world.uwp().code(multiverse.UWP.Element.WorldSize))
 
     def calculateAtmosphereTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Atmosphere,
-            code=world.uwp().code(travellermap.UWP.Element.Atmosphere))
+            code=world.uwp().code(multiverse.UWP.Element.Atmosphere))
 
     def calculateHydrographicsTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Hydrographics,
-            code=world.uwp().code(travellermap.UWP.Element.Hydrographics))
+            code=world.uwp().code(multiverse.UWP.Element.Hydrographics))
 
     def calculatePopulationTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Population,
-            code=world.uwp().code(travellermap.UWP.Element.Population))
+            code=world.uwp().code(multiverse.UWP.Element.Population))
 
     def calculateGovernmentTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Government,
-            code=world.uwp().code(travellermap.UWP.Element.Government))
+            code=world.uwp().code(multiverse.UWP.Element.Government))
 
     def calculateLawLevelTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.LawLevel,
-            code=world.uwp().code(travellermap.UWP.Element.LawLevel))
+            code=world.uwp().code(multiverse.UWP.Element.LawLevel))
 
     def calculateTechLevelTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.TechLevel,
-            code=world.uwp().code(travellermap.UWP.Element.TechLevel))
+            code=world.uwp().code(multiverse.UWP.Element.TechLevel))
 
     def calculateBaseTypeTagLevel(
             self,
-            baseType: travellermap.BaseType
+            baseType: multiverse.BaseType
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.BaseType,
@@ -292,7 +292,7 @@ class WorldTagging(object):
 
     def calculateTradeCodeTagLevel(
             self,
-            tradeCode: travellermap.TradeCode
+            tradeCode: multiverse.TradeCode
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.TradeCode,
@@ -300,71 +300,71 @@ class WorldTagging(object):
 
     def calculateResourcesTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Resources,
-            code=world.economics().code(travellermap.Economics.Element.Resources))
+            code=world.economics().code(multiverse.Economics.Element.Resources))
 
     def calculateLabourTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Labour,
-            code=world.economics().code(travellermap.Economics.Element.Labour))
+            code=world.economics().code(multiverse.Economics.Element.Labour))
 
     def calculateInfrastructureTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Infrastructure,
-            code=world.economics().code(travellermap.Economics.Element.Infrastructure))
+            code=world.economics().code(multiverse.Economics.Element.Infrastructure))
 
     def calculateEfficiencyTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> logic.TagLevel:
         return self._propertyTagLevel(
             property=TaggingProperty.Efficiency,
-            code=world.economics().code(travellermap.Economics.Element.Efficiency))
+            code=world.economics().code(multiverse.Economics.Element.Efficiency))
 
     def calculateHeterogeneityTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Heterogeneity,
-            code=world.culture().code(travellermap.Culture.Element.Heterogeneity))
+            code=world.culture().code(multiverse.Culture.Element.Heterogeneity))
 
     def calculateAcceptanceTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Acceptance,
-            code=world.culture().code(travellermap.Culture.Element.Acceptance))
+            code=world.culture().code(multiverse.Culture.Element.Acceptance))
 
     def calculateStrangenessTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Strangeness,
-            code=world.culture().code(travellermap.Culture.Element.Strangeness))
+            code=world.culture().code(multiverse.Culture.Element.Strangeness))
 
     def calculateSymbolsTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Symbols,
-            code=world.culture().code(travellermap.Culture.Element.Symbols))
+            code=world.culture().code(multiverse.Culture.Element.Symbols))
 
     def calculateNobilityTagLevel(
             self,
-            nobilityType: travellermap.NobilityType
+            nobilityType: multiverse.NobilityType
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Nobility,
@@ -372,9 +372,9 @@ class WorldTagging(object):
 
     def calculateAllegianceTagLevel(
             self,
-            world: travellermap.World
+            world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
-        allegianceCode = travellermap.AllegianceManager.instance().uniqueAllegianceCode(
+        allegianceCode = multiverse.AllegianceManager.instance().uniqueAllegianceCode(
             milieu=world.milieu(),
             code=world.allegiance(),
             sectorName=world.sectorName())
@@ -386,19 +386,19 @@ class WorldTagging(object):
 
     def calculateSpectralTagLevel(
             self,
-            star: travellermap.Star
+            star: multiverse.Star
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Spectral,
-            code=star.code(travellermap.Star.Element.SpectralClass))
+            code=star.code(multiverse.Star.Element.SpectralClass))
 
     def calculateLuminosityTagLevel(
             self,
-            star: travellermap.Star
+            star: multiverse.Star
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Luminosity,
-            code=star.code(travellermap.Star.Element.LuminosityClass))
+            code=star.code(multiverse.Star.Element.LuminosityClass))
 
     def _propertyTagLevel(
             self,

@@ -1,6 +1,6 @@
 import logging
 import threading
-import travellermap
+import multiverse
 import typing
 
 class AllegianceCodeInfo(object):
@@ -105,7 +105,7 @@ class AllegianceManager(object):
     # them no mater which milieu you have selected. In my implementation
     # they are only used for M1120
     _T5UnofficialAllegiancesMap = {
-        travellermap.Milieu.M1120: [
+        multiverse.Milieu.M1120: [
             # -----------------------
             # Unofficial/Unreviewed
             # -----------------------
@@ -131,7 +131,7 @@ class AllegianceManager(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _milieuDataMap: typing.Dict[
-        travellermap.Milieu,
+        multiverse.Milieu,
         typing.Dict[
             str,
             AllegianceCodeInfo]]
@@ -152,7 +152,7 @@ class AllegianceManager(object):
 
     def allegiances(
             self,
-            milieu: travellermap.Milieu
+            milieu: multiverse.Milieu
             ) -> typing.Iterable[AllegianceCodeInfo]:
         milieuData = self._milieuDataMap.get(milieu)
         if not milieuData:
@@ -161,7 +161,7 @@ class AllegianceManager(object):
 
     def allegianceName(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             code: str,
             sectorName: str
             ) -> typing.Optional[str]:
@@ -180,7 +180,7 @@ class AllegianceManager(object):
 
     def legacyCode(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             code: str
             ) -> typing.Optional[str]:
         if not code:
@@ -198,7 +198,7 @@ class AllegianceManager(object):
 
     def basesCode(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             code: str
             ) -> typing.Optional[str]:
         if not code:
@@ -216,7 +216,7 @@ class AllegianceManager(object):
 
     def uniqueAllegianceCode(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             code: str,
             sectorName: str
             ) -> typing.Optional[str]:
@@ -235,7 +235,7 @@ class AllegianceManager(object):
 
     def addSectorAllegiances(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             sectorName: str,
             allegiances: typing.Mapping[str, str]
             ) -> None:
@@ -248,12 +248,12 @@ class AllegianceManager(object):
     # the mutex is locked
     def _loadAllegiances(self) -> None:
         self._milieuDataMap = {}
-        for milieu in travellermap.Milieu:
+        for milieu in multiverse.Milieu:
             self._milieuDataMap[milieu] = {}
 
         # Load the T5 second survey allegiances pulled from Traveller Map
-        _, results = travellermap.parseTabContent(
-            content=travellermap.DataStore.instance().loadTextResource(
+        _, results = multiverse.parseTabContent(
+            content=multiverse.DataStore.instance().loadTextResource(
                 filePath=AllegianceManager._T5OfficialAllegiancesPath))
 
         # Split results into global and local allegiances
@@ -273,7 +273,7 @@ class AllegianceManager(object):
             baseCode = allegiance['BaseCode']
             globalName = allegiance['Name']
 
-            for milieu in travellermap.Milieu:
+            for milieu in multiverse.Milieu:
                 self._addAllegianceCode(
                     milieu=milieu,
                     code=code,
@@ -285,11 +285,11 @@ class AllegianceManager(object):
         # sectors. The locations are specified using abbreviations so a per-milieu map
         # is generated for all abbreviations.
         abbreviationMap: typing.Dict[
-            typing.Tuple[travellermap.Milieu, str], # Milieu & abbreviation
+            typing.Tuple[multiverse.Milieu, str], # Milieu & abbreviation
             str # Canonical name
             ] = {}
-        for milieu in travellermap.Milieu:
-            for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
+        for milieu in multiverse.Milieu:
+            for sectorInfo in multiverse.DataStore.instance().sectors(milieu=milieu):
                 abbreviation = sectorInfo.abbreviation()
                 if not abbreviation:
                     continue
@@ -304,7 +304,7 @@ class AllegianceManager(object):
 
             abbreviations = location.split('/')
 
-            for milieu in travellermap.Milieu:
+            for milieu in multiverse.Milieu:
                 codeInfo = self._addAllegianceCode(
                     milieu=milieu,
                     code=code,
@@ -323,7 +323,7 @@ class AllegianceManager(object):
                         allegianceName=localName)
 
         # Now unofficial global entries
-        for milieu in travellermap.Milieu:
+        for milieu in multiverse.Milieu:
             unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(milieu)
             if unofficialAllegiance:
                 for code, legacyCode, basesCode, globalName in unofficialAllegiance:
@@ -336,7 +336,7 @@ class AllegianceManager(object):
 
     def _addAllegianceCode(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             code: str,
             legacyCode: typing.Optional[str] = None,
             basesCode: typing.Optional[str] = None,

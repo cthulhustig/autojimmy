@@ -1,5 +1,5 @@
 import enum
-import travellermap
+import multiverse
 import typing
 
 _PopulationMultiplierDescriptionMap = {
@@ -19,7 +19,7 @@ _PopulationMultiplierDescriptionMap = {
 # There can be any number of planetoid belts or gas giants up to the max allowed by ehex.
 # The mapping shouldn't be modified so the same mapping can be used for both.
 _PlanetoidBeltDescriptionMap = {}
-for code, value in travellermap.ehexCodeMap().items():
+for code, value in multiverse.ehexCodeMap().items():
     _PlanetoidBeltDescriptionMap[code] = str(value)
 _PlanetoidBeltDescriptionMap['?'] = 'Unknown'
 
@@ -82,7 +82,7 @@ class PBG(object):
         if index >= len(pbg):
             return '?'
         code = pbg[index].upper()
-        value = travellermap.ehexToInteger(value=code, default=None)
+        value = multiverse.ehexToInteger(value=code, default=None)
         if value == None:
             return '?'
 

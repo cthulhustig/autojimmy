@@ -5,7 +5,7 @@ import jobs
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -27,7 +27,7 @@ class _WorldSaleScoreTable(gui.WorldTradeScoreTable):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -858,8 +858,8 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorld: typing.Optional[travellermap.World] = None,
-            saleWorlds: typing.Optional[typing.Iterable[travellermap.World]] = None,
+            purchaseWorld: typing.Optional[multiverse.World] = None,
+            saleWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -1579,7 +1579,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         return cargoRecords
 
-    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: multiverse.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._saleWorldsWidget.containsHex(hex)
 
@@ -2433,8 +2433,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def configureControls(
             self,
-            purchaseWorlds: typing.Optional[typing.Iterable[travellermap.World]] = None,
-            saleWorlds: typing.Optional[typing.Iterable[travellermap.World]] = None,
+            purchaseWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
+            saleWorlds: typing.Optional[typing.Iterable[multiverse.World]] = None,
             playerBrokerDm: typing.Optional[int] = None,
             minSellerDm: typing.Optional[int] = None,
             maxSellerDm: typing.Optional[int] = None,
@@ -2674,11 +2674,11 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
         self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
 
-    def _allowPurchaseWorld(self, hex: travellermap.HexPosition) -> bool:
+    def _allowPurchaseWorld(self, hex: multiverse.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._purchaseWorldsWidget.containsHex(hex)
 
-    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: multiverse.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._saleWorldsWidget.containsHex(hex)
 

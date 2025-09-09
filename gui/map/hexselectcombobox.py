@@ -3,38 +3,38 @@ import gui
 import html
 import logging
 import math
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def _formatWorldName(world: travellermap.World) -> str:
+def _formatWorldName(world: multiverse.World) -> str:
     return world.name(includeSubsector=True)
 
 def _formatHexName(
-        milieu: travellermap.Milieu,
-        hex: travellermap.HexPosition
+        milieu: multiverse.Milieu,
+        hex: multiverse.HexPosition
         ) -> str:
-    world = travellermap.WorldManager.instance().worldByPosition(
+    world = multiverse.WorldManager.instance().worldByPosition(
         milieu=milieu,
         hex=hex)
     if world:
         return _formatWorldName(world=world)
 
-    sectorHex = travellermap.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
-    subsector = travellermap.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
+    sectorHex = multiverse.WorldManager.instance().positionToSectorHex(milieu=milieu, hex=hex)
+    subsector = multiverse.WorldManager.instance().subsectorByPosition(milieu=milieu, hex=hex)
     return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
 
-def _formatWorldHtml(world: travellermap.World) -> str:
+def _formatWorldHtml(world: multiverse.World) -> str:
     return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
         worldName=html.escape(_formatWorldName(world=world)),
         sectorHex=html.escape(world.sectorHex()),
         uwp=html.escape(world.uwp().string()))
 
 def _formatHexHtml(
-        milieu: travellermap.Milieu,
-        hex: travellermap.HexPosition
+        milieu: multiverse.Milieu,
+        hex: multiverse.HexPosition
         ) -> str:
-    world = travellermap.WorldManager.instance().worldByPosition(
+    world = multiverse.WorldManager.instance().worldByPosition(
         milieu=milieu,
         hex=hex)
     if world:
@@ -46,17 +46,17 @@ def _formatHexHtml(
 class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(parent)
         self._milieu = milieu
         self._document = QtGui.QTextDocument(self)
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         self._milieu = milieu
 
     def paint(
@@ -124,7 +124,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(parent)
@@ -153,10 +153,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -170,7 +170,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if selectedHex and not self._enableDeadSpaceSelection:
             # Dead space selection is not enabled so clear the currently selected
             # hex if there isn't a world at that location
-            world = travellermap.WorldManager.instance().worldByPosition(
+            world = multiverse.WorldManager.instance().worldByPosition(
                 milieu=self._milieu,
                 hex=selectedHex)
             if not world:
@@ -181,12 +181,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
         # selection has been cleared due to it being dead space
         self.setCurrentHex(hex=selectedHex)
 
-    def currentHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def currentHex(self) -> typing.Optional[multiverse.HexPosition]:
         return self._selectedHex
 
     def setCurrentHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition],
+            hex: typing.Optional[multiverse.HexPosition],
             updateHistory: bool = True
             ) -> None:
         self.setCurrentText(_formatHexName(milieu=self._milieu, hex=hex) if hex else '')
@@ -228,7 +228,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # if it's a dead space hex
             hex = self.currentHex()
             if hex:
-                world = travellermap.WorldManager.instance().worldByPosition(
+                world = multiverse.WorldManager.instance().worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -324,7 +324,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             return False
 
         if stream.readBool():
-            hex = travellermap.HexPosition(
+            hex = multiverse.HexPosition(
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32())
             self.setCurrentHex(
@@ -355,7 +355,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection:
-                    world = travellermap.WorldManager.instance().worldByPosition(
+                    world = multiverse.WorldManager.instance().worldByPosition(
                         milieu=self._milieu,
                         hex=hex)
                     if not world:
@@ -456,7 +456,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _delayedCompleterHandler(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self._updateSelectedHex(hex=hex)
         self.selectAll()
@@ -474,7 +474,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _updateSelectedHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition],
+            hex: typing.Optional[multiverse.HexPosition],
             updateHistory: bool = True
             ) -> None:
         if hex and updateHistory:
@@ -517,9 +517,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completer.setWidget(lineEdit)
             self._completer.complete()
 
-    def _findCompletionMatches(self) -> typing.Collection[travellermap.HexPosition]:
+    def _findCompletionMatches(self) -> typing.Collection[multiverse.HexPosition]:
         searchString = self.currentText().strip()
-        matches: typing.List[travellermap.HexPosition] = []
+        matches: typing.List[multiverse.HexPosition] = []
 
         if searchString:
             # NOTE: For sorting to make sense it's important that the world
@@ -527,7 +527,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             # can be sorted. The limiting of the number of results added to
             # the completer should be done on the sorted list.
             try:
-                worlds = travellermap.WorldManager.instance().searchForWorlds(
+                worlds = multiverse.WorldManager.instance().searchForWorlds(
                     milieu=self._milieu,
                     searchString=searchString)
                 for world in worlds:
@@ -540,7 +540,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             if self._enableDeadSpaceSelection:
                 try:
-                    hex = travellermap.WorldManager.instance().stringToPosition(
+                    hex = multiverse.WorldManager.instance().stringToPosition(
                         milieu=self._milieu,
                         string=searchString)
                     isDuplicate = False

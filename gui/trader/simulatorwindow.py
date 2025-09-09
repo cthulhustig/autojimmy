@@ -7,7 +7,7 @@ import logic
 import math
 import random
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -672,7 +672,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.MapStyle
+            style: multiverse.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -680,7 +680,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.MapOption]
+            options: typing.Iterable[multiverse.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -851,7 +851,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: Available funds = Cr{common.formatNumber(availableFunds)}')
         elif event.type() == logic.Simulator.Event.Type.HexUpdate:
             # Data is the new world object
-            currentHex: travellermap.HexPosition = event.data()
+            currentHex: multiverse.HexPosition = event.data()
             if currentHex and self._currentHex != currentHex:
                 if self._currentHex:
                     self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
@@ -892,7 +892,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _showOnMap(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> None:
         try:
             self._mapWidget.centerOnHex(hex=hex)

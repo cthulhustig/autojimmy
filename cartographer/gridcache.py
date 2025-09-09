@@ -1,6 +1,6 @@
 import common
 import cartographer
-import travellermap
+import multiverse
 
 class GridCache(object):
     _Slop = 1
@@ -28,16 +28,16 @@ class GridCache(object):
             yOffset = 0 if ((px % 2) != 0) else 0.5
             for py in range(-GridCache._Slop, parsecHeight + GridCache._Slop):
                 point1 = cartographer.PointF(
-                    x=px + -travellermap.HexWidthOffset,
+                    x=px + -multiverse.HexWidthOffset,
                     y=py + 0.5 + yOffset)
                 point2 = cartographer.PointF(
-                    x=px + travellermap.HexWidthOffset,
+                    x=px + multiverse.HexWidthOffset,
                     y=py + 1.0 + yOffset)
                 point3 = cartographer.PointF(
-                    x=px + 1.0 - travellermap.HexWidthOffset,
+                    x=px + 1.0 - multiverse.HexWidthOffset,
                     y=py + 1.0 + yOffset)
                 point4 = cartographer.PointF(
-                    x=px + 1.0 + travellermap.HexWidthOffset,
+                    x=px + 1.0 + multiverse.HexWidthOffset,
                     y=py + 0.5 + yOffset)
 
                 points.append(point1)

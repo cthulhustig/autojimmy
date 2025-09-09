@@ -4,7 +4,7 @@ import gui
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -68,7 +68,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -88,10 +88,10 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         self._syncToMilieu()
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -137,7 +137,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._sectorComboBox.clear()
 
         sectorNames = sorted(
-            travellermap.WorldManager.instance().sectorNames(milieu=self._milieu),
+            multiverse.WorldManager.instance().sectorNames(milieu=self._milieu),
             key=str.casefold)
         self._sectorComboBox.addItems(sectorNames)
 
@@ -145,7 +145,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._subsectorComboBox.clear()
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
-        sector = travellermap.WorldManager.instance().sectorByName(
+        sector = multiverse.WorldManager.instance().sectorByName(
             milieu=self._milieu,
             name=self._sectorComboBox.currentText())
         if not sector:
@@ -171,7 +171,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
                 self._subsectorComboBox.setCurrentIndex(index)
 
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
-    showCenterHex = QtCore.pyqtSignal(travellermap.HexPosition)
+    showCenterHex = QtCore.pyqtSignal(multiverse.HexPosition)
 
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
@@ -179,10 +179,10 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.MapStyle,
-            mapOptions: typing.Iterable[travellermap.MapOption],
+            mapStyle: multiverse.MapStyle,
+            mapOptions: typing.Iterable[multiverse.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -236,16 +236,16 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         self._hexWidget.setMilieu(milieu=milieu)
 
     def setRules(self, rules: traveller.Rules) -> None:
         self._hexWidget.setRules(rules=rules)
 
-    def setMapStyle(self, style: travellermap.MapStyle) -> None:
+    def setMapStyle(self, style: multiverse.MapStyle) -> None:
         self._hexWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Iterable[multiverse.MapOption]) -> None:
         self._hexWidget.setMapOptions(options=options)
 
     def setMapRendering(self, rendering: app.MapRendering) -> None:
@@ -260,7 +260,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
         self._hexWidget.setTaggingColours(colours=colours)
 
-    def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def centerHex(self) -> typing.Optional[multiverse.HexPosition]:
         return self._hexWidget.selectedHex()
 
     def searchRadius(self) -> int:
@@ -753,7 +753,7 @@ class WorldSearchWindow(gui.WindowWidget):
     def _worldRadiusSearchToggled(self, selected: bool) -> None:
         self._worldRadiusSearchWidget.setDisabled(not selected)
 
-    def _showCenterHexOnMapClicked(self, hex: travellermap.HexPosition) -> None:
+    def _showCenterHexOnMapClicked(self, hex: multiverse.HexPosition) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(
                 self._mapWrapperWidget)
@@ -820,7 +820,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.MapStyle
+            style: multiverse.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -828,7 +828,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.MapOption]
+            options: typing.Iterable[multiverse.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -964,7 +964,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[travellermap.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -981,7 +981,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[travellermap.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -1008,7 +1008,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[travellermap.World],
+            hexes: typing.Iterable[multiverse.World],
             highlightHexes: bool = False,
             switchTab: bool = True
             ) -> None:

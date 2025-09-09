@@ -5,7 +5,7 @@ import gui
 import jobs
 import logging
 import os
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -156,7 +156,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
-    def posters(self) -> typing.Optional[typing.Mapping[int, travellermap.MapImage]]:
+    def posters(self) -> typing.Optional[typing.Mapping[int, multiverse.MapImage]]:
         return self._posters
 
     def exec(self) -> int:
@@ -196,7 +196,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
 
     def _jobComplete(
             self,
-            result: typing.Union[typing.Mapping[int, travellermap.MapImage], Exception]
+            result: typing.Union[typing.Mapping[int, multiverse.MapImage], Exception]
             ) -> None:
         self._generatingTimer.stop()
 
@@ -464,7 +464,7 @@ class _NewSectorDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
         self.setFixedHeight(self.sizeHint().height())
 
-    def sector(self) -> typing.Optional[travellermap.SectorInfo]:
+    def sector(self) -> typing.Optional[multiverse.SectorInfo]:
         return self._sector
 
     # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
@@ -613,51 +613,51 @@ class _NewSectorDialog(gui.DialogEx):
         style = app.Config.instance().value(option=app.ConfigOption.MapStyle)
         options = app.Config.instance().value(option=app.ConfigOption.MapOptions)
 
-        supportedStyles = [s for s in travellermap.MapStyle if s is not travellermap.MapStyle.Candy]
+        supportedStyles = [s for s in multiverse.MapStyle if s is not multiverse.MapStyle.Candy]
         self._renderStyleComboBox = gui.EnumComboBox(
-            type=travellermap.MapStyle,
+            type=multiverse.MapStyle,
             value=style,
             options=supportedStyles)
 
         self._renderSectorGridCheckBox = gui.CheckBoxEx()
         self._renderSectorGridCheckBox.setChecked(
-            travellermap.MapOption.SectorGrid in options)
+            multiverse.MapOption.SectorGrid in options)
 
         renderSectorNames = None
-        if travellermap.MapOption.SectorNames in options:
-            renderSectorNames = travellermap.MapOption.SectorNames
-        elif travellermap.MapOption.SelectedSectorNames in options:
-            renderSectorNames = travellermap.MapOption.SelectedSectorNames
+        if multiverse.MapOption.SectorNames in options:
+            renderSectorNames = multiverse.MapOption.SectorNames
+        elif multiverse.MapOption.SelectedSectorNames in options:
+            renderSectorNames = multiverse.MapOption.SelectedSectorNames
         self._renderSectorNamesComboBox = gui.EnumComboBox(
-            type=travellermap.MapOption,
+            type=multiverse.MapOption,
             value=renderSectorNames,
             isOptional=True,
             options=[
-                travellermap.MapOption.SelectedSectorNames,
-                travellermap.MapOption.SectorNames],
+                multiverse.MapOption.SelectedSectorNames,
+                multiverse.MapOption.SectorNames],
             textMap={
-                travellermap.MapOption.SelectedSectorNames: 'Selected',
-                travellermap.MapOption.SectorNames: 'All'})
+                multiverse.MapOption.SelectedSectorNames: 'Selected',
+                multiverse.MapOption.SectorNames: 'All'})
 
         self._renderRegionNamesCheckBox = gui.CheckBoxEx()
         self._renderRegionNamesCheckBox.setChecked(
-            travellermap.MapOption.RegionNames in options)
+            multiverse.MapOption.RegionNames in options)
 
         self._renderBordersCheckBox = gui.CheckBoxEx()
         self._renderBordersCheckBox.setChecked(
-            travellermap.MapOption.Borders in options)
+            multiverse.MapOption.Borders in options)
 
         self._renderFilledBordersCheckBox = gui.CheckBoxEx()
         self._renderFilledBordersCheckBox.setChecked(
-            travellermap.MapOption.FilledBorders in options)
+            multiverse.MapOption.FilledBorders in options)
 
         self._renderRoutesCheckBox = gui.CheckBoxEx()
         self._renderRoutesCheckBox.setChecked(
-            travellermap.MapOption.Routes in options)
+            multiverse.MapOption.Routes in options)
 
         self._renderWorldColoursCheckBox = gui.CheckBoxEx()
         self._renderWorldColoursCheckBox.setChecked(
-            travellermap.MapOption.WorldColours in options)
+            multiverse.MapOption.WorldColours in options)
 
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
@@ -784,31 +784,31 @@ class _NewSectorDialog(gui.DialogEx):
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
 
-            metadataFormat = travellermap.metadataFileFormatDetect(
+            metadataFormat = multiverse.metadataFileFormatDetect(
                 content=sectorMetadata)
             if not metadataFormat:
                 raise RuntimeError('Unknown metadata file format')
 
-            rawMetadata = travellermap.readMetadata(
+            rawMetadata = multiverse.readMetadata(
                 content=sectorMetadata,
                 format=metadataFormat,
                 identifier=metadataFilePath)
 
-            if metadataFormat == travellermap.MetadataFormat.XML:
+            if metadataFormat == multiverse.MetadataFormat.XML:
                 xmlMetadata = sectorMetadata
-                travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
+                multiverse.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
             else:
                 gui.AutoSelectMessageBox.information(
                     parent=self,
                     text=_JsonMetadataWarning,
                     stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                xmlMetadata = travellermap.writeXMLMetadata(
+                xmlMetadata = multiverse.writeXMLMetadata(
                     metadata=rawMetadata,
                     identifier='Generated XML metadata')
 
             # This will throw if there is a conflict with an existing sector
-            travellermap.DataStore.instance().customSectorConflictCheck(
+            multiverse.DataStore.instance().customSectorConflictCheck(
                 sectorName=rawMetadata.canonicalName(),
                 sectorX=rawMetadata.x(),
                 sectorY=rawMetadata.y(),
@@ -829,10 +829,10 @@ class _NewSectorDialog(gui.DialogEx):
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
 
-            sectorFormat = travellermap.sectorFileFormatDetect(content=sectorData)
+            sectorFormat = multiverse.sectorFileFormatDetect(content=sectorData)
             if not sectorFormat:
                 raise RuntimeError('Unknown sector file format')
-            travellermap.readSector(
+            multiverse.readSector(
                 content=sectorData,
                 format=sectorFormat,
                 identifier=sectorFilePath)
@@ -848,7 +848,7 @@ class _NewSectorDialog(gui.DialogEx):
         try:
             posterJob = jobs.PosterJobAsync(
                 parent=self,
-                mapUrl=travellermap.TravellerMapBaseUrl,
+                mapUrl=multiverse.TravellerMapBaseUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata, # Poster API always uses XML metadata
                 style=renderStyle,
@@ -872,7 +872,7 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            self._sector = travellermap.DataStore.instance().createCustomSector(
+            self._sector = multiverse.DataStore.instance().createCustomSector(
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                 sectorContent=sectorData,
                 metadataContent=sectorMetadata, # Write the users metadata, not the xml metadata if it was converted
@@ -910,25 +910,25 @@ class _NewSectorDialog(gui.DialogEx):
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                     sectorMetadata = file.read()
 
-                metadataFormat = travellermap.metadataFileFormatDetect(
+                metadataFormat = multiverse.metadataFileFormatDetect(
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unknown metadata file format')
 
-                if metadataFormat == travellermap.MetadataFormat.XML:
+                if metadataFormat == multiverse.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
-                    travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
+                    multiverse.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
                 else:
                     gui.AutoSelectMessageBox.information(
                         parent=self,
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                    rawMetadata = travellermap.readMetadata(
+                    rawMetadata = multiverse.readMetadata(
                         content=sectorMetadata,
                         format=metadataFormat,
                         identifier=metadataFilePath)
-                    xmlMetadata = travellermap.writeXMLMetadata(
+                    xmlMetadata = multiverse.writeXMLMetadata(
                         metadata=rawMetadata,
                         identifier='Generated XML metadata')
             except Exception as ex:
@@ -942,7 +942,7 @@ class _NewSectorDialog(gui.DialogEx):
 
             lintJob = jobs.LintJobAsync(
                 parent=self,
-                mapUrl=travellermap.TravellerMapBaseUrl,
+                mapUrl=multiverse.TravellerMapBaseUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata)
             progressDlg = _LintJobDialog(
@@ -971,29 +971,29 @@ class _NewSectorDialog(gui.DialogEx):
                 results=results)
             dlg.exec()
 
-    def _renderOptionList(self) -> typing.Iterable[travellermap.MapOption]:
+    def _renderOptionList(self) -> typing.Iterable[multiverse.MapOption]:
         renderOptions = []
 
         if self._renderSectorGridCheckBox.isChecked():
-            renderOptions.append(travellermap.MapOption.SectorGrid)
+            renderOptions.append(multiverse.MapOption.SectorGrid)
 
         if self._renderSectorNamesComboBox.currentEnum():
             renderOptions.append(self._renderSectorNamesComboBox.currentEnum())
 
         if self._renderRegionNamesCheckBox.isChecked():
-            renderOptions.append(travellermap.MapOption.RegionNames)
+            renderOptions.append(multiverse.MapOption.RegionNames)
 
         if self._renderBordersCheckBox.isChecked():
-            renderOptions.append(travellermap.MapOption.Borders)
+            renderOptions.append(multiverse.MapOption.Borders)
 
         if self._renderFilledBordersCheckBox.isChecked():
-            renderOptions.append(travellermap.MapOption.FilledBorders)
+            renderOptions.append(multiverse.MapOption.FilledBorders)
 
         if self._renderRoutesCheckBox.isChecked():
-            renderOptions.append(travellermap.MapOption.Routes)
+            renderOptions.append(multiverse.MapOption.Routes)
 
         if self._renderWorldColoursCheckBox.isChecked():
-            renderOptions.append(travellermap.MapOption.WorldColours)
+            renderOptions.append(multiverse.MapOption.WorldColours)
 
         return renderOptions
 
@@ -1027,19 +1027,19 @@ class _CustomSectorTable(gui.ListTable):
 
         self.synchronise()
 
-    def sector(self, row: int) -> typing.Optional[travellermap.SectorInfo]:
+    def sector(self, row: int) -> typing.Optional[multiverse.SectorInfo]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def sectorRow(self, sector: travellermap.SectorInfo) -> int:
+    def sectorRow(self, sector: multiverse.SectorInfo) -> int:
         for row in range(self.rowCount()):
             if sector == self.sector(row):
                 return row
         return -1
 
-    def currentSector(self) -> typing.Optional[travellermap.SectorInfo]:
+    def currentSector(self) -> typing.Optional[multiverse.SectorInfo]:
         row = self.currentRow()
         if row < 0:
             return None
@@ -1047,7 +1047,7 @@ class _CustomSectorTable(gui.ListTable):
 
     def setCurrentSector(
             self,
-            sector: typing.Optional[travellermap.SectorInfo]
+            sector: typing.Optional[multiverse.SectorInfo]
             ) -> None:
         if sector:
             row = self.sectorRow(sector)
@@ -1059,7 +1059,7 @@ class _CustomSectorTable(gui.ListTable):
             self.setCurrentItem(None)
 
     def synchronise(self) -> None:
-        sectors = travellermap.DataStore.instance().sectors(
+        sectors = multiverse.DataStore.instance().sectors(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
 
         # Disable sorting while inserting multiple rows then sort once after they've
@@ -1142,7 +1142,7 @@ class _CustomSectorTable(gui.ListTable):
     def _fillRow(
             self,
             row: int,
-            sector: travellermap.SectorInfo
+            sector: multiverse.SectorInfo
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -1193,7 +1193,7 @@ class _MapComboBox(gui.ComboBoxEx):
 
     def __init__(
             self,
-            sectorInfo: typing.Optional[travellermap.SectorInfo] = None,
+            sectorInfo: typing.Optional[multiverse.SectorInfo] = None,
             *args,
             **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -1201,12 +1201,12 @@ class _MapComboBox(gui.ComboBoxEx):
         if sectorInfo:
             self.setSectorInfo(sectorInfo)
 
-    def sectorInfo(self) -> typing.Optional[travellermap.SectorInfo]:
+    def sectorInfo(self) -> typing.Optional[multiverse.SectorInfo]:
         return self._sectorInfo
 
     def setSectorInfo(
             self,
-            sectorInfo: typing.Optional[travellermap.SectorInfo]
+            sectorInfo: typing.Optional[multiverse.SectorInfo]
             ) -> None:
         if sectorInfo == self._sectorInfo:
             return # Nothing to do
@@ -1260,7 +1260,7 @@ class _MapComboBox(gui.ComboBoxEx):
 class _MapImageView(gui.ImageView):
     def __init__(
             self,
-            sectorInfo: typing.Optional[travellermap.SectorInfo] = None,
+            sectorInfo: typing.Optional[multiverse.SectorInfo] = None,
             scale: typing.Optional[int] = None,
             *args,
             **kwargs) -> None:
@@ -1273,7 +1273,7 @@ class _MapImageView(gui.ImageView):
 
     def setMapImage(
             self,
-            sectorInfo: typing.Optional[travellermap.SectorInfo],
+            sectorInfo: typing.Optional[multiverse.SectorInfo],
             scale: typing.Optional[int],
             ) -> bool:
         self.clear()
@@ -1282,7 +1282,7 @@ class _MapImageView(gui.ImageView):
         if not self._sectorInfo:
             return True # Nothing more to do
 
-        mapImage = travellermap.DataStore.instance().sectorMapImage(
+        mapImage = multiverse.DataStore.instance().sectorMapImage(
             sectorName=self._sectorInfo.canonicalName(),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             scale=scale)
@@ -1455,7 +1455,7 @@ class CustomSectorDialog(gui.DialogEx):
 
     def _syncSectorDataControls(
             self,
-            sectorInfo: typing.Optional[travellermap.SectorInfo]
+            sectorInfo: typing.Optional[multiverse.SectorInfo]
             ) -> None:
         if not sectorInfo:
             self._sectorFileTextEdit.clear()
@@ -1466,7 +1466,7 @@ class CustomSectorDialog(gui.DialogEx):
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         try:
-            fileData = travellermap.DataStore.instance().sectorFileData(
+            fileData = multiverse.DataStore.instance().sectorFileData(
                 sectorName=sectorInfo.canonicalName(),
                 milieu=milieu)
             self._sectorFileTextEdit.setPlainText(fileData)
@@ -1482,7 +1482,7 @@ class CustomSectorDialog(gui.DialogEx):
             # Continue to try and sync other controls
 
         try:
-            metaData = travellermap.DataStore.instance().sectorMetaData(
+            metaData = multiverse.DataStore.instance().sectorMetaData(
                 sectorName=sectorInfo.canonicalName(),
                 milieu=milieu)
             self._sectorMetadataTextEdit.setPlainText(metaData)
@@ -1530,7 +1530,7 @@ class CustomSectorDialog(gui.DialogEx):
             return # User cancelled
 
         try:
-            travellermap.DataStore.instance().deleteCustomSector(
+            multiverse.DataStore.instance().deleteCustomSector(
                 sectorName=sector.canonicalName(),
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
         except Exception as ex:
