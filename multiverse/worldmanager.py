@@ -52,17 +52,6 @@ class WorldManager(object):
     # Use with `_WrapPattern.sub('\n', label)` to  replace
     _LineWrapPattern = re.compile(r'\s+(?![a-z])')
 
-    _SubsectorHexWidth = 8
-    _SubsectorHexHeight = 10
-    _SubsectorPerSectorX = 4
-    _SubsectorPerSectorY = 4
-    _SubsectorCodeMap = {
-        0:  'A', 1:  'B', 2:  'C', 3:  'D',
-        4:  'E', 5:  'F', 6:  'G', 7:  'H',
-        8:  'I', 9:  'J', 10: 'K', 11: 'L',
-        12: 'M', 13: 'N', 14: 'O', 15: 'P'
-    }
-
     # This is the value used by Traveller Map (tools\mains.js)
     _MinMainWorldCount = 5
 
@@ -298,9 +287,9 @@ class WorldManager(object):
         assert(len(subsectors) == 16)
 
         _, _, offsetX, offsetY = hex.relative()
-        subsectorX = (offsetX - 1) // WorldManager._SubsectorHexWidth
-        subsectorY = (offsetY - 1) // WorldManager._SubsectorHexHeight
-        index = (subsectorY * WorldManager._SubsectorPerSectorX) + subsectorX
+        subsectorX = (offsetX - 1) // multiverse.SubsectorWidth
+        subsectorY = (offsetY - 1) // multiverse.SubsectorHeight
+        index = (subsectorY * multiverse.HorzSubsectorsPerSector) + subsectorX
         if index < 0 or index >= 16:
             return None
 
@@ -653,8 +642,8 @@ class WorldManager(object):
                 if not sector:
                     continue
                 subsector = sector.subsectorByIndex(
-                    indexX=(offsetX - 1) // WorldManager._SubsectorHexWidth,
-                    indexY=(offsetY - 1) // WorldManager._SubsectorHexHeight)
+                    indexX=(offsetX - 1) // multiverse.SubsectorWidth,
+                    indexY=(offsetY - 1) // multiverse.SubsectorHeight)
                 if subsector and (not filterCallback or filterCallback(subsector)):
                     yield subsector
 
@@ -1473,22 +1462,21 @@ class WorldManager(object):
     @staticmethod
     def _calculateSubsectorCode(
             relativeWorldHex: str
-            ) -> typing.Optional[str]:
+            ) -> str:
         if len(relativeWorldHex) != 4:
             raise RuntimeError(f'Invalid relative world hex "{relativeWorldHex}"')
 
         worldX = int(relativeWorldHex[:2])
         worldY = int(relativeWorldHex[-2:])
 
-        subsectorX = (worldX - 1) // WorldManager._SubsectorHexWidth
-        if subsectorX < 0 or subsectorX >= WorldManager._SubsectorPerSectorX:
+        subsectorX = (worldX - 1) // multiverse.SubsectorWidth
+        if subsectorX < 0 or subsectorX >= multiverse.HorzSubsectorsPerSector:
             raise RuntimeError(f'Subsector X position for world hex "{relativeWorldHex}" is out of range')
 
-        subsectorY = (worldY - 1) // WorldManager._SubsectorHexHeight
-        if subsectorY < 0 or subsectorY >= WorldManager._SubsectorPerSectorY:
+        subsectorY = (worldY - 1) // multiverse.SubsectorHeight
+        if subsectorY < 0 or subsectorY >= multiverse.VertSubsectorPerSector:
             raise RuntimeError(f'Subsector Y position for world hex "{relativeWorldHex}" is out of range')
 
-        index = (subsectorY * WorldManager._SubsectorPerSectorX) + subsectorX
+        index = (subsectorY * multiverse.HorzSubsectorsPerSector) + subsectorX
 
-        code = WorldManager._SubsectorCodeMap.get(index)
-        return code
+        return chr(ord('A') + index)

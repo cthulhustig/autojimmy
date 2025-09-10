@@ -2,18 +2,20 @@ import enum
 import math
 import typing
 
-SectorWidth = 32 # parsecs
-SectorHeight = 40 # parsecs
+SubsectorWidth = 8 # parsecs
+SubsectorHeight = 10 # parsecs
+HorzSubsectorsPerSector = 4
+VertSubsectorPerSector = 4
+SubsectorPerSector = HorzSubsectorsPerSector * VertSubsectorPerSector
+SectorWidth = HorzSubsectorsPerSector * SubsectorWidth # parsecs (32)
+SectorHeight = VertSubsectorPerSector * SubsectorHeight # parsecs (40)
 ReferenceSectorX = 0
 ReferenceSectorY = 0
 ReferenceHexX = 1
 ReferenceHexY = 40
-TravellerMapTileSize = 256
 ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
 ParsecScaleY = 1
 HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX # = 0.16666666666666666
-SubsectorWidth = 8 # parsecs
-SubsectorHeight = 10 # parsecs
 
 # I've pinched this diagram from Traveller Map (RenderUtils.cs)
 # It shows how the size of hexes are calculated
@@ -311,14 +313,47 @@ class SectorIndex(object):
 # NOTE: There is a LOT of code that assumes instances of this
 # class are immutable
 class SubsectorIndex(object):
-    def __init__(self, sectorX: int, sectorY: int, code: str) -> None:
-        self._sectorX = int(sectorX)
-        self._sectorY = int(sectorY)
-        self._code = str(code).upper()
+    @typing.overload
+    def __init__(self, sectorX: int, sectorY: int, code: str) -> None: ...
+    @typing.overload
+    def __init__(self, sectorX: int, sectorY: int, indexX: int, indexY: int) -> None: ...
 
-        index = ord(self._code) - ord('A')
-        self._indexX = index % 4
-        self._indexY = index // 4
+    def __init__(self, *args, **kwargs) -> None:
+        argCount = len(args) + len(kwargs)
+        if argCount == 3:
+            sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
+            sectorY = int(args[1] if len(args) > 1 else kwargs['sectorY'])
+            code = str(args[2] if len(args) > 2 else kwargs['code'])
+
+            self._sectorX = int(sectorX)
+            self._sectorY = int(sectorY)
+            self._code = str(code).upper()
+
+            index = ord(self._code) - ord('A')
+            if index < 0 or index > 15:
+                raise ValueError('Subsector index code must be in range in range A-P')
+
+            self._indexX = index % 4
+            self._indexY = index // 4
+        elif argCount == 4:
+            sectorX = int(args[0] if len(args) > 0 else kwargs['sectorX'])
+            sectorY = int(args[1] if len(args) > 1 else kwargs['sectorY'])
+            indexX = str(args[2] if len(args) > 2 else kwargs['indexX'])
+            indexY = str(args[3] if len(args) > 3 else kwargs['indexY'])
+
+            self._sectorX = int(sectorX)
+            self._sectorY = int(sectorY)
+            self._indexX = int(indexX)
+            self._indexY = int(indexY)
+
+            if self._indexX < 0 or self._indexX > 3:
+                raise ValueError('Subsector index x value must be in range in range 0-3')
+            if self._indexY < 0 or self._indexY > 3:
+                raise ValueError('Subsector index y value must be in range in range 0-3')
+
+            self._code=chr(ord('A') + (self._indexY * 4) + self._indexX)
+        else:
+            raise ValueError('Invalid sector index arguments')
 
         self._sectorIndex: typing.Optional[SectorIndex] = None
         self._worldBounds: typing.Optional[typing.Tuple[float, float, float, float]] = None
@@ -493,12 +528,11 @@ class HexPosition(object):
     def subsectorIndex(self) -> SubsectorIndex:
         if not self._subsectorIndex:
             sectorX, sectorY, offsetX, offsetY = self.relative()
-            codeX = (offsetX - 1) // SubsectorWidth
-            codeY = (offsetY - 1) // SubsectorHeight
             self._subsectorIndex = SubsectorIndex(
                 sectorX=sectorX,
                 sectorY=sectorY,
-                code=chr(ord('A') + (codeY * 4) + codeX))
+                indexX=(offsetX - 1) // SubsectorWidth,
+                indexY=(offsetY - 1) // SubsectorHeight)
         return self._subsectorIndex
 
     def sectorX(self) -> int:

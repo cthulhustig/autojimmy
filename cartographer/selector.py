@@ -9,21 +9,16 @@ class RectSelector(object):
             milieu: multiverse.Milieu,
             universe: cartographer.AbstractUniverse,
             sectorSlop: int = 1, # Numbers of sectors
-            subsectorSlop: int = 1, # Number of subsectors
             worldSlop: int = 1, # Number of parsecs
             ) -> None:
         self._milieu = milieu
         self._universe = universe
         self._sectorSlop = sectorSlop
-        self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
         self._rect = cartographer.RectangleF()
 
         self._tightSectors: typing.Optional[typing.List[cartographer.AbstractSector]] = None
         self._sloppySectors: typing.Optional[typing.List[cartographer.AbstractSector]] = None
-
-        self._tightSubsectors: typing.Optional[typing.List[cartographer.AbstractSubsector]] = None
-        self._sloppySubsectors: typing.Optional[typing.List[cartographer.AbstractSubsector]] = None
 
         self._tightWorlds: typing.Optional[typing.List[cartographer.AbstractWorld]] = None
         self._sloppyWorlds: typing.Optional[typing.List[cartographer.AbstractWorld]] = None
@@ -59,13 +54,6 @@ class RectSelector(object):
         self._sectorSlop = slop
         self._sloppySectors = None
 
-    def subsectorSlop(self) -> float:
-        return self._subsectorSlop
-
-    def setSubsectorSlop(self, slop: float) -> None:
-        self._subsectorSlop = slop
-        self._sloppySubsectors = None
-
     def worldSlop(self) -> float:
         return self._worldSlop
 
@@ -81,15 +69,6 @@ class RectSelector(object):
         self._cacheSectors(tight=tight)
 
         return self._tightSectors if tight else self._sloppySectors
-
-    def subsectors(self, tight: bool = True) -> typing.Iterable[cartographer.AbstractSubsector]:
-        subsectors = self._tightSubsectors if tight else self._sloppySubsectors
-        if subsectors is not None:
-            return subsectors
-
-        self._cacheSubsectors(tight=tight)
-
-        return self._tightSubsectors if tight else self._sloppySubsectors
 
     def worlds(self, tight: bool = False) -> typing.Iterable[cartographer.AbstractWorld]:
         worlds = self._tightWorlds if tight else self._sloppyWorlds
@@ -120,7 +99,6 @@ class RectSelector(object):
 
     def _invalidate(self) -> None:
         self._tightSectors = self._sloppySectors = None
-        self._tightSubsectors = self._sloppySubsectors = None
         self._tightWorlds = self._sloppyWorlds = None
         self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds = None
         self._tightPlaceholderSectors = self._sloppyPlaceholderSectors = None
@@ -187,42 +165,6 @@ class RectSelector(object):
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightPlaceholderSectors.append(sector)
-
-    def _cacheSubsectors(
-            self,
-            tight: bool
-            ) -> None:
-        if self._sloppySubsectors is None: # Specifically None to not recalculate if there are no subsectors
-            sloppyRect = cartographer.RectangleF(self._rect)
-            if self._subsectorSlop:
-                sloppyRect.inflate(
-                    x=self._subsectorSlop * multiverse.SubsectorWidth,
-                    y=self._subsectorSlop * multiverse.SubsectorHeight)
-
-            upperLeft = multiverse.HexPosition(
-                absoluteX=int(math.floor(sloppyRect.left())),
-                absoluteY=int(math.floor(sloppyRect.top())))
-            lowerRight = multiverse.HexPosition(
-                absoluteX=int(math.ceil(sloppyRect.right())),
-                absoluteY=int(math.ceil(sloppyRect.bottom())))
-
-            self._sloppySubsectors = self._universe.subsectorsInArea(
-                milieu=self._milieu,
-                ulHex=upperLeft,
-                lrHex=lowerRight)
-
-            if not self._subsectorSlop:
-                self._tightSubsectors = self._sloppySubsectors
-
-        if tight and self._tightSubsectors is None: # Specifically None to not recalculate if there are no subsectors
-            rect = cartographer.RectangleF()
-            self._tightSubsectors = []
-            for subsector in self._sloppySubsectors:
-                index = subsector.index()
-                left, top, width, height = index.worldBounds()
-                rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersects(other=rect):
-                    self._tightSubsectors.append(subsector)
 
     def _cacheWorlds(
             self,

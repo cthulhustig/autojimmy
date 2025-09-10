@@ -79,54 +79,6 @@ class MapWorld(cartographer.AbstractWorld):
             return self._world == other._world
         return NotImplemented
 
-class MapSubsector(cartographer.AbstractSubsector):
-    def __init__(
-            self,
-            universe: 'MapUniverse',
-            subsector: multiverse.Subsector
-            ) -> None:
-        self._universe = universe
-        self._subsector = subsector
-
-    def milieu(self) -> multiverse.Milieu:
-        return self._subsector.milieu()
-
-    def index(self) -> multiverse.SubsectorIndex:
-        return self._subsector.index()
-
-    def sector(self) -> 'MapSector':
-        return self._universe.sectorAt(
-            milieu=self._subsector.milieu(),
-            index=self._subsector.index().sectorIndex())
-
-    def name(self) -> typing.Optional[str]:
-        return self._subsector.name() if not self._subsector.isNameGenerated() else None
-
-    def worlds(self) -> typing.Iterable[MapWorld]:
-        for world in self._subsector.yieldWorlds():
-            wrapper = self._universe.worldAt(
-                milieu=world.milieu(),
-                hex=world.hex())
-            if wrapper:
-                yield wrapper
-
-    def worldHexes(self) -> typing.Iterable[multiverse.HexPosition]:
-        for world in self._subsector.yieldWorlds():
-            yield world.hex()
-
-    # NOTE: It's important that different instances of this class wrapping
-    # the same object are seen as the same. This allows the the universe
-    # implementation to discard instances of the wrapper that it doesn't
-    # need and recreate them later without worrying about caches in the
-    # renderer getting messed up
-    def __hash__(self) -> int:
-        return self._subsector.__hash__()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        if isinstance(other, MapSubsector):
-            return self._subsector == other._subsector
-        return NotImplemented
-
 class MapSector(cartographer.AbstractSector):
     def __init__(
             self,
@@ -147,6 +99,12 @@ class MapSector(cartographer.AbstractSector):
 
     def sectorLabel(self) -> typing.Optional[str]:
         return self._sector.sectorLabel()
+
+    def subsectorName(self, code: str) -> typing.Optional[str]:
+        subsector = self._sector.subsectorByCode(code)
+        if not subsector:
+            return None
+        return subsector.name()
 
     def isSelected(self) -> bool:
         return self._sector.selected()
@@ -199,12 +157,6 @@ class MapUniverse(cartographer.AbstractUniverse):
             typing.Dict[
                 multiverse.SectorIndex,
                 MapSector]] = {}
-
-        self._subsectorWrappers: typing.Dict[
-            multiverse.Milieu,
-            typing.Dict[
-                multiverse.SubsectorIndex,
-                MapSubsector]] = {}
 
         self._worldWrappers: typing.Dict[
             multiverse.Milieu,
@@ -288,33 +240,6 @@ class MapUniverse(cartographer.AbstractUniverse):
             if not wrapper:
                 wrapper = MapSector(universe=self, sector=sector)
                 milieuSectors[index] = wrapper
-            results.append(wrapper)
-        return results
-
-    def subsectorsInArea(
-            self,
-            milieu: multiverse.Milieu,
-            ulHex: multiverse.HexPosition,
-            lrHex: multiverse.HexPosition,
-            includePlaceholders: bool = False
-            ) -> typing.List[MapSubsector]:
-        milieuSubsectors = self._subsectorWrappers.get(milieu)
-        if milieuSubsectors is None:
-            milieuSubsectors = {}
-            self._subsectorWrappers[milieu] = milieuSubsectors
-
-        generator = multiverse.WorldManager.instance().yieldSubsectorsInArea(
-            milieu=milieu,
-            upperLeft=ulHex,
-            lowerRight=lrHex,
-            includePlaceholders=includePlaceholders)
-        results = []
-        for subsector in generator:
-            index = subsector.index()
-            wrapper = milieuSubsectors.get(index)
-            if not wrapper:
-                wrapper = MapSubsector(universe=self, subsector=subsector)
-                milieuSubsectors[index] = wrapper
             results.append(wrapper)
         return results
 

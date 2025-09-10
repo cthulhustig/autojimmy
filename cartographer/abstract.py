@@ -52,32 +52,6 @@ class AbstractWorld(object):
     def hasGasGiantRefuelling(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement hasGasGiantRefuelling')
 
-# TODO: I think it should be possible to rework stuff a bit so that
-# I can get rid of this class and all the subsector code from the
-# selector. It's only really needed for _drawSubsectorNames. I think
-# it should be possible to update that code so that it iterates over
-# the visible sectors and works out which subsector indexes are visible.
-# It would probably need an extra method added to AbstractSector to get
-# the subsector name by the subsector code
-class AbstractSubsector(object):
-    def milieu(self) -> multiverse.Milieu:
-        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement milieu')
-
-    def index(self) -> multiverse.SubsectorIndex:
-        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement index')
-
-    def sector(self) -> 'AbstractSector':
-        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement sector')
-
-    def name(self) -> typing.Optional[str]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement name')
-
-    def worlds(self) -> typing.Iterable[AbstractWorld]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement worlds')
-
-    def worldHexes(self) -> typing.Iterable[multiverse.HexPosition]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractSubsector so must implement worldHexes')
-
 class AbstractSector(object):
     def milieu(self) -> multiverse.Milieu:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement milieu')
@@ -100,6 +74,9 @@ class AbstractSector(object):
     #         sector label instead of the name
     def sectorLabel(self) -> typing.Optional[str]:
         raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement sectorLabel')
+
+    def subsectorName(self, code: str) -> typing.Optional[str]:
+        raise RuntimeError(f'{type(self)} is derived from AbstractSector so must implement subsectorName')
 
     # TODO: I really don't like the name of this function (or the equivalent
     # on multiverse.Sector). It's used to specify if a sector should have its
@@ -154,15 +131,6 @@ class AbstractUniverse(object):
             includePlaceholders: bool = False
             ) -> typing.List[AbstractSector]:
         raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement sectorsInArea')
-
-    def subsectorsInArea(
-            self,
-            milieu: multiverse.Milieu,
-            ulHex: multiverse.HexPosition,
-            lrHex: multiverse.HexPosition,
-            includePlaceholders: bool = False
-            ) -> typing.List[AbstractSubsector]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractUniverse so must implement subsectorsInArea')
 
     def worldsInArea(
             self,

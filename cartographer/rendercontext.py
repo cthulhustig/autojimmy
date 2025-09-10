@@ -606,27 +606,47 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        for subsector in self._selector.subsectors():
-            name = subsector.name()
-            if not name:
-                continue
+        minX = int(math.floor(self._worldViewRect.left()))
+        minY = int(math.floor(self._worldViewRect.top()))
+        maxX = int(math.ceil(self._worldViewRect.right()))
+        maxY = int(math.ceil(self._worldViewRect.bottom()))
 
-            index = subsector.index()
+        for x in range(minX, maxX + multiverse.SubsectorWidth, multiverse.SubsectorWidth):
+            for y in range(minY, maxY + multiverse.SubsectorHeight, multiverse.SubsectorHeight):
+                sectorX, sectorY, offsetX, offsetY = \
+                    multiverse.absoluteSpaceToRelativeSpace((x, y))
+                sectorIndex = multiverse.SectorIndex(
+                    sectorX=sectorX,
+                    sectorY=sectorY)
+                sector = self._universe.sectorAt(
+                    milieu=self._milieu,
+                    index=sectorIndex)
+                if not sector:
+                    continue
 
-            ulHex, brHex = index.hexExtent()
-            left = ulHex.absoluteX() - 1
-            top = ulHex.absoluteY() - 1
-            right = brHex.absoluteX()
-            bottom = brHex.absoluteY()
+                subsectorIndex = multiverse.SubsectorIndex(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    indexX=(offsetX - 1) // multiverse.SubsectorWidth,
+                    indexY=(offsetY - 1) // multiverse.SubsectorHeight)
+                subsectorName = sector.subsectorName(code=subsectorIndex.code())
+                if not subsectorName:
+                    continue
 
-            self._drawLabel(
-                text=subsector.name(),
-                center=cartographer.PointF(
-                    x=(left + right) / 2,
-                    y=(top + bottom) / 2),
-                font=self._styleSheet.subsectorNames.font,
-                brush=self._styleSheet.subsectorNames.textBrush,
-                labelStyle=self._styleSheet.subsectorNames.textStyle)
+                ulHex, brHex = subsectorIndex.hexExtent()
+                left = ulHex.absoluteX() - 1
+                top = ulHex.absoluteY() - 1
+                right = brHex.absoluteX()
+                bottom = brHex.absoluteY()
+
+                self._drawLabel(
+                    text=subsectorName,
+                    center=cartographer.PointF(
+                        x=(left + right) / 2,
+                        y=(top + bottom) / 2),
+                    font=self._styleSheet.subsectorNames.font,
+                    brush=self._styleSheet.subsectorNames.textBrush,
+                    labelStyle=self._styleSheet.subsectorNames.textStyle)
 
     def _drawMicroBordersBackground(self) -> None:
         if not self._styleSheet.microBorders.visible:

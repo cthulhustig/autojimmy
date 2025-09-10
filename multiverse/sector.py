@@ -90,14 +90,14 @@ class Sector(object):
         self._tags = multiverse.SectorTagging(tags)
 
         self._subsectorNameMap: typing.Dict[str, Subsector] = {}
-        self._subsectorIndexMap: typing.Dict[
-            typing.Tuple[int, int],
-            Subsector] = {}
+        self._subsectorIndexMap: typing.Dict[typing.Tuple[int, int], Subsector] = {}
+        self._subsectorCodeMap: typing.Dict[str, Subsector] = {}
         self._worlds: typing.List[multiverse.World] = []
         for subsector in subsectors:
             subsectorIndex = subsector.index()
             self._subsectorNameMap[subsector.name()] = subsector
             self._subsectorIndexMap[(subsectorIndex.indexX(), subsectorIndex.indexY())] = subsector
+            self._subsectorCodeMap[subsectorIndex.code()] = subsector
             for world in subsector.worlds():
                 self._worlds.append(world)
 
@@ -187,6 +187,9 @@ class Sector(object):
 
     def subsectorByIndex(self, indexX: int, indexY: int) -> typing.Optional[Subsector]:
         return self._subsectorIndexMap.get((indexX, indexY))
+
+    def subsectorByCode(self, code: str) -> typing.Optional[Subsector]:
+        return self._subsectorCodeMap.get(code)
 
     def subsectors(self) -> typing.Sequence[Subsector]:
         return list(self._subsectorIndexMap.values())
