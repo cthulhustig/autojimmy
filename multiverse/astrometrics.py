@@ -277,7 +277,7 @@ class SectorIndex(object):
     def sectorY(self) -> int:
         return self._sectorY
 
-    def components(self) -> typing.Tuple[int, int]:
+    def elements(self) -> typing.Tuple[int, int]:
         return (self._sectorX, self._sectorY)
 
     def worldBounds(self) -> typing.Tuple[float, float, float, float]: # (left, top, width, height)
@@ -390,7 +390,7 @@ class SubsectorIndex(object):
     def indexY(self) -> int:
         return self._indexY
 
-    def components(self) -> typing.Tuple[int, int, str]:
+    def elements(self) -> typing.Tuple[int, int, str]:
         return (self._sectorX, self._sectorY, self._code)
 
     def sectorIndex(self) -> SectorIndex:

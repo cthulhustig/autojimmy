@@ -31,4 +31,5 @@ from .route import *
 from .sector import *
 from .main import *
 from .allegiance import *
+from .universe import *
 from .worldmanager import *
