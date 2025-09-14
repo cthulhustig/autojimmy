@@ -666,6 +666,7 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget.setLayout(tableLayout)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,

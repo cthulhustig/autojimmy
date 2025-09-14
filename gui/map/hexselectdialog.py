@@ -25,6 +25,7 @@ class HexSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,

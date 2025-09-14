@@ -100,6 +100,9 @@ class WorldManager(object):
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
 
+    def universe(self) -> multiverse.Universe:
+        return self._universe
+
     def sectorNames(
             self,
             milieu: multiverse.Milieu

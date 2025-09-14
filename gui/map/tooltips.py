@@ -38,6 +38,7 @@ def createHexToolTip(
     if includeHexImage:
         try:
             tileBytes, tileFormat = gui.generateThumbnail(
+                universe=multiverse.WorldManager.instance().universe(),
                 milieu=milieu,
                 hex=hex,
                 width=256,

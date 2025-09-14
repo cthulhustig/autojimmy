@@ -812,6 +812,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            universe: multiverse.Universe,
             milieu: multiverse.Milieu,
             style: multiverse.MapStyle,
             options: typing.Collection[multiverse.MapOption],
@@ -826,6 +827,7 @@ class MapWidget(QtWidgets.QWidget):
             for _ in range(MapWidget._sharedEasingCurveMaxCount):
                 MapWidget._sharedEasingCurves.append(_MoveAnimationEasingCurve())
 
+        self._universe = universe
         self._milieu = milieu
         self._style = style
         self._options = set(options)
@@ -842,14 +844,14 @@ class MapWidget(QtWidgets.QWidget):
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
-        self._universe = gui.MapUniverse()
-        self._graphics = gui.MapGraphics()
+        self._mapUniverse = gui.MapUniverse(universe=self._universe)
+        self._mapGraphics = gui.MapGraphics()
         self._imageCache = cartographer.ImageStore(
-            graphics=self._graphics)
+            graphics=self._mapGraphics)
         self._vectorCache = cartographer.VectorStore(
-            graphics=self._graphics)
+            graphics=self._mapGraphics)
         self._labelCache = cartographer.LabelStore(
-            universe=self._universe)
+            universe=self._mapUniverse)
         self._styleCache = cartographer.StyleStore()
         self._renderer = self._newRenderer()
 
@@ -935,7 +937,7 @@ class MapWidget(QtWidgets.QWidget):
         # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
         # objects for the entire app so need to create them when needed
         # (which means creating the animations when needed) and make sure
-        # they're destroyed after use. I I didn't I would get this error
+        # they're destroyed after use. If I didn't I would get this error
         # after a bit:
         # ValueError: a maximum of 10 different easing functions are supported
         self._viewCenterAnimationEasing = None
@@ -1133,7 +1135,7 @@ class MapWidget(QtWidgets.QWidget):
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
             ) -> typing.Optional[multiverse.World]:
         hex = self._pixelSpaceToHex(pixelPos=pos)
-        return multiverse.WorldManager.instance().worldByPosition(
+        return self._universe.worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -1481,7 +1483,7 @@ class MapWidget(QtWidgets.QWidget):
         #super().wheelEvent(event)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
-        if not self._graphics or not self._renderer:
+        if not self._mapGraphics or not self._renderer:
             return super().paintEvent(event)
 
         viewRect = event.rect()
@@ -1597,7 +1599,7 @@ class MapWidget(QtWidgets.QWidget):
             if viewRect != self.rect():
                 clipRect = (viewRect.x(), viewRect.y(), viewRect.width(), viewRect.height())
 
-            self._graphics.setPainter(painter=painter)
+            self._mapGraphics.setPainter(painter=painter)
             try:
                 self._renderer.setView(
                     worldCenterX=self._viewCenter.x(),
@@ -1608,7 +1610,7 @@ class MapWidget(QtWidgets.QWidget):
                     clipRect=clipRect)
                 self._renderer.render()
             finally:
-                self._graphics.setPainter(painter=None)
+                self._mapGraphics.setPainter(painter=None)
 
     def _drawOverlays(
             self,
@@ -1744,7 +1746,7 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         if hex and self.isEnabled():
             if multiverse.MapOption.MainsOverlay in self._options:
-                main = multiverse.WorldManager.instance().mainByPosition(
+                main = self._universe.mainByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 self._mainsOverlay.setMain(main)
@@ -1812,8 +1814,8 @@ class MapWidget(QtWidgets.QWidget):
 
     def _newRenderer(self) -> cartographer.RenderContext:
         return cartographer.RenderContext(
-            universe=self._universe,
-            graphics=self._graphics,
+            universe=self._mapUniverse,
+            graphics=self._mapGraphics,
             worldCenterX=self._viewCenter.x(),
             worldCenterY=self._viewCenter.y(),
             scale=self._viewScale.linear,
@@ -2285,7 +2287,7 @@ class MapWidget(QtWidgets.QWidget):
         painter = QtGui.QPainter()
         painter.begin(image)
         try:
-            self._graphics.setPainter(painter=painter)
+            self._mapGraphics.setPainter(painter=painter)
             self._renderer.setView(
                 worldCenterX=worldTileCenterX,
                 worldCenterY=worldTileCenterY,
@@ -2294,7 +2296,7 @@ class MapWidget(QtWidgets.QWidget):
                 outputPixelHeight=MapWidget._TileSize)
             self._renderer.render()
         finally:
-            self._graphics.setPainter(painter=None)
+            self._mapGraphics.setPainter(painter=None)
             painter.end()
 
         return image

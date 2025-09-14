@@ -150,7 +150,12 @@ class MapSector(cartographer.AbstractSector):
         return NotImplemented
 
 class MapUniverse(cartographer.AbstractUniverse):
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            universe: multiverse.Universe
+            ) -> None:
+        self._universe = universe
+
         # TODO: Need to limit the number of wrappers maintained at any one time
         self._sectorWrappers: typing.Dict[
             multiverse.Milieu,
@@ -179,7 +184,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuSectors = {}
             self._sectorWrappers[milieu] = milieuSectors
 
-        sector = multiverse.WorldManager.instance().sectorBySectorIndex(
+        sector = self._universe.sectorBySectorIndex(
             milieu=milieu,
             index=index,
             includePlaceholders=includePlaceholders)
@@ -205,7 +210,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuWorlds = {}
             self._worldWrappers[milieu] = milieuWorlds
 
-        world = multiverse.WorldManager.instance().worldByPosition(
+        world = self._universe.worldByPosition(
             milieu=milieu,
             hex=hex,
             includePlaceholders=includePlaceholders)
@@ -228,7 +233,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuSectors = {}
             self._sectorWrappers[milieu] = milieuSectors
 
-        generator = multiverse.WorldManager.instance().yieldSectorsInArea(
+        generator = self._universe.yieldSectorsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
@@ -255,7 +260,7 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieuWorlds = {}
             self._worldWrappers[milieu] = milieuWorlds
 
-        generator = multiverse.WorldManager.instance().yieldWorldsInArea(
+        generator = self._universe.yieldWorldsInArea(
             milieu=milieu,
             upperLeft=ulHex,
             lowerRight=lrHex,
@@ -275,6 +280,6 @@ class MapUniverse(cartographer.AbstractUniverse):
             milieu: multiverse.Milieu,
             sectorHex: str
             ) -> multiverse.HexPosition:
-        return multiverse.WorldManager.instance().sectorHexToPosition(
+        return self._universe.sectorHexToPosition(
             milieu=milieu,
             sectorHex=sectorHex)

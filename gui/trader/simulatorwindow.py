@@ -585,6 +585,7 @@ class SimulatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,

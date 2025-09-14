@@ -955,6 +955,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def __init__(
             self,
+            universe: multiverse.Universe,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
             style: multiverse.MapStyle,
@@ -967,6 +968,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._style = style
@@ -991,6 +993,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
         self._mapWidget = gui.MapWidget(
+            universe=self._universe,
             milieu=self._milieu,
             style=self._style,
             options=self._options,
@@ -1618,7 +1621,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 self.setInfoHex(hex=hex)
             return
 
-        world = multiverse.WorldManager.instance().worldByPosition(
+        world = self._universe.worldByPosition(
             milieu=self._milieu,
             hex=hex)
         if not world and not self._enableDeadSpaceSelection:
@@ -1650,7 +1653,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if not self._enableDeadSpaceSelection:
             filtered = []
             for hex in hexes:
-                world = multiverse.WorldManager.instance().worldByPosition(
+                world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if world:
@@ -1740,7 +1743,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             # Deselect any dead space
             selectionChanged = False
             for hex in list(self._selectedHexes.keys()):
-                world = multiverse.WorldManager.instance().worldByPosition(
+                world = self._universe.worldByPosition(
                     milieu=self._milieu,
                     hex=hex)
                 if not world:
@@ -2023,7 +2026,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         if self._enableDeadSpaceSelection:
             shouldSelect = hex != None
         elif hex:
-            shouldSelect = multiverse.WorldManager.instance().worldByPosition(
+            shouldSelect = self._universe.worldByPosition(
                 milieu=self._milieu,
                 hex=hex) != None
 
@@ -2037,7 +2040,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             if self._selectionMode != MapWidgetEx.SelectionMode.NoSelect:
                 if self._selectionMode == MapWidgetEx.SelectionMode.MultiSelect and \
                         gui.isShiftKeyDown():
-                    worlds = multiverse.WorldManager.instance().worldsInFlood(
+                    worlds = self._universe.worldsInFlood(
                         milieu=self._milieu,
                         hex=hex)
                     self.selectHexes(hexes=[world.hex() for world in worlds])

@@ -5,7 +5,6 @@ import typing
 from PyQt5 import QtCore, QtGui
 
 _thumbnailRenderInitialised = False
-_thumbnailUniverse: typing.Optional[gui.MapUniverse] = None
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
 _thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
 _thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
@@ -14,7 +13,6 @@ _thumbnailStyleCache: typing.Optional[cartographer.StyleStore] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
-    global _thumbnailUniverse
     global _thumbnailGraphics
     global _thumbnailImageCache
     global _thumbnailVectorCache
@@ -24,15 +22,15 @@ def _initThumbnailRenderer():
     if _thumbnailRenderInitialised:
         return
 
-    _thumbnailUniverse = gui.MapUniverse()
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
     _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
-    _thumbnailLabelCache = cartographer.LabelStore(universe=_thumbnailUniverse)
+    _thumbnailLabelCache = cartographer.LabelStore(universe=multiverse.WorldManager.instance().universe())
     _thumbnailStyleCache = cartographer.StyleStore()
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
+        universe: multiverse.Universe,
         milieu: multiverse.Milieu,
         hex: multiverse.HexPosition,
         width: int,
@@ -47,7 +45,7 @@ def generateThumbnail(
 
     centerX, centerY = hex.worldCenter()
     renderer = cartographer.RenderContext(
-        universe=_thumbnailUniverse,
+        universe=gui.MapUniverse(universe=universe),
         graphics=_thumbnailGraphics,
         worldCenterX=centerX,
         worldCenterY=centerY,
