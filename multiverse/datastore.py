@@ -4,12 +4,12 @@ import enum
 import io
 import json
 import logging
+import multiverse
 import os
 import re
 import requests
 import shutil
 import threading
-import multiverse
 import typing
 import xmlschema
 import xml.etree.ElementTree
@@ -70,27 +70,6 @@ class UniverseDataFormat(object):
             return self._minor >= other._minor
         return NotImplemented
 
-# TODO: This shouldn't be needed when I'm finished
-class CustomMapLevel(object):
-    def __init__(
-            self,
-            scale: int,
-            fileName: str,
-            format: multiverse.MapFormat
-            ) -> None:
-        self._scale = scale
-        self._fileName = fileName
-        self._format = format
-
-    def scale(self) -> int:
-        return self._scale
-
-    def fileName(self) -> str:
-        return self._fileName
-
-    def format(self) -> multiverse.MapFormat:
-        return self._format
-
 class SectorInfo(object):
     def __init__(
             self,
@@ -101,11 +80,7 @@ class SectorInfo(object):
             sectorFormat: multiverse.SectorFormat,
             metadataFormat: multiverse.MetadataFormat,
             modifiedTimestamp: datetime.datetime,
-            isCustomSector: bool,
-            # TODO: These options should go as part of this work
-            customMapStyle: typing.Optional[multiverse.MapStyle],
-            customMapOptions: typing.Optional[typing.Iterable[multiverse.MapOption]],
-            customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]
+            isCustomSector: bool
             ) -> None:
         self._canonicalName = canonicalName
         self._abbreviation = abbreviation
@@ -115,9 +90,6 @@ class SectorInfo(object):
         self._metadataFormat = metadataFormat
         self._modifiedTimestamp = modifiedTimestamp
         self._isCustomSector = isCustomSector
-        self._customMapStyle = customMapStyle
-        self._customMapOptions = list(customMapOptions) if customMapOptions else None
-        self._customMapLevels = dict(customMapLevels) if customMapLevels else None
 
     def canonicalName(self) -> str:
         return self._canonicalName
@@ -142,18 +114,6 @@ class SectorInfo(object):
 
     def isCustomSector(self) -> bool:
         return self._isCustomSector
-
-    def customMapLevels(self) -> typing.Optional[typing.Dict[int, CustomMapLevel]]:
-        return self._customMapLevels.copy() if self._customMapLevels else None
-
-    def customMapLevel(self, scale: int) -> typing.Optional[CustomMapLevel]:
-        return self._customMapLevels.get(scale) if self._customMapLevels else None
-
-    def customMapStyle(self) -> typing.Optional[multiverse.MapStyle]:
-        return self._customMapStyle
-
-    def customMapOptions(self) -> typing.Optional[typing.List[multiverse.MapOption]]:
-        return self._customMapOptions.copy() if self._customMapOptions else None
 
 class SectorLookupMaps(object):
     def __init__(self) -> None:
@@ -606,32 +566,6 @@ class DataStore(object):
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector()))
 
-    def sectorMapImage(
-            self,
-            sectorName: str,
-            milieu: multiverse.Milieu,
-            scale: int
-            ) -> multiverse.MapImage:
-        self._loadSectors(milieu=milieu)
-
-        sector = self.sector(
-            sectorName=sectorName,
-            milieu=milieu,
-            stockOnly=False) # Stock only doesn't make sense for map images
-        if not sector:
-            raise RuntimeError(f'Unable to retrieve sector map data for unknown sector {sectorName}')
-        mapLevel = sector.customMapLevel(scale=scale)
-        if not mapLevel:
-            raise RuntimeError(f'Unable to retrieve {scale} scale sector map data for {sectorName}')
-        mapData = self._readMilieuFile(
-            fileName=mapLevel.fileName(),
-            milieu=milieu,
-            useCustomMapDir=sector.isCustomSector())
-
-        return multiverse.MapImage(
-            bytes=mapData,
-            format=mapLevel.format())
-
     def loadBinaryResource(self, filePath: str) -> bytes:
         return self._readStockFile(
             relativeFilePath=filePath)
@@ -841,10 +775,7 @@ class DataStore(object):
             self,
             milieu: multiverse.Milieu,
             sectorContent: str,
-            metadataContent: str,
-            customMapStyle: typing.Optional[multiverse.MapStyle],
-            customMapOptions: typing.Optional[typing.Iterable[multiverse.MapOption]],
-            customMapImages: typing.Mapping[int, multiverse.MapImage]
+            metadataContent: str
             ) -> SectorInfo:
         self._loadSectors(milieu=milieu)
 
@@ -901,22 +832,6 @@ class DataStore(object):
                 path=metadataFilePath,
                 data=metadataContent)
 
-            mapLevels = {}
-            for scale, mapImage in customMapImages.items():
-                mapFormat = mapImage.format()
-                mapLevelFileName = f'{escapedSectorName}_{scale}.{mapFormat.value}'
-                mapLevelFilePath = os.path.join(milieuDirPath, mapLevelFileName)
-
-                mapLevel = CustomMapLevel(
-                    scale=scale,
-                    fileName=mapLevelFileName,
-                    format=mapFormat)
-                mapLevels[mapLevel.scale()] = mapLevel
-
-                DataStore._writeFile(
-                    path=mapLevelFilePath,
-                    data=mapImage.bytes())
-
             sectorInfo = SectorInfo(
                 canonicalName=metadata.canonicalName(),
                 abbreviation=metadata.abbreviation(),
@@ -925,10 +840,7 @@ class DataStore(object):
                 sectorFormat=sectorFormat,
                 metadataFormat=metadataFormat,
                 modifiedTimestamp=common.utcnow(),
-                isCustomSector=True,
-                customMapStyle=customMapStyle,
-                customMapOptions=customMapOptions,
-                customMapLevels=mapLevels)
+                isCustomSector=True)
             universeInfo.addSector(sectorInfo)
 
             self._saveCustomSectors(milieu=milieu)
@@ -967,10 +879,6 @@ class DataStore(object):
             files = [
                 f'{escapedSectorName}.{sectorExtension}',
                 f'{escapedSectorName}.{metadataExtension}']
-            mapLevels = sectorInfo.customMapLevels()
-            if mapLevels:
-                for mapLevel in mapLevels.values():
-                    files.append(mapLevel.fileName())
 
             # Perform best effort attempt to delete files. If it fails log and continue,
             # any undeleted files will have no effect since the sector has been deleted
@@ -1274,59 +1182,6 @@ class DataStore(object):
                 else:
                     modifiedTimestamp = datetime.datetime.fromtimestamp(0)
 
-                # TODO: Loading this should go as part of this work
-                customMapLevels = None
-                customMapStyle = None
-                customMapOptions = None
-                if customSectors:
-                    customMapStyleTag = sectorElement.get('CustomMapStyle')
-                    if customMapStyleTag == None:
-                        raise RuntimeError('Sector has no custom map style')
-                    customMapStyle = multiverse.MapStyle.__members__.get(str(customMapStyleTag))
-                    if customMapStyle == None:
-                        raise RuntimeError(f'Sector has an unknown map style {str(customMapStyleTag)}')
-
-                    customMapOptionsElement = sectorElement.get('CustomMapOptions')
-                    if customMapOptionsElement != None:
-                        customMapOptions = []
-                        for optionTag in customMapOptionsElement:
-                            optionTag = str(optionTag)
-                            option = multiverse.MapOption.__members__.get(optionTag)
-                            if option == None:
-                                raise RuntimeError(f'Sector has unknown custom map option {optionTag}')
-                            customMapOptions.append(option)
-
-                    customMapLevelsElement = sectorElement.get('CustomMapLevels')
-                    if customMapLevelsElement == None:
-                        raise RuntimeError('Sector has no custom map levels')
-
-                    customMapLevels = {}
-                    for mapLevel in customMapLevelsElement:
-                        mimeType = mapLevel.get('MimeType')
-                        if mimeType == None:
-                            raise RuntimeError('Custom map level has no mime type')
-                        mimeType = str(mimeType)
-
-                        mapFormat = multiverse.mimeTypeToMapFormat(mimeType=mimeType)
-                        if mapFormat == None:
-                            raise RuntimeError(f'Custom map level has unsupported mime type {mimeType}')
-
-                        scale = mapLevel.get('Scale')
-                        if scale == None:
-                            raise RuntimeError(f'Custom map level has no scale')
-                        scale = int(scale)
-
-                        fileName = mapLevel.get('FileName')
-                        if fileName == None:
-                            raise RuntimeError(f'Custom map level has no file name')
-                        fileName = str(fileName)
-
-                        mapLevel = CustomMapLevel(
-                            scale=scale,
-                            fileName=fileName,
-                            format=mapFormat)
-                        customMapLevels[mapLevel.scale()] = mapLevel
-
                 sectors.append(SectorInfo(
                     canonicalName=canonicalName,
                     abbreviation=abbreviation,
@@ -1335,10 +1190,7 @@ class DataStore(object):
                     sectorFormat=sectorFormat,
                     metadataFormat=metadataFormat,
                     modifiedTimestamp=modifiedTimestamp,
-                    isCustomSector=customSectors,
-                    customMapStyle=customMapStyle,
-                    customMapOptions=customMapOptions,
-                    customMapLevels=customMapLevels))
+                    isCustomSector=customSectors))
             except Exception as ex:
                 if canonicalName != None:
                     logging.warning(f'Skipping {sectorType} sector at {canonicalName} in {milieu.value} ({str(ex)})')
@@ -1378,32 +1230,8 @@ class DataStore(object):
                 #
                 # The following elements are extensions and not part of the standard universe file format
                 #
-
-                sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
-                sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
                 sectorData['ModifiedTimestamp'] = \
                     DataStore._formatTimestamp(sectorInfo.modifiedTimestamp()).decode()
-
-                # TODO: Writing map levels, style & options should go as part of this work
-                mapLevels = sectorInfo.customMapLevels()
-                mapLevelListData = []
-                if mapLevels:
-                    for mapLevel in mapLevels.values():
-                        mapLevelListData.append({
-                            'Scale': mapLevel.scale(),
-                            'FileName': mapLevel.fileName(),
-                            'MimeType': multiverse.mapFormatToMimeType(format=mapLevel.format())
-                        })
-                if mapLevelListData:
-                    sectorData['CustomMapLevels'] = mapLevelListData
-
-                mapStyle = sectorInfo.customMapStyle()
-                if mapStyle:
-                    sectorData['CustomMapStyle'] = mapStyle.name
-
-                mapOptions = sectorInfo.customMapOptions()
-                if mapOptions:
-                    sectorData['CustomMapOptions'] = [option.name for option in mapOptions]
 
                 sectorListData.append(sectorData)
 

@@ -4,8 +4,8 @@ import enum
 import gui
 import jobs
 import logging
-import os
 import multiverse
+import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -99,168 +99,8 @@ _JsonMetadataWarning = """
 """.format(name=app.AppName)
 _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
 
-# This defines the scales of the different map images that will be generated. The values
-# are specifically chosen to match up with the scales that the Traveller Map rendering
-# code makes significant changes to how it renders the sector (e.g. transitioning from
-# full world info -> no names -> no worlds)
-# It's important that this is defined from largest to smallest as this will be the
-# order the maps are generated in and the generating the largest is the most likely to
-# fail so best to do it first.
-# Once you get to a scale lower than 4 the poster API stops generating posters that really
-# look like what is rendered by the tile API. You don't get the red sector overlay and
-# the background colour can be noticeably different.
-# NOTE: SVGs put less load on Traveller Map so I've added an extra scale to make the
-# compositing more seamless
-_BitmapCustomMapScales = [128, 64, 32, 16, 4]
-
-# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
-# can cause incorrect sizing if the font scaling is increased then decreased
-class _PosterJobDialog(QtWidgets.QDialog):
-    _GeneratingProgressDotCount = 5
-
-    def __init__(
-            self,
-            title: str,
-            job: jobs.PosterJobAsync,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(parent=parent)
-
-        self._job = job
-        self._job.complete.connect(self._jobComplete)
-        self._job.progress.connect(self._jobEvent)
-        self._posters = None
-        self._generatingTimer = QtCore.QTimer()
-        self._generatingTimer.timeout.connect(self._generatingTimerFired)
-        self._generatingTimer.setInterval(500)
-        self._generatingTimer.setSingleShot(False)
-
-        self._mapLabel = gui.PrefixLabel(prefix='Map: ')
-        self._uploadingLabel = gui.PrefixLabel(prefix='Uploading: ')
-        self._generatingLabel = gui.PrefixLabel(prefix='Generating: ')
-        self._downloadingLabel = gui.PrefixLabel(prefix='Downloading: ')
-
-        progressLayout = QtWidgets.QVBoxLayout()
-        progressLayout.addWidget(self._mapLabel)
-        progressLayout.addWidget(self._uploadingLabel)
-        progressLayout.addWidget(self._generatingLabel)
-        progressLayout.addWidget(self._downloadingLabel)
-
-        progressGroupBox = QtWidgets.QGroupBox()
-        progressGroupBox.setLayout(progressLayout)
-
-        self._cancelButton = QtWidgets.QPushButton('Cancel')
-        self._cancelButton.clicked.connect(self._cancelJob)
-
-        windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(progressGroupBox)
-        windowLayout.addWidget(self._cancelButton)
-
-        self.setWindowTitle(title)
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
-        self.setSizeGripEnabled(False)
-        self.setLayout(windowLayout)
-
-        # Setting up the title bar needs to be done before the window is show to take effect. It
-        # needs to be done every time the window is shown as the setting is lost if the window is
-        # closed then reshown
-        gui.configureWindowTitleBar(widget=self)
-
-    def posters(self) -> typing.Optional[typing.Mapping[int, multiverse.MapImage]]:
-        return self._posters
-
-    def exec(self) -> int:
-        try:
-            self._job.run()
-        except Exception as ex:
-            message = 'Failed to start poster job'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            # Closing a dialog from showEvent doesn't work so schedule it to happen immediately after
-            # the window is shown
-            QtCore.QTimer.singleShot(0, self.close)
-
-        return super().exec()
-
-    def showEvent(self, e: QtGui.QShowEvent) -> None:
-        if not e.spontaneous():
-            # Setting up the title bar needs to be done before the window is show to take effect. It
-            # needs to be done every time the window is shown as the setting is lost if the window is
-            # closed then reshown
-            gui.configureWindowTitleBar(widget=self)
-
-        return super().showEvent(e)
-
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        if self._job:
-            self._job.cancel()
-        return super().closeEvent(a0)
-
-    def _cancelJob(self) -> None:
-        if self._job:
-            self._job.cancel()
-        self.close()
-
-    def _jobComplete(
-            self,
-            result: typing.Union[typing.Mapping[int, multiverse.MapImage], Exception]
-            ) -> None:
-        self._generatingTimer.stop()
-
-        if isinstance(result, Exception):
-            message = 'Map creation job failed'
-            logging.critical(message, exc_info=result)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=result)
-            self.close()
-        else:
-            self._posters = result
-            self.accept()
-
-    def _jobEvent(
-            self,
-            event: jobs.PosterJobAsync.ProgressEvent,
-            scale: int,
-            stageIndex: int,
-            totalStages: int,
-            currentBytes: int,
-            totalBytes: int
-            ) -> None:
-        self._mapLabel.setText(f'{scale} pixels per parsec ({stageIndex + 1}/{totalStages})')
-
-        if totalBytes > 0:
-            progressText = common.humanFriendlyByteSizes(currentBytes) + ' / ' + \
-                common.humanFriendlyByteSizes(totalBytes)
-        else:
-            progressText = common.humanFriendlyByteSizes(currentBytes)
-
-        if event == jobs.PosterJobAsync.ProgressEvent.Uploading:
-            if currentBytes == 0:
-                self._generatingLabel.setText('')
-                self._downloadingLabel.setText('')
-
-            self._uploadingLabel.setText(progressText)
-
-            if currentBytes == totalBytes:
-                self._generatingTimer.start()
-        elif event == jobs.PosterJobAsync.ProgressEvent.Downloading:
-            if currentBytes == 0:
-                self._generatingTimer.stop()
-                self._generatingLabel.setText('Complete')
-
-            self._downloadingLabel.setText(progressText)
-
-    def _generatingTimerFired(self) -> None:
-        text = self._generatingLabel.text()
-        if (len(text) % _PosterJobDialog._GeneratingProgressDotCount) == 0:
-            text = ''
-        text += '.'
-        self._generatingLabel.setText(text)
+# TODO: This should probably come from the config
+_TravellerMapBaseUrl = 'https://travellermap.com'
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
@@ -463,12 +303,10 @@ class _NewSectorDialog(gui.DialogEx):
         self._sector = None
 
         self._setupFileSelectControls()
-        self._setupRenderOptionControls()
         self._setupDialogButtons()
 
         dialogLayout = QtWidgets.QVBoxLayout()
         dialogLayout.addWidget(self._filesGroupBox)
-        dialogLayout.addWidget(self._renderOptionsGroupBox)
         dialogLayout.addLayout(self._buttonLayout)
 
         self.setLayout(dialogLayout)
@@ -505,62 +343,6 @@ class _NewSectorDialog(gui.DialogEx):
         if storedValue:
             self._metadataFileLineEdit.setText(storedValue)
 
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='StyleComboBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderStyleComboBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SectorGridCheckBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderSectorGridCheckBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SectorNamesComboBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderSectorNamesComboBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='RegionNamesCheckBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderRegionNamesCheckBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='BordersCheckBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderBordersCheckBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='FilledBordersCheckBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderFilledBordersCheckBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='RoutesCheckBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderRoutesCheckBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='WorldColoursCheckBoxState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._renderWorldColoursCheckBox.restoreState(storedValue)
-
         self._settings.endGroup()
 
     def accept(self) -> None:
@@ -568,14 +350,6 @@ class _NewSectorDialog(gui.DialogEx):
         self._settings.setValue('RecentDirectory', self._recentDirectoryPath)
         self._settings.setValue('SectorFilePath', self._sectorFileLineEdit.text())
         self._settings.setValue('MetadataFilePath', self._metadataFileLineEdit.text())
-        self._settings.setValue('StyleComboBoxState', self._renderStyleComboBox.saveState())
-        self._settings.setValue('SectorGridCheckBoxState', self._renderSectorGridCheckBox.saveState())
-        self._settings.setValue('SectorNamesComboBoxState', self._renderSectorNamesComboBox.saveState())
-        self._settings.setValue('RegionNamesCheckBoxState', self._renderRegionNamesCheckBox.saveState())
-        self._settings.setValue('BordersCheckBoxState', self._renderBordersCheckBox.saveState())
-        self._settings.setValue('FilledBordersCheckBoxState', self._renderFilledBordersCheckBox.saveState())
-        self._settings.setValue('RoutesCheckBoxState', self._renderRoutesCheckBox.saveState())
-        self._settings.setValue('WorldColoursCheckBoxState', self._renderWorldColoursCheckBox.saveState())
         self._settings.endGroup()
 
         return super().accept()
@@ -614,95 +388,6 @@ class _NewSectorDialog(gui.DialogEx):
 
         self._filesGroupBox = QtWidgets.QGroupBox('Files')
         self._filesGroupBox.setLayout(groupLayout)
-
-    # NOTE: This only allows setting a subset of options that are available. In some cases I don't
-    # thing anyone would ever want their custom sectors to always display the info (all overlays
-    # fall into this category). Other options are client side so don't need to be included (i.e.
-    # mains)
-    def _setupRenderOptionControls(self) -> None:
-        style = app.Config.instance().value(option=app.ConfigOption.MapStyle)
-        options = app.Config.instance().value(option=app.ConfigOption.MapOptions)
-
-        supportedStyles = [s for s in multiverse.MapStyle if s is not multiverse.MapStyle.Candy]
-        self._renderStyleComboBox = gui.EnumComboBox(
-            type=multiverse.MapStyle,
-            value=style,
-            options=supportedStyles)
-
-        self._renderSectorGridCheckBox = gui.CheckBoxEx()
-        self._renderSectorGridCheckBox.setChecked(
-            multiverse.MapOption.SectorGrid in options)
-
-        renderSectorNames = None
-        if multiverse.MapOption.SectorNames in options:
-            renderSectorNames = multiverse.MapOption.SectorNames
-        elif multiverse.MapOption.SelectedSectorNames in options:
-            renderSectorNames = multiverse.MapOption.SelectedSectorNames
-        self._renderSectorNamesComboBox = gui.EnumComboBox(
-            type=multiverse.MapOption,
-            value=renderSectorNames,
-            isOptional=True,
-            options=[
-                multiverse.MapOption.SelectedSectorNames,
-                multiverse.MapOption.SectorNames],
-            textMap={
-                multiverse.MapOption.SelectedSectorNames: 'Selected',
-                multiverse.MapOption.SectorNames: 'All'})
-
-        self._renderRegionNamesCheckBox = gui.CheckBoxEx()
-        self._renderRegionNamesCheckBox.setChecked(
-            multiverse.MapOption.RegionNames in options)
-
-        self._renderBordersCheckBox = gui.CheckBoxEx()
-        self._renderBordersCheckBox.setChecked(
-            multiverse.MapOption.Borders in options)
-
-        self._renderFilledBordersCheckBox = gui.CheckBoxEx()
-        self._renderFilledBordersCheckBox.setChecked(
-            multiverse.MapOption.FilledBorders in options)
-
-        self._renderRoutesCheckBox = gui.CheckBoxEx()
-        self._renderRoutesCheckBox.setChecked(
-            multiverse.MapOption.Routes in options)
-
-        self._renderWorldColoursCheckBox = gui.CheckBoxEx()
-        self._renderWorldColoursCheckBox.setChecked(
-            multiverse.MapOption.WorldColours in options)
-
-        leftLayout = gui.FormLayoutEx()
-        leftLayout.setContentsMargins(0, 0, 0, 0)
-        leftLayout.addRow('Style:', self._renderStyleComboBox)
-        leftLayout.addRow('Sector Grid:', self._renderSectorGridCheckBox)
-        leftLayout.addRow('Sector Names:', self._renderSectorNamesComboBox)
-        leftLayout.addRow('Region Names:', self._renderRegionNamesCheckBox)
-
-        rightLayout = gui.FormLayoutEx()
-        rightLayout.setContentsMargins(0, 0, 0, 0)
-        rightLayout.addRow('Borders:', self._renderBordersCheckBox)
-        rightLayout.addRow('Filled Borders:', self._renderFilledBordersCheckBox)
-        rightLayout.addRow('Routes:', self._renderRoutesCheckBox)
-        rightLayout.addRow('More World Colours:', self._renderWorldColoursCheckBox)
-
-        optionsLayout = QtWidgets.QHBoxLayout()
-        optionsLayout.setContentsMargins(0, 0, 0, 0)
-        optionsLayout.addLayout(leftLayout)
-        optionsLayout.addLayout(rightLayout)
-        optionsLayout.addStretch()
-
-        infoLabel = QtWidgets.QLabel(
-            '* These options only apply to custom sectors if you switch to legacy web based rendering. When using local rendering, custom sectors will be drawn using the same options as the rest of the map and will update dynamically as you change those options.')
-        infoLabel.setWordWrap(True)
-        infoLabel.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Preferred,
-            QtWidgets.QSizePolicy.Policy.Minimum)
-
-        groupLayout = QtWidgets.QVBoxLayout()
-        groupLayout.addLayout(optionsLayout)
-        groupLayout.addSpacing(int(10 * gui.interfaceScale()))
-        groupLayout.addWidget(infoLabel)
-
-        self._renderOptionsGroupBox = QtWidgets.QGroupBox('Web Rendering Options*')
-        self._renderOptionsGroupBox.setLayout(groupLayout)
 
     def _setupDialogButtons(self):
         metadataFileTooltip = gui.createStringToolTip(
@@ -786,9 +471,6 @@ class _NewSectorDialog(gui.DialogEx):
                 text=f'Sector metadata file doesn\'t exist')
             return
 
-        renderStyle = self._renderStyleComboBox.currentEnum()
-        renderOptions = self._renderOptionList()
-
         xmlMetadata = None
         try:
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
@@ -856,39 +538,10 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            posterJob = jobs.PosterJobAsync(
-                parent=self,
-                mapUrl=multiverse.TravellerMapBaseUrl,
-                sectorData=sectorData,
-                xmlMetadata=xmlMetadata, # Poster API always uses XML metadata
-                style=renderStyle,
-                options=renderOptions,
-                scales=_BitmapCustomMapScales,
-                compositing=True)
-            progressDlg = _PosterJobDialog(
-                parent=self,
-                title='Map Creation',
-                job=posterJob)
-            if progressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-                return
-            posters = posterJob.posters()
-        except Exception as ex:
-            message = 'Failed to generate sector maps'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        try:
             self._sector = multiverse.DataStore.instance().createCustomSector(
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                 sectorContent=sectorData,
-                metadataContent=sectorMetadata, # Write the users metadata, not the xml metadata if it was converted
-                customMapStyle=renderStyle,
-                customMapOptions=renderOptions,
-                customMapImages=posters)
+                metadataContent=sectorMetadata) # Write the users metadata, not the xml metadata if it was converted
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
             logging.critical(message, exc_info=ex)
@@ -952,7 +605,7 @@ class _NewSectorDialog(gui.DialogEx):
 
             lintJob = jobs.LintJobAsync(
                 parent=self,
-                mapUrl=multiverse.TravellerMapBaseUrl,
+                mapUrl=_TravellerMapBaseUrl,
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata)
             progressDlg = _LintJobDialog(
@@ -981,44 +634,14 @@ class _NewSectorDialog(gui.DialogEx):
                 results=results)
             dlg.exec()
 
-    def _renderOptionList(self) -> typing.Iterable[multiverse.MapOption]:
-        renderOptions = []
-
-        if self._renderSectorGridCheckBox.isChecked():
-            renderOptions.append(multiverse.MapOption.SectorGrid)
-
-        if self._renderSectorNamesComboBox.currentEnum():
-            renderOptions.append(self._renderSectorNamesComboBox.currentEnum())
-
-        if self._renderRegionNamesCheckBox.isChecked():
-            renderOptions.append(multiverse.MapOption.RegionNames)
-
-        if self._renderBordersCheckBox.isChecked():
-            renderOptions.append(multiverse.MapOption.Borders)
-
-        if self._renderFilledBordersCheckBox.isChecked():
-            renderOptions.append(multiverse.MapOption.FilledBorders)
-
-        if self._renderRoutesCheckBox.isChecked():
-            renderOptions.append(multiverse.MapOption.Routes)
-
-        if self._renderWorldColoursCheckBox.isChecked():
-            renderOptions.append(multiverse.MapOption.WorldColours)
-
-        return renderOptions
-
 class _CustomSectorTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
         Location = 'Location'
-        Style = 'Style'
-        Options = 'Options'
 
     AllColumns = [
         ColumnType.Name,
-        ColumnType.Location,
-        ColumnType.Style,
-        ColumnType.Options
+        ColumnType.Location
     ]
 
     _StateVersion = 'CustomSectorTable_v1'
@@ -1169,19 +792,6 @@ class _CustomSectorTable(gui.ListTable):
                 elif columnType == self.ColumnType.Location:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.x()}, {sector.y()})')
-                elif columnType == self.ColumnType.Style:
-                    style = sector.customMapStyle()
-                    tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, style.value if style else 'Unknown')
-                elif columnType == self.ColumnType.Options:
-                    options = sector.customMapOptions()
-                    if options:
-                        optionsString = common.humanFriendlyListString(
-                            [option.value for option in options])
-                    else:
-                        optionsString = ''
-                    tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, optionsString)
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -1198,109 +808,11 @@ class _CustomSectorTable(gui.ListTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
-class _MapComboBox(gui.ComboBoxEx):
-    _StateVersion = 'MapComboBox_v1'
-
-    def __init__(
-            self,
-            sectorInfo: typing.Optional[multiverse.SectorInfo] = None,
-            *args,
-            **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._sectorInfo = None
-        if sectorInfo:
-            self.setSectorInfo(sectorInfo)
-
-    def sectorInfo(self) -> typing.Optional[multiverse.SectorInfo]:
-        return self._sectorInfo
-
-    def setSectorInfo(
-            self,
-            sectorInfo: typing.Optional[multiverse.SectorInfo]
-            ) -> None:
-        if sectorInfo == self._sectorInfo:
-            return # Nothing to do
-
-        self._sectorInfo = sectorInfo
-        with gui.SignalBlocker(widget=self):
-            self.clear()
-            if sectorInfo:
-                for scale in sectorInfo.customMapLevels().keys():
-                    self.addItem(f'{scale} Pixels Per Parsec', scale)
-        self.currentIndexChanged.emit(self.currentIndex())
-
-    def currentScale(self) -> typing.Optional[int]:
-        currentIndex = self.currentIndex()
-        if currentIndex < 0:
-            return None
-        return self.itemData(currentIndex, QtCore.Qt.ItemDataRole.UserRole)
-
-    def setCurrentScale(self, scale: typing.Optional[int]) -> None:
-        if scale != None:
-            for index in range(self.count()):
-                if scale == self.itemData(index, QtCore.Qt.ItemDataRole.UserRole):
-                    self.setCurrentIndex(index)
-                    return
-        else:
-            self.setCurrentIndex(-1)
-
-    def saveState(self) -> QtCore.QByteArray:
-        value = self.currentScale()
-        state = QtCore.QByteArray()
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(_MapComboBox._StateVersion)
-        stream.writeDouble(value if value != None else 0)
-        return state
-
-    def restoreState(
-            self,
-            state: QtCore.QByteArray
-            ) -> bool:
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
-        version = stream.readQString()
-        if version != _MapComboBox._StateVersion:
-            # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore MapComboBox state (Incorrect version)')
-            return False
-
-        value = stream.readDouble()
-        self.setCurrentScale(value if value > 0 else None)
-        return True
-
-class _MapImageView(gui.ImageView):
-    def __init__(
-            self,
-            sectorInfo: typing.Optional[multiverse.SectorInfo] = None,
-            scale: typing.Optional[int] = None,
-            *args,
-            **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._sectorInfo = None
-        if sectorInfo != None and scale != None:
-            self.setMapImage(
-                sectorInfo=sectorInfo,
-                scale=scale)
-
-    def setMapImage(
-            self,
-            sectorInfo: typing.Optional[multiverse.SectorInfo],
-            scale: typing.Optional[int],
-            ) -> bool:
-        self.clear()
-
-        self._sectorInfo = sectorInfo
-        if not self._sectorInfo:
-            return True # Nothing more to do
-
-        mapImage = multiverse.DataStore.instance().sectorMapImage(
-            sectorName=self._sectorInfo.canonicalName(),
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
-            scale=scale)
-        if not mapImage:
-            return False
-        return self.imageFromBytes(data=mapImage.bytes(), type=mapImage.format().value)
-
+# TODO: This will need to handle passing config updates to the map (style, options etc)
 class CustomSectorDialog(gui.DialogEx):
+    _MinMapScale = multiverse.Scale(log=5)
+    _MaxMapScale = multiverse.Scale(log=10)
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -1352,13 +864,6 @@ class CustomSectorDialog(gui.DialogEx):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='MapSelectState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._mapSelectComboBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
             key='SplitterState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -1371,7 +876,6 @@ class CustomSectorDialog(gui.DialogEx):
 
         self._settings.setValue('SectorTableState', self._sectorTable.saveState())
         self._settings.setValue('SectorDataDisplayModeState', self._sectorDataTabView.saveState())
-        self._settings.setValue('MapSelectState', self._mapSelectComboBox.saveState())
         self._settings.setValue('SplitterState', self._horizontalSplitter.saveState())
 
         self._settings.endGroup()
@@ -1416,26 +920,24 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMetadataTextEdit.setFont(monospaceFont)
         self._sectorMetadataTextEdit.setReadOnly(True)
 
-        self._mapGraphicsView = _MapImageView()
-
-        self._mapSelectComboBox = _MapComboBox()
-        self._mapSelectComboBox.currentIndexChanged.connect(self._mapSelectionChanged)
-
-        iconSize = self._mapSelectComboBox.sizeHint().height()
-        self._mapToolbar = QtWidgets.QToolBar("Map Toolbar")
-        self._mapToolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
-        self._mapToolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)
-        self._mapToolbar.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
-        self._mapToolbar.addWidget(self._mapSelectComboBox)
-        self._mapToolbar.addActions(self._mapGraphicsView.actions())
+        self._sectorMap = gui.MapWidgetEx(
+            universe=multiverse.Universe(sectors=[]),
+            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules),
+            style=app.Config.instance().value(option=app.ConfigOption.MapStyle),
+            options=app.Config.instance().value(option=app.ConfigOption.MapOptions),
+            rendering=app.Config.instance().value(option=app.ConfigOption.MapRendering),
+            animated=app.Config.instance().value(option=app.ConfigOption.MapAnimations),
+            worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
+            taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
+        self._sectorMap.setViewScaleLimits(
+            minScale=CustomSectorDialog._MinMapScale,
+            maxScale=CustomSectorDialog._MaxMapScale)
 
         mapLayout = QtWidgets.QVBoxLayout()
         mapLayout.setContentsMargins(0, 0, 0, 0)
         mapLayout.setSpacing(0)
-        mapLayout.addWidget(self._mapToolbar)
-        mapLayout.addWidget(self._mapGraphicsView)
+        mapLayout.addWidget(self._sectorMap)
         mapLayoutWidget = QtWidgets.QWidget()
         mapLayoutWidget.setLayout(mapLayout)
 
@@ -1457,12 +959,6 @@ class CustomSectorDialog(gui.DialogEx):
     def _sectorSelectionChanged(self) -> None:
         self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
 
-    def _mapSelectionChanged(self) -> None:
-        self._mapGraphicsView.setMapImage(
-            sectorInfo=self._mapSelectComboBox.sectorInfo(),
-            scale=self._mapSelectComboBox.currentScale())
-        self._mapGraphicsView.zoomToFit()
-
     def _syncSectorDataControls(
             self,
             sectorInfo: typing.Optional[multiverse.SectorInfo]
@@ -1470,16 +966,16 @@ class CustomSectorDialog(gui.DialogEx):
         if not sectorInfo:
             self._sectorFileTextEdit.clear()
             self._sectorMetadataTextEdit.clear()
-            self._mapSelectComboBox.setSectorInfo(None)
+            self._sectorMap.setUniverse(universe=multiverse.Universe(sectors=[]))
             return
 
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         try:
-            fileData = multiverse.DataStore.instance().sectorFileData(
+            sectorContent = multiverse.DataStore.instance().sectorFileData(
                 sectorName=sectorInfo.canonicalName(),
                 milieu=milieu)
-            self._sectorFileTextEdit.setPlainText(fileData)
+            self._sectorFileTextEdit.setPlainText(sectorContent)
         except Exception as ex:
             self._sectorFileTextEdit.clear()
 
@@ -1492,10 +988,10 @@ class CustomSectorDialog(gui.DialogEx):
             # Continue to try and sync other controls
 
         try:
-            metaData = multiverse.DataStore.instance().sectorMetaData(
+            metadataContent = multiverse.DataStore.instance().sectorMetaData(
                 sectorName=sectorInfo.canonicalName(),
                 milieu=milieu)
-            self._sectorMetadataTextEdit.setPlainText(metaData)
+            self._sectorMetadataTextEdit.setPlainText(metadataContent)
         except Exception as ex:
             self._sectorMetadataTextEdit.clear()
 
@@ -1507,8 +1003,27 @@ class CustomSectorDialog(gui.DialogEx):
                 exception=ex)
             # Continue to try and sync other controls
 
-        # This will trigger an update of the map graphics view
-        self._mapSelectComboBox.setSectorInfo(sectorInfo=sectorInfo)
+        universe, sector = multiverse.WorldManager.instance().createSectorUniverse(
+            milieu=milieu,
+            sectorContent=sectorContent,
+            metadataContent=metadataContent)
+
+        self._sectorMap.setUniverse(universe=universe)
+
+        sectorIndex = sector.index()
+        left, top, width, height = sectorIndex.worldBounds()
+        sectorCenter = QtCore.QPointF(left + (width / 2), top + (height / 2))
+        self._sectorMap.setViewAreaLimits(
+            upperLeft=QtCore.QPointF(left, top),
+            lowerRight=QtCore.QPointF(left + width, top + height))
+        self._sectorMap.setView(
+            center=sectorCenter,
+            scale=CustomSectorDialog._MinMapScale,
+            immediate=True)
+        self._sectorMap.setHomePosition(
+            center=sectorCenter,
+            scale=CustomSectorDialog._MinMapScale)
+        self._sectorMap.setInfoHex(hex=None)
 
     def _newSectorClicked(self) -> None:
         dialog = _NewSectorDialog(parent=self)

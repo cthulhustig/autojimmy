@@ -5,13 +5,14 @@ import gui
 import html
 import logging
 import logic
-import traveller
 import multiverse
+import traveller
 import typing
 
 def createHexToolTip(
-        hex: multiverse.HexPosition,
+        universe: multiverse.Universe,
         milieu: multiverse.Milieu,
+        hex: multiverse.HexPosition,
         rules: traveller.Rules,
         width: int = 512, # 0 means no fixed width
         worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -20,7 +21,7 @@ def createHexToolTip(
         hexImageStyle: typing.Optional[multiverse.MapStyle] = None,
         hexImageOptions: typing.Optional[typing.Collection[multiverse.MapOption]] = None
         ) -> str:
-    world = multiverse.WorldManager.instance().worldByPosition(
+    world = universe.worldByPosition(
         milieu=milieu,
         hex=hex)
     uwp = world.uwp() if world else None
@@ -37,8 +38,8 @@ def createHexToolTip(
     #
     if includeHexImage:
         try:
-            tileBytes, tileFormat = gui.generateThumbnail(
-                universe=multiverse.WorldManager.instance().universe(),
+            tileBytes = gui.generateThumbnail(
+                universe=universe,
                 milieu=milieu,
                 hex=hex,
                 width=256,
@@ -47,11 +48,10 @@ def createHexToolTip(
                 style=hexImageStyle,
                 options=hexImageOptions)
             if tileBytes:
-                mineType = multiverse.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()
                 toolTip += '<td width="256">'
                 # https://travellermap.com/doc/api#tile-render-an-arbitrary-rectangle-of-space
-                toolTip += f'<p style="vertical-align:middle"><img src=data:{mineType};base64,{tileString} width="256" height="256"></p>'
+                toolTip += f'<p style="vertical-align:middle"><img src=data:image/png;base64,{tileString} width="256" height="256"></p>'
                 toolTip += '</td>'
         except Exception as ex:
             logging.error(f'Failed to generate tool tip image for hex {hex}', exc_info=ex)
@@ -63,7 +63,7 @@ def createHexToolTip(
     # World
     #
 
-    canonicalName = multiverse.WorldManager.instance().canonicalHexName(
+    canonicalName = universe.canonicalHexName(
         milieu=milieu,
         hex=hex)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
@@ -72,10 +72,10 @@ def createHexToolTip(
         sectorHex = world.sectorHex()
         subsectorName = world.subsectorName()
     else:
-        sectorHex = multiverse.WorldManager.instance().positionToSectorHex(
+        sectorHex = universe.positionToSectorHex(
             milieu=milieu,
             hex=hex)
-        subsector = multiverse.WorldManager.instance().subsectorByPosition(
+        subsector = universe.subsectorByPosition(
             milieu=milieu,
             hex=hex)
         subsectorName = subsector.name() if subsector else 'Unknown'
@@ -138,7 +138,7 @@ def createHexToolTip(
 
         if world.hasOwner():
             try:
-                ownerWorld = multiverse.WorldManager.instance().worldBySectorHex(
+                ownerWorld = universe.worldBySectorHex(
                     milieu=milieu,
                     sectorHex=world.ownerSectorHex())
             except Exception:
@@ -339,7 +339,7 @@ def createHexToolTip(
             toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
             for colonySectorHex in world.colonySectorHexes():
                 try:
-                    colonyWorld = multiverse.WorldManager.instance().worldBySectorHex(
+                    colonyWorld = universe.worldBySectorHex(
                         milieu=milieu,
                         sectorHex=colonySectorHex)
                 except Exception:

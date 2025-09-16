@@ -1,8 +1,8 @@
 import common
 import re
 import logging
-import threading
 import multiverse
+import threading
 import typing
 
 # This object is thread safe, however the world objects are only thread safe
@@ -84,11 +84,28 @@ class WorldManager(object):
                         milieu=milieu)
 
                     try:
+                        sectorName = sectorInfo.canonicalName()
+                        sectorX = sectorInfo.x()
+                        sectorY = sectorInfo.y()
+
+                        rawWorlds = multiverse.readSector(
+                            content=sectorContent,
+                            format=sectorInfo.sectorFormat(),
+                            identifier=sectorName)
+
+                        rawMetadata = multiverse.readMetadata(
+                            content=metadataContent,
+                            format=sectorInfo.metadataFormat(),
+                            identifier=sectorName)
+
                         sector = self._loadSector(
+                            sectorName=sectorName,
+                            sectorX=sectorX,
+                            sectorY=sectorY,
                             milieu=milieu,
-                            sectorInfo=sectorInfo,
-                            sectorContent=sectorContent,
-                            metadataContent=metadataContent)
+                            rawWorlds=rawWorlds,
+                            rawMetadata=rawMetadata,
+                            updateAllegiances=True)
                     except Exception as ex:
                         logging.error(f'Failed to load sector {canonicalName} in {milieu.value}', exc_info=ex)
                         continue
@@ -99,6 +116,43 @@ class WorldManager(object):
             self._universe = multiverse.Universe(
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
+
+    def createSectorUniverse(
+            self,
+            milieu: multiverse.Milieu,
+            sectorContent: str,
+            metadataContent: str
+            ) -> typing.Tuple[multiverse.Universe, multiverse.Sector]:
+        sectorFormat = multiverse.sectorFileFormatDetect(
+            content=sectorContent)
+        if not sectorFormat:
+            raise ValueError('Unknown sector format')
+
+        metadataFormat = multiverse.metadataFileFormatDetect(
+            content=metadataContent)
+        if not metadataContent:
+            raise ValueError('Unknown metadata format')
+
+        rawWorlds = multiverse.readSector(
+            content=sectorContent,
+            format=sectorFormat,
+            identifier='Sector')
+
+        rawMetadata = multiverse.readMetadata(
+            content=metadataContent,
+            format=metadataFormat,
+            identifier='Metadata')
+
+        sector = self._loadSector(
+            sectorName=rawMetadata.canonicalName(),
+            sectorX=rawMetadata.x(),
+            sectorY=rawMetadata.y(),
+            milieu=milieu,
+            rawWorlds=rawWorlds,
+            rawMetadata=rawMetadata,
+            updateAllegiances=False) # TODO: Allegiances for these universes is currently broken
+
+        return (multiverse.Universe(sectors=[sector]), sector)
 
     def universe(self) -> multiverse.Universe:
         return self._universe
@@ -463,15 +517,14 @@ class WorldManager(object):
 
     @staticmethod
     def _loadSector(
+            sectorName: str,
+            sectorX: int,
+            sectorY: int,
             milieu: multiverse.Milieu,
-            sectorInfo: multiverse.SectorInfo,
-            sectorContent: str,
-            metadataContent: str
+            rawWorlds: typing.Collection[multiverse.RawWorld],
+            rawMetadata: multiverse.RawMetadata,
+            updateAllegiances: bool # TODO: This is a temp hack
             ) -> multiverse.Sector:
-        sectorName = sectorInfo.canonicalName()
-        sectorX = sectorInfo.x()
-        sectorY = sectorInfo.y()
-
         subsectorNameMap: typing.Dict[
             str, # Subsector code (A-P)
             typing.Tuple[
@@ -494,11 +547,6 @@ class WorldManager(object):
             subsectorNameMap[subsectorCode] = (f'{sectorName} Subsector {subsectorCode}', True)
             subsectorWorldsMap[subsectorCode] = []
 
-        rawMetadata = multiverse.readMetadata(
-            content=metadataContent,
-            format=sectorInfo.metadataFormat(),
-            identifier=sectorName)
-
         subsectorNames = rawMetadata.subsectorNames()
         if subsectorNames:
             for subsectorCode, subsectorName in subsectorNames.items():
@@ -518,11 +566,6 @@ class WorldManager(object):
                 # NOTE: The code here is intentionally left with the case as it appears int metadata as
                 # there are some sectors where allegiances vary only by case (see AllegianceManager)
                 allegianceNameMap[allegiance.code()] = allegiance.name()
-
-        rawWorlds = multiverse.readSector(
-            content=sectorContent,
-            format=sectorInfo.sectorFormat(),
-            identifier=sectorName)
 
         for rawWorld in rawWorlds:
             try:
@@ -585,11 +628,14 @@ class WorldManager(object):
                 sectorName=sectorName,
                 worlds=subsectorWorlds))
 
-        # Add the allegiances for this sector to the allegiance manager
-        multiverse.AllegianceManager.instance().addSectorAllegiances(
-            milieu=milieu,
-            sectorName=sectorName,
-            allegiances=allegianceNameMap)
+        # TODO: Need a to move allegiances into the universe so different universes
+        # can have different allegiances
+        if updateAllegiances:
+            # Add the allegiances for this sector to the allegiance manager
+            multiverse.AllegianceManager.instance().addSectorAllegiances(
+                milieu=milieu,
+                sectorName=sectorName,
+                allegiances=allegianceNameMap)
 
         styleSheet = rawMetadata.styleSheet()
         borderStyleMap: typing.Dict[

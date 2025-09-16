@@ -5,9 +5,9 @@ import functools
 import gui
 import logic
 import logging
+import multiverse
 import os
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -189,10 +189,14 @@ class _RenderingTypeActionGroup(_EnumSelectActionGroup):
 class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(
             self,
+            universe: multiverse.Universe,
             milieu: multiverse.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
-        super().__init__(milieu=milieu, parent=parent)
+        super().__init__(
+            universe=universe,
+            milieu=milieu,
+            parent=parent)
 
         self.setStyleSheet(_SearchComboBox._formatComboStyle())
         self.view().setStyleSheet(_SearchComboBox._formatListStyle())
@@ -301,6 +305,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
+            universe: multiverse.Universe,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -309,6 +314,7 @@ class _InfoWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        self._universe = universe
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
@@ -354,6 +360,15 @@ class _InfoWidget(QtWidgets.QWidget):
         self.setMinimumHeight(0)
         self.setLayout(layout)
         self.setAutoFillBackground(True)
+
+    def setUniverse(
+            self,
+            universe: multiverse.Universe
+            ) -> None:
+        if universe is self._universe:
+            return
+        self._universe = universe
+        self._updateContent(self._label.width())
 
     def setMilieu(
             self,
@@ -481,8 +496,9 @@ class _InfoWidget(QtWidgets.QWidget):
 
         if self._hex:
             text = gui.createHexToolTip(
-                hex=self._hex,
+                universe=self._universe,
                 milieu=self._milieu,
+                hex=self._hex,
                 rules=self._rules,
                 width=width - _InfoWidget._ContentRightMargin,
                 worldTagging=self._worldTagging,
@@ -951,7 +967,11 @@ class MapWidgetEx(QtWidgets.QWidget):
     _SelectionOutlineLightStyleColour = QtGui.QColor('#7F5442f5')
     _SelectionOutlineWidth = 6
 
-    _HomeLinearScale = 1
+    # The default home position is the center of the reference hex
+    # ReferenceSectorX ReferenceSectorY ReferenceHexX ReferenceHexY
+    _DefaultHomeWorldX = -0.5
+    _DefaultHomeWorldY = -0.5
+    _DefaultHomeLinearScale = 1
 
     def __init__(
             self,
@@ -977,6 +997,12 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._animated = animated
         self._worldTagging = logic.WorldTagging(worldTagging)
         self._taggingColours = app.TaggingColours(taggingColours)
+
+        self._homeCenter = QtCore.QPointF(
+            MapWidgetEx._DefaultHomeWorldX,
+            MapWidgetEx._DefaultHomeWorldY)
+        self._homeScale=multiverse.Scale(
+                linear=MapWidgetEx._DefaultHomeLinearScale)
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
@@ -1006,7 +1032,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         # For reasons I don't understand this needs to be done after load has been called on the map.
         # If it's not then the search control is drawn under the map widget. Using stackUnder doesn't
         # seem to work either.
-        self._searchWidget = _SearchComboBox(milieu=self._milieu, parent=self)
+        self._searchWidget = _SearchComboBox(
+            universe=self._universe,
+            milieu=self._milieu,
+            parent=self)
         self._searchWidget.setFixedSize(searchWidth, controlHeights)
         self._searchWidget.installEventFilter(self)
         self._searchWidget.editTextChanged.connect(self._searchHexTextEdited)
@@ -1029,6 +1058,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._infoButton.toggled.connect(self._showInfoToggled)
 
         self._infoWidget = _InfoWidget(
+            universe=self._universe,
             milieu=self._milieu,
             rules=self._rules,
             worldTagging=worldTagging,
@@ -1052,7 +1082,7 @@ class MapWidgetEx(QtWidgets.QWidget):
             icon=gui.loadIcon(id=gui.Icon.Home),
             size=buttonSize,
             parent=self)
-        self._homeButton.clicked.connect(self._gotoHome)
+        self._homeButton.clicked.connect(self.gotoHomePosition)
 
         self._legendButton = _CustomIconButton(
             icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Key)),
@@ -1307,6 +1337,21 @@ class MapWidgetEx(QtWidgets.QWidget):
         action.triggered.connect(self.promptExportImage)
         self.setMenuAction(MapWidgetEx.MenuAction.ExportImage, action)
 
+    def universe(self) -> multiverse.Universe:
+        return self._universe
+
+    def setUniverse(
+            self,
+            universe: multiverse.Universe
+            ) -> None:
+        if universe is self._universe:
+            return
+
+        self._universe = universe
+        self._mapWidget.setUniverse(universe=universe)
+        self._searchWidget.setUniverse(universe=universe)
+        self._infoWidget.setUniverse(universe=universe)
+
     def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
@@ -1454,6 +1499,69 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self._taggingColours = app.TaggingColours(colours) if colours else None
         self._infoWidget.setTaggingColours(colours=self._taggingColours)
+
+    def setView(
+            self,
+            center: typing.Optional[QtCore.QPointF],
+            scale: typing.Optional[multiverse.Scale],
+            immediate: bool = False
+            ) -> None:
+        self._mapWidget.setView(
+            center=center,
+            scale=scale,
+            immediate=immediate)
+
+    def viewCenter(self) -> QtCore.QPointF:
+        return self._mapWidget.viewCenter()
+
+    def setViewCenter(
+            self,
+            center: QtCore.QPointF,
+            immediate: bool = False
+            ) -> None:
+        self._mapWidget.setViewCenter(center=center, immediate=immediate)
+
+    def viewScale(self) -> multiverse.Scale:
+        return self._mapWidget.viewScale()
+
+    def setViewScale(
+            self,
+            scale: multiverse.Scale,
+            immediate: bool = False
+            ) -> None:
+        self._mapWidget.setViewScale(scale=scale, immediate=immediate)
+
+    def setViewAreaLimits(
+            self,
+            upperLeft: typing.Optional[QtCore.QPointF], # In World coordinates
+            lowerRight: typing.Optional[QtCore.QPointF] # In World coordinates
+            ) -> None:
+        self._mapWidget.setViewAreaLimits(
+            upperLeft=upperLeft,
+            lowerRight=lowerRight)
+
+    def setViewScaleLimits(
+            self,
+            minScale: typing.Optional[multiverse.Scale],
+            maxScale: typing.Optional[multiverse.Scale]
+            ) -> None:
+        self._mapWidget.setViewScaleLimits(minScale=minScale, maxScale=maxScale)
+
+    def homePosition(self) -> typing.Tuple[
+            QtCore.QPointF,
+            multiverse.Scale]:
+        return (QtCore.QPointF(self._homeCenter), multiverse.Scale(self._homeScale))
+
+    def setHomePosition(
+            self,
+            center: QtCore.QPointF, # World coordinates
+            scale: multiverse.Scale
+            ) -> None:
+        self._homeCenter = QtCore.QPointF(center)
+        self._homeScale = multiverse.Scale(scale)
+
+    def gotoHomePosition(self) -> None:
+        self._mapWidget.setView(center=self._homeCenter, scale=self._homeScale)
 
     def hexAt(
             self,
@@ -1873,7 +1981,7 @@ class MapWidgetEx(QtWidgets.QWidget):
                 event.accept()
                 return
             elif event.key() == QtCore.Qt.Key.Key_H: # Copied from Traveller Map
-                self._gotoHome()
+                self.gotoHomePosition()
                 event.accept()
                 return
             elif event.key() == QtCore.Qt.Key.Key_F: # Copied from Traveller Map
@@ -2059,16 +2167,6 @@ class MapWidgetEx(QtWidgets.QWidget):
             hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self.rightClicked.emit(hex)
-
-    def _gotoHome(self) -> None:
-        self.centerOnHex(
-            hex=multiverse.HexPosition(
-                sectorX=multiverse.ReferenceSectorX,
-                sectorY=multiverse.ReferenceSectorY,
-                offsetX=multiverse.ReferenceHexX,
-                offsetY=multiverse.ReferenceHexY),
-            scale=multiverse.Scale(
-                linear=MapWidgetEx._HomeLinearScale))
 
     def _mapStyleChanged(self, style: multiverse.MapStyle) -> None:
         self.setMapStyle(style=style)

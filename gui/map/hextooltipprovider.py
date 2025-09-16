@@ -1,8 +1,8 @@
 import app
 import gui
 import logic
-import traveller
 import multiverse
+import traveller
 import typing
 
 class HexTooltipProvider(object):
@@ -70,8 +70,9 @@ class HexTooltipProvider(object):
 
     def tooltip(self, hex: multiverse.HexPosition) -> str:
         return gui.createHexToolTip(
-            hex=hex,
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=self._milieu,
+            hex=hex,
             rules=self._rules,
             includeHexImage=self._showImages,
             hexImageStyle=self._mapStyle,

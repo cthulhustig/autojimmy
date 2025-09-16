@@ -1,9 +1,9 @@
 import app
+import cartographer
 import common
 import gui
 import logic
 import logging
-import cartographer
 import math
 import multiverse
 import typing
@@ -782,11 +782,15 @@ class MapWidget(QtWidgets.QWidget):
     # structure didn't change
     _StateVersion = 'LocalMapWidget_v1'
 
+    # TODO: I don't like the fact this has the universe in the key
+    # TODO: If I do keep the universe as part of the key I need to check there
+    # is no perf degradation
     _sharedTileCache = common.LRUCache[
         typing.Tuple[
             int, # Tile X
             int, # Tile Y
             int,
+            multiverse.Universe,
             multiverse.Milieu,
             multiverse.MapStyle,
             int], # MapOptions as an int
@@ -844,15 +848,17 @@ class MapWidget(QtWidgets.QWidget):
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
+        self._upperLeftViewLimit = None
+        self._lowerRightViewLimit = None
+        self._minViewScale = None
+        self._maxViewScale = None
+
         self._mapUniverse = gui.MapUniverse(universe=self._universe)
         self._mapGraphics = gui.MapGraphics()
-        self._imageCache = cartographer.ImageStore(
-            graphics=self._mapGraphics)
-        self._vectorCache = cartographer.VectorStore(
-            graphics=self._mapGraphics)
-        self._labelCache = cartographer.LabelStore(
-            universe=self._mapUniverse)
-        self._styleCache = cartographer.StyleStore()
+        self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
+        self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
+        self._labelStore = cartographer.LabelStore(universe=self._mapUniverse)
+        self._styleStore = cartographer.StyleStore()
         self._renderer = self._newRenderer()
 
         self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
@@ -960,6 +966,29 @@ class MapWidget(QtWidgets.QWidget):
         self.setMouseTracking(True)
 
         self._updateView()
+
+    def universe(self) -> multiverse.Universe:
+        return self._universe
+
+    def setUniverse(
+            self,
+            universe: multiverse.Universe
+            ) -> None:
+        if universe is self._universe:
+            return
+
+        self._universe = universe
+
+        self._mapUniverse = gui.MapUniverse(universe=self._universe)
+        self._labelStore = cartographer.LabelStore(universe=self._mapUniverse)
+
+        self._renderer = self._newRenderer()
+
+        # Clear the main when the universe changes as the main may have
+        # changed
+        self._mainsOverlay.setMain(main=None)
+
+        self.update() # Force redraw
 
     def milieu(self) -> multiverse.Milieu:
         return self._milieu
@@ -1080,7 +1109,10 @@ class MapWidget(QtWidgets.QWidget):
             immediate: bool = False
             ) -> None:
         center = self._viewCenter if center is None else QtCore.QPointF(center)
+        center = self._clampCenter(center=center)
+
         scale = self._viewScale if scale is None else multiverse.Scale(scale)
+        scale = self._clampScale(scale=scale)
 
         self._stopMoveAnimation()
 
@@ -1118,6 +1150,56 @@ class MapWidget(QtWidgets.QWidget):
             immediate: bool = False
             ) -> None:
         self.setView(scale=scale, immediate=immediate)
+
+    def viewAreaLimits(self) -> typing.Tuple[
+            QtCore.QPointF, # Upper Left
+            QtCore.QPointF]: # Lower Right
+        return (
+            QtCore.QPointF(self._upperLeftViewLimit) if self._upperLeftViewLimit else None,
+            QtCore.QPointF(self._lowerRightViewLimit) if self._lowerRightViewLimit else None)
+
+    def setViewAreaLimits(
+            self,
+            upperLeft: typing.Optional[QtCore.QPointF], # In World coordinates
+            lowerRight: typing.Optional[QtCore.QPointF] # In World coordinates
+            ) -> None:
+        if upperLeft and lowerRight:
+            self._upperLeftViewLimit = QtCore.QPointF(
+                min(upperLeft.x(), lowerRight.x()),
+                min(upperLeft.y(), lowerRight.y()))
+
+            self._lowerRightViewLimit = QtCore.QPointF(
+                max(upperLeft.x(), lowerRight.x()),
+                max(upperLeft.y(), lowerRight.y()))
+        elif upperLeft:
+            self._upperLeftViewLimit = QtCore.QPointF(upperLeft)
+            self._lowerRightViewLimit = None
+        elif lowerRight:
+            self._upperLeftViewLimit = None
+            self._lowerRightViewLimit = QtCore.QPointF(lowerRight)
+        else:
+            self._upperLeftViewLimit = None
+            self._lowerRightViewLimit = None
+
+    def viewScaleLimits(self) -> typing.Tuple[
+            typing.Optional[multiverse.Scale], # Min Scale
+            typing.Optional[multiverse.Scale]]: # Max Scale
+        return (
+            multiverse.Scale(self._minViewScale) if self._minViewScale else None,
+            multiverse.Scale(self._maxViewScale) if self._maxViewScale else None)
+
+    def setViewScaleLimits(
+            self,
+            minScale: typing.Optional[multiverse.Scale],
+            maxScale: typing.Optional[multiverse.Scale]
+            ) -> None:
+        if minScale and maxScale and maxScale < minScale:
+            minScale, maxScale = maxScale, minScale
+
+        self._minViewScale = multiverse.Scale(minScale)
+        self._maxViewScale = multiverse.Scale(maxScale)
+
+        self._updateView()
 
     def fullRedraw(self) -> None:
         if self._renderer:
@@ -1539,6 +1621,27 @@ class MapWidget(QtWidgets.QWidget):
 
         self._forceAtomicRedraw = False
 
+    def _clampCenter(self, center: QtCore.QPointF) -> QtCore.QPointF:
+        center = QtCore.QPointF(center)
+        if self._upperLeftViewLimit:
+            if center.x() < self._upperLeftViewLimit.x():
+                center.setX(self._upperLeftViewLimit.x())
+            if center.y() < self._upperLeftViewLimit.y():
+                center.setY(self._upperLeftViewLimit.y())
+        if self._lowerRightViewLimit:
+            if center.x() > self._lowerRightViewLimit.x():
+                center.setX(self._lowerRightViewLimit.x())
+            if center.y() > self._lowerRightViewLimit.y():
+                center.setY(self._lowerRightViewLimit.y())
+        return center
+
+    def _clampScale(self, scale: multiverse.Scale) -> multiverse.Scale:
+        if self._minViewScale and scale < self._minViewScale:
+            scale = self._minViewScale
+        if self._maxViewScale and scale > self._maxViewScale:
+            scale = self._maxViewScale
+        return scale
+
     def _drawView(
             self,
             paintDevice: QtGui.QPaintDevice,
@@ -1824,10 +1927,10 @@ class MapWidget(QtWidgets.QWidget):
             milieu=self._milieu,
             style=self._style,
             options=cartographer.mapOptionsToRenderOptions(self._options),
-            imageStore=self._imageCache,
-            styleStore=self._styleCache,
-            vectorStore=self._vectorCache,
-            labelStore=self._labelCache)
+            imageStore=self._imageStore,
+            styleStore=self._styleStore,
+            vectorStore=self._vectorStore,
+            labelStore=self._labelStore)
 
     def _updateView(
             self,
@@ -1835,15 +1938,13 @@ class MapWidget(QtWidgets.QWidget):
             scale: typing.Optional[multiverse.Scale] = None,
             forceAtomicRedraw: bool = False
             ) -> None:
-        centerChanged = False
-        if center is not None:
-            centerChanged = center != self._viewCenter
-            self._viewCenter = center
+        center = self._clampCenter(center=self._viewCenter if center is None else center)
+        centerChanged = center != self._viewCenter
+        self._viewCenter = center
 
-        scaleChanged = False
-        if scale is not None:
-            scaleChanged = scale != self._viewScale
-            self._viewScale = scale
+        scale = self._clampScale(scale=self._viewScale if scale is None else scale)
+        scaleChanged = scale != self._viewScale
+        self._viewScale = scale
 
         worldWidth = self.width() / (self._viewScale.linear * multiverse.ParsecScaleX)
         worldHeight = self.height() / (self._viewScale.linear * multiverse.ParsecScaleY)
@@ -2120,8 +2221,9 @@ class MapWidget(QtWidgets.QWidget):
             tileX,
             tileY,
             tileScale,
+            self._universe,
             self._milieu,
-            self._style,
+            self._renderer.style(),
             int(self._renderer.options()))
         image = self._sharedTileCache.get(tileCacheKey)
         if not image:
@@ -2219,7 +2321,8 @@ class MapWidget(QtWidgets.QWidget):
                     x,
                     y,
                     placeholderScale,
-                    self._renderer.milieu(),
+                    self._universe,
+                    self._milieu,
                     self._renderer.style(),
                     int(self._renderer.options()))
 
@@ -2311,9 +2414,10 @@ class MapWidget(QtWidgets.QWidget):
             tileX,
             tileY,
             tileScale,
+            self._universe,
+            self._milieu,
             # Use the settings for the renderer that is going to render the
             # tile to make sure the key is accurate
-            self._renderer.milieu(),
             self._renderer.style(),
             int(self._renderer.options()))
         self._sharedTileCache[tileCacheKey] = self._renderTile(

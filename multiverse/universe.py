@@ -100,7 +100,9 @@ class Universe(object):
             self,
             milieu: multiverse.Milieu
             ) -> typing.Iterable[str]:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
 
         sectorNames = []
         for sector in milieuData.sectorList:
@@ -111,8 +113,10 @@ class Universe(object):
             self,
             milieu: multiverse.Milieu,
             name: str
-            ) -> multiverse.Sector:
-        milieuData = self._milieuDataMap[milieu]
+            ) -> typing.Optional[multiverse.Sector]:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return None
         return milieuData.canonicalNameMap.get(name.lower())
 
     def sectors(
@@ -154,15 +158,17 @@ class Universe(object):
             hex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.Optional[multiverse.World]:
-        milieuData = self._milieuDataMap[milieu]
-        world = milieuData.worldPositionMap.get(hex.absolute())
+        milieuData = self._milieuDataMap.get(milieu)
+        world = milieuData.worldPositionMap.get(hex.absolute()) if milieuData else None
+
         if not world and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             sectorPos = multiverse.absoluteSpaceToSectorPos(hex.absolute())
-            if sectorPos not in milieuData.sectorIndexMap:
+            if not milieuData or sectorPos not in milieuData.sectorIndexMap:
                 world = self.worldByPosition(
                     milieu=self._placeholderMilieu,
                     hex=hex,
                     includePlaceholders=False)
+
         return world
 
     def sectorByPosition(
@@ -171,13 +177,15 @@ class Universe(object):
             hex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> typing.Optional[multiverse.Sector]:
-        milieuData = self._milieuDataMap[milieu]
-        sector = milieuData.sectorIndexMap.get(hex.sectorIndex().elements())
+        milieuData = self._milieuDataMap.get(milieu)
+        sector = milieuData.sectorIndexMap.get(hex.sectorIndex().elements()) if milieuData else None
+
         if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             sector = self.sectorByPosition(
                 milieu=self._placeholderMilieu,
                 hex=hex,
                 includePlaceholders=False)
+
         return sector
 
     def sectorBySectorIndex(
@@ -186,13 +194,15 @@ class Universe(object):
             index: multiverse.SectorIndex,
             includePlaceholders: bool = False
             ) -> typing.Optional[multiverse.Sector]:
-        milieuData = self._milieuDataMap[milieu]
-        sector = milieuData.sectorIndexMap.get(index.elements())
+        milieuData = self._milieuDataMap.get(milieu)
+        sector = milieuData.sectorIndexMap.get(index.elements()) if milieuData else None
+
         if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
             sector = self.sectorBySectorIndex(
                 milieu=self._placeholderMilieu,
                 index=index,
                 includePlaceholders=False)
+
         return sector
 
     def subsectorByPosition(
@@ -309,15 +319,16 @@ class Universe(object):
             hex: multiverse.HexPosition,
             includePlaceholders: bool = False
             ) -> str:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
 
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sectorPos = (sectorX, sectorY)
-        sector = milieuData.sectorIndexMap.get(sectorPos)
+        sector = milieuData.sectorIndexMap.get(sectorPos) if milieuData else None
 
         if not sector and includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
-            sector = placeholderData.sectorIndexMap.get(sectorPos)
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
+            if placeholderData:
+                sector = placeholderData.sectorIndexMap.get(sectorPos)
 
         return multiverse.formatSectorHex(
             sectorName=sector.name() if sector else f'{sectorX}:{sectorY}',
@@ -329,8 +340,6 @@ class Universe(object):
             milieu: multiverse.Milieu,
             sectorHex: str
             ) -> multiverse.HexPosition:
-        milieuData = self._milieuDataMap[milieu]
-
         sectorName, offsetX, offsetY = multiverse.splitSectorHex(
             sectorHex=sectorHex)
 
@@ -340,22 +349,25 @@ class Universe(object):
         sectorName = sectorName.lower()
 
         # Check to see if the sector name is a canonical sector name
-        sector = milieuData.canonicalNameMap.get(sectorName)
-        if not sector:
-            # Make a best effort attempt to find the sector by looking at
-            # abbreviations/alternate names and subsector names. This is
-            # important as in some places the official data does ths for things
-            # like owner/colony worlds sector hexes. These matches are not
-            # always unique so just use the first if more than one is found
-            sectors = milieuData.alternateNameMap.get(sectorName)
-            if sectors:
-                # Alternate sector name match
-                sector = sectors[0]
-            else:
-                subsectors = milieuData.subsectorNameMap.get(sectorName)
-                if subsectors:
-                    # Subsector name match
-                    sector = milieuData.subsectorSectorMap.get(subsectors[0])
+        milieuData = self._milieuDataMap.get(milieu)
+        sector = None
+        if milieuData:
+            sector = milieuData.canonicalNameMap.get(sectorName)
+            if not sector:
+                # Make a best effort attempt to find the sector by looking at
+                # abbreviations/alternate names and subsector names. This is
+                # important as in some places the official data does ths for things
+                # like owner/colony worlds sector hexes. These matches are not
+                # always unique so just use the first if more than one is found
+                sectors = milieuData.alternateNameMap.get(sectorName)
+                if sectors:
+                    # Alternate sector name match
+                    sector = sectors[0]
+                else:
+                    subsectors = milieuData.subsectorNameMap.get(sectorName)
+                    if subsectors:
+                        # Subsector name match
+                        sector = milieuData.subsectorSectorMap.get(subsectors[0])
 
         if sector:
             return multiverse.HexPosition(
@@ -445,7 +457,10 @@ class Universe(object):
             milieu: multiverse.Milieu,
             hex: multiverse.HexPosition
             ) -> typing.Optional[multiverse.Main]:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return None
+
         main = milieuData.hexMainMap.get(hex)
         if main:
             return main
@@ -469,19 +484,21 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.Sector], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.Sector, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-        for sector in milieuData.sectorList:
-            if not filterCallback or filterCallback(sector):
-                yield sector
+        milieuData = self._milieuDataMap.get(milieu)
+        if milieuData:
+            for sector in milieuData.sectorList:
+                if not filterCallback or filterCallback(sector):
+                    yield sector
 
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
-            for sector in placeholderData.sectorList:
-                sectorIndex = sector.index()
-                sectorPos = sectorIndex.elements()
-                if sectorPos not in milieuData.sectorIndexMap:
-                    if not filterCallback or filterCallback(sector):
-                        yield sector
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
+            if placeholderData:
+                for sector in placeholderData.sectorList:
+                    sectorIndex = sector.index()
+                    sectorPos = sectorIndex.elements()
+                    if not milieuData or sectorPos not in milieuData.sectorIndexMap:
+                        if not filterCallback or filterCallback(sector):
+                            yield sector
 
     def yieldSectorsInArea(
             self,
@@ -491,11 +508,10 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.Sector], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.Sector, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-
+        milieuData = self._milieuDataMap.get(milieu)
         placeholderData = None
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         startX, finishX = common.minmax(upperLeft.sectorX(), lowerRight.sectorX())
         startY, finishY = common.minmax(upperLeft.sectorY(), lowerRight.sectorY())
@@ -505,7 +521,7 @@ class Universe(object):
             y = startY
             while y <= finishY:
                 key = (x, y)
-                sector = milieuData.sectorIndexMap.get(key)
+                sector = milieuData.sectorIndexMap.get(key) if milieuData else None
                 if not sector and placeholderData:
                     sector = placeholderData.sectorIndexMap.get(key)
 
@@ -520,21 +536,23 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.Subsector], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.Subsector, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-        for sector in milieuData.sectorList:
-            for subsector in sector.yieldSubsectors():
-                if not filterCallback or filterCallback(subsector):
-                    yield subsector
+        milieuData = self._milieuDataMap.get(milieu)
+        if milieuData:
+            for sector in milieuData.sectorList:
+                for subsector in sector.yieldSubsectors():
+                    if not filterCallback or filterCallback(subsector):
+                        yield subsector
 
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
-            for sector in placeholderData.sectorList:
-                sectorIndex = sector.index()
-                sectorPos = sectorIndex.elements()
-                if sectorPos not in milieuData.sectorIndexMap:
-                    for subsector in sector.yieldSubsectors():
-                        if not filterCallback or filterCallback(subsector):
-                            yield subsector
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
+            if placeholderData:
+                for sector in placeholderData.sectorList:
+                    sectorIndex = sector.index()
+                    sectorPos = sectorIndex.elements()
+                    if not milieuData or sectorPos not in milieuData.sectorIndexMap:
+                        for subsector in sector.yieldSubsectors():
+                            if not filterCallback or filterCallback(subsector):
+                                yield subsector
 
     def yieldSubsectorsInArea(
             self,
@@ -544,11 +562,10 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.Subsector], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.Subsector, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-
+        milieuData = self._milieuDataMap.get(milieu)
         placeholderData = None
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
         startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
@@ -559,7 +576,7 @@ class Universe(object):
                     multiverse.absoluteSpaceToRelativeSpace((x, y))
 
                 key = (sectorX, sectorY)
-                sector = milieuData.sectorIndexMap.get(key)
+                sector = milieuData.sectorIndexMap.get(key) if milieuData else None
                 if not sector and placeholderData:
                     sector = placeholderData.sectorIndexMap.get(key)
 
@@ -577,20 +594,22 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.World], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.World, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-        for world in milieuData.worldPositionMap.values():
-            if not filterCallback or filterCallback(world):
-                yield world
+        milieuData = self._milieuDataMap.get(milieu)
+        if milieuData:
+            for world in milieuData.worldPositionMap.values():
+                if not filterCallback or filterCallback(world):
+                    yield world
 
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
-            for sector in placeholderData.sectorList:
-                sectorIndex = sector.index()
-                sectorPos = sectorIndex.elements()
-                if sectorPos not in milieuData.sectorIndexMap:
-                    for world in sector.yieldWorlds():
-                        if not filterCallback or filterCallback(world):
-                            yield world
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
+            if placeholderData:
+                for sector in placeholderData.sectorList:
+                    sectorIndex = sector.index()
+                    sectorPos = sectorIndex.elements()
+                    if not milieuData or sectorPos not in milieuData.sectorIndexMap:
+                        for world in sector.yieldWorlds():
+                            if not filterCallback or filterCallback(world):
+                                yield world
 
     def yieldWorldsInArea(
             self,
@@ -600,11 +619,10 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.World], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.World, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-
+        milieuData = self._milieuDataMap.get(milieu)
         placeholderData = None
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         startX, finishX = common.minmax(upperLeft.absoluteX(), lowerRight.absoluteX())
         startY, finishY = common.minmax(upperLeft.absoluteY(), lowerRight.absoluteY())
@@ -614,10 +632,10 @@ class Universe(object):
             y = startY
             while y <= finishY:
                 key = (x, y)
-                world = milieuData.worldPositionMap.get(key)
+                world = milieuData.worldPositionMap.get(key) if milieuData else None
                 if not world and placeholderData:
                     sectorPos = multiverse.absoluteSpaceToSectorPos(key)
-                    if sectorPos not in milieuData.sectorIndexMap:
+                    if not milieuData or sectorPos not in milieuData.sectorIndexMap:
                         world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
@@ -633,11 +651,10 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.World], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.World, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-
+        milieuData = self._milieuDataMap.get(milieu)
         placeholderData = None
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         minLength = radius + 1
         maxLength = (radius * 2) + 1
@@ -670,10 +687,10 @@ class Universe(object):
 
             for y in range(startY, finishY + 1):
                 key = (x, y)
-                world = milieuData.worldPositionMap.get(key)
+                world = milieuData.worldPositionMap.get(key) if milieuData else None
                 if not world and placeholderData:
                     sectorPos = multiverse.absoluteSpaceToSectorPos(key)
-                    if sectorPos not in milieuData.sectorIndexMap:
+                    if not milieuData or sectorPos not in milieuData.sectorIndexMap:
                         world = placeholderData.worldPositionMap.get(key)
 
                 if world and ((not filterCallback) or filterCallback(world)):
@@ -686,17 +703,16 @@ class Universe(object):
             filterCallback: typing.Callable[[multiverse.World], bool] = None,
             includePlaceholders: bool = False
             ) -> typing.Generator[multiverse.World, None, None]:
-        milieuData = self._milieuDataMap[milieu]
-
+        milieuData = self._milieuDataMap.get(milieu)
         placeholderData = None
         if includePlaceholders and self._placeholderMilieu and milieu is not self._placeholderMilieu:
-            placeholderData = self._milieuDataMap[self._placeholderMilieu]
+            placeholderData = self._milieuDataMap.get(self._placeholderMilieu)
 
         key = hex.absolute()
-        world = milieuData.worldPositionMap.get(key)
+        world = milieuData.worldPositionMap.get(key) if milieuData else None
         if not world and placeholderData:
             sectorPos = multiverse.absoluteSpaceToSectorPos(key)
-            if sectorPos not in milieuData.sectorIndexMap:
+            if not milieuData or sectorPos not in milieuData.sectorIndexMap:
                 world = placeholderData.worldPositionMap.get(key)
         if not world:
             return
@@ -713,10 +729,10 @@ class Universe(object):
                 adjacentHex = hex.neighbourHex(edge=edge)
 
                 key = adjacentHex.absolute()
-                adjacentWorld = milieuData.worldPositionMap.get(key)
+                adjacentWorld = milieuData.worldPositionMap.get(key) if milieuData else None
                 if not adjacentWorld and placeholderData:
                     sectorPos = multiverse.absoluteSpaceToSectorPos(key)
-                    if sectorPos not in milieuData.sectorIndexMap:
+                    if not milieuData or sectorPos not in milieuData.sectorIndexMap:
                         adjacentWorld = placeholderData.worldPositionMap.get(key)
 
                 if adjacentWorld and (adjacentWorld not in seen):
@@ -732,7 +748,9 @@ class Universe(object):
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[multiverse.World]:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
 
         searchString = searchString.strip()
         if not searchString:
@@ -841,7 +859,9 @@ class Universe(object):
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[multiverse.Subsector]:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
 
         searchString = searchString.strip()
         if not searchString:
@@ -880,7 +900,9 @@ class Universe(object):
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[multiverse.Sector]:
-        milieuData = self._milieuDataMap[milieu]
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
 
         searchString = searchString.strip()
         if not searchString:

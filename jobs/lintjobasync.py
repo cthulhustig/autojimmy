@@ -1,8 +1,8 @@
 import app
 import asyncio
-import typing
-import multiverse
 import enum
+import typing
+import urllib.parse
 from PyQt5 import QtCore
 
 class LintJobAsync(QtCore.QObject):
@@ -64,7 +64,7 @@ class LintJobAsync(QtCore.QObject):
         return self._results
 
     def _primeSectorLint(self) -> None:
-        url = multiverse.formatPosterLintUrl(baseMapUrl=self._mapUrl)
+        url = LintJobAsync._formatPosterLintUrl(baseMapUrl=self._mapUrl)
 
         self._results: typing.Dict[LintJobAsync.Stage, LintJobAsync.LinterResult] = {}
 
@@ -106,7 +106,7 @@ class LintJobAsync(QtCore.QObject):
         self._primeMetadataLint()
 
     def _primeMetadataLint(self) -> None:
-        url = multiverse.formatMetadataLintUrl(baseMapUrl=self._mapUrl)
+        url = LintJobAsync._formatMetadataLintUrl(baseMapUrl=self._mapUrl)
 
         self._emitProgress(
             event=LintJobAsync.ProgressEvent.Uploading,
@@ -181,3 +181,11 @@ class LintJobAsync(QtCore.QObject):
             stage,
             currentBytes,
             totalBytes)
+
+    @staticmethod
+    def _formatPosterLintUrl(baseMapUrl: str) -> str:
+        return urllib.parse.urljoin(baseMapUrl, 'api/poster?lint=1')
+
+    @staticmethod
+    def _formatMetadataLintUrl(baseMapUrl: str) -> str:
+        return urllib.parse.urljoin(baseMapUrl, 'api/metadata?lint=1')

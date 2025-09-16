@@ -1,8 +1,8 @@
 import app
 import gui
 import logic
-import traveller
 import multiverse
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -111,8 +111,9 @@ class _CustomTextEdit(gui.TextEditEx):
     def _updateContent(self) -> None:
         if self._hex:
             self.setHtml(gui.createHexToolTip(
-                hex=self._hex,
+                universe=multiverse.WorldManager.instance().universe(),
                 milieu=self._milieu,
+                hex=self._hex,
                 rules=self._rules,
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,

@@ -38,9 +38,7 @@ def generateThumbnail(
         linearScale: float,
         style: multiverse.MapStyle,
         options: typing.Collection[multiverse.MapOption]
-        ) -> typing.Tuple[
-            typing.Optional[bytes],
-            typing.Optional[multiverse.MapFormat]]:
+        ) -> typing.Optional[bytes]:
     _initThumbnailRenderer()
 
     centerX, centerY = hex.worldCenter()
@@ -78,4 +76,4 @@ def generateThumbnail(
     finally:
         buffer.close()
 
-    return (byteArray.data(), multiverse.MapFormat.PNG)
+    return byteArray.data()

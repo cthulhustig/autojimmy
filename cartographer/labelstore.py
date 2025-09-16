@@ -1,6 +1,6 @@
+import cartographer
 import common
 import logging
-import cartographer
 import multiverse
 import typing
 import xml.etree.ElementTree
@@ -31,6 +31,16 @@ class WorldLabel(object):
         self.biasX = biasX
         self.biasY = biasY
 
+# TODO: The way world labels currently work is a pain in the ass as it
+# means this class needs to be aware of the universe. Not sure what the
+# best solution is
+# - Could update the file to use absolute positions rather than sector
+# hex. Downside of this is it won't work in the future when I add editing
+# as the world labels mark the position of worlds that can move.
+# - Could move it the abstract world says if the world have this kind of
+# label. It would need to handle to store the label content and bias
+# (although it may be world converting bias to text alignment as that's
+# what it currently resolves to)
 class LabelStore(object):
     _MinorLabelsPath = 'labels/minor_labels.tab'
     _MajorLabelsPath = 'labels/mega_labels.tab'

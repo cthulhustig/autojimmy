@@ -2,8 +2,8 @@ import app
 import gui
 import logging
 import logic
-import traveller
 import multiverse
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -50,7 +50,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         self._enableShowHexButton = False
         self._enableShowInfoButton = False
 
-        self._searchComboBox = gui.HexSelectComboBox(milieu=self._milieu)
+        self._searchComboBox = gui.HexSelectComboBox(
+            universe=multiverse.WorldManager.instance().universe(),
+            milieu=self._milieu)
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(
             int(HexSelectToolWidget._MinWoldSelectWidth * gui.interfaceScale()))
