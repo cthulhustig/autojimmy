@@ -3,6 +3,7 @@ import cartographer
 import multiverse
 import typing
 
+# TODO: Is the abstract universe stuff a good idea?
 class AbstractWorld(object):
     def milieu(self) -> multiverse.Milieu:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement milieu')

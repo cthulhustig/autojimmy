@@ -61,6 +61,7 @@ from .map.hexselecttoolwidget import *
 from .map.hextable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
+from .map.customsectordialog import *
 from .trader.tooltips import *
 from .trader.skillspinbox import *
 from .trader.shipcontrols import *
@@ -90,7 +91,6 @@ from .trader.traderwindows import *
 from .trader.purchasecalculatorwindow import *
 from .trader.salecalculatorwindow import *
 from .trader.simulatorwindow import *
-from .trader.customsectordialog import *
 from .construction.stagegroupwidget import *
 from .construction.manifesttable import *
 from .construction.noteswidget import *

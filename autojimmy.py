@@ -22,10 +22,6 @@ import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-# TODO: Update custom sector import dialog
-# - Remember to update dialog welcome message
-# - It would be really nice if I could get some way of making sector imports live
-# rather than needing a restart
 # TODO: Drop libcairo stuff from docs
 # - Maybe leave the around for a bit but make it clear they're only needed for
 # older versions

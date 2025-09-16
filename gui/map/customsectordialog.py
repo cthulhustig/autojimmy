@@ -9,16 +9,6 @@ import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: This class should probably be moved to gui\map
-# TODO: In order to update this so it doesn't rely on posters being generated
-# for custom sectors, I want to create a SectorWidget that is similar to
-# MapWidget but just displays a single sector. It doesn't need any of the
-# selection or overlay code, just the basic code for panning zooming.
-# - This widget will probably need it's own implementations of AbstractUniverse,
-# AbstractWorld etc
-# = It will need a way to clamp panning/zooming values to something sensible for
-# displaying just the sector.
-
 _WelcomeMessage = """
     <html>
     <p>The Custom Sectors dialog allows you to add your own sectors to {name}.

@@ -1164,12 +1164,12 @@ class MapWidgetEx(QtWidgets.QWidget):
         currentNames = None
         if multiverse.MapOption.SelectedSectorNames in self._options:
             currentNames = multiverse.MapOption.SelectedSectorNames
-        elif multiverse.MapOption.SectorNames in self._options:
-            currentNames = multiverse.MapOption.SectorNames
+        elif multiverse.MapOption.AllSectorNames in self._options:
+            currentNames = multiverse.MapOption.AllSectorNames
         self._sectorNamesActionGroup = _ExclusiveMapOptionsActionGroup(
             options=[
                 multiverse.MapOption.SelectedSectorNames,
-                multiverse.MapOption.SectorNames],
+                multiverse.MapOption.AllSectorNames],
             current=currentNames)
         self._sectorNamesActionGroup.optionChanged.connect(self._mapOptionChanged)
         sectorNamesLayout = _ConfigSectionLayout()
@@ -1405,8 +1405,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             multiverse.MapOption.SectorGrid in self._options)
         if multiverse.MapOption.SelectedSectorNames in self._options:
             self._sectorNamesActionGroup.setSelection(multiverse.MapOption.SelectedSectorNames)
-        elif multiverse.MapOption.SectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(multiverse.MapOption.SectorNames)
+        elif multiverse.MapOption.AllSectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(multiverse.MapOption.AllSectorNames)
         else:
             self._sectorNamesActionGroup.setSelection(None)
         self._bordersAction.setChecked(

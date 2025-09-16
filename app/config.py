@@ -394,7 +394,7 @@ class MapOptionsConfigItem(ConfigItem):
         multiverse.MapOption.GalacticDirections: '/GalacticDirections',
         multiverse.MapOption.SectorGrid: '/SectorGrid',
         multiverse.MapOption.SelectedSectorNames: '/SelectedSectorNames',
-        multiverse.MapOption.SectorNames: '/AllSectorNames',
+        multiverse.MapOption.AllSectorNames: '/AllSectorNames',
         multiverse.MapOption.Borders: '/Borders',
         multiverse.MapOption.Routes: '/Routes',
         multiverse.MapOption.RegionNames: '/RegionNames',

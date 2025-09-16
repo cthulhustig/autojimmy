@@ -28,7 +28,7 @@ _MapOptionsToRenderOptions: typing.Dict[
     ] = {
         multiverse.MapOption.SectorGrid: cartographer.RenderOptions.GridMask,
         multiverse.MapOption.SelectedSectorNames: cartographer.RenderOptions.SectorsSelected,
-        multiverse.MapOption.SectorNames: cartographer.RenderOptions.SectorsAll,
+        multiverse.MapOption.AllSectorNames: cartographer.RenderOptions.SectorsAll,
         multiverse.MapOption.Borders: cartographer.RenderOptions.BordersMask,
         multiverse.MapOption.Routes: cartographer.RenderOptions.RoutesMask,
         multiverse.MapOption.RegionNames: cartographer.RenderOptions.NamesMask,
