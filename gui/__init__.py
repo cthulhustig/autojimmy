@@ -46,6 +46,8 @@ from .common.singletonapplication import *
 from .common.plotwidgetex import *
 from .common.tooltips import *
 from .map.primitives import *
+from .map.mapscale import *
+from .map.utils import *
 from .map.mapuniverse import *
 from .map.mapgraphics import *
 from .map.thumbnail import *

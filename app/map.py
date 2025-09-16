@@ -1,11 +1,9 @@
 import enum
 
-# TODO: Once the datastore has been updated to not load map options
-# for custom sectors. It should be possible to move this class into
-# app\. Ideally it should probably go into gui\map\ but it's needed
-# in app as it's used by app.Config. As part of this change the code
-# that converts these map options to cartographer render options
-# should be moved into gui\map
+class MapRendering(enum.Enum):
+    Tiled = 'Tiled' # Tiles rendered in background (i.e. the same as Traveller Map)
+    Hybrid = 'Hybrid' # Tiles rendered in foreground
+    Full = 'Full' # Entire frame rendered each redraw and no digital zoom between log zoom levels
 
 class MapOption(enum.Enum):
     GalacticDirections = 'Galactic Directions'

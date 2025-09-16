@@ -40,7 +40,7 @@ class _MapOverlay(object):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> bool: # True if anything was draw
         raise RuntimeError(f'{type(self)} is derived from _MapOverlay so must implement draw')
 
@@ -101,7 +101,7 @@ class _JumpRouteOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled() or not self._jumpRoutePath:
             return False
@@ -323,7 +323,7 @@ class _HexHighlightOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled() or not self._styleMap:
             return False
@@ -399,7 +399,7 @@ class _HexBorderOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled():
             return False
@@ -440,7 +440,7 @@ class _EmpressWaveOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled():
             return False
@@ -490,7 +490,7 @@ class _QrekrshaZoneOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled():
             return False
@@ -534,7 +534,7 @@ class _AntaresSupernovaOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled():
             return False
@@ -603,7 +603,7 @@ class _MainsOverlay(_MapOverlay):
     def draw(
             self,
             painter: QtGui.QPainter,
-            currentScale: multiverse.Scale
+            currentScale: gui.MapScale
             ) -> None:
         if not self.isEnabled() or not self._points or not self._pen:
             return False
@@ -732,7 +732,7 @@ class _MoveAnimationEasingCurve(QtCore.QEasingCurve):
 
 class MapWidget(QtWidgets.QWidget):
     centerChanged = QtCore.pyqtSignal(QtCore.QPointF)
-    scaleChanged = QtCore.pyqtSignal(multiverse.Scale)
+    scaleChanged = QtCore.pyqtSignal(gui.MapScale)
     leftClicked = QtCore.pyqtSignal(multiverse.HexPosition)
     rightClicked = QtCore.pyqtSignal(multiverse.HexPosition)
 
@@ -740,7 +740,7 @@ class MapWidget(QtWidgets.QWidget):
     _MaxLogScale = 10
     _DefaultCenterX = 0
     _DefaultCenterY = 0
-    _DefaultLogScale = multiverse.linearScaleToLogScale(64)
+    _DefaultLogScale = gui.linearScaleToLogScale(64)
 
     _WheelZoomDelta = 0.15
     _KeyboardZoomDelta = 0.5
@@ -792,7 +792,7 @@ class MapWidget(QtWidgets.QWidget):
             int,
             multiverse.Universe,
             multiverse.Milieu,
-            multiverse.MapStyle,
+            cartographer.MapStyle,
             int], # MapOptions as an int
         QtGui.QImage](capacity=_TileCacheSize)
 
@@ -818,8 +818,8 @@ class MapWidget(QtWidgets.QWidget):
             self,
             universe: multiverse.Universe,
             milieu: multiverse.Milieu,
-            style: multiverse.MapStyle,
-            options: typing.Collection[multiverse.MapOption],
+            style: cartographer.MapStyle,
+            options: typing.Collection[app.MapOption],
             rendering: app.MapRendering,
             animated: bool,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -844,7 +844,7 @@ class MapWidget(QtWidgets.QWidget):
 
         # NOTE: The view center is in world coordinates
         self._viewCenter = QtCore.QPointF(MapWidget._DefaultCenterX, MapWidget._DefaultCenterY)
-        self._viewScale = multiverse.Scale(log=MapWidget._DefaultLogScale)
+        self._viewScale = gui.MapScale(log=MapWidget._DefaultLogScale)
         self._imageSpaceToWorldSpace = None
         self._imageSpaceToOverlaySpace = None
 
@@ -922,22 +922,22 @@ class MapWidget(QtWidgets.QWidget):
 
         self._empressWaveOverlay = _EmpressWaveOverlay(milieu=self._milieu)
         self._empressWaveOverlay.setEnabled(
-            enabled=multiverse.MapOption.EmpressWaveOverlay in self._options)
+            enabled=app.MapOption.EmpressWaveOverlay in self._options)
         self._overlayMap[self._empressWaveOverlay.handle()] = self._empressWaveOverlay
 
         self._qrekrshaZoneOverlay = _QrekrshaZoneOverlay()
         self._qrekrshaZoneOverlay.setEnabled(
-            enabled=multiverse.MapOption.QrekrshaZoneOverlay in self._options)
+            enabled=app.MapOption.QrekrshaZoneOverlay in self._options)
         self._overlayMap[self._qrekrshaZoneOverlay.handle()] = self._qrekrshaZoneOverlay
 
         self._antaresSupernovaOverlay = _AntaresSupernovaOverlay(milieu=self._milieu)
         self._antaresSupernovaOverlay.setEnabled(
-            enabled=multiverse.MapOption.AntaresSupernovaOverlay in self._options)
+            enabled=app.MapOption.AntaresSupernovaOverlay in self._options)
         self._overlayMap[self._antaresSupernovaOverlay.handle()] = self._antaresSupernovaOverlay
 
         self._mainsOverlay = _MainsOverlay()
         self._mainsOverlay.setEnabled(
-            enabled=multiverse.MapOption.MainsOverlay in self._options)
+            enabled=app.MapOption.MainsOverlay in self._options)
         self._overlayMap[self._mainsOverlay.handle()] = self._mainsOverlay
 
         # NOTE: It looks like Qt has a hard limitation fo 10 easing curve
@@ -1009,10 +1009,10 @@ class MapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def mapStyle(self) -> multiverse.MapStyle:
+    def mapStyle(self) -> cartographer.MapStyle:
         return self._style
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._style:
             return
 
@@ -1021,10 +1021,10 @@ class MapWidget(QtWidgets.QWidget):
 
         self.update() # Force redraw
 
-    def mapOptions(self) -> typing.List[multiverse.MapOption]:
+    def mapOptions(self) -> typing.List[app.MapOption]:
         return list(self._options)
 
-    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1033,34 +1033,34 @@ class MapWidget(QtWidgets.QWidget):
         self._renderer = self._newRenderer()
 
         self._empressWaveOverlay.setEnabled(
-            enabled=multiverse.MapOption.EmpressWaveOverlay in self._options)
+            enabled=app.MapOption.EmpressWaveOverlay in self._options)
         self._qrekrshaZoneOverlay.setEnabled(
-            enabled=multiverse.MapOption.QrekrshaZoneOverlay in self._options)
+            enabled=app.MapOption.QrekrshaZoneOverlay in self._options)
         self._antaresSupernovaOverlay.setEnabled(
-            enabled=multiverse.MapOption.AntaresSupernovaOverlay in self._options)
+            enabled=app.MapOption.AntaresSupernovaOverlay in self._options)
         self._mainsOverlay.setEnabled(
-            enabled=multiverse.MapOption.MainsOverlay in self._options)
+            enabled=app.MapOption.MainsOverlay in self._options)
 
         self.update() # Force redraw
 
     def modifyMapOptions(
             self,
             add: typing.Optional[typing.Union[
-                multiverse.MapOption,
-                typing.Collection[multiverse.MapOption]]] = None,
+                app.MapOption,
+                typing.Collection[app.MapOption]]] = None,
             remove: typing.Optional[typing.Union[
-                multiverse.MapOption,
-                typing.Collection[multiverse.MapOption]]] = None
+                app.MapOption,
+                typing.Collection[app.MapOption]]] = None
             ) -> None:
         options = set(self._options)
 
-        if isinstance(add, multiverse.MapOption):
+        if isinstance(add, app.MapOption):
             options.add(add)
         elif add is not None:
             for option in add:
                 options.add(option)
 
-        if isinstance(remove, multiverse.MapOption):
+        if isinstance(remove, app.MapOption):
             if remove in options:
                 options.remove(remove)
         elif remove is not None:
@@ -1105,13 +1105,13 @@ class MapWidget(QtWidgets.QWidget):
     def setView(
             self,
             center: typing.Optional[QtCore.QPointF] = None, # Center in World coordinates
-            scale: typing.Optional[multiverse.Scale] = None,
+            scale: typing.Optional[gui.MapScale] = None,
             immediate: bool = False
             ) -> None:
         center = self._viewCenter if center is None else QtCore.QPointF(center)
         center = self._clampCenter(center=center)
 
-        scale = self._viewScale if scale is None else multiverse.Scale(scale)
+        scale = self._viewScale if scale is None else gui.MapScale(scale)
         scale = self._clampScale(scale=scale)
 
         self._stopMoveAnimation()
@@ -1141,12 +1141,12 @@ class MapWidget(QtWidgets.QWidget):
             ) -> None:
         self.setView(center=center, immediate=immediate)
 
-    def viewScale(self) -> multiverse.Scale:
-        return multiverse.Scale(self._viewScale)
+    def viewScale(self) -> gui.MapScale:
+        return gui.MapScale(self._viewScale)
 
     def setViewScale(
             self,
-            scale: multiverse.Scale,
+            scale: gui.MapScale,
             immediate: bool = False
             ) -> None:
         self.setView(scale=scale, immediate=immediate)
@@ -1182,22 +1182,22 @@ class MapWidget(QtWidgets.QWidget):
             self._lowerRightViewLimit = None
 
     def viewScaleLimits(self) -> typing.Tuple[
-            typing.Optional[multiverse.Scale], # Min Scale
-            typing.Optional[multiverse.Scale]]: # Max Scale
+            typing.Optional[gui.MapScale], # Min Scale
+            typing.Optional[gui.MapScale]]: # Max Scale
         return (
-            multiverse.Scale(self._minViewScale) if self._minViewScale else None,
-            multiverse.Scale(self._maxViewScale) if self._maxViewScale else None)
+            gui.MapScale(self._minViewScale) if self._minViewScale else None,
+            gui.MapScale(self._maxViewScale) if self._maxViewScale else None)
 
     def setViewScaleLimits(
             self,
-            minScale: typing.Optional[multiverse.Scale],
-            maxScale: typing.Optional[multiverse.Scale]
+            minScale: typing.Optional[gui.MapScale],
+            maxScale: typing.Optional[gui.MapScale]
             ) -> None:
         if minScale and maxScale and maxScale < minScale:
             minScale, maxScale = maxScale, minScale
 
-        self._minViewScale = multiverse.Scale(minScale)
-        self._maxViewScale = multiverse.Scale(maxScale)
+        self._minViewScale = gui.MapScale(minScale)
+        self._maxViewScale = gui.MapScale(maxScale)
 
         self._updateView()
 
@@ -1224,7 +1224,7 @@ class MapWidget(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: multiverse.HexPosition,
-            scale: typing.Optional[multiverse.Scale] = multiverse.Scale(linear=64), # None keeps current scale
+            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
         self.setView(
@@ -1261,14 +1261,14 @@ class MapWidget(QtWidgets.QWidget):
             top + (height / 2))
         logScale = common.clamp(
             value=min(
-                multiverse.linearScaleToLogScale(self.width() / width),
-                multiverse.linearScaleToLogScale(self.height() / height)),
+                gui.linearScaleToLogScale(self.width() / width),
+                gui.linearScaleToLogScale(self.height() / height)),
             minValue=MapWidget._MinLogScale,
             maxValue=MapWidget._MaxLogScale)
 
         self.setView(
             center=center,
-            scale=multiverse.Scale(log=logScale),
+            scale=gui.MapScale(log=logScale),
             immediate=immediate)
 
     def hasJumpRoute(self) -> bool:
@@ -1425,7 +1425,7 @@ class MapWidget(QtWidgets.QWidget):
             return False
 
         center = QtCore.QPointF(stream.readFloat(), stream.readFloat())
-        scale = multiverse.Scale(log=stream.readFloat())
+        scale = gui.MapScale(log=stream.readFloat())
         self._updateView(center=center, scale=scale)
         return True
 
@@ -1635,7 +1635,7 @@ class MapWidget(QtWidgets.QWidget):
                 center.setY(self._lowerRightViewLimit.y())
         return center
 
-    def _clampScale(self, scale: multiverse.Scale) -> multiverse.Scale:
+    def _clampScale(self, scale: gui.MapScale) -> gui.MapScale:
         if self._minViewScale and scale < self._minViewScale:
             scale = self._minViewScale
         if self._maxViewScale and scale > self._maxViewScale:
@@ -1768,7 +1768,7 @@ class MapWidget(QtWidgets.QWidget):
 
         self._scalePen.setColor(QtGui.QColor(
             common.HtmlColours.White
-            if multiverse.isDarkStyle(self._renderer.style()) else
+            if gui.isDarkMapStyle(self._renderer.style()) else
             common.HtmlColours.Black))
 
         with gui.PainterStateGuard(painter):
@@ -1801,7 +1801,7 @@ class MapWidget(QtWidgets.QWidget):
             self,
             painter: QtGui.QPainter
             ) -> None:
-        if not self._directionTextFont or multiverse.MapOption.GalacticDirections not in self._options:
+        if not self._directionTextFont or app.MapOption.GalacticDirections not in self._options:
             return
 
         viewWidth = self.width()
@@ -1848,7 +1848,7 @@ class MapWidget(QtWidgets.QWidget):
             hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         if hex and self.isEnabled():
-            if multiverse.MapOption.MainsOverlay in self._options:
+            if app.MapOption.MainsOverlay in self._options:
                 main = self._universe.mainByPosition(
                     milieu=self._milieu,
                     hex=hex)
@@ -1926,7 +1926,7 @@ class MapWidget(QtWidgets.QWidget):
             outputPixelY=self.height(),
             milieu=self._milieu,
             style=self._style,
-            options=cartographer.mapOptionsToRenderOptions(self._options),
+            options=gui.mapOptionsToRenderOptions(self._options),
             imageStore=self._imageStore,
             styleStore=self._styleStore,
             vectorStore=self._vectorStore,
@@ -1935,7 +1935,7 @@ class MapWidget(QtWidgets.QWidget):
     def _updateView(
             self,
             center: typing.Optional[QtCore.QPointF] = None,
-            scale: typing.Optional[multiverse.Scale] = None,
+            scale: typing.Optional[gui.MapScale] = None,
             forceAtomicRedraw: bool = False
             ) -> None:
         center = self._clampCenter(center=self._viewCenter if center is None else center)
@@ -1979,7 +1979,7 @@ class MapWidget(QtWidgets.QWidget):
             self.centerChanged.emit(QtCore.QPointF(self._viewCenter))
 
         if scaleChanged:
-            self.scaleChanged.emit(multiverse.Scale(self._viewScale))
+            self.scaleChanged.emit(gui.MapScale(self._viewScale))
 
     def _zoomView(
             self,
@@ -1994,7 +1994,7 @@ class MapWidget(QtWidgets.QWidget):
         logViewScale = common.clamp(logViewScale, MapWidget._MinLogScale, MapWidget._MaxLogScale)
         if logViewScale == self._viewScale.log:
             return # Reached min/max zoom
-        newViewScale = multiverse.Scale(log=logViewScale)
+        newViewScale = gui.MapScale(log=logViewScale)
 
         newViewCenter = None
         if cursor:
@@ -2373,7 +2373,7 @@ class MapWidget(QtWidgets.QWidget):
             tileScale: int, # Log scale rounded down
             image: typing.Optional[QtGui.QImage]
             ) -> QtGui.QImage:
-        tileScale = multiverse.logScaleToLinearScale(tileScale)
+        tileScale = gui.logScaleToLinearScale(tileScale)
         scaleX = (tileScale * multiverse.ParsecScaleX)
         scaleY = (tileScale * multiverse.ParsecScaleY)
         worldTileWidth = MapWidget._TileSize / scaleX
@@ -2459,7 +2459,7 @@ class MapWidget(QtWidgets.QWidget):
     def _shouldAnimateViewTransition(
             self,
             newViewCenter: QtCore.QPointF,
-            newViewScale: multiverse.Scale
+            newViewScale: gui.MapScale
             ) -> bool:
         if self.isHidden() or not self._animated:
             return False
@@ -2477,7 +2477,7 @@ class MapWidget(QtWidgets.QWidget):
     def _startMoveAnimation(
             self,
             newViewCenter: QtCore.QPointF,
-            newViewScale: multiverse.Scale
+            newViewScale: gui.MapScale
             ) -> None:
         self._stopMoveAnimation()
 
@@ -2544,7 +2544,7 @@ class MapWidget(QtWidgets.QWidget):
         return self._viewScale.log
 
     def _animateViewScaleSetter(self, logScale: float) -> None:
-        newViewScale = multiverse.Scale(log=logScale)
+        newViewScale = gui.MapScale(log=logScale)
         self._updateView(scale=newViewScale)
 
     def _stopMoveAnimation(self):

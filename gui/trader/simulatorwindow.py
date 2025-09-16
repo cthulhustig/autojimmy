@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import gui
 import jobs
@@ -6,7 +7,6 @@ import logging
 import logic
 import math
 import random
-import traveller
 import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -673,7 +673,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -681,7 +681,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[multiverse.MapOption]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

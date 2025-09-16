@@ -1,4 +1,5 @@
 import app
+import cartographer
 import gui
 import logic
 import multiverse
@@ -11,8 +12,8 @@ class HexTooltipProvider(object):
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
             showImages: bool,
-            mapStyle: multiverse.MapStyle,
-            mapOptions: typing.Collection[multiverse.MapOption],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Collection[app.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None
             ) -> None:
@@ -44,16 +45,16 @@ class HexTooltipProvider(object):
     def setShowImages(self, show: bool) -> None:
         self._showImages = show
 
-    def mapStyle(self) -> multiverse.MapStyle:
+    def mapStyle(self) -> cartographer.MapStyle:
         return self._mapStyle
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         self._mapStyle = style
 
-    def mapOptions(self) -> typing.Iterable[multiverse.MapOption]:
+    def mapOptions(self) -> typing.Iterable[app.MapOption]:
         return list(self._mapOptions)
 
-    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         self._mapOptions = set(options)
 
     def worldTagging(self) -> typing.Optional[logic.WorldTagging]:

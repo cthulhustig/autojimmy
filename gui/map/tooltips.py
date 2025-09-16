@@ -1,4 +1,5 @@
 import app
+import cartographer
 import base64
 import common
 import gui
@@ -18,8 +19,8 @@ def createHexToolTip(
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None,
         includeHexImage: bool = True,
-        hexImageStyle: typing.Optional[multiverse.MapStyle] = None,
-        hexImageOptions: typing.Optional[typing.Collection[multiverse.MapOption]] = None
+        hexImageStyle: typing.Optional[cartographer.MapStyle] = None,
+        hexImageOptions: typing.Optional[typing.Collection[app.MapOption]] = None
         ) -> str:
     world = universe.worldByPosition(
         milieu=milieu,

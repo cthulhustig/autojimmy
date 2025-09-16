@@ -1,4 +1,5 @@
 import app
+import cartographer
 import gui
 import logging
 import logic
@@ -12,8 +13,8 @@ class HexRadiusSelectDialog(gui.DialogEx):
             self,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: multiverse.MapStyle,
-            mapOptions: typing.Iterable[multiverse.MapOption],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: logic.WorldTagging,
@@ -177,7 +178,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
     def _mapStyleChanged(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -185,7 +186,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[multiverse.MapOption]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

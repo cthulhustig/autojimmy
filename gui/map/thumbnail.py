@@ -1,5 +1,6 @@
-import gui
+import app
 import cartographer
+import gui
 import multiverse
 import typing
 from PyQt5 import QtCore, QtGui
@@ -36,8 +37,8 @@ def generateThumbnail(
         width: int,
         height: int,
         linearScale: float,
-        style: multiverse.MapStyle,
-        options: typing.Collection[multiverse.MapOption]
+        style: cartographer.MapStyle,
+        options: typing.Collection[app.MapOption]
         ) -> typing.Optional[bytes]:
     _initThumbnailRenderer()
 
@@ -52,7 +53,7 @@ def generateThumbnail(
         outputPixelY=height,
         milieu=milieu,
         style=style,
-        options=cartographer.mapOptionsToRenderOptions(options),
+        options=gui.mapOptionsToRenderOptions(options),
         imageStore=_thumbnailImageCache,
         styleStore=_thumbnailStyleCache,
         vectorStore=_thumbnailVectorCache,

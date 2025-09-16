@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import darkdetect
 import enum
@@ -20,11 +21,6 @@ class ColourTheme(enum.Enum):
     DarkMode = 'Dark Mode'
     LightMode = 'Light Mode'
     UseOSSetting = 'Use OS Setting'
-
-class MapRendering(enum.Enum):
-    Tiled = 'Tiled' # Tiles rendered in background (i.e. the same as Traveller Map)
-    Hybrid = 'Hybrid' # Tiles rendered in foreground
-    Full = 'Full' # Entire frame rendered each redraw and no digital zoom between log zoom levels
 
 class ConfigOption(enum.Enum):
     # Debug
@@ -391,28 +387,28 @@ class ColourConfigItem(StringConfigItem):
 
 class MapOptionsConfigItem(ConfigItem):
     _MapOptionToSettingsKey = {
-        multiverse.MapOption.GalacticDirections: '/GalacticDirections',
-        multiverse.MapOption.SectorGrid: '/SectorGrid',
-        multiverse.MapOption.SelectedSectorNames: '/SelectedSectorNames',
-        multiverse.MapOption.AllSectorNames: '/AllSectorNames',
-        multiverse.MapOption.Borders: '/Borders',
-        multiverse.MapOption.Routes: '/Routes',
-        multiverse.MapOption.RegionNames: '/RegionNames',
-        multiverse.MapOption.ImportantWorlds: '/ImportantWorlds',
-        multiverse.MapOption.WorldColours: '/WorldColours',
-        multiverse.MapOption.FilledBorders: '/FilledBorders',
-        multiverse.MapOption.DimUnofficial: '/DimUnofficial',
-        multiverse.MapOption.ImportanceOverlay: '/ImportanceOverlay',
-        multiverse.MapOption.PopulationOverlay: '/PopulationOverlay',
-        multiverse.MapOption.CapitalsOverlay: '/CapitalsOverlay',
-        multiverse.MapOption.MinorRaceOverlay: '/MinorRaceOverlay',
-        multiverse.MapOption.DroyneWorldOverlay: '/DroyneWorldOverlay',
-        multiverse.MapOption.AncientSitesOverlay: '/AncientSitesOverlay',
-        multiverse.MapOption.StellarOverlay: '/StellarOverlay',
-        multiverse.MapOption.EmpressWaveOverlay: '/EmpressWaveOverlay',
-        multiverse.MapOption.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
-        multiverse.MapOption.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
-        multiverse.MapOption.MainsOverlay: '/MainsOverlay'
+        app.MapOption.GalacticDirections: '/GalacticDirections',
+        app.MapOption.SectorGrid: '/SectorGrid',
+        app.MapOption.SelectedSectorNames: '/SelectedSectorNames',
+        app.MapOption.AllSectorNames: '/AllSectorNames',
+        app.MapOption.Borders: '/Borders',
+        app.MapOption.Routes: '/Routes',
+        app.MapOption.RegionNames: '/RegionNames',
+        app.MapOption.ImportantWorlds: '/ImportantWorlds',
+        app.MapOption.WorldColours: '/WorldColours',
+        app.MapOption.FilledBorders: '/FilledBorders',
+        app.MapOption.DimUnofficial: '/DimUnofficial',
+        app.MapOption.ImportanceOverlay: '/ImportanceOverlay',
+        app.MapOption.PopulationOverlay: '/PopulationOverlay',
+        app.MapOption.CapitalsOverlay: '/CapitalsOverlay',
+        app.MapOption.MinorRaceOverlay: '/MinorRaceOverlay',
+        app.MapOption.DroyneWorldOverlay: '/DroyneWorldOverlay',
+        app.MapOption.AncientSitesOverlay: '/AncientSitesOverlay',
+        app.MapOption.StellarOverlay: '/StellarOverlay',
+        app.MapOption.EmpressWaveOverlay: '/EmpressWaveOverlay',
+        app.MapOption.QrekrshaZoneOverlay: '/QrekrshaZoneOverlay',
+        app.MapOption.AntaresSupernovaOverlay: '/AntaresSupernovaOverlay',
+        app.MapOption.MainsOverlay: '/MainsOverlay'
     }
 
     def __init__(
@@ -420,17 +416,17 @@ class MapOptionsConfigItem(ConfigItem):
             option: ConfigOption,
             section: str,
             restart: bool,
-            default: typing.Iterable[multiverse.MapOption] = None
+            default: typing.Iterable[app.MapOption] = None
             ) -> None:
         super().__init__(option=option, restart=restart)
         self._section = section
         self._default = set(default) if default else set()
         self._currentValue = self._futureValue = self._default
 
-    def value(self, futureValue: bool = False) -> typing.Iterable[multiverse.MapOption]:
+    def value(self, futureValue: bool = False) -> typing.Iterable[app.MapOption]:
         return list(self._futureValue if futureValue else self._currentValue)
 
-    def setValue(self, value: typing.Iterable[multiverse.MapOption]) -> None:
+    def setValue(self, value: typing.Iterable[app.MapOption]) -> None:
         if value == self._futureValue:
             return
 
@@ -1078,28 +1074,28 @@ class Config(QtCore.QObject):
             option=ConfigOption.MapStyle,
             key='TravellerMap/MapStyle',
             restart=False,
-            enumType=multiverse.MapStyle,
-            default=multiverse.MapStyle.Poster))
+            enumType=cartographer.MapStyle,
+            default=cartographer.MapStyle.Poster))
         self._addConfigItem(MapOptionsConfigItem(
             option=ConfigOption.MapOptions,
             section='TravellerMap',
             restart=False,
             default=[
-                multiverse.MapOption.GalacticDirections,
-                multiverse.MapOption.SectorGrid,
-                multiverse.MapOption.SelectedSectorNames,
-                multiverse.MapOption.Borders,
-                multiverse.MapOption.Routes,
-                multiverse.MapOption.RegionNames,
-                multiverse.MapOption.ImportantWorlds,
-                multiverse.MapOption.FilledBorders]))
+                app.MapOption.GalacticDirections,
+                app.MapOption.SectorGrid,
+                app.MapOption.SelectedSectorNames,
+                app.MapOption.Borders,
+                app.MapOption.Routes,
+                app.MapOption.RegionNames,
+                app.MapOption.ImportantWorlds,
+                app.MapOption.FilledBorders]))
 
         self._addConfigItem(EnumConfigItem(
             option=ConfigOption.MapRendering,
             key='TravellerMap/MapRenderingType',
             restart=False,
-            enumType=MapRendering,
-            default=MapRendering.Tiled))
+            enumType=app.MapRendering,
+            default=app.MapRendering.Tiled))
         self._addConfigItem(BoolConfigItem(
             option=ConfigOption.MapAnimations,
             key='TravellerMap/MapAnimations',
@@ -1377,11 +1373,11 @@ class Config(QtCore.QObject):
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.Milieu], futureValue: bool = False) -> multiverse.Milieu: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> multiverse.MapStyle: ...
+    def value(self, option: typing.Literal[ConfigOption.MapStyle], futureValue: bool = False) -> cartographer.MapStyle: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[multiverse.MapOption]: ...
+    def value(self, option: typing.Literal[ConfigOption.MapOptions], futureValue: bool = False) -> typing.Collection[app.MapOption]: ...
     @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.MapRendering], futureValue: bool = False) -> MapRendering: ...
+    def value(self, option: typing.Literal[ConfigOption.MapRendering], futureValue: bool = False) -> app.MapRendering: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.MapAnimations], futureValue: bool = False) -> bool: ...
     @typing.overload

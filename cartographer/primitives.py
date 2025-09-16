@@ -1,6 +1,15 @@
 import enum
-import multiverse
 import typing
+
+class MapStyle(enum.Enum):
+    Poster = 'Poster'
+    Print = 'Print'
+    Mongoose = 'Mongoose'
+    Candy = 'Eye Candy'
+    Draft = 'Draft'
+    Fasa = 'FASA'
+    Atlas = 'Atlas'
+    Terminal = 'Terminal'
 
 class TextAlignment(enum.Enum):
     Baseline = 0

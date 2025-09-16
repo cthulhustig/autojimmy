@@ -1,4 +1,5 @@
 import app
+import cartographer
 import gui
 import logic
 import multiverse
@@ -44,7 +45,7 @@ class MapWindow(gui.WindowWidget):
     def centerOnHex(
             self,
             hex: multiverse.HexPosition,
-            scale: typing.Optional[multiverse.Scale] = multiverse.Scale(linear=64), # None keeps current scale
+            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
@@ -148,7 +149,7 @@ class MapWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -156,7 +157,7 @@ class MapWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[multiverse.MapOption]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

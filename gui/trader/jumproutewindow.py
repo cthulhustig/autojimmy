@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import enum
 import gui
@@ -271,8 +272,8 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
             self,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: multiverse.MapStyle,
-            mapOptions: typing.Iterable[multiverse.MapOption],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -324,11 +325,11 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         self._startWidget.setRules(rules=rules)
         self._finishWidget.setRules(rules=rules)
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         self._startWidget.setMapStyle(style=style)
         self._finishWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Iterable[app.MapOption]) -> None:
         self._startWidget.setMapOptions(options=options)
         self._finishWidget.setMapOptions(options=options)
 
@@ -1555,7 +1556,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -1563,7 +1564,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[multiverse.MapOption]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -2326,7 +2327,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if startHex and showJumpRatingOverlay:
             mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
-            isDarkMapStyle = multiverse.isDarkStyle(style=mapStyle)
+            isDarkMapStyle = gui.isDarkMapStyle(style=mapStyle)
             colour = self._JumpRatingOverlayDarkStyleColour \
                 if isDarkMapStyle else \
                 self._JumpRatingOverlayLightStyleColour

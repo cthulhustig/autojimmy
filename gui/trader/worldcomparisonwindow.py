@@ -1,4 +1,5 @@
 import app
+import cartographer
 import gui
 import logic
 import logging
@@ -368,7 +369,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -376,7 +377,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[multiverse.MapOption]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

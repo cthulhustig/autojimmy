@@ -1,4 +1,5 @@
 import app
+import cartographer
 import gui
 import logic
 import multiverse
@@ -11,8 +12,8 @@ class _CustomTextEdit(gui.TextEditEx):
             self,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: multiverse.MapStyle,
-            mapOptions: typing.Collection[multiverse.MapOption],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Collection[app.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -50,14 +51,14 @@ class _CustomTextEdit(gui.TextEditEx):
         self._rules = traveller.Rules(rules)
         self._updateContent()
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._mapStyle:
             return
 
         self._mapStyle = style
         self._updateContent()
 
-    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return

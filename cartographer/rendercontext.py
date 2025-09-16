@@ -69,7 +69,7 @@ class RenderContext(object):
             outputPixelX: int,
             outputPixelY: int,
             milieu: multiverse.Milieu,
-            style: multiverse.MapStyle,
+            style: cartographer.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
             styleStore: cartographer.StyleStore,
@@ -184,12 +184,12 @@ class RenderContext(object):
         self._worldCache.setMilieu(milieu=self._milieu)
         self._selector.setMilieu(milieu=self._milieu)
 
-    def style(self) -> multiverse.MapStyle:
+    def style(self) -> cartographer.MapStyle:
         return self._styleSheet.style
 
     def setStyle(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         self._styleSheet.style = style
         self._updateLayerOrder()

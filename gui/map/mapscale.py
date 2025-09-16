@@ -7,13 +7,13 @@ def linearScaleToLogScale(linearScale: float) -> float:
 def logScaleToLinearScale(logScale: float) -> float:
     return math.pow(2, logScale - 1)
 
-class Scale(object):
+class MapScale(object):
     @typing.overload
     def __init__(self, linear: 'float') -> None: ...
     @typing.overload
     def __init__(self, log: 'float') -> None: ...
     @typing.overload
-    def __init__(self, other: 'Scale') -> None: ...
+    def __init__(self, other: 'MapScale') -> None: ...
 
     def __init__(self, *args, **kwargs) -> None:
         argCount = len(args) + len(kwargs)
@@ -26,8 +26,8 @@ class Scale(object):
             other = kwargs.get('other')
 
         if other is not None:
-            if not isinstance(other, Scale):
-                raise TypeError('The other parameter must be a Scale')
+            if not isinstance(other, MapScale):
+                raise TypeError('The other parameter must be a MapScale')
             self._linear = other._linear
             self._log = other._log
         else:
@@ -68,31 +68,31 @@ class Scale(object):
             self._linear = None
 
     def __eq__(self, other) -> bool:
-        if isinstance(other, Scale):
+        if isinstance(other, MapScale):
             return self.log == other.log
         return NotImplemented
 
     def __lt__(self, other) -> bool:
-        if isinstance(other, Scale):
+        if isinstance(other, MapScale):
             return self.log < other.log
         return NotImplemented
 
     def __gt__(self, other) -> bool:
-        if isinstance(other, Scale):
+        if isinstance(other, MapScale):
             return self.log > other.log
         return NotImplemented
 
     def __le__(self, other) -> bool:
-        if isinstance(other, Scale):
+        if isinstance(other, MapScale):
             return self.log <= other.log
         return NotImplemented
 
     def __ge__(self, other) -> bool:
-        if isinstance(other, Scale):
+        if isinstance(other, MapScale):
             return self.log >= other.log
         return NotImplemented
 
     def __ne__(self, other) -> bool:
-        if isinstance(other, Scale):
+        if isinstance(other, MapScale):
             return self.log != other.log
         return NotImplemented

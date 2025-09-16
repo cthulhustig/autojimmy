@@ -1,4 +1,5 @@
 import app
+import cartographer
 import enum
 import gui
 import logging
@@ -23,8 +24,8 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: multiverse.MapStyle,
-            mapOptions: typing.Iterable[multiverse.MapOption],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -193,18 +194,18 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._hexTable.setRules(rules=self._rules)
 
-    def mapStyle(self) -> multiverse.MapStyle:
+    def mapStyle(self) -> cartographer.MapStyle:
         return self._mapStyle
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style == self._mapStyle:
             return
         self._mapStyle = style
 
-    def mapOptions(self) -> typing.Iterable[multiverse.MapOption]:
+    def mapOptions(self) -> typing.Iterable[app.MapOption]:
         return list(self._mapStyle)
 
-    def setMapOptions(self, options: typing.Iterable[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Iterable[app.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return

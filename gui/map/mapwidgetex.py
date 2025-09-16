@@ -1,4 +1,5 @@
 import app
+import cartographer
 import base64
 import enum
 import functools
@@ -106,16 +107,16 @@ class _EnumSelectActionGroup(QtWidgets.QActionGroup):
 class _MapStyleActionGroup(_EnumSelectActionGroup):
     def __init__(self, current, parent = None):
         super().__init__(
-            enumType=multiverse.MapStyle,
+            enumType=cartographer.MapStyle,
             current=current,
             parent=parent)
 
 class _MapOptionAction(QtWidgets.QAction):
-    optionChanged = QtCore.pyqtSignal([multiverse.MapOption, bool])
+    optionChanged = QtCore.pyqtSignal([app.MapOption, bool])
 
     def __init__(
             self,
-            option: multiverse.MapOption,
+            option: app.MapOption,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(option.value, parent)
@@ -137,12 +138,12 @@ class _MapOptionAction(QtWidgets.QAction):
         self.optionChanged.emit(self._option, checked)
 
 class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
-    optionChanged = QtCore.pyqtSignal([multiverse.MapOption, bool])
+    optionChanged = QtCore.pyqtSignal([app.MapOption, bool])
 
     def __init__(
             self,
-            options: typing.Iterable[multiverse.MapOption],
-            current: multiverse.MapOption,
+            options: typing.Iterable[app.MapOption],
+            current: app.MapOption,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -157,7 +158,7 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.setExclusionPolicy(
                 QtWidgets.QActionGroup.ExclusionPolicy.ExclusiveOptional)
 
-        self._optionActions: typing.Dict[multiverse.MapOption, _MapOptionAction] = {}
+        self._optionActions: typing.Dict[app.MapOption, _MapOptionAction] = {}
         for option in options:
             action = _MapOptionAction(option=option)
             action.setChecked(option is current)
@@ -165,13 +166,13 @@ class _ExclusiveMapOptionsActionGroup(QtWidgets.QActionGroup):
             self.addAction(action)
             self._optionActions[option] = action
 
-    def setSelection(self, option: typing.Optional[multiverse.MapOption]) -> None:
+    def setSelection(self, option: typing.Optional[app.MapOption]) -> None:
         for actionOption, action in self._optionActions.items():
             action.setChecked(option is actionOption)
 
     def _optionChanged(
             self,
-            option: multiverse.MapOption,
+            option: app.MapOption,
             checked: bool
             ) -> None:
         self.optionChanged.emit(option, checked)
@@ -529,8 +530,8 @@ class _InfoWidget(QtWidgets.QWidget):
 class _LegendWidget(QtWidgets.QWidget):
     def __init__(
             self,
-            style: multiverse.MapStyle,
-            options: typing.Collection[multiverse.MapOption],
+            style: cartographer.MapStyle,
+            options: typing.Collection[app.MapOption],
             parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -564,13 +565,13 @@ class _LegendWidget(QtWidgets.QWidget):
         self.syncContent()
         self.adjustSize()
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._style:
             return
         self._style = style
         self.syncContent()
 
-    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -605,12 +606,12 @@ class _LegendWidget(QtWidgets.QWidget):
 
         worldGlyphSize = int(12 * gui.interfaceScale())
 
-        if self._style is multiverse.MapStyle.Print:
+        if self._style is cartographer.MapStyle.Print:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
             noWaterFillColour = '#FFFFFF'
             noWaterOutlineColour = '#6F6F6F'
-        elif self._style is multiverse.MapStyle.Draft:
+        elif self._style is cartographer.MapStyle.Draft:
             textStyle = 'color: #B0000000;' # Note that this is alpha blended
             backgroundStyle = 'background-color: #FAEBD7;'
             highlightColour = '#B0FF0000' # Note that this is alpha blended
@@ -622,7 +623,7 @@ class _LegendWidget(QtWidgets.QWidget):
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; text-decoration: underline;'
             capitalStyle = 'text-transform: uppercase;'
-        elif self._style is multiverse.MapStyle.Atlas:
+        elif self._style is cartographer.MapStyle.Atlas:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
             highlightColour = '#808080'
@@ -631,7 +632,7 @@ class _LegendWidget(QtWidgets.QWidget):
             noWaterOutlineColour = '#000000'
             amberZoneColour = '#C0C0C0'
             redZoneColour = '#000000'
-        elif self._style is multiverse.MapStyle.Mongoose:
+        elif self._style is cartographer.MapStyle.Mongoose:
             textStyle = 'color: #000000;'
             backgroundStyle = 'background-color: #E6E7E8;'
             hasWaterFillColour = '#0000CD'
@@ -641,20 +642,20 @@ class _LegendWidget(QtWidgets.QWidget):
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; font-weight: bold;'
             capitalStyle = 'text-transform: uppercase;'
-        elif self._style is multiverse.MapStyle.Fasa:
+        elif self._style is cartographer.MapStyle.Fasa:
             textStyle = 'color: #5C4033;'
             backgroundStyle = 'background-color: #FFFFFF;'
             amberZoneColour = '#5C4033'
             redZoneColour = '#805C4033' # Note that this is alpha blended
-        elif self._style is multiverse.MapStyle.Terminal:
+        elif self._style is cartographer.MapStyle.Terminal:
             textStyle = 'color: #00FFFF; font-family: "Courier New", "Courier", monospace;'
             hasWaterFillColour = '#000000'
             hasWaterOutlineColour = '#00FFFF'
             noWaterFillColour = '#00FFFF'
 
         characteristicItems = []
-        if multiverse.MapOption.WorldColours in self._options and \
-                self._style is not multiverse.MapStyle.Atlas:
+        if app.MapOption.WorldColours in self._options and \
+                self._style is not cartographer.MapStyle.Atlas:
             characteristicItems.extend([
                 ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
                 ('Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#6AA84F'), ''),
@@ -690,7 +691,7 @@ class _LegendWidget(QtWidgets.QWidget):
         ]
 
         zoneItems = []
-        if self._style is multiverse.MapStyle.Mongoose:
+        if self._style is cartographer.MapStyle.Mongoose:
             zoneItems.append(('Green Zone', '&#x25AC;', f'{largeGlyphStyle} color: {greenZoneColour};'))
         zoneItems.extend([
             ('Amber Zone', '&#x25AC;', f'{largeGlyphStyle} color: {amberZoneColour};'),
@@ -716,8 +717,8 @@ class _LegendWidget(QtWidgets.QWidget):
         if imageData:
             legendContent += f'<center><img src=data:image/png;base64,{imageData}></center>'
 
-        if self._style is not multiverse.MapStyle.Candy and \
-                self._style is not multiverse.MapStyle.Fasa:
+        if self._style is not cartographer.MapStyle.Candy and \
+                self._style is not cartographer.MapStyle.Fasa:
             legendContent += self._createLegendSection(
                 title='World Characteristics',
                 items=characteristicItems)
@@ -728,7 +729,7 @@ class _LegendWidget(QtWidgets.QWidget):
             title='Travel Zones',
             items=zoneItems)
 
-        if self._style is not multiverse.MapStyle.Fasa:
+        if self._style is not cartographer.MapStyle.Fasa:
             legendContent += self._createLegendSection(
                 title='Population',
                 items=populationItems)
@@ -941,7 +942,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     leftClicked = QtCore.pyqtSignal([multiverse.HexPosition])
     rightClicked = QtCore.pyqtSignal([multiverse.HexPosition])
 
-    mapStyleChanged = QtCore.pyqtSignal([multiverse.MapStyle])
+    mapStyleChanged = QtCore.pyqtSignal([cartographer.MapStyle])
     mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of multiverse.Options
     mapRenderingChanged = QtCore.pyqtSignal([app.MapRendering])
     mapAnimationChanged = QtCore.pyqtSignal([bool])
@@ -978,8 +979,8 @@ class MapWidgetEx(QtWidgets.QWidget):
             universe: multiverse.Universe,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            style: multiverse.MapStyle,
-            options: typing.Collection[multiverse.MapOption],
+            style: cartographer.MapStyle,
+            options: typing.Collection[app.MapOption],
             rendering: app.MapRendering,
             animated: bool,
             worldTagging: logic.WorldTagging,
@@ -1001,7 +1002,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._homeCenter = QtCore.QPointF(
             MapWidgetEx._DefaultHomeWorldX,
             MapWidgetEx._DefaultHomeWorldY)
-        self._homeScale=multiverse.Scale(
+        self._homeScale=gui.MapScale(
                 linear=MapWidgetEx._DefaultHomeLinearScale)
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
@@ -1148,28 +1149,28 @@ class MapWidgetEx(QtWidgets.QWidget):
         featuresConfigLayout = _ConfigSectionLayout()
 
         self._galacticDirectionsAction = _MapOptionAction(
-                option=multiverse.MapOption.GalacticDirections)
+                option=app.MapOption.GalacticDirections)
         self._galacticDirectionsAction.setChecked(
-            multiverse.MapOption.GalacticDirections in self._options)
+            app.MapOption.GalacticDirections in self._options)
         self._galacticDirectionsAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._galacticDirectionsAction)
 
         self._sectorGridAction = _MapOptionAction(
-            option=multiverse.MapOption.SectorGrid)
+            option=app.MapOption.SectorGrid)
         self._sectorGridAction.setChecked(
-            multiverse.MapOption.SectorGrid in self._options)
+            app.MapOption.SectorGrid in self._options)
         self._sectorGridAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._sectorGridAction)
 
         currentNames = None
-        if multiverse.MapOption.SelectedSectorNames in self._options:
-            currentNames = multiverse.MapOption.SelectedSectorNames
-        elif multiverse.MapOption.AllSectorNames in self._options:
-            currentNames = multiverse.MapOption.AllSectorNames
+        if app.MapOption.SelectedSectorNames in self._options:
+            currentNames = app.MapOption.SelectedSectorNames
+        elif app.MapOption.AllSectorNames in self._options:
+            currentNames = app.MapOption.AllSectorNames
         self._sectorNamesActionGroup = _ExclusiveMapOptionsActionGroup(
             options=[
-                multiverse.MapOption.SelectedSectorNames,
-                multiverse.MapOption.AllSectorNames],
+                app.MapOption.SelectedSectorNames,
+                app.MapOption.AllSectorNames],
             current=currentNames)
         self._sectorNamesActionGroup.optionChanged.connect(self._mapOptionChanged)
         sectorNamesLayout = _ConfigSectionLayout()
@@ -1180,30 +1181,30 @@ class MapWidgetEx(QtWidgets.QWidget):
             sectorNamesLayout.rowCount(), 0, 1, 2)
 
         self._bordersAction = _MapOptionAction(
-            option=multiverse.MapOption.Borders)
+            option=app.MapOption.Borders)
         self._bordersAction.setChecked(
-            multiverse.MapOption.Borders in self._options)
+            app.MapOption.Borders in self._options)
         self._bordersAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._bordersAction)
 
         self._routesAction = _MapOptionAction(
-            option=multiverse.MapOption.Routes)
+            option=app.MapOption.Routes)
         self._routesAction.setChecked(
-            multiverse.MapOption.Routes in self._options)
+            app.MapOption.Routes in self._options)
         self._routesAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._routesAction)
 
         self._regionNamesAction = _MapOptionAction(
-            option=multiverse.MapOption.RegionNames)
+            option=app.MapOption.RegionNames)
         self._regionNamesAction.setChecked(
-            multiverse.MapOption.RegionNames in self._options)
+            app.MapOption.RegionNames in self._options)
         self._regionNamesAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._regionNamesAction)
 
         self._importantWorldsAction = _MapOptionAction(
-            option=multiverse.MapOption.ImportantWorlds)
+            option=app.MapOption.ImportantWorlds)
         self._importantWorldsAction.setChecked(
-            multiverse.MapOption.ImportantWorlds in self._options)
+            app.MapOption.ImportantWorlds in self._options)
         self._importantWorldsAction.optionChanged.connect(self._mapOptionChanged)
         featuresConfigLayout.addToggleAction(self._importantWorldsAction)
 
@@ -1217,23 +1218,23 @@ class MapWidgetEx(QtWidgets.QWidget):
         appearanceConfigLayout = _ConfigSectionLayout()
 
         self._worldColoursAction = _MapOptionAction(
-            option=multiverse.MapOption.WorldColours)
+            option=app.MapOption.WorldColours)
         self._worldColoursAction.setChecked(
-            multiverse.MapOption.WorldColours in self._options)
+            app.MapOption.WorldColours in self._options)
         self._worldColoursAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._worldColoursAction)
 
         self._filledBordersAction = _MapOptionAction(
-            option=multiverse.MapOption.FilledBorders)
+            option=app.MapOption.FilledBorders)
         self._filledBordersAction.setChecked(
-            multiverse.MapOption.FilledBorders in self._options)
+            app.MapOption.FilledBorders in self._options)
         self._filledBordersAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._filledBordersAction)
 
         self._dimUnofficialAction = _MapOptionAction(
-            option=multiverse.MapOption.DimUnofficial)
+            option=app.MapOption.DimUnofficial)
         self._dimUnofficialAction.setChecked(
-            multiverse.MapOption.DimUnofficial in self._options)
+            app.MapOption.DimUnofficial in self._options)
         self._dimUnofficialAction.optionChanged.connect(self._mapOptionChanged)
         appearanceConfigLayout.addToggleAction(self._dimUnofficialAction)
 
@@ -1247,79 +1248,79 @@ class MapWidgetEx(QtWidgets.QWidget):
         overlayConfigLayout = _ConfigSectionLayout()
 
         self._mainsOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.MainsOverlay)
+            option=app.MapOption.MainsOverlay)
         self._mainsOverlayAction.setChecked(
-            multiverse.MapOption.MainsOverlay in self._options)
+            app.MapOption.MainsOverlay in self._options)
         self._mainsOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._mainsOverlayAction)
 
         self._importanceOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.ImportanceOverlay)
+            option=app.MapOption.ImportanceOverlay)
         self._importanceOverlayAction.setChecked(
-            multiverse.MapOption.ImportanceOverlay in self._options)
+            app.MapOption.ImportanceOverlay in self._options)
         self._importanceOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._importanceOverlayAction)
 
         self._populationOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.PopulationOverlay)
+            option=app.MapOption.PopulationOverlay)
         self._populationOverlayAction.setChecked(
-            multiverse.MapOption.PopulationOverlay in self._options)
+            app.MapOption.PopulationOverlay in self._options)
         self._populationOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._populationOverlayAction)
 
         self._capitalsOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.CapitalsOverlay)
+            option=app.MapOption.CapitalsOverlay)
         self._capitalsOverlayAction.setChecked(
-            multiverse.MapOption.CapitalsOverlay in self._options)
+            app.MapOption.CapitalsOverlay in self._options)
         self._capitalsOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._capitalsOverlayAction)
 
         self._minorRaceOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.MinorRaceOverlay)
+            option=app.MapOption.MinorRaceOverlay)
         self._minorRaceOverlayAction.setChecked(
-            multiverse.MapOption.MinorRaceOverlay in self._options)
+            app.MapOption.MinorRaceOverlay in self._options)
         self._minorRaceOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._minorRaceOverlayAction)
 
         self._droyneWorldOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.DroyneWorldOverlay)
+            option=app.MapOption.DroyneWorldOverlay)
         self._droyneWorldOverlayAction.setChecked(
-            multiverse.MapOption.DroyneWorldOverlay in self._options)
+            app.MapOption.DroyneWorldOverlay in self._options)
         self._droyneWorldOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._droyneWorldOverlayAction)
 
         self._ancientSitesOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.AncientSitesOverlay)
+            option=app.MapOption.AncientSitesOverlay)
         self._ancientSitesOverlayAction.setChecked(
-            multiverse.MapOption.AncientSitesOverlay in self._options)
+            app.MapOption.AncientSitesOverlay in self._options)
         self._ancientSitesOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._ancientSitesOverlayAction)
 
         self._stellarOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.StellarOverlay)
+            option=app.MapOption.StellarOverlay)
         self._stellarOverlayAction.setChecked(
-            multiverse.MapOption.StellarOverlay in self._options)
+            app.MapOption.StellarOverlay in self._options)
         self._stellarOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._stellarOverlayAction)
 
         self._empressWaveOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.EmpressWaveOverlay)
+            option=app.MapOption.EmpressWaveOverlay)
         self._empressWaveOverlayAction.setChecked(
-            multiverse.MapOption.EmpressWaveOverlay in self._options)
+            app.MapOption.EmpressWaveOverlay in self._options)
         self._empressWaveOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._empressWaveOverlayAction)
 
         self._qrekrshaZoneOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.QrekrshaZoneOverlay)
+            option=app.MapOption.QrekrshaZoneOverlay)
         self._qrekrshaZoneOverlayAction.setChecked(
-            multiverse.MapOption.QrekrshaZoneOverlay in self._options)
+            app.MapOption.QrekrshaZoneOverlay in self._options)
         self._qrekrshaZoneOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._qrekrshaZoneOverlayAction)
 
         self._antaresSupernovaOverlayAction = _MapOptionAction(
-            option=multiverse.MapOption.AntaresSupernovaOverlay)
+            option=app.MapOption.AntaresSupernovaOverlay)
         self._antaresSupernovaOverlayAction.setChecked(
-            multiverse.MapOption.AntaresSupernovaOverlay in self._options)
+            app.MapOption.AntaresSupernovaOverlay in self._options)
         self._antaresSupernovaOverlayAction.optionChanged.connect(self._mapOptionChanged)
         overlayConfigLayout.addToggleAction(self._antaresSupernovaOverlayAction)
 
@@ -1374,10 +1375,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._rules = traveller.Rules(rules)
         self._infoWidget.setRules(rules=self._rules)
 
-    def mapStyle(self) -> multiverse.MapStyle:
+    def mapStyle(self) -> cartographer.MapStyle:
         return self._style
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._style:
             return
 
@@ -1388,10 +1389,10 @@ class MapWidgetEx(QtWidgets.QWidget):
 
         self.mapStyleChanged.emit(self._style)
 
-    def mapOptions(self) -> typing.List[multiverse.MapOption]:
+    def mapOptions(self) -> typing.List[app.MapOption]:
         return list(self._options)
 
-    def setMapOptions(self, options: typing.Collection[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options)
         if options == self._options:
             return
@@ -1400,51 +1401,51 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._mapWidget.setMapOptions(options=self._options)
         self._legendWidget.setMapOptions(options=self._options)
         self._galacticDirectionsAction.setChecked(
-            multiverse.MapOption.GalacticDirections in self._options)
+            app.MapOption.GalacticDirections in self._options)
         self._sectorGridAction.setChecked(
-            multiverse.MapOption.SectorGrid in self._options)
-        if multiverse.MapOption.SelectedSectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(multiverse.MapOption.SelectedSectorNames)
-        elif multiverse.MapOption.AllSectorNames in self._options:
-            self._sectorNamesActionGroup.setSelection(multiverse.MapOption.AllSectorNames)
+            app.MapOption.SectorGrid in self._options)
+        if app.MapOption.SelectedSectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(app.MapOption.SelectedSectorNames)
+        elif app.MapOption.AllSectorNames in self._options:
+            self._sectorNamesActionGroup.setSelection(app.MapOption.AllSectorNames)
         else:
             self._sectorNamesActionGroup.setSelection(None)
         self._bordersAction.setChecked(
-            multiverse.MapOption.Borders in self._options)
+            app.MapOption.Borders in self._options)
         self._routesAction.setChecked(
-            multiverse.MapOption.Routes in self._options)
+            app.MapOption.Routes in self._options)
         self._regionNamesAction.setChecked(
-            multiverse.MapOption.RegionNames in self._options)
+            app.MapOption.RegionNames in self._options)
         self._importantWorldsAction.setChecked(
-            multiverse.MapOption.ImportantWorlds in self._options)
+            app.MapOption.ImportantWorlds in self._options)
         self._worldColoursAction.setChecked(
-            multiverse.MapOption.WorldColours in self._options)
+            app.MapOption.WorldColours in self._options)
         self._filledBordersAction.setChecked(
-            multiverse.MapOption.FilledBorders in self._options)
+            app.MapOption.FilledBorders in self._options)
         self._dimUnofficialAction.setChecked(
-            multiverse.MapOption.DimUnofficial in self._options)
+            app.MapOption.DimUnofficial in self._options)
         self._mainsOverlayAction.setChecked(
-            multiverse.MapOption.MainsOverlay in self._options)
+            app.MapOption.MainsOverlay in self._options)
         self._importanceOverlayAction.setChecked(
-            multiverse.MapOption.ImportanceOverlay in self._options)
+            app.MapOption.ImportanceOverlay in self._options)
         self._populationOverlayAction.setChecked(
-            multiverse.MapOption.PopulationOverlay in self._options)
+            app.MapOption.PopulationOverlay in self._options)
         self._capitalsOverlayAction.setChecked(
-            multiverse.MapOption.CapitalsOverlay in self._options)
+            app.MapOption.CapitalsOverlay in self._options)
         self._minorRaceOverlayAction.setChecked(
-            multiverse.MapOption.MinorRaceOverlay in self._options)
+            app.MapOption.MinorRaceOverlay in self._options)
         self._droyneWorldOverlayAction.setChecked(
-            multiverse.MapOption.DroyneWorldOverlay in self._options)
+            app.MapOption.DroyneWorldOverlay in self._options)
         self._ancientSitesOverlayAction.setChecked(
-            multiverse.MapOption.AncientSitesOverlay in self._options)
+            app.MapOption.AncientSitesOverlay in self._options)
         self._stellarOverlayAction.setChecked(
-            multiverse.MapOption.StellarOverlay in self._options)
+            app.MapOption.StellarOverlay in self._options)
         self._empressWaveOverlayAction.setChecked(
-            multiverse.MapOption.EmpressWaveOverlay in self._options)
+            app.MapOption.EmpressWaveOverlay in self._options)
         self._qrekrshaZoneOverlayAction.setChecked(
-            multiverse.MapOption.QrekrshaZoneOverlay in self._options)
+            app.MapOption.QrekrshaZoneOverlay in self._options)
         self._antaresSupernovaOverlayAction.setChecked(
-            multiverse.MapOption.AntaresSupernovaOverlay in self._options)
+            app.MapOption.AntaresSupernovaOverlay in self._options)
 
         self.mapOptionsChanged.emit(self._options)
 
@@ -1503,7 +1504,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     def setView(
             self,
             center: typing.Optional[QtCore.QPointF],
-            scale: typing.Optional[multiverse.Scale],
+            scale: typing.Optional[gui.MapScale],
             immediate: bool = False
             ) -> None:
         self._mapWidget.setView(
@@ -1521,12 +1522,12 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self._mapWidget.setViewCenter(center=center, immediate=immediate)
 
-    def viewScale(self) -> multiverse.Scale:
+    def viewScale(self) -> gui.MapScale:
         return self._mapWidget.viewScale()
 
     def setViewScale(
             self,
-            scale: multiverse.Scale,
+            scale: gui.MapScale,
             immediate: bool = False
             ) -> None:
         self._mapWidget.setViewScale(scale=scale, immediate=immediate)
@@ -1542,23 +1543,23 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def setViewScaleLimits(
             self,
-            minScale: typing.Optional[multiverse.Scale],
-            maxScale: typing.Optional[multiverse.Scale]
+            minScale: typing.Optional[gui.MapScale],
+            maxScale: typing.Optional[gui.MapScale]
             ) -> None:
         self._mapWidget.setViewScaleLimits(minScale=minScale, maxScale=maxScale)
 
     def homePosition(self) -> typing.Tuple[
             QtCore.QPointF,
-            multiverse.Scale]:
-        return (QtCore.QPointF(self._homeCenter), multiverse.Scale(self._homeScale))
+            gui.MapScale]:
+        return (QtCore.QPointF(self._homeCenter), gui.MapScale(self._homeScale))
 
     def setHomePosition(
             self,
             center: QtCore.QPointF, # World coordinates
-            scale: multiverse.Scale
+            scale: gui.MapScale
             ) -> None:
         self._homeCenter = QtCore.QPointF(center)
-        self._homeScale = multiverse.Scale(scale)
+        self._homeScale = gui.MapScale(scale)
 
     def gotoHomePosition(self) -> None:
         self._mapWidget.setView(center=self._homeCenter, scale=self._homeScale)
@@ -1580,7 +1581,7 @@ class MapWidgetEx(QtWidgets.QWidget):
     def centerOnHex(
             self,
             hex: multiverse.HexPosition,
-            scale: typing.Optional[multiverse.Scale] = multiverse.Scale(linear=64), # None keeps current scale
+            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHex(
@@ -2115,12 +2116,12 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def selectionFillColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionFillDarkStyleColour \
-            if multiverse.isDarkStyle(style=self._style) else \
+            if gui.isDarkMapStyle(style=self._style) else \
             MapWidgetEx._SelectionFillLightStyleColour
 
     def selectionOutlineColour(self) -> QtGui.QColor:
         return MapWidgetEx._SelectionOutlineDarkStyleColour \
-            if multiverse.isDarkStyle(style=self._style) else \
+            if gui.isDarkMapStyle(style=self._style) else \
             MapWidgetEx._SelectionOutlineLightStyleColour
 
     def selectionOutlineWidth(self) -> int:
@@ -2168,10 +2169,10 @@ class MapWidgetEx(QtWidgets.QWidget):
             ) -> None:
         self.rightClicked.emit(hex)
 
-    def _mapStyleChanged(self, style: multiverse.MapStyle) -> None:
+    def _mapStyleChanged(self, style: cartographer.MapStyle) -> None:
         self.setMapStyle(style=style)
 
-    def _mapOptionChanged(self, option: multiverse.MapOption, enabled: bool) -> None:
+    def _mapOptionChanged(self, option: app.MapOption, enabled: bool) -> None:
         if (enabled and option in self._options) or (not enabled and option not in self._options):
             return
 

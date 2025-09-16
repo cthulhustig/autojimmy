@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import gui
 import logging
@@ -181,8 +182,8 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             self,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: multiverse.MapStyle,
-            mapOptions: typing.Iterable[multiverse.MapOption],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -242,10 +243,10 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def setRules(self, rules: traveller.Rules) -> None:
         self._hexWidget.setRules(rules=rules)
 
-    def setMapStyle(self, style: multiverse.MapStyle) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         self._hexWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[multiverse.MapOption]) -> None:
+    def setMapOptions(self, options: typing.Iterable[app.MapOption]) -> None:
         self._hexWidget.setMapOptions(options=options)
 
     def setMapRendering(self, rendering: app.MapRendering) -> None:
@@ -821,7 +822,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: multiverse.MapStyle
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -829,7 +830,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[multiverse.MapOption]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

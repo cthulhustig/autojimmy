@@ -800,8 +800,8 @@ class _CustomSectorTable(gui.ListTable):
 
 # TODO: This will need to handle passing config updates to the map (style, options etc)
 class CustomSectorDialog(gui.DialogEx):
-    _MinMapScale = multiverse.Scale(log=5)
-    _MaxMapScale = multiverse.Scale(log=10)
+    _MinMapScale = gui.MapScale(log=5)
+    _MaxMapScale = gui.MapScale(log=10)
 
     def __init__(
             self,
