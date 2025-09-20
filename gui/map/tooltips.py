@@ -118,17 +118,14 @@ def createHexToolTip(
         count=world.numberOfSystemWorlds() if world else 0)
 
     if world:
+        allegiance = world.allegiance()
         allegianceString = 'Unknown'
-        allegianceCode = world.allegiance()
-        if allegianceCode:
-            allegianceName = multiverse.AllegianceManager.instance().allegianceName(
-                milieu=world.milieu(),
+        if allegiance:
+            allegianceCode = allegiance.code()
+            allegianceName = allegiance.name()
+            allegianceString = '{code} - {name}'.format(
                 code=allegianceCode,
-                sectorName=world.sectorName())
-            if allegianceName:
-                allegianceString = f'{allegianceCode} - {allegianceName}'
-            else:
-                allegianceString = f'{allegianceCode} - Unknown'
+                name=allegianceName if allegianceName else 'Unknown')
 
         tagLevel = worldTagging.calculateAllegianceTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)

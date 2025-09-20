@@ -539,7 +539,7 @@ def readSector(
         content: str,
         format: SectorFormat,
         identifier: str, # File name or some other identifier, used for logging and error generation
-        ) -> typing.Iterable[RawWorld]:
+        ) -> typing.Collection[RawWorld]:
     if format == SectorFormat.T5Column:
         return readT5ColumnSector(
             content=content,
@@ -554,7 +554,7 @@ def readSector(
 def readT5ColumnSector(
         content: str,
         identifier: str
-        ) -> typing.Iterable[RawWorld]:
+        ) -> typing.Collection[RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None
@@ -643,7 +643,7 @@ def _readT5ColumnWorld(
 def readT5RowSector(
         content: str,
         identifier: str
-        ) -> typing.Iterable[RawWorld]:
+        ) -> typing.Collection[RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None

@@ -18,6 +18,7 @@ from .sophont import *
 from .remarks import *
 from .stellar import *
 from .sectortagging import *
+from .allegiance import *
 from .world import *
 from .region import *
 from .border import *
@@ -25,6 +26,5 @@ from .label import *
 from .route import *
 from .sector import *
 from .main import *
-from .allegiance import *
 from .universe import *
 from .worldmanager import *

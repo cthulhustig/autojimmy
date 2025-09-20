@@ -38,18 +38,8 @@ class MapWorld(cartographer.AbstractWorld):
     def isAnomaly(self) -> bool:
         return self._world.isAnomaly()
 
-    def allegiance(self) -> str:
+    def allegiance(self) -> typing.Optional[multiverse.Allegiance]:
         return self._world.allegiance()
-
-    def legacyAllegiance(self) -> typing.Optional[str]:
-        return multiverse.AllegianceManager.instance().legacyCode(
-            milieu=self._world.milieu(),
-            code=self._world.allegiance())
-
-    def basesAllegiance(self) -> typing.Optional[str]:
-        return multiverse.AllegianceManager.instance().basesCode(
-            milieu=self._world.milieu(),
-            code=self._world.allegiance())
 
     def bases(self) -> multiverse.Bases:
         return self._world.bases()

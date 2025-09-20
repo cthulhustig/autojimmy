@@ -119,8 +119,15 @@ class GlyphDefs(object):
         (_compileGlyphRegex(r'*.*'), Circle)] # Independent Base
 
     @staticmethod
-    def fromBaseCode(allegiance: str, code: str) -> Glyph:
+    def fromBaseCode(
+        allegiance: typing.Optional[str],
+        code: str
+        ) -> Glyph:
+        string = '{allegiance}.{code}'.format(
+            allegiance=allegiance if allegiance else '',
+            code=code)
+
         for regex, glyph in GlyphDefs._BaseGlyphs:
-            if regex.match(allegiance + '.' + code):
+            if regex.match(string):
                 return glyph
         return GlyphDefs.Circle

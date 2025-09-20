@@ -1566,7 +1566,8 @@ class RenderContext(object):
             allegiance = world.allegiance()
             remarks = world.remarks()
 
-            droyne = allegiance == 'Dr' or allegiance == 'NaDr' or remarks.hasRemark('Droy')
+            allegianceCode = allegiance.code() if allegiance else None
+            droyne = allegianceCode == 'Dr' or allegianceCode == 'NaDr' or remarks.hasRemark('Droy')
             chirpers = remarks.hasRemark('Chir')
 
             if droyne or chirpers:

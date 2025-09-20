@@ -825,9 +825,11 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.Allegiance:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.allegiance())
-                        tagLevel = self._worldTagging.calculateAllegianceTagLevel(world=world) if self._worldTagging else None
-                        tagColour = self._taggingColour(level=tagLevel)
+                        allegiance = world.allegiance()
+                        if allegiance:
+                            tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, allegiance.code())
+                            tagLevel = self._worldTagging.calculateAllegianceTagLevel(world=world) if self._worldTagging else None
+                            tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Sophont:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
@@ -1084,12 +1086,11 @@ class HexTable(gui.FrozenColumnListTable):
                     strings=lines,
                     stringColours=lineColours)
         elif columnType == self.ColumnType.Allegiance:
-            allegiance = multiverse.AllegianceManager.instance().allegianceName(
-                milieu=self._milieu,
-                code=world.allegiance(),
-                sectorName=world.sectorName())
-            if allegiance:
-                return gui.createStringToolTip(allegiance)
+            allegiance = world.allegiance()
+            if not allegiance:
+                return None
+            allegianceName = allegiance.name()
+            return gui.createStringToolTip(allegianceName if allegianceName else allegiance.code())
         elif columnType == self.ColumnType.Sophont:
             lines = []
             remarks = world.remarks()

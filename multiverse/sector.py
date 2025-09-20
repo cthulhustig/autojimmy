@@ -74,12 +74,12 @@ class Sector(object):
             regions: typing.Iterable[multiverse.Region],
             labels: typing.Iterable[multiverse.Label],
             selected: bool,
-            tags: typing.Optional[str] = None
+            tags: multiverse.SectorTagging
             ) -> None:
         self._milieu = milieu
         self._index = index
         self._name = name
-        self._alternateNames = alternateNames
+        self._alternateNames = list(alternateNames) if alternateNames else None
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
         self._routes = list(routes)
@@ -87,7 +87,7 @@ class Sector(object):
         self._regions = list(regions)
         self._labels = list(labels)
         self._selected = selected
-        self._tags = multiverse.SectorTagging(tags)
+        self._tags = tags
 
         self._subsectorNameMap: typing.Dict[str, Subsector] = {}
         self._subsectorIndexMap: typing.Dict[typing.Tuple[int, int], Subsector] = {}

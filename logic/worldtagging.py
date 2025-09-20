@@ -374,15 +374,12 @@ class WorldTagging(object):
             self,
             world: multiverse.World
             ) -> typing.Optional[logic.TagLevel]:
-        allegianceCode = multiverse.AllegianceManager.instance().uniqueAllegianceCode(
-            milieu=world.milieu(),
-            code=world.allegiance(),
-            sectorName=world.sectorName())
-        if not allegianceCode:
+        allegiance = world.allegiance()
+        if not allegiance:
             return None
         return self._propertyTagLevel(
             property=TaggingProperty.Allegiance,
-            code=allegianceCode)
+            code=allegiance.uniqueCode())
 
     def calculateSpectralTagLevel(
             self,

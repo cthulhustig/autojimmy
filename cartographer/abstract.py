@@ -29,14 +29,8 @@ class AbstractWorld(object):
     def isAnomaly(self) -> bool:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement isAnomaly')
 
-    def allegiance(self) -> str:
+    def allegiance(self) -> typing.Optional[multiverse.Allegiance]:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement allegiance')
-
-    def legacyAllegiance(self) -> typing.Optional[str]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement legacyAllegiance')
-
-    def basesAllegiance(self) -> typing.Optional[str]:
-        raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement basesAllegiance')
 
     def bases(self) -> multiverse.Bases:
         raise RuntimeError(f'{type(self)} is derived from AbstractWorld so must implement bases')

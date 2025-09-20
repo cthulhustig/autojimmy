@@ -574,30 +574,30 @@ class AllegianceFilter(WorldFilter):
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        allegianceCode = world.allegiance()
-        if allegianceCode:
+        allegiance = world.allegiance()
+        if not allegiance:
+            return False
+
+        allegianceCode = allegiance.code()
+        if self._operation == StringFilterOperation.ContainsString:
+            if self._regex.search(allegianceCode):
+                return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            if self._regex.match(allegianceCode):
+                return True
+        else:
+            raise ValueError('Invalid allegiance filter operation')
+
+        allegianceName = allegiance.name()
+        if allegianceName:
             if self._operation == StringFilterOperation.ContainsString:
-                if self._regex.search(allegianceCode):
+                if self._regex.search(allegianceName):
                     return True
             elif self._operation == StringFilterOperation.MatchRegex:
-                if self._regex.match(allegianceCode):
+                if self._regex.match(allegianceName):
                     return True
             else:
                 raise ValueError('Invalid allegiance filter operation')
-
-            allegianceName = multiverse.AllegianceManager.instance().allegianceName(
-                milieu=world.milieu(),
-                code=world.allegiance(),
-                sectorName=world.sectorName())
-            if allegianceName:
-                if self._operation == StringFilterOperation.ContainsString:
-                    if self._regex.search(allegianceName):
-                        return True
-                elif self._operation == StringFilterOperation.MatchRegex:
-                    if self._regex.match(allegianceName):
-                        return True
-                else:
-                    raise ValueError('Invalid allegiance filter operation')
         return False
 
 class SophontFilter(WorldFilter):

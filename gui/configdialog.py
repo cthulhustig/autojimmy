@@ -759,17 +759,17 @@ class ConfigDialog(gui.DialogEx):
             table.setTaggingColours(colours=colours)
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
-        allegiances = multiverse.AllegianceManager.instance().allegiances(
+        universe = multiverse.WorldManager.instance().universe()
+        allegiances = universe.allegiances(
             milieu=self._milieuComboBox.currentEnum())
 
         # Create a copy of the allegiances list and sort it by code
-        allegiances = list(allegiances)
         allegiances.sort(key=lambda x: x.code())
 
         descriptions: typing.Mapping[str, str] = {}
         for allegiance in allegiances:
-            nameMap = allegiance.uniqueNameMap()
-            for code, name in nameMap.items():
-                descriptions[code] = name
+            name = allegiance.name()
+            if name:
+                descriptions[allegiance.code()] = name
 
         return descriptions

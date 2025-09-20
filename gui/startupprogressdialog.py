@@ -9,7 +9,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # can cause incorrect sizing if the font scaling is increased then decreased
 class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
-        jobs.LoadSectorsJob: 'Loading: ',
+        jobs.LoadSectorsJob: '',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
         jobs.LoadRobotsJob: 'Loading: Robot - '}
 

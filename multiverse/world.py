@@ -11,17 +11,17 @@ class World(object):
             isNameGenerated: bool,
             sectorName: str,
             subsectorName: str,
-            allegiance: str,
-            uwp: str,
-            economics: str,
-            culture: str,
-            nobilities: str,
-            remarks: str,
-            zone: str,
-            stellar: str,
-            pbg: str,
-            systemWorlds: str,
-            bases: str
+            allegiance: typing.Optional[multiverse.Allegiance],
+            uwp: multiverse.UWP,
+            economics: multiverse.Economics,
+            culture: multiverse.Culture,
+            nobilities: multiverse.Nobilities,
+            remarks: multiverse.Remarks,
+            zone: typing.Optional[multiverse.ZoneType],
+            stellar: multiverse.Stellar,
+            pbg: multiverse.PBG,
+            systemWorlds: int,
+            bases: multiverse.Bases
             ) -> None:
         self._milieu = milieu
         self._hex = hex
@@ -30,22 +30,19 @@ class World(object):
         self._sectorName = sectorName
         self._subsectorName = subsectorName
         self._allegiance = allegiance
-        self._uwp = multiverse.UWP(uwp)
-        self._economics = multiverse.Economics(economics)
-        self._culture = multiverse.Culture(culture)
-        self._nobilities = multiverse.Nobilities(nobilities)
-        self._zone = multiverse.parseZoneString(zone)
-        self._remarks = multiverse.Remarks(
-            string=remarks,
-            sectorName=sectorName,
-            zone=self._zone)
+        self._uwp = uwp
+        self._economics = economics
+        self._culture = culture
+        self._nobilities = nobilities
+        self._zone = zone
+        self._remarks = remarks
         self._isAnomaly = self._remarks.hasRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasRemark('{Fuel}')
-        self._stellar = multiverse.Stellar(stellar)
-        self._pbg = multiverse.PBG(pbg)
+        self._stellar = stellar
+        self._pbg = pbg
         # There is always 1 system world (the main world)
-        self._systemWorlds = int(systemWorlds) if systemWorlds else 1
-        self._bases = multiverse.Bases(bases)
+        self._systemWorlds = systemWorlds
+        self._bases = bases
 
     def milieu(self) -> multiverse.Milieu:
         return self._milieu
@@ -76,7 +73,7 @@ class World(object):
             offsetX=self._hex.offsetX(),
             offsetY=self._hex.offsetY())
 
-    def allegiance(self) -> str:
+    def allegiance(self) -> typing.Optional[multiverse.Allegiance]:
         return self._allegiance
 
     def uwp(self) -> multiverse.UWP:

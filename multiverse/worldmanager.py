@@ -5,6 +5,343 @@ import multiverse
 import threading
 import typing
 
+class _AllegianceCodeInfo(object):
+    def __init__(
+            self,
+            code: str,
+            legacyCode: typing.Optional[str],
+            basesCode: typing.Optional[str],
+            globalName: typing.Optional[str]
+            ) -> None:
+        self._code = code
+        self._legacyCode = legacyCode
+        self._basesCode = basesCode
+        self._globalName = globalName
+        self._localNames: typing.Dict[str, str] = {}
+        self._consistentName = True
+
+    def code(self) -> str:
+        return self._code
+
+    def legacyCode(self) -> typing.Optional[str]:
+        return self._legacyCode
+
+    def basesCode(self) -> typing.Optional[str]:
+        return self._basesCode
+
+    def name(self, sectorName) -> typing.Optional[str]:
+        localName = self._localNames.get(sectorName)
+        if localName:
+            return localName
+        return self._globalName
+
+    def uniqueCode(self, sectorName) -> str:
+        if not self._consistentName and sectorName in self._localNames:
+            return self._formatUniqueCode(sectorName)
+        return self._code
+
+    def globalName(self) -> typing.Optional[str]:
+        return self._globalName
+
+    def localNames(self) -> typing.Mapping[str, str]:
+        return self._localNames
+
+    def addLocalName(
+            self,
+            sectorName: str,
+            allegianceName: str
+            ) -> None:
+        if self._globalName:
+            if allegianceName.lower() == self._globalName.lower():
+                # The local name is the same as the global name so just use the global name
+                return
+
+            # The local name differs from the global name so the allegiance doesn't have a
+            # consistent name
+            self._consistentName = False
+
+        if self._consistentName and len(self._localNames) > 0:
+            if allegianceName.lower() not in (name.lower() for name in self._localNames.values()):
+                # This name is different to other local names so this allegiance no longer
+                # has a consistent local name
+                self._consistentName = False
+
+        self._localNames[sectorName] = allegianceName
+
+    def uniqueNameMap(self) -> typing.Mapping[str, str]:
+        nameMap = {}
+        if self._globalName:
+            nameMap[self._code] = self._globalName
+
+            if self._consistentName:
+                # The allegiance has a consistent name so there is only one mapping, no need to
+                # look at local mappings
+                return nameMap
+
+        for sectorName, allegianceName in self._localNames.items():
+            if self._consistentName:
+                # The allegiance has a local name so just create a single mapping using the base
+                # code and this instance of the local name
+                nameMap[self._code] = allegianceName
+                break
+
+            # This allegiance doesn't have a consistent name so map the sectors unique code to the
+            # allegiance name
+            nameMap[self._formatUniqueCode(sectorName)] = allegianceName
+
+        return nameMap
+
+    def _formatUniqueCode(
+            self,
+            sectorName: str
+            ) -> str:
+        return f'{self._code} ({sectorName})'
+
+
+# NOTE: Mapping allegiance codes to names needs to be case sensitive as some sectors have
+# allegiances that differ only by case (e.g. Knaeleng, Kharrthon, Phlange, Kruse)
+class _AllegianceTracker(object):
+    _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
+
+    # These unofficial allegiances are taken from Traveller Map. It has a
+    # comment saying they're for M1120 but as far as I can tell it uses
+    # them no mater which milieu you have selected. In my implementation
+    # they are only used for M1120
+    _T5UnofficialAllegiancesMap = {
+        multiverse.Milieu.M1120: [
+            # -----------------------
+            # Unofficial/Unreviewed
+            # -----------------------
+
+            # M1120
+            ( 'FdAr', 'Fa', None, 'Federation of Arden' ),
+            ( 'BoWo', 'Bw', None, 'Border Worlds' ),
+            ( 'LuIm', 'Li', 'Im', 'Lucan\'s Imperium' ),
+            ( 'MaSt', 'Ma', 'Im', 'Maragaret\'s Domain' ),
+            ( 'BaCl', 'Bc', None, 'Backman Cluster' ),
+            ( 'FdDa', 'Fd', 'Im', 'Federation of Daibei' ),
+            ( 'FdIl', 'Fi', 'Im', 'Federation of Ilelish' ),
+            ( 'AvCn', 'Ac', None, 'Avalar Consulate' ),
+            ( 'CoAl', 'Ca', None, 'Corsair Alliance' ),
+            ( 'StIm', 'St', 'Im', 'Strephon\'s Worlds' ),
+            ( 'ZiSi', 'Rv', 'Im', 'Restored Vilani Imperium' ), # Ziru Sirka
+            ( 'VA16', 'V6', None, 'Assemblage of 1116' ),
+            ( 'CRVi', 'CV', None, 'Vilani Cultural Region' ),
+            ( 'CRGe', 'CG', None, 'Geonee Cultural Region' ),
+            ( 'CRSu', 'CS', None, 'Suerrat Cultural Region' ),
+            ( 'CRAk', 'CA', None, 'Anakudnu Cultural Region' )]}
+
+    def __init__(self) -> None:
+        self._milieuDataMap: typing.Dict[
+            multiverse.Milieu,
+            typing.Dict[
+                str,
+                _AllegianceCodeInfo]] = {}
+        self._loadAllegiances()
+
+    def allegiances(
+            self,
+            milieu: multiverse.Milieu
+            ) -> typing.Iterable[_AllegianceCodeInfo]:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
+        return milieuData.values()
+
+    def allegianceName(
+            self,
+            milieu: multiverse.Milieu,
+            code: str,
+            sectorName: str
+            ) -> typing.Optional[str]:
+        if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return None
+
+        codeInfo = milieuData.get(code)
+        if not codeInfo:
+            return None
+
+        return codeInfo.name(sectorName)
+
+    def legacyCode(
+            self,
+            milieu: multiverse.Milieu,
+            code: str
+            ) -> typing.Optional[str]:
+        if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return None
+
+        codeInfo = milieuData.get(code)
+        if not codeInfo:
+            return None
+
+        return codeInfo.legacyCode()
+
+    def basesCode(
+            self,
+            milieu: multiverse.Milieu,
+            code: str
+            ) -> typing.Optional[str]:
+        if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return None
+
+        codeInfo = milieuData.get(code)
+        if not codeInfo:
+            return None
+
+        return codeInfo.basesCode()
+
+    def uniqueAllegianceCode(
+            self,
+            milieu: multiverse.Milieu,
+            code: str,
+            sectorName: str
+            ) -> typing.Optional[str]:
+        if not code:
+            return None
+
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return None
+
+        codeInfo = milieuData.get(code)
+        if not codeInfo:
+            return None
+
+        return codeInfo.uniqueCode(sectorName)
+
+    def addSectorAllegiances(
+            self,
+            milieu: multiverse.Milieu,
+            sectorName: str,
+            allegiances: typing.Mapping[str, str]
+            ) -> None:
+        for code, name in allegiances.items():
+            codeInfo = self._addAllegianceCode(milieu=milieu, code=code)
+            codeInfo.addLocalName(sectorName=sectorName, allegianceName=name)
+
+    def _loadAllegiances(self) -> None:
+        self._milieuDataMap.clear()
+
+        for milieu in multiverse.Milieu:
+            self._milieuDataMap[milieu] = {}
+
+        # Load the T5 second survey allegiances pulled from Traveller Map
+        _, results = multiverse.parseTabContent(
+            content=multiverse.DataStore.instance().loadTextResource(
+                filePath=_AllegianceTracker._T5OfficialAllegiancesPath))
+
+        # Split results into global and local allegiances
+        globalAllegiances = []
+        localAllegiances = []
+        for allegiance in results:
+            location = allegiance.get('Location')
+            if not location or location.lower() == 'various':
+                globalAllegiances.append(allegiance)
+            else:
+                localAllegiances.append(allegiance)
+
+        # First the entries with no location or location of 'various' are added as global names
+        for allegiance in globalAllegiances:
+            code = allegiance['Code']
+            legacyCode = allegiance['Legacy']
+            baseCode = allegiance['BaseCode']
+            globalName = allegiance['Name']
+
+            for milieu in multiverse.Milieu:
+                self._addAllegianceCode(
+                    milieu=milieu,
+                    code=code,
+                    legacyCode=legacyCode if legacyCode else None,
+                    basesCode=baseCode if baseCode else None,
+                    globalName=globalName if globalName else None)
+
+        # Now entries where the locations specify sectors are added as names for those
+        # sectors. The locations are specified using abbreviations so a per-milieu map
+        # is generated for all abbreviations.
+        abbreviationMap: typing.Dict[
+            typing.Tuple[multiverse.Milieu, str], # Milieu & abbreviation
+            str # Canonical name
+            ] = {}
+        for milieu in multiverse.Milieu:
+            for sectorInfo in multiverse.DataStore.instance().sectors(milieu=milieu):
+                abbreviation = sectorInfo.abbreviation()
+                if not abbreviation:
+                    continue
+                abbreviationMap[(milieu, abbreviation)] = sectorInfo.canonicalName()
+
+        for allegiance in localAllegiances:
+            code = allegiance['Code']
+            legacyCode = allegiance['Legacy']
+            baseCode = allegiance['BaseCode']
+            localName = allegiance['Name']
+            location = allegiance['Location']
+
+            abbreviations = location.split('/')
+
+            for milieu in multiverse.Milieu:
+                codeInfo = self._addAllegianceCode(
+                    milieu=milieu,
+                    code=code,
+                    legacyCode=legacyCode if legacyCode else None,
+                    basesCode=baseCode if baseCode else None)
+
+                for abbreviation in abbreviations:
+                    sectorName = abbreviationMap.get((milieu, abbreviation))
+                    if not sectorName:
+                        # Log this at debug as it occurs with the standard data
+                        logging.debug(f'Unable to resolve Allegiance location abbreviation {abbreviation} to a sector')
+                        continue
+
+                    codeInfo.addLocalName(
+                        sectorName=sectorName,
+                        allegianceName=localName)
+
+        # Now unofficial global entries
+        for milieu in multiverse.Milieu:
+            unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(milieu)
+            if unofficialAllegiance:
+                for code, legacyCode, basesCode, globalName in unofficialAllegiance:
+                    self._addAllegianceCode(
+                        milieu=milieu,
+                        code=code,
+                        legacyCode=legacyCode if legacyCode else None,
+                        basesCode=basesCode if baseCode else None,
+                        globalName=globalName if globalName else None)
+
+    def _addAllegianceCode(
+            self,
+            milieu: multiverse.Milieu,
+            code: str,
+            legacyCode: typing.Optional[str] = None,
+            basesCode: typing.Optional[str] = None,
+            globalName: typing.Optional[str] = None,
+            ) -> _AllegianceCodeInfo:
+        milieuData = self._milieuDataMap.get(milieu)
+        codeInfo = None
+        if milieuData:
+            codeInfo = milieuData.get(code)
+        if not codeInfo:
+            codeInfo = _AllegianceCodeInfo(
+                code=code,
+                legacyCode=legacyCode,
+                basesCode=basesCode,
+                globalName=globalName)
+            milieuData[code] = codeInfo
+        return codeInfo
+
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
@@ -63,55 +400,83 @@ class WorldManager(object):
             for milieu in multiverse.Milieu:
                 totalSectorCount += multiverse.DataStore.instance().sectorCount(milieu=milieu)
 
-            sectors = []
-            progress = 0
+            maxProgress = totalSectorCount * 2
+            currentProgress = 0
+
+            rawData: typing.List[typing.Tuple[
+                multiverse.Milieu,
+                multiverse.RawMetadata,
+                typing.Iterable[multiverse.RawWorld]
+                ]] = []
             for milieu in multiverse.Milieu:
                 for sectorInfo in multiverse.DataStore.instance().sectors(milieu=milieu):
                     canonicalName = sectorInfo.canonicalName()
-                    logging.debug(f'Loading worlds for sector {canonicalName}')
+                    logging.debug(f'Loading sector {canonicalName}')
 
                     if progressCallback:
-                        stage = f'{milieu.value} - {canonicalName}'
-                        progress += 1
-                        progressCallback(stage, progress, totalSectorCount)
-
-                    sectorContent = multiverse.DataStore.instance().sectorFileData(
-                        sectorName=canonicalName,
-                        milieu=milieu)
-
-                    metadataContent = multiverse.DataStore.instance().sectorMetaData(
-                        sectorName=canonicalName,
-                        milieu=milieu)
+                        stage = f'Loading: {milieu.value} - {canonicalName}'
+                        currentProgress += 1
+                        progressCallback(stage, currentProgress, maxProgress)
 
                     try:
-                        sectorName = sectorInfo.canonicalName()
-                        sectorX = sectorInfo.x()
-                        sectorY = sectorInfo.y()
+                        metadataContent = multiverse.DataStore.instance().sectorMetaData(
+                            sectorName=canonicalName,
+                            milieu=milieu)
 
-                        rawWorlds = multiverse.readSector(
-                            content=sectorContent,
-                            format=sectorInfo.sectorFormat(),
-                            identifier=sectorName)
+                        sectorContent = multiverse.DataStore.instance().sectorFileData(
+                            sectorName=canonicalName,
+                            milieu=milieu)
 
                         rawMetadata = multiverse.readMetadata(
                             content=metadataContent,
                             format=sectorInfo.metadataFormat(),
-                            identifier=sectorName)
+                            identifier=canonicalName)
 
-                        sector = self._loadSector(
-                            sectorName=sectorName,
-                            sectorX=sectorX,
-                            sectorY=sectorY,
-                            milieu=milieu,
-                            rawWorlds=rawWorlds,
-                            rawMetadata=rawMetadata,
-                            updateAllegiances=True)
+                        rawWorlds = multiverse.readSector(
+                            content=sectorContent,
+                            format=sectorInfo.sectorFormat(),
+                            identifier=canonicalName)
+
+                        rawData.append((milieu, rawMetadata, rawWorlds))
                     except Exception as ex:
                         logging.error(f'Failed to load sector {canonicalName} in {milieu.value}', exc_info=ex)
                         continue
 
-                    logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} in {milieu.value}')
-                    sectors.append(sector)
+            # Generate allegiances for all sectors before processing them. This is
+            # done so that any disambiguation that is needed can be done prior to
+            # worlds being created as the unique disambiguated name is part of their
+            # construction
+            allegianceTracker = _AllegianceTracker()
+            for milieu, rawMetadata, _ in rawData:
+                canonicalName = rawMetadata.canonicalName()
+                logging.debug(f'Populating allegiances for sector {canonicalName}')
+                WorldManager._populateAllegiances(
+                    milieu=milieu,
+                    rawMetadata=rawMetadata,
+                    tracker=allegianceTracker)
+
+            sectors = []
+            for milieu, rawMetadata, rawWorlds in rawData:
+                canonicalName = rawMetadata.canonicalName()
+                logging.debug(f'Processing sector {canonicalName}')
+
+                if progressCallback:
+                    stage = f'Processing: {milieu.value} - {canonicalName}'
+                    currentProgress += 1
+                    progressCallback(stage, currentProgress, maxProgress)
+
+                try:
+                    sector = self._processSector(
+                        milieu=milieu,
+                        rawMetadata=rawMetadata,
+                        rawWorlds=rawWorlds,
+                        allegianceTracker=allegianceTracker)
+                except Exception as ex:
+                    logging.error(f'Failed to process sector {canonicalName} in {milieu.value}', exc_info=ex)
+                    continue
+
+                logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} in {milieu.value}')
+                sectors.append(sector)
 
             self._universe = multiverse.Universe(
                 sectors=sectors,
@@ -143,14 +508,17 @@ class WorldManager(object):
             format=metadataFormat,
             identifier='Metadata')
 
-        sector = self._loadSector(
-            sectorName=rawMetadata.canonicalName(),
-            sectorX=rawMetadata.x(),
-            sectorY=rawMetadata.y(),
+        allegianceTracker = _AllegianceTracker()
+        self._populateAllegiances(
             milieu=milieu,
-            rawWorlds=rawWorlds,
             rawMetadata=rawMetadata,
-            updateAllegiances=False) # TODO: Allegiances for these universes is currently broken
+            tracker=allegianceTracker)
+
+        sector = self._processSector(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawWorlds=rawWorlds,
+            allegianceTracker=allegianceTracker)
 
         return (multiverse.Universe(sectors=[sector]), sector)
 
@@ -516,15 +884,42 @@ class WorldManager(object):
             maxResults=maxResults)
 
     @staticmethod
-    def _loadSector(
-            sectorName: str,
-            sectorX: int,
-            sectorY: int,
+    def _populateAllegiances(
             milieu: multiverse.Milieu,
-            rawWorlds: typing.Collection[multiverse.RawWorld],
             rawMetadata: multiverse.RawMetadata,
-            updateAllegiances: bool # TODO: This is a temp hack
+            tracker: _AllegianceTracker
+            ) -> None:
+        allegianceNameMap: typing.Dict[
+            str, # Allegiance code
+            str # Allegiance name
+        ] = {}
+
+        allegiances = rawMetadata.allegiances()
+        if allegiances:
+            for allegiance in allegiances:
+                if not allegiance.code() or not allegiance.name():
+                    continue
+
+                # NOTE: The code here is intentionally left with the case as it appears int metadata as
+                # there are some sectors where allegiances vary only by case (see AllegianceManager)
+                allegianceNameMap[allegiance.code()] = allegiance.name()
+
+        tracker.addSectorAllegiances(
+            milieu=milieu,
+            sectorName=rawMetadata.canonicalName(),
+            allegiances=allegianceNameMap)
+
+    @staticmethod
+    def _processSector(
+            milieu: multiverse.Milieu,
+            rawMetadata: multiverse.RawMetadata,
+            rawWorlds: typing.Collection[multiverse.RawWorld],
+            allegianceTracker: _AllegianceTracker
             ) -> multiverse.Sector:
+        sectorName = rawMetadata.canonicalName()
+        sectorX = rawMetadata.x()
+        sectorY = rawMetadata.y()
+
         subsectorNameMap: typing.Dict[
             str, # Subsector code (A-P)
             typing.Tuple[
@@ -534,10 +929,6 @@ class WorldManager(object):
         subsectorWorldsMap: typing.Dict[
             str, # Subsector code (A-P)
             typing.List[multiverse.World]
-        ] = {}
-        allegianceNameMap: typing.Dict[
-            str, # Allegiance code
-            str # Allegiance name
         ] = {}
 
         # Setup default subsector names. Some sectors just use the code A-P but we need
@@ -557,16 +948,6 @@ class WorldManager(object):
                 subsectorCode = subsectorCode.upper()
                 subsectorNameMap[subsectorCode] = (subsectorName, False)
 
-        allegiances = rawMetadata.allegiances()
-        if allegiances:
-            for allegiance in allegiances:
-                if not allegiance.code() or not allegiance.name():
-                    continue
-
-                # NOTE: The code here is intentionally left with the case as it appears int metadata as
-                # there are some sectors where allegiances vary only by case (see AllegianceManager)
-                allegianceNameMap[allegiance.code()] = allegiance.name()
-
         for rawWorld in rawWorlds:
             try:
                 hex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
@@ -582,6 +963,49 @@ class WorldManager(object):
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
                 subsectorName, _ = subsectorNameMap[subsectorCode]
 
+                allegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+                allegiance = None
+                if allegianceCode:
+                    allegiance = multiverse.Allegiance(
+                        code=allegianceCode,
+                        name=allegianceTracker.allegianceName(
+                            milieu=milieu,
+                            code=allegianceCode,
+                            sectorName=sectorName),
+                        legacyCode=allegianceTracker.legacyCode(
+                            milieu=milieu,
+                            code=allegianceCode),
+                        basesCode=allegianceTracker.basesCode(
+                            milieu=milieu,
+                            code=allegianceCode),
+                        uniqueCode=allegianceTracker.uniqueAllegianceCode(
+                            milieu=milieu,
+                            code=allegianceCode,
+                            sectorName=sectorName))
+
+                zone = multiverse.parseZoneString(
+                    rawWorld.attribute(multiverse.WorldAttribute.Zone))
+                uwp = multiverse.UWP(
+                    rawWorld.attribute(multiverse.WorldAttribute.UWP))
+                economics = multiverse.Economics(
+                    rawWorld.attribute(multiverse.WorldAttribute.Economics))
+                culture = multiverse.Culture(
+                    rawWorld.attribute(multiverse.WorldAttribute.Culture))
+                nobilities=multiverse.Nobilities(
+                    rawWorld.attribute(multiverse.WorldAttribute.Nobility))
+                remarks = multiverse.Remarks(
+                    string=rawWorld.attribute(multiverse.WorldAttribute.Remarks),
+                    sectorName=sectorName,
+                    zone=zone)
+                stellar = multiverse.Stellar(
+                    rawWorld.attribute(multiverse.WorldAttribute.Stellar))
+                pbg = multiverse.PBG(
+                    rawWorld.attribute(multiverse.WorldAttribute.PBG))
+                systemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
+                systemWorlds = int(systemWorlds) if systemWorlds else 1
+                bases = multiverse.Bases(
+                    rawWorld.attribute(multiverse.WorldAttribute.Bases))
+
                 world = multiverse.World(
                     milieu=milieu,
                     hex=multiverse.HexPosition(
@@ -593,17 +1017,17 @@ class WorldManager(object):
                     isNameGenerated=isNameGenerated,
                     sectorName=sectorName,
                     subsectorName=subsectorName,
-                    allegiance=rawWorld.attribute(multiverse.WorldAttribute.Allegiance),
-                    uwp=rawWorld.attribute(multiverse.WorldAttribute.UWP),
-                    economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
-                    culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
-                    nobilities=rawWorld.attribute(multiverse.WorldAttribute.Nobility),
-                    remarks=rawWorld.attribute(multiverse.WorldAttribute.Remarks),
-                    zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
-                    stellar=rawWorld.attribute(multiverse.WorldAttribute.Stellar),
-                    pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
-                    systemWorlds=rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds),
-                    bases=rawWorld.attribute(multiverse.WorldAttribute.Bases))
+                    allegiance=allegiance,
+                    uwp=uwp,
+                    economics=economics,
+                    culture=culture,
+                    nobilities=nobilities,
+                    remarks=remarks,
+                    zone=zone,
+                    stellar=stellar,
+                    pbg=pbg,
+                    systemWorlds=systemWorlds,
+                    bases=bases)
 
                 subsectorWorlds = subsectorWorldsMap[subsectorCode]
                 subsectorWorlds.append(world)
@@ -627,15 +1051,6 @@ class WorldManager(object):
                 isNameGenerated=isNameGenerated,
                 sectorName=sectorName,
                 worlds=subsectorWorlds))
-
-        # TODO: Need a to move allegiances into the universe so different universes
-        # can have different allegiances
-        if updateAllegiances:
-            # Add the allegiances for this sector to the allegiance manager
-            multiverse.AllegianceManager.instance().addSectorAllegiances(
-                milieu=milieu,
-                sectorName=sectorName,
-                allegiances=allegianceNameMap)
 
         styleSheet = rawMetadata.styleSheet()
         borderStyleMap: typing.Dict[
@@ -790,7 +1205,7 @@ class WorldManager(object):
                     # to be done every time the border is rendered
                     label = rawBorder.label()
                     if not label and rawBorder.allegiance():
-                        label = multiverse.AllegianceManager.instance().allegianceName(
+                        label = allegianceTracker.allegianceName(
                             milieu=milieu,
                             code=rawBorder.allegiance(),
                             sectorName=sectorName)
@@ -909,7 +1324,7 @@ class WorldManager(object):
             regions=regions,
             labels=labels,
             selected=rawMetadata.selected() if rawMetadata.selected() else False,
-            tags=rawMetadata.tags())
+            tags=multiverse.SectorTagging(rawMetadata.tags()))
 
     _RouteStyleMap = {
         'solid': multiverse.Route.Style.Solid,

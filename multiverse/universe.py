@@ -17,6 +17,7 @@ class Universe(object):
             self.worldPositionMap: typing.Dict[typing.Tuple[int, int], multiverse.World] = {}
             self.mainsList: typing.List[multiverse.Main] = []
             self.hexMainMap: typing.Dict[multiverse.HexPosition, multiverse.Main] = {}
+            self.allegiances: typing.Dict[str, multiverse.Allegiance] = {}
 
     # The absolute and relative hex patterns match search strings formatted
     # as 2 or 4 comma separated signed integers respectively, optionally
@@ -95,6 +96,10 @@ class Universe(object):
             for world in sector.worlds():
                 hex = world.hex()
                 milieuData.worldPositionMap[(hex.absoluteX(), hex.absoluteY())] = world
+
+                allegiance = world.allegiance()
+                if allegiance and (allegiance.uniqueCode() not in milieuData.allegiances):
+                    milieuData.allegiances[allegiance.uniqueCode()] = allegiance
 
     def sectorNames(
             self,
@@ -948,3 +953,12 @@ class Universe(object):
             return matches[:maxResults]
 
         return matches
+
+    def allegiances(
+            self,
+            milieu: multiverse.Milieu
+            ) -> typing.List[multiverse.Allegiance]:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
+        return list(milieuData.allegiances.values())
