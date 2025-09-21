@@ -7,7 +7,7 @@ class RectSelector(object):
     def __init__(
             self,
             milieu: multiverse.Milieu,
-            universe: cartographer.AbstractUniverse,
+            universe: multiverse.Universe,
             sectorSlop: int = 1, # Numbers of sectors
             worldSlop: int = 1, # Number of parsecs
             ) -> None:
@@ -17,17 +17,17 @@ class RectSelector(object):
         self._worldSlop = worldSlop
         self._rect = cartographer.RectangleF()
 
-        self._tightSectors: typing.Optional[typing.List[cartographer.AbstractSector]] = None
-        self._sloppySectors: typing.Optional[typing.List[cartographer.AbstractSector]] = None
+        self._tightSectors: typing.Optional[typing.List[multiverse.Sector]] = None
+        self._sloppySectors: typing.Optional[typing.List[multiverse.Sector]] = None
 
-        self._tightWorlds: typing.Optional[typing.List[cartographer.AbstractWorld]] = None
-        self._sloppyWorlds: typing.Optional[typing.List[cartographer.AbstractWorld]] = None
+        self._tightWorlds: typing.Optional[typing.List[multiverse.World]] = None
+        self._sloppyWorlds: typing.Optional[typing.List[multiverse.World]] = None
 
-        self._tightPlaceholderWorlds: typing.Optional[typing.List[cartographer.AbstractWorld]] = None
-        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[cartographer.AbstractWorld]] = None
+        self._tightPlaceholderWorlds: typing.Optional[typing.List[multiverse.World]] = None
+        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[multiverse.World]] = None
 
-        self._tightPlaceholderSectors: typing.Optional[typing.List[cartographer.AbstractSector]] = None
-        self._sloppyPlaceholderSectors: typing.Optional[typing.List[cartographer.AbstractSector]] = None
+        self._tightPlaceholderSectors: typing.Optional[typing.List[multiverse.Sector]] = None
+        self._sloppyPlaceholderSectors: typing.Optional[typing.List[multiverse.Sector]] = None
 
     def rect(self) -> cartographer.RectangleF:
         return cartographer.RectangleF(self._rect)
@@ -61,7 +61,7 @@ class RectSelector(object):
         self._worldSlop = slop
         self._sloppyWorlds = None
 
-    def sectors(self, tight: bool = False) -> typing.Iterable[cartographer.AbstractSector]:
+    def sectors(self, tight: bool = False) -> typing.Iterable[multiverse.Sector]:
         sectors = self._tightSectors if tight else self._sloppySectors
         if sectors is not None:
             return sectors
@@ -70,7 +70,7 @@ class RectSelector(object):
 
         return self._tightSectors if tight else self._sloppySectors
 
-    def worlds(self, tight: bool = False) -> typing.Iterable[cartographer.AbstractWorld]:
+    def worlds(self, tight: bool = False) -> typing.Iterable[multiverse.World]:
         worlds = self._tightWorlds if tight else self._sloppyWorlds
         if worlds is not None:
             return worlds
@@ -79,7 +79,7 @@ class RectSelector(object):
 
         return self._tightWorlds if tight else self._sloppyWorlds
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[cartographer.AbstractSector]:
+    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[multiverse.Sector]:
         sectors = self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
         if sectors is not None:
             return sectors
@@ -88,7 +88,7 @@ class RectSelector(object):
 
         return self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
 
-    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[cartographer.AbstractWorld]:
+    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[multiverse.World]:
         placeholders = self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
         if placeholders is not None:
             return placeholders
@@ -128,8 +128,8 @@ class RectSelector(object):
             usePlaceholders = self._milieu is not multiverse.Milieu.M1105
             sloppySectors = self._universe.sectorsInArea(
                 milieu=self._milieu,
-                ulHex=upperLeft,
-                lrHex=lowerRight,
+                upperLeft=upperLeft,
+                lowerRight=lowerRight,
                 includePlaceholders=usePlaceholders)
             if not usePlaceholders:
                 self._sloppySectors = sloppySectors
@@ -185,8 +185,8 @@ class RectSelector(object):
             usePlaceholders = self._milieu is not multiverse.Milieu.M1105
             sloppyWorlds = self._universe.worldsInArea(
                 milieu=self._milieu,
-                ulHex=upperLeft,
-                lrHex=lowerRight,
+                upperLeft=upperLeft,
+                lowerRight=lowerRight,
                 includePlaceholders=usePlaceholders)
             if not usePlaceholders:
                 self._sloppyWorlds = sloppyWorlds

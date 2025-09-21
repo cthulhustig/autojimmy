@@ -52,7 +52,7 @@ class LabelStore(object):
 
     def __init__(
             self,
-            universe: cartographer.AbstractUniverse
+            universe: multiverse.Universe
             ) -> None:
         self._universe = universe
         self.minorLabels = self._parseMapLabels(

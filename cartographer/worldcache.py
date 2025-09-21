@@ -1,8 +1,9 @@
 import common
 import cartographer
 import math
-import random
 import multiverse
+import random
+import traveller
 
 class WorldInfo(object):
     # Traveller Map doesn't use trade codes for things you might expect it
@@ -41,10 +42,10 @@ class WorldInfo(object):
 
     def __init__(
             self,
-            world: cartographer.AbstractWorld,
+            world: multiverse.World,
             imageCache: cartographer.ImageStore
             ) -> None:
-        self.name = world.name() if world.name() else ''
+        self.name = world.name() if not world.isNameGenerated() else ''
         self.upperName = self.name.upper()
 
         hex = world.hex()
@@ -176,26 +177,26 @@ class WorldInfo(object):
             0
 
     @staticmethod
-    def _calcIsPlaceholder(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsPlaceholder(world: multiverse.World) -> bool:
         uwp = world.uwp()
         return uwp.sanitised() == '???????-?'
 
     @staticmethod
-    def _calcHasWater(world: cartographer.AbstractWorld) -> bool:
-        return world.hasWaterRefuelling()
+    def _calcHasWater(world: multiverse.World) -> bool:
+        return traveller.worldHasWaterRefuelling(world=world)
 
     @staticmethod
-    def _calcHasGasGiants(world: cartographer.AbstractWorld) -> bool:
-        return world.hasGasGiantRefuelling()
+    def _calcHasGasGiants(world: multiverse.World) -> bool:
+        return traveller.worldHasGasGiantRefuelling(world=world)
 
     @staticmethod
-    def _calcIsHighPopulation(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsHighPopulation(world: multiverse.World) -> bool:
         uwp = world.uwp()
         population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
         return population >= WorldInfo._HighPopulation
 
     @staticmethod
-    def _calcIsAgricultural(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsAgricultural(world: multiverse.World) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
         hydrographics = uwp.numeric(element=multiverse.UWP.Element.Hydrographics, default=-1)
@@ -205,7 +206,7 @@ class WorldInfo(object):
             population in WorldInfo._AgriculturalPopulations
 
     @staticmethod
-    def _calcIsIndustrial(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsIndustrial(world: multiverse.World) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
         population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
@@ -213,7 +214,7 @@ class WorldInfo(object):
             population >= WorldInfo._IndustrialMinPopulation
 
     @staticmethod
-    def _calcIsRich(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsRich(world: multiverse.World) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
         population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
@@ -221,23 +222,23 @@ class WorldInfo(object):
             population in WorldInfo._RichPopulations
 
     @staticmethod
-    def _calcIsVacuum(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsVacuum(world: multiverse.World) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
         return atmosphere == 0
 
     @staticmethod
-    def _calcIsHarshAtmosphere(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsHarshAtmosphere(world: multiverse.World) -> bool:
         uwp = world.uwp()
         atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
         return atmosphere > 10
 
     @staticmethod
-    def _calcIsAnomaly(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsAnomaly(world: multiverse.World) -> bool:
         return world.isAnomaly()
 
     @staticmethod
-    def _calcIsAsteroid(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsAsteroid(world: multiverse.World) -> bool:
         if world.isAnomaly():
             return False
         uwp = world.uwp()
@@ -245,7 +246,7 @@ class WorldInfo(object):
         return worldSize == 0
 
     @staticmethod
-    def _calcIsCapital(world: cartographer.AbstractWorld) -> bool:
+    def _calcIsCapital(world: multiverse.World) -> bool:
         remarks = world.remarks()
         return remarks.hasTradeCode(multiverse.TradeCode.SectorCapital) or \
             remarks.hasTradeCode(multiverse.TradeCode.SubsectorCapital) or \
@@ -255,7 +256,7 @@ class WorldInfo(object):
     # This is based on code from Traveller Map which I believe is
     # based on the T5.10 rules
     @staticmethod
-    def _calcImportance(world: cartographer.AbstractWorld) -> int:
+    def _calcImportance(world: multiverse.World) -> int:
         importance = 0
 
         uwp = world.uwp()
@@ -326,7 +327,7 @@ class WorldInfo(object):
 
     @staticmethod
     def _calcWorldImage(
-            world: cartographer.AbstractWorld,
+            world: multiverse.World,
             images: cartographer.ImageStore
             ) -> cartographer.AbstractImage:
         uwp = world.uwp()
@@ -342,7 +343,7 @@ class WorldCache(object):
     def __init__(
             self,
             milieu: multiverse.Milieu,
-            universe: cartographer.AbstractUniverse,
+            universe: multiverse.Universe,
             imageStore: cartographer.ImageStore,
             capacity: int
             ) -> None:
@@ -368,7 +369,7 @@ class WorldCache(object):
             ) -> WorldInfo:
         worldInfo = self._infoCache.get(hex)
         if not worldInfo:
-            world = self._universe.worldAt(
+            world = self._universe.worldByPosition(
                 milieu=self._milieu,
                 hex=hex)
             if not world:

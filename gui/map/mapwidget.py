@@ -853,11 +853,10 @@ class MapWidget(QtWidgets.QWidget):
         self._minViewScale = None
         self._maxViewScale = None
 
-        self._mapUniverse = gui.MapUniverse(universe=self._universe)
         self._mapGraphics = gui.MapGraphics()
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
         self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
-        self._labelStore = cartographer.LabelStore(universe=self._mapUniverse)
+        self._labelStore = cartographer.LabelStore(universe=self._universe)
         self._styleStore = cartographer.StyleStore()
         self._renderer = self._newRenderer()
 
@@ -979,8 +978,7 @@ class MapWidget(QtWidgets.QWidget):
 
         self._universe = universe
 
-        self._mapUniverse = gui.MapUniverse(universe=self._universe)
-        self._labelStore = cartographer.LabelStore(universe=self._mapUniverse)
+        self._labelStore = cartographer.LabelStore(universe=self._universe)
 
         self._renderer = self._newRenderer()
 
@@ -1917,7 +1915,7 @@ class MapWidget(QtWidgets.QWidget):
 
     def _newRenderer(self) -> cartographer.RenderContext:
         return cartographer.RenderContext(
-            universe=self._mapUniverse,
+            universe=self._universe,
             graphics=self._mapGraphics,
             worldCenterX=self._viewCenter.x(),
             worldCenterY=self._viewCenter.y(),

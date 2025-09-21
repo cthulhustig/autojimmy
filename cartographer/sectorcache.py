@@ -102,7 +102,7 @@ class SectorCache(object):
     def __init__(
             self,
             milieu: multiverse.Milieu,
-            universe: cartographer.AbstractUniverse,
+            universe: multiverse.Universe,
             graphics: cartographer.AbstractGraphics,
             styleStore: cartographer.StyleStore
             ) -> None:
@@ -150,7 +150,7 @@ class SectorCache(object):
         if worlds is not None:
             return worlds
 
-        sector = self._universe.sectorAt(
+        sector = self._universe.sectorBySectorIndex(
             milieu=self._milieu,
             index=index,
             includePlaceholders=True)
@@ -159,8 +159,8 @@ class SectorCache(object):
             return None
 
         points = []
-        for hex in sector.worldHexes():
-            centerX, centerY = hex.worldCenter()
+        for world in sector.yieldWorlds():
+            centerX, centerY = world.hex().worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
                 x=centerX * multiverse.ParsecScaleX,
@@ -178,7 +178,7 @@ class SectorCache(object):
         if borders is not None:
             return borders
 
-        sector = self._universe.sectorAt(
+        sector = self._universe.sectorBySectorIndex(
             milieu=self._milieu,
             index=index)
         if not sector:
@@ -186,7 +186,7 @@ class SectorCache(object):
             return None
 
         borders = []
-        for border in sector.borders():
+        for border in sector.yieldBorders():
             borders.append(self._createOutline(source=border))
         self._borderCache[index] = borders
         return borders
@@ -199,7 +199,7 @@ class SectorCache(object):
         if regions is not None:
             return regions
 
-        sector = self._universe.sectorAt(
+        sector = self._universe.sectorBySectorIndex(
             milieu=self._milieu,
             index=index)
         if not sector:
@@ -207,7 +207,7 @@ class SectorCache(object):
             return None
 
         regions = []
-        for region in sector.regions():
+        for region in sector.yieldRegions():
             regions.append(self._createOutline(source=region))
         self._regionCache[index] = regions
         return regions
@@ -220,7 +220,7 @@ class SectorCache(object):
         if routes is not None:
             return routes
 
-        sector = self._universe.sectorAt(
+        sector = self._universe.sectorBySectorIndex(
             milieu=self._milieu,
             index=index)
         if not sector:
@@ -235,7 +235,7 @@ class SectorCache(object):
                 typing.Optional[str], # Type
                 typing.Optional[str]], # Allegiance
             typing.List[cartographer.PointF]] = {}
-        for route in sector.routes():
+        for route in sector.yieldRoutes():
             # Compute source/target sectors (may be offset)
             startPoint = route.startHex()
             endPoint = route.endHex()

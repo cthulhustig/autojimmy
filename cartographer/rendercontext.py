@@ -61,7 +61,7 @@ class RenderContext(object):
 
     def __init__(
             self,
-            universe: cartographer.AbstractUniverse,
+            universe: multiverse.Universe,
             graphics: cartographer.AbstractGraphics,
             worldCenterX: float,
             worldCenterY: float,
@@ -618,7 +618,7 @@ class RenderContext(object):
                 sectorIndex = multiverse.SectorIndex(
                     sectorX=sectorX,
                     sectorY=sectorY)
-                sector = self._universe.sectorAt(
+                sector = self._universe.sectorBySectorIndex(
                     milieu=self._milieu,
                     index=sectorIndex)
                 if not sector:
@@ -629,7 +629,11 @@ class RenderContext(object):
                     sectorY=sectorY,
                     indexX=(offsetX - 1) // multiverse.SubsectorWidth,
                     indexY=(offsetY - 1) // multiverse.SubsectorHeight)
-                subsectorName = sector.subsectorName(code=subsectorIndex.code())
+                subsector = sector.subsectorByCode(subsectorIndex.code())
+                if not subsector:
+                    continue
+
+                subsectorName = subsector.name()
                 if not subsectorName:
                     continue
 
@@ -735,7 +739,7 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
-                for border in sector.borders():
+                for border in sector.yieldBorders():
                     if not border.showLabel():
                         continue
 
@@ -757,7 +761,7 @@ class RenderContext(object):
                         brush=brush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
-                for region in sector.regions():
+                for region in sector.yieldRegions():
                     if not region.showLabel():
                         continue
 
@@ -779,7 +783,7 @@ class RenderContext(object):
                         brush=brush,
                         labelStyle=self._styleSheet.microBorders.textStyle)
 
-                for label in sector.labels():
+                for label in sector.yieldLabels():
                     text = label.text()
 
                     labelPos = RenderContext._hexToCenter(label.hex())
@@ -820,7 +824,7 @@ class RenderContext(object):
         for sector in self._selector.sectors():
             sectorLabel = sector.sectorLabel()
 
-            if not self._styleSheet.showAllSectorNames and not sector.isSelected() \
+            if not self._styleSheet.showAllSectorNames and not sector.selected() \
                     and not sectorLabel:
                 continue
 
@@ -1733,7 +1737,7 @@ class RenderContext(object):
             y=position.y(),
             format=cartographer.TextAlignment.Centered)
 
-    def _drawStars(self, world: cartographer.AbstractWorld) -> None:
+    def _drawStars(self, world: multiverse.World) -> None:
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
@@ -2293,7 +2297,7 @@ class RenderContext(object):
         'V': 0}
 
     @staticmethod
-    def _worldStarProps(world: cartographer.AbstractWorld) -> typing.Iterable[typing.Tuple[
+    def _worldStarProps(world: multiverse.World) -> typing.Iterable[typing.Tuple[
             str, # Fill Colour,
             str, # Border Colour
             float]]: # Radius

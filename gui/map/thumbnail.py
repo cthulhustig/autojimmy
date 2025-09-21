@@ -44,7 +44,7 @@ def generateThumbnail(
 
     centerX, centerY = hex.worldCenter()
     renderer = cartographer.RenderContext(
-        universe=gui.MapUniverse(universe=universe),
+        universe=universe,
         graphics=_thumbnailGraphics,
         worldCenterX=centerX,
         worldCenterY=centerY,
