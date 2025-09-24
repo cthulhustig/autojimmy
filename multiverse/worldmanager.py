@@ -10,12 +10,12 @@ class _AllegianceCodeInfo(object):
             self,
             code: str,
             legacyCode: typing.Optional[str],
-            basesCode: typing.Optional[str],
+            baseCode: typing.Optional[str],
             globalName: typing.Optional[str]
             ) -> None:
         self._code = code
         self._legacyCode = legacyCode
-        self._basesCode = basesCode
+        self._baseCode = baseCode
         self._globalName = globalName
         self._localNames: typing.Dict[str, str] = {}
         self._consistentName = True
@@ -26,8 +26,8 @@ class _AllegianceCodeInfo(object):
     def legacyCode(self) -> typing.Optional[str]:
         return self._legacyCode
 
-    def basesCode(self) -> typing.Optional[str]:
-        return self._basesCode
+    def baseCode(self) -> typing.Optional[str]:
+        return self._baseCode
 
     def name(self, sectorName) -> typing.Optional[str]:
         localName = self._localNames.get(sectorName)
@@ -185,7 +185,7 @@ class _AllegianceTracker(object):
 
         return codeInfo.legacyCode()
 
-    def basesCode(
+    def baseCode(
             self,
             milieu: multiverse.Milieu,
             code: str
@@ -201,7 +201,7 @@ class _AllegianceTracker(object):
         if not codeInfo:
             return None
 
-        return codeInfo.basesCode()
+        return codeInfo.baseCode()
 
     def uniqueAllegianceCode(
             self,
@@ -265,7 +265,7 @@ class _AllegianceTracker(object):
                     milieu=milieu,
                     code=code,
                     legacyCode=legacyCode if legacyCode else None,
-                    basesCode=baseCode if baseCode else None,
+                    baseCode=baseCode if baseCode else None,
                     globalName=globalName if globalName else None)
 
         # Now entries where the locations specify sectors are added as names for those
@@ -296,7 +296,7 @@ class _AllegianceTracker(object):
                     milieu=milieu,
                     code=code,
                     legacyCode=legacyCode if legacyCode else None,
-                    basesCode=baseCode if baseCode else None)
+                    baseCode=baseCode if baseCode else None)
 
                 for abbreviation in abbreviations:
                     sectorName = abbreviationMap.get((milieu, abbreviation))
@@ -313,12 +313,12 @@ class _AllegianceTracker(object):
         for milieu in multiverse.Milieu:
             unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(milieu)
             if unofficialAllegiance:
-                for code, legacyCode, basesCode, globalName in unofficialAllegiance:
+                for code, legacyCode, baseCode, globalName in unofficialAllegiance:
                     self._addAllegianceCode(
                         milieu=milieu,
                         code=code,
                         legacyCode=legacyCode if legacyCode else None,
-                        basesCode=basesCode if baseCode else None,
+                        baseCode=baseCode if baseCode else None,
                         globalName=globalName if globalName else None)
 
     def _addAllegianceCode(
@@ -326,7 +326,7 @@ class _AllegianceTracker(object):
             milieu: multiverse.Milieu,
             code: str,
             legacyCode: typing.Optional[str] = None,
-            basesCode: typing.Optional[str] = None,
+            baseCode: typing.Optional[str] = None,
             globalName: typing.Optional[str] = None,
             ) -> _AllegianceCodeInfo:
         milieuData = self._milieuDataMap.get(milieu)
@@ -337,7 +337,7 @@ class _AllegianceTracker(object):
             codeInfo = _AllegianceCodeInfo(
                 code=code,
                 legacyCode=legacyCode,
-                basesCode=basesCode,
+                baseCode=baseCode,
                 globalName=globalName)
             milieuData[code] = codeInfo
         return codeInfo
@@ -975,7 +975,7 @@ class WorldManager(object):
                         legacyCode=allegianceTracker.legacyCode(
                             milieu=milieu,
                             code=allegianceCode),
-                        basesCode=allegianceTracker.basesCode(
+                        baseCode=allegianceTracker.baseCode(
                             milieu=milieu,
                             code=allegianceCode),
                         uniqueCode=allegianceTracker.uniqueAllegianceCode(

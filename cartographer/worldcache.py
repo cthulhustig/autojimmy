@@ -108,12 +108,12 @@ class WorldInfo(object):
             # T5AllegianceCodeToLegacyCode
             self.legacyAllegiance = self.t5Allegiance
 
-        basesAllegiance = allegiance.basesCode() if allegiance else None
-        if not basesAllegiance:
-            # Using the T5 allegiance if there is no bases one seems odd
+        baseAllegiance = allegiance.baseCode() if allegiance else None
+        if not baseAllegiance:
+            # Using the T5 allegiance if there is no base one seems odd
             # but it's consistent with the Traveller Map implementation of
             # AllegianceCodeToBaseAllegianceCode
-            basesAllegiance = self.t5Allegiance
+            baseAllegiance = self.t5Allegiance
 
         bases = world.bases()
         self.primaryBaseGlyph = self.secondaryBaseGlyph = self.tertiaryBaseGlyph = self.specialFeatureGlyph = None
@@ -128,12 +128,12 @@ class WorldInfo(object):
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
             # Special case: Show Zho Naval+Military as diamond
-            if basesAllegiance == 'Zh' and bases.string() == 'KM':
+            if baseAllegiance == 'Zh' and bases.string() == 'KM':
                 baseCode = 'Z'
                 ignoreSecondBase = True
 
             self.primaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
-                allegiance=basesAllegiance,
+                allegiance=baseAllegiance,
                 code=baseCode)
 
         if bases.count() >= 2 and not ignoreSecondBase:
