@@ -42,7 +42,6 @@ _JsonMetadataWarning = """
 """.format(name=app.AppName)
 _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
 
-# TODO: This should probably come from the config
 _TravellerMapBaseUrl = 'https://travellermap.com'
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it

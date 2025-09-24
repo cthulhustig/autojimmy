@@ -83,21 +83,16 @@ cloned/installed Auto-Jimmy to. If you have downloaded an update, they can be
 found in `%AppData%\map\` on Windows or `~/.auto-jimmy/map/` on macOS and Linux.
 
 ## Linting
-Linting is a process performed by Traveller Map where it will check your sector
-and metadata files for any errors or potential issues.
-If you're using new or modified sector or metadata files, it's recommend to lint
-them before using them to create custom sectors. The linter gives detailed
-information about any errors or potential issues, allowing you to correct them.
-This is advisable as, in most cases, the Traveller Map poster generator will
-simply ignore worlds that have any errors, meaning they won't be shown. Linting
-before creating the sectors saves you time and means you're not putting additional
-load on the Traveller Map servers by recreating the sector once you notice
-something isn't being displayed correctly.
+Linting is a service provided by Traveller Map where it can analyse your sector
+and metadata files to check for errors. For example it will flag worlds that have
+a government that is invalid for the population size. The rules Traveller Map uses
+when linting are based on the T5 world creation rules.
+Auto-Jimmy gives you the option to lint your custom sector files when creating a
+new custom sector. If you choose to lint the files, they will be automatically
+uploaded to Traveller Map and any errors found will be displayed.
 
-> [!TIP]
-> You can lint your sectors from the same Auto-Jimmy dialog you use to create a
-> new custom sector. Just click the 'Lint' button after selecting your sector
-> and metadata file.
+> [!IMPORTANT]
+> Linting requires an internet connection.
 
 ## Links
 * Traveller Map API: https://travellermap.com/doc/api
