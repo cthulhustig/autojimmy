@@ -31,9 +31,8 @@ Python and can be run on Windows, Linux and macOS.
     and best case dice rolls at each point in the trading process
 * Import of custom sectors
     * Custom sector data integrated into all tools
-    * Posters of custom sectors automatically generated and overlaid onto Traveller Map views
     * Support for T5 Column & Tab sector files and XML & JSON metadata
-* Fast map drawing using a port of the Traveller Map rendering code
+* Offline map rendering
     * Replicates all Traveller Map map styles and overlays
     * No internet connection required
 
@@ -84,50 +83,7 @@ Downloading the source code can be done either by cloning the repo with git or d
    pip3 install -r requirements_sierra.txt
    ```
 
-### Step 3: Install libcairo (Optional)
-> [!NOTE]
-> By default, Auto-Jimmy will use its own in-app rendering engine to draw the map of
-> the Traveller universe and there is no need to install libcairo.
-
-If you configure Auto-Jimmy to use web proxy based rendering and are creating
-custom sectors, it is recommended to install [libcairo](https://www.cairographics.org/).
-Primarily this is done to reduce visual artifacts when compositing custom
-sectors onto the map tiles Traveller Map uses to display the universe, however,
-it also has the added advantage that generating custom sectors is quicker.
-
-#### Install libcairo on Windows
-On Windows, libcairo can be installed using the package manager that comes with
-[MSYS2](https://www.msys2.org/).
-1. Follow the instructions from https://www.msys2.org/ to install MSYS2 . When prompted to
-   choose an install location, it's recommended to use the default of `c:\msys64`
-2. Once the installer has completed it should launch a MSYS2 command prompt. If it doesn't
-   happen, or you already have MSYS2 installed, you can launch one from the Windows Start
-   Menu.
-
-   Note: MSYS2 adds multiple command prompt entries to the Start Menu, each for a different
-   compiler. It doesn't matter which you use to run the following command.
-3. Run the following command from the MSYS2 command prompt:
-   ```
-   pacman -S mingw-w64-x86_64-cairo
-   ```
-4. If you choose to install MSYS2 in a location other that the default of `c:\msys64`, you
-   will need to set the `MSYS2_PATH` environment variable to the location you installed
-   it.
-
-#### Install libcairo on macOS
-On macOS, libcairo can be installed using the [Homebrew](https://brew.sh/) package manager.
-1. Follow the instructions at https://brew.sh/ to install Homebrew 
-2. Open a terminal.
-3. Run the following command:
-   ```
-   brew install cairo
-   ```
-
-#### Install libcairo on Linux
-How libcairo is installed on Linux will vary depending on which distro you are using.
-Some distros, such as recent versions of Ubuntu, come with it already installed.
-
-### Step 4: Running Auto-Jimmy
+### Step 3: Running Auto-Jimmy
 1. Open a terminal or command prompt.
 2. Navigate to the directory containing the Auto-Jimmy source code
 3. Execute the following command to run the application:

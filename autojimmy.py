@@ -22,10 +22,6 @@ import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-# TODO: Drop libcairo stuff from docs
-# - Maybe leave the around for a bit but make it clear they're only needed for
-# older versions
-
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
 
 _WelcomeMessage = """

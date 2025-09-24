@@ -28,53 +28,6 @@ _WelcomeMessage = """
     <li>JSON Metadata Format (sorry, I can't find any documentation for this format)</li>
     </ul>
     </p>
-
-    <p>How custom sectors are drawn in windows displaying the map differs
-    depending on if you're using the default local rendering, where {name}
-    draws the map, or if you're using one of the legacy web based rendering,
-    where the Traveller Map server draws it.</p>
-    <p>If local rendering is used, {name} will draw custom sectors at the
-    same time as it's drawing the rest of the map. Custom sectors will be
-    indistinguishable from other sectors and will update if the map style or
-    draw options are changed.</p>
-    <p>If one of the web based rendering methods is used, {name} will use
-    Traveller Map to draw the stock map, then composites the custom sectors
-    on top of that. This uses images of the custom sectors that are
-    automatically generated using the Traveller Map Poster API at the point
-    the sector is added to {name}. This approach to drawing custom sectors
-    has a few of significant drawbacks. Most significant of those are, there
-    can be graphical artifacts where a custom sector borders another sector
-    or at high zoom levels, and, the map style and draw options are set at
-    the point the custom sector is created, so custom sectors will not
-    update if they're changed later.<p>
-
-    <p>Web based rendering is now considered a legacy feature and will most
-    likely be removed in a future version of {name}. If you do choose to use
-    when also using custom sectors, there are a few additional things to be
-    aware of:
-    <ul style="margin-left:15px; -qt-list-indent:0;">
-    <li>The eye candy style isn't supported.</li>
-    <li>{name} support 3 modes of composition with web based rendering. Which
-    is used is dependent on configuration and if CairoSVG is installed. The
-    composition modes are:</li>
-    <ul style="margin-left:15px; -qt-list-indent:0;">
-    <li><i>Bitmap</i> - This is the fallback mode if CairoSVG is not installed.
-    {name} uses Traveller Map to generate bitmap posters for composition. This
-    method suffers from the most visual artifacts.</li>
-    <li><i>Hybrid</i> - This is the default mode if CairoSVG is installed.
-    {name} uses Traveller Map to generate SVG posters, these posters are
-    pre-processed and converted to bitmap layers prior to composition. This
-    method prevents some of the visual artifacts around the borders of custom
-    sectors.</li>
-    <li><i>SVG</i> - This method of composition can be enabled from the
-    configuration dialog if CairoSVG is installed. {name} uses Traveller Map to
-    generate SVG posters, these SVG posters are only converted to bitmaps at the
-    point tile composition occurs. This method prevents blockiness at high zoom
-    levels and some of the visual artifacts around the borders, however it's
-    <b>significantly</b> more CPU intensive than other methods and only suitable
-    for systems with high core counts.</ul>
-    </ul></p>
-    </html>
 """.format(name=app.AppName)
 
 _JsonMetadataWarning = """
