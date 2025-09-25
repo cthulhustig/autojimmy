@@ -151,11 +151,8 @@ class Universe(object):
             milieu: multiverse.Milieu,
             sectorHex: str,
             ) -> typing.Optional[multiverse.World]:
-        try:
-            hex = self.sectorHexToPosition(milieu=milieu, sectorHex=sectorHex)
-        except Exception as ex:
-            return None
-        return self.worldByPosition(milieu=milieu, hex=hex)
+        hex = self.sectorHexToPosition(milieu=milieu, sectorHex=sectorHex)
+        return self.worldByPosition(milieu=milieu, hex=hex) if hex else None
 
     def worldByPosition(
             self,
@@ -344,7 +341,7 @@ class Universe(object):
             self,
             milieu: multiverse.Milieu,
             sectorHex: str
-            ) -> multiverse.HexPosition:
+            ) -> typing.Optional[multiverse.HexPosition]:
         sectorName, offsetX, offsetY = multiverse.splitSectorHex(
             sectorHex=sectorHex)
 
@@ -396,8 +393,7 @@ class Universe(object):
             except:
                 pass
 
-        if not sector:
-            raise KeyError(f'Failed to resolve sector {sectorName} for sector hex {sectorHex}')
+        return None
 
     def stringToPosition(
             self,
@@ -410,13 +406,14 @@ class Universe(object):
 
         result = self._SectorHexSearchPattern.match(testString)
         if result:
-            try:
-                return self.sectorHexToPosition(milieu=milieu, sectorHex=testString)
-            except:
-                # Search string is not a valid sector hex. The search pattern
-                # regex was matched so it should have the correct format, most
-                # likely the sector name doesn't match a known sector
-                pass
+            hex = self.sectorHexToPosition(milieu=milieu, sectorHex=testString)
+            if hex:
+                return hex
+
+            # Search string is not a valid sector hex. The search pattern
+            # regex was matched so it should have the correct format, most
+            # likely the sector name doesn't match a known sector. Continue
+            # in case it matches one of the other patterns (but it's unlikely)
 
         result = self._AbsoluteHexSearchPattern.match(testString)
         if result:

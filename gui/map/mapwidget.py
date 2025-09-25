@@ -977,7 +977,6 @@ class MapWidget(QtWidgets.QWidget):
             return
 
         self._universe = universe
-
         self._labelStore = cartographer.LabelStore(universe=self._universe)
 
         self._renderer = self._newRenderer()

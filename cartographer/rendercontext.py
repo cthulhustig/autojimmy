@@ -908,7 +908,7 @@ class RenderContext(object):
                     labelStyle=labelStyle)
 
         if self._labelStore and (self._options & cartographer.RenderOptions.NamesMinor) != 0:
-            for label in self._labelStore.minorLabels:
+            for label in self._labelStore.minorLabels():
                 font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
                     self._styleSheet.macroRoutes.textBrush \
@@ -944,7 +944,7 @@ class RenderContext(object):
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.HighQuality)
-            for worldLabel in self._labelStore.worldLabels:
+            for worldLabel in self._labelStore.worldLabels():
                 if (worldLabel.options & self._options) == 0:
                     continue
 
@@ -997,7 +997,7 @@ class RenderContext(object):
 
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
-        for label in self._labelStore.megaLabels:
+        for label in self._labelStore.megaLabels():
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.scaleTransform(

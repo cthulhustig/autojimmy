@@ -712,7 +712,7 @@ class WorldManager(object):
             self,
             milieu: multiverse.Milieu,
             sectorHex: str
-            ) -> multiverse.HexPosition:
+            ) -> typing.Optional[multiverse.HexPosition]:
         return self._universe.sectorHexToPosition(
             milieu=milieu,
             sectorHex=sectorHex)

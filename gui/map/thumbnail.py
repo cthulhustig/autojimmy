@@ -9,7 +9,6 @@ _thumbnailRenderInitialised = False
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
 _thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
 _thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
-_thumbnailLabelCache: typing.Optional[cartographer.LabelStore] = None
 _thumbnailStyleCache: typing.Optional[cartographer.StyleStore] = None
 
 def _initThumbnailRenderer():
@@ -17,7 +16,6 @@ def _initThumbnailRenderer():
     global _thumbnailGraphics
     global _thumbnailImageCache
     global _thumbnailVectorCache
-    global _thumbnailLabelCache
     global _thumbnailStyleCache
 
     if _thumbnailRenderInitialised:
@@ -26,7 +24,6 @@ def _initThumbnailRenderer():
     _thumbnailGraphics = gui.MapGraphics()
     _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
     _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
-    _thumbnailLabelCache = cartographer.LabelStore(universe=multiverse.WorldManager.instance().universe())
     _thumbnailStyleCache = cartographer.StyleStore()
     _thumbnailRenderInitialised = True
 
@@ -57,7 +54,7 @@ def generateThumbnail(
         imageStore=_thumbnailImageCache,
         styleStore=_thumbnailStyleCache,
         vectorStore=_thumbnailVectorCache,
-        labelStore=_thumbnailLabelCache)
+        labelStore=cartographer.LabelStore(universe=universe))
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
     painter = QtGui.QPainter()

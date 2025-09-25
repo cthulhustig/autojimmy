@@ -31,41 +31,49 @@ class WorldLabel(object):
         self.biasX = biasX
         self.biasY = biasY
 
-# TODO: The way world labels currently work is a pain in the ass as it
-# means this class needs to be aware of the universe. Not sure what the
-# best solution is
-# - Could update the file to use absolute positions rather than sector
-# hex. Downside of this is it won't work in the future when I add editing
-# as the world labels mark the position of worlds that can move.
-# - Could move it the abstract world says if the world have this kind of
-# label. It would need to handle to store the label content and bias
-# (although it may be world converting bias to text alignment as that's
-# what it currently resolves to)
 class LabelStore(object):
     _MinorLabelsPath = 'labels/minor_labels.tab'
-    _MajorLabelsPath = 'labels/mega_labels.tab'
+    _MegaLabelsPath = 'labels/mega_labels.tab'
     _WorldLabelPath = 'labels/Worlds.xml'
 
     # The Traveller Map world labels use sector hex locations with the
     # sectors using the M1105 names
     _SectorHexMilieu = multiverse.Milieu.M1105
 
+    _cachedMinorLabels = None
+    _cachedMegaLabels = None
+
+    _cachedWorldLabelsXml = None
+
     def __init__(
             self,
             universe: multiverse.Universe
             ) -> None:
         self._universe = universe
-        self.minorLabels = self._parseMapLabels(
-            multiverse.DataStore.instance().loadTextResource(
-                filePath=LabelStore._MinorLabelsPath))
-        self.megaLabels = self._parseMapLabels(
-            multiverse.DataStore.instance().loadTextResource(
-                filePath=LabelStore._MajorLabelsPath))
-        self.worldLabels = self._parseWorldLabels(
-            multiverse.DataStore.instance().loadTextResource(
-                filePath=LabelStore._WorldLabelPath))
 
-    def _parseMapLabels(self, content: str) -> typing.List[MapLabel]:
+        if LabelStore._cachedMinorLabels is None:
+            LabelStore._cachedMinorLabels = self._parseMapLabels(
+                multiverse.DataStore.instance().loadTextResource(
+                    filePath=LabelStore._MinorLabelsPath))
+
+        if LabelStore._cachedMegaLabels is None:
+            self._cachedMegaLabels = self._parseMapLabels(
+                multiverse.DataStore.instance().loadTextResource(
+                    filePath=LabelStore._MegaLabelsPath))
+
+        self._worldLabels = self._loadWorldLabels(self._universe)
+
+    def minorLabels(self) -> typing.Collection[MapLabel]:
+        return LabelStore._cachedMinorLabels
+
+    def megaLabels(self) -> typing.Collection[MapLabel]:
+        return LabelStore._cachedMegaLabels
+
+    def worldLabels(self) -> typing.Collection[WorldLabel]:
+        return self._worldLabels
+
+    @staticmethod
+    def _parseMapLabels(content: str) -> typing.List[MapLabel]:
         _, rows = multiverse.parseTabContent(content=content)
         labels = []
         for data in rows:
@@ -75,11 +83,15 @@ class LabelStore(object):
                 minor=common.stringToBool(data['Minor'], strict=False)))
         return labels
 
-    def _parseWorldLabels(self, content) -> typing.List[WorldLabel]:
-        rootElement = xml.etree.ElementTree.fromstring(content)
+    @staticmethod
+    def _loadWorldLabels(universe: multiverse.Universe) -> typing.List[WorldLabel]:
+        if LabelStore._cachedWorldLabelsXml is None:
+            content = multiverse.DataStore.instance().loadTextResource(
+                filePath=LabelStore._WorldLabelPath)
+            LabelStore._cachedWorldLabelsXml = xml.etree.ElementTree.fromstring(content)
 
         labels: typing.List[WorldLabel] = []
-        for index, worldElement in enumerate(rootElement.findall('./World')):
+        for index, worldElement in enumerate(LabelStore._cachedWorldLabelsXml.findall('./World')):
             try:
                 nameElement = worldElement.find('./Name')
                 if nameElement is None:
@@ -105,9 +117,16 @@ class LabelStore(object):
                 hex = locationElement.attrib.get('Hex')
                 if hex is None:
                     raise RuntimeError('Location element has no Hex attribute')
-                location = self._universe.sectorHexToPosition(
+                sectorHex = f'{sector} {hex}'
+                world = universe.worldBySectorHex(
                     milieu=LabelStore._SectorHexMilieu,
-                    sectorHex=f'{sector} {hex}')
+                    sectorHex=sectorHex)
+                if not world:
+                    # The world doesn't exist in this universe so skip the label
+                    logging.debug(
+                        f'Skipping world label {index} as no world at location {sectorHex}')
+                    continue
+                location = world.hex()
                 centerX, centerY = location.worldCenter()
                 location = cartographer.PointF(x=centerX, y=centerY)
 
