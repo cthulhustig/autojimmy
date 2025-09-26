@@ -84,7 +84,7 @@ found in `%AppData%\map\` on Windows or `~/.auto-jimmy/map/` on macOS and Linux.
 
 ## Linting
 Linting is a service provided by Traveller Map where it can analyse your sector
-and metadata files to check for errors. For example it will flag worlds that have
+and metadata files to check for errors. For example, it will flag worlds that have
 a government that is invalid for the population size. The rules Traveller Map uses
 when linting are based on the T5 world creation rules.
 Auto-Jimmy gives you the option to lint your custom sector files when creating a
