@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import enum
 import gui
@@ -750,7 +751,6 @@ class _CustomSectorTable(gui.ListTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
-# TODO: This will need to handle passing config updates to the map (style, options etc)
 class CustomSectorDialog(gui.DialogEx):
     _MinMapScale = gui.MapScale(log=5)
     _MaxMapScale = gui.MapScale(log=10)
@@ -781,6 +781,8 @@ class CustomSectorDialog(gui.DialogEx):
         dialogLayout.addWidget(self._horizontalSplitter)
 
         self.setLayout(dialogLayout)
+
+        app.Config.instance().configChanged.connect(self._appConfigChanged)
 
     def modified(self) -> bool:
         return self._modified
@@ -862,7 +864,7 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMetadataTextEdit.setFont(monospaceFont)
         self._sectorMetadataTextEdit.setReadOnly(True)
 
-        self._sectorMap = gui.MapWidgetEx(
+        self._sectorMapWidget = gui.MapWidgetEx(
             universe=multiverse.Universe(sectors=[]),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
@@ -872,14 +874,18 @@ class CustomSectorDialog(gui.DialogEx):
             animated=app.Config.instance().value(option=app.ConfigOption.MapAnimations),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
             taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
-        self._sectorMap.setViewScaleLimits(
+        self._sectorMapWidget.setViewScaleLimits(
             minScale=CustomSectorDialog._MinMapScale,
             maxScale=CustomSectorDialog._MaxMapScale)
+        self._sectorMapWidget.mapStyleChanged.connect(self._mapStyleChanged)
+        self._sectorMapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
+        self._sectorMapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
+        self._sectorMapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
         mapLayout = QtWidgets.QVBoxLayout()
         mapLayout.setContentsMargins(0, 0, 0, 0)
         mapLayout.setSpacing(0)
-        mapLayout.addWidget(self._sectorMap)
+        mapLayout.addWidget(self._sectorMapWidget)
         mapLayoutWidget = QtWidgets.QWidget()
         mapLayoutWidget.setLayout(mapLayout)
 
@@ -908,7 +914,7 @@ class CustomSectorDialog(gui.DialogEx):
         if not sectorInfo:
             self._sectorFileTextEdit.clear()
             self._sectorMetadataTextEdit.clear()
-            self._sectorMap.setUniverse(universe=multiverse.Universe(sectors=[]))
+            self._sectorMapWidget.setUniverse(universe=multiverse.Universe(sectors=[]))
             return
 
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
@@ -950,22 +956,22 @@ class CustomSectorDialog(gui.DialogEx):
             sectorContent=sectorContent,
             metadataContent=metadataContent)
 
-        self._sectorMap.setUniverse(universe=universe)
+        self._sectorMapWidget.setUniverse(universe=universe)
 
         sectorIndex = sector.index()
         left, top, width, height = sectorIndex.worldBounds()
         sectorCenter = QtCore.QPointF(left + (width / 2), top + (height / 2))
-        self._sectorMap.setViewAreaLimits(
+        self._sectorMapWidget.setViewAreaLimits(
             upperLeft=QtCore.QPointF(left, top),
             lowerRight=QtCore.QPointF(left + width, top + height))
-        self._sectorMap.setView(
+        self._sectorMapWidget.setView(
             center=sectorCenter,
             scale=CustomSectorDialog._MinMapScale,
             immediate=True)
-        self._sectorMap.setHomePosition(
+        self._sectorMapWidget.setHomePosition(
             center=sectorCenter,
             scale=CustomSectorDialog._MinMapScale)
-        self._sectorMap.setInfoHex(hex=None)
+        self._sectorMapWidget.setInfoHex(hex=None)
 
     def _newSectorClicked(self) -> None:
         dialog = _NewSectorDialog(parent=self)
@@ -1012,6 +1018,61 @@ class CustomSectorDialog(gui.DialogEx):
 
         self._modified = True
         self._sectorTable.synchronise()
+
+    def _mapStyleChanged(
+            self,
+            style: cartographer.MapStyle
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapStyle,
+            value=style)
+
+    def _mapOptionsChanged(
+            self,
+            options: typing.Iterable[app.MapOption]
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapOptions,
+            value=options)
+
+    def _mapRenderingChanged(
+            self,
+            renderingType: app.MapRendering,
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapRendering,
+            value=renderingType)
+
+    def _mapAnimationChanged(
+            self,
+            animations: bool
+            ) -> None:
+        app.Config.instance().setValue(
+            option=app.ConfigOption.MapAnimations,
+            value=animations)
+
+    def _appConfigChanged(
+            self,
+            option: app.ConfigOption,
+            oldValue: typing.Any,
+            newValue: typing.Any
+            ) -> None:
+        if option is app.ConfigOption.Milieu:
+            self._sectorMapWidget.setMilieu(milieu=newValue)
+        elif option is app.ConfigOption.Rules:
+            self._sectorMapWidget.setRules(rules=newValue)
+        elif option is app.ConfigOption.MapStyle:
+            self._sectorMapWidget.setMapStyle(style=newValue)
+        elif option is app.ConfigOption.MapOptions:
+            self._sectorMapWidget.setMapOptions(options=newValue)
+        elif option is app.ConfigOption.MapRendering:
+            self._sectorMapWidget.setRendering(rendering=newValue)
+        elif option is app.ConfigOption.MapAnimations:
+            self._sectorMapWidget.setAnimated(animated=newValue)
+        elif option is app.ConfigOption.WorldTagging:
+            self._sectorMapWidget.setWorldTagging(tagging=newValue)
+        elif option is app.ConfigOption.TaggingColours:
+            self._sectorMapWidget.setTaggingColours(colours=newValue)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
