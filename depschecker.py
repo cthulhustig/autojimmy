@@ -37,8 +37,6 @@ _MissingRequirements = []
 for lib in _Requirements:
     try:
         importlib.import_module(lib)
-    except OSError as ex:
-        raise # Rethrow other OSErrors
     except ModuleNotFoundError as ex:
         _MissingRequirements.append(lib)
 
