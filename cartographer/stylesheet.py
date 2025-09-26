@@ -1,8 +1,6 @@
 import common
-import logging
 import cartographer
 import math
-import multiverse
 import typing
 
 class LayerList(list):
