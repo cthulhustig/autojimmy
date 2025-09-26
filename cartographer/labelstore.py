@@ -57,7 +57,7 @@ class LabelStore(object):
                     filePath=LabelStore._MinorLabelsPath))
 
         if LabelStore._cachedMegaLabels is None:
-            self._cachedMegaLabels = self._parseMapLabels(
+            LabelStore._cachedMegaLabels = self._parseMapLabels(
                 multiverse.DataStore.instance().loadTextResource(
                     filePath=LabelStore._MegaLabelsPath))
 
