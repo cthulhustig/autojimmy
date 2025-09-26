@@ -782,9 +782,14 @@ class MapWidget(QtWidgets.QWidget):
     # structure didn't change
     _StateVersion = 'LocalMapWidget_v1'
 
-    # TODO: I don't like the fact this has the universe in the key
-    # TODO: If I do keep the universe as part of the key I need to check there
-    # is no perf degradation
+    # NOTE: Using the universe as part of the key isn't ideal as it means the
+    # tile cache can keep old universes in memory until all tiles for it have
+    # been evicted from the cache. I don't think it's really an issue at the
+    # moment but could become more of a problem depending on how I end up
+    # implementing universe editing. Solutions could be
+    # - Give each universe a unique id and use that in the key
+    # - Use a weakref.WeakKeyDictionary to map weak references to the universe
+    # to a LRUCache per universe
     _sharedTileCache = common.LRUCache[
         typing.Tuple[
             int, # Tile X
