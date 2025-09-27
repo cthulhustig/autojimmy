@@ -101,6 +101,6 @@ def worldHasRefuelling(
         world: multiverse.World,
         rules: traveller.Rules
         ) -> bool:
-    return worldHasWildernessRefuelling() or \
+    return worldHasWildernessRefuelling(world=world) or \
         worldHasStarPortRefuelling(world=world, rules=rules) or \
         world.isFuelCache()
