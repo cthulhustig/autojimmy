@@ -1372,6 +1372,7 @@ class WorldManager(object):
         'large': multiverse.Label.Size.Large,
     }
 
+    @staticmethod
     def _mapLabelSize(
             size: typing.Optional[str]
             ) -> typing.Optional[multiverse.Label.Size]:
