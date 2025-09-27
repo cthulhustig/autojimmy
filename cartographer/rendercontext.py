@@ -1619,10 +1619,11 @@ class RenderContext(object):
                 colour=self._styleSheet.backgroundBrush.colour()))
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                shouldDim = \
-                    not tagging.contains(multiverse.SectorTagging.Tag.Official) and \
-                    not tagging.contains(multiverse.SectorTagging.Tag.Preserve) and \
-                    not tagging.contains(multiverse.SectorTagging.Tag.InReview)
+                shouldDim = sector.isCustom()
+                if not shouldDim:
+                    shouldDim = not tagging.contains(multiverse.SectorTagging.Tag.Official) and \
+                        not tagging.contains(multiverse.SectorTagging.Tag.Preserve) and \
+                        not tagging.contains(multiverse.SectorTagging.Tag.InReview)
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         index=sector.index())

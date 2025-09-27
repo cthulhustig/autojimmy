@@ -406,7 +406,8 @@ class WorldManager(object):
             rawData: typing.List[typing.Tuple[
                 multiverse.Milieu,
                 multiverse.RawMetadata,
-                typing.Iterable[multiverse.RawWorld]
+                typing.Iterable[multiverse.RawWorld],
+                bool # True if sector is a custom sector
                 ]] = []
             for milieu in multiverse.Milieu:
                 for sectorInfo in multiverse.DataStore.instance().sectors(milieu=milieu):
@@ -437,7 +438,7 @@ class WorldManager(object):
                             format=sectorInfo.sectorFormat(),
                             identifier=canonicalName)
 
-                        rawData.append((milieu, rawMetadata, rawWorlds))
+                        rawData.append((milieu, rawMetadata, rawWorlds, sectorInfo.isCustomSector()))
                     except Exception as ex:
                         logging.error(f'Failed to load sector {canonicalName} in {milieu.value}', exc_info=ex)
                         continue
@@ -447,7 +448,7 @@ class WorldManager(object):
             # worlds being created as the unique disambiguated name is part of their
             # construction
             allegianceTracker = _AllegianceTracker()
-            for milieu, rawMetadata, _ in rawData:
+            for milieu, rawMetadata, _, _ in rawData:
                 canonicalName = rawMetadata.canonicalName()
                 logging.debug(f'Populating allegiances for sector {canonicalName}')
                 WorldManager._populateAllegiances(
@@ -456,7 +457,7 @@ class WorldManager(object):
                     tracker=allegianceTracker)
 
             sectors = []
-            for milieu, rawMetadata, rawWorlds in rawData:
+            for milieu, rawMetadata, rawWorlds, isCustom in rawData:
                 canonicalName = rawMetadata.canonicalName()
                 logging.debug(f'Processing sector {canonicalName}')
 
@@ -470,7 +471,8 @@ class WorldManager(object):
                         milieu=milieu,
                         rawMetadata=rawMetadata,
                         rawWorlds=rawWorlds,
-                        allegianceTracker=allegianceTracker)
+                        allegianceTracker=allegianceTracker,
+                        isCustom=isCustom)
                 except Exception as ex:
                     logging.error(f'Failed to process sector {canonicalName} in {milieu.value}', exc_info=ex)
                     continue
@@ -518,7 +520,8 @@ class WorldManager(object):
             milieu=milieu,
             rawMetadata=rawMetadata,
             rawWorlds=rawWorlds,
-            allegianceTracker=allegianceTracker)
+            allegianceTracker=allegianceTracker,
+            isCustom=True)
 
         return (multiverse.Universe(sectors=[sector]), sector)
 
@@ -914,7 +917,8 @@ class WorldManager(object):
             milieu: multiverse.Milieu,
             rawMetadata: multiverse.RawMetadata,
             rawWorlds: typing.Collection[multiverse.RawWorld],
-            allegianceTracker: _AllegianceTracker
+            allegianceTracker: _AllegianceTracker,
+            isCustom: bool
             ) -> multiverse.Sector:
         sectorName = rawMetadata.canonicalName()
         sectorX = rawMetadata.x()
@@ -1324,7 +1328,8 @@ class WorldManager(object):
             regions=regions,
             labels=labels,
             selected=rawMetadata.selected() if rawMetadata.selected() else False,
-            tags=multiverse.SectorTagging(rawMetadata.tags()))
+            tags=multiverse.SectorTagging(rawMetadata.tags()),
+            isCustom=isCustom)
 
     _RouteStyleMap = {
         'solid': multiverse.Route.Style.Solid,
