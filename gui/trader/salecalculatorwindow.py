@@ -103,7 +103,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
@@ -546,8 +545,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
             self._saleWorldWidget.setMapRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._saleWorldWidget.setMapAnimations(enabled=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._cargoTable.setOutcomeColours(colours=newValue)
             self._salePricesTable.setOutcomeColours(colours=newValue)

@@ -11,7 +11,6 @@ class HexTooltipProvider(object):
             self,
             milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            showImages: bool,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Collection[app.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -21,7 +20,6 @@ class HexTooltipProvider(object):
 
         self._milieu = milieu
         self._rules = traveller.Rules(rules)
-        self._showImages = showImages
         self._mapStyle = mapStyle
         self._mapOptions = set(mapOptions)
         self._worldTagging = logic.WorldTagging(worldTagging) if worldTagging else None
@@ -38,12 +36,6 @@ class HexTooltipProvider(object):
 
     def setRules(self, rules: traveller.Rules) -> None:
         self._rules = traveller.Rules(rules)
-
-    def showImages(self) -> bool:
-        return self._showImages
-
-    def setShowImages(self, show: bool) -> None:
-        self._showImages = show
 
     def mapStyle(self) -> cartographer.MapStyle:
         return self._mapStyle
@@ -75,7 +67,7 @@ class HexTooltipProvider(object):
             milieu=self._milieu,
             hex=hex,
             rules=self._rules,
-            includeHexImage=self._showImages,
+            includeHexImage=True, # Always show hex images
             hexImageStyle=self._mapStyle,
             hexImageOptions=self._mapOptions,
             worldTagging=self._worldTagging,

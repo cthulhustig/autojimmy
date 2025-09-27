@@ -718,7 +718,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
@@ -1488,8 +1487,6 @@ class JumpRouteWindow(gui.WindowWidget):
             self._waypointsWidget.setMapAnimations(enabled=newValue)
             self._avoidHexesWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimated(animated=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._refuellingPlanTable.setOutcomeColours(colours=newValue)
         elif option is app.ConfigOption.WorldTagging:

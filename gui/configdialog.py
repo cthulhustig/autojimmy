@@ -353,18 +353,6 @@ class ConfigDialog(gui.DialogEx):
             _RestartRequiredParagraph,
             escape=False))
 
-        self._showToolTipImagesCheckBox = gui.CheckBoxEx()
-        self._showToolTipImagesCheckBox.setChecked(app.Config.instance().value(
-            option=app.ConfigOption.ShowToolTipImages,
-            futureValue=True))
-        self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
-            '<p>Display world images in tool tips</p>'
-            '<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
-            'recommended to disable this setting if operating offline or with a slow connection. Tool '
-            'tip images are cached, however the first time a tool tip for a given world is displayed it '
-            'can cause the user interface to block temporarily while the image is downloaded.</p>',
-            escape=False))
-
         outcomeColours = app.Config.instance().value(
             option=app.ConfigOption.OutcomeColours,
             futureValue=True)
@@ -390,7 +378,6 @@ class ConfigDialog(gui.DialogEx):
         guiLayout = gui.FormLayoutEx()
         guiLayout.addRow('Colour Theme:', self._colourThemeComboBox)
         guiLayout.addRow('Scale (%):', self._interfaceScaleSpinBox)
-        guiLayout.addRow('Show World Image in Tool Tips:', self._showToolTipImagesCheckBox)
         guiLayout.addRow('Average Case Highlight Colour:', self._averageCaseColourButton)
         guiLayout.addRow('Worst Case Highlight Colour:', self._worstCaseColourButton)
         guiLayout.addRow('Best Case Highlight Colour:', self._bestCaseColourButton)
@@ -683,9 +670,6 @@ class ConfigDialog(gui.DialogEx):
             app.Config.instance().setValue(
                 option=app.ConfigOption.InterfaceScale,
                 value=self._interfaceScaleSpinBox.value() / 100) # Convert percent to scale
-            app.Config.instance().setValue(
-                option=app.ConfigOption.ShowToolTipImages,
-                value=self._showToolTipImagesCheckBox.isChecked())
             app.Config.instance().setValue(
                 option=app.ConfigOption.OutcomeColours,
                 value=app.OutcomeColours(

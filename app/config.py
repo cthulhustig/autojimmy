@@ -69,8 +69,7 @@ class ConfigOption(enum.Enum):
     # UI
     ColourTheme = 600
     InterfaceScale = 601
-    ShowToolTipImages = 602
-    OutcomeColours = 603
+    OutcomeColours = 602
 
     WorldTagging = 700
     TaggingColours = 701
@@ -1308,11 +1307,6 @@ class Config(QtCore.QObject):
             default=1,
             min=1,
             max=4))
-        self._addConfigItem(BoolConfigItem(
-            option=ConfigOption.ShowToolTipImages,
-            key='GUI/ShowToolTipImages',
-            restart=False,
-            default=True))
         self._addConfigItem(OutcomeColoursConfigItem(
             option=ConfigOption.OutcomeColours,
             section='GUI',
@@ -1448,8 +1442,6 @@ class Config(QtCore.QObject):
     def value(self, option: typing.Literal[ConfigOption.ColourTheme], futureValue: bool = False) -> ColourTheme: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.InterfaceScale], futureValue: bool = False) -> float: ...
-    @typing.overload
-    def value(self, option: typing.Literal[ConfigOption.ShowToolTipImages], futureValue: bool = False) -> bool: ...
     @typing.overload
     def value(self, option: typing.Literal[ConfigOption.OutcomeColours], futureValue: bool = False) -> app.OutcomeColours: ...
     @typing.overload
