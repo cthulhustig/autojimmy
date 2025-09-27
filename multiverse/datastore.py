@@ -1230,6 +1230,8 @@ class DataStore(object):
                 #
                 # The following elements are extensions and not part of the standard universe file format
                 #
+                sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
+                sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
                 sectorData['ModifiedTimestamp'] = \
                     DataStore._formatTimestamp(sectorInfo.modifiedTimestamp()).decode()
 
