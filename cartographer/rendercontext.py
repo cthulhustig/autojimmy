@@ -454,7 +454,7 @@ class RenderContext(object):
                 rect=self._riftImageRect)
 
     def _drawMacroBorders(self) -> None:
-        if not self._vectorStore or not self._styleSheet.macroBorders.visible:
+        if not self._styleSheet.macroBorders.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -466,7 +466,7 @@ class RenderContext(object):
                     pen=self._styleSheet.macroBorders.linePen)
 
     def _drawMacroRoutes(self) -> None:
-        if not self._vectorStore or not self._styleSheet.macroRoutes.visible:
+        if not self._styleSheet.macroRoutes.visible:
             return
 
         self._graphics.setSmoothingMode(
@@ -849,45 +849,43 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
 
-        if self._vectorStore:
-            for vectorObject in self._vectorStore.borders:
-                if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
-                    continue
-                major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-                labelStyle = cartographer.LabelStyle(uppercase=major)
-                font = \
-                    self._styleSheet.macroNames.font \
-                    if major else \
-                    self._styleSheet.macroNames.smallFont
-                brush = \
-                    self._styleSheet.macroNames.textBrush \
-                    if major else \
-                    self._styleSheet.macroNames.textHighlightBrush
-                self._drawVectorObjectName(
-                    vectorObject=vectorObject,
-                    font=font,
-                    textBrush=brush,
-                    labelStyle=labelStyle)
+        for vectorObject in self._vectorStore.borders:
+            if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
+                continue
+            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
+            labelStyle = cartographer.LabelStyle(uppercase=major)
+            font = \
+                self._styleSheet.macroNames.font \
+                if major else \
+                self._styleSheet.macroNames.smallFont
+            brush = \
+                self._styleSheet.macroNames.textBrush \
+                if major else \
+                self._styleSheet.macroNames.textHighlightBrush
+            self._drawVectorObjectName(
+                vectorObject=vectorObject,
+                font=font,
+                textBrush=brush,
+                labelStyle=labelStyle)
 
-        if self._vectorStore:
-            for vectorObject in self._vectorStore.rifts:
-                major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
-                labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
-                font = \
-                    self._styleSheet.macroNames.font \
-                    if major else \
-                    self._styleSheet.macroNames.smallFont
-                brush = \
-                    self._styleSheet.macroNames.textBrush \
-                    if major else \
-                    self._styleSheet.macroNames.textHighlightBrush
-                self._drawVectorObjectName(
-                    vectorObject=vectorObject,
-                    font=font,
-                    textBrush=brush,
-                    labelStyle=labelStyle)
+        for vectorObject in self._vectorStore.rifts:
+            major = (vectorObject.mapOptions & cartographer.RenderOptions.NamesMajor) != 0
+            labelStyle = cartographer.LabelStyle(rotation=35, uppercase=major)
+            font = \
+                self._styleSheet.macroNames.font \
+                if major else \
+                self._styleSheet.macroNames.smallFont
+            brush = \
+                self._styleSheet.macroNames.textBrush \
+                if major else \
+                self._styleSheet.macroNames.textHighlightBrush
+            self._drawVectorObjectName(
+                vectorObject=vectorObject,
+                font=font,
+                textBrush=brush,
+                labelStyle=labelStyle)
 
-        if self._vectorStore and self._styleSheet.macroRoutes.visible:
+        if self._styleSheet.macroRoutes.visible:
             for vectorObject in self._vectorStore.routes:
                 if (vectorObject.mapOptions & self._options & cartographer.RenderOptions.NamesMask) == 0:
                     continue
@@ -907,7 +905,7 @@ class RenderContext(object):
                     textBrush=brush,
                     labelStyle=labelStyle)
 
-        if self._labelStore and (self._options & cartographer.RenderOptions.NamesMinor) != 0:
+        if (self._options & cartographer.RenderOptions.NamesMinor) != 0:
             for label in self._labelStore.minorLabels():
                 font = self._styleSheet.macroNames.smallFont if label.minor else self._styleSheet.macroNames.mediumFont
                 brush = \
@@ -926,7 +924,7 @@ class RenderContext(object):
                         y=label.position.y() * multiverse.ParsecScaleY)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
-        if not self._labelStore or not self._styleSheet.capitals.visible or \
+        if not self._styleSheet.capitals.visible or \
             (self._options & cartographer.RenderOptions.WorldsMask) == 0:
             return
 
@@ -992,7 +990,7 @@ class RenderContext(object):
                         format=format)
 
     def _drawMegaLabels(self) -> None:
-        if not self._labelStore or not self._styleSheet.megaNames.visible:
+        if not self._styleSheet.megaNames.visible:
             return
 
         self._graphics.setSmoothingMode(
