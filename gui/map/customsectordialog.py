@@ -666,7 +666,7 @@ class _CustomSectorTable(gui.ListTable):
 
         # Force a selection if there isn't one
         if not self.hasSelection() and self.rowCount() > 0:
-            self.selectRow(0)
+            self.setCurrentRow(0)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -704,7 +704,8 @@ class _CustomSectorTable(gui.ListTable):
                 if sector.canonicalName() == sectorName:
                     currentSector = sector
                     break
-        self.setCurrentSector(currentSector)
+        if currentSector:
+            self.setCurrentSector(currentSector)
 
         count = stream.readUInt32()
         if count <= 0:
@@ -987,7 +988,7 @@ class CustomSectorDialog(gui.DialogEx):
         # Select the sector that was just added
         row = self._sectorTable.sectorRow(newSector)
         if row >= 0:
-            self._sectorTable.selectRow(row)
+            self._sectorTable.setCurrentRow(row)
 
     def _deleteSectorClicked(self) -> None:
         sector = self._sectorTable.currentSector()
