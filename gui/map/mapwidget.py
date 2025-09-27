@@ -1154,8 +1154,8 @@ class MapWidget(QtWidgets.QWidget):
         self.setView(scale=scale, immediate=immediate)
 
     def viewAreaLimits(self) -> typing.Tuple[
-            QtCore.QPointF, # Upper Left
-            QtCore.QPointF]: # Lower Right
+            typing.Optional[QtCore.QPointF], # Upper Left
+            typing.Optional[QtCore.QPointF]]: # Lower Right
         return (
             QtCore.QPointF(self._upperLeftViewLimit) if self._upperLeftViewLimit else None,
             QtCore.QPointF(self._lowerRightViewLimit) if self._lowerRightViewLimit else None)
