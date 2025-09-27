@@ -1,6 +1,5 @@
 import cartographer
 import random
-import multiverse
 import typing
 
 class StarfieldCache(object):
