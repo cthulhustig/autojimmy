@@ -18,7 +18,8 @@ def createHexToolTip(
         width: int = 512, # 0 means no fixed width
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None,
-        includeHexImage: bool = True,
+        includeHexImage: bool = False,
+        # hexImageStyle & hexImageOptions must be supplied if includeHexImage is True
         hexImageStyle: typing.Optional[cartographer.MapStyle] = None,
         hexImageOptions: typing.Optional[typing.Collection[app.MapOption]] = None
         ) -> str:
