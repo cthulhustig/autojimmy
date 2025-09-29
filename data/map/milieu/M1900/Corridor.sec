@@ -173,7 +173,7 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 0115 Khikhuushir          X676000-4 Di                      { -3 } (700+2) [0000] B    - - 024 9  Wild M0 V          
 0119 Ka Eto               D615000-C Di Ic                   { -1 } (700+1) [0000] B    - - 002 13 Wild M3 V          
 0213 Erlu                 X7C0000-9 Di He                   { -2 } (C00+3) [0000] B    - - 004 12 Wild M0 V          
-0218 Lobok                C582775-8 Ri                      { 0 }  (J69-2) [7747] BC   - - 935 11 Wild G1 V          
+0218 Lobok                B582775-9 Ri                      { 2 }  (J69-2) [7747] BC   - - 935 11 Wild G1 V          
 0311 Jubal                X300000-9 Di Va                   { -2 } (B00+4) [0000] B    - - 023 17 Wild G8 IV M8 V    
 0312 Muugagen             X553000-4 Di Po                   { -3 } (600-2) [0000] B    - - 001 8  Wild M0 V          
 0313 Yubitty              E96A000-6 Di Wa                   { -3 } (B00+1) [0000] B    - - 032 8  Wild K9 V          
@@ -224,7 +224,7 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 2511 Naagasa              X527000-9 Di                      { -2 } (G00+3) [0000] B    - - 024 10 Wild F4 V          
 2611 Mee                  X9D8000-9 Di                      { -2 } (A00+2) [0000] B    - - 020 6  Wild M0 V          
 2811 Kiiguuroesa          X200000-7 Di Va                   { -3 } (600+1) [0000] B    - - 001 9  Wild M7 V          
-0221 Shush                C664672-7 Ag Ri Ni                { 0 }  (451+1) [6646] BC   - - 423 15 Wild F8 V G3 V     
+0221 Shush                C664672-8 Ag Ri Ni                { 0 }  (C54+1) [6646] BC   - - 423 15 Wild F8 V G3 V     
 1430 Lasher               X8C2000-9 Di Fl He                { -2 } (B00+1) [0000] B    - - 025 10 Wild K4 III        
 1923 Rill                 X688658-1 Ag Ri Chir6 Ni          { -1 } (851+1) [4582] BC   - - 102 10 Wild K0 V M3 V     
 2121 Atu'l                E898000-7 Di                      { -3 } (400+4) [0000] B    - - 004 10 Wild G8 V M3 V     
