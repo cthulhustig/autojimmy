@@ -39,7 +39,7 @@
     <Allegiance Code="VVar" Base="Va">Empire of Varroerth</Allegiance>
     <Allegiance Code="VNgC" Base="Va">Ngath Confederation</Allegiance>
     <Allegiance Code="NaVa" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
-    <Allegiance Code="V17D" Base="Va">17th Disjucture</Allegiance>
+    <Allegiance Code="V17D" Base="Va">17th Disjuncture</Allegiance>
   </Allegiances>
   <Labels>
     <Label Hex="1218" Color="White" Wrap="false">Windhorn Rift</Label>
