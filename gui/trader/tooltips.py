@@ -4,6 +4,7 @@ import gui
 import html
 import logic
 import traveller
+import multiverse
 import typing
 
 ShipTonnageToolTip = gui.createStringToolTip(
@@ -233,10 +234,10 @@ def createLogisticsToolTip(
     jumpRoute = routeLogistics.jumpRoute()
     startHex = jumpRoute.startNode()
     finishHex = jumpRoute.finishNode()
-    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(
+    startString = html.escape(multiverse.WorldManager.instance().canonicalHexName(
         milieu=milieu,
         hex=startHex))
-    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(
+    finishString = html.escape(multiverse.WorldManager.instance().canonicalHexName(
         milieu=milieu,
         hex=finishHex))
 
@@ -300,12 +301,12 @@ def createLogisticsToolTip(
             pitStopMap[pitStop.routeIndex()] = pitStop
 
     for index, nodePos in enumerate(jumpRoute):
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = multiverse.WorldManager.instance().worldByPosition(
             milieu=milieu,
             hex=nodePos)
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
+            name=multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=nodePos)))
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:
@@ -432,8 +433,8 @@ def _createTradeScoreToolTip(
 
 
 def createBasesToolTip(
-        world: traveller.World,
-        includeBaseTypes: typing.Optional[typing.Iterable[traveller.BaseType]] = None,
+        world: multiverse.World,
+        includeBaseTypes: typing.Optional[typing.Iterable[multiverse.BaseType]] = None,
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
         ) -> str:
@@ -443,7 +444,7 @@ def createBasesToolTip(
         if includeBaseTypes and not world.hasBase(baseType=baseType):
             # An include list is being used and the world doesn't have the base type
             continue
-        baseString = traveller.Bases.description(baseType=baseType)
+        baseString = multiverse.Bases.description(baseType=baseType)
         baseStrings.append(baseString)
 
         tagLevel = worldTagging.calculateBaseTypeTagLevel(baseType=baseType) if worldTagging else None

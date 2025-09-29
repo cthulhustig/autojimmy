@@ -4,7 +4,7 @@ import enum
 import gui
 import logging
 import logic
-import traveller
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -330,7 +330,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                     tradeOptions.append(tradeOption)
         return tradeOptions
 
-    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[traveller.World]:
+    def uniqueWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -340,7 +340,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 worlds.add(tradeOption.saleWorld())
         return worlds
 
-    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[traveller.World]:
+    def uniquePurchaseWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -349,7 +349,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
                 worlds.add(tradeOption.purchaseWorld())
         return worlds
 
-    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[traveller.World]:
+    def uniqueSaleWorlds(self, selectedOnly: bool = False) -> typing.Set[multiverse.World]:
         rowsIter = self.selectedRows() if selectedOnly else range(self.rowCount())
         worlds = set()
         for row in rowsIter:
@@ -702,7 +702,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
             else:
-                return traveller.WorldManager.instance().canonicalHexName(
+                return multiverse.WorldManager.instance().canonicalHexName(
                     milieu=purchaseWorld.milieu(),
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
@@ -711,7 +711,7 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())
             else:
-                return traveller.WorldManager.instance().canonicalHexName(
+                return multiverse.WorldManager.instance().canonicalHexName(
                     milieu=saleWorld.milieu(),
                     hex=saleWorld.hex())
         elif columnType == self.ColumnType.Notes:
@@ -782,14 +782,14 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         try:
             mapWindow = gui.WindowManager.instance().showUniverseMapWindow()

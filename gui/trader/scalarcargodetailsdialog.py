@@ -2,6 +2,7 @@ import app
 import common
 import gui
 import traveller
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -9,7 +10,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
     def __init__(
             self,
             title: str,
-            world: traveller.World,
+            world: multiverse.World,
             rules: traveller.Rules,
             selectableTradeGoods: typing.Optional[typing.List[traveller.TradeGood]] = None,
             editTradeGood: typing.Optional[traveller.TradeGood] = None,

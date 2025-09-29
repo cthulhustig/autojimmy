@@ -2,7 +2,6 @@
 rem  Building the installer requires the following to be installed and added to the path
 rem  - PyInstaller - https://pyinstaller.org
 rem  - Inno Setup - https://jrsoftware.org/isinfo.php
-rem  - MSYS2 - https://www.msys2.org/
 
 rem This runs appdetails.py and captures the output
 for /F "tokens=*" %%a in ('python .\app\appdetails.py --name') do SET APPNAME=%%a
@@ -21,12 +20,6 @@ if exist %XMLSCHEMACOPY%\ rmdir %XMLSCHEMACOPY% /s /q
 robocopy "%XMLSCHEMAPATH%" %XMLSCHEMACOPY% *.xsd /s
 if %ERRORLEVEL% NEQ 1 exit /b 1
 
-rem Package up MSYS2 so libcairo can be included in the installer
-set MSYS2COPY=.\build\msys64
-if exist %MSYS2COPY%\ rmdir %MSYS2COPY% /s /q
-python ./scripts/packagemsys2.py %MSYS2COPY%
-if %ERRORLEVEL% NEQ 0 exit /b 1
-
 set APPVERSIONFILE=.\build\app_version.txt
 python ./scripts/createversionfile.py "%APPNAME%" "%APPVERSION%" "%APPDESCRIPTION%" "%APPAUTHOR%" "%APPVERSIONFILE%"
 if %ERRORLEVEL% NEQ 0 exit /b 1
@@ -38,7 +31,7 @@ rem works it gets run during this import and fails because it looks like not all
 rem libraries can be found at that point in time.
 set AUTOJIMMY_NO_DEPENDENCIES_CHECK=1
 
-pyinstaller -w autojimmy.py -n %APPNAME% --icon ".\icons\autojimmy.ico" --version-file %APPVERSIONFILE% --add-data "data;data" --add-data "icons;icons" --add-data "licenses;licenses" --add-data "%XMLSCHEMACOPY%;xmlschema" --add-data "%MSYS2COPY%;msys64" --clean --noconfirm
+pyinstaller -w autojimmy.py -n %APPNAME% --icon ".\icons\autojimmy.ico" --version-file %APPVERSIONFILE% --add-data "data;data" --add-data "icons;icons" --add-data "licenses;licenses" --add-data "%XMLSCHEMACOPY%;xmlschema" --clean --noconfirm
 if %ERRORLEVEL% NEQ 0 exit /b 1
 
 iscc installer.iss /DApplicationName=%APPNAME% /DApplicationVersion=%APPVERSION%

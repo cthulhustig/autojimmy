@@ -1,29 +1,29 @@
 import app
+import cartographer
 import base64
 import common
 import gui
 import html
 import logging
 import logic
+import multiverse
 import traveller
-import travellermap
 import typing
 
-_DisableHexToolTipImages = False
 def createHexToolTip(
-        hex: travellermap.HexPosition,
-        milieu: travellermap.Milieu,
+        universe: multiverse.Universe,
+        milieu: multiverse.Milieu,
+        hex: multiverse.HexPosition,
         rules: traveller.Rules,
         width: int = 512, # 0 means no fixed width
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None,
-        hexImage: bool = True,
-        hexImageStyle: typing.Optional[travellermap.Style] = None,
-        hexImageOptions: typing.Optional[typing.Collection[travellermap.Option]] = None
+        includeHexImage: bool = False,
+        # hexImageStyle & hexImageOptions must be supplied if includeHexImage is True
+        hexImageStyle: typing.Optional[cartographer.MapStyle] = None,
+        hexImageOptions: typing.Optional[typing.Collection[app.MapOption]] = None
         ) -> str:
-    global _DisableHexToolTipImages
-
-    world = traveller.WorldManager.instance().worldByPosition(
+    world = universe.worldByPosition(
         milieu=milieu,
         hex=hex)
     uwp = world.uwp() if world else None
@@ -38,31 +38,25 @@ def createHexToolTip(
     #
     # Image
     #
-    if hexImage and not _DisableHexToolTipImages:
-        mapEngine = app.Config.instance().value(
-            option=app.ConfigOption.MapEngine)
+    if includeHexImage:
         try:
-            tileBytes, tileFormat = gui.generateThumbnail(
+            tileBytes = gui.generateThumbnail(
+                universe=universe,
                 milieu=milieu,
                 hex=hex,
                 width=256,
                 height=256,
                 linearScale=64,
                 style=hexImageStyle,
-                options=hexImageOptions,
-                engine=mapEngine)
+                options=hexImageOptions)
             if tileBytes:
-                mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()
                 toolTip += '<td width="256">'
                 # https://travellermap.com/doc/api#tile-render-an-arbitrary-rectangle-of-space
-                toolTip += f'<p style="vertical-align:middle"><img src=data:{mineType};base64,{tileString} width="256" height="256"></p>'
+                toolTip += f'<p style="vertical-align:middle"><img src=data:image/png;base64,{tileString} width="256" height="256"></p>'
                 toolTip += '</td>'
         except Exception as ex:
-            logging.error(f'Failed to retrieve tool tip image for hex {hex}', exc_info=ex)
-            if isinstance(ex, TimeoutError):
-                logging.warning(f'Showing world images in tool tips has been temporarily disabled')
-                _DisableHexToolTipImages = True
+            logging.error(f'Failed to generate tool tip image for hex {hex}', exc_info=ex)
 
     widthString = '' if not width else f'width="{width}"'
     toolTip += f'<td style="padding-left:10" {widthString}>'
@@ -71,7 +65,7 @@ def createHexToolTip(
     # World
     #
 
-    canonicalName = traveller.WorldManager.instance().canonicalHexName(
+    canonicalName = universe.canonicalHexName(
         milieu=milieu,
         hex=hex)
     toolTip += f'<h1>{html.escape(canonicalName)}</h1>'
@@ -80,10 +74,10 @@ def createHexToolTip(
         sectorHex = world.sectorHex()
         subsectorName = world.subsectorName()
     else:
-        sectorHex = traveller.WorldManager.instance().positionToSectorHex(
+        sectorHex = universe.positionToSectorHex(
             milieu=milieu,
             hex=hex)
-        subsector = traveller.WorldManager.instance().subsectorByPosition(
+        subsector = universe.subsectorByPosition(
             milieu=milieu,
             hex=hex)
         subsectorName = subsector.name() if subsector else 'Unknown'
@@ -98,16 +92,16 @@ def createHexToolTip(
             tagLevel = worldTagging.calculateZoneTagLevel(world=world) if worldTagging else None
             toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
                 style=formatTaggingStyle(level=tagLevel),
-                zone=html.escape(traveller.zoneTypeName(zone)))
+                zone=html.escape(multiverse.zoneTypeName(zone)))
 
     refuellingTypes = []
     if world:
-        if world.hasStarPortRefuelling(rules=rules):
+        if traveller.worldHasStarPortRefuelling(world=world, rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
-                code=uwp.code(traveller.UWP.Element.StarPort)))
-        if world.hasGasGiantRefuelling():
+                code=uwp.code(multiverse.UWP.Element.StarPort)))
+        if traveller.worldHasGasGiantRefuelling(world=world):
             refuellingTypes.append('Gas Giant(s)')
-        if world.hasWaterRefuelling():
+        if traveller.worldHasWaterRefuelling(world=world):
             refuellingTypes.append('Water')
         if world.isFuelCache():
             refuellingTypes.append('Fuel Cache')
@@ -125,10 +119,15 @@ def createHexToolTip(
         count=world.numberOfSystemWorlds() if world else 0)
 
     if world:
-        allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(
-            milieu=world.milieu(),
-            code=world.allegiance(),
-            sectorName=world.sectorName())
+        allegiance = world.allegiance()
+        allegianceString = 'Unknown'
+        if allegiance:
+            allegianceCode = allegiance.code()
+            allegianceName = allegiance.name()
+            allegianceString = '{code} - {name}'.format(
+                code=allegianceCode,
+                name=allegianceName if allegianceName else 'Unknown')
+
         tagLevel = worldTagging.calculateAllegianceTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
         toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
@@ -138,7 +137,7 @@ def createHexToolTip(
 
         if world.hasOwner():
             try:
-                ownerWorld = traveller.WorldManager.instance().worldBySectorHex(
+                ownerWorld = universe.worldBySectorHex(
                     milieu=milieu,
                     sectorHex=world.ownerSectorHex())
             except Exception:
@@ -163,35 +162,35 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateStarPortTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Star Port: {uwp.code(traveller.UWP.Element.StarPort)} - {html.escape(uwp.description(traveller.UWP.Element.StarPort))}</span></li>'
+        toolTip += f'<li><span style="{style}">Star Port: {uwp.code(multiverse.UWP.Element.StarPort)} - {html.escape(uwp.description(multiverse.UWP.Element.StarPort))}</span></li>'
 
         tagLevel = worldTagging.calculateWorldSizeTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">World Size: {uwp.code(traveller.UWP.Element.WorldSize)} - {html.escape(uwp.description(traveller.UWP.Element.WorldSize))}</span></li>'
+        toolTip += f'<li><span style="{style}">World Size: {uwp.code(multiverse.UWP.Element.WorldSize)} - {html.escape(uwp.description(multiverse.UWP.Element.WorldSize))}</span></li>'
 
         tagLevel = worldTagging.calculateAtmosphereTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Atmosphere: {uwp.code(traveller.UWP.Element.Atmosphere)} - {html.escape(uwp.description(traveller.UWP.Element.Atmosphere))}</span></li>'
+        toolTip += f'<li><span style="{style}">Atmosphere: {uwp.code(multiverse.UWP.Element.Atmosphere)} - {html.escape(uwp.description(multiverse.UWP.Element.Atmosphere))}</span></li>'
 
         tagLevel = worldTagging.calculateHydrographicsTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Hydrographics: {uwp.code(traveller.UWP.Element.Hydrographics)} - {html.escape(uwp.description(traveller.UWP.Element.Hydrographics))}</span></li>'
+        toolTip += f'<li><span style="{style}">Hydrographics: {uwp.code(multiverse.UWP.Element.Hydrographics)} - {html.escape(uwp.description(multiverse.UWP.Element.Hydrographics))}</span></li>'
 
         tagLevel = worldTagging.calculatePopulationTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Population: {uwp.code(traveller.UWP.Element.Population)} - {html.escape(uwp.description(traveller.UWP.Element.Population))}</span></li>'
+        toolTip += f'<li><span style="{style}">Population: {uwp.code(multiverse.UWP.Element.Population)} - {html.escape(uwp.description(multiverse.UWP.Element.Population))}</span></li>'
 
         tagLevel = worldTagging.calculateGovernmentTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Government: {uwp.code(traveller.UWP.Element.Government)} - {html.escape(uwp.description(traveller.UWP.Element.Government))}</span></li>'
+        toolTip += f'<li><span style="{style}">Government: {uwp.code(multiverse.UWP.Element.Government)} - {html.escape(uwp.description(multiverse.UWP.Element.Government))}</span></li>'
 
         tagLevel = worldTagging.calculateLawLevelTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Law Level: {uwp.code(traveller.UWP.Element.LawLevel)} - {html.escape(uwp.description(traveller.UWP.Element.LawLevel))}</span></li>'
+        toolTip += f'<li><span style="{style}">Law Level: {uwp.code(multiverse.UWP.Element.LawLevel)} - {html.escape(uwp.description(multiverse.UWP.Element.LawLevel))}</span></li>'
 
         tagLevel = worldTagging.calculateTechLevelTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(traveller.UWP.Element.TechLevel)} ({traveller.ehexToInteger(value=uwp.code(traveller.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(traveller.UWP.Element.TechLevel))}</span></li>'
+        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(multiverse.UWP.Element.TechLevel)} ({multiverse.ehexToInteger(value=uwp.code(multiverse.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(multiverse.UWP.Element.TechLevel))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -204,19 +203,19 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateResourcesTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Resources: {economics.code(traveller.Economics.Element.Resources)} - {html.escape(economics.description(traveller.Economics.Element.Resources))}</span></li>'
+        toolTip += f'<li><span style="{style}">Resources: {economics.code(multiverse.Economics.Element.Resources)} - {html.escape(economics.description(multiverse.Economics.Element.Resources))}</span></li>'
 
         tagLevel = worldTagging.calculateLabourTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Labour: {economics.code(traveller.Economics.Element.Labour)} - {html.escape(economics.description(traveller.Economics.Element.Labour))}</span></li>'
+        toolTip += f'<li><span style="{style}">Labour: {economics.code(multiverse.Economics.Element.Labour)} - {html.escape(economics.description(multiverse.Economics.Element.Labour))}</span></li>'
 
         tagLevel = worldTagging.calculateInfrastructureTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Infrastructure: {economics.code(traveller.Economics.Element.Infrastructure)} - {html.escape(economics.description(traveller.Economics.Element.Infrastructure))}</span></li>'
+        toolTip += f'<li><span style="{style}">Infrastructure: {economics.code(multiverse.Economics.Element.Infrastructure)} - {html.escape(economics.description(multiverse.Economics.Element.Infrastructure))}</span></li>'
 
         tagLevel = worldTagging.calculateEfficiencyTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Efficiency: {economics.code(traveller.Economics.Element.Efficiency)} - {html.escape(economics.description(traveller.Economics.Element.Efficiency))}</span></li>'
+        toolTip += f'<li><span style="{style}">Efficiency: {economics.code(multiverse.Economics.Element.Efficiency)} - {html.escape(economics.description(multiverse.Economics.Element.Efficiency))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -229,19 +228,19 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateHeterogeneityTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Heterogeneity: {culture.code(traveller.Culture.Element.Heterogeneity)} - {html.escape(culture.description(traveller.Culture.Element.Heterogeneity))}</span></li>'
+        toolTip += f'<li><span style="{style}">Heterogeneity: {culture.code(multiverse.Culture.Element.Heterogeneity)} - {html.escape(culture.description(multiverse.Culture.Element.Heterogeneity))}</span></li>'
 
         tagLevel = worldTagging.calculateAcceptanceTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Acceptance: {culture.code(traveller.Culture.Element.Acceptance)} - {html.escape(culture.description(traveller.Culture.Element.Acceptance))}</span></li>'
+        toolTip += f'<li><span style="{style}">Acceptance: {culture.code(multiverse.Culture.Element.Acceptance)} - {html.escape(culture.description(multiverse.Culture.Element.Acceptance))}</span></li>'
 
         tagLevel = worldTagging.calculateStrangenessTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Strangeness: {culture.code(traveller.Culture.Element.Strangeness)} - {html.escape(culture.description(traveller.Culture.Element.Strangeness))}</span></li>'
+        toolTip += f'<li><span style="{style}">Strangeness: {culture.code(multiverse.Culture.Element.Strangeness)} - {html.escape(culture.description(multiverse.Culture.Element.Strangeness))}</span></li>'
 
         tagLevel = worldTagging.calculateSymbolsTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Symbols: {html.escape(culture.code(traveller.Culture.Element.Symbols))} - {html.escape(culture.description(traveller.Culture.Element.Symbols))}</span></li>'
+        toolTip += f'<li><span style="{style}">Symbols: {html.escape(culture.code(multiverse.Culture.Element.Symbols))} - {html.escape(culture.description(multiverse.Culture.Element.Symbols))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -255,7 +254,7 @@ def createHexToolTip(
             for nobilityType in nobilities:
                 tagLevel = worldTagging.calculateNobilityTagLevel(nobilityType) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">{traveller.Nobilities.code(nobilityType)} - {html.escape(traveller.Nobilities.description(nobilityType))}</span></li>'
+                toolTip += f'<li><span style="{style}">{multiverse.Nobilities.code(nobilityType)} - {html.escape(multiverse.Nobilities.description(nobilityType))}</span></li>'
             toolTip += '</ul>'
 
         #
@@ -272,7 +271,7 @@ def createHexToolTip(
                 for tradeCode in tradeCodes:
                     tagLevel = worldTagging.calculateTradeCodeTagLevel(tradeCode) if worldTagging else None
                     style = formatTaggingStyle(level=tagLevel)
-                    toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
+                    toolTip += f'<li><span style="{style}">{html.escape(multiverse.tradeCodeName(tradeCode))} - {html.escape(multiverse.tradeCodeDescription(tradeCode))}</span></li>'
                 toolTip += '</ul>'
 
             sophonts = remarks.sophonts()
@@ -290,9 +289,9 @@ def createHexToolTip(
         pbg = world.pbg()
         toolTip += f'<li><span>PBG: {html.escape(pbg.string())}</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Population Multiplier: {pbg.code(traveller.PBG.Element.PopulationMultiplier)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
-        toolTip += f'<li><span>Planetoid Belts: {pbg.code(traveller.PBG.Element.PlanetoidBelts)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
-        toolTip += f'<li><span>Gas Giants: {pbg.code(traveller.PBG.Element.GasGiants)} ({traveller.ehexToInteger(value=pbg.code(traveller.PBG.Element.GasGiants), default="?")})</span></li>'
+        toolTip += f'<li><span>Population Multiplier: {pbg.code(multiverse.PBG.Element.PopulationMultiplier)} ({multiverse.ehexToInteger(value=pbg.code(multiverse.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
+        toolTip += f'<li><span>Planetoid Belts: {pbg.code(multiverse.PBG.Element.PlanetoidBelts)} ({multiverse.ehexToInteger(value=pbg.code(multiverse.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
+        toolTip += f'<li><span>Gas Giants: {pbg.code(multiverse.PBG.Element.GasGiants)} ({multiverse.ehexToInteger(value=pbg.code(multiverse.PBG.Element.GasGiants), default="?")})</span></li>'
         toolTip += '</ul>'
 
         #
@@ -309,12 +308,12 @@ def createHexToolTip(
 
                 tagLevel = worldTagging.calculateSpectralTagLevel(star) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">Spectral Class: {star.code(traveller.Star.Element.SpectralClass)} - {html.escape(star.description(traveller.Star.Element.SpectralClass))}</span></li>'
-                toolTip += f'<li><span style="{style}">Spectral Scale: {star.code(traveller.Star.Element.SpectralScale)} - {html.escape(star.description(traveller.Star.Element.SpectralScale))}</span></li>'
+                toolTip += f'<li><span style="{style}">Spectral Class: {star.code(multiverse.Star.Element.SpectralClass)} - {html.escape(star.description(multiverse.Star.Element.SpectralClass))}</span></li>'
+                toolTip += f'<li><span style="{style}">Spectral Scale: {star.code(multiverse.Star.Element.SpectralScale)} - {html.escape(star.description(multiverse.Star.Element.SpectralScale))}</span></li>'
 
                 tagLevel = worldTagging.calculateLuminosityTagLevel(star) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">Luminosity Class: {star.code(traveller.Star.Element.LuminosityClass)} - {html.escape(star.description(traveller.Star.Element.LuminosityClass))}</span></li>'
+                toolTip += f'<li><span style="{style}">Luminosity Class: {star.code(multiverse.Star.Element.LuminosityClass)} - {html.escape(star.description(multiverse.Star.Element.LuminosityClass))}</span></li>'
                 toolTip += '</ul>'
             toolTip += '</ul>'
 
@@ -328,7 +327,7 @@ def createHexToolTip(
             for base in bases:
                 tagLevel = worldTagging.calculateBaseTypeTagLevel(base) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">{html.escape(traveller.Bases.description(base))}</span></li>'
+                toolTip += f'<li><span style="{style}">{html.escape(multiverse.Bases.description(base))}</span></li>'
             toolTip += '</ul>'
 
         #
@@ -339,7 +338,7 @@ def createHexToolTip(
             toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
             for colonySectorHex in world.colonySectorHexes():
                 try:
-                    colonyWorld = traveller.WorldManager.instance().worldBySectorHex(
+                    colonyWorld = universe.worldBySectorHex(
                         milieu=milieu,
                         sectorHex=colonySectorHex)
                 except Exception:

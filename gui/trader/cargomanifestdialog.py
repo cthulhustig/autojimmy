@@ -3,7 +3,7 @@ import common
 import gui
 import logging
 import logic
-import traveller
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -65,7 +65,6 @@ class CargoManifestDialog(gui.DialogEx):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
@@ -306,8 +305,6 @@ class CargoManifestDialog(gui.DialogEx):
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
             self._hexTooltipProvider.setMapOptions(options=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._cargoManifestTable.setOutcomeColours(colours=newValue)
             self._cargoBreakdownTable.setOutcomeColours(colours=newValue)
@@ -322,7 +319,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -404,7 +401,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:

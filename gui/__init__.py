@@ -46,13 +46,14 @@ from .common.singletonapplication import *
 from .common.plotwidgetex import *
 from .common.tooltips import *
 from .map.primitives import *
+from .map.mapscale import *
+from .map.utils import *
 from .map.mapgraphics import *
 from .map.thumbnail import *
 from .map.tooltips import *
 from .map.hextooltipprovider import *
 from .map.hexselectcombobox import *
-from .map.localmapwidget import *
-from .map.webmapwidget import *
+from .map.mapwidget import *
 from .map.mapwidgetex import *
 from .map.mapwindow import *
 from .map.hexradiusselectdialog import *
@@ -61,6 +62,7 @@ from .map.hexselecttoolwidget import *
 from .map.hextable import *
 from .map.hextablemanagerwidget import *
 from .map.hexdetailswindow import *
+from .map.customsectordialog import *
 from .trader.tooltips import *
 from .trader.skillspinbox import *
 from .trader.shipcontrols import *
@@ -90,7 +92,6 @@ from .trader.traderwindows import *
 from .trader.purchasecalculatorwindow import *
 from .trader.salecalculatorwindow import *
 from .trader.simulatorwindow import *
-from .trader.customsectordialog import *
 from .construction.stagegroupwidget import *
 from .construction.manifesttable import *
 from .construction.noteswidget import *

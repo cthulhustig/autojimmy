@@ -1,10 +1,11 @@
 import app
+import cartographer
 import common
 import gui
 import logging
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -68,7 +69,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -88,10 +89,10 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 
         self._syncToMilieu()
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -137,7 +138,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._sectorComboBox.clear()
 
         sectorNames = sorted(
-            traveller.WorldManager.instance().sectorNames(milieu=self._milieu),
+            multiverse.WorldManager.instance().sectorNames(milieu=self._milieu),
             key=str.casefold)
         self._sectorComboBox.addItems(sectorNames)
 
@@ -145,7 +146,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         self._subsectorComboBox.clear()
         self._subsectorComboBox.addItem(self._AllSubsectorsText)
 
-        sector = traveller.WorldManager.instance().sectorByName(
+        sector = multiverse.WorldManager.instance().sectorByName(
             milieu=self._milieu,
             name=self._sectorComboBox.currentText())
         if not sector:
@@ -171,7 +172,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
                 self._subsectorComboBox.setCurrentIndex(index)
 
 class _HexSearchRadiusWidget(QtWidgets.QWidget):
-    showCenterHex = QtCore.pyqtSignal(travellermap.HexPosition)
+    showCenterHex = QtCore.pyqtSignal(multiverse.HexPosition)
 
     _StateVersion = '_HexSearchRadiusWidget_v1'
 
@@ -179,10 +180,10 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -236,16 +237,16 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         self._hexWidget.setMilieu(milieu=milieu)
 
     def setRules(self, rules: traveller.Rules) -> None:
         self._hexWidget.setRules(rules=rules)
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         self._hexWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Iterable[app.MapOption]) -> None:
         self._hexWidget.setMapOptions(options=options)
 
     def setMapRendering(self, rendering: app.MapRendering) -> None:
@@ -260,7 +261,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
     def setTaggingColours(self, colours: typing.Optional[app.TaggingColours]) -> None:
         self._hexWidget.setTaggingColours(colours=colours)
 
-    def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def centerHex(self) -> typing.Optional[multiverse.HexPosition]:
         return self._hexWidget.selectedHex()
 
     def searchRadius(self) -> int:
@@ -326,7 +327,6 @@ class WorldSearchWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
@@ -489,10 +489,6 @@ class WorldSearchWindow(gui.WindowWidget):
         super().saveSettings()
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
-        # Schedule the Traveller Map init fix to be run shortly after the window is displayed. We
-        # can't run it directly here as the window won't have finished being resized (after loading
-        # the saved window layout) so the fix won't work.
-        QtCore.QTimer.singleShot(1000, self._travellerMapInitFix)
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         return super().firstShowEvent(e)
 
@@ -670,6 +666,7 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget.setLayout(tableLayout)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -715,19 +712,6 @@ class WorldSearchWindow(gui.WindowWidget):
         self._foundWorldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._foundWorldsGroupBox.setLayout(layout)
 
-    # This is a MASSIVE hack. It works around the fact the Traveller Map widget isn't resized until
-    # its tab is displayed. This caused zooming to the jump route to not zoom to the correct area
-    # if the route was calculated before the widget was displayed for the first time. The hack works
-    # by checking if the Traveller Map widget is not the displayed widget and forces a resize if
-    # it's not.
-    # TODO: This can be removed when I finally ditch the web map widget
-    def _travellerMapInitFix(self) -> None:
-        currentWidget = self._resultsDisplayModeTabView.currentWidget()
-        if currentWidget != self._mapWidget:
-            size = currentWidget.size()
-            self._mapWidget.resize(size)
-            self._mapWidget.show()
-
     def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._worldTableDisplayModeTabs.currentDisplayMode()
         if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
@@ -770,7 +754,7 @@ class WorldSearchWindow(gui.WindowWidget):
     def _worldRadiusSearchToggled(self, selected: bool) -> None:
         self._worldRadiusSearchWidget.setDisabled(not selected)
 
-    def _showCenterHexOnMapClicked(self, hex: travellermap.HexPosition) -> None:
+    def _showCenterHexOnMapClicked(self, hex: multiverse.HexPosition) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(
                 self._mapWrapperWidget)
@@ -821,8 +805,6 @@ class WorldSearchWindow(gui.WindowWidget):
         elif option is app.ConfigOption.MapAnimations:
             self._worldRadiusSearchWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimated(animated=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
             self._worldRadiusSearchWidget.setWorldTagging(tagging=newValue)
@@ -837,7 +819,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -845,7 +827,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -981,7 +963,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -998,7 +980,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -1025,7 +1007,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[traveller.World],
+            hexes: typing.Iterable[multiverse.World],
             highlightHexes: bool = False,
             switchTab: bool = True
             ) -> None:

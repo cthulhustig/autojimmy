@@ -2,7 +2,7 @@ import app
 import gui
 import jobs
 import logging
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -75,13 +75,13 @@ class DownloadProgressDialog(QtWidgets.QDialog):
 
     def _updateProgress(
             self,
-            stage: travellermap.DataStore.UpdateStage,
+            stage: multiverse.DataStore.UpdateStage,
             progress: int,
             total: int
             ) -> None:
         self._stageLabel.setText(
             'Downloading universe data update...'
-            if stage == travellermap.DataStore.UpdateStage.DownloadStage else
+            if stage == multiverse.DataStore.UpdateStage.DownloadStage else
             'Extracting universe data update...')
         if total:
             self._progressBar.setValue(int((progress / total) * 100))

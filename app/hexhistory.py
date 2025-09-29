@@ -2,7 +2,7 @@ import app
 import logging
 import os
 import threading
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -13,25 +13,25 @@ class HexHistory(object):
     # Based on the default list Traveller Map shows in a drop down if you click
     # on the search edit box when it has no content
     _DefaultSectorHexes = [
-        travellermap.HexPosition(absoluteX=0, absoluteY=0), # Reference/Core 0140
-        travellermap.HexPosition(absoluteX=20, absoluteY=-22), # Capital/Core 2118
-        travellermap.HexPosition(absoluteX=-110, absoluteY=-70), # Regina/Spinward Marches 1910
-        travellermap.HexPosition(absoluteX=-16, absoluteY=-63), # Vland/Vland 1717 (Vilani Home World)
-        travellermap.HexPosition(absoluteX=17, absoluteY=107), # Terra/Solomani Rim 1827 (Solomani Home World)
-        travellermap.HexPosition(absoluteX=-198, absoluteY=-101), # Zhdant/Zhodane 2719 (Zhodani Home World)
-        travellermap.HexPosition(absoluteX=-41, absoluteY=-118), # Lair/Provence 2402 (Vargr Home World)
-        travellermap.HexPosition(absoluteX=-53, absoluteY=106), # Kusyu/Dark Nebula 1226 (Aslan Home World)
-        travellermap.HexPosition(absoluteX=167, absoluteY=67), # Guaran/Ricenden 0827 (Hive Home World)
-        travellermap.HexPosition(absoluteX=153, absoluteY=89), # Glea/Centrax 2609 (Hive Capital)
-        travellermap.HexPosition(absoluteX=172, absoluteY=-65), # Kirur/Ruupiin 1315 (K'kree Home World)
-        travellermap.HexPosition(absoluteX=-9, absoluteY=68) # Girillovitch/Daibei 2428 (Jimmy's Home World)
+        multiverse.HexPosition(absoluteX=0, absoluteY=0), # Reference/Core 0140
+        multiverse.HexPosition(absoluteX=20, absoluteY=-22), # Capital/Core 2118
+        multiverse.HexPosition(absoluteX=-110, absoluteY=-70), # Regina/Spinward Marches 1910
+        multiverse.HexPosition(absoluteX=-16, absoluteY=-63), # Vland/Vland 1717 (Vilani Home World)
+        multiverse.HexPosition(absoluteX=17, absoluteY=107), # Terra/Solomani Rim 1827 (Solomani Home World)
+        multiverse.HexPosition(absoluteX=-198, absoluteY=-101), # Zhdant/Zhodane 2719 (Zhodani Home World)
+        multiverse.HexPosition(absoluteX=-41, absoluteY=-118), # Lair/Provence 2402 (Vargr Home World)
+        multiverse.HexPosition(absoluteX=-53, absoluteY=106), # Kusyu/Dark Nebula 1226 (Aslan Home World)
+        multiverse.HexPosition(absoluteX=167, absoluteY=67), # Guaran/Ricenden 0827 (Hive Home World)
+        multiverse.HexPosition(absoluteX=153, absoluteY=89), # Glea/Centrax 2609 (Hive Capital)
+        multiverse.HexPosition(absoluteX=172, absoluteY=-65), # Kirur/Ruupiin 1315 (K'kree Home World)
+        multiverse.HexPosition(absoluteX=-9, absoluteY=68) # Girillovitch/Daibei 2428 (Jimmy's Home World)
     ]
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _settings = None # Created on first load
     _filePath = '.\\' # Static config path
-    _history: typing.List[travellermap.HexPosition] = []
+    _history: typing.List[multiverse.HexPosition] = []
 
     def __init__(self):
         raise RuntimeError('Call instance() instead')
@@ -47,10 +47,10 @@ class HexHistory(object):
                     cls._instance.load()
         return cls._instance
 
-    def hexes(self) -> typing.Iterable[travellermap.HexPosition]:
+    def hexes(self) -> typing.Iterable[multiverse.HexPosition]:
         return list(HexHistory._history)
 
-    def addHex(self, hex: travellermap.HexPosition) -> None:
+    def addHex(self, hex: multiverse.HexPosition) -> None:
         if hex in HexHistory._history:
             # Remove the hex from the history so it can be re-added as the first entry
             HexHistory._history.remove(hex)
@@ -81,7 +81,7 @@ class HexHistory(object):
                 tokens = value.split(':')
                 if len(tokens) != 2:
                     raise RuntimeError(f'Invalid hex string {value} at {index}')
-                HexHistory._history.append(travellermap.HexPosition(
+                HexHistory._history.append(multiverse.HexPosition(
                     absoluteX=int(tokens[0]),
                     absoluteY=int(tokens[1])))
             except TypeError as ex:

@@ -1,8 +1,6 @@
 import common
-import logging
 import cartographer
 import math
-import travellermap
 import typing
 
 class LayerList(list):
@@ -113,7 +111,7 @@ class StyleSheet(object):
             self,
             scale: float,
             options: cartographer.RenderOptions,
-            style: travellermap.Style,
+            style: cartographer.MapStyle,
             graphics: cartographer.AbstractGraphics
             ):
         self._scale = scale
@@ -153,11 +151,11 @@ class StyleSheet(object):
         self._handleConfigUpdate()
 
     @property
-    def style(self) -> travellermap.Style:
+    def style(self) -> cartographer.MapStyle:
         return self._style
 
     @style.setter
-    def style(self, style: travellermap.Style) -> None:
+    def style(self, style: cartographer.MapStyle) -> None:
         if style == self._style:
             return # Nothing to do
         self._style = style
@@ -300,7 +298,7 @@ class StyleSheet(object):
         self.pseudoRandomStars.visible = (StyleSheet._PseudoRandomStarsMinScale <= self.scale) and \
             (self.scale <= StyleSheet._PseudoRandomStarsMaxScale)
         self.showRiftOverlay = (self.scale <= StyleSheet._PseudoRandomStarsMaxScale) or \
-            (StyleSheet.style == travellermap.Style.Candy)
+            (StyleSheet.style == cartographer.MapStyle.Candy)
 
         self.t5AllegianceCodes = self.scale >= StyleSheet._T5AllegianceCodeMinScale
 
@@ -421,7 +419,7 @@ class StyleSheet(object):
         if self.worlds.visible:
             fontScale = \
                 1 \
-                if (self.scale <= 96) or (self.style == travellermap.Style.Candy) else \
+                if (self.scale <= 96) or (self.style == cartographer.MapStyle.Candy) else \
                 96 / min(self.scale, 192)
 
             self.worlds.font = self._createFont(
@@ -628,9 +626,9 @@ class StyleSheet(object):
         dimColour = common.HtmlColours.DimGray
         highlightColour = common.HtmlColours.TravellerRed
 
-        if self._style is travellermap.Style.Poster:
+        if self._style is cartographer.MapStyle.Poster:
             pass
-        elif self._style is travellermap.Style.Atlas:
+        elif self._style is cartographer.MapStyle.Atlas:
             self.grayscale = True
             self.lightBackground = True
 
@@ -675,7 +673,7 @@ class StyleSheet(object):
                 colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-        elif self._style is travellermap.Style.Fasa:
+        elif self._style is cartographer.MapStyle.Fasa:
             self.showGalaxyBackground = False
             self.deepBackgroundOpacity = 0
             self.riftOpacity = 0
@@ -763,7 +761,7 @@ class StyleSheet(object):
                 colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-        elif self._style is travellermap.Style.Print:
+        elif self._style is cartographer.MapStyle.Print:
             self.lightBackground = True
 
             foregroundColour = common.HtmlColours.Black
@@ -798,7 +796,7 @@ class StyleSheet(object):
                 colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-        elif self._style is travellermap.Style.Draft:
+        elif self._style is cartographer.MapStyle.Draft:
             inkOpacity = 0xB0
 
             self.showGalaxyBackground = False
@@ -948,7 +946,7 @@ class StyleSheet(object):
                 colour=common.HtmlColours.Gray,
                 width=0.03 * penScale,
                 style=cartographer.LineStyle.Dot)
-        elif self._style is travellermap.Style.Candy:
+        elif self._style is cartographer.MapStyle.Candy:
             self.useWorldImages = True
             self.pseudoRandomStars.visible = False
             self.fadeSectorSubsectorNames = False
@@ -1060,7 +1058,7 @@ class StyleSheet(object):
 
             if (self.scale > StyleSheet._CandyMaxWorldRelativeScale):
                 self.hexContentScale = StyleSheet._CandyMaxWorldRelativeScale / self.scale
-        elif self._style is travellermap.Style.Terminal:
+        elif self._style is cartographer.MapStyle.Terminal:
             self.fadeSectorSubsectorNames = False
             self.showGalaxyBackground = False
             self.lightBackground = False
@@ -1183,7 +1181,7 @@ class StyleSheet(object):
 
             if (self.scale >= 64):
                 self.subsectorNames.visible = False
-        elif self._style is travellermap.Style.Mongoose:
+        elif self._style is cartographer.MapStyle.Mongoose:
             self.showGalaxyBackground = False
             self.lightBackground = True
             self.showGasGiantRing = True

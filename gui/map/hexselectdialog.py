@@ -1,18 +1,19 @@
 import app
+import cartographer
 import gui
 import logic
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: logic.WorldTagging,
@@ -25,6 +26,7 @@ class HexSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -77,12 +79,12 @@ class HexSelectDialog(gui.DialogEx):
 
         self._updateLabel()
 
-    def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
+    def selectedHexes(self) -> typing.Iterable[multiverse.HexPosition]:
         return self._mapWidget.selectedHexes()
 
     def selectHex(
             self,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             setInfoHex: bool = True
             ) -> None:
         self._mapWidget.selectHex(
@@ -91,13 +93,13 @@ class HexSelectDialog(gui.DialogEx):
 
     def deselectHex(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> None:
         self._mapWidget.deselectHex(hex=hex)
 
     def selectHexes(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         self._mapWidget.selectHexes(hexes=hexes)
 
@@ -143,7 +145,7 @@ class HexSelectDialog(gui.DialogEx):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -151,7 +153,7 @@ class HexSelectDialog(gui.DialogEx):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

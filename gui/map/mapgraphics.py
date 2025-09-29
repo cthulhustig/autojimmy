@@ -844,18 +844,12 @@ class MapGraphics(cartographer.AbstractGraphics):
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
         newClip.addPolygon(path.qtPolygon())
-        currentClip = self._painter.clipPath()
-        if not currentClip.isEmpty():
-            newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     def intersectClipRect(self, rect: cartographer.RectangleF) -> None:
         newClip = QtGui.QPainterPath()
         newClip.setFillRule(QtCore.Qt.FillRule.WindingFill)
         newClip.addRect(QtCore.QRectF(*rect.rect()))
-        currentClip = self._painter.clipPath()
-        if not currentClip.isEmpty():
-            newClip = currentClip.intersected(newClip)
         self._painter.setClipPath(newClip, operation=QtCore.Qt.ClipOperation.IntersectClip)
 
     def drawPoint(self, point: cartographer.PointF, pen: MapPen) -> None:

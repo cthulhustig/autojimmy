@@ -5,7 +5,7 @@ import itertools
 import logic
 import math
 import traveller
-import travellermap
+import multiverse
 import typing
 
 # NOTE: The names of these enums are when serialising jump routes (specifically
@@ -81,7 +81,7 @@ class PitStopCostCalculator(object):
 
     def refuellingType(
             self,
-            world: traveller.World
+            world: multiverse.World
             ) -> typing.Optional[RefuellingType]:
         if world in self._worldFuelTypes:
             return self._worldFuelTypes[world]
@@ -92,7 +92,7 @@ class PitStopCostCalculator(object):
 
     def fuelCost(
             self,
-            world: traveller.World
+            world: multiverse.World
             ) -> typing.Optional[common.ScalarCalculation]:
         refuellingType = self.refuellingType(world=world)
         if refuellingType is logic.RefuellingType.Refined:
@@ -109,7 +109,7 @@ class PitStopCostCalculator(object):
 
     def berthingCost(
             self,
-            world: traveller.World,
+            world: multiverse.World,
             mandatory: bool = False, # Is berthing mandatory rather than based
                                      # on the refuelling type for the world
             diceRoller: typing.Optional[common.DiceRoller] = None
@@ -140,61 +140,67 @@ class PitStopCostCalculator(object):
 
     def _selectRefuellingType(
             self,
-            world: traveller.World
+            world: multiverse.World
             ) -> typing.Optional[RefuellingType]:
         if self._refuellingStrategy == RefuellingStrategy.RefinedFuelOnly:
-            if world.hasStarPortRefuelling(
+            if traveller.worldHasStarPortRefuelling(
                     includeUnrefined=False,
+                    world=world,
                     rules=self._rules):
                 return RefuellingType.Refined
         elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelOnly:
-            if world.hasStarPortRefuelling(
+            if traveller.worldHasStarPortRefuelling(
                     includeRefined=False,
+                    world=world,
                     rules=self._rules):
                 return RefuellingType.Unrefined
         elif self._refuellingStrategy == RefuellingStrategy.GasGiantOnly:
-            if world.hasGasGiantRefuelling():
+            if traveller.worldHasGasGiantRefuelling(world=world):
                 return RefuellingType.Wilderness
         elif self._refuellingStrategy == RefuellingStrategy.WaterOnly:
-            if world.hasWaterRefuelling():
+            if traveller.worldHasWaterRefuelling(world=world):
                 return RefuellingType.Wilderness
         elif self._refuellingStrategy == RefuellingStrategy.WildernessOnly:
-            if world.hasWildernessRefuelling():
+            if traveller.worldHasWildernessRefuelling(world=world):
                 return RefuellingType.Wilderness
         elif self._refuellingStrategy == RefuellingStrategy.RefinedFuelPreferred:
-            if world.hasStarPortRefuelling(
+            if traveller.worldHasStarPortRefuelling(
                     includeUnrefined=False, # Check for refined fuel
+                    world=world,
                     rules=self._rules):
                 return RefuellingType.Refined
-            if world.hasStarPortRefuelling(
+            if traveller.worldHasStarPortRefuelling(
                     includeRefined=False, # Check for unrefined fuel
+                    world=world,
                     rules=self._rules):
                 return RefuellingType.Unrefined
         elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelPreferred:
-            if world.hasStarPortRefuelling(
+            if traveller.worldHasStarPortRefuelling(
                     includeRefined=False, # Check for unrefined fuel
+                    world=world,
                     rules=self._rules):
                 return RefuellingType.Unrefined
-            if world.hasStarPortRefuelling(
+            if traveller.worldHasStarPortRefuelling(
                     includeUnrefined=False, # Check for refined fuel
+                    world=world,
                     rules=self._rules):
                 return RefuellingType.Refined
         elif self._refuellingStrategy == RefuellingStrategy.GasGiantPreferred:
-            if world.hasGasGiantRefuelling():
+            if traveller.worldHasGasGiantRefuelling(world=world):
                 return RefuellingType.Wilderness
             fallbackRefuelling = self._fallbackRefuellingType(
                 world=world)
             if fallbackRefuelling is not None:
                 return fallbackRefuelling
         elif self._refuellingStrategy == RefuellingStrategy.WaterPreferred:
-            if world.hasWaterRefuelling():
+            if traveller.worldHasWaterRefuelling(world=world):
                 return RefuellingType.Wilderness
             fallbackRefuelling = self._fallbackRefuellingType(
                 world=world)
             if fallbackRefuelling is not None:
                 return fallbackRefuelling
         elif self._refuellingStrategy == RefuellingStrategy.WildernessPreferred:
-            if world.hasWildernessRefuelling():
+            if traveller.worldHasWildernessRefuelling(world=world):
                 return RefuellingType.Wilderness
             fallbackRefuelling = self._fallbackRefuellingType(
                 world=world)
@@ -220,14 +226,16 @@ class PitStopCostCalculator(object):
     # fuel they purchase.
     def _fallbackRefuellingType(
             self,
-            world: traveller.World
+            world: multiverse.World
             ) -> typing.Optional[RefuellingType]:
-        if world.hasStarPortRefuelling(
+        if traveller.worldHasStarPortRefuelling(
                 includeRefined=False, # Only check for unrefined fuel
+                world=world,
                 rules=self._rules):
             return RefuellingType.Unrefined
-        if world.hasStarPortRefuelling(
+        if traveller.worldHasStarPortRefuelling(
                 includeUnrefined=False, # Only check for refined fuel
+                world=world,
                 rules=self._rules):
             return RefuellingType.Refined
         return None
@@ -236,7 +244,7 @@ class PitStop(object):
     def __init__(
             self,
             routeIndex: int, # Intentionally not a calculation as it's not used to calculate values
-            world: traveller.World,
+            world: multiverse.World,
             refuellingType: typing.Optional[RefuellingType],
             tonsOfFuel: typing.Optional[common.ScalarCalculation],
             fuelCost: typing.Optional[common.ScalarCalculation],
@@ -273,10 +281,10 @@ class PitStop(object):
     def routeIndex(self) -> int:
         return self._routeIndex
 
-    def world(self) -> traveller.World:
+    def world(self) -> multiverse.World:
         return self._world
 
-    def hex(self) -> travellermap.HexPosition:
+    def hex(self) -> multiverse.HexPosition:
         return self._world.hex()
 
     def hasRefuelling(self) -> bool:
@@ -303,7 +311,7 @@ class PitStop(object):
 class RefuellingPlan(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             pitStops: typing.Sequence[PitStop]
             ) -> None:
         self._milieu = milieu
@@ -348,7 +356,7 @@ class RefuellingPlan(object):
             rhs=self._totalBerthingCosts,
             name='Total Refuelling Plan Cost')
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
     def pitStop(self, routeIndex: int) -> typing.Optional[PitStop]:
@@ -387,7 +395,7 @@ class _NodeContext(object):
     def __init__(
             self,
             index: int,
-            world: typing.Optional[traveller.World],
+            world: typing.Optional[multiverse.World],
             refuellingType: typing.Optional[RefuellingType],
             fuelCostPerTon: typing.Optional[int], # Only used if world and refuelling type is not None
             berthingCost: typing.Optional[int], # Only used if world is not None
@@ -412,7 +420,7 @@ class _NodeContext(object):
     def index(self) -> int:
         return self._index
 
-    def world(self) -> typing.Optional[traveller.World]:
+    def world(self) -> typing.Optional[multiverse.World]:
         return self._world
 
     def isFinish(self) -> bool:
@@ -553,7 +561,7 @@ class _CalculationContext:
         return isBetter
 
 def calculateRefuellingPlan(
-        milieu: travellermap.Milieu,
+        milieu: multiverse.Milieu,
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -624,7 +632,7 @@ def calculateRefuellingPlan(
         diceRoller=diceRoller)
 
 def _processRoute(
-        milieu: travellermap.Milieu,
+        milieu: multiverse.Milieu,
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
@@ -650,7 +658,7 @@ def _processRoute(
         while reachableNodeIndex <= finishNodeIndex:
             fromHex = jumpRoute.nodeAt(reachableNodeIndex - 1)
             toHex = jumpRoute.nodeAt(reachableNodeIndex)
-            toWorld = traveller.WorldManager.instance().worldByPosition(
+            toWorld = multiverse.WorldManager.instance().worldByPosition(
                 milieu=milieu,
                 hex=toHex)
             parsecs = fromHex.parsecsTo(toHex)
@@ -669,7 +677,7 @@ def _processRoute(
             reachableNodeIndex += 1
 
         nodePos = jumpRoute.nodeAt(index=nodeIndex)
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = multiverse.WorldManager.instance().worldByPosition(
             milieu=milieu,
             hex=nodePos)
         refuellingType = None
@@ -833,7 +841,7 @@ def _processNode(
     return bestFinalCost
 
 def _createRefuellingPlan(
-        milieu: travellermap.Milieu,
+        milieu: multiverse.Milieu,
         calculationContext: _CalculationContext,
         pitCostCalculator: PitStopCostCalculator,
         includeRefuellingCosts: bool,

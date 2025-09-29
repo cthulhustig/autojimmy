@@ -1,9 +1,10 @@
 import app
+import cartographer
 import gui
 import logic
-import travellermap
+import multiverse
 import typing
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 class MapWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -22,6 +23,7 @@ class MapWindow(gui.WindowWidget):
         app.Config.instance().configChanged.connect(self._appConfigChanged)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -42,8 +44,8 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHex(
             self,
-            hex: travellermap.HexPosition,
-            scale: typing.Optional[travellermap.Scale] = travellermap.Scale(linear=64), # None keeps current scale
+            hex: multiverse.HexPosition,
+            scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             ) -> None:
         self._mapWidget.centerOnHex(
             hex=hex,
@@ -52,7 +54,7 @@ class MapWindow(gui.WindowWidget):
 
     def centerOnHexes(
             self,
-            hexes: travellermap.HexPosition
+            hexes: multiverse.HexPosition
             ) -> None:
         self._mapWidget.centerOnHexes(
             hexes=hexes,
@@ -71,9 +73,9 @@ class MapWindow(gui.WindowWidget):
 
     def highlightHex(
             self,
-            hex: travellermap.HexPosition,
+            hex: multiverse.HexPosition,
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHex(
             hex=hex,
@@ -85,9 +87,9 @@ class MapWindow(gui.WindowWidget):
 
     def highlightHexes(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition],
+            hexes: typing.Iterable[multiverse.HexPosition],
             radius: float = 0.5,
-            colour: str = '#8080FF'
+            colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
         self._mapWidget.highlightHexes(
             hexes=hexes,
@@ -147,7 +149,7 @@ class MapWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -155,7 +157,7 @@ class MapWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,

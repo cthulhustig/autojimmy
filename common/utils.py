@@ -317,12 +317,23 @@ class DebugTimer():
         self._string = string
 
     def __enter__(self) -> 'DebugTimer':
-        self._startTime = utcnow()
+        self.start()
         return self
 
     def __exit__(self, type, value, traceback):
-        delta = utcnow() - self._startTime
+        delta = self.stop()
         print(f'{self._string}: {delta.total_seconds() * 1000}ms')
+
+    def start(self) -> None:
+        self._startTime = utcnow()
+
+    def delta(self) -> datetime.timedelta:
+        return utcnow() - self._startTime
+
+    def stop(self) -> datetime.timedelta:
+        delta = self.delta()
+        self._startTime = None
+        return delta
 
 class Profiler():
     def __init__(self, sortBy=pstats.SortKey.TIME):

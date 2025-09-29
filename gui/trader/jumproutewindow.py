@@ -1,4 +1,5 @@
 import app
+import cartographer
 import common
 import enum
 import gui
@@ -7,7 +8,7 @@ import logging
 import logic
 import os
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -41,12 +42,14 @@ def _formatRefuellingTypeString(
     elif refuellingType == logic.RefuellingType.Unrefined:
         text = 'Star Port (Unrefined)'
     elif refuellingType == logic.RefuellingType.Wilderness:
+        hasGasGiant = traveller.worldHasGasGiantRefuelling(world=world)
+        hasWater = traveller.worldHasWaterRefuelling(world=world)
         text = 'Wilderness'
-        if world.hasGasGiantRefuelling() and world.hasWaterRefuelling():
+        if hasGasGiant and hasWater:
             pass # Just leave it as wilderness refuelling
-        elif world.hasGasGiantRefuelling():
+        elif hasGasGiant:
             text += ' (Gas Giant Only)'
-        elif world.hasWaterRefuelling():
+        elif hasWater:
             text += ' (Water Only)'
         else:
             text += ' (Unknown)'
@@ -68,7 +71,7 @@ def _formatBerthingTypeString(
     world = pitStop.world()
 
     if world.hasStarPort():
-        starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
+        starPortCode = world.uwp().code(multiverse.UWP.Element.StarPort)
         return f'Class {starPortCode} Star Port'
     elif world.isFuelCache():
         return 'Fuel Cache'
@@ -80,7 +83,7 @@ def _formatBerthingTypeString(
 class _HexFilter(logic.HexFilterInterface):
     def __init__(
             self,
-            avoidHexes: typing.List[travellermap.HexPosition],
+            avoidHexes: typing.List[multiverse.HexPosition],
             avoidFilters: typing.List[logic.WorldFilter],
             avoidFilterLogic: logic.FilterLogic,
             rules: traveller.Rules,
@@ -101,8 +104,8 @@ class _HexFilter(logic.HexFilterInterface):
     # IMPORTANT: This will be called from the route planner job thread
     def match(
             self,
-            hex: travellermap.HexPosition,
-            world: typing.Optional[traveller.World]
+            hex: multiverse.HexPosition,
+            world: typing.Optional[multiverse.World]
             ) -> bool:
         if self._avoidHexes and hex in self._avoidHexes:
             # Filter out worlds on the avoid list
@@ -145,7 +148,7 @@ class _RefuellingPlanTable(gui.HexTable):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -195,9 +198,9 @@ class _RefuellingPlanTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> int:
-        world = traveller.WorldManager.instance().worldByPosition(
+        world = multiverse.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -257,7 +260,7 @@ class _RefuellingPlanTable(gui.HexTable):
 
 class _StartFinishSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
-    showHexRequested = QtCore.pyqtSignal(travellermap.HexPosition)
+    showHexRequested = QtCore.pyqtSignal(multiverse.HexPosition)
 
     # The state version doesn't match the current class name for backwards
     # compatibility. The class name was changed when adding dead space routing
@@ -267,10 +270,10 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
-            mapOptions: typing.Iterable[travellermap.Option],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Iterable[app.MapOption],
             mapRendering: app.MapRendering,
             mapAnimations: bool,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -314,7 +317,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         self._startWidget.setMilieu(milieu=milieu)
         self._finishWidget.setMilieu(milieu=milieu)
 
@@ -322,11 +325,11 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         self._startWidget.setRules(rules=rules)
         self._finishWidget.setRules(rules=rules)
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         self._startWidget.setMapStyle(style=style)
         self._finishWidget.setMapStyle(style=style)
 
-    def setMapOptions(self, options: typing.Iterable[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Iterable[app.MapOption]) -> None:
         self._startWidget.setMapOptions(options=options)
         self._finishWidget.setMapOptions(options=options)
 
@@ -346,34 +349,34 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         self._startWidget.setTaggingColours(colours=colours)
         self._finishWidget.setTaggingColours(colours=colours)
 
-    def startHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def startHex(self) -> typing.Optional[multiverse.HexPosition]:
         return self._startWidget.selectedHex()
 
-    def finishHex(self) -> typing.Optional[travellermap.HexPosition]:
+    def finishHex(self) -> typing.Optional[multiverse.HexPosition]:
         return self._finishWidget.selectedHex()
 
     def hexes(self) -> typing.Tuple[
-            typing.Optional[travellermap.HexPosition],
-            typing.Optional[travellermap.HexPosition]
+            typing.Optional[multiverse.HexPosition],
+            typing.Optional[multiverse.HexPosition]
             ]:
         return (self.startHex(), self.finishHex())
 
     def setStartHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self._startWidget.setSelectedHex(hex=hex)
 
     def setFinishHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         self._finishWidget.setSelectedHex(hex=hex)
 
     def setHexes(
             self,
-            startHex: typing.Optional[travellermap.HexPosition],
-            finishHex: typing.Optional[travellermap.HexPosition]
+            startHex: typing.Optional[multiverse.HexPosition],
+            finishHex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         selectionChanged = False
 
@@ -450,7 +453,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
     def _handleShowHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         if hex:
             self.showHexRequested.emit(hex)
@@ -697,8 +700,8 @@ class _ExportJumpRouteDialog(gui.DialogEx):
         self._filePathLineEdit.setText(path)
 
 class JumpRouteWindow(gui.WindowWidget):
-    _JumpRatingOverlayDarkStyleColour = '#9D03FC'
-    _JumpRatingOverlayLightStyleColour = '#4A03FC'
+    _JumpRatingOverlayDarkStyleColour = QtGui.QColor('#7F9D03FC')
+    _JumpRatingOverlayLightStyleColour = QtGui.QColor('#7F4A03FC')
     _JumpRatingOverlayLineWidth = 6
 
     def __init__(self) -> None:
@@ -715,7 +718,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
@@ -943,10 +945,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._updateTravellerMapOverlays()
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
-        # Schedule the Traveller Map init fix to be run shortly after the window is displayed. We
-        # can't run it directly here as the window won't have finished being resized (after loading
-        # the saved window layout) so the fix won't work.
-        QtCore.QTimer.singleShot(1000, self._travellerMapInitFix)
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         return super().firstShowEvent(e)
 
@@ -956,18 +954,21 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteJob = None
         return super().closeEvent(e)
 
-    # This is a MASSIVE hack. It works around the fact the Traveller Map widget isn't resized until
-    # its tab is displayed. This caused zooming to the jump route to not zoom to the correct area
-    # if the route was calculated before the widget was displayed for the first time. The hack works
-    # by checking if the Traveller Map widget is not the displayed widget and forces a resize if
-    # it's not.
-    # TODO: This can be removed when I finally ditch the web map widget
-    def _travellerMapInitFix(self) -> None:
-        currentWidget = self._resultsDisplayModeTabView.currentWidget()
-        if currentWidget != self._mapWidget:
-            size = currentWidget.size()
-            self._mapWidget.resize(size)
-            self._mapWidget.show()
+    def eventFilter(
+            self,
+            obj: typing.Optional[QtCore.QObject],
+            event: typing.Optional[QtCore.QEvent]
+            ) -> bool:
+        if obj == self._mapWidget:
+            if event.type() == QtCore.QEvent.Type.ToolTip:
+                assert(isinstance(event, QtGui.QHelpEvent))
+                toolTip = self._formatMapToolTip(self._mapWidget.hexAt(event.pos()))
+                if toolTip:
+                    QtWidgets.QToolTip.showText(event.globalPos(), toolTip)
+                    event.accept()
+                    return True
+
+        return super().eventFilter(obj, event)
 
     def _setupStartFinishControls(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
@@ -1342,6 +1343,7 @@ class JumpRouteWindow(gui.WindowWidget):
             showRefuellingContentOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -1350,11 +1352,10 @@ class JumpRouteWindow(gui.WindowWidget):
             animated=mapAnimations,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
+        self._mapWidget.enableDeadSpaceSelection(routingType is logic.RoutingType.DeadSpace)
         self._mapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._mapWidget.setToolTipCallback(self._formatMapToolTip)
-        self._mapWidget.enableDeadSpaceSelection(
-            enable=routingType is logic.RoutingType.DeadSpace)
-        self._mapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
+        self._mapWidget.installEventFilter(self)
+        self._mapWidget.customContextMenuRequested.connect(self._showTravellerMapContextMenu)
         self._mapWidget.mapStyleChanged.connect(self._mapStyleChanged)
         self._mapWidget.mapOptionsChanged.connect(self._mapOptionsChanged)
         self._mapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
@@ -1486,8 +1487,6 @@ class JumpRouteWindow(gui.WindowWidget):
             self._waypointsWidget.setMapAnimations(enabled=newValue)
             self._avoidHexesWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimated(animated=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._refuellingPlanTable.setOutcomeColours(colours=newValue)
         elif option is app.ConfigOption.WorldTagging:
@@ -1554,7 +1553,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -1562,7 +1561,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -1634,7 +1633,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            startWorld = traveller.WorldManager.instance().worldByPosition(
+            startWorld = multiverse.WorldManager.instance().worldByPosition(
                 milieu=milieu,
                 hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
@@ -1669,7 +1668,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             fuelIssueWorldStrings = []
             for waypointHex in self._waypointsWidget.hexes():
-                waypointWorld = traveller.WorldManager.instance().worldByPosition(
+                waypointWorld = multiverse.WorldManager.instance().worldByPosition(
                     milieu=milieu,
                     hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
@@ -1792,8 +1791,8 @@ class JumpRouteWindow(gui.WindowWidget):
         if isinstance(result, Exception):
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             startHex, finishHex = self._selectStartFinishWidget.hexes()
-            startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+            startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+            finishString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1913,28 +1912,18 @@ class JumpRouteWindow(gui.WindowWidget):
         menu.addAction(showAllRefuellingCalculationsAction)
         menu.exec(self._refuellingPlanTable.viewport().mapToGlobal(point))
 
-    # TODO: When I get rid of the web map widget I can switch this to use
-    # the standard custom context menu rather than the maps right click
-    # event. It can't be done now as it would require an non-async way
-    # to resolve the widget position to a hex which isn't possible with
-    # the web map widget.
-    # - I think I would need to implement a hexAt function for the local map
-    # widget but it should be pretty straight forward
-    # - I would also need to update this function to handle the fact the
-    # hex could in theory be null (menu should still display, just with
-    # some options disabled)
     def _showTravellerMapContextMenu(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            pos: QtCore.QPoint
             ) -> None:
-        if not hex:
-            return
+        hex = self._mapWidget.hexAt(pos=pos)
+
         isCurrentWaypoint = self._waypointsWidget.containsHex(hex=hex)
         isCurrentAvoidHex = self._avoidHexesWidget.containsHex(hex=hex)
 
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
-            traveller.WorldManager.instance().worldByPosition(
+            multiverse.WorldManager.instance().worldByPosition(
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                 hex=hex) != None
         isValidAvoidHex = not isCurrentAvoidHex
@@ -2045,7 +2034,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _formatMapToolTip(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> typing.Optional[str]:
         if not hex:
             return None
@@ -2096,12 +2085,12 @@ class JumpRouteWindow(gui.WindowWidget):
 
                     tonsOfFuel = pitStop.tonsOfFuel()
                     if tonsOfFuel:
-                        toolTip += '<li><nobr>Fuel Amount: {} tons</nobr></li>'.format(
+                        toolTip += '<li><nobr>Refuelling Amount: {} tons</nobr></li>'.format(
                             common.formatNumber(number=tonsOfFuel.value()))
 
                     fuelCost = pitStop.fuelCost()
                     if fuelCost:
-                        toolTip += '<li><nobr>Fuel Cost: Cr{}</nobr></li>'.format(
+                        toolTip += '<li><nobr>Refuelling Cost: Cr{}</nobr></li>'.format(
                             common.formatNumber(number=fuelCost.value()))
 
                 berthingCost = pitStop.berthingCost()
@@ -2236,7 +2225,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexDetails(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=hexes)
@@ -2258,7 +2247,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexOnMap(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._mapWrapperWidget)
@@ -2280,7 +2269,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         if not hexes:
             return
@@ -2335,7 +2324,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if startHex and showJumpRatingOverlay:
             mapStyle = app.Config.instance().value(option=app.ConfigOption.MapStyle)
-            isDarkMapStyle = travellermap.isDarkStyle(style=mapStyle)
+            isDarkMapStyle = gui.isDarkMapStyle(style=mapStyle)
             colour = self._JumpRatingOverlayDarkStyleColour \
                 if isDarkMapStyle else \
                 self._JumpRatingOverlayLightStyleColour
@@ -2355,12 +2344,12 @@ class JumpRouteWindow(gui.WindowWidget):
                 option=app.ConfigOption.TaggingColours)
 
             try:
-                worlds = traveller.WorldManager.instance().worldsInRadius(
+                worlds = multiverse.WorldManager.instance().worldsInRadius(
                     milieu=milieu,
                     center=startHex,
                     searchRadius=jumpRating)
             except Exception as ex:
-                startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+                startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
                 logging.warning(
                     f'An exception occurred while finding worlds reachable from {startString}',
                     exc_info=ex)
@@ -2377,11 +2366,10 @@ class JumpRouteWindow(gui.WindowWidget):
                     continue
 
                 colour = QtGui.QColor(taggingColours.colour(level=tagLevel))
-                tagColour = gui.colourToString(
-                    colour=colour,
-                    includeAlpha=False) # Remove alpha from colour
+                colour.setAlpha(128)
+
                 taggedHexes.append(world.hex())
-                colourMap[world.hex()] = tagColour
+                colourMap[world.hex()] = colour
 
             if taggedHexes:
                 handle = self._mapWidget.createHexOverlay(
@@ -2424,19 +2412,19 @@ class JumpRouteWindow(gui.WindowWidget):
         if startHex:
             self._mapWidget.highlightHex(
                 hex=startHex,
-                colour='#00FF00',
+                colour=QtGui.QColor('#7F00FF00'),
                 radius=0.5)
         if finishHex:
             self._mapWidget.highlightHex(
                 hex=finishHex,
-                colour='#00FF00',
+                colour=QtGui.QColor('#7F00FF00'),
                 radius=0.5)
 
         waypointHexes = self._waypointsWidget.hexes()
         if waypointHexes:
             self._mapWidget.highlightHexes(
                 hexes=waypointHexes,
-                colour='#0066FF',
+                colour=QtGui.QColor('#7F0066FF'),
                 radius=0.3)
 
         filteredAvoidHexes = []
@@ -2446,7 +2434,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if filteredAvoidHexes:
             self._mapWidget.highlightHexes(
                 hexes=filteredAvoidHexes,
-                colour='#FF0000',
+                colour=QtGui.QColor('#7FFF0000'),
                 radius=0.3)
 
         if self._jumpRoute:
@@ -2598,7 +2586,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._anomalyFuelCostSpinBox.setEnabled(isAnomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(isAnomalyRefuelling)
 
-    def _allowAvoidHex(self, hex: travellermap.HexPosition) -> bool:
+    def _allowAvoidHex(self, hex: multiverse.HexPosition) -> bool:
         if self._avoidHexesWidget.containsHex(hex):
             # Silently ignore worlds that are already in the table
             return False
@@ -2648,8 +2636,8 @@ class JumpRouteWindow(gui.WindowWidget):
             except Exception as ex:
                 startHex = jumpRoute.startNode()
                 finishHex = jumpRoute.finishNode()
-                startString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-                finishString = traveller.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+                startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+                finishString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
                 message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                     start=startString,
                     finish=finishString)

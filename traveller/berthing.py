@@ -1,5 +1,5 @@
 import common
-import traveller
+import multiverse
 import typing
 
 # Berthing costs are the same for Mongoose 1e (p178), 2e (p225) & 2022 (p257)
@@ -17,12 +17,12 @@ _StarPortBerthingCostScale = {
 # The MGT2 rules aren't clear on what time range the berthing costs on p225 of the rules are
 # over. For now I'm leaving it up to the consuming code to decide what it does with the value.
 def starPortBerthingCost(
-        world: traveller.World,
+        world: multiverse.World,
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[typing.Union[
             common.ScalarCalculation,
             common.RangeCalculation]]:
-    starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
+    starPortCode = world.uwp().code(multiverse.UWP.Element.StarPort)
     berthingScale = _StarPortBerthingCostScale.get(starPortCode)
     if not berthingScale:
         return None

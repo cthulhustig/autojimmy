@@ -1,92 +1,77 @@
 import app
-import gui
 import cartographer
-import travellermap
+import gui
+import multiverse
 import typing
 from PyQt5 import QtCore, QtGui
 
 _thumbnailRenderInitialised = False
 _thumbnailGraphics: typing.Optional[gui.MapGraphics] = None
-_thumbnailImageCache: typing.Optional[cartographer.ImageCache] = None
-_thumbnailVectorCache: typing.Optional[cartographer.VectorObjectCache] = None
-_thumbnailLabelCache: typing.Optional[cartographer.LabelCache] = None
-_thumbnailStyleCache: typing.Optional[cartographer.StyleCache] = None
+_thumbnailImageCache: typing.Optional[cartographer.ImageStore] = None
+_thumbnailVectorCache: typing.Optional[cartographer.VectorStore] = None
+_thumbnailStyleCache: typing.Optional[cartographer.StyleStore] = None
 
 def _initThumbnailRenderer():
     global _thumbnailRenderInitialised
     global _thumbnailGraphics
     global _thumbnailImageCache
     global _thumbnailVectorCache
-    global _thumbnailLabelCache
     global _thumbnailStyleCache
 
     if _thumbnailRenderInitialised:
         return
+
     _thumbnailGraphics = gui.MapGraphics()
-    _thumbnailImageCache = cartographer.ImageCache(graphics=_thumbnailGraphics)
-    _thumbnailVectorCache = cartographer.VectorObjectCache(graphics=_thumbnailGraphics)
-    _thumbnailLabelCache = cartographer.LabelCache()
-    _thumbnailStyleCache = cartographer.StyleCache()
+    _thumbnailImageCache = cartographer.ImageStore(graphics=_thumbnailGraphics)
+    _thumbnailVectorCache = cartographer.VectorStore(graphics=_thumbnailGraphics)
+    _thumbnailStyleCache = cartographer.StyleStore()
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
-        milieu: travellermap.Milieu,
-        hex: travellermap.HexPosition,
+        universe: multiverse.Universe,
+        milieu: multiverse.Milieu,
+        hex: multiverse.HexPosition,
         width: int,
         height: int,
         linearScale: float,
-        style: travellermap.Style,
-        options: typing.Collection[travellermap.Option],
-        engine: app.MapEngine = app.MapEngine.InApp
-        ) -> typing.Tuple[
-            typing.Optional[bytes],
-            typing.Optional[travellermap.MapFormat]]:
+        style: cartographer.MapStyle,
+        options: typing.Collection[app.MapOption]
+        ) -> typing.Optional[bytes]:
+    _initThumbnailRenderer()
 
-    if engine is app.MapEngine.InApp:
-        _initThumbnailRenderer()
+    centerX, centerY = hex.worldCenter()
+    renderer = cartographer.RenderContext(
+        universe=universe,
+        graphics=_thumbnailGraphics,
+        worldCenterX=centerX,
+        worldCenterY=centerY,
+        scale=linearScale,
+        outputPixelX=width,
+        outputPixelY=height,
+        milieu=milieu,
+        style=style,
+        options=gui.mapOptionsToRenderOptions(options),
+        imageStore=_thumbnailImageCache,
+        styleStore=_thumbnailStyleCache,
+        vectorStore=_thumbnailVectorCache,
+        labelStore=cartographer.LabelStore(universe=universe))
 
-        centerX, centerY = hex.worldCenter()
-        renderer = cartographer.RenderContext(
-            graphics=_thumbnailGraphics,
-            worldCenterX=centerX,
-            worldCenterY=centerY,
-            scale=linearScale,
-            outputPixelX=width,
-            outputPixelY=height,
-            milieu=milieu,
-            style=style,
-            options=cartographer.mapOptionsToRenderOptions(options),
-            imageCache=_thumbnailImageCache,
-            vectorCache=_thumbnailVectorCache,
-            labelCache=_thumbnailLabelCache,
-            styleCache=_thumbnailStyleCache)
+    image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
+    painter = QtGui.QPainter()
+    painter.begin(image)
+    try:
+        _thumbnailGraphics.setPainter(painter)
+        renderer.render()
+    finally:
+        painter.end()
+        _thumbnailGraphics.setPainter(None)
 
-        image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
-        painter = QtGui.QPainter()
-        painter.begin(image)
-        try:
-            _thumbnailGraphics.setPainter(painter)
-            renderer.render()
-        finally:
-            painter.end()
-            _thumbnailGraphics.setPainter(None)
+    byteArray = QtCore.QByteArray()
+    buffer = QtCore.QBuffer(byteArray)
+    buffer.open(QtCore.QBuffer.OpenModeFlag.WriteOnly)
+    try:
+        image.save(buffer, 'PNG')
+    finally:
+        buffer.close()
 
-        byteArray = QtCore.QByteArray()
-        buffer = QtCore.QBuffer(byteArray)
-        buffer.open(QtCore.QBuffer.OpenModeFlag.WriteOnly)
-        try:
-            image.save(buffer, 'PNG')
-        finally:
-            buffer.close()
-
-        return (byteArray.data(), travellermap.MapFormat.PNG)
-    else:
-        return travellermap.TileClient.instance().tile(
-            milieu=milieu,
-            style=style,
-            options=options,
-            hex=hex,
-            width=width,
-            height=height,
-            linearScale=linearScale,
-            timeout=3)
+    return byteArray.data()

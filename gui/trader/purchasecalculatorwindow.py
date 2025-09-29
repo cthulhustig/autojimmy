@@ -29,7 +29,6 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
-            showImages=app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
             mapOptions=app.Config.instance().value(option=app.ConfigOption.MapOptions),
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
@@ -361,8 +360,6 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self._purchaseWorldWidget.setMapRendering(rendering=newValue)
         elif option is app.ConfigOption.MapAnimations:
             self._purchaseWorldWidget.setMapAnimations(enabled=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.OutcomeColours:
             self._cargoTable.setOutcomeColours(colours=newValue)
         elif option is app.ConfigOption.WorldTagging:

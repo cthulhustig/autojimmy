@@ -14,13 +14,10 @@ import multiprocessing
 import objectdb
 import os
 import pathlib
-import proxy
 import qasync
 import robots
-import socket
 import sys
-import traveller
-import travellermap
+import multiverse
 import uuid
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -50,87 +47,6 @@ def _applicationDirectory() -> str:
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
 
-def _cairoSvgInstallCheck(
-        parent: typing.Optional[QtWidgets.QWidget] = None
-        ) -> bool: # True if the application should continue, or False if it should exit
-    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
-        return True # CairoSVG is working so app should continue
-
-    svgCustomSectors = []
-    sectors = travellermap.DataStore.instance().sectors(
-        milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
-    for sector in sectors:
-        mapLevels = sector.customMapLevels()
-        if not mapLevels:
-            continue
-        for mapLevel in mapLevels.values():
-            if mapLevel.format() == travellermap.MapFormat.SVG:
-                svgCustomSectors.append(sector.canonicalName())
-                break
-
-    alwaysShowPrompt = False
-    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:
-        promptMessage = 'The CairoSVG Python package is not installed.'
-        promptIcon = QtWidgets.QMessageBox.Icon.Information
-        logging.info(promptMessage)
-    elif depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NoLibraries:
-        promptMessage = 'The CairoSVG Python package is installed but it failed to find the Cairo libraries that it requires.'
-        promptIcon = QtWidgets.QMessageBox.Icon.Warning
-        logging.warning(promptMessage)
-    else:
-        promptMessage = 'The CairoSVG Python package is in an unknown state.'
-        promptIcon = QtWidgets.QMessageBox.Icon.Critical
-        alwaysShowPrompt = True
-        logging.error(promptMessage)
-
-    promptMessage += \
-        '<br><br>New custom sector posters will be created using PNG images. This can ' \
-        'introduce more visual artifacts around the borders of custom sectors when ' \
-        'compositing them onto tiles returned by Traveller Map.'
-
-    if svgCustomSectors:
-        # Always show the prompt if there are SVG sectors that won't be rendered
-        alwaysShowPrompt = True
-
-        promptMessage += '<br><br>Existing custom sectors that use SVG posters will be disabled.'
-
-        if len(svgCustomSectors) <= 4:
-            promptMessage += ' The following custom sectors are currently using SVG posters:'
-            for sectorName in svgCustomSectors:
-                promptMessage += '<br>' + sectorName
-        else:
-            promptMessage += f' There are currently {len(svgCustomSectors)} custom sectors using SVG posters.'
-
-    promptMessage += '<br><br>Details on how to install the CairoSVG package and its required libraries can ' \
-        f'be found at <a href=\'{app.AppURL}\'>{app.AppURL}</a>.'
-    promptMessage += f'<br><br>Do you want to continue loading {app.AppName}?'
-
-    promptMessage = f'<html>{promptMessage}</html>'
-
-    promptTitle = 'Prompt'
-    promptButtons = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
-    promptDefaultButton = QtWidgets.QMessageBox.StandardButton.Yes
-    if alwaysShowPrompt:
-        answer = gui.MessageBoxEx.showMessageBox(
-            parent=parent,
-            title=promptTitle,
-            icon=promptIcon,
-            text=promptMessage,
-            buttons=promptButtons,
-            defaultButton=promptDefaultButton)
-    else:
-        answer = gui.AutoSelectMessageBox.showMessageBox(
-            parent=parent,
-            title=promptTitle,
-            icon=promptIcon,
-            text=promptMessage,
-            buttons=promptButtons,
-            defaultButton=promptDefaultButton,
-            stateKey='ContinueIfCairoSvgNotWorking',
-            rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
-
-    return answer == QtWidgets.QMessageBox.StandardButton.Yes
-
 class _SnapshotCheckResult(enum.Enum):
     NoUpdate = 0
     UpdateInstalled = 1
@@ -142,16 +58,16 @@ def _snapshotUpdateCheck(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
-    snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
+    snapshotAvailability = multiverse.DataStore.instance().checkForNewSnapshot()
 
-    if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
+    if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.NoNewSnapshot:
         return _SnapshotCheckResult.NoUpdate
 
-    if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+    if snapshotAvailability != multiverse.DataStore.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
-            age='old' if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld else 'new')
-        if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld:
+            age='old' if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld:
             promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
                 url=app.AppURL)
             stateKey = 'UniverseUpdateAppToOld'
@@ -207,68 +123,6 @@ def _snapshotUpdateCheck(
     return _SnapshotCheckResult.UpdateInstalled \
         if result == QtWidgets.QDialog.DialogCode.Accepted else \
         _SnapshotCheckResult.Cancelled
-
-# Check that the loopback addresses required for the proxy host pool
-# are available. This is required as macOS (and possibly some Linux
-# distros) only enables 127.0.0.1 by default.
-def _hostPoolSizeCheck(
-        parent: typing.Optional[QtWidgets.QWidget] = None
-        ) -> int:
-    requestedHostCount = app.Config.instance().value(
-        option=app.ConfigOption.ProxyHostPoolSize)
-    availableHostCount = 0
-    for index in range(1, requestedHostCount + 1):
-        testSocket = None
-        try:
-            address = f'127.0.0.{index}'
-            testSocket = socket.socket()
-            testSocket.bind((address, 0))
-            availableHostCount = index
-        except Exception as ex:
-            logging.debug(
-                'An exception occurred when binding to {address} to test proxy host pool size.',
-                exc_info=ex)
-            break
-        finally:
-            if testSocket:
-                testSocket.close()
-
-    if availableHostCount == 0:
-        logging.error(
-            'Proxy will be disabled as no IPv4 loopback addresses were found')
-
-        message = """
-            <p>The proxy will be disabled as no IPv4 loopback addresses were
-            found. When the proxy is disabled, custom sectors will not be overlaid
-            on Traveller Map.</p>
-            """
-        gui.AutoSelectMessageBox.critical(
-            parent=parent,
-            text=message,
-            stateKey='NoHostPoolInterfaces')
-    elif availableHostCount != requestedHostCount:
-        logging.warning(
-            'Proxy host pool size will be reduced from {requested} to '
-            '{available} due to insufficient IPv4 loopback addresses.'.format(
-                requested=requestedHostCount,
-                available=availableHostCount))
-
-        message = """
-            <p>The proxy is configured to have a host pool size of {requested}
-            but only {available} IPv4 loopback {wording} available. This may
-            reduce performance when displaying Traveller Map.</p>
-            <p>For a pool size of {requested}, the loopback addresses
-            127.0.0.1 -> 127.0.0.{requested} must be enabled.</p>
-            """.format(
-            requested=requestedHostCount,
-            available=availableHostCount,
-            wording='address is' if availableHostCount == 1 else 'addresses are')
-        gui.AutoSelectMessageBox.warning(
-            parent=parent,
-            text=message,
-            stateKey='NoHostPoolInterfaces')
-
-    return availableHostCount
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -524,7 +378,7 @@ def main() -> None:
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
         customMapsDir = os.path.join(appDir, 'custom_map')
-        travellermap.DataStore.setSectorDirs(
+        multiverse.DataStore.setSectorDirs(
             installDir=installMapsDir,
             overlayDir=overlayMapsDir,
             customDir=customMapsDir)
@@ -542,15 +396,6 @@ def main() -> None:
             interfaceTheme=app.Config.instance().value(option=app.ConfigOption.ColourTheme),
             interfaceScale=app.Config.instance().value(option=app.ConfigOption.InterfaceScale))
 
-        mapEngine = app.Config.instance().value(option=app.ConfigOption.MapEngine)
-        if mapEngine is app.MapEngine.WebProxy:
-            # Check if CairoSVG is working, possibly prompting the user if it's
-            # not. This needs to be done after the DataStore singleton has been
-            # set up so it can check if there are any existing SVG custom
-            # sectors
-            if not _cairoSvgInstallCheck():
-                sys.exit(0)
-
         # Check if there is new universe data available BEFORE the app loads the
         # local snapshot so it can be updated without restarting
         try:
@@ -566,33 +411,7 @@ def main() -> None:
                 stateKey='UniverseUpdateErrorWhenChecking')
             # Continue loading the app with the existing data
 
-        # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
-        # so progress can be displayed
-        startProxy = False
-        if mapEngine is app.MapEngine.WebProxy:
-            hostPoolSize = _hostPoolSizeCheck()
-            if hostPoolSize > 0:
-                proxy.MapProxy.configure(
-                    listenPort=app.Config.instance().value(
-                        option=app.ConfigOption.ProxyPort),
-                    hostPoolSize=hostPoolSize,
-                    travellerMapUrl=app.Config.instance().value(
-                        option=app.ConfigOption.ProxyMapUrl),
-                    tileCacheSize=app.Config.instance().value(
-                        option=app.ConfigOption.ProxyTileCacheSize),
-                    tileCacheLifetime=app.Config.instance().value(
-                        option=app.ConfigOption.ProxyTileCacheLifetime),
-                    svgComposition=app.Config.instance().value(
-                        option=app.ConfigOption.ProxySvgComposition),
-                    mainsMilieu=app.Config.instance().value(
-                        option=app.ConfigOption.Milieu),
-                    installDir=installDir,
-                    appDir=appDir,
-                    logDir=logDirectory,
-                    logLevel=logLevel)
-                startProxy = True
-
-        startupProgress = gui.StartupProgressDialog(startProxy=startProxy)
+        startupProgress = gui.StartupProgressDialog()
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             exception = startupProgress.exception()
             if exception is not None:
@@ -603,14 +422,6 @@ def main() -> None:
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
         startupProgress.deleteLater()
-
-        # Configure the tile client to use the proxy if it's running
-        if proxy.MapProxy.instance().isRunning():
-            travellermap.TileClient.configure(
-                baseMapUrl=proxy.MapProxy.instance().accessUrl())
-        else:
-            travellermap.TileClient.configure(
-                baseMapUrl=travellermap.TravellerMapBaseUrl)
 
         with qasync.QEventLoop() as asyncEventLoop:
             window = MainWindow()
@@ -623,8 +434,6 @@ def main() -> None:
             text=message,
             exception=ex)
         exitCode = 1
-    finally:
-        proxy.MapProxy.instance().shutdown()
 
     sys.exit(exitCode)
 

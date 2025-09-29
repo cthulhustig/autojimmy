@@ -327,6 +327,9 @@ class ListTable(gui.TableWidgetEx):
             if self.isRowSelected(row):
                 self.removeRow(row)
 
+    def setCurrentRow(self, row: int) -> None:
+        self.setCurrentCell(row, 0)
+
     def removeAllRows(self) -> None:
         self.setRowCount(0)
 

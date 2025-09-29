@@ -1,4 +1,4 @@
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -6,7 +6,7 @@ class DataDownloadJob(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals
-    _progressSignal = QtCore.pyqtSignal([travellermap.DataStore.UpdateStage, int, int])
+    _progressSignal = QtCore.pyqtSignal([multiverse.DataStore.UpdateStage, int, int])
     _finishedSignal = QtCore.pyqtSignal([str], [Exception])
 
     _remainingTimeSmoothingFactor = 0.05
@@ -14,13 +14,13 @@ class DataDownloadJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            progressCallback: typing.Callable[[travellermap.DataStore.UpdateStage, int, int], typing.Any],
+            progressCallback: typing.Callable[[multiverse.DataStore.UpdateStage, int, int], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             ) -> None:
         super().__init__(parent=parent)
 
         if progressCallback:
-            self._progressSignal[travellermap.DataStore.UpdateStage, int, int].connect(progressCallback)
+            self._progressSignal[multiverse.DataStore.UpdateStage, int, int].connect(progressCallback)
         if finishedCallback:
             self._finishedSignal[str].connect(finishedCallback)
             self._finishedSignal[Exception].connect(finishedCallback)
@@ -40,7 +40,7 @@ class DataDownloadJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            travellermap.DataStore.instance().downloadSnapshot(
+            multiverse.DataStore.instance().downloadSnapshot(
                 progressCallback=self._handleProgressUpdate,
                 isCancelledCallback=self.isCancelled)
 
@@ -50,8 +50,8 @@ class DataDownloadJob(QtCore.QThread):
 
     def _handleProgressUpdate(
             self,
-            stage: travellermap.DataStore.UpdateStage,
+            stage: multiverse.DataStore.UpdateStage,
             progress: int,
             total: int
             ) -> None:
-        self._progressSignal[travellermap.DataStore.UpdateStage, int, int].emit(stage, progress, total)
+        self._progressSignal[multiverse.DataStore.UpdateStage, int, int].emit(stage, progress, total)

@@ -1,7 +1,6 @@
 import gunsmith
-import traveller
-import proxy
 import robots
+import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -46,7 +45,7 @@ class StartupJobBase(QtCore.QThread):
 
 class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:
-        traveller.WorldManager.instance().loadSectors(
+        multiverse.WorldManager.instance().loadSectors(
             progressCallback=self._handleProgressUpdate)
 
 class LoadRobotsJob(StartupJobBase):
@@ -57,9 +56,4 @@ class LoadRobotsJob(StartupJobBase):
 class LoadWeaponsJob(StartupJobBase):
     def executeJob(self) -> None:
         gunsmith.WeaponStore.instance().loadWeapons(
-            progressCallback=self._handleProgressUpdate)
-
-class StartProxyJob(StartupJobBase):
-    def executeJob(self) -> None:
-        proxy.MapProxy.instance().start(
             progressCallback=self._handleProgressUpdate)

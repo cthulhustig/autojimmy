@@ -5,9 +5,9 @@ The Python Imaging Library (PIL) is
 
 Pillow is the friendly PIL fork. It is
 
-    Copyright © 2010-2024 by Jeffrey A. Clark and contributors
+    Copyright © 2010 by Jeffrey A. Clark and contributors
 
-Like PIL, Pillow is licensed under the open source HPND License:
+Like PIL, Pillow is licensed under the open source MIT-CMU License:
 
 By obtaining, using, and/or copying this software and/or its associated
 documentation, you agree that you have read, understood, and will comply
@@ -51,7 +51,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  
-===== freetype-2.13.2 ===== 
+===== freetype-2.13.3 ===== 
  
 FREETYPE LICENSES
 -----------------
@@ -609,7 +609,7 @@ consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Library General
 Public License instead of this License.
  
-===== harfbuzz-8.5.0 ===== 
+===== harfbuzz-11.0.1 ===== 
  
 HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
 For parts of HarfBuzz that are licensed under different licenses see individual
@@ -654,7 +654,7 @@ FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
 ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
 PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  
-===== lcms2-2.16 ===== 
+===== lcms2-2.17 ===== 
  
 MIT License
 
@@ -679,7 +679,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
-===== libjpeg-turbo-3.0.3 ===== 
+===== libjpeg-turbo-3.1.0 ===== 
  
 LEGAL ISSUES
 ============
@@ -826,7 +826,7 @@ intended solely for clarification.
 The Modified (3-clause) BSD License
 ===================================
 
-Copyright (C)2009-2023 D. R. Commander.  All Rights Reserved.<br>
+Copyright (C)2009-2024 D. R. Commander.  All Rights Reserved.<br>
 Copyright (C)2015 Viktor Szathmáry.  All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -866,40 +866,7 @@ attribution and endorsement protections to other entities.  Thus, it was
 desirable to choose a license that granted us the same protections for new code
 that were granted to the IJG for code derived from their software.
  
-===== libwebp-1.4.0 ===== 
- 
-Copyright (c) 2010, Google Inc. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-  * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in
-    the documentation and/or other materials provided with the
-    distribution.
-
-  * Neither the name of Google nor the names of its contributors may
-    be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
- 
-===== lpng1643 ===== 
+===== libpng-1.6.47 ===== 
  
 COPYRIGHT NOTICE, DISCLAIMER, and LICENSE
 =========================================
@@ -907,8 +874,8 @@ COPYRIGHT NOTICE, DISCLAIMER, and LICENSE
 PNG Reference Library License version 2
 ---------------------------------------
 
- * Copyright (c) 1995-2024 The PNG Reference Library Authors.
- * Copyright (c) 2018-2024 Cosmin Truta.
+ * Copyright (c) 1995-2025 The PNG Reference Library Authors.
+ * Copyright (c) 2018-2025 Cosmin Truta.
  * Copyright (c) 2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson.
  * Copyright (c) 1996-1997 Andreas Dilger.
  * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
@@ -1036,7 +1003,40 @@ to supporting the PNG file format in commercial products.  If you use
 this source code in a product, acknowledgment is not required but would
 be appreciated.
  
-===== openjpeg-2.5.2 ===== 
+===== libwebp-1.5.0 ===== 
+ 
+Copyright (c) 2010, Google Inc. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+
+  * Neither the name of Google nor the names of its contributors may
+    be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ 
+===== openjpeg-2.5.3 ===== 
  
 /*
  * The copyright in this software is being made available under the 2-clauses 
@@ -1078,7 +1078,7 @@ be appreciated.
  * POSSIBILITY OF SUCH DAMAGE.
  */
  
-===== tiff-4.6.0 ===== 
+===== tiff-4.7.0 ===== 
  
 # LibTIFF license
 
@@ -1104,116 +1104,97 @@ WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
 LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE 
 OF THIS SOFTWARE.
  
-===== xz-5.4.5 ===== 
+===== xz-5.8.1 ===== 
  
 
 XZ Utils Licensing
 ==================
 
     Different licenses apply to different files in this package. Here
-    is a rough summary of which licenses apply to which parts of this
-    package (but check the individual files to be sure!):
+    is a summary of which licenses apply to which parts of this package:
 
-      - liblzma is in the public domain.
+      - liblzma is under the BSD Zero Clause License (0BSD).
 
-      - xz, xzdec, and lzmadec command line tools are in the public
-        domain unless GNU getopt_long had to be compiled and linked
-        in from the lib directory. The getopt_long code is under
-        GNU LGPLv2.1+.
+      - The command line tools xz, xzdec, lzmadec, and lzmainfo are
+        under 0BSD except that, on systems that don't have a usable
+        getopt_long, GNU getopt_long is compiled and linked in from the
+        'lib' directory. The getopt_long code is under GNU LGPLv2.1+.
 
       - The scripts to grep, diff, and view compressed files have been
-        adapted from gzip. These scripts and their documentation are
-        under GNU GPLv2+.
+        adapted from GNU gzip. These scripts (xzgrep, xzdiff, xzless,
+        and xzmore) are under GNU GPLv2+. The man pages of the scripts
+        are under 0BSD; they aren't based on the man pages of GNU gzip.
 
-      - All the documentation in the doc directory and most of the
-        XZ Utils specific documentation files in other directories
-        are in the public domain.
+      - Most of the XZ Utils specific documentation that is in
+        plain text files (like README, INSTALL, PACKAGERS, NEWS,
+        and ChangeLog) are under 0BSD unless stated otherwise in
+        the file itself. The files xz-file-format.txt and
+        lzma-file-format.xt are in the public domain but may
+        be distributed under the terms of 0BSD too.
 
-        Note: The JavaScript files (under the MIT license) have
-        been removed from the Doxygen-generated HTML version of the
-        liblzma API documentation. Doxygen itself is under the GNU GPL
-        but the remaining files generated by Doxygen are not affected
-        by the licenses used in Doxygen because Doxygen licensing has
-        the following exception:
+      - Translated messages and man pages are under 0BSD except that
+        some old translations are in the public domain.
 
-            "Documents produced by doxygen are derivative works
-            derived from the input used in their production;
-            they are not affected by this license."
+      - Test files and test code in the 'tests' directory, and
+        debugging utilities in the 'debug' directory are under
+        the BSD Zero Clause License (0BSD).
 
-      - Translated messages are in the public domain.
+      - The GNU Autotools based build system contains files that are
+        under GNU GPLv2+, GNU GPLv3+, and a few permissive licenses.
+        These files don't affect the licensing of the binaries being
+        built.
 
-      - The build system contains public domain files, and files that
-        are under GNU GPLv2+ or GNU GPLv3+. None of these files end up
-        in the binaries being built.
+      - The 'extra' directory contains files that are under various
+        free software licenses. These aren't built or installed as
+        part of XZ Utils.
 
-      - Test files and test code in the tests directory, and debugging
-        utilities in the debug directory are in the public domain.
+    The following command may be helpful in finding per-file license
+    information. It works on xz.git and on a clean file tree extracted
+    from a release tarball.
 
-      - The extra directory may contain public domain files, and files
-        that are under various free software licenses.
+        sh build-aux/license-check.sh -v
 
-    You can do whatever you want with the files that have been put into
-    the public domain. If you find public domain legally problematic,
-    take the previous sentence as a license grant. If you still find
-    the lack of copyright legally problematic, you have too many
-    lawyers.
+    For the files under the BSD Zero Clause License (0BSD), if
+    a copyright notice is needed, the following is sufficient:
 
-    As usual, this software is provided "as is", without any warranty.
+        Copyright (C) The XZ Utils authors and contributors
 
-    If you copy significant amounts of public domain code from XZ Utils
+    If you copy significant amounts of 0BSD-licensed code from XZ Utils
     into your project, acknowledging this somewhere in your software is
     polite (especially if it is proprietary, non-free software), but
-    naturally it is not legally required. Here is an example of a good
-    notice to put into "about box" or into documentation:
+    it is not legally required by the license terms. Here is an example
+    of a good notice to put into "about box" or into documentation:
 
         This software includes code from XZ Utils <https://tukaani.org/xz/>.
 
     The following license texts are included in the following files:
+      - COPYING.0BSD: BSD Zero Clause License
       - COPYING.LGPLv2.1: GNU Lesser General Public License version 2.1
       - COPYING.GPLv2: GNU General Public License version 2
       - COPYING.GPLv3: GNU General Public License version 3
 
-    Note that the toolchain (compiler, linker etc.) may add some code
-    pieces that are copyrighted. Thus, it is possible that e.g. liblzma
-    binary wouldn't actually be in the public domain in its entirety
-    even though it contains no copyrighted code from the XZ Utils source
-    package.
-
-    If you have questions, don't hesitate to ask the author(s) for more
-    information.
+    If you have questions, don't hesitate to ask for more information.
+    The contact information is in the README file.
 
  
-===== zlib-1.3.1 ===== 
+===== zlib-ng-2.2.4 ===== 
  
- (C) 1995-2024 Jean-loup Gailly and Mark Adler
+(C) 1995-2024 Jean-loup Gailly and Mark Adler
 
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
 
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
 
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
 
-  Jean-loup Gailly        Mark Adler
-  jloup@gzip.org          madler@alumni.caltech.edu
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
 
-If you use the zlib library in a product, we would appreciate *not* receiving
-lengthy legal documents to sign.  The sources are provided for free but without
-warranty of any kind.  The library has been entirely written by Jean-loup
-Gailly and Mark Adler; it does not include third-party code.  We make all
-contributions to and distributions of this project solely in our personal
-capacity, and are not conveying any rights to any intellectual property of
-any third parties.
-
-If you redistribute modified sources, we would appreciate that you include in
-the file ChangeLog history information documenting your changes.  Please read
-the FAQ for more information on the distribution of modified source versions.
+3. This notice may not be removed or altered from any source distribution.

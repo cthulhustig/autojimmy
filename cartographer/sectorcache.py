@@ -1,7 +1,6 @@
 import cartographer
 import math
-import traveller
-import travellermap
+import multiverse
 import typing
 
 class SectorPath(object):
@@ -73,156 +72,157 @@ class SectorCache(object):
 
     # NOTE: These offsets assume a clockwise winding
     _TopClipOffsets = [
-        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
-        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
-        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + travellermap.HexWidthOffset, 0) # Center right
+        (-0.5 - multiverse.HexWidthOffset, 0), # Center left
+        (-0.5 + multiverse.HexWidthOffset, -0.5), # Upper left
+        (+0.5 - multiverse.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + multiverse.HexWidthOffset, 0) # Center right
     ]
 
     _RightClipOffsets = [
-        (+0.5 - travellermap.HexWidthOffset, -0.5), # Upper right
-        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
-        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
-        (+0.5 + travellermap.HexWidthOffset, 1) # Center right of next hex
+        (+0.5 - multiverse.HexWidthOffset, -0.5), # Upper right
+        (+0.5 + multiverse.HexWidthOffset, 0), # Center right
+        (+0.5 - multiverse.HexWidthOffset, +0.5), # Lower right
+        (+0.5 + multiverse.HexWidthOffset, 1) # Center right of next hex
     ]
 
     _BottomClipOffsets = [
-        (+0.5 + travellermap.HexWidthOffset, 0), # Center right
-        (+0.5 - travellermap.HexWidthOffset, +0.5), # Lower right
-        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
-        (-0.5 - travellermap.HexWidthOffset, 0) # Center left
+        (+0.5 + multiverse.HexWidthOffset, 0), # Center right
+        (+0.5 - multiverse.HexWidthOffset, +0.5), # Lower right
+        (-0.5 + multiverse.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - multiverse.HexWidthOffset, 0) # Center left
     ]
 
     _LeftClipOffsets = [
-        (-0.5 + travellermap.HexWidthOffset, +0.5), # Lower Left
-        (-0.5 - travellermap.HexWidthOffset, 0), # Center left
-        (-0.5 + travellermap.HexWidthOffset, -0.5), # Upper left
-        (-0.5 - travellermap.HexWidthOffset, -1) # Center left of next hex
+        (-0.5 + multiverse.HexWidthOffset, +0.5), # Lower Left
+        (-0.5 - multiverse.HexWidthOffset, 0), # Center left
+        (-0.5 + multiverse.HexWidthOffset, -0.5), # Upper left
+        (-0.5 - multiverse.HexWidthOffset, -1) # Center left of next hex
     ]
 
     def __init__(
             self,
+            milieu: multiverse.Milieu,
+            universe: multiverse.Universe,
             graphics: cartographer.AbstractGraphics,
-            styleCache: cartographer.StyleCache
+            styleStore: cartographer.StyleStore
             ) -> None:
+        self._milieu = milieu
+        self._universe = universe
         self._graphics = graphics
-        self._styleCache = styleCache
+        self._styleStore = styleStore
         self._worldsCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            multiverse.SectorIndex,
             cartographer.AbstractPointList
         ] = {}
         self._borderCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            multiverse.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._regionCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            multiverse.SectorIndex,
             typing.List[SectorPath]
         ] = {}
         self._routeCache: typing.Dict[
-            typing.Union[travellermap.Milieu, int, int], # Milieu & Sector x/y
+            multiverse.SectorIndex,
             typing.List[SectorLines]
         ] = {}
-        self._clipCache: typing.Mapping[
-            typing.Tuple[int, int], # Sector x/y
+        self._clipCache: typing.Dict[
+            multiverse.SectorIndex,
             cartographer.AbstractPath
         ] = {}
 
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+        if milieu is self._milieu:
+            return
+        self._milieu = milieu
+        self._worldsCache.clear()
+        self._borderCache.clear()
+        self._regionCache.clear()
+        self._routeCache.clear()
+        # NOTE: No need to clear clip cache as it's not dependant on milieu
+        #self._clipCache.clear()
+
     def isotropicWorldPoints(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: multiverse.SectorIndex
             ) -> typing.Optional[cartographer.AbstractPointList]:
-        key = (milieu, x, y)
-        worlds = self._worldsCache.get(key)
+        worlds = self._worldsCache.get(index)
         if worlds is not None:
             return worlds
 
-        pos = (x, y)
-        sector = traveller.WorldManager.instance().sectorBySectorIndex(
-            milieu=milieu,
-            index=pos,
+        sector = self._universe.sectorBySectorIndex(
+            milieu=self._milieu,
+            index=index,
             includePlaceholders=True)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
 
         points = []
-        for world in sector:
-            hex = world.hex()
-            centerX, centerY = hex.worldCenter()
+        for world in sector.yieldWorlds():
+            centerX, centerY = world.hex().worldCenter()
             points.append(cartographer.PointF(
                 # Scale center point by parsec scale to convert to isotropic coordinates
-                x=centerX * travellermap.ParsecScaleX,
-                y=centerY * travellermap.ParsecScaleY))
+                x=centerX * multiverse.ParsecScaleX,
+                y=centerY * multiverse.ParsecScaleY))
 
         worlds = self._graphics.createPointList(points=points)
-        self._worldsCache[key] = worlds
+        self._worldsCache[index] = worlds
         return worlds
 
     def borderPaths(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: multiverse.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
-        key = (milieu, x, y)
-        borders = self._borderCache.get(key)
+        borders = self._borderCache.get(index)
         if borders is not None:
             return borders
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            milieu=milieu,
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = self._universe.sectorBySectorIndex(
+            milieu=self._milieu,
+            index=index)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
 
         borders = []
-        for border in sector.borders():
+        for border in sector.yieldBorders():
             borders.append(self._createOutline(source=border))
-        self._borderCache[key] = borders
+        self._borderCache[index] = borders
         return borders
 
     def regionPaths(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: multiverse.SectorIndex
             ) -> typing.Optional[typing.List[SectorPath]]:
-        key = (milieu, x, y)
-        regions = self._regionCache.get(key)
+        regions = self._regionCache.get(index)
         if regions is not None:
             return regions
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            milieu=milieu,
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = self._universe.sectorBySectorIndex(
+            milieu=self._milieu,
+            index=index)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
 
         regions = []
-        for region in sector.regions():
+        for region in sector.yieldRegions():
             regions.append(self._createOutline(source=region))
-        self._regionCache[key] = regions
+        self._regionCache[index] = regions
         return regions
 
     def routeLines(
             self,
-            milieu: travellermap.Milieu,
-            x: int,
-            y: int
+            index: multiverse.SectorIndex
             ) -> typing.Optional[typing.List[SectorLines]]:
-        key = (milieu, x, y)
-        routes = self._routeCache.get(key)
+        routes = self._routeCache.get(index)
         if routes is not None:
             return routes
 
-        sector = traveller.WorldManager.instance().sectorByPosition(
-            milieu=milieu,
-            hex=travellermap.HexPosition(sectorX=x, sectorY=y, offsetX=1, offsetY=1))
+        sector = self._universe.sectorBySectorIndex(
+            milieu=self._milieu,
+            index=index)
         if not sector:
             # Don't cache the fact the sector doesn't exist to avoid memory bloat
             return None
@@ -235,7 +235,7 @@ class SectorCache(object):
                 typing.Optional[str], # Type
                 typing.Optional[str]], # Allegiance
             typing.List[cartographer.PointF]] = {}
-        for route in sector.routes():
+        for route in sector.yieldRoutes():
             # Compute source/target sectors (may be offset)
             startPoint = route.startHex()
             endPoint = route.endHex()
@@ -278,38 +278,36 @@ class SectorCache(object):
                 style=style,
                 type=type,
                 allegiance=allegiance))
-        self._routeCache[key] = routes
+        self._routeCache[index] = routes
 
         return routes
 
     def clipPath(
             self,
-            sectorX: int,
-            sectorY: int
+            index: multiverse.SectorIndex
             ) -> cartographer.AbstractPath:
-        key = (sectorX, sectorY)
-        clipPath = self._clipCache.get(key)
+        clipPath = self._clipCache.get(index)
         if clipPath:
             return clipPath
 
-        absoluteOriginX, absoluteOriginY = travellermap.relativeSpaceToAbsoluteSpace(
-            (sectorX, sectorY, 1, 1))
+        absoluteOriginX, absoluteOriginY = multiverse.relativeSpaceToAbsoluteSpace(
+            (index.sectorX(), index.sectorY(), 1, 1))
 
         points = []
 
         count = len(SectorCache._TopClipOffsets)
         y = 0
-        for x in range(0, travellermap.SectorWidth, 2):
+        for x in range(0, multiverse.SectorWidth, 2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._TopClipOffsets[i]
                 points.append(cartographer.PointF(
                     x=((absoluteOriginX + x) - 0.5) + offsetX,
                     y=((absoluteOriginY + y) - 0.5) + offsetY))
 
-        last = travellermap.SectorHeight - 2
+        last = multiverse.SectorHeight - 2
         count = len(SectorCache._RightClipOffsets)
-        x = travellermap.SectorWidth - 1
-        for y in range(0, travellermap.SectorHeight, 2):
+        x = multiverse.SectorWidth - 1
+        for y in range(0, multiverse.SectorHeight, 2):
             if y == last:
                 count -= 1
             for i in range(count):
@@ -319,18 +317,18 @@ class SectorCache(object):
                     y=(absoluteOriginY + y) + offsetY))
 
         count = len(SectorCache._BottomClipOffsets)
-        y = travellermap.SectorHeight - 1
-        for x in range(travellermap.SectorWidth - 1, -1, -2):
+        y = multiverse.SectorHeight - 1
+        for x in range(multiverse.SectorWidth - 1, -1, -2):
             for i in range(count):
                 offsetX, offsetY = SectorCache._BottomClipOffsets[i]
                 points.append(cartographer.PointF(
                     x=((absoluteOriginX + x) - 0.5) + offsetX,
                     y=(absoluteOriginY + y) + offsetY))
 
-        last = travellermap.SectorHeight - 2
+        last = multiverse.SectorHeight - 2
         count = len(SectorCache._LeftClipOffsets)
         x = 0
-        for y in range(travellermap.SectorHeight - 1, -1, -2):
+        for y in range(multiverse.SectorHeight - 1, -1, -2):
             if y == last:
                 count -= 1
             for i in range(count):
@@ -340,26 +338,33 @@ class SectorCache(object):
                     y=((absoluteOriginY + y) - 0.5) + offsetY))
 
         path = self._graphics.createPath(points=points, closed=True)
-        self._clipCache[key] = path
+        self._clipCache[index] = path
         return path
+
+    def clear(self) -> None:
+        self._worldsCache.clear()
+        self._borderCache.clear()
+        self._regionCache.clear()
+        self._routeCache.clear()
+        self._clipCache.clear()
 
     def _createOutline(
             self,
-            source: typing.Union[traveller.Region, traveller.Border]
+            source: typing.Union[multiverse.Region, multiverse.Border]
             ) -> SectorPath:
         colour = source.colour()
         style = None
 
-        if isinstance(source, traveller.Border):
-            if source.style() is traveller.Border.Style.Solid:
+        if isinstance(source, multiverse.Border):
+            if source.style() is multiverse.Border.Style.Solid:
                 style = cartographer.LineStyle.Solid
-            elif source.style() is traveller.Border.Style.Dashed:
+            elif source.style() is multiverse.Border.Style.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif source.style() is traveller.Border.Style.Dotted:
+            elif source.style() is multiverse.Border.Style.Dotted:
                 style = cartographer.LineStyle.Dot
 
             if not colour or not style:
-                defaultColour, defaultStyle = self._styleCache.borderStyle(source.allegiance())
+                defaultColour, defaultStyle = self._styleStore.borderStyle(source.allegiance())
                 if not colour:
                     colour = defaultColour
                 if not style:
@@ -386,13 +391,13 @@ class SectorCache(object):
             endPoint: cartographer.PointF,
             offset: float
             ) -> None:
-        dx = (endPoint.x() - startPoint.x()) * travellermap.ParsecScaleX
-        dy = (endPoint.y() - startPoint.y()) * travellermap.ParsecScaleY
+        dx = (endPoint.x() - startPoint.x()) * multiverse.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * multiverse.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
         if not length:
             return # No offset
-        ddx = (dx * offset / length) / travellermap.ParsecScaleX
-        ddy = (dy * offset / length) / travellermap.ParsecScaleY
+        ddx = (dx * offset / length) / multiverse.ParsecScaleX
+        ddy = (dy * offset / length) / multiverse.ParsecScaleY
         startPoint.setX(startPoint.x() + ddx)
         startPoint.setY(startPoint.y() + ddy)
         endPoint.setX(endPoint.x() - ddx)

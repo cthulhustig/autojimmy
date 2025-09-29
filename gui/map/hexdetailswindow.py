@@ -1,18 +1,19 @@
 import app
+import cartographer
 import gui
 import logic
+import multiverse
 import traveller
-import travellermap
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 class _CustomTextEdit(gui.TextEditEx):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
             rules: traveller.Rules,
-            mapStyle: travellermap.Style,
-            mapOptions: typing.Collection[travellermap.Option],
+            mapStyle: cartographer.MapStyle,
+            mapOptions: typing.Collection[app.MapOption],
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -36,7 +37,7 @@ class _CustomTextEdit(gui.TextEditEx):
         # set. This is required so the sizeHint is generated correctly
         self.document().adjustSize()
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -50,14 +51,14 @@ class _CustomTextEdit(gui.TextEditEx):
         self._rules = traveller.Rules(rules)
         self._updateContent()
 
-    def setMapStyle(self, style: travellermap.Style) -> None:
+    def setMapStyle(self, style: cartographer.MapStyle) -> None:
         if style is self._mapStyle:
             return
 
         self._mapStyle = style
         self._updateContent()
 
-    def setMapOptions(self, options: typing.Collection[travellermap.Option]) -> None:
+    def setMapOptions(self, options: typing.Collection[app.MapOption]) -> None:
         options = set(options) # Force use of set so options can be compared
         if options == self._mapOptions:
             return
@@ -85,7 +86,7 @@ class _CustomTextEdit(gui.TextEditEx):
 
     def setHex(
             self,
-            hex: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[multiverse.HexPosition]
             ) -> None:
         if hex == self._hex:
             return
@@ -111,12 +112,13 @@ class _CustomTextEdit(gui.TextEditEx):
     def _updateContent(self) -> None:
         if self._hex:
             self.setHtml(gui.createHexToolTip(
-                hex=self._hex,
+                universe=multiverse.WorldManager.instance().universe(),
                 milieu=self._milieu,
+                hex=self._hex,
                 rules=self._rules,
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,
-                hexImage=True, # Always show image of the hex in hex detail window
+                includeHexImage=True, # Always show image of the hex in hex detail window
                 hexImageStyle=self._mapStyle,
                 hexImageOptions=self._mapOptions))
         else:
@@ -130,7 +132,7 @@ class HexDetailsWindow(gui.WindowWidget):
             title='Hex Details',
             configSection='HexDetailsWindow')
 
-        self._hexes: typing.List[travellermap.HexPosition] = []
+        self._hexes: typing.List[multiverse.HexPosition] = []
 
         self._tabBar = gui.VerticalTabBar()
         self._tabBar.setTabsClosable(True)
@@ -156,7 +158,7 @@ class HexDetailsWindow(gui.WindowWidget):
 
     def addHex(
             self,
-            hex: travellermap.HexPosition
+            hex: multiverse.HexPosition
             ) -> None:
         for index, existingHex in enumerate(self._hexes):
             if hex == existingHex:
@@ -164,7 +166,7 @@ class HexDetailsWindow(gui.WindowWidget):
                 self._hexDetails.setHex(hex)
                 return
 
-        tabName = traveller.WorldManager.instance().canonicalHexName(
+        tabName = multiverse.WorldManager.instance().canonicalHexName(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             hex=hex)
         self._hexes.append(hex)
@@ -174,7 +176,7 @@ class HexDetailsWindow(gui.WindowWidget):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         if not hexes:
             return
@@ -183,7 +185,7 @@ class HexDetailsWindow(gui.WindowWidget):
         currentHexes = set(self._hexes)
         for hex in hexes:
             if hex not in currentHexes:
-                tabName = traveller.WorldManager.instance().canonicalHexName(
+                tabName = multiverse.WorldManager.instance().canonicalHexName(
                     milieu=milieu,
                     hex=hex)
                 self._hexes.append(hex)
@@ -236,7 +238,7 @@ class HexDetailsWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             for index, hex in enumerate(self._hexes):
-                tabName = traveller.WorldManager.instance().canonicalHexName(
+                tabName = multiverse.WorldManager.instance().canonicalHexName(
                     milieu=newValue,
                     hex=hex)
                 self._tabBar.setTabText(index, tabName)

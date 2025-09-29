@@ -1,37 +1,33 @@
 import cartographer
 import math
-import traveller
-import travellermap
+import multiverse
 import typing
 
 class RectSelector(object):
     def __init__(
             self,
-            milieu: travellermap.Milieu,
+            milieu: multiverse.Milieu,
+            universe: multiverse.Universe,
             sectorSlop: int = 1, # Numbers of sectors
-            subsectorSlop: int = 1, # Number of subsectors
             worldSlop: int = 1, # Number of parsecs
             ) -> None:
         self._milieu = milieu
+        self._universe = universe
         self._sectorSlop = sectorSlop
-        self._subsectorSlop = subsectorSlop
         self._worldSlop = worldSlop
         self._rect = cartographer.RectangleF()
 
-        self._tightSectors: typing.Optional[typing.List[traveller.Sector]] = None
-        self._sloppySectors: typing.Optional[typing.List[traveller.Sector]] = None
+        self._tightSectors: typing.Optional[typing.List[multiverse.Sector]] = None
+        self._sloppySectors: typing.Optional[typing.List[multiverse.Sector]] = None
 
-        self._tightSubsectors: typing.Optional[typing.List[traveller.Subsector]] = None
-        self._sloppySubsectors: typing.Optional[typing.List[traveller.Subsector]] = None
+        self._tightWorlds: typing.Optional[typing.List[multiverse.World]] = None
+        self._sloppyWorlds: typing.Optional[typing.List[multiverse.World]] = None
 
-        self._tightWorlds: typing.Optional[typing.List[traveller.World]] = None
-        self._sloppyWorlds: typing.Optional[typing.List[traveller.World]] = None
+        self._tightPlaceholderWorlds: typing.Optional[typing.List[multiverse.World]] = None
+        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[multiverse.World]] = None
 
-        self._tightPlaceholderWorlds: typing.Optional[typing.List[traveller.World]] = None
-        self._sloppyPlaceholderWorlds: typing.Optional[typing.List[traveller.World]] = None
-
-        self._tightPlaceholderSectors: typing.Optional[typing.List[traveller.Sector]] = None
-        self._sloppyPlaceholderSectors: typing.Optional[typing.List[traveller.Sector]] = None
+        self._tightPlaceholderSectors: typing.Optional[typing.List[multiverse.Sector]] = None
+        self._sloppyPlaceholderSectors: typing.Optional[typing.List[multiverse.Sector]] = None
 
     def rect(self) -> cartographer.RectangleF:
         return cartographer.RectangleF(self._rect)
@@ -42,10 +38,10 @@ class RectSelector(object):
         self._rect = cartographer.RectangleF(rect)
         self._invalidate()
 
-    def milieu(self) -> travellermap.Milieu:
+    def milieu(self) -> multiverse.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: travellermap.Milieu) -> None:
+    def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
@@ -58,13 +54,6 @@ class RectSelector(object):
         self._sectorSlop = slop
         self._sloppySectors = None
 
-    def subsectorSlop(self) -> float:
-        return self._subsectorSlop
-
-    def setSubsectorSlop(self, slop: float) -> None:
-        self._subsectorSlop = slop
-        self._sloppySubsectors = None
-
     def worldSlop(self) -> float:
         return self._worldSlop
 
@@ -72,7 +61,7 @@ class RectSelector(object):
         self._worldSlop = slop
         self._sloppyWorlds = None
 
-    def sectors(self, tight: bool = False) -> typing.Iterable[traveller.Sector]:
+    def sectors(self, tight: bool = False) -> typing.Iterable[multiverse.Sector]:
         sectors = self._tightSectors if tight else self._sloppySectors
         if sectors is not None:
             return sectors
@@ -81,16 +70,7 @@ class RectSelector(object):
 
         return self._tightSectors if tight else self._sloppySectors
 
-    def subsectors(self, tight: bool = True) -> typing.Iterable[traveller.Subsector]:
-        subsectors = self._tightSubsectors if tight else self._sloppySubsectors
-        if subsectors is not None:
-            return subsectors
-
-        self._cacheSubsectors(tight=tight)
-
-        return self._tightSubsectors if tight else self._sloppySubsectors
-
-    def worlds(self, tight: bool = False) -> typing.Iterable[traveller.World]:
+    def worlds(self, tight: bool = False) -> typing.Iterable[multiverse.World]:
         worlds = self._tightWorlds if tight else self._sloppyWorlds
         if worlds is not None:
             return worlds
@@ -99,7 +79,7 @@ class RectSelector(object):
 
         return self._tightWorlds if tight else self._sloppyWorlds
 
-    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[traveller.Sector]:
+    def placeholderSectors(self, tight: bool = False) -> typing.Iterable[multiverse.Sector]:
         sectors = self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
         if sectors is not None:
             return sectors
@@ -108,7 +88,7 @@ class RectSelector(object):
 
         return self._tightPlaceholderSectors if tight else self._sloppyPlaceholderSectors
 
-    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[traveller.World]:
+    def placeholderWorlds(self, tight: bool = False) -> typing.Iterable[multiverse.World]:
         placeholders = self._tightPlaceholderWorlds if tight else self._sloppyPlaceholderWorlds
         if placeholders is not None:
             return placeholders
@@ -119,7 +99,6 @@ class RectSelector(object):
 
     def _invalidate(self) -> None:
         self._tightSectors = self._sloppySectors = None
-        self._tightSubsectors = self._sloppySubsectors = None
         self._tightWorlds = self._sloppyWorlds = None
         self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds = None
         self._tightPlaceholderSectors = self._sloppyPlaceholderSectors = None
@@ -132,22 +111,22 @@ class RectSelector(object):
             sloppyRect = cartographer.RectangleF(self._rect)
             if self._sectorSlop:
                 sloppyRect.inflate(
-                    x=self._sectorSlop * travellermap.SectorWidth,
-                    y=self._sectorSlop * travellermap.SectorHeight)
+                    x=self._sectorSlop * multiverse.SectorWidth,
+                    y=self._sectorSlop * multiverse.SectorHeight)
 
-            upperLeft = travellermap.HexPosition(
-                sectorX=int(math.floor((sloppyRect.left() + travellermap.ReferenceHexX) / travellermap.SectorWidth)),
-                sectorY=int(math.floor((sloppyRect.top() + travellermap.ReferenceHexY) / travellermap.SectorHeight)),
-                offsetX=travellermap.SectorWidth - 1,
-                offsetY=travellermap.SectorHeight - 1)
-            lowerRight = travellermap.HexPosition(
-                sectorX=int(math.floor((sloppyRect.right() + travellermap.ReferenceHexX) / travellermap.SectorWidth)),
-                sectorY=int(math.floor((sloppyRect.bottom() + travellermap.ReferenceHexY) / travellermap.SectorHeight)),
+            upperLeft = multiverse.HexPosition(
+                sectorX=int(math.floor((sloppyRect.left() + multiverse.ReferenceHexX) / multiverse.SectorWidth)),
+                sectorY=int(math.floor((sloppyRect.top() + multiverse.ReferenceHexY) / multiverse.SectorHeight)),
+                offsetX=multiverse.SectorWidth - 1,
+                offsetY=multiverse.SectorHeight - 1)
+            lowerRight = multiverse.HexPosition(
+                sectorX=int(math.floor((sloppyRect.right() + multiverse.ReferenceHexX) / multiverse.SectorWidth)),
+                sectorY=int(math.floor((sloppyRect.bottom() + multiverse.ReferenceHexY) / multiverse.SectorHeight)),
                 offsetX=0,
                 offsetY=0)
 
-            usePlaceholders = self._milieu is not travellermap.Milieu.M1105
-            sloppySectors = traveller.WorldManager.instance().sectorsInArea(
+            usePlaceholders = self._milieu is not multiverse.Milieu.M1105
+            sloppySectors = self._universe.sectorsInArea(
                 milieu=self._milieu,
                 upperLeft=upperLeft,
                 lowerRight=lowerRight,
@@ -173,57 +152,19 @@ class RectSelector(object):
 
             self._tightSectors = []
             for sector in self._sloppySectors:
-                left, top, width, height = travellermap.sectorBoundingRect(
-                    sector=(sector.x(), sector.y()))
+                index = sector.index()
+                left, top, width, height = index.worldBounds()
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightSectors.append(sector)
 
             self._tightPlaceholderSectors = []
             for sector in self._sloppyPlaceholderSectors:
-                left, top, width, height = travellermap.sectorBoundingRect(
-                    sector=(sector.x(), sector.y()))
+                index = sector.index()
+                left, top, width, height = index.worldBounds()
                 rect.setRect(x=left, y=top, width=width, height=height)
                 if self._rect.intersects(other=rect):
                     self._tightPlaceholderSectors.append(sector)
-
-    def _cacheSubsectors(
-            self,
-            tight: bool
-            ) -> None:
-        if self._sloppySubsectors is None: # Specifically None to not recalculate if there are no subsectors
-            sloppyRect = cartographer.RectangleF(self._rect)
-            if self._subsectorSlop:
-                sloppyRect.inflate(
-                    x=self._subsectorSlop * travellermap.SubsectorWidth,
-                    y=self._subsectorSlop * travellermap.SubsectorHeight)
-
-            upperLeft = travellermap.HexPosition(
-                absoluteX=int(math.floor(sloppyRect.left())),
-                absoluteY=int(math.floor(sloppyRect.top())))
-            lowerRight = travellermap.HexPosition(
-                absoluteX=int(math.ceil(sloppyRect.right())),
-                absoluteY=int(math.ceil(sloppyRect.bottom())))
-
-            self._sloppySubsectors = traveller.WorldManager.instance().subsectorsInArea(
-                milieu=self._milieu,
-                upperLeft=upperLeft,
-                lowerRight=lowerRight)
-
-            if not self._subsectorSlop:
-                self._tightSubsectors = self._sloppySubsectors
-
-        if tight and self._tightSubsectors is None: # Specifically None to not recalculate if there are no subsectors
-            rect = cartographer.RectangleF()
-            self._tightSubsectors = []
-            for subsector in self._sloppySubsectors:
-                left, top, width, height = travellermap.subsectorBoundingRect(
-                    subsector=(
-                        subsector.sectorX(), subsector.sectorY(),
-                        subsector.indexX(), subsector.indexY()))
-                rect.setRect(x=left, y=top, width=width, height=height)
-                if self._rect.intersects(other=rect):
-                    self._tightSubsectors.append(subsector)
 
     def _cacheWorlds(
             self,
@@ -234,15 +175,15 @@ class RectSelector(object):
             if self._worldSlop:
                 rect.inflate(x=self._worldSlop, y=self._worldSlop)
 
-            upperLeft = travellermap.HexPosition(
+            upperLeft = multiverse.HexPosition(
                 absoluteX=int(math.floor(rect.left())),
                 absoluteY=int(math.floor(rect.top())))
-            lowerRight = travellermap.HexPosition(
+            lowerRight = multiverse.HexPosition(
                 absoluteX=int(math.ceil(rect.right())),
                 absoluteY=int(math.ceil(rect.bottom())))
 
-            usePlaceholders = self._milieu is not travellermap.Milieu.M1105
-            sloppyWorlds = traveller.WorldManager.instance().worldsInArea(
+            usePlaceholders = self._milieu is not multiverse.Milieu.M1105
+            sloppyWorlds = self._universe.worldsInArea(
                 milieu=self._milieu,
                 upperLeft=upperLeft,
                 lowerRight=lowerRight,
@@ -258,6 +199,10 @@ class RectSelector(object):
                         self._sloppyWorlds.append(world)
                     else:
                         self._sloppyPlaceholderWorlds.append(world)
+
+            if not self._worldSlop:
+               self._tightWorlds = self._sloppyWorlds
+               self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds
 
         if tight and self._tightWorlds is None: # Specifically None to not recalculate if there are no worlds
             rect = cartographer.RectangleF()

@@ -1,9 +1,10 @@
 import app
+import cartographer
 import gui
 import logic
 import logging
 import traveller
-import travellermap
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -179,14 +180,12 @@ class WorldComparisonWindow(gui.WindowWidget):
         mapOptions = app.Config.instance().value(option=app.ConfigOption.MapOptions)
         mapRendering = app.Config.instance().value(option=app.ConfigOption.MapRendering)
         mapAnimations = app.Config.instance().value(option=app.ConfigOption.MapAnimations)
-        showTooltipImages = app.Config.instance().value(option=app.ConfigOption.ShowToolTipImages)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._hexTooltipProvider = gui.HexTooltipProvider(
             milieu=milieu,
             rules=rules,
-            showImages=showTooltipImages,
             mapStyle=mapStyle,
             mapOptions=mapOptions,
             worldTagging=worldTagging,
@@ -234,6 +233,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             showAllOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
+            universe=multiverse.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -279,7 +279,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._worldsGroupBox.setLayout(groupLayout)
 
-    def _allowWorld(self, hex: travellermap.HexPosition) -> bool:
+    def _allowWorld(self, hex: multiverse.HexPosition) -> bool:
         return not self._worldManagementWidget.containsHex(hex)
 
     def _tradeGoodTableItemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
@@ -354,8 +354,6 @@ class WorldComparisonWindow(gui.WindowWidget):
         elif option is app.ConfigOption.MapAnimations:
             self._worldManagementWidget.setMapAnimations(enabled=newValue)
             self._mapWidget.setAnimated(animated=newValue)
-        elif option is app.ConfigOption.ShowToolTipImages:
-            self._hexTooltipProvider.setShowImages(show=newValue)
         elif option is app.ConfigOption.WorldTagging:
             self._hexTooltipProvider.setWorldTagging(tagging=newValue)
             self._worldManagementWidget.setWorldTagging(tagging=newValue)
@@ -367,7 +365,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _mapStyleChanged(
             self,
-            style: travellermap.Style
+            style: cartographer.MapStyle
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapStyle,
@@ -375,7 +373,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _mapOptionsChanged(
             self,
-            options: typing.Iterable[travellermap.Option]
+            options: typing.Iterable[app.MapOption]
             ) -> None:
         app.Config.instance().setValue(
             option=app.ConfigOption.MapOptions,
@@ -426,7 +424,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -459,14 +457,14 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            worlds: typing.Iterable[multiverse.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[multiverse.HexPosition]
             ) -> None:
         if not hexes:
             return
