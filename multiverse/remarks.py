@@ -7,7 +7,7 @@ class Remarks(object):
     # Most of these are based on the descriptions here https://travellermap.com/doc/secondsurvey
     # with the exception of Colony which I found here https://wiki.travellerrpg.com/Trade_classification
     _TradeCodePattern = re.compile(r'^([A-Za-z]{2})$') # Argument gives trade code
-    _MilitaryRulePattern = re.compile(r'^Mr\(\S{4}\)$') # Argument gives the controlling
+    _MilitaryRulePattern = re.compile(r'^Mr\((\S{4})\)$') # Argument gives the controlling allegiance short code
     _ResearchStationPattern = re.compile(r'^Rs([ABGDEZHIO]?)$') # Argument gives grade of research station
     _OwnershipPattern = re.compile(r'^O:(?:(\S{4})-)?(\d{4})$') # Argument gives the owning world
     _ColonyPattern = re.compile(r'^C:(?:(\S{4})-)?(\d{4})$') # Argument gives the colony world
@@ -35,8 +35,10 @@ class Remarks(object):
         self._isMajorHomeworld = False
         self._isMinorHomeworld = False
         self._sophontPercentages: typing.Dict[str, int] = dict()
+        self._diebackSophonts: typing.List[str] = list()
         self._owningWorld = None
         self._colonyWorlds = []
+        self._rulingAllegiance = None
         self._researchStation = None
 
         self._parseRemarks()
@@ -90,6 +92,12 @@ class Remarks(object):
             return 0
         return self._sophontPercentages[sophont]
 
+    def hasDiebackSophonts(self) -> bool:
+        return len(self._diebackSophonts) > 0
+
+    def diebackSophonts(self) -> typing.Iterable[str]:
+        return self._diebackSophonts
+
     def hasOwner(self) -> bool:
         return self._owningWorld != None
 
@@ -104,6 +112,9 @@ class Remarks(object):
 
     def colonySectorHexes(self) -> typing.Iterable[str]:
         return self._colonyWorlds
+
+    def rulingAllegiance(self) -> typing.Optional[str]:
+        return self._rulingAllegiance
 
     """
     Research Stations:
@@ -144,8 +155,11 @@ class Remarks(object):
 
             result = self._MilitaryRulePattern.match(remark)
             if result:
-                # TODO: Handle ruling world
                 self._tradeCodes.add(multiverse.TradeCode.MilitaryRule)
+
+                allegiance = result.group(1)
+                if allegiance:
+                    self._rulingAllegiance = allegiance
                 continue
 
             result = self._ResearchStationPattern.match(remark)
@@ -202,8 +216,11 @@ class Remarks(object):
 
             result = self._SophontDiebackWorldPattern.match(remark)
             if result:
-                # TODO: Handle die back sophont
                 self._tradeCodes.add(multiverse.TradeCode.DieBackWorld)
+
+                sophont = result.group(1)
+                if sophont:
+                    self._diebackSophonts.append(sophont)
                 continue
 
             result = self._SophontShortCodePattern.match(remark)
