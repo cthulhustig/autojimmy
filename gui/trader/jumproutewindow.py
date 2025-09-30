@@ -2024,12 +2024,21 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(self._exportJumpRoute)
         actions.append(action)
 
+        action = self._mapWidget.menuAction(id=gui.MapWidgetEx.MenuAction.ExportImage)
+        if action:
+            actions.append(action)
+
+        action = QtWidgets.QAction(self)
+        action.setSeparator(True)
+        actions.append(action)
+
+        action = QtWidgets.QAction('Clear Jump Route...', self)
+        action.setEnabled(self._jumpRoute != None)
+        action.triggered.connect(self._clearJumpRoute)
+        actions.append(action)
+
         menu = QtWidgets.QMenu()
-        self._mapWidget.fillContextMenu(menu)
-
-        helper = gui.MenuHelper(menu)
-        helper.prependActions(actions)
-
+        menu.addActions(actions)
         menu.exec(QtGui.QCursor.pos())
 
     def _formatMapToolTip(
