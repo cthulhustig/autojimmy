@@ -463,6 +463,6 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         headerText = gui.textToHtmlContent(text=headerText, font=headerFont)
         headerAlignment = gui.alignmentToHtmlStyle(alignment=headerAlignment)
 
-        return '<th{style}>{headerText}</th>\n'.format(
+        return '<th{style}>{headerText}</th>'.format(
             style=f' style="{headerAlignment}"' if headerAlignment else '',
             headerText=headerText)
