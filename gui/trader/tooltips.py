@@ -72,7 +72,14 @@ RouteOptimisationToolTip = gui.createStringToolTip(
     'jump space.</li>'
     '<li><b>Lowest Cost</b> - A search that attempts to find the route with '
     'the lowest logistics costs. It\'s not guaranteed to find the absolute '
-    'lowest cost route but it\'s generally pretty good.</li>'
+    'lowest cost route, but it\'s generally pretty good.</li>'
+    '<li><b>X-Boat (Strict)</b> - A search that finds the Shortest Time route, '
+    'while following official point-to-point X-boat links between systems '
+    'whenever possible.</li>'
+    '<li><b>X-Boat (Loose)</b> - A search that finds the Shortest Time route, '
+    'while following the X-Boat network whenever possible. Unlike Strict mode, '
+    'individual links can be skipped if the ship can jump directly to a system '
+    'further along the network.</li>'
     '</ul>',
     escape=False)
 RefuellingStrategyToolTip = gui.createStringToolTip(

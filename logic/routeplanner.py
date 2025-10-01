@@ -307,6 +307,11 @@ class RoutePlanner(object):
                 startFlags |= logic.JumpRoute.NodeFlags.MandatoryBerthing
             return logic.JumpRoute(nodes=[(startHex, startFlags)])
         elif sequenceLength == 2:
+            # TODO: This optimisation is invalid when using strict x-boat
+            # routing as, if there is an path of X-boat routes between
+            # the start and finish, it should follow that rather than jumping
+            # directly
+
             # A _LOT_ of the time we're asked to calculate a route the finish
             # world is actually within one jump of the start world (as finished
             # worlds tend to come from nearby world searches). Do a quick check

@@ -18,6 +18,7 @@ class Universe(object):
             self.mainsList: typing.List[multiverse.Main] = []
             self.hexMainMap: typing.Dict[multiverse.HexPosition, multiverse.Main] = {}
             self.allegiances: typing.Dict[str, multiverse.Allegiance] = {}
+            self.hexRoutesMap: typing.Dict[multiverse.HexPosition, typing.List[multiverse.Route]] = {}
 
     # The absolute and relative hex patterns match search strings formatted
     # as 2 or 4 comma separated signed integers respectively, optionally
@@ -100,6 +101,14 @@ class Universe(object):
                 allegiance = world.allegiance()
                 if allegiance and (allegiance.uniqueCode() not in milieuData.allegiances):
                     milieuData.allegiances[allegiance.uniqueCode()] = allegiance
+
+            for route in sector.routes():
+                for hex in [route.startHex(), route.endHex()]:
+                    endpoints = milieuData.hexRoutesMap.get(hex)
+                    if not endpoints:
+                        endpoints = []
+                        milieuData.hexRoutesMap[hex] = endpoints
+                    endpoints.append(route)
 
     def sectorNames(
             self,
@@ -959,3 +968,65 @@ class Universe(object):
         if not milieuData:
             return []
         return list(milieuData.allegiances.values())
+
+    def hasRoutes(
+            self,
+            hex: multiverse.HexPosition,
+            milieu: multiverse.Milieu
+            ) -> bool:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return
+        routes = milieuData.hexRoutesMap.get(hex)
+        return routes and len(routes) > 0
+
+    def routesByPosition(
+            self,
+            hex: multiverse.HexPosition,
+            milieu: multiverse.Milieu
+            ) -> typing.List[multiverse.Route]:
+        return list(self.yieldRouteByPosition(hex=hex, milieu=milieu))
+
+    def yieldRouteByPosition(
+            self,
+            hex: multiverse.HexPosition,
+            milieu: multiverse.Milieu
+            ) -> typing.Generator[multiverse.Route, None, None]:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return
+        routes = milieuData.hexRoutesMap.get(hex)
+        if routes:
+            for route in routes:
+                yield route
+
+    def connectedWorlds(
+            self,
+            hex: multiverse.HexPosition,
+            milieu: multiverse.Milieu
+            ) -> typing.List[multiverse.World]:
+        return list(self.yieldConnectedWorlds(hex=hex, milieu=milieu))
+
+    def yieldConnectedWorlds(
+            self,
+            hex: multiverse.HexPosition,
+            milieu: multiverse.Milieu
+            ) -> typing.Generator[multiverse.World, None, None]:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return
+        routes = milieuData.hexRoutesMap.get(hex)
+        if not routes:
+            return
+
+        for route in routes:
+            connectedHex = None
+            if hex != route.startHex():
+                connectedHex = route.startHex()
+            elif hex != route.endHex():
+                connectedHex = route.endHex()
+
+            if connectedHex:
+                connectedWorld = milieuData.worldPositionMap.get(connectedHex.absolute())
+                if connectedWorld:
+                    yield connectedWorld

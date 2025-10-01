@@ -10,6 +10,8 @@ class RouteOptimisation(enum.Enum):
     ShortestTime = 'Shortest Time'
     ShortestDistance = 'Shortest Distance'
     LowestCost = 'Lowest Cost'
+    StrictXBoat = 'X-Boat (Strict)'
+    LooseXBoat = 'X-Boat (Loose)'
 
 # This cost function finds the route with fewest jumps but not necessarily the shortest distance.
 # The fewest jumps route is important as it takes the shortest time.
@@ -268,3 +270,89 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             parsecsToFinish: int
             ) -> float:
         return (parsecsToFinish / self._shipJumpRating) * self._perJumpOverheads
+
+# This cost function is used to find the shortest time route while trying to
+# follow X-Boat routes. It's classed as strict as it only gives preference to
+# worlds that are directly connected to the current world by an X-Boat route.
+class StrictXBoatCostCalculator(logic.JumpCostCalculatorInterface):
+    def __init__(
+            self,
+            milieu: multiverse.Milieu,
+            shipJumpRating: int
+            ) -> None:
+        super().__init__()
+        self._milieu = milieu
+        self._shipJumpRating = shipJumpRating
+        self._universe = multiverse.WorldManager.instance().universe()
+
+    def initialise(
+            self,
+            startHex: multiverse.HexPosition,
+            startWorld: typing.Optional[multiverse.World]
+            ) -> typing.Any:
+        return None
+
+    def calculate(
+            self,
+            currentHex: multiverse.HexPosition,
+            currentWorld: typing.Optional[multiverse.World],
+            nextHex: multiverse.HexPosition,
+            nextWorld: typing.Optional[multiverse.World],
+            jumpParsecs: int, # Distance from current to next world
+            costContext: typing.Any
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
+        for routeWorld in self._universe.yieldConnectedWorlds(hex=currentHex, milieu=self._milieu):
+            if routeWorld.hex() == nextHex:
+                return (1, None)
+
+        return (100000, None)
+
+    def estimate(
+            self,
+            parsecsToFinish: int
+            ) -> float:
+        return parsecsToFinish / self._shipJumpRating
+
+# This cost function is used to find the shortest time route while trying to
+# follow X-Boat routes. It's classed as loose as it gives preference to any
+# world that has X-Boat routes, not just worlds that are directly connected to
+# the current world by a route.
+class LooseXBoatCostCalculator(logic.JumpCostCalculatorInterface):
+    def __init__(
+            self,
+            milieu: multiverse.Milieu,
+            shipJumpRating: int
+            ) -> None:
+        super().__init__()
+        self._milieu = milieu
+        self._shipJumpRating = shipJumpRating
+        self._universe = multiverse.WorldManager.instance().universe()
+
+    def initialise(
+            self,
+            startHex: multiverse.HexPosition,
+            startWorld: typing.Optional[multiverse.World]
+            ) -> typing.Any:
+        return None
+
+    def calculate(
+            self,
+            currentHex: multiverse.HexPosition,
+            currentWorld: typing.Optional[multiverse.World],
+            nextHex: multiverse.HexPosition,
+            nextWorld: typing.Optional[multiverse.World],
+            jumpParsecs: int, # Distance from current to next world
+            costContext: typing.Any
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
+        nextIsEndpoint = self._universe.hasRoutes(hex=nextHex, milieu=self._milieu)
+        return (1 if nextIsEndpoint else 100000, None)
+
+    def estimate(
+            self,
+            parsecsToFinish: int
+            ) -> float:
+        return parsecsToFinish / self._shipJumpRating
