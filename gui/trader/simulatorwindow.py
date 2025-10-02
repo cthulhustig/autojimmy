@@ -766,6 +766,14 @@ class SimulatorWindow(gui.WindowWidget):
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 pitCostCalculator=pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
+        elif routeOptimisation == logic.RouteOptimisation.StrictXBoat:
+            jumpCostCalculator = logic.StrictXBoatCostCalculator(
+                milieu=milieu,
+                shipJumpRating=self._shipJumpRatingSpinBox.value())
+        elif routeOptimisation == logic.RouteOptimisation.LooseXBoat:
+            jumpCostCalculator = logic.LooseXBoatCostCalculator(
+                milieu=milieu,
+                shipJumpRating=self._shipJumpRatingSpinBox.value())
         else:
             assert(False) # I've missed an enum
 
