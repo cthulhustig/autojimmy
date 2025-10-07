@@ -331,7 +331,6 @@ class RawProduct(object):
     def reference(self) -> typing.Optional[str]:
         return self._reference
 
-# TODO: Need to test reading/writing of both formats
 # TODO: I don't like the fact the parameters in here have a lot of
 # overlap with the RawProduct structure
 class RawSources(object):
@@ -1696,4 +1695,4 @@ def writeJSONMetadata(
         sectorElement['StyleSheet'] = metadata.styleSheet()
     """
 
-    return json.dumps(sectorElement, indent=4)
+    return json.dumps(sectorElement, indent=4).encode()
