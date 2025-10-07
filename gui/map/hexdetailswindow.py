@@ -7,7 +7,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-class _CustomTextEdit(gui.TextEditEx):
+class _CustomLabel(QtWidgets.QLabel):
     def __init__(
             self,
             milieu: multiverse.Milieu,
@@ -28,14 +28,15 @@ class _CustomTextEdit(gui.TextEditEx):
         self._taggingColours = app.TaggingColours(taggingColours)
         self._hex = None
 
-        self.setReadOnly(True)
+        self.setBackgroundRole(QtGui.QPalette.ColorRole.Base)
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
-
-        # Call adjustSize on the document to force an update of it's size after the content has been
-        # set. This is required so the sizeHint is generated correctly
-        self.document().adjustSize()
+        self.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.setOpenExternalLinks(True)
+        self.setWordWrap(True)
+        self.linkHovered.connect(self._linkHovered)
 
     def setMilieu(self, milieu: multiverse.Milieu) -> None:
         if milieu is self._milieu:
@@ -94,24 +95,9 @@ class _CustomTextEdit(gui.TextEditEx):
         self._hex = hex
         self._updateContent()
 
-    def clear(self) -> None:
-        super().clear()
-
-    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-        key = event.key()
-        # Accept + or = for zoom in so user doesn't have to press shift
-        if key == QtCore.Qt.Key.Key_Plus:
-            self.zoomIn(1)
-            return # Swallow event
-        elif key == QtCore.Qt.Key.Key_Minus:
-            self.zoomOut(1)
-            return # Swallow event
-
-        return super().keyPressEvent(event)
-
     def _updateContent(self) -> None:
         if self._hex:
-            self.setHtml(gui.createHexToolTip(
+            self.setText(gui.createHexToolTip(
                 universe=multiverse.WorldManager.instance().universe(),
                 milieu=self._milieu,
                 hex=self._hex,
@@ -123,6 +109,9 @@ class _CustomTextEdit(gui.TextEditEx):
                 hexImageOptions=self._mapOptions))
         else:
             self.clear()
+
+    def _linkHovered(self, link: str) -> None:
+        QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), link)
 
 class HexDetailsWindow(gui.WindowWidget):
     def __init__(
@@ -139,7 +128,7 @@ class HexDetailsWindow(gui.WindowWidget):
         self._tabBar.tabCloseRequested.connect(self._tabCloseRequested)
         self._tabBar.selectionChanged.connect(self._tabChanged)
 
-        self._hexDetails = _CustomTextEdit(
+        self._hexLabel = _CustomLabel(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             mapStyle=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -147,9 +136,13 @@ class HexDetailsWindow(gui.WindowWidget):
             worldTagging=app.Config.instance().value(option=app.ConfigOption.WorldTagging),
             taggingColours=app.Config.instance().value(option=app.ConfigOption.TaggingColours))
 
+        scrollArea = gui.ScrollAreaEx()
+        scrollArea.setWidget(self._hexLabel)
+        scrollArea.setWidgetResizable(True)
+
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self._tabBar, 0)
-        layout.addWidget(self._hexDetails, 1)
+        layout.addWidget(scrollArea, 1)
 
         self.setLayout(layout)
         self.resize(800, 600)
@@ -163,7 +156,7 @@ class HexDetailsWindow(gui.WindowWidget):
         for index, existingHex in enumerate(self._hexes):
             if hex == existingHex:
                 self._tabBar.setCurrentIndex(index)
-                self._hexDetails.setHex(hex)
+                self._hexLabel.setHex(hex)
                 return
 
         tabName = multiverse.WorldManager.instance().canonicalHexName(
@@ -172,7 +165,7 @@ class HexDetailsWindow(gui.WindowWidget):
         self._hexes.append(hex)
         index = self._tabBar.addTab(tabName)
         self._tabBar.setCurrentIndex(index)
-        self._hexDetails.setHex(hex)
+        self._hexLabel.setHex(hex)
 
     def addHexes(
             self,
@@ -195,7 +188,7 @@ class HexDetailsWindow(gui.WindowWidget):
         index = self._hexes.index(firstHex)
         if index >= 0:
             self._tabBar.setCurrentIndex(index)
-            self._hexDetails.setHex(firstHex)
+            self._hexLabel.setHex(firstHex)
 
     def _tabChanged(self) -> None:
         index = self._tabBar.currentIndex()
@@ -203,7 +196,7 @@ class HexDetailsWindow(gui.WindowWidget):
             return
 
         assert(index < len(self._hexes))
-        self._hexDetails.setHex(self._hexes[index])
+        self._hexLabel.setHex(self._hexes[index])
 
     def _tabCloseRequested(
             self,
@@ -223,11 +216,11 @@ class HexDetailsWindow(gui.WindowWidget):
         if len(self._hexes) > 0:
             currentIndex = self._tabBar.currentIndex()
             assert(currentIndex < len(self._hexes))
-            self._hexDetails.setHex(self._hexes[currentIndex])
+            self._hexLabel.setHex(self._hexes[currentIndex])
         else:
             # No more worlds to display so clear the current world info and close the window.
             # The world info is cleared in case the window is re-shown
-            self._hexDetails.clear()
+            self._hexLabel.clear()
             self.close()
 
     def _appConfigChanged(
@@ -242,15 +235,15 @@ class HexDetailsWindow(gui.WindowWidget):
                     milieu=newValue,
                     hex=hex)
                 self._tabBar.setTabText(index, tabName)
-            self._hexDetails.setMilieu(milieu=newValue)
+            self._hexLabel.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
-            self._hexDetails.setRules(rules=newValue)
+            self._hexLabel.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
-            self._hexDetails.setMapStyle(style=newValue)
+            self._hexLabel.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
-            self._hexDetails.setMapOptions(options=newValue)
+            self._hexLabel.setMapOptions(options=newValue)
         elif option is app.ConfigOption.WorldTagging:
-            self._hexDetails.setWorldTagging(tagging=newValue)
+            self._hexLabel.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
-            self._hexDetails.setTaggingColours(colours=newValue)
+            self._hexLabel.setTaggingColours(colours=newValue)
 

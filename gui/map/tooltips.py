@@ -355,12 +355,76 @@ def createHexToolTip(
                 style = formatTaggingStyle(level=tagLevel)
                 toolTip += f'<li><span style="{style}">{html.escape(worldText)}</span></li>'
             toolTip += '</ul>'
-
     toolTip += '</ul>'
+
+    sector = universe.sectorBySectorIndex(
+        milieu=milieu,
+        index=hex.sectorIndex())
+    if sector and sector.sources():
+        sources = sector.sources()
+
+        if sources.credits():
+            toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
+
+            toolTip += '<li><i><u>Sector Credits</u></i></li>'
+            toolTip += '<li>'
+            # NOTE: Credits are expected to be preformatted html so no escaping
+            toolTip += sources.credits()
+            toolTip += '</li>'
+            toolTip += '</ul>'
+
+        if sources.source() or sources.author() or sources.publisher() or sources.reference():
+            toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
+
+            toolTip += '<li><i><u>Sector Data</u></i></li>'
+            strings = [sources.source(), sources.author(), sources.publisher()]
+            text = ', '.join([s for s in strings if s])
+            if sources.reference():
+                if text:
+                    text += ', '
+                text = html.escape(text)
+                text += '<a href="{url}">Source</a>'.format(
+                    url=html.escape(sources.reference()))
+
+            if text:
+                toolTip += '<li>'
+                toolTip += text
+                toolTip += '</li>'
+
+            toolTip += '</ul>'
+
+        if sources.products():
+            toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
+
+            toolTip += '<li><i><u>Reference Products</u></i></li>'
+            isFirst = True
+            for product in sources.products():
+                if not isFirst:
+                    toolTip += '<li>&nbsp;</li>'
+                isFirst = False
+
+                toolTip += '<li>'
+                if product.reference():
+                    toolTip += '<a href="{url}">{text}</a>'.format(
+                        url=html.escape(product.reference()),
+                        text=html.escape(product.title()))
+                toolTip += '</li>'
+
+                if product.author():
+                    toolTip += '<li>'
+                    toolTip += html.escape(product.author())
+                    toolTip += '</li>'
+
+                toolTip += '<li>'
+                toolTip += html.escape(product.publisher())
+                toolTip += '</li>'
+
+            toolTip += '</ul>'
 
     toolTip += '</td>'
     toolTip += '</tr>'
     toolTip += '</table>'
+
     toolTip += '</html>'
 
     return toolTip
