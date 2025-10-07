@@ -306,55 +306,21 @@ class RawRegion(object):
     def fileIndex(self) -> int:
         return self._fileIndex
 
-class RawProduct(object):
+class RawSource(object):
     def __init__(
             self,
-            title: str,
-            publisher: str,
-            author: typing.Optional[str],
-            reference: typing.Optional[str]
-            ) -> None:
-        self._title = title
-        self._publisher = publisher
-        self._author = author
-        self._reference = reference
-
-    def title(self) -> str:
-        return self._title
-
-    def publisher(self) -> str:
-        return self._publisher
-
-    def author(self) -> typing.Optional[str]:
-        return self._author
-
-    def reference(self) -> typing.Optional[str]:
-        return self._reference
-
-# TODO: I don't like the fact the parameters in here have a lot of
-# overlap with the RawProduct structure
-class RawSources(object):
-    def __init__(
-            self,
-            credits: typing.Optional[str],
-            source: typing.Optional[str],
+            publication: typing.Optional[str],
             author: typing.Optional[str],
             publisher: typing.Optional[str],
-            reference: typing.Optional[str],
-            products: typing.Optional[typing.Iterable[RawProduct]]
+            reference: typing.Optional[str]
             ) -> None:
-        self._credits = credits
-        self._source = source
-        self._author = author
+        self._publication = publication
         self._publisher = publisher
+        self._author = author
         self._reference = reference
-        self._products = products
 
-    def credits(self) -> typing.Optional[str]:
-        return self._credits
-
-    def source(self) -> typing.Optional[str]:
-        return self._source
+    def publication(self) -> typing.Optional[str]:
+        return self._publication
 
     def author(self) -> typing.Optional[str]:
         return self._author
@@ -365,7 +331,24 @@ class RawSources(object):
     def reference(self) -> typing.Optional[str]:
         return self._reference
 
-    def products(self) -> typing.Optional[typing.Iterable[RawProduct]]:
+class RawSources(object):
+    def __init__(
+            self,
+            credits: typing.Optional[str],
+            primary: typing.Optional[RawSource],
+            products: typing.Optional[typing.Iterable[RawSource]]
+            ) -> None:
+        self._credits = credits
+        self._primary = primary
+        self._products = products
+
+    def credits(self) -> typing.Optional[str]:
+        return self._credits
+
+    def primary(self) -> typing.Optional[RawSource]:
+        return self._primary
+
+    def products(self) -> typing.Optional[typing.Iterable[RawSource]]:
         return self._products
 
 class RawMetadata(object):
@@ -986,34 +969,37 @@ def readXMLMetadata(
                 fileIndex=index))
 
     creditsElements = sectorElement.find('./Credits')
-    sourceElements = sectorElement.find('./DataFile')
+    primaryElements = sectorElement.find('./DataFile')
     productsElements = sectorElement.findall('./Product')
     sources = None
-    if creditsElements != None or sourceElements != None or productsElements != None:
+    if creditsElements != None or primaryElements != None or productsElements != None:
+        primary = None
+        if primaryElements != None:
+            publication = primaryElements.get('Source')
+            author = primaryElements.get('Author')
+            publisher = primaryElements.get('Publisher')
+            reference = primaryElements.get('Ref')
+
+            if publication or author or publisher or reference:
+                primary = RawSource(
+                    publication=publication,
+                    author=author,
+                    publisher=publisher,
+                    reference=reference)
+
         products = None
-        if productsElements:
+        if productsElements != None:
             products = []
             for element in productsElements:
-                title = element.get('Title')
-                if title == None:
-                    raise RuntimeError(f'Failed to find Title element for Product in {identifier} metadata')
-
-                publisher = element.get('Publisher')
-                if publisher == None:
-                    raise RuntimeError(f'Failed to find Publisher element for Product in {identifier} metadata')
-
-                products.append(RawProduct(
-                    title=title,
-                    publisher=publisher,
+                products.append(RawSource(
+                    publication=element.get('Title'),
                     author=element.get('Author'),
+                    publisher=element.get('Publisher'),
                     reference=element.get('Ref')))
 
         sources = RawSources(
             credits=creditsElements.text if creditsElements != None else None,
-            source=sourceElements.get('Source') if sourceElements != None else None,
-            author=sourceElements.get('Author') if sourceElements != None else None,
-            publisher=sourceElements.get('Publisher') if sourceElements != None else None,
-            reference=sourceElements.get('Ref') if sourceElements != None else None,
+            primary=primary,
             products=products)
 
     styleSheetElement = sectorElement.find('./Stylesheet')
@@ -1238,38 +1224,42 @@ def readJSONMetadata(
                 fileIndex=index))
 
     creditsElements = sectorElement.get('Credits')
-    sourceElements = sectorElement.get('DataFile')
+    primaryElements = sectorElement.get('DataFile')
     productsElements = sectorElement.get('Products')
     sources = None
-    if creditsElements != None or sourceElements != None or productsElements != None:
+    if creditsElements != None or primaryElements != None or productsElements != None:
+        primary = None
+        if primaryElements:
+            publication = primaryElements.get('Source')
+            author = primaryElements.get('Author')
+            publisher = primaryElements.get('Publisher')
+            reference = primaryElements.get('Ref')
+
+            if publication or author or publisher or reference:
+                primary = RawSource(
+                    publication=publication,
+                    author=author,
+                    publisher=publisher,
+                    reference=reference)
+
         products = None
-        if productsElements:
+        if productsElements != None:
             products = []
             for element in productsElements:
-                title = element.get('Title')
-                if title == None:
-                    raise RuntimeError(f'Failed to find Title element for Product in {identifier} metadata')
-
-                publisher = element.get('Publisher')
-                if publisher == None:
-                    raise RuntimeError(f'Failed to find Publisher element for Product in {identifier} metadata')
-
-                products.append(RawProduct(
-                    title=title,
-                    publisher=publisher,
+                products.append(RawSource(
+                    publication=element.get('Title'),
                     author=element.get('Author'),
+                    publisher=element.get('Publisher'),
                     reference=element.get('Ref')))
 
         # NOTE: Credits aren't currently supported for JSON format as I don't
         # know what structure they use. The Traveller Map metadata API always
         # returns an empty list
-        sources = RawSources(
-            credits=None,
-            source=sourceElements.get('Source') if sourceElements else None,
-            author=sourceElements.get('Author') if sourceElements else None,
-            publisher=sourceElements.get('Publisher') if sourceElements else None,
-            reference=sourceElements.get('Ref') if sourceElements else None,
-            products=products)
+        if primary or products:
+            sources = RawSources(
+                credits=None,
+                primary=primary,
+                products=products)
 
     return RawMetadata(
         canonicalName=names[0],
@@ -1475,28 +1465,35 @@ def writeXMLMetadata(
             creditsElement = xml.etree.ElementTree.SubElement(sectorElement, 'Credits')
             creditsElement.text = sources.credits()
 
-        if sources.source() or sources.author() or sources.publisher() or sources.reference():
+        if sources.primary():
+            primary = sources.primary()
             attributes = {}
-            if sources.source():
-                attributes['Source'] = sources.source()
-            if sources.author():
-                attributes['Author'] = sources.author()
-            if sources.publisher():
-                attributes['Publisher'] = sources.publisher()
-            if sources.reference():
-                attributes['Ref'] = sources.reference()
-            xml.etree.ElementTree.SubElement(sectorElement, 'DataFile', attributes)
+            if primary.publication():
+                attributes['Source'] = primary.publication()
+            if primary.author():
+                attributes['Author'] = primary.author()
+            if primary.publisher():
+                attributes['Publisher'] = primary.publisher()
+            if primary.reference():
+                attributes['Ref'] = primary.reference()
+
+            if attributes:
+                xml.etree.ElementTree.SubElement(sectorElement, 'DataFile', attributes)
 
         if sources.products():
             for product in sources.products():
                 attributes = {}
-                attributes['Title'] = product.title()
-                attributes['Publisher'] = product.publisher()
+                if product.publication():
+                    attributes['Title'] = product.publication()
                 if product.author():
                     attributes['Author'] = product.author()
+                if product.publisher():
+                    attributes['Publisher'] = product.publisher()
                 if product.reference():
                     attributes['Ref'] = product.reference()
-                xml.etree.ElementTree.SubElement(sectorElement, 'Product', attributes)
+
+                if attributes:
+                    xml.etree.ElementTree.SubElement(sectorElement, 'Product', attributes)
 
     if metadata.styleSheet() != None:
         styleSheetElement = xml.etree.ElementTree.SubElement(labelsElement, 'StyleSheet')
@@ -1663,30 +1660,39 @@ def writeJSONMetadata(
         # API returns an empty array for sectors with credits when JSON
         # is requested
 
-        if sources.source() or sources.author() or sources.publisher() or sources.reference():
-            sourceElement = {}
-            sectorElement['DataFile'] = sourceElement
-            if sources.source():
-                sourceElement['Source'] = sources.source()
-            if sources.author():
-                sourceElement['Author'] = sources.author()
-            if sources.publisher():
-                sourceElement['Publisher'] = sources.publisher()
-            if sources.reference():
-                sourceElement['Ref'] = sources.reference()
+        if sources.primary():
+            primary = sources.primary()
+            primaryElement = {}
+            if primary.publication():
+                primaryElement['Source'] = primary.publication()
+            if primary.author():
+                primaryElement['Author'] = primary.author()
+            if primary.publisher():
+                primaryElement['Publisher'] = primary.publisher()
+            if primary.reference():
+                primaryElement['Ref'] = primary.reference()
+
+            if primaryElement:
+                sectorElement['DataFile'] = primaryElement
 
         if sources.products():
             productsElement = []
-            sectorElement['Products'] = productsElement
             for product in sources.products():
-                productElement = {
-                    'Title': product.title(),
-                    'Publisher': product.publisher()}
+                productElement = {}
+                if product.publication():
+                    productElement['Title'] = product.publication()
                 if product.author():
                     productElement['Author'] = product.author()
+                if product.publisher():
+                    productElement['Publisher'] = product.publisher()
                 if product.reference():
                     productElement['Ref'] = product.reference()
-                productsElement.append(productElement)
+
+                if productElement:
+                    productsElement.append(productElement)
+
+            if productsElement:
+                sectorElement['Products'] = productsElement
 
     # NOTE: The JSON metadata returned by Traveller Map doesn't include
     # style sheet information

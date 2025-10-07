@@ -363,6 +363,8 @@ def createHexToolTip(
     if sector and sector.sources():
         sources = sector.sources()
 
+        toolTip += '<br>'
+
         if sources.credits():
             toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
 
@@ -373,22 +375,22 @@ def createHexToolTip(
             toolTip += '</li>'
             toolTip += '</ul>'
 
-        if sources.source() or sources.author() or sources.publisher() or sources.reference():
+        primary = sources.primary()
+        if primary:
             toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
 
             toolTip += '<li><i><u>Sector Data</u></i></li>'
-            strings = [sources.source(), sources.author(), sources.publisher()]
-            text = ', '.join([s for s in strings if s])
-            if sources.reference():
-                if text:
-                    text += ', '
-                text = html.escape(text)
-                text += '<a href="{url}">Source</a>'.format(
-                    url=html.escape(sources.reference()))
+            text = ', '.join([s for s in [primary.publication(), primary.author(), primary.publisher()] if s])
 
-            if text:
+            if text or primary.reference():
                 toolTip += '<li>'
-                toolTip += text
+                if text:
+                    toolTip += html.escape(text)
+                if primary.reference():
+                    if text:
+                        toolTip += ' - '
+                    toolTip += '<a href="{url}">Source</a>'.format(
+                        url=html.escape(primary.reference()))
                 toolTip += '</li>'
 
             toolTip += '</ul>'
@@ -399,6 +401,9 @@ def createHexToolTip(
             toolTip += '<li><i><u>Reference Products</u></i></li>'
             isFirst = True
             for product in sources.products():
+                if not product.publication():
+                    continue # No publication so no product to mention
+
                 if not isFirst:
                     toolTip += '<li>&nbsp;</li>'
                 isFirst = False
@@ -407,7 +412,9 @@ def createHexToolTip(
                 if product.reference():
                     toolTip += '<a href="{url}">{text}</a>'.format(
                         url=html.escape(product.reference()),
-                        text=html.escape(product.title()))
+                        text=html.escape(product.publication()))
+                else:
+                    toolTip += html.escape(product.publication())
                 toolTip += '</li>'
 
                 if product.author():

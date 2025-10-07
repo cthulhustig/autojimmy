@@ -1314,21 +1314,30 @@ class WorldManager(object):
                         exc_info=ex)
 
         rawSources = rawMetadata.sources()
-        products = []
-        if rawSources and rawSources.products():
-            for rawProduct in rawSources.products():
-                products.append(multiverse.SourceProduct(
-                    title=rawProduct.title(),
-                    publisher=rawProduct.publisher(),
-                    author=rawProduct.author(),
-                    reference=rawProduct.reference()))
-        sources = multiverse.SectorSources(
-            credits=rawSources.credits() if rawSources else None,
-            source=rawSources.source() if rawSources else None,
-            author=rawSources.author() if rawSources else None,
-            publisher=rawSources.publisher() if rawSources else None,
-            reference=rawSources.reference() if rawSources else None,
-            products=products)
+        sources = None
+        if rawSources:
+            rawPrimary = rawSources.primary()
+            primary = None
+            if rawPrimary:
+                primary = multiverse.SectorSource(
+                    publication=rawPrimary.publication(),
+                    author=rawPrimary.author(),
+                    publisher=rawPrimary.publisher(),
+                    reference=rawPrimary.reference())
+
+            products = []
+            if rawSources.products():
+                for rawProduct in rawSources.products():
+                    products.append(multiverse.SectorSource(
+                        publication=rawProduct.publication(),
+                        author=rawProduct.author(),
+                        publisher=rawProduct.publisher(),
+                        reference=rawProduct.reference()))
+
+            sources = multiverse.SectorSources(
+                credits=rawSources.credits(),
+                primary=primary,
+                products=products)
 
         return multiverse.Sector(
             name=sectorName,
