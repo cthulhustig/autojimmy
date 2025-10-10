@@ -29,9 +29,6 @@ class _CustomLabel(QtWidgets.QLabel):
         self._hex = None
 
         self.setBackgroundRole(QtGui.QPalette.ColorRole.Base)
-        self.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
-            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.setTextInteractionFlags(
             QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         self.setOpenExternalLinks(True)
@@ -104,6 +101,7 @@ class _CustomLabel(QtWidgets.QLabel):
                 rules=self._rules,
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,
+                width=0,
                 includeHexImage=True, # Always show image of the hex in hex detail window
                 hexImageStyle=self._mapStyle,
                 hexImageOptions=self._mapOptions))
