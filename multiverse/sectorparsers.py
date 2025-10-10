@@ -1229,7 +1229,7 @@ def readJSONMetadata(
     sources = None
     if creditsElements != None or primaryElements != None or productsElements != None:
         primary = None
-        if primaryElements:
+        if primaryElements != None:
             publication = primaryElements.get('Source')
             author = primaryElements.get('Author')
             publisher = primaryElements.get('Publisher')
