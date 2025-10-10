@@ -36,6 +36,8 @@ import typing
 class TradeType(enum.Enum):
     Sale = 'Sale'
     Purchase = 'Purchase'
+
+
 _TradeTypeSerialisationTypeToStr = {e: e.value.lower() for e in TradeType}
 _TradeTypeSerialisationStrToType = {v: k for k, v in _TradeTypeSerialisationTypeToStr.items()}
 
@@ -505,8 +507,8 @@ class TradeDMToPriceModifierFunction(common.CalculatorFunction):
 
     @staticmethod
     def fromJson(
-        jsonData: typing.Mapping[str, typing.Any]
-        ) -> 'TradeDMToPriceModifierFunction':
+            jsonData: typing.Mapping[str, typing.Any]
+            ) -> 'TradeDMToPriceModifierFunction':
         type = jsonData.get('type')
         if type is None:
             raise RuntimeError('Trade DM function is missing the type property')

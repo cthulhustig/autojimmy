@@ -120,9 +120,9 @@ class GlyphDefs(object):
 
     @staticmethod
     def fromBaseCode(
-        allegiance: typing.Optional[str],
-        code: str
-        ) -> Glyph:
+            allegiance: typing.Optional[str],
+            code: str
+            ) -> Glyph:
         string = '{allegiance}.{code}'.format(
             allegiance=allegiance if allegiance else '',
             code=code)

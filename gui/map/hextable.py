@@ -266,22 +266,22 @@ class HexTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
-        action =  QtWidgets.QAction('Show Details...', self)
+        action = QtWidgets.QAction('Show Details...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectionDetails)
         self.setMenuAction(HexTable.MenuAction.ShowSelectionDetails, action)
 
-        action =  QtWidgets.QAction('Show All Details...', self)
+        action = QtWidgets.QAction('Show All Details...', self)
         action.setEnabled(False) # No content
         action.triggered.connect(self.showAllDetails)
         self.setMenuAction(HexTable.MenuAction.ShowAllDetails, action)
 
-        action =  QtWidgets.QAction('Show on Map...', self)
+        action = QtWidgets.QAction('Show on Map...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectionOnMap)
         self.setMenuAction(HexTable.MenuAction.ShowSelectionOnMap, action)
 
-        action =  QtWidgets.QAction('Show All on Map...', self)
+        action = QtWidgets.QAction('Show All on Map...', self)
         action.setEnabled(False) # No content
         action.triggered.connect(self.showAllOnMap)
         self.setMenuAction(HexTable.MenuAction.ShowAllOnMap, action)
@@ -1021,7 +1021,7 @@ class HexTable(gui.FrozenColumnListTable):
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.Name or columnType == self.ColumnType.Sector or \
-            columnType == self.ColumnType.Subsector:
+                columnType == self.ColumnType.Subsector:
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=hex)
             elif world:

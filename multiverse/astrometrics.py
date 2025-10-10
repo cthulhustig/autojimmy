@@ -71,6 +71,7 @@ class HexEdge(enum.Enum):
     LowerLeft = 4
     UpperLeft = 5
 
+
 _OppositeEdgeTransitions = {
     HexEdge.Upper: HexEdge.Lower,
     HexEdge.UpperRight: HexEdge.LowerLeft,
@@ -351,7 +352,7 @@ class SubsectorIndex(object):
             if self._indexY < 0 or self._indexY > 3:
                 raise ValueError('Subsector index y value must be in range in range 0-3')
 
-            self._code=chr(ord('A') + (self._indexY * 4) + self._indexX)
+            self._code = chr(ord('A') + (self._indexY * 4) + self._indexX)
         else:
             raise ValueError('Invalid sector index arguments')
 

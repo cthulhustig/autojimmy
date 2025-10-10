@@ -14,6 +14,7 @@ def isLightMapStyle(style: cartographer.MapStyle) -> bool:
 def isDarkMapStyle(style: cartographer.MapStyle) -> bool:
     return style in _DarkStyles
 
+
 _MapOptionsToRenderOptions: typing.Dict[
     app.MapOption,
     cartographer.RenderOptions

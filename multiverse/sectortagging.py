@@ -31,4 +31,3 @@ class SectorTagging(object):
             if tag is not None:
                 parsed.add(tag)
         return parsed
-

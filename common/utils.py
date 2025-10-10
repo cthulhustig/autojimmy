@@ -236,6 +236,7 @@ def sanitiseFileName(fileName: str) -> str:
         result = result.replace(char, '')
     return result
 
+
 T = typing.TypeVar('T')
 def getSubclasses(
         classType: typing.Type[T],

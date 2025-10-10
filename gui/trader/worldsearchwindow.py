@@ -866,7 +866,6 @@ class WorldSearchWindow(gui.WindowWidget):
             rules = app.Config.instance().value(option=app.ConfigOption.Rules)
             tagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
 
-
             if self._universeSearchRadioButton.isChecked():
                 foundWorlds = worldFilter.search(
                     milieu=milieu,

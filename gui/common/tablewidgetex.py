@@ -315,7 +315,6 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             self.displayContextMenu(pos=event.pos())
         #super().contextMenuEvent(event)
 
-
     def _hookModel(self) -> None:
         model = self.model()
         if model:

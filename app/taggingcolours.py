@@ -4,11 +4,12 @@ import typing
 class TaggingColours(object):
     @typing.overload
     def __init__(
-            self,
-            desirableColour: str,
-            warningColour: str,
-            dangerColour: str
-            ) -> None: ...
+        self,
+        desirableColour: str,
+        warningColour: str,
+        dangerColour: str
+        ) -> None: ...
+
     @typing.overload
     def __init__(self, other: 'TaggingColours' ) -> None: ...
 

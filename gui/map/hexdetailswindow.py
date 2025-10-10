@@ -244,4 +244,3 @@ class HexDetailsWindow(gui.WindowWidget):
             self._hexLabel.setWorldTagging(tagging=newValue)
         elif option is app.ConfigOption.TaggingColours:
             self._hexLabel.setTaggingColours(colours=newValue)
-

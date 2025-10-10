@@ -52,7 +52,7 @@ class TradeGoodTable(gui.ListTable):
         self._rules = traveller.Rules(rules)
         self._updateContent()
 
-    def filterCallback(self) ->typing.Optional[typing.Callable[[traveller.TradeGood], bool]]:
+    def filterCallback(self) -> typing.Optional[typing.Callable[[traveller.TradeGood], bool]]:
         return self._filterCallback
 
     def setFilterCallback(

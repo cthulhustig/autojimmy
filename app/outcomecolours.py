@@ -4,11 +4,12 @@ import typing
 class OutcomeColours(object):
     @typing.overload
     def __init__(
-            self,
-            averageCaseColour: str,
-            worstCaseColour: str,
-            bestCaseColour: str
-            ) -> None: ...
+        self,
+        averageCaseColour: str,
+        worstCaseColour: str,
+        bestCaseColour: str
+        ) -> None: ...
+
     @typing.overload
     def __init__(self, other: 'OutcomeColours' ) -> None: ...
 

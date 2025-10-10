@@ -111,8 +111,8 @@ class MgtBrokerSkillToPercentageCutFunction(common.CalculatorFunction):
 
     @staticmethod
     def fromJson(
-        jsonData: typing.Mapping[str, typing.Any]
-        ) -> 'MgtBrokerSkillToPercentageCutFunction':
+            jsonData: typing.Mapping[str, typing.Any]
+            ) -> 'MgtBrokerSkillToPercentageCutFunction':
         skill = jsonData.get('skill')
         if skill is None:
             raise RuntimeError('Mongoose broker cut function is missing the skill property')

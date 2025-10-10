@@ -31,14 +31,15 @@ class TaggingProperty(enum.Enum):
 class WorldTagging(object):
     @typing.overload
     def __init__(
-            self,
-            config: typing.Optional[typing.Dict[
-                TaggingProperty,
-                typing.Dict[
-                    typing.Any, # Type varies by tagging property
-                    logic.TagLevel
-                    ]]] = None
-            ) -> None: ...
+        self,
+        config: typing.Optional[typing.Dict[
+            TaggingProperty,
+            typing.Dict[
+                typing.Any, # Type varies by tagging property
+                logic.TagLevel
+                ]]] = None
+        ) -> None: ...
+
     @typing.overload
     def __init__(self, other: 'WorldTagging' ) -> None: ...
 
@@ -63,11 +64,11 @@ class WorldTagging(object):
         return self._taggingMap == other._taggingMap
 
     def config(self) -> typing.Dict[
-                TaggingProperty,
-                typing.Dict[
-                    typing.Any, # Type varies by tagging property
-                    logic.TagLevel
-                    ]]:
+        TaggingProperty,
+        typing.Dict[
+            typing.Any, # Type varies by tagging property
+            logic.TagLevel
+            ]]:
         return WorldTagging._copyConfig(self._taggingMap)
 
     def setConfig(
@@ -84,12 +85,12 @@ class WorldTagging(object):
             self._taggingMap[property] = dict(tagging)
 
     def propertyConfig(
-            self,
-            property: TaggingProperty
-            ) -> typing.Dict[
-                    typing.Any, # Type varies by tagging property
-                    logic.TagLevel
-                    ]:
+        self,
+        property: TaggingProperty
+        ) -> typing.Dict[
+            typing.Any, # Type varies by tagging property
+            logic.TagLevel
+            ]:
         config = self._taggingMap.get(property)
         return dict(config) if config else {}
 
@@ -97,9 +98,9 @@ class WorldTagging(object):
             self,
             property: TaggingProperty,
             config: typing.Mapping[
-                        typing.Any, # Type varies by tagging property
-                        logic.TagLevel
-                        ]) -> None:
+                typing.Any, # Type varies by tagging property
+                logic.TagLevel
+                ]) -> None:
         self._taggingMap[property] = dict(config)
 
     def calculateWorldTagLevel(
@@ -410,17 +411,17 @@ class WorldTagging(object):
     @staticmethod
     def _copyConfig(
             source: typing.Optional[typing.Dict[
-                        TaggingProperty,
-                        typing.Dict[
-                            typing.Any,
-                            logic.TagLevel
-                            ]]] = None
+                TaggingProperty,
+                typing.Dict[
+                    typing.Any,
+                    logic.TagLevel
+                    ]]] = None
             ) -> typing.Dict[
-                    TaggingProperty,
-                    typing.Dict[
-                        typing.Any,
-                        logic.TagLevel
-                        ]]:
+        TaggingProperty,
+        typing.Dict[
+            typing.Any,
+            logic.TagLevel
+            ]]:
         copy = {}
         if source:
             for property, tagging in source.items():
