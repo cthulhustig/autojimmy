@@ -75,6 +75,7 @@ class Sector(object):
             labels: typing.Iterable[multiverse.Label],
             selected: bool,
             tags: multiverse.SectorTagging,
+            sources: multiverse.SectorSources,
             isCustom: bool
             ) -> None:
         self._milieu = milieu
@@ -89,6 +90,7 @@ class Sector(object):
         self._labels = list(labels)
         self._selected = selected
         self._tags = tags
+        self._sources = sources
         self._isCustom = isCustom
 
         self._subsectorNameMap: typing.Dict[str, Subsector] = {}
@@ -176,6 +178,9 @@ class Sector(object):
 
     def hasTag(self, tag: multiverse.SectorTagging.Tag) -> bool:
         return self._tags.contains(tag)
+
+    def sources(self) -> typing.Optional[multiverse.SectorSources]:
+        return self._sources
 
     def isCustom(self) -> bool:
         return self._isCustom

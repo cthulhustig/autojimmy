@@ -1313,6 +1313,32 @@ class WorldManager(object):
                         f'Failed to process label {rawLabel.fileIndex()} in metadata for sector {sectorName}',
                         exc_info=ex)
 
+        rawSources = rawMetadata.sources()
+        sources = None
+        if rawSources:
+            rawPrimary = rawSources.primary()
+            primary = None
+            if rawPrimary:
+                primary = multiverse.SectorSource(
+                    publication=rawPrimary.publication(),
+                    author=rawPrimary.author(),
+                    publisher=rawPrimary.publisher(),
+                    reference=rawPrimary.reference())
+
+            products = []
+            if rawSources.products():
+                for rawProduct in rawSources.products():
+                    products.append(multiverse.SectorSource(
+                        publication=rawProduct.publication(),
+                        author=rawProduct.author(),
+                        publisher=rawProduct.publisher(),
+                        reference=rawProduct.reference()))
+
+            sources = multiverse.SectorSources(
+                credits=rawSources.credits(),
+                primary=primary,
+                products=products)
+
         return multiverse.Sector(
             name=sectorName,
             milieu=milieu,
@@ -1329,6 +1355,7 @@ class WorldManager(object):
             labels=labels,
             selected=rawMetadata.selected() if rawMetadata.selected() else False,
             tags=multiverse.SectorTagging(rawMetadata.tags()),
+            sources=sources,
             isCustom=isCustom)
 
     _RouteStyleMap = {

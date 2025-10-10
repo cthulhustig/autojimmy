@@ -306,6 +306,51 @@ class RawRegion(object):
     def fileIndex(self) -> int:
         return self._fileIndex
 
+class RawSource(object):
+    def __init__(
+            self,
+            publication: typing.Optional[str],
+            author: typing.Optional[str],
+            publisher: typing.Optional[str],
+            reference: typing.Optional[str]
+            ) -> None:
+        self._publication = publication
+        self._publisher = publisher
+        self._author = author
+        self._reference = reference
+
+    def publication(self) -> typing.Optional[str]:
+        return self._publication
+
+    def author(self) -> typing.Optional[str]:
+        return self._author
+
+    def publisher(self) -> typing.Optional[str]:
+        return self._publisher
+
+    def reference(self) -> typing.Optional[str]:
+        return self._reference
+
+class RawSources(object):
+    def __init__(
+            self,
+            credits: typing.Optional[str],
+            primary: typing.Optional[RawSource],
+            products: typing.Optional[typing.Iterable[RawSource]]
+            ) -> None:
+        self._credits = credits
+        self._primary = primary
+        self._products = products
+
+    def credits(self) -> typing.Optional[str]:
+        return self._credits
+
+    def primary(self) -> typing.Optional[RawSource]:
+        return self._primary
+
+    def products(self) -> typing.Optional[typing.Iterable[RawSource]]:
+        return self._products
+
 class RawMetadata(object):
     def __init__(
             self,
@@ -324,6 +369,7 @@ class RawMetadata(object):
             borders: typing.Optional[typing.Iterable[RawBorder]],
             labels: typing.Optional[typing.Iterable[RawLabel]],
             regions: typing.Optional[typing.Iterable[RawRegion]],
+            sources: typing.Optional[RawSources],
             styleSheet: typing.Optional[str]
             ) -> None:
         self._canonicalName = canonicalName
@@ -341,6 +387,7 @@ class RawMetadata(object):
         self._borders = borders
         self._labels = labels
         self._regions = regions
+        self._sources = sources
         self._styleSheet = styleSheet
 
     def canonicalName(self) -> str:
@@ -398,6 +445,9 @@ class RawMetadata(object):
 
     def regions(self) -> typing.Optional[typing.Iterable[RawRegion]]:
         return self._regions
+
+    def sources(self) -> typing.Optional[RawSources]:
+        return self._sources
 
     def styleSheet(self) -> typing.Optional[str]:
         return self._styleSheet
@@ -918,6 +968,40 @@ def readXMLMetadata(
                 colour=element.get('Color'),
                 fileIndex=index))
 
+    creditsElements = sectorElement.find('./Credits')
+    primaryElements = sectorElement.find('./DataFile')
+    productsElements = sectorElement.findall('./Product')
+    sources = None
+    if creditsElements != None or primaryElements != None or productsElements != None:
+        primary = None
+        if primaryElements != None:
+            publication = primaryElements.get('Source')
+            author = primaryElements.get('Author')
+            publisher = primaryElements.get('Publisher')
+            reference = primaryElements.get('Ref')
+
+            if publication or author or publisher or reference:
+                primary = RawSource(
+                    publication=publication,
+                    author=author,
+                    publisher=publisher,
+                    reference=reference)
+
+        products = None
+        if productsElements != None:
+            products = []
+            for element in productsElements:
+                products.append(RawSource(
+                    publication=element.get('Title'),
+                    author=element.get('Author'),
+                    publisher=element.get('Publisher'),
+                    reference=element.get('Ref')))
+
+        sources = RawSources(
+            credits=creditsElements.text if creditsElements != None else None,
+            primary=primary,
+            products=products)
+
     styleSheetElement = sectorElement.find('./Stylesheet')
     styleSheet = styleSheetElement.text if styleSheetElement != None else None
 
@@ -937,6 +1021,7 @@ def readXMLMetadata(
         borders=borders,
         labels=labels,
         regions=regions,
+        sources=sources,
         styleSheet=styleSheet)
 
 def readJSONMetadata(
@@ -1138,6 +1223,44 @@ def readJSONMetadata(
                 colour=element.get('Color'),
                 fileIndex=index))
 
+    creditsElements = sectorElement.get('Credits')
+    primaryElements = sectorElement.get('DataFile')
+    productsElements = sectorElement.get('Products')
+    sources = None
+    if creditsElements != None or primaryElements != None or productsElements != None:
+        primary = None
+        if primaryElements != None:
+            publication = primaryElements.get('Source')
+            author = primaryElements.get('Author')
+            publisher = primaryElements.get('Publisher')
+            reference = primaryElements.get('Ref')
+
+            if publication or author or publisher or reference:
+                primary = RawSource(
+                    publication=publication,
+                    author=author,
+                    publisher=publisher,
+                    reference=reference)
+
+        products = None
+        if productsElements != None:
+            products = []
+            for element in productsElements:
+                products.append(RawSource(
+                    publication=element.get('Title'),
+                    author=element.get('Author'),
+                    publisher=element.get('Publisher'),
+                    reference=element.get('Ref')))
+
+        # NOTE: Credits aren't currently supported for JSON format as I don't
+        # know what structure they use. The Traveller Map metadata API always
+        # returns an empty list
+        if primary or products:
+            sources = RawSources(
+                credits=None,
+                primary=primary,
+                products=products)
+
     return RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
@@ -1154,6 +1277,7 @@ def readJSONMetadata(
         borders=borders,
         labels=labels,
         regions=regions,
+        sources=sources,
         styleSheet=sectorElement.get('StyleSheet'))
 
 def writeMetadata(
@@ -1335,6 +1459,42 @@ def writeXMLMetadata(
             regionElement = xml.etree.ElementTree.SubElement(regionsElement, 'Region', attributes)
             regionElement.text = ' '.join(region.hexList())
 
+    sources = metadata.sources()
+    if sources:
+        if sources.credits():
+            creditsElement = xml.etree.ElementTree.SubElement(sectorElement, 'Credits')
+            creditsElement.text = sources.credits()
+
+        if sources.primary():
+            primary = sources.primary()
+            attributes = {}
+            if primary.publication():
+                attributes['Source'] = primary.publication()
+            if primary.author():
+                attributes['Author'] = primary.author()
+            if primary.publisher():
+                attributes['Publisher'] = primary.publisher()
+            if primary.reference():
+                attributes['Ref'] = primary.reference()
+
+            if attributes:
+                xml.etree.ElementTree.SubElement(sectorElement, 'DataFile', attributes)
+
+        if sources.products():
+            for product in sources.products():
+                attributes = {}
+                if product.publication():
+                    attributes['Title'] = product.publication()
+                if product.author():
+                    attributes['Author'] = product.author()
+                if product.publisher():
+                    attributes['Publisher'] = product.publisher()
+                if product.reference():
+                    attributes['Ref'] = product.reference()
+
+                if attributes:
+                    xml.etree.ElementTree.SubElement(sectorElement, 'Product', attributes)
+
     if metadata.styleSheet() != None:
         styleSheetElement = xml.etree.ElementTree.SubElement(labelsElement, 'StyleSheet')
         styleSheetElement.text = metadata.styleSheet()
@@ -1493,6 +1653,47 @@ def writeJSONMetadata(
 
             regionsElement.append(regionElement)
 
+    sources = metadata.sources()
+    if sources:
+        # NOTE: The Credits string isn't written out as I don't know what
+        # format it's mean to be in for JSON. The Traveller Map metadata
+        # API returns an empty array for sectors with credits when JSON
+        # is requested
+
+        if sources.primary():
+            primary = sources.primary()
+            primaryElement = {}
+            if primary.publication():
+                primaryElement['Source'] = primary.publication()
+            if primary.author():
+                primaryElement['Author'] = primary.author()
+            if primary.publisher():
+                primaryElement['Publisher'] = primary.publisher()
+            if primary.reference():
+                primaryElement['Ref'] = primary.reference()
+
+            if primaryElement:
+                sectorElement['DataFile'] = primaryElement
+
+        if sources.products():
+            productsElement = []
+            for product in sources.products():
+                productElement = {}
+                if product.publication():
+                    productElement['Title'] = product.publication()
+                if product.author():
+                    productElement['Author'] = product.author()
+                if product.publisher():
+                    productElement['Publisher'] = product.publisher()
+                if product.reference():
+                    productElement['Ref'] = product.reference()
+
+                if productElement:
+                    productsElement.append(productElement)
+
+            if productsElement:
+                sectorElement['Products'] = productsElement
+
     # NOTE: The JSON metadata returned by Traveller Map doesn't include
     # style sheet information
     """
@@ -1500,4 +1701,4 @@ def writeJSONMetadata(
         sectorElement['StyleSheet'] = metadata.styleSheet()
     """
 
-    return json.dumps(sectorElement, indent=4)
+    return json.dumps(sectorElement, indent=4).encode()

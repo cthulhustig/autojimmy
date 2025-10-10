@@ -329,13 +329,16 @@ class _InfoWidget(QtWidgets.QWidget):
         self._hex = None
 
         self._label = MapOverlayLabel()
-        self._label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._label.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._label.setOpenExternalLinks(True)
         self._label.setWordWrap(True)
         self._label.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._label.setMinimumHeight(0)
         self._label.setMaximumHeight(100000)
+        self._label.linkHovered.connect(self._linkHovered)
 
         self._scroller = _CustomScrollArea()
         self._scroller.setWidgetResizable(True)
@@ -524,6 +527,9 @@ class _InfoWidget(QtWidgets.QWidget):
         delta = QtGui.QCursor.pos().x() - self._resizeAnchor.x()
         newWidth = self._resizeBaseWidth + delta
         self.setFixedWidth(newWidth)
+
+    def _linkHovered(self, link: str) -> None:
+        QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), link)
 
 class _LegendWidget(QtWidgets.QWidget):
     def __init__(
