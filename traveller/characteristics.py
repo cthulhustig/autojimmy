@@ -16,6 +16,8 @@ class Characteristic(enum.Enum):
     Wealth = 'WLT'
     Moral = 'MRL'
     Sanity = 'STY'
+
+
 _CharacteristicSerialisationTypeToStr = {e: e.value.lower() for e in Characteristic}
 _CharacteristicSerialisationStrToType = {v: k for k, v in _CharacteristicSerialisationTypeToStr.items()}
 
@@ -78,8 +80,8 @@ class CharacteristicDMFunction(common.CalculatorFunction):
 
     @staticmethod
     def fromJson(
-        jsonData: typing.Mapping[str, typing.Any]
-        ) -> 'CharacteristicDMFunction':
+            jsonData: typing.Mapping[str, typing.Any]
+            ) -> 'CharacteristicDMFunction':
         characteristic = jsonData.get('characteristic')
         if characteristic is None:
             raise RuntimeError('Characteristic DM function is missing the characteristic property')

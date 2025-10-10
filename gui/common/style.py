@@ -40,6 +40,7 @@ def isDarkModeEnabled() -> bool:
 
     return True # In case of error default to dark mode
 
+
 _InterfaceScale = 1.0
 def interfaceScale() -> float:
     global _InterfaceScale

@@ -8,21 +8,22 @@ from PyQt5 import QtWidgets, QtCore
 class TradeGoodQuantityDialog(gui.DialogEx):
     @typing.overload
     def __init__(
-            self,
-            title: str,
-            selectableTradeGoods: typing.Iterable[traveller.TradeGood],
-            limitQuantity: typing.Optional[common.ScalarCalculation] = None,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None: ...
+        self,
+        title: str,
+        selectableTradeGoods: typing.Iterable[traveller.TradeGood],
+        limitQuantity: typing.Optional[common.ScalarCalculation] = None,
+        parent: typing.Optional[QtWidgets.QWidget] = None
+        ) -> None: ...
+
     @typing.overload
     def __init__(
-            self,
-            title: str,
-            editTradeGood: typing.Optional[traveller.TradeGood],
-            editQuantity: typing.Optional[common.ScalarCalculation],
-            limitQuantity: typing.Optional[common.ScalarCalculation] = None,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None: ...
+        self,
+        title: str,
+        editTradeGood: typing.Optional[traveller.TradeGood],
+        editQuantity: typing.Optional[common.ScalarCalculation],
+        limitQuantity: typing.Optional[common.ScalarCalculation] = None,
+        parent: typing.Optional[QtWidgets.QWidget] = None
+        ) -> None: ...
 
     def __init__(
             self,

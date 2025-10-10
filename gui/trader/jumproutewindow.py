@@ -1550,7 +1550,6 @@ class JumpRouteWindow(gui.WindowWidget):
         elif option is app.ConfigOption.ShipFuelPerParsec:
             self._shipFuelPerParsecSpinBox.setValue(newValue)
 
-
     def _mapStyleChanged(
             self,
             style: cartographer.MapStyle
@@ -1827,24 +1826,24 @@ class JumpRouteWindow(gui.WindowWidget):
             jumpRoute: logic.JumpRoute,
             routeLogistics: typing.Optional[logic.RouteLogistics]
             ) -> None:
-            self._jumpRoute = jumpRoute
-            self._routeLogistics = routeLogistics
-            self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
+        self._jumpRoute = jumpRoute
+        self._routeLogistics = routeLogistics
+        self._jumpRouteTable.setHexes(hexes=self._jumpRoute.nodes())
 
-            if self._routeLogistics:
-                self._refuellingPlanTable.setPitStops(
-                    pitStops=self._routeLogistics.refuellingPlan())
-            else:
-                self._refuellingPlanTable.removeAllRows()
+        if self._routeLogistics:
+            self._refuellingPlanTable.setPitStops(
+                pitStops=self._routeLogistics.refuellingPlan())
+        else:
+            self._refuellingPlanTable.removeAllRows()
 
-            self._updateRouteLabels()
-            self._updateTravellerMapOverlays()
+        self._updateRouteLabels()
+        self._updateTravellerMapOverlays()
 
-            # We've set a new jump route so prevent future recalculations
-            # from zooming out to show the full jump route. Zooming will be
-            # re-enabled if we start calculating a "new" jump route (i.e the
-            # start/finish world changes)
-            self._shouldZoomToNewRoute = False
+        # We've set a new jump route so prevent future recalculations
+        # from zooming out to show the full jump route. Zooming will be
+        # re-enabled if we start calculating a "new" jump route (i.e the
+        # start/finish world changes)
+        self._shouldZoomToNewRoute = False
 
     def _updateJumpRouteTableColumns(self, index: int) -> None:
         self._jumpRouteTable.setActiveColumns(self._jumpRouteColumns())
@@ -2472,13 +2471,13 @@ class JumpRouteWindow(gui.WindowWidget):
     def _avoidHexesTableContentChanged(self) -> None:
         self._updateTravellerMapOverlays()
         self._avoidLocationsTabWidget.setWidgetItemCount(
-                self._avoidHexesWidget,
-                self._avoidHexesWidget.rowCount())
+            self._avoidHexesWidget,
+            self._avoidHexesWidget.rowCount())
 
     def _avoidFiltersTableContentChange(self) -> None:
         self._avoidLocationsTabWidget.setWidgetItemCount(
-                self._avoidFiltersWidget,
-                self._avoidFiltersWidget.filterCount())
+            self._avoidFiltersWidget,
+            self._avoidFiltersWidget.filterCount())
 
     def _perJumpOverheadsChanged(self, jumpOverheads: int) -> None:
         app.Config.instance().setValue(
@@ -2586,7 +2585,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 option=app.ConfigOption.ShipFuelPerParsec,
                 value=fuelPerParsec)
 
-
     def _enableDisableControls(self) -> None:
         # Disable configuration controls while jump route job is running
         runningJob = self._jumpRouteJob != None
@@ -2613,56 +2611,56 @@ class JumpRouteWindow(gui.WindowWidget):
             self,
             jumpRoute: logic.JumpRoute
             ) -> logic.RouteLogistics:
-            invalidConfigReason = None
-            if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
-                invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
-            elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
-                invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
+        invalidConfigReason = None
+        if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
+            invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
+        elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
+            invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
 
-            if invalidConfigReason:
+        if invalidConfigReason:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
+            return
+
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        pitCostCalculator = logic.PitStopCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+            rules=app.Config.instance().value(option=app.ConfigOption.Rules))
+
+        try:
+            routeLogistics = logic.calculateRouteLogistics(
+                milieu=milieu,
+                jumpRoute=jumpRoute,
+                shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                pitCostCalculator=pitCostCalculator,
+                includeLogisticsCosts=True) # Always include logistics costs
+            if not routeLogistics:
                 gui.MessageBoxEx.information(
                     parent=self,
-                    text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
-                return
-
-            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-            pitCostCalculator = logic.PitStopCostCalculator(
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-                rules=app.Config.instance().value(option=app.ConfigOption.Rules))
-
-            try:
-                routeLogistics = logic.calculateRouteLogistics(
-                    milieu=milieu,
-                    jumpRoute=jumpRoute,
-                    shipTonnage=self._shipTonnageSpinBox.value(),
-                    shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                    shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
-                    shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                    perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                    pitCostCalculator=pitCostCalculator,
-                    includeLogisticsCosts=True) # Always include logistics costs
-                if not routeLogistics:
-                    gui.MessageBoxEx.information(
-                        parent=self,
-                        text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
-                return routeLogistics
-            except Exception as ex:
-                startHex = jumpRoute.startNode()
-                finishHex = jumpRoute.finishNode()
-                startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-                finishString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
-                message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
-                    start=startString,
-                    finish=finishString)
-                logging.error(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
+                    text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
+            return routeLogistics
+        except Exception as ex:
+            startHex = jumpRoute.startNode()
+            finishHex = jumpRoute.finishNode()
+            startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+            finishString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+            message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
+                start=startString,
+                finish=finishString)
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

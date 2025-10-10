@@ -61,7 +61,7 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     escape=False)
 
 class _InPlaceTagLevelComboBox(gui.TagLevelComboBox):
-    def __init__(self, colours, parent = None, value = None):
+    def __init__(self, colours, parent=None, value=None):
         super().__init__(colours, parent, value)
         # NOTE: Change focus policy and install event filter to prevent
         # accidental changes to the value if, while scrolling the list the
@@ -395,7 +395,7 @@ class ConfigDialog(gui.DialogEx):
         self._desirableTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight desirable tagging'))
         self._desirableTagColourButton.colourChanged.connect(
-                self._taggingColourChanged)
+            self._taggingColourChanged)
 
         self._warningTagColourButton = gui.ColourButton(QtGui.QColor(
             taggingColours.colour(level=logic.TagLevel.Warning)))
@@ -403,7 +403,7 @@ class ConfigDialog(gui.DialogEx):
         self._warningTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight warning tagging'))
         self._warningTagColourButton.colourChanged.connect(
-                self._taggingColourChanged)
+            self._taggingColourChanged)
 
         self._dangerTagColourButton = gui.ColourButton(QtGui.QColor(
             taggingColours.colour(level=logic.TagLevel.Danger)))
@@ -411,7 +411,7 @@ class ConfigDialog(gui.DialogEx):
         self._dangerTagColourButton.setToolTip(gui.createStringToolTip(
             'Colour used to highlight danger tagging'))
         self._dangerTagColourButton.colourChanged.connect(
-                self._taggingColourChanged)
+            self._taggingColourChanged)
 
         taggingLayout = gui.FormLayoutEx()
         taggingLayout.addRow('Desirable Tagging Colour:', self._desirableTagColourButton)

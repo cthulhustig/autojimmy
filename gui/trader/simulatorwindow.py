@@ -169,7 +169,7 @@ class SimulatorWindow(gui.WindowWidget):
         if currentHex:
             self._mapWidget.centerOnHex(
                 hex=currentHex,
-                 # Immediate to prevent ugly scrolling from current map position
+                # Immediate to prevent ugly scrolling from current map position
                 immediate=True)
 
     def loadSettings(self) -> None:

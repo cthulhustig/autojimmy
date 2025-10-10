@@ -105,7 +105,7 @@ class _EnumSelectActionGroup(QtWidgets.QActionGroup):
         self.selectionChanged.emit(value)
 
 class _MapStyleActionGroup(_EnumSelectActionGroup):
-    def __init__(self, current, parent = None):
+    def __init__(self, current, parent=None):
         super().__init__(
             enumType=cartographer.MapStyle,
             current=current,
@@ -1006,8 +1006,8 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._homeCenter = QtCore.QPointF(
             MapWidgetEx._DefaultHomeWorldX,
             MapWidgetEx._DefaultHomeWorldY)
-        self._homeScale=gui.MapScale(
-                linear=MapWidgetEx._DefaultHomeLinearScale)
+        self._homeScale = gui.MapScale(
+            linear=MapWidgetEx._DefaultHomeLinearScale)
 
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
@@ -1153,7 +1153,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         featuresConfigLayout = _ConfigSectionLayout()
 
         self._galacticDirectionsAction = _MapOptionAction(
-                option=app.MapOption.GalacticDirections)
+            option=app.MapOption.GalacticDirections)
         self._galacticDirectionsAction.setChecked(
             app.MapOption.GalacticDirections in self._options)
         self._galacticDirectionsAction.optionChanged.connect(self._mapOptionChanged)

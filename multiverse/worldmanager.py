@@ -995,7 +995,7 @@ class WorldManager(object):
                     rawWorld.attribute(multiverse.WorldAttribute.Economics))
                 culture = multiverse.Culture(
                     rawWorld.attribute(multiverse.WorldAttribute.Culture))
-                nobilities=multiverse.Nobilities(
+                nobilities = multiverse.Nobilities(
                     rawWorld.attribute(multiverse.WorldAttribute.Nobility))
                 remarks = multiverse.Remarks(
                     string=rawWorld.attribute(multiverse.WorldAttribute.Remarks),

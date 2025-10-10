@@ -135,37 +135,37 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         self._taggingColours = app.TaggingColours(taggingColours) if taggingColours else None
         self._hexTooltipProvider = None
 
-        action =  QtWidgets.QAction('Show Purchase World Details...', self)
+        action = QtWidgets.QAction('Show Purchase World Details...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedPurchaseWorldDetails)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedPurchaseWorldDetails, action)
 
-        action =  QtWidgets.QAction('Show Sale World Details...', self)
+        action = QtWidgets.QAction('Show Sale World Details...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedSaleWorldDetails)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedSaleWorldDetails, action)
 
-        action =  QtWidgets.QAction('Show World Details...', self)
+        action = QtWidgets.QAction('Show World Details...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedWorldDetails)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedWorldDetails, action)
 
-        action =  QtWidgets.QAction('Show Purchase World on Map...', self)
+        action = QtWidgets.QAction('Show Purchase World on Map...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedPurchaseWorldsOnMap)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedPurchaseWorldsOnMap, action)
 
-        action =  QtWidgets.QAction('Show Sale World on Map...', self)
+        action = QtWidgets.QAction('Show Sale World on Map...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedSaleWorldsOnMap)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedSaleWorldsOnMap, action)
 
-        action =  QtWidgets.QAction('Show World on Map...', self)
+        action = QtWidgets.QAction('Show World on Map...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedWorldsOnMap)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedWorldsOnMap, action)
 
-        action =  QtWidgets.QAction('Show Jump Route on Map...', self)
+        action = QtWidgets.QAction('Show Jump Route on Map...', self)
         action.setEnabled(False) # No selection
         action.triggered.connect(self.showSelectedJumpRouteOnMap)
         self.setMenuAction(CargoManifestTable.MenuAction.ShowSelectedJumpRouteOnMap, action)
@@ -562,7 +562,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.PurchaseWorld or columnType == self.ColumnType.PurchaseSector or \
-            columnType == self.ColumnType.PurchaseSubsector:
+                columnType == self.ColumnType.PurchaseSubsector:
             purchaseWorld = cargoManifest.purchaseWorld()
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=purchaseWorld.hex())
@@ -571,7 +571,7 @@ class CargoManifestTable(gui.FrozenColumnListTable):
                     milieu=purchaseWorld.milieu(),
                     hex=purchaseWorld.hex())
         elif columnType == self.ColumnType.SaleWorld or columnType == self.ColumnType.SaleSector or \
-            columnType == self.ColumnType.SaleSubsector:
+                columnType == self.ColumnType.SaleSubsector:
             saleWorld = cargoManifest.saleWorld()
             if self._hexTooltipProvider:
                 return self._hexTooltipProvider.tooltip(hex=saleWorld.hex())

@@ -18,14 +18,15 @@ class StarPortFuelType(enum.Enum):
 class Rules(object):
     @typing.overload
     def __init__(
-            self,
-            system: RuleSystem,
-            classAStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
-            classBStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
-            classCStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
-            classDStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
-            classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel,
-            ) -> None: ...
+        self,
+        system: RuleSystem,
+        classAStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
+        classBStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
+        classCStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
+        classDStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
+        classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel,
+        ) -> None: ...
+
     @typing.overload
     def __init__(self, other: 'Rules' ) -> None: ...
 

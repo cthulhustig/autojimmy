@@ -925,7 +925,7 @@ class RenderContext(object):
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if not self._styleSheet.capitals.visible or \
-            (self._options & cartographer.RenderOptions.WorldsMask) == 0:
+                (self._options & cartographer.RenderOptions.WorldsMask) == 0:
             return
 
         dotPen = self._graphics.createPen(

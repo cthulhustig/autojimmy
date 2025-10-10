@@ -201,8 +201,8 @@ class RectSelector(object):
                         self._sloppyPlaceholderWorlds.append(world)
 
             if not self._worldSlop:
-               self._tightWorlds = self._sloppyWorlds
-               self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds
+                self._tightWorlds = self._sloppyWorlds
+                self._tightPlaceholderWorlds = self._sloppyPlaceholderWorlds
 
         if tight and self._tightWorlds is None: # Specifically None to not recalculate if there are no worlds
             rect = cartographer.RectangleF()

@@ -245,8 +245,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.RenameFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.RenameFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Rename function is missing the value property')
@@ -278,8 +278,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.EqualsFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.EqualsFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Equals function is missing the value property')
@@ -325,8 +325,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.AddFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.AddFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Add function is missing the lhs property')
@@ -378,8 +378,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.SubtractFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.SubtractFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Subtract function is missing the lhs property')
@@ -431,8 +431,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.MultiplyFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.MultiplyFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Multiply function is missing the lhs property')
@@ -493,8 +493,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.DivideFloatFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.DivideFloatFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Divide float function is missing the lhs property')
@@ -556,8 +556,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.DivideIntegerFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.DivideIntegerFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Divide integer function is missing the lhs property')
@@ -636,8 +636,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.SumFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.SumFunction':
             jsonValues = jsonData.get('values')
             if jsonValues is None:
                 raise RuntimeError('Sum function is missing the values property')
@@ -682,8 +682,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.AverageFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.AverageFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Average function is missing the lhs property')
@@ -729,8 +729,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.FloorFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.FloorFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Floor function is missing the value property')
@@ -770,8 +770,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.CeilFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.CeilFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Ceil function is missing the value property')
@@ -847,8 +847,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.SignificantDigitsFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.SignificantDigitsFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Significant digits function is missing the value property')
@@ -905,8 +905,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.MinFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.MinFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Min function is missing the lhs property')
@@ -953,8 +953,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.MaxFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.MaxFunction':
             lhs = jsonData.get('lhs')
             if lhs is None:
                 raise RuntimeError('Max function is missing the lhs property')
@@ -999,8 +999,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.NegateFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.NegateFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Negate function is missing the value property')
@@ -1039,8 +1039,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.AbsoluteFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.AbsoluteFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Absolute function is missing the value property')
@@ -1090,8 +1090,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.OverrideFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.OverrideFunction':
             old = jsonData.get('old')
             if old is None:
                 raise RuntimeError('Override function is missing the old property')
@@ -1150,8 +1150,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.TakePercentageFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.TakePercentageFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Take percentage function is missing the value property')
@@ -1210,8 +1210,8 @@ class Calculator(object):
 
         @staticmethod
         def fromJson(
-            jsonData: typing.Mapping[str, typing.Any]
-            ) -> 'Calculator.ApplyPercentageFunction':
+                jsonData: typing.Mapping[str, typing.Any]
+                ) -> 'Calculator.ApplyPercentageFunction':
             value = jsonData.get('value')
             if value is None:
                 raise RuntimeError('Apply percentage function is missing the value property')
@@ -2210,6 +2210,7 @@ class _FunctionSerialiser(object):
             for cls in common.getSubclasses(classType=CalculatorFunction):
                 _FunctionSerialiser._FunctionTypeMap[cls.serialisationType()] = cls
 
+
 _CalculationVersion = packaging.version.Version('1.0')
 
 def serialiseCalculation(
@@ -2341,7 +2342,6 @@ def deserialiseCalculation(
                     if name else \
                     'Failed to deserialise worstFunc property for unnamed range calculation'
                 logging.warning(message, exc_info=ex)
-
 
         bestValue = jsonData.get('best')
         if bestValue is None:

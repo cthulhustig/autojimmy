@@ -168,7 +168,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._perJumpOverheadsSpinBox.valueChanged.connect(self._perJumpOverheadsChanged)
 
         self._includeStartWorldBerthingCheckBox = gui.IncludeStartBerthingCheckBox(
-           value=app.Config.instance().value(option=app.ConfigOption.IncludeStartBerthing))
+            value=app.Config.instance().value(option=app.ConfigOption.IncludeStartBerthing))
         self._includeStartWorldBerthingCheckBox.stateChanged.connect(self._includeStartWorldBerthingToggled)
 
         self._includeFinishWorldBerthingCheckBox = gui.IncludeFinishBerthingCheckBox(
