@@ -34,11 +34,9 @@ _WelcomeMessage = """
 _JsonMetadataWarning = """
     <html>
     <p>You're using JSON metadata which isn't officially supported by the
-    Traveller Map Poster API that's used to generate images of custom sectors.
-    The metadata will be automatically converted to XML format before uploading
-    it to Traveller Map. This is mostly a transparent process, however any
-    parsing errors returned by Traveller Map will refer to the XML
-    representation of the data.</p>
+    Traveller Map Linter API. The metadata will be automatically converted to
+    XML format before uploading it to Traveller Map. Due to this conversion
+    line numbers reported in linter results may be inaccurate.</p>
     </html>
 """.format(name=app.AppName)
 _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
@@ -414,7 +412,6 @@ class _NewSectorDialog(gui.DialogEx):
                 text=f'Sector metadata file doesn\'t exist')
             return
 
-        xmlMetadata = None
         try:
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
@@ -428,19 +425,6 @@ class _NewSectorDialog(gui.DialogEx):
                 content=sectorMetadata,
                 format=metadataFormat,
                 identifier=metadataFilePath)
-
-            if metadataFormat == multiverse.MetadataFormat.XML:
-                xmlMetadata = sectorMetadata
-                multiverse.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
-            else:
-                gui.AutoSelectMessageBox.information(
-                    parent=self,
-                    text=_JsonMetadataWarning,
-                    stateKey=_JsonMetadataWarningNoShowStateKey)
-
-                xmlMetadata = multiverse.writeXMLMetadata(
-                    metadata=rawMetadata,
-                    identifier='Generated XML metadata')
 
             # This will throw if there is a conflict with an existing sector
             multiverse.DataStore.instance().customSectorConflictCheck(
