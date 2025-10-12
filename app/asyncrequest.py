@@ -85,10 +85,7 @@ class AsyncRequest(QtCore.QObject):
             self._dataSize = len(data)
             super().__init__(raw=self._data)
 
-        def seek(self, __offset: int, __whence: int = ...) -> int:
-            return super().seek(__offset, __whence)
-
-        def read(self, size=None) -> bytes:
+        def read(self, size: typing.Optional[int] = -1) -> bytes:
             data = super().read(size)
             pos = self.tell()
             if pos > self._dataRead:
@@ -204,7 +201,7 @@ class AsyncRequest(QtCore.QObject):
             logging.debug(f'Starting async POST request to {url}')
 
             if isinstance(content, dict):
-                data = data = aiohttp.FormData()
+                data = aiohttp.FormData()
                 for key, value in content.items():
                     if isinstance(value, str):
                         value = value.encode()
