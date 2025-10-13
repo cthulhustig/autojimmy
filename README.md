@@ -55,7 +55,7 @@ download Auto-Jimmy, install dependencies and run the application.
 
 ### Prerequisites
 Before you begin, ensure that you have the following prerequisites installed:
-* Python 3.12+ (3.8+ _should_ be ok, ymmv)
+* Python 3.13 (3.8+ _should_ be ok, ymmv)
 * Pip (Python package installer)
 
 ### Step 1: Download the Auto-Jimmy Source Code
