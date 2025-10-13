@@ -1,23 +1,5 @@
 # Known Issues
 
-## Windows: Installing requirements.txt fails for Python 3.12
-At the time of writing, Python 3.12 is relatively new, and the precompiled wheels used by some
-packages have not yet been rebuilt for it. The wheels will automatically be built as part of
-the installation, however, this will fail with the error below if you don't have the Visual
-Studio Build Tools installed on your system.
-
-> ERROR: Could not build wheels for frozenlist, multidict, which is required to install pyproject.toml-based projects
-
-One solution to this is to simply use Python 3.11 until package maintainers have had time to
-update them for Python 3.12.
-
-Alternatively, you can install the Visual Studio Build Tools by following these steps:
-1. Download the Visual Studio Build Tools installer from https://visualstudio.microsoft.com/visual-cpp-build-tools/
-2. Run the installer
-3. When prompted to choose which Workloads to install, check "Desktop development with C++"
-   then click the Install button in the lower right corner
-4. Once the installer has completed, re-run the command to install requirements.txt
-
 ## Windows: Microsoft Defender SmartScreen prevents the installer from running
 This happens because the installer executable isn't digitally signed so Windows doesn't
 know who created it and therefore doesn't automatically trust it. Auto-Jimmy is just a
@@ -105,33 +87,3 @@ XDG_SESSION_TYPE=x11
 
 ## macOS: Segmentation fault: 11 when starting
 This can happen when using Python 3.12. Using Python 3.11 resolves the issue.
-
-## macOS: World information tool tips aren't showing tile images from Traveller Map
-This issue can be caused by an HTTPS certificate failure. After installing a versions of
-Python downloaded from www.python.org on macOS, you need to manually install the Python
-certificates.
-1. From the main toolbar select *Go > Applications*
-2. Find the application directory for Python 3.x and open it
-3. Click on "Install Certificates.command" and select *Open*
-
-## macOS: When starting Auto-Jimmy a warning is displayed saying there are not enough IPv4 loopback addresses available
-This can happen if you've set the proxy host pool size to a value higher than 1
-on macOS. The host pool size specifies the number of loopback addresses (e.g.
-127.0.0.x) that the proxy will bind to in order to work around the hard coded
-limit of 6 connections per host imposed by the Chromium web browser Auto-Jimmy
-uses to display Traveller Map. In order for the proxy to use additional loopback
-addresses they must be enabled in the OS, however, macOS only enables the
-127.0.0.1 loopback address by default.
-
-Details of how to enable additional loopback addresses can be found here. Note
-that you will need to repeat the instructions for each additional address you
-enable. For example, if you set the host pool size to 4 you will need to enable
-127.0.0.2, 127.0.0.3 & 127.0.0.4.
-
-https://medium.com/@david.limkys/permanently-create-an-ifconfig-loopback-alias-macos-b7c93a8b0db
-
-> [!NOTE]
-> The host pool size only affects the number of simultaneous connections made
-> between Auto-Jimmy and the proxy, this is done to make better use of the
-> proxies tile cache. The proxy will still impose a limit of 6 simultaneous
-> connections to travellermap.com so as not to place additional load on the site.
