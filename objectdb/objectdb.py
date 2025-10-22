@@ -877,7 +877,7 @@ class ObjectDbManager(object):
             cursor: sqlite3.Cursor
             ) -> None:
         logging.info(f'ObjectDbManager creating \'{table}\' \'{column}\' index')
-        common.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
+        database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createEntityTableTrigger(
             self,
