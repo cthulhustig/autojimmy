@@ -1,4 +1,5 @@
 import common
+import database
 import enum
 import logging
 import sqlite3
@@ -401,7 +402,7 @@ class ObjectDbManager(object):
                 cursor.execute('BEGIN;')
 
                 # Create schema table
-                if not self._checkIfTableExists(
+                if not database.checkIfTableExists(
                         tableName=ObjectDbManager._SchemasTableName,
                         cursor=cursor):
                     sql = """
@@ -416,7 +417,7 @@ class ObjectDbManager(object):
                     cursor.execute(sql)
 
                 # Create entities table
-                if not self._checkIfTableExists(
+                if not database.checkIfTableExists(
                         tableName=ObjectDbManager._EntitiesTableName,
                         cursor=cursor):
                     sql = """
@@ -444,7 +445,7 @@ class ObjectDbManager(object):
                         cursor=cursor)
 
                 # Create hierarchy table
-                if not self._checkIfTableExists(
+                if not database.checkIfTableExists(
                         tableName=ObjectDbManager._HierarchyTableName,
                         cursor=cursor):
                     sql = """
@@ -480,7 +481,7 @@ class ObjectDbManager(object):
                         cursor=cursor)
 
                 # Create list table
-                if not self._checkIfTableExists(
+                if not database.checkIfTableExists(
                         tableName=ObjectDbManager._ListsTableName,
                         cursor=cursor):
                     sql = """
@@ -514,7 +515,7 @@ class ObjectDbManager(object):
                         cursor=cursor)
 
                 # Create change log table
-                if not self._checkIfTableExists(
+                if not database.checkIfTableExists(
                         tableName=ObjectDbManager._ChangeLogTableName,
                         cursor=cursor):
                     sql = """
@@ -549,7 +550,7 @@ class ObjectDbManager(object):
 
                 # Create any object tables that don't exist
                 for objectDef in classObjectDefs.values():
-                    if not self._checkIfTableExists(tableName=objectDef.tableName(), cursor=cursor):
+                    if not database.checkIfTableExists(tableName=objectDef.tableName(), cursor=cursor):
                         self._createObjectTable(
                             objectDef=objectDef,
                             cursor=cursor)
@@ -810,24 +811,6 @@ class ObjectDbManager(object):
                     continue
             self._connectionPool.clear()
 
-    def _checkIfTableExists(
-            self,
-            tableName: str,
-            cursor: sqlite3.Cursor
-            ) -> bool:
-        sql = 'SELECT name FROM sqlite_master WHERE type = "table" AND name = :table;'
-        cursor.execute(sql, {'table': tableName})
-        return cursor.fetchone() != None
-
-    def _checkIfTriggerExists(
-            self,
-            triggerName: str,
-            cursor: sqlite3.Cursor
-            ) -> bool:
-        sql = 'SELECT name  FROM sqlite_master  WHERE type = "trigger" AND name = :trigger;'
-        cursor.execute(sql, {'trigger': triggerName})
-        return cursor.fetchone() != None
-
     def _readSchemaVersion(
             self,
             name: str,
@@ -893,12 +876,8 @@ class ObjectDbManager(object):
             unique: bool,
             cursor: sqlite3.Cursor
             ) -> None:
-        if unique:
-            sql = f'CREATE UNIQUE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
-        else:
-            sql = f'CREATE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
-        logging.info(f'ObjectDbManager creating \'{table}\' {column} index')
-        cursor.execute(sql)
+        logging.info(f'ObjectDbManager creating \'{table}\' \'{column}\' index')
+        common.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createEntityTableTrigger(
             self,
@@ -911,7 +890,7 @@ class ObjectDbManager(object):
             type=type.value.lower(),
             operation=operation.value.lower())
 
-        if self._checkIfTriggerExists(triggerName=triggerName, cursor=cursor):
+        if database.checkIfTriggerExists(triggerName=triggerName, cursor=cursor):
             schemaVersion = self._readSchemaVersion(
                 name=triggerName,
                 type=ObjectDbManager.SchemaType.Trigger,
