@@ -17,6 +17,8 @@ class MetadataFormat(enum.Enum):
     JSON = 0
     XML = 1
 
+# TODO: Need to change this method of accessing the world attributes to something
+# more standard
 class WorldAttribute(enum.Enum):
     Hex = 0
     Name = 1
