@@ -871,7 +871,7 @@ class DbSector(object):
             return
         for i in range(self._borders):
             border = self._borders[i]
-            if self._borders[i].id() == borderId:
+            if border.id() == borderId:
                 del self._borders[i]
                 return
 
@@ -1620,7 +1620,6 @@ class MapDb(object):
                     CREATE TABLE IF NOT EXISTS {bordersTable} (
                         id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
-                        allegiance TEXT,
                         show_label INTEGER NOT NULL,
                         wrap_label INTEGER NOT NULL,
                         label_hex_x INTEGER,
@@ -1628,8 +1627,9 @@ class MapDb(object):
                         label_offset_x REAL,
                         label_offset_y REAL,
                         label TEXT,
-                        style TEXT,
                         colour TEXT,
+                        style TEXT,
+                        allegiance TEXT,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
@@ -1883,7 +1883,43 @@ class MapDb(object):
             universeId: str,
             cursor: sqlite3.Cursor
             ) -> typing.Optional[DbUniverse]:
-        pass
+        sql = """
+            SELECT name, description, notes
+            FROM {table}
+            WHERE id = :id;
+            """.format(table=MapDb._UniversesTableName)
+        cursor.execute(sql, {'id': universeId})
+        row = cursor.fetchone()
+        if not row:
+            return None
+        name = row[0]
+        description = row[1]
+        notes = row[2]
+
+        # TODO: This could be made more efficient by loading all the sector
+        # information in a single select then just loading the sector child
+        # data with individual selects.
+        sql = """
+            SELECT id FROM {table} WHERE universe_id = :id;
+            """.format(table=MapDb._SectorsTableName)
+        cursor.execute(sql, {'id': universeId})
+        sectors = []
+        for row in cursor.fetchall():
+            sectorId = row[0]
+            sector = self._internalReadSector(
+                sectorId=sectorId,
+                cursor=cursor)
+            if not sector:
+                # TODO: Some kind of logging or error handling?
+                continue
+            sectors.append(sector)
+
+        return DbUniverse(
+            id=universeId,
+            name=name,
+            description=description,
+            notes=notes,
+            sectors=sectors)
 
     def _internalDeleteUniverse(
             self,
@@ -2048,12 +2084,12 @@ class MapDb(object):
 
         if sector.borders():
             bordersSql = """
-                INSERT INTO {table} (id, sector_id, allegiance, show_label,
-                    wrap_label, label_hex_x, label_hex_y, label_offset_x,
-                    label_offset_y, label, style, colour)
-                VALUES (:id, :sector_id, :allegiance, :show_label,
-                    :wrap_label, :label_hex_x, :label_hex_y, :label_offset_x,
-                    :label_offset_y, :label, :style, :colour);
+                INSERT INTO {table} (id, sector_id, show_label, wrap_label,
+                    label_hex_x, label_hex_y, label_offset_x, label_offset_y,
+                    label, colour, style, allegiance)
+                VALUES (:id, :sector_id, :show_label, :wrap_label,
+                    :label_hex_x, :label_hex_y, :label_offset_x, :label_offset_y,
+                    :label, :colour, :style, :allegiance );
                 """.format(table=MapDb._BordersTableName)
             hexesSql =  """
                 INSERT INTO {table} (border_id, hex_x, hex_y)
@@ -2065,7 +2101,6 @@ class MapDb(object):
                 bordersData.append({
                     'id': border.id(),
                     'sector_id': border.sectorId(),
-                    'allegiance': border.allegiance(),
                     'show_label': 1 if border.showLabel() else 0,
                     'wrap_label': 1 if border.wrapLabel() else 0,
                     'label_hex_x': border.labelHexX(),
@@ -2073,8 +2108,9 @@ class MapDb(object):
                     'label_offset_x': border.labelOffsetX(),
                     'label_offset_y': border.labelOffsetY(),
                     'label': border.label(),
+                    'colour': border.colour(),
                     'style': border.style(),
-                    'colour': border.colour()})
+                    'allegiance': border.allegiance()})
                 for hexX, hexY in border.hexes():
                     hexesData.append({
                         'border_id': border.id(),
@@ -2144,8 +2180,234 @@ class MapDb(object):
             self,
             sectorId: str,
             cursor: sqlite3.Cursor
-            ) -> typing.Optional[DbUniverse]:
-        pass
+            ) -> typing.Optional[DbSector]:
+        sql = """
+            SELECT universe_id, is_custom, milieu, sector_x, sector_y,
+                primary_name, primary_language, abbreviation, sector_label,
+                selected, tags, style_sheet, credits, publication, author,
+                publisher, reference, notes
+            FROM {table}
+            WHERE id = :id;
+            """.format(table=MapDb._SectorsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        sector = DbSector(
+            id=sectorId,
+            universeId=row[0],
+            isCustom=True if row[1] else False,
+            milieu=row[2],
+            sectorX=row[3],
+            sectorY=row[4],
+            primaryName=row[5],
+            primaryLanguage=row[6],
+            abbreviation=row[7],
+            sectorLabel=row[8],
+            selected=True if row[9] else False,
+            tags=row[10],
+            styleSheet=row[11],
+            credits=row[12],
+            publication=row[13],
+            author=row[14],
+            publisher=row[15],
+            reference=row[16],
+            notes=row[17])
+
+        sql = """
+            SELECT name, language
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._AlternateNamesTableName)
+        cursor.execute(sql, {'id': sectorId})
+        sector.setAlternateNames(
+            [(row[0], row[1]) for row in cursor.fetchall()])
+
+        sql = """
+            SELECT code, name
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._SubsectorNamesTableName)
+        cursor.execute(sql, {'id': sectorId})
+        sector.setSubsectorNames(
+            [(row[0], row[1]) for row in cursor.fetchall()])
+
+        sql = """
+            SELECT publication, author, publisher, reference
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._ProductsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        products = []
+        for row in cursor.fetchall():
+            products.append(DbProduct(
+                publication=row[0],
+                author=row[1],
+                publisher=row[2],
+                reference=row[3]))
+        sector.setProducts(products)
+
+        sql = """
+            SELECT code, name, base
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._AllegiancesTableName)
+        cursor.execute(sql, {'id': sectorId})
+        allegiances = []
+        for row in cursor.fetchall():
+            allegiances.append(DbAllegiance(
+                code=row[0],
+                name=row[1],
+                base=row[2]))
+        sector.setAllegiances(allegiances)
+
+        sql = """
+            SELECT id, hex_x, hex_y, name, uwp, remarks, importance,
+                economics, culture, nobility, bases, zone, pbg,
+                system_worlds, allegiance, stellar, notes
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systems = []
+        for row in cursor.fetchall():
+            systems.append(DbSystem(
+                id=row[0],
+                hexX=row[1],
+                hexY=row[2],
+                name=row[3],
+                uwp=row[4],
+                remarks=row[5],
+                importance=row[6],
+                economics=row[7],
+                culture=row[8],
+                nobility=row[9],
+                bases=row[10],
+                zone=row[11],
+                pbg=row[12],
+                systemWorlds=row[13],
+                allegiance=row[14],
+                stellar=row[15],
+                notes=row[16]))
+        sector.setSystems(systems)
+
+        sql = """
+            SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
+                allegiance, type, style, colour, width
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._RoutesTableName)
+        cursor.execute(sql, {'id': sectorId})
+        routes = []
+        for row in cursor.fetchall():
+            routes.append(DbRoute(
+                id=row[0],
+                startHexX=row[1],
+                startHexY=row[2],
+                endHexX=row[3],
+                endHexY=row[4],
+                allegiance=row[5],
+                type=row[6],
+                style=row[7],
+                colour=row[8],
+                width=row[9]))
+        sector.setRoutes(routes)
+
+        sql = """
+            SELECT id, show_label, wrap_label,
+                label_hex_x, label_hex_y, label_offset_x, label_offset_y,
+                label, colour, style, allegiance
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._BordersTableName)
+        cursor.execute(sql, {'id': sectorId})
+        borders = []
+        for row in cursor.fetchall():
+            borderId = row[0]
+
+            hexesSql = """
+                SELECT hex_x, hex_y
+                FROM {table}
+                WHERE border_id = :id;
+                """.format(table=MapDb._BorderHexesTableName)
+            cursor.execute(hexesSql, {'id': borderId})
+            hexes = []
+            for hexRow in cursor.fetchall():
+                hexes.append((hexRow[0], hexRow[1]))
+
+            borders.append(DbBorder(
+                id=borderId,
+                hexes=hexes,
+                showLabel=True if row[1] else False,
+                wrapLabel=True if row[2] else False,
+                labelHexX=row[3],
+                labelHexY=row[4],
+                labelOffsetX=row[5],
+                labelOffsetY=row[6],
+                label=row[7],
+                colour=row[8],
+                style=row[9],
+                allegiance=row[10]))
+        sector.setBorders(borders)
+
+        sql = """
+            SELECT id, show_label, wrap_label,
+                label_hex_x, label_hex_y, label_offset_x, label_offset_y,
+                label, colour
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._RegionsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        regions = []
+        for row in cursor.fetchall():
+            regionId = row[0]
+
+            hexesSql = """
+                SELECT hex_x, hex_y
+                FROM {table}
+                WHERE region_id = :id;
+                """.format(table=MapDb._RegionHexesTableName)
+            cursor.execute(hexesSql, {'id': regionId})
+            hexes = []
+            for hexRow in cursor.fetchall():
+                hexes.append((hexRow[0], hexRow[1]))
+
+            regions.append(DbRegion(
+                id=regionId,
+                hexes=hexes,
+                showLabel=True if row[1] else False,
+                wrapLabel=True if row[2] else False,
+                labelHexX=row[3],
+                labelHexY=row[4],
+                labelOffsetX=row[5],
+                labelOffsetY=row[6],
+                label=row[7],
+                colour=row[8]))
+        sector.setRegions(regions)
+
+        sql = """
+            SELECT id, text, hex_x, hex_y, wrap, colour, size,
+                offset_x, offset_y
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MapDb._LabelsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        labels = []
+        for row in cursor.fetchall():
+            labels.append(DbLabel(
+                id=row[0],
+                text=row[1],
+                hexX=row[2],
+                hexY=row[3],
+                wrap=True if row[4] else False,
+                colour=row[5],
+                size=row[6],
+                offsetX=row[7],
+                offsetY=row[8]))
+        sector.setLabels(labels)
+
+        return sector
 
     def _internalDeleteSector(
             self,
@@ -2164,7 +2426,7 @@ class MapDb(object):
             cursor: sqlite3.Cursor
             ) -> typing.Mapping[str, str]:
         sql = """
-            SELECT (id, name) FROM {table}
+            SELECT id, name FROM {table}
             """.format(
             table=MapDb._UniversesTableName)
         cursor.execute(sql)
@@ -2182,7 +2444,7 @@ class MapDb(object):
             milieu: typing.Optional[str],
             cursor: sqlite3.Cursor
             ) -> typing.Mapping[str, str]:
-        sql = 'SELECT (id, name) FROM {table}'.format(
+        sql = 'SELECT id, name FROM {table}'.format(
             table=MapDb._UniversesTableName)
         selectData = {}
         if universeId and milieu:
