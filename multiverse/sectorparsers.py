@@ -3,7 +3,6 @@ import enum
 import itertools
 import json
 import logging
-import multiverse
 import re
 import typing
 import xml.etree.ElementTree
@@ -480,7 +479,7 @@ class RawSectorInfo(object):
             self,
             x: int,
             y: int,
-            milieu: multiverse.Milieu,
+            milieu: str,
             abbreviation: typing.Optional[str],
             tags: typing.Optional[str],
             nameInfos: typing.Optional[typing.Collection[RawNameInfo]],
@@ -498,7 +497,7 @@ class RawSectorInfo(object):
     def y(self) -> int:
         return self._y
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> str:
         return self._milieu
 
     def abbreviation(self) -> typing.Optional[str]:
@@ -1794,7 +1793,6 @@ def readUniverseInfo(
         milieu = sectorElement.get('Milieu')
         if not milieu:
             raise RuntimeError('Sector has no Milieu')
-        milieu = multiverse.Milieu[milieu]
 
         abbreviation = sectorElement.get('Abbreviation')
         if abbreviation is not None:
@@ -1848,7 +1846,7 @@ def writeUniverseInfo(
         sectorElement = {
             'X': sectorInfo.x(),
             'Y': sectorInfo.y(),
-            'Milieu': sectorInfo.milieu().name}
+            'Milieu': sectorInfo.milieu()}
 
         if sectorInfo.abbreviation():
             sectorElement['Abbreviation'] = sectorInfo.abbreviation()
