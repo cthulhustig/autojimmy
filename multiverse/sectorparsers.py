@@ -3,6 +3,7 @@ import enum
 import itertools
 import json
 import logging
+import multiverse
 import re
 import typing
 import xml.etree.ElementTree
@@ -154,7 +155,7 @@ class RawRoute(object):
 class RawBorder(object):
     def __init__(
             self,
-            hexList: typing.Iterable[str],
+            hexList: typing.Collection[str],
             allegiance: typing.Optional[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
@@ -178,7 +179,7 @@ class RawBorder(object):
         self._colour = colour
         self._fileIndex = fileIndex
 
-    def hexList(self) -> typing.Iterable[str]:
+    def hexList(self) -> typing.Collection[str]:
         return self._hexList
 
     def allegiance(self) -> typing.Optional[str]:
@@ -261,7 +262,7 @@ class RawLabel(object):
 class RawRegion(object):
     def __init__(
             self,
-            hexList: typing.Iterable[str],
+            hexList: typing.Collection[str],
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
             labelHex: typing.Optional[str],
@@ -281,7 +282,7 @@ class RawRegion(object):
         self._colour = colour
         self._fileIndex = fileIndex
 
-    def hexList(self) -> typing.Iterable[str]:
+    def hexList(self) -> typing.Collection[str]:
         return self._hexList
 
     def showLabel(self) -> typing.Optional[bool]:
@@ -338,7 +339,7 @@ class RawSources(object):
             self,
             credits: typing.Optional[str],
             primary: typing.Optional[RawSource],
-            products: typing.Optional[typing.Iterable[RawSource]]
+            products: typing.Optional[typing.Collection[RawSource]]
             ) -> None:
         self._credits = credits
         self._primary = primary
@@ -350,14 +351,14 @@ class RawSources(object):
     def primary(self) -> typing.Optional[RawSource]:
         return self._primary
 
-    def products(self) -> typing.Optional[typing.Iterable[RawSource]]:
+    def products(self) -> typing.Optional[typing.Collection[RawSource]]:
         return self._products
 
 class RawMetadata(object):
     def __init__(
             self,
-            canonicalName: typing.Iterable[str],
-            alternateNames: typing.Optional[typing.Iterable[str]],
+            canonicalName: typing.Collection[str],
+            alternateNames: typing.Optional[typing.Collection[str]],
             nameLanguages: typing.Optional[typing.Mapping[str, str]],
             abbreviation: typing.Optional[str],
             sectorLabel: typing.Optional[str],
@@ -366,11 +367,11 @@ class RawMetadata(object):
             y: int,
             selected: typing.Optional[bool],
             tags: typing.Optional[str],
-            allegiances: typing.Optional[typing.Iterable[RawAllegiance]],
-            routes: typing.Optional[typing.Iterable[RawRoute]],
-            borders: typing.Optional[typing.Iterable[RawBorder]],
-            labels: typing.Optional[typing.Iterable[RawLabel]],
-            regions: typing.Optional[typing.Iterable[RawRegion]],
+            allegiances: typing.Optional[typing.Collection[RawAllegiance]],
+            routes: typing.Optional[typing.Collection[RawRoute]],
+            borders: typing.Optional[typing.Collection[RawBorder]],
+            labels: typing.Optional[typing.Collection[RawLabel]],
+            regions: typing.Optional[typing.Collection[RawRegion]],
             sources: typing.Optional[RawSources],
             styleSheet: typing.Optional[str]
             ) -> None:
@@ -395,10 +396,10 @@ class RawMetadata(object):
     def canonicalName(self) -> str:
         return self._canonicalName
 
-    def alternateNames(self) -> typing.Optional[typing.Iterable[str]]:
+    def alternateNames(self) -> typing.Optional[typing.Collection[str]]:
         return self._alternateNames
 
-    def names(self) -> typing.Iterable[str]:
+    def names(self) -> typing.Collection[str]:
         names = [self._canonicalName]
         if self._alternateNames:
             names.extend(self._alternateNames)
@@ -433,19 +434,19 @@ class RawMetadata(object):
     def tags(self) -> typing.Optional[str]:
         return self._tags
 
-    def allegiances(self) -> typing.Optional[typing.Iterable[RawAllegiance]]:
+    def allegiances(self) -> typing.Optional[typing.Collection[RawAllegiance]]:
         return self._allegiances
 
-    def routes(self) -> typing.Optional[typing.Iterable[RawRoute]]:
+    def routes(self) -> typing.Optional[typing.Collection[RawRoute]]:
         return self._routes
 
-    def borders(self) -> typing.Optional[typing.Iterable[RawBorder]]:
+    def borders(self) -> typing.Optional[typing.Collection[RawBorder]]:
         return self._borders
 
-    def labels(self) -> typing.Optional[typing.Iterable[RawLabel]]:
+    def labels(self) -> typing.Optional[typing.Collection[RawLabel]]:
         return self._labels
 
-    def regions(self) -> typing.Optional[typing.Iterable[RawRegion]]:
+    def regions(self) -> typing.Optional[typing.Collection[RawRegion]]:
         return self._regions
 
     def sources(self) -> typing.Optional[RawSources]:
@@ -454,6 +455,70 @@ class RawMetadata(object):
     def styleSheet(self) -> typing.Optional[str]:
         return self._styleSheet
 
+class RawNameInfo(object):
+    def __init__(
+            self,
+            name: str,
+            language: typing.Optional[str],
+            source: typing.Optional[str]
+            ):
+        self._name = name
+        self._language = language
+        self._source = source
+
+    def name(self) -> str:
+        return self._name
+
+    def language(self) -> typing.Optional[str]:
+        return self._language
+
+    def source(self) -> typing.Optional[str]:
+        return self._source
+
+class RawSectorInfo(object):
+    def __init__(
+            self,
+            x: int,
+            y: int,
+            milieu: multiverse.Milieu,
+            abbreviation: typing.Optional[str],
+            tags: typing.Optional[str],
+            nameInfos: typing.Optional[typing.Collection[RawNameInfo]],
+            ) -> None:
+        self._x = x
+        self._y = y
+        self._milieu = milieu
+        self._abbreviation = abbreviation
+        self._tags = tags
+        self._nameInfos = nameInfos
+
+    def x(self) -> int:
+        return self._x
+
+    def y(self) -> int:
+        return self._y
+
+    def milieu(self) -> multiverse.Milieu:
+        return self._milieu
+
+    def abbreviation(self) -> typing.Optional[str]:
+        return self._abbreviation
+
+    def tags(self) -> typing.Optional[str]:
+        return self._tags
+
+    def nameInfos(self) -> typing.Optional[typing.Collection[RawNameInfo]]:
+        return self._nameInfos
+
+class RawUniverseInfo(object):
+    def __init__(
+            self,
+            sectorInfos: typing.Collection[RawSectorInfo]
+            ) -> None:
+        self._sectorInfos = sectorInfos
+
+    def sectorInfos(self) -> typing.Collection[RawSectorInfo]:
+        return self._sectorInfos
 
 _HeaderPattern = re.compile(r'(?:([\w{}()\[\]]+)\s*)')
 _SeparatorPattern = re.compile(r'(?:([-]+)\s?)')
@@ -669,8 +734,8 @@ def readT5ColumnSector(
 def _readT5ColumnWorld(
         line: str,
         lineNumber: int,
-        columnAttributes: typing.Iterable[WorldAttribute],
-        columnWidths: typing.Iterable[int]
+        columnAttributes: typing.Collection[WorldAttribute],
+        columnWidths: typing.Collection[int]
         ) -> RawWorld:
     worldData = RawWorld(lineNumber=lineNumber)
     lineLength = len(line)
@@ -746,7 +811,7 @@ def readT5RowSector(
 def _readT5RowWorld(
         line: str,
         lineNumber: int,
-        columnAttributes: typing.Iterable[WorldAttribute],
+        columnAttributes: typing.Collection[WorldAttribute],
         ) -> RawWorld:
     columnData = line.split('\t')
     if len(columnData) != len(columnAttributes):
@@ -1704,3 +1769,110 @@ def writeJSONMetadata(
     """
 
     return json.dumps(sectorElement, indent=4).encode()
+
+def readUniverseInfo(
+        content: str
+        ) -> RawUniverseInfo:
+    universeElement = json.loads(content)
+
+    sectorsElement = universeElement.get('Sectors')
+    sectorInfos = []
+    if not sectorsElement:
+        raise RuntimeError('No Sectors element found')
+
+    for sectorElement in sectorsElement:
+        sectorX = sectorElement.get('X')
+        if sectorX is None:
+            raise RuntimeError('Sector has no X Position')
+        sectorX = int(sectorX)
+
+        sectorY = sectorElement.get('Y')
+        if sectorY is None:
+            raise RuntimeError('Sector has no Y Position')
+        sectorY = int(sectorY)
+
+        milieu = sectorElement.get('Milieu')
+        if not milieu:
+            raise RuntimeError('Sector has no Milieu')
+        milieu = multiverse.Milieu[milieu]
+
+        abbreviation = sectorElement.get('Abbreviation')
+        if abbreviation is not None:
+            abbreviation = str(abbreviation)
+
+        tags = sectorElement.get('Tags')
+        if tags is not None:
+            tags = str(tags)
+
+        namesElements = sectorElement.get('Names')
+        nameInfos = None
+        if namesElements and len(namesElements) > 0:
+            nameInfos = []
+            for nameElement in namesElements:
+                name = nameElement.get('Text')
+                if not name:
+                    raise RuntimeError('Sector Name element has no Text')
+                name = str(name)
+
+                language = nameElement.get('Lang')
+                if language is not None:
+                    language = str(language)
+
+                source = nameElement.get('Source')
+                if source is not None:
+                    source = str(source)
+
+                nameInfos.append(RawNameInfo(
+                    name=name,
+                    language=language,
+                    source=source))
+
+        sectorInfos.append(RawSectorInfo(
+            x=sectorX,
+            y=sectorY,
+            milieu=milieu,
+            abbreviation=abbreviation,
+            tags=tags,
+            nameInfos=nameInfos))
+
+    return RawUniverseInfo(
+        sectorInfos=sectorInfos)
+
+def writeUniverseInfo(
+        universeInfo: RawUniverseInfo
+        ) -> str:
+    universeElement = {}
+
+    sectorsElement = []
+    for sectorInfo in universeInfo.sectorInfos():
+        sectorElement = {
+            'X': sectorInfo.x(),
+            'Y': sectorInfo.y(),
+            'Milieu': sectorInfo.milieu().name}
+
+        if sectorInfo.abbreviation():
+            sectorElement['Abbreviation'] = sectorInfo.abbreviation()
+
+        if sectorInfo.tags():
+            sectorElement['Tags'] = sectorInfo.tags()
+
+        if sectorInfo.names():
+            namesElement = []
+            for nameInfo in sectorInfo.names():
+                nameElement = {'Text': nameInfo.name()}
+
+                if nameInfo.language():
+                    nameElement['Lang'] = nameInfo.language()
+
+                if nameInfo.source():
+                    nameElement['Source'] = nameInfo.source()
+
+                namesElement.append(nameElement)
+
+            sectorElement['Names'] = namesElement
+
+        sectorsElement.append(sectorElement)
+
+    universeElement['Sectors'] = sectorsElement
+
+    return json.dumps(universeElement, indent=4).encode()

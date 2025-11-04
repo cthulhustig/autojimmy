@@ -1,5 +1,9 @@
+import common
 import database
+import datetime
 import logging
+import multiverse
+import os
 import sqlite3
 import typing
 import uuid
@@ -11,6 +15,11 @@ import uuid
 # filesystem to database
 # TODO: All the constructors and setters on DB objects should validate the
 # input
+# TODO: Need to handle the initial import case where there is no DB
+# TODO: Need to handle the case where the version the default universe that
+# comes in the install directory is newer than the version that is in the
+# overlay directory
+# TODO: Test with unicode in universe/sector names etc
 
 class DbSystem(object):
     def __init__(
@@ -784,6 +793,10 @@ class DbSector(object):
         self.setRegions(regions)
         self.setNotes(notes)
 
+    # TODO: Remove the equality operators as they're not reliable
+    # due to the fact they use lists of children which are only
+    # equal if the order matches. There shouldn't be a need to use
+    # them outside of debug code
     def __eq__(self, value: typing.Any) -> bool:
         if not isinstance(value, DbSector):
             return NotImplemented
@@ -1086,6 +1099,8 @@ class DbUniverse(object):
             ) -> None:
         self._id = id if id is not None else str(uuid.uuid4())
 
+        self._sectorByMilieuPosition: typing.Dict[typing.Tuple[str, int, int], DbSector] = {}
+
         self.setName(name)
         self.setDescription(description)
         self.setNotes(notes)
@@ -1127,15 +1142,26 @@ class DbUniverse(object):
         return self._sectors
 
     def setSectors(self, sectors: typing.Optional[typing.Collection[DbSector]]) -> None:
-        self._sectors = list(sectors) if sectors else None
-        if self._sectors:
-            for sector in self._sectors:
-                sector.setUniverseId(self._id)
+        if sectors is not None:
+            self._sectors = []
+            for sector in sectors:
+                self.addSector(sector=sector)
+        else:
+            self._sectors = None
 
     def addSector(self, sector: DbSector) -> None:
         if self._sectors is None:
-            self._sectors = []
+            self._sectors: typing.List[DbSector] = []
+
+        key = (sector.milieu(), sector.sectorX(), sector.sectorY())
+
+        oldSector = self._sectorByMilieuPosition.get(key)
+        if oldSector:
+            self._sectors.remove(oldSector)
+
         self._sectors.append(sector)
+        self._sectorByMilieuPosition[key] = sector
+
         sector.setUniverseId(self._id)
 
     def removeSector(self, sectorId: str) -> None:
@@ -1144,6 +1170,7 @@ class DbUniverse(object):
         for i in range(self._sectors):
             sector = self._sectors[i]
             if sector.id() == sectorId:
+                del self._sectorByMilieuPosition[(sector.milieu(), sector.sectorX(), sector.sectorY())]
                 del self._sectors[i]
                 return
 
@@ -1221,9 +1248,13 @@ class MapDb(object):
         PRAGMA foreign_keys = ON;
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
+        PRAGMA cache_size = -200000;
         """
 
     _TableSchemaTableName = 'table_schemas'
+
+    _MetadataTableName = 'metadata'
+    _MetadataTableSchema = 1
 
     _UniversesTableName = 'universes'
     _UniversesTableSchema = 1
@@ -1264,6 +1295,11 @@ class MapDb(object):
     _SystemsTableName = 'systems'
     _SystemsTableSchema = 1
 
+    _DefaultUniverseId = 'default'
+    _DefaultUniverseTimestampKey = 'default_universe_timestamp'
+
+    _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
+
     def __init__(self, path: str):
         self._path = path
         self._initTables()
@@ -1272,6 +1308,23 @@ class MapDb(object):
         connection = self._createConnection()
         return MapDb.Transaction(connection=connection)
 
+    def importDefaultUniverse(
+            self,
+            directoryPath: str,
+            forceImport: bool = False,
+            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
+            ) -> None:
+        logging.info(f'MapDb importing default universe from "{directoryPath}"')
+        with self.createTransaction() as transaction:
+            connection = transaction.connection()
+            self._internalImportDefaultUniverse(
+                directoryPath=directoryPath,
+                cursor=connection.cursor(),
+                forceImport=forceImport,
+                progressCallback=progressCallback)
+
+    # TODO: Write/Delete Universe/Sector functions should prevent
+    # writing to the default universe
     def writeUniverse(
             self,
             universe: DbUniverse,
@@ -1338,10 +1391,25 @@ class MapDb(object):
             transaction: typing.Optional['MapDb.Transaction'] = None
             ) -> None:
         logging.debug(f'MapDb writing sector {sector.id()}')
+
+        if not sector.id():
+            raise RuntimeError('Sector cannot be saved as has no id')
+
+        if not sector.universeId():
+            raise RuntimeError('Sector cannot be saved as has no universe id')
+
+        if not sector.isCustom():
+            raise RuntimeError('Sector cannot be saved as it is not a custom sector')
+
         if transaction != None:
             connection = transaction.connection()
+            # Delete any old version of the sector and any sector that has at the
+            # same time and place as the new sector
             self._internalDeleteSector(
                 sectorId=sector.id(),
+                milieu=sector.milieu(),
+                sectorX=sector.sectorX(),
+                sectorY=sector.sectorY(),
                 cursor=connection.cursor())
             self._internalInsertSector(
                 sector=sector,
@@ -1349,8 +1417,13 @@ class MapDb(object):
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
+                # Delete any old version of the sector and any sector that has at the
+                # same time and place as the new sector
                 self._internalDeleteSector(
                     sectorId=sector.id(),
+                    milieu=sector.milieu(),
+                    sectorX=sector.sectorX(),
+                    sectorY=sector.sectorY(),
                     cursor=connection.cursor())
                 self._internalInsertSector(
                     sector=sector,
@@ -1395,7 +1468,7 @@ class MapDb(object):
     def listUniverseNames(
             self,
             transaction: typing.Optional['MapDb.Transaction'] = None
-            ) -> typing.Mapping[str, str]:
+            ) -> typing.List[typing.Tuple[str, str]]:
         logging.debug(f'MapDb listing universe names')
         if transaction != None:
             connection = transaction.connection()
@@ -1409,21 +1482,24 @@ class MapDb(object):
 
     def listSectorNames(
             self,
-            universeId: typing.Optional[str] = None,
+            universeId: str,
+            milieu: typing.Optional[str] = None,
             transaction: typing.Optional['MapDb.Transaction'] = None
-            ) -> typing.Mapping[str, str]:
+            ) -> typing.List[typing.Tuple[str, str]]:
         logging.debug(
             f'MapDb listing sector names' + ('' if universeId is None else f' for universe {universeId}'))
         if transaction != None:
             connection = transaction.connection()
             return self._internalListSectorNames(
                 universeId=universeId,
+                milieu=milieu,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._internalListSectorNames(
                     universeId=universeId,
+                    milieu=milieu,
                     cursor=connection.cursor())
 
     def _createConnection(self) -> sqlite3.Connection:
@@ -1444,6 +1520,7 @@ class MapDb(object):
             cursor = connection.cursor()
             cursor.execute('BEGIN;')
 
+            # Create table schema table
             if not database.checkIfTableExists(
                     tableName=MapDb._TableSchemaTableName,
                     cursor=cursor):
@@ -1454,6 +1531,19 @@ class MapDb(object):
                     );
                     """.format(table=MapDb._TableSchemaTableName)
                 logging.info(f'MapDb creating \'{MapDb._TableSchemaTableName}\' table')
+                cursor.execute(sql)
+
+            # Create metadata table
+            if not database.checkIfTableExists(
+                    tableName=MapDb._MetadataTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {table} (
+                        key TEXT PRIMARY KEY NOT NULL,
+                        value TEXT
+                    );
+                    """.format(table=MapDb._MetadataTableName)
+                logging.info(f'MapDb creating \'{MapDb._MetadataTableName}\' table')
                 cursor.execute(sql)
 
             # Create universe table
@@ -1492,7 +1582,7 @@ class MapDb(object):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sectorsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
-                        universe_id TEXT NOT NULL,
+                        universe_id TEXT,
                         is_custom INTEGER NOT NULL,
                         milieu TEXT NOT NULL,
                         sector_x INTEGER NOT NULL,
@@ -1538,6 +1628,16 @@ class MapDb(object):
                     table=MapDb._SectorsTableName,
                     column='universe_id',
                     unique=False,
+                    cursor=cursor)
+
+                # Create index on universe id and sector position. This is used
+                # to speed up the queries when determining which default sectors
+                # should be used. The index is unique as each universe should
+                # only ever have one sector at a location for a given milieu
+                self._createMultiColumnIndex(
+                    table=MapDb._SectorsTableName,
+                    columns=['universe_id', 'milieu', 'sector_x', 'sector_y'],
+                    unique=True,
                     cursor=cursor)
 
             # Create sector alternate names table
@@ -1991,13 +2091,13 @@ class MapDb(object):
             version: int,
             cursor: sqlite3.Cursor
             ) -> None:
+        logging.info(f'MapDb setting schema for \'{table}\' table to {version}')
         sql = """
             INSERT INTO {table} (name, version)
             VALUES (:name, :version)
             ON CONFLICT(name) DO UPDATE SET
                 version = excluded.version;
             """.format(table=MapDb._TableSchemaTableName)
-        logging.info(f'MapDb setting schema for \'{table}\' table to {version}')
         rowData = {
             'name': table,
             'version': version}
@@ -2010,13 +2110,329 @@ class MapDb(object):
             unique: bool,
             cursor: sqlite3.Cursor
             ) -> None:
-        logging.info(f'MapDb creating \'{table}\' \'{column}\' index')
+        logging.info(f'MapDb creating index for \'{column}\' in table \'{table}\'')
         database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
+
+    def _createMultiColumnIndex(
+            self,
+            table: str,
+            columns: typing.Collection[str],
+            unique: bool,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        logging.info(f'MapDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
+        database.createMultiColumnIndex(table=table, columns=columns, unique=unique, cursor=cursor)
+
+    def _setMetadata(
+            self,
+            key: str,
+            value: str,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        logging.info(f'MapDb setting metadata \'{key}\' to {value}')
+        sql = """
+            INSERT INTO {table} (key, value)
+            VALUES (:key, :value)
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value;
+            """.format(table=MapDb._MetadataTableName)
+        rowData = {
+            'key': key,
+            'value': value}
+        cursor.execute(sql, rowData)
+
+    def _getMetadata(
+            self,
+            key: str,
+            cursor: sqlite3.Cursor
+            ) -> typing.Optional[str]:
+        sql = """
+            SELECT value
+            FROM {table}
+            WHERE key = :key;
+            """.format(table=MapDb._MetadataTableName)
+        cursor.execute(sql, {'key': key})
+        rowData = cursor.fetchone()
+        return rowData[0] if rowData else None
+
+    def _internalImportDefaultUniverse(
+            self,
+            directoryPath: str,
+            cursor: sqlite3.Cursor,
+            forceImport: bool,
+            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
+            ) -> None:
+        # TODO: How to handle import
+        # - I still need to extract non-sector data (e.g. sophonts.json, candy images)
+        # - I think it probably makes sense to have an extracted copy of the sector data as well
+        # - With this approach I think what is currently DataStore still exists but is probably
+        #   renamed to SnapshotStore and code for custom sector support is removed.
+        #       - MapDb would then use data store to load the files
+        # - Update Process
+        #   - Extract archive to disk as normal
+        #       - Including version check logic for archive compatibility
+        #   - Import extracted map data into db as new default universe
+        #       - IMPORTANT: Store archive timestamp (from timestamp file) in db when importing.
+        #         even if I don't need it now it could be important in the future
+
+        timestampPath = os.path.join(directoryPath, 'timestamp.txt')
+        with open(timestampPath, 'r', encoding='utf-8-sig') as file:
+            timestampContent = file.read()
+        importTimestamp = MapDb._parseTimestamp(content=timestampContent)
+
+        currentTimestamp = self._getMetadata(
+            key=MapDb._DefaultUniverseTimestampKey,
+            cursor=cursor)
+        if currentTimestamp:
+            try:
+                currentTimestamp = datetime.datetime.fromisoformat(currentTimestamp)
+            except Exception as ex:
+                # TODO: Log something but continue import
+                currentTimestamp = None
+
+            if currentTimestamp and currentTimestamp >= importTimestamp:
+                if not forceImport:
+                    raise RuntimeError('Default universe has not been imported as current default universe is newer')
+
+                # TODO: Log that old data is being imported but continue
+
+        universePath = os.path.join(directoryPath, 'milieu')
+        rawData: typing.List[typing.Tuple[
+            str, # Milieu
+            multiverse.RawMetadata,
+            typing.Collection[multiverse.RawWorld]
+            ]] = []
+        for _, dirs, _ in os.walk(universePath):
+            for milieu in dirs:
+                milieuPath = os.path.join(universePath, milieu)
+                universeInfoPath = os.path.join(milieuPath, 'universe.json')
+                with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
+                    universeInfoContent = file.read()
+                universeInfo = multiverse.readUniverseInfo(content=universeInfoContent)
+
+                for sectorInfo in universeInfo.sectorInfos():
+                    try:
+                        nameInfos = sectorInfo.nameInfos()
+                        canonicalName = nameInfos[0].name() if nameInfos else None
+                        if not canonicalName:
+                            raise RuntimeError('Sector has no name')
+                        escapedName = common.encodeFileName(rawFileName=canonicalName)
+
+                        metadataPath = os.path.join(milieuPath, escapedName + '.xml')
+                        with open(metadataPath, 'r', encoding='utf-8-sig') as file:
+                            rawMetadata = multiverse.readXMLMetadata(
+                                content=file.read(),
+                                identifier=canonicalName)
+
+                        sectorPath = os.path.join(milieuPath, escapedName + '.sec')
+                        with open(sectorPath, 'r', encoding='utf-8-sig') as file:
+                            rawSystems = multiverse.readT5ColumnSector(
+                                content=file.read(),
+                                identifier=canonicalName)
+                        rawData.append((milieu, rawMetadata, rawSystems))
+                    except Exception as ex:
+                        # TODO: Log something but continue
+                        continue
+
+        dbUniverse = DbUniverse(
+            id=MapDb._DefaultUniverseId,
+            name='Default Universe')
+        for milieu, rawMetadata, rawSystems in rawData:
+            try:
+                dbAlternateNames = None
+                if rawMetadata.alternateNames():
+                    dbAlternateNames = [(name, rawMetadata.nameLanguage(name)) for name in rawMetadata.alternateNames()]
+
+                dbSubsectorNames = None
+                if rawMetadata.subsectorNames():
+                    dbSubsectorNames = []
+                    for code, name in rawMetadata.subsectorNames().items():
+                        if not name:
+                            continue
+                        dbSubsectorNames.append((ord(code) - ord('A'), name))
+
+                dbProducts = None
+                rawSources = rawMetadata.sources()
+                rawPrimarySource = rawSources.primary() if rawSources else None
+                if rawSources and rawSources.products():
+                    dbProducts = []
+                    for product in rawSources.products():
+                        dbProducts.append(multiverse.DbProduct(
+                            publication=product.publication(),
+                            author=product.author(),
+                            publisher=product.publisher(),
+                            reference=product.reference()))
+
+                dbAllegiances = None
+                if rawMetadata.allegiances():
+                    dbAllegiances = []
+                    for rawAllegiance in rawMetadata.allegiances():
+                        dbAllegiances.append(multiverse.DbAllegiance(
+                            code=rawAllegiance.code(),
+                            name=rawAllegiance.name(),
+                            base=rawAllegiance.base()))
+
+                dbSystems = None
+                if rawSystems:
+                    dbSystems = []
+                    for rawWorld in rawSystems:
+                        rawHex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
+                        if not rawHex:
+                            assert(False) # TODO: Better error handling
+
+                        rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
+
+                        dbSystems.append(multiverse.DbSystem(
+                            hexX=int(rawHex[:2]),
+                            hexY=int(rawHex[-2:]),
+                            name=rawWorld.attribute(multiverse.WorldAttribute.Name),
+                            uwp=rawWorld.attribute(multiverse.WorldAttribute.UWP),
+                            importance=rawWorld.attribute(multiverse.WorldAttribute.Importance),
+                            economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
+                            culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
+                            nobility=rawWorld.attribute(multiverse.WorldAttribute.Nobility),
+                            bases=rawWorld.attribute(multiverse.WorldAttribute.Bases),
+                            zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
+                            pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
+                            systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else 1,
+                            allegiance=rawWorld.attribute(multiverse.WorldAttribute.Allegiance),
+                            stellar=rawWorld.attribute(multiverse.WorldAttribute.Stellar)))
+
+                dbRoutes = None
+                if rawMetadata.routes():
+                    dbRoutes = []
+                    for rawRoute in rawMetadata.routes():
+                        rawStartHex = rawRoute.startHex()
+                        rawEndHex = rawRoute.endHex()
+
+                        dbRoutes.append(multiverse.DbRoute(
+                            startHexX=int(rawStartHex[:2]),
+                            startHexY=int(rawStartHex[-2:]),
+                            endHexX=int(rawEndHex[:2]),
+                            endHexY=int(rawEndHex[-2:]),
+                            allegiance=rawRoute.allegiance(),
+                            type=rawRoute.type(),
+                            style=rawRoute.style(),
+                            colour=rawRoute.colour(),
+                            width=rawRoute.width()))
+
+                dbBorders = None
+                if rawMetadata.borders():
+                    dbBorders = []
+                    for rawBorder in rawMetadata.borders():
+                        dbHexes = []
+                        for rawHex in rawBorder.hexList():
+                            dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
+
+                        rawLabelHex = rawBorder.labelHex()
+
+                        dbBorders.append(multiverse.DbBorder(
+                            hexes=dbHexes,
+                            showLabel=rawBorder.showLabel() if rawBorder.showLabel() is not None else False,
+                            wrapLabel=rawBorder.wrapLabel() if rawBorder.wrapLabel() is not None else False,
+                            # TODO: I think I should check that there is a label position if show label is True
+                            # (Need to check how the final value is used in the cartographer)
+                            labelHexX=int(rawLabelHex[:2]),
+                            labelHexY=int(rawLabelHex[-2:]),
+                            labelOffsetX=rawBorder.labelOffsetX(),
+                            labelOffsetY=rawBorder.labelOffsetY(),
+                            label=rawBorder.label(),
+                            colour=rawBorder.colour(),
+                            style=rawBorder.style(),
+                            allegiance=rawBorder.allegiance()))
+
+                dbRegions = None
+                if rawMetadata.regions():
+                    dbRegions = []
+                    for rawBorder in rawMetadata.regions():
+                        dbHexes = []
+                        for rawHex in rawBorder.hexList():
+                            dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
+
+                        rawShowLabel = rawBorder.showLabel()
+                        rawWrapLabel = rawBorder.wrapLabel()
+                        rawLabelHex = rawBorder.labelHex()
+
+                        dbRegions.append(multiverse.DbRegion(
+                            hexes=dbHexes,
+                            showLabel=rawShowLabel if rawShowLabel is not None else False,
+                            wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
+                            # TODO: I think I should check that there is a label position if show label is True
+                            # (Need to check how the final value is used in the cartographer)
+                            labelHexX=int(rawLabelHex[:2]),
+                            labelHexY=int(rawLabelHex[-2:]),
+                            labelOffsetX=rawBorder.labelOffsetX(),
+                            labelOffsetY=rawBorder.labelOffsetY(),
+                            label=rawBorder.label(),
+                            colour=rawBorder.colour()))
+
+                dbLabels = None
+                if rawMetadata.labels():
+                    dbLabels = []
+                    for rawLabel in rawMetadata.labels():
+                        rawHex = rawLabel.hex()
+                        rawWrap = rawLabel.wrap()
+
+                        dbLabels.append(multiverse.DbLabel(
+                            text=rawLabel.text(),
+                            hexX=int(rawHex[:2]),
+                            hexY=int(rawHex[-2:]),
+                            wrap=rawWrap if rawWrap is not None else False,
+                            colour=rawLabel.colour(),
+                            size=rawLabel.size(),
+                            offsetX=rawLabel.offsetX(),
+                            offsetY=rawLabel.offsetY()))
+
+                dbUniverse.addSector(multiverse.DbSector(
+                    isCustom=False,
+                    milieu=milieu, # Use name of enum as that is what is used when writing out elsewhere
+                    sectorX=rawMetadata.x(),
+                    sectorY=rawMetadata.y(),
+                    primaryName=rawMetadata.canonicalName(),
+                    primaryLanguage=rawMetadata.nameLanguage(rawMetadata.canonicalName()),
+                    alternateNames=dbAlternateNames,
+                    abbreviation=rawMetadata.abbreviation(),
+                    sectorLabel=rawMetadata.sectorLabel(),
+                    subsectorNames=dbSubsectorNames,
+                    selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
+                    tags=rawMetadata.tags(),
+                    styleSheet=rawMetadata.styleSheet(),
+                    credits=rawSources.credits() if rawSources else None,
+                    publication=rawPrimarySource.publication() if rawPrimarySource else None,
+                    author=rawPrimarySource.author() if rawPrimarySource else None,
+                    publisher=rawPrimarySource.publisher() if rawPrimarySource else None,
+                    reference=rawPrimarySource.reference() if rawPrimarySource else None,
+                    products=dbProducts,
+                    allegiances=dbAllegiances,
+                    systems=dbSystems,
+                    routes=dbRoutes,
+                    borders=dbBorders,
+                    regions=dbRegions,
+                    labels=dbLabels))
+            except Exception as ex:
+                # TODO: Log something and continue
+                continue
+
+        # TODO: Not sure how to do progress for this step
+        self._internalDeleteUniverse(
+            universeId=MapDb._DefaultUniverseId,
+            cursor=cursor)
+
+        self._internalInsertUniverse(
+            universe=dbUniverse,
+            updateDefault=True,
+            cursor=cursor)
+
+        self._setMetadata(
+            key=MapDb._DefaultUniverseTimestampKey,
+            value=importTimestamp.isoformat(),
+            cursor=cursor)
 
     def _internalInsertUniverse(
             self,
             universe: DbUniverse,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            updateDefault: bool = False
             ) -> None:
         sql = """
             INSERT INTO {table} (id, name, description, notes)
@@ -2031,6 +2447,9 @@ class MapDb(object):
 
         if universe.sectors():
             for sector in universe.sectors():
+                if not updateDefault and not sector.isCustom():
+                    continue # Only write custom sectors
+
                 self._internalInsertSector(
                     sector=sector,
                     cursor=cursor)
@@ -2057,7 +2476,23 @@ class MapDb(object):
         # information in a single select then just loading the sector child
         # data with individual selects.
         sql = """
-            SELECT id FROM {table} WHERE universe_id = :id;
+            SELECT id
+            FROM {table}
+            WHERE universe_id = :id
+
+            UNION ALL
+
+            SELECT d.id
+            FROM {table} d
+            WHERE d.universe_id IS "default"
+            AND NOT EXISTS (
+                SELECT 1
+                FROM {table} u
+                WHERE u.universe_id = :id
+                    AND u.milieu = d.milieu
+                    AND u.sector_x = d.sector_x
+                    AND u.sector_y = d.sector_y
+            );
             """.format(table=MapDb._SectorsTableName)
         cursor.execute(sql, {'id': universeId})
         sectors = []
@@ -2569,61 +3004,100 @@ class MapDb(object):
     def _internalDeleteSector(
             self,
             sectorId: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            milieu: typing.Optional[str] = None,
+            sectorX: typing.Optional[int] = None,
+            sectorY: typing.Optional[int] = None,
             ) -> typing.Optional[DbUniverse]:
         sql = """
             DELETE FROM {table}
             WHERE id = :id
             """.format(
             table=MapDb._SectorsTableName)
-        cursor.execute(sql, {'id': sectorId})
+        queryData = {'id': sectorId}
+
+        if milieu is not None and sectorX is not None and sectorY is not None:
+            sql += 'OR (milieu = :milieu AND sector_x = :sector_x AND sector_y = :sector_y)'
+            queryData['milieu'] = milieu
+            queryData['sector_x'] = sectorX
+            queryData['sector_y'] = sectorY
+
+        sql += ';'
+        cursor.execute(sql, queryData)
 
     def _internalListUniverseNames(
             self,
             cursor: sqlite3.Cursor
-            ) -> typing.Mapping[str, str]:
+            ) -> typing.List[typing.Tuple[str, str]]:
         sql = """
-            SELECT id, name FROM {table}
+            SELECT id, name
+            FROM {table}
+            WHERE id != :defaultId;
             """.format(
             table=MapDb._UniversesTableName)
-        cursor.execute(sql)
-        idToNameMap = {}
+        cursor.execute(sql, {'defaultId': MapDb._DefaultUniverseId})
+
+        universeList = []
         for row in cursor.fetchall():
             universeId = row[0]
             name = row[1]
-            idToNameMap[universeId] = name
+            universeList.append((universeId, name))
+        return universeList
 
-        return idToNameMap
-
+    # TODO: This needs to include sector names from default sectors
+    # in locations that don't have a sector in the actual universe
     def _internalListSectorNames(
             self,
-            universeId: typing.Optional[str],
+            universeId: str,
             milieu: typing.Optional[str],
             cursor: sqlite3.Cursor
-            ) -> typing.Mapping[str, str]:
-        sql = 'SELECT id, name FROM {table}'.format(
-            table=MapDb._UniversesTableName)
-        selectData = {}
-        if universeId and milieu:
-            sql += """
-                WHERE universe_id = :universe_id
-                AND milieu = :milieu
-                """
-            selectData['universe_id'] = universeId
+            ) -> typing.List[typing.Tuple[str, str]]:
+        sql = """
+            SELECT id, primary_name
+            FROM {table}
+            WHERE universe_id = :id
+            """.format(table=MapDb._SectorsTableName)
+        selectData = {'id': universeId}
+
+        if milieu:
+            sql += 'AND milieu = :milieu'
             selectData['milieu'] = milieu
-        elif universeId:
-            sql += "WHERE universe_id = :universe_id"""
-            selectData['universe_id'] = universeId
-        elif milieu:
-            sql += "WHERE milieu = :milieu"""
-            selectData['milieu'] = milieu
-        sql += ';'
+
+        sql += """
+            UNION ALL
+            SELECT d.id, d.primary_name
+            FROM {table} d
+            WHERE d.universe_id IS "default"
+            """.format(table=MapDb._SectorsTableName)
+
+        if milieu:
+            sql += 'AND milieu = :milieu'
+
+        sql += """
+            AND NOT EXISTS (
+                SELECT 1
+                FROM {table} u
+                WHERE u.universe_id = :id
+                    AND u.milieu = d.milieu
+                    AND u.sector_x = d.sector_x
+                    AND u.sector_y = d.sector_y
+            );
+            """.format(table=MapDb._SectorsTableName)
+
         cursor.execute(sql, selectData)
 
-        idToNameMap = {}
+        sectorList = []
         for row in cursor.fetchall():
             sectorId = row[0]
             name = row[1]
-            idToNameMap[sectorId] = name
+            sectorList.append((sectorId, name))
+        return sectorList
 
-        return idToNameMap
+    @staticmethod
+    def _parseTimestamp(
+            content: str,
+            ) -> datetime.datetime:
+        timestamp = datetime.datetime.strptime(
+            content,
+            MapDb._TimestampFormat)
+        return timestamp.replace(tzinfo=datetime.timezone.utc)
