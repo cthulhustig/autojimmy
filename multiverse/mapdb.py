@@ -1323,6 +1323,11 @@ class MapDb(object):
                 forceImport=forceImport,
                 progressCallback=progressCallback)
 
+        # Vacuum the database to stop it getting out of control. This MUST be
+        # done outside the transaction
+        # TODO: Do I really want to do this here?
+        self.vacuumDatabase()
+
     # TODO: Write/Delete Universe/Sector functions should prevent
     # writing to the default universe
     def writeUniverse(
@@ -1501,6 +1506,17 @@ class MapDb(object):
                     universeId=universeId,
                     milieu=milieu,
                     cursor=connection.cursor())
+
+    def vacuumDatabase(self) -> None:
+        logging.debug('MapDb vacuuming database')
+
+        # NOTE: VACUUM can't be performed inside a transaction
+        connection = self._createConnection()
+        try:
+            cursor = connection.cursor()
+            cursor.execute('VACUUM;')
+        finally:
+            connection.close()
 
     def _createConnection(self) -> sqlite3.Connection:
         # TODO: Connection pool like ObjectDb????
