@@ -2,7 +2,7 @@ import multiverse
 import typing
 from PyQt5 import QtCore
 
-class DataDownloadJob(QtCore.QThread):
+class SnapshotDownloadJob(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals

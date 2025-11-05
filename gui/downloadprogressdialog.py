@@ -41,7 +41,7 @@ class DownloadProgressDialog(QtWidgets.QDialog):
 
     def exec(self) -> int:
         try:
-            self._downloadJob = jobs.DataDownloadJob(
+            self._downloadJob = jobs.SnapshotDownloadJob(
                 parent=self,
                 progressCallback=self._updateProgress,
                 finishedCallback=self._downloadFinished)

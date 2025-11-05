@@ -1,5 +1,5 @@
 from .startupjobs import *
-from .datadownloadjob import *
+from .snapshotdownloadjob import *
 from .routeplannerjobs import *
 from .traderjobs import *
 from .simulatorjob import *
