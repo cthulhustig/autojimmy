@@ -1309,10 +1309,53 @@ class MapDb(object):
         connection = self._createConnection()
         return MapDb.Transaction(connection=connection)
 
+    def hasDefaultUniverse(self) -> bool:
+        try:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._getMetadata(
+                    key=MapDb._DefaultUniverseTimestampKey,
+                    cursor=connection.cursor()) is not None
+        except Exception as ex:
+            logging.debug('MapDb failed to query default universe timestamp', exc_info=ex)
+            return False
+
+    # This returns true if the universe snapshot in the specified directory is
+    # newer than the default universe currently in the database (or if there is
+    # no default universe in the database)
+    def isDefaultUniverseSnapshotNewer(
+            self,
+            directoryPath: str
+            ) -> bool:
+        with self.createTransaction() as transaction:
+            connection = transaction.connection()
+
+            timestampPath = os.path.join(directoryPath, 'timestamp.txt')
+            with open(timestampPath, 'r', encoding='utf-8-sig') as file:
+                timestampContent = file.read()
+            importTimestamp = MapDb._parseTimestamp(content=timestampContent)
+
+            currentTimestamp = self._getMetadata(
+                key=MapDb._DefaultUniverseTimestampKey,
+                cursor=connection.cursor())
+            if not currentTimestamp:
+                # No timestamp means there is no default universe so the supplied
+                # universe is "newer"
+                return True
+
+            try:
+                currentTimestamp = datetime.datetime.fromisoformat(currentTimestamp)
+            except Exception as ex:
+                logging.warning(
+                    f'MapDb failed to parse default universe timestamp "{currentTimestamp}"',
+                    exc_info=ex)
+                return True
+
+            return importTimestamp > currentTimestamp
+
     def importDefaultUniverse(
             self,
             directoryPath: str,
-            forceImport: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
             ) -> None:
         logging.info(f'MapDb importing default universe from "{directoryPath}"')
@@ -1321,7 +1364,6 @@ class MapDb(object):
             self._internalImportDefaultUniverse(
                 directoryPath=directoryPath,
                 cursor=connection.cursor(),
-                forceImport=forceImport,
                 progressCallback=progressCallback)
 
         # Vacuum the database to stop it getting out of control. This MUST be
@@ -2172,33 +2214,20 @@ class MapDb(object):
         rowData = cursor.fetchone()
         return rowData[0] if rowData else None
 
+    # This function returns True if imported or False if nothing was
+    # done due to the snapshot being older than the current snapshot.
+    # If forceImport is true the snapshot will be imported even if
+    # it is older
     def _internalImportDefaultUniverse(
             self,
             directoryPath: str,
             cursor: sqlite3.Cursor,
-            forceImport: bool,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
             ) -> None:
         timestampPath = os.path.join(directoryPath, 'timestamp.txt')
         with open(timestampPath, 'r', encoding='utf-8-sig') as file:
             timestampContent = file.read()
         importTimestamp = MapDb._parseTimestamp(content=timestampContent)
-
-        currentTimestamp = self._getMetadata(
-            key=MapDb._DefaultUniverseTimestampKey,
-            cursor=cursor)
-        if currentTimestamp:
-            try:
-                currentTimestamp = datetime.datetime.fromisoformat(currentTimestamp)
-            except Exception as ex:
-                # TODO: Log something but continue import
-                currentTimestamp = None
-
-            if currentTimestamp and currentTimestamp >= importTimestamp:
-                if not forceImport:
-                    raise RuntimeError('Default universe has not been imported as current default universe is newer')
-
-                # TODO: Log that old data is being imported but continue
 
         universePath = os.path.join(directoryPath, 'milieu')
         rawData: typing.List[typing.Tuple[

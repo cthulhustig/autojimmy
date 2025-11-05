@@ -354,7 +354,7 @@ class ObjectDbManager(object):
             self,
             databasePath: str
             ) -> None:
-        logging.info(f'ObjectDbManager connecting to {databasePath}')
+        logging.info(f'ObjectDbManager connecting to "{databasePath}"')
 
         with ObjectDbManager._lock:
             classTypes: typing.Iterable[typing.Type[DatabaseObject]] = common.getSubclasses(

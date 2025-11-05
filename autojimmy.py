@@ -414,6 +414,24 @@ def main() -> None:
                 stateKey='UniverseUpdateErrorWhenChecking')
             # Continue loading the app with the existing data
 
+        databasePath = databasePath = os.path.join(appDir, 'universe.db')
+        database = multiverse.MapDb(path=databasePath)
+        importPath = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
+        try:
+            if database.isDefaultUniverseSnapshotNewer(directoryPath=importPath):
+                database.importDefaultUniverse(directoryPath=importPath)
+        except Exception as ex:
+            canContinue = False
+            try:
+                canContinue = database.hasDefaultUniverse()
+            except:
+                pass
+            if not canContinue:
+                raise ex
+            answer = gui.MessageBoxEx.question(text='Failed to import new default universe snapshot.\nDo you want to continue with the previous data?')
+            if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+                raise ex
+
         startupProgress = gui.StartupProgressDialog()
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             exception = startupProgress.exception()
