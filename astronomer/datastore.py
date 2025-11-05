@@ -4,6 +4,7 @@ import datetime
 import enum
 import json
 import logging
+import multiverse
 import os
 import threading
 import typing
@@ -21,8 +22,8 @@ class SectorInfo(object):
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            sectorFormat: astronomer.SectorFormat,
-            metadataFormat: astronomer.MetadataFormat,
+            sectorFormat: multiverse.SectorFormat,
+            metadataFormat: multiverse.MetadataFormat,
             modifiedTimestamp: datetime.datetime,
             isCustomSector: bool
             ) -> None:
@@ -47,10 +48,10 @@ class SectorInfo(object):
     def y(self) -> int:
         return self._y
 
-    def sectorFormat(self) -> astronomer.SectorFormat:
+    def sectorFormat(self) -> multiverse.SectorFormat:
         return self._sectorFormat
 
-    def metadataFormat(self) -> astronomer.MetadataFormat:
+    def metadataFormat(self) -> multiverse.MetadataFormat:
         return self._metadataFormat
 
     def modifiedTimestamp(self) -> datetime.datetime:
@@ -359,11 +360,11 @@ class DataStore(object):
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
-        astronomer.SectorFormat.T5Column: 'sec',
-        astronomer.SectorFormat.T5Tab: 'tab'}
+        multiverse.SectorFormat.T5Column: 'sec',
+        multiverse.SectorFormat.T5Tab: 'tab'}
     _MetadataFormatExtensions = {
-        astronomer.MetadataFormat.JSON: 'json',
-        astronomer.MetadataFormat.XML: 'xml'}
+        multiverse.MetadataFormat.JSON: 'json',
+        multiverse.MetadataFormat.XML: 'xml'}
 
     _instance = None # Singleton instance
     _lock = threading.RLock() # Recursive lock
@@ -510,15 +511,15 @@ class DataStore(object):
             ) -> SectorInfo:
         self._loadSectors(milieu=milieu)
 
-        sectorFormat = astronomer.sectorFileFormatDetect(content=sectorContent)
+        sectorFormat = multiverse.sectorFileFormatDetect(content=sectorContent)
         if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
 
-        metadataFormat = astronomer.metadataFileFormatDetect(content=metadataContent)
+        metadataFormat = multiverse.metadataFileFormatDetect(content=metadataContent)
         if not metadataFormat:
             raise RuntimeError('Sector metadata content has an unknown format')
 
-        metadata = astronomer.readMetadata(
+        metadata = multiverse.readMetadata(
             content=metadataContent,
             format=metadataFormat,
             identifier='Custom Metadata')
@@ -527,7 +528,7 @@ class DataStore(object):
         # format. If it fails an exception will be raised and allowed to pass
         # back to the called. Doing this check is important as it prevents bad
         # data causing the app to barf when loading
-        astronomer.readSector(
+        multiverse.readSector(
             content=sectorContent,
             format=sectorFormat,
             identifier=f'Custom Sector {metadata.canonicalName()}')
@@ -820,18 +821,18 @@ class DataStore(object):
                 # If the universe doesn't specify the sector format it must be a standard traveller map
                 # universe file which means the corresponding sectors files all use T5 column format
                 sectorFormatTag = sectorElement.get('SectorFormat')
-                sectorFormat = astronomer.SectorFormat.T5Column
+                sectorFormat = multiverse.SectorFormat.T5Column
                 if sectorFormatTag != None:
-                    sectorFormat = astronomer.SectorFormat.__members__.get(
+                    sectorFormat = multiverse.SectorFormat.__members__.get(
                         str(sectorFormatTag),
                         sectorFormat)
 
                 # If the universe doesn't specify the metadata format it must be a standard traveller map
                 # universe file which means the corresponding metadata files all use XML format
                 metadataFormatTag = sectorElement.get('MetadataFormat')
-                metadataFormat = astronomer.MetadataFormat.XML
+                metadataFormat = multiverse.MetadataFormat.XML
                 if metadataFormatTag != None:
-                    metadataFormat = astronomer.MetadataFormat.__members__.get(
+                    metadataFormat = multiverse.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
                         metadataFormat)
 

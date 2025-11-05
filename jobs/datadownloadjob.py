@@ -1,4 +1,4 @@
-import astronomer
+import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -6,7 +6,7 @@ class DataDownloadJob(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals
-    _progressSignal = QtCore.pyqtSignal([astronomer.SnapshotManager.UpdateStage, int, int])
+    _progressSignal = QtCore.pyqtSignal([multiverse.SnapshotManager.UpdateStage, int, int])
     _finishedSignal = QtCore.pyqtSignal([str], [Exception])
 
     _remainingTimeSmoothingFactor = 0.05
@@ -14,13 +14,13 @@ class DataDownloadJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            progressCallback: typing.Callable[[astronomer.SnapshotManager.UpdateStage, int, int], typing.Any],
+            progressCallback: typing.Callable[[multiverse.SnapshotManager.UpdateStage, int, int], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             ) -> None:
         super().__init__(parent=parent)
 
         if progressCallback:
-            self._progressSignal[astronomer.SnapshotManager.UpdateStage, int, int].connect(progressCallback)
+            self._progressSignal[multiverse.SnapshotManager.UpdateStage, int, int].connect(progressCallback)
         if finishedCallback:
             self._finishedSignal[str].connect(finishedCallback)
             self._finishedSignal[Exception].connect(finishedCallback)
@@ -40,7 +40,7 @@ class DataDownloadJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            astronomer.SnapshotManager.instance().downloadSnapshot(
+            multiverse.SnapshotManager.instance().downloadSnapshot(
                 progressCallback=self._handleProgressUpdate,
                 isCancelledCallback=self.isCancelled)
 
@@ -50,8 +50,8 @@ class DataDownloadJob(QtCore.QThread):
 
     def _handleProgressUpdate(
             self,
-            stage: astronomer.SnapshotManager.UpdateStage,
+            stage: multiverse.SnapshotManager.UpdateStage,
             progress: int,
             total: int
             ) -> None:
-        self._progressSignal[astronomer.SnapshotManager.UpdateStage, int, int].emit(stage, progress, total)
+        self._progressSignal[multiverse.SnapshotManager.UpdateStage, int, int].emit(stage, progress, total)

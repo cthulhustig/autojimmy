@@ -6,6 +6,7 @@ import enum
 import gui
 import jobs
 import logging
+import multiverse
 import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -416,12 +417,12 @@ class _NewSectorDialog(gui.DialogEx):
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
 
-            metadataFormat = astronomer.metadataFileFormatDetect(
+            metadataFormat = multiverse.metadataFileFormatDetect(
                 content=sectorMetadata)
             if not metadataFormat:
                 raise RuntimeError('Unknown metadata file format')
 
-            rawMetadata = astronomer.readMetadata(
+            rawMetadata = multiverse.readMetadata(
                 content=sectorMetadata,
                 format=metadataFormat,
                 identifier=metadataFilePath)
@@ -448,10 +449,10 @@ class _NewSectorDialog(gui.DialogEx):
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
 
-            sectorFormat = astronomer.sectorFileFormatDetect(content=sectorData)
+            sectorFormat = multiverse.sectorFileFormatDetect(content=sectorData)
             if not sectorFormat:
                 raise RuntimeError('Unknown sector file format')
-            astronomer.readSector(
+            multiverse.readSector(
                 content=sectorData,
                 format=sectorFormat,
                 identifier=sectorFilePath)
@@ -500,12 +501,12 @@ class _NewSectorDialog(gui.DialogEx):
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                     sectorMetadata = file.read()
 
-                metadataFormat = astronomer.metadataFileFormatDetect(
+                metadataFormat = multiverse.metadataFileFormatDetect(
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unknown metadata file format')
 
-                if metadataFormat == astronomer.MetadataFormat.XML:
+                if metadataFormat == multiverse.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
                     astronomer.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
                 else:
@@ -514,11 +515,11 @@ class _NewSectorDialog(gui.DialogEx):
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                    rawMetadata = astronomer.readMetadata(
+                    rawMetadata = multiverse.readMetadata(
                         content=sectorMetadata,
                         format=metadataFormat,
                         identifier=metadataFilePath)
-                    xmlMetadata = astronomer.writeXMLMetadata(
+                    xmlMetadata = multiverse.writeXMLMetadata(
                         metadata=rawMetadata,
                         identifier='Generated XML metadata')
             except Exception as ex:

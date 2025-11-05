@@ -12,6 +12,7 @@ import gunsmith
 import locale
 import logging
 import multiprocessing
+import multiverse
 import objectdb
 import os
 import pathlib
@@ -58,16 +59,16 @@ def _snapshotUpdateCheck(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
-    snapshotAvailability = astronomer.SnapshotManager.instance().checkForNewSnapshot()
+    snapshotAvailability = multiverse.SnapshotManager.instance().checkForNewSnapshot()
 
-    if snapshotAvailability == astronomer.SnapshotManager.SnapshotAvailability.NoNewSnapshot:
+    if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.NoNewSnapshot:
         return _SnapshotCheckResult.NoUpdate
 
-    if snapshotAvailability != astronomer.SnapshotManager.SnapshotAvailability.NewSnapshotAvailable:
+    if snapshotAvailability != multiverse.SnapshotManager.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
-            age='old' if snapshotAvailability == astronomer.SnapshotManager.SnapshotAvailability.AppToOld else 'new')
-        if snapshotAvailability == astronomer.SnapshotManager.SnapshotAvailability.AppToOld:
+            age='old' if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld:
             promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
                 url=app.AppURL)
             stateKey = 'UniverseUpdateAppToOld'
@@ -378,7 +379,7 @@ def main() -> None:
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
         customMapsDir = os.path.join(appDir, 'custom_map')
-        astronomer.SnapshotManager.setSectorDirs(
+        multiverse.SnapshotManager.setSectorDirs(
             installDir=installMapsDir,
             overlayDir=overlayMapsDir)
         astronomer.DataStore.setSectorDirs(
@@ -415,7 +416,7 @@ def main() -> None:
             # Continue loading the app with the existing data
 
         databasePath = databasePath = os.path.join(appDir, 'universe.db')
-        database = astronomer.MultiverseDb(path=databasePath)
+        database = multiverse.MultiverseDb(path=databasePath)
 
 
         importPath = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir

@@ -1,7 +1,8 @@
+import astronomer
 import common
 import re
 import logging
-import astronomer
+import multiverse
 import threading
 import typing
 
@@ -241,7 +242,7 @@ class _AllegianceTracker(object):
 
         # Load the T5 second survey allegiances pulled from Traveller Map
         _, results = astronomer.parseTabContent(
-            content=astronomer.SnapshotManager.instance().loadTextResource(
+            content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=_AllegianceTracker._T5OfficialAllegiancesPath))
 
         # Split results into global and local allegiances
@@ -406,8 +407,8 @@ class WorldManager(object):
 
             rawData: typing.List[typing.Tuple[
                 astronomer.Milieu,
-                astronomer.RawMetadata,
-                typing.Iterable[astronomer.RawWorld],
+                multiverse.RawMetadata,
+                typing.Iterable[multiverse.RawWorld],
                 bool # True if sector is a custom sector
                 ]] = []
             for milieu in astronomer.Milieu:
@@ -429,12 +430,12 @@ class WorldManager(object):
                             sectorName=canonicalName,
                             milieu=milieu)
 
-                        rawMetadata = astronomer.readMetadata(
+                        rawMetadata = multiverse.readMetadata(
                             content=metadataContent,
                             format=sectorInfo.metadataFormat(),
                             identifier=canonicalName)
 
-                        rawWorlds = astronomer.readSector(
+                        rawWorlds = multiverse.readSector(
                             content=sectorContent,
                             format=sectorInfo.sectorFormat(),
                             identifier=canonicalName)
@@ -491,22 +492,22 @@ class WorldManager(object):
             sectorContent: str,
             metadataContent: str
             ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
-        sectorFormat = astronomer.sectorFileFormatDetect(
+        sectorFormat = multiverse.sectorFileFormatDetect(
             content=sectorContent)
         if not sectorFormat:
             raise ValueError('Unknown sector format')
 
-        metadataFormat = astronomer.metadataFileFormatDetect(
+        metadataFormat = multiverse.metadataFileFormatDetect(
             content=metadataContent)
         if not metadataContent:
             raise ValueError('Unknown metadata format')
 
-        rawWorlds = astronomer.readSector(
+        rawWorlds = multiverse.readSector(
             content=sectorContent,
             format=sectorFormat,
             identifier='Sector')
 
-        rawMetadata = astronomer.readMetadata(
+        rawMetadata = multiverse.readMetadata(
             content=metadataContent,
             format=metadataFormat,
             identifier='Metadata')
@@ -890,7 +891,7 @@ class WorldManager(object):
     @staticmethod
     def _populateAllegiances(
             milieu: astronomer.Milieu,
-            rawMetadata: astronomer.RawMetadata,
+            rawMetadata: multiverse.RawMetadata,
             tracker: _AllegianceTracker
             ) -> None:
         allegianceNameMap: typing.Dict[
@@ -916,8 +917,8 @@ class WorldManager(object):
     @staticmethod
     def _processSector(
             milieu: astronomer.Milieu,
-            rawMetadata: astronomer.RawMetadata,
-            rawWorlds: typing.Collection[astronomer.RawWorld],
+            rawMetadata: multiverse.RawMetadata,
+            rawWorlds: typing.Collection[multiverse.RawWorld],
             allegianceTracker: _AllegianceTracker,
             isCustom: bool
             ) -> astronomer.Sector:
@@ -955,8 +956,8 @@ class WorldManager(object):
 
         for rawWorld in rawWorlds:
             try:
-                hex = rawWorld.attribute(astronomer.WorldAttribute.Hex)
-                worldName = rawWorld.attribute(astronomer.WorldAttribute.Name)
+                hex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
+                worldName = rawWorld.attribute(multiverse.WorldAttribute.Name)
                 isNameGenerated = False
                 if not worldName:
                     # If the world doesn't have a name the sector combined with the hex. This format
@@ -968,7 +969,7 @@ class WorldManager(object):
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
                 subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                allegianceCode = rawWorld.attribute(astronomer.WorldAttribute.Allegiance)
+                allegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
                 allegiance = None
                 if allegianceCode:
                     allegiance = astronomer.Allegiance(
@@ -989,27 +990,27 @@ class WorldManager(object):
                             sectorName=sectorName))
 
                 zone = astronomer.parseZoneString(
-                    rawWorld.attribute(astronomer.WorldAttribute.Zone))
+                    rawWorld.attribute(multiverse.WorldAttribute.Zone))
                 uwp = astronomer.UWP(
-                    rawWorld.attribute(astronomer.WorldAttribute.UWP))
+                    rawWorld.attribute(multiverse.WorldAttribute.UWP))
                 economics = astronomer.Economics(
-                    rawWorld.attribute(astronomer.WorldAttribute.Economics))
+                    rawWorld.attribute(multiverse.WorldAttribute.Economics))
                 culture = astronomer.Culture(
-                    rawWorld.attribute(astronomer.WorldAttribute.Culture))
+                    rawWorld.attribute(multiverse.WorldAttribute.Culture))
                 nobilities = astronomer.Nobilities(
-                    rawWorld.attribute(astronomer.WorldAttribute.Nobility))
+                    rawWorld.attribute(multiverse.WorldAttribute.Nobility))
                 remarks = astronomer.Remarks(
-                    string=rawWorld.attribute(astronomer.WorldAttribute.Remarks),
+                    string=rawWorld.attribute(multiverse.WorldAttribute.Remarks),
                     sectorName=sectorName,
                     zone=zone)
                 stellar = astronomer.Stellar(
-                    rawWorld.attribute(astronomer.WorldAttribute.Stellar))
+                    rawWorld.attribute(multiverse.WorldAttribute.Stellar))
                 pbg = astronomer.PBG(
-                    rawWorld.attribute(astronomer.WorldAttribute.PBG))
-                systemWorlds = rawWorld.attribute(astronomer.WorldAttribute.SystemWorlds)
+                    rawWorld.attribute(multiverse.WorldAttribute.PBG))
+                systemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
                 systemWorlds = int(systemWorlds) if systemWorlds else 1
                 bases = astronomer.Bases(
-                    rawWorld.attribute(astronomer.WorldAttribute.Bases))
+                    rawWorld.attribute(multiverse.WorldAttribute.Bases))
 
                 world = astronomer.World(
                     milieu=milieu,

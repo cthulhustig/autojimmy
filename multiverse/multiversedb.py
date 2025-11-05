@@ -1,8 +1,8 @@
-import astronomer
 import common
 import database
 import datetime
 import logging
+import multiverse
 import os
 import sqlite3
 import typing
@@ -2231,15 +2231,15 @@ class MultiverseDb(object):
         universePath = os.path.join(directoryPath, 'milieu')
         rawData: typing.List[typing.Tuple[
             str, # Milieu
-            astronomer.RawMetadata,
-            typing.Collection[astronomer.RawWorld]
+            multiverse.RawMetadata,
+            typing.Collection[multiverse.RawWorld]
             ]] = []
         for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
             milieuPath = os.path.join(universePath, milieu)
             universeInfoPath = os.path.join(milieuPath, 'universe.json')
             with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
                 universeInfoContent = file.read()
-            universeInfo = astronomer.readUniverseInfo(content=universeInfoContent)
+            universeInfo = multiverse.readUniverseInfo(content=universeInfoContent)
 
             for sectorInfo in universeInfo.sectorInfos():
                 try:
@@ -2251,13 +2251,13 @@ class MultiverseDb(object):
 
                     metadataPath = os.path.join(milieuPath, escapedName + '.xml')
                     with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                        rawMetadata = astronomer.readXMLMetadata(
+                        rawMetadata = multiverse.readXMLMetadata(
                             content=file.read(),
                             identifier=canonicalName)
 
                     sectorPath = os.path.join(milieuPath, escapedName + '.sec')
                     with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                        rawSystems = astronomer.readT5ColumnSector(
+                        rawSystems = multiverse.readT5ColumnSector(
                             content=file.read(),
                             identifier=canonicalName)
                     rawData.append((milieu, rawMetadata, rawSystems))
@@ -2288,7 +2288,7 @@ class MultiverseDb(object):
                 if rawSources and rawSources.products():
                     dbProducts = []
                     for product in rawSources.products():
-                        dbProducts.append(astronomer.DbProduct(
+                        dbProducts.append(multiverse.DbProduct(
                             publication=product.publication(),
                             author=product.author(),
                             publisher=product.publisher(),
@@ -2298,7 +2298,7 @@ class MultiverseDb(object):
                 if rawMetadata.allegiances():
                     dbAllegiances = []
                     for rawAllegiance in rawMetadata.allegiances():
-                        dbAllegiances.append(astronomer.DbAllegiance(
+                        dbAllegiances.append(multiverse.DbAllegiance(
                             code=rawAllegiance.code(),
                             name=rawAllegiance.name(),
                             base=rawAllegiance.base()))
@@ -2307,27 +2307,27 @@ class MultiverseDb(object):
                 if rawSystems:
                     dbSystems = []
                     for rawWorld in rawSystems:
-                        rawHex = rawWorld.attribute(astronomer.WorldAttribute.Hex)
+                        rawHex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
                         if not rawHex:
                             assert(False) # TODO: Better error handling
 
-                        rawSystemWorlds = rawWorld.attribute(astronomer.WorldAttribute.SystemWorlds)
+                        rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
 
-                        dbSystems.append(astronomer.DbSystem(
+                        dbSystems.append(DbSystem(
                             hexX=int(rawHex[:2]),
                             hexY=int(rawHex[-2:]),
-                            name=rawWorld.attribute(astronomer.WorldAttribute.Name),
-                            uwp=rawWorld.attribute(astronomer.WorldAttribute.UWP),
-                            importance=rawWorld.attribute(astronomer.WorldAttribute.Importance),
-                            economics=rawWorld.attribute(astronomer.WorldAttribute.Economics),
-                            culture=rawWorld.attribute(astronomer.WorldAttribute.Culture),
-                            nobility=rawWorld.attribute(astronomer.WorldAttribute.Nobility),
-                            bases=rawWorld.attribute(astronomer.WorldAttribute.Bases),
-                            zone=rawWorld.attribute(astronomer.WorldAttribute.Zone),
-                            pbg=rawWorld.attribute(astronomer.WorldAttribute.PBG),
+                            name=rawWorld.attribute(multiverse.WorldAttribute.Name),
+                            uwp=rawWorld.attribute(multiverse.WorldAttribute.UWP),
+                            importance=rawWorld.attribute(multiverse.WorldAttribute.Importance),
+                            economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
+                            culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
+                            nobility=rawWorld.attribute(multiverse.WorldAttribute.Nobility),
+                            bases=rawWorld.attribute(multiverse.WorldAttribute.Bases),
+                            zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
+                            pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
                             systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else 1,
-                            allegiance=rawWorld.attribute(astronomer.WorldAttribute.Allegiance),
-                            stellar=rawWorld.attribute(astronomer.WorldAttribute.Stellar)))
+                            allegiance=rawWorld.attribute(multiverse.WorldAttribute.Allegiance),
+                            stellar=rawWorld.attribute(multiverse.WorldAttribute.Stellar)))
 
                 dbRoutes = None
                 if rawMetadata.routes():
@@ -2336,7 +2336,7 @@ class MultiverseDb(object):
                         rawStartHex = rawRoute.startHex()
                         rawEndHex = rawRoute.endHex()
 
-                        dbRoutes.append(astronomer.DbRoute(
+                        dbRoutes.append(multiverse.DbRoute(
                             startHexX=int(rawStartHex[:2]),
                             startHexY=int(rawStartHex[-2:]),
                             endHexX=int(rawEndHex[:2]),
@@ -2357,7 +2357,7 @@ class MultiverseDb(object):
 
                         rawLabelHex = rawBorder.labelHex()
 
-                        dbBorders.append(astronomer.DbBorder(
+                        dbBorders.append(multiverse.DbBorder(
                             hexes=dbHexes,
                             showLabel=rawBorder.showLabel() if rawBorder.showLabel() is not None else False,
                             wrapLabel=rawBorder.wrapLabel() if rawBorder.wrapLabel() is not None else False,
@@ -2384,7 +2384,7 @@ class MultiverseDb(object):
                         rawWrapLabel = rawBorder.wrapLabel()
                         rawLabelHex = rawBorder.labelHex()
 
-                        dbRegions.append(astronomer.DbRegion(
+                        dbRegions.append(multiverse.DbRegion(
                             hexes=dbHexes,
                             showLabel=rawShowLabel if rawShowLabel is not None else False,
                             wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
@@ -2404,7 +2404,7 @@ class MultiverseDb(object):
                         rawHex = rawLabel.hex()
                         rawWrap = rawLabel.wrap()
 
-                        dbLabels.append(astronomer.DbLabel(
+                        dbLabels.append(multiverse.DbLabel(
                             text=rawLabel.text(),
                             hexX=int(rawHex[:2]),
                             hexY=int(rawHex[-2:]),
@@ -2414,7 +2414,7 @@ class MultiverseDb(object):
                             offsetX=rawLabel.offsetX(),
                             offsetY=rawLabel.offsetY()))
 
-                dbUniverse.addSector(astronomer.DbSector(
+                dbUniverse.addSector(multiverse.DbSector(
                     isCustom=False,
                     milieu=milieu, # Use name of enum as that is what is used when writing out elsewhere
                     sectorX=rawMetadata.x(),

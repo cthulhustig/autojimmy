@@ -1,7 +1,7 @@
-import astronomer
 import gui
 import jobs
 import logging
+import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -74,13 +74,13 @@ class DownloadProgressDialog(QtWidgets.QDialog):
 
     def _updateProgress(
             self,
-            stage: astronomer.SnapshotManager.UpdateStage,
+            stage: multiverse.SnapshotManager.UpdateStage,
             progress: int,
             total: int
             ) -> None:
         self._stageLabel.setText(
             'Downloading universe snapshot update...'
-            if stage == astronomer.SnapshotManager.UpdateStage.DownloadStage else
+            if stage == multiverse.SnapshotManager.UpdateStage.DownloadStage else
             'Extracting universe snapshot update...')
         if total:
             self._progressBar.setValue(int((progress / total) * 100))

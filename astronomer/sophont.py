@@ -1,4 +1,5 @@
 import astronomer
+import multiverse
 import threading
 import typing
 
@@ -36,7 +37,7 @@ class SophontManager(object):
     # TODO: Should these live in the database a well?
     def _loadSophonts(self) -> None:
         _, results = astronomer.parseTabContent(
-            content=astronomer.SnapshotManager.instance().loadTextResource(
+            content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=SophontManager._T5OfficialSophontsPath))
 
         for sophont in results:

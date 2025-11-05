@@ -1,6 +1,6 @@
 import app
-import astronomer
 import gui
+import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -35,7 +35,7 @@ class AboutDialog(gui.DialogEx):
 
         self._licenseDir = licenseDir
 
-        universeTimestamp = astronomer.SnapshotManager.instance().snapshotTimestamp()
+        universeTimestamp = multiverse.SnapshotManager.instance().snapshotTimestamp()
         if universeTimestamp:
             universeTimestamp = universeTimestamp.astimezone()
             universeTimestamp = universeTimestamp.strftime('%c')
