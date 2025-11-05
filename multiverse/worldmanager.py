@@ -232,6 +232,7 @@ class _AllegianceTracker(object):
             codeInfo = self._addAllegianceCode(milieu=milieu, code=code)
             codeInfo.addLocalName(sectorName=sectorName, allegianceName=name)
 
+    # TODO: Should these live in the database as well?
     def _loadAllegiances(self) -> None:
         self._milieuDataMap.clear()
 
@@ -240,7 +241,7 @@ class _AllegianceTracker(object):
 
         # Load the T5 second survey allegiances pulled from Traveller Map
         _, results = multiverse.parseTabContent(
-            content=multiverse.DataStore.instance().loadTextResource(
+            content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=_AllegianceTracker._T5OfficialAllegiancesPath))
 
         # Split results into global and local allegiances

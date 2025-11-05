@@ -58,16 +58,16 @@ def _snapshotUpdateCheck(
         isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> _SnapshotCheckResult:
-    snapshotAvailability = multiverse.DataStore.instance().checkForNewSnapshot()
+    snapshotAvailability = multiverse.SnapshotManager.instance().checkForNewSnapshot()
 
-    if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.NoNewSnapshot:
+    if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.NoNewSnapshot:
         return _SnapshotCheckResult.NoUpdate
 
-    if snapshotAvailability != multiverse.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+    if snapshotAvailability != multiverse.SnapshotManager.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
-            age='old' if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld else 'new')
-        if snapshotAvailability == multiverse.DataStore.SnapshotAvailability.AppToOld:
+            age='old' if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == multiverse.SnapshotManager.SnapshotAvailability.AppToOld:
             promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
                 url=app.AppURL)
             stateKey = 'UniverseUpdateAppToOld'
@@ -378,6 +378,9 @@ def main() -> None:
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
         customMapsDir = os.path.join(appDir, 'custom_map')
+        multiverse.SnapshotManager.setSectorDirs(
+            installDir=installMapsDir,
+            overlayDir=overlayMapsDir)
         multiverse.DataStore.setSectorDirs(
             installDir=installMapsDir,
             overlayDir=overlayMapsDir,

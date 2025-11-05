@@ -33,9 +33,10 @@ class SophontManager(object):
 
     # This function assumes it's only called once when the singleton is created and that
     # the mutex is locked
+    # TODO: Should these live in the database a well?
     def _loadSophonts(self) -> None:
         _, results = multiverse.parseTabContent(
-            content=multiverse.DataStore.instance().loadTextResource(
+            content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=SophontManager._T5OfficialSophontsPath))
 
         for sophont in results:

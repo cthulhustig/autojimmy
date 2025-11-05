@@ -3,6 +3,7 @@ from .utils import *
 from .astrometrics import *
 from .sectorparsers import *
 from .datastore import *
+from .snapshotmanager import *
 from .cssreader import *
 from .ehex import *
 from .sectorhex import *

@@ -19,7 +19,7 @@ class StyleStore(object):
         self._routeStyles = {}
 
         content = multiverse.readCssContent(
-            multiverse.DataStore.instance().loadTextResource(
+            multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=StyleStore._DefaultStylePath))
         for group, properties in content.items():
             match = StyleStore._BorderPattern.match(group)

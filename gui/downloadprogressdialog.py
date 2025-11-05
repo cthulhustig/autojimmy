@@ -75,14 +75,14 @@ class DownloadProgressDialog(QtWidgets.QDialog):
 
     def _updateProgress(
             self,
-            stage: multiverse.DataStore.UpdateStage,
+            stage: multiverse.SnapshotManager.UpdateStage,
             progress: int,
             total: int
             ) -> None:
         self._stageLabel.setText(
-            'Downloading universe data update...'
-            if stage == multiverse.DataStore.UpdateStage.DownloadStage else
-            'Extracting universe data update...')
+            'Downloading universe snapshot update...'
+            if stage == multiverse.SnapshotManager.UpdateStage.DownloadStage else
+            'Extracting universe snapshot update...')
         if total:
             self._progressBar.setValue(int((progress / total) * 100))
             self._progressBar.setMaximum(100)

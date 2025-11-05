@@ -121,7 +121,7 @@ class VectorStore(object):
         for path in paths:
             try:
                 vectors.extend(self._parseFile(
-                    content=multiverse.DataStore.instance().loadTextResource(
+                    content=multiverse.SnapshotManager.instance().loadTextResource(
                         filePath=path)))
             except Exception as ex:
                 logging.warning(f'Failed to parse vector object file "{path}"', exc_info=ex)
