@@ -2218,37 +2218,36 @@ class MapDb(object):
             multiverse.RawMetadata,
             typing.Collection[multiverse.RawWorld]
             ]] = []
-        for _, dirs, _ in os.walk(universePath):
-            for milieu in dirs:
-                milieuPath = os.path.join(universePath, milieu)
-                universeInfoPath = os.path.join(milieuPath, 'universe.json')
-                with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
-                    universeInfoContent = file.read()
-                universeInfo = multiverse.readUniverseInfo(content=universeInfoContent)
+        for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
+            milieuPath = os.path.join(universePath, milieu)
+            universeInfoPath = os.path.join(milieuPath, 'universe.json')
+            with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
+                universeInfoContent = file.read()
+            universeInfo = multiverse.readUniverseInfo(content=universeInfoContent)
 
-                for sectorInfo in universeInfo.sectorInfos():
-                    try:
-                        nameInfos = sectorInfo.nameInfos()
-                        canonicalName = nameInfos[0].name() if nameInfos else None
-                        if not canonicalName:
-                            raise RuntimeError('Sector has no name')
-                        escapedName = common.encodeFileName(rawFileName=canonicalName)
+            for sectorInfo in universeInfo.sectorInfos():
+                try:
+                    nameInfos = sectorInfo.nameInfos()
+                    canonicalName = nameInfos[0].name() if nameInfos else None
+                    if not canonicalName:
+                        raise RuntimeError('Sector has no name')
+                    escapedName = common.encodeFileName(rawFileName=canonicalName)
 
-                        metadataPath = os.path.join(milieuPath, escapedName + '.xml')
-                        with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                            rawMetadata = multiverse.readXMLMetadata(
-                                content=file.read(),
-                                identifier=canonicalName)
+                    metadataPath = os.path.join(milieuPath, escapedName + '.xml')
+                    with open(metadataPath, 'r', encoding='utf-8-sig') as file:
+                        rawMetadata = multiverse.readXMLMetadata(
+                            content=file.read(),
+                            identifier=canonicalName)
 
-                        sectorPath = os.path.join(milieuPath, escapedName + '.sec')
-                        with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                            rawSystems = multiverse.readT5ColumnSector(
-                                content=file.read(),
-                                identifier=canonicalName)
-                        rawData.append((milieu, rawMetadata, rawSystems))
-                    except Exception as ex:
-                        # TODO: Log something but continue
-                        continue
+                    sectorPath = os.path.join(milieuPath, escapedName + '.sec')
+                    with open(sectorPath, 'r', encoding='utf-8-sig') as file:
+                        rawSystems = multiverse.readT5ColumnSector(
+                            content=file.read(),
+                            identifier=canonicalName)
+                    rawData.append((milieu, rawMetadata, rawSystems))
+                except Exception as ex:
+                    # TODO: Log something but continue
+                    continue
 
         dbUniverse = DbUniverse(
             id=MapDb._DefaultUniverseId,
