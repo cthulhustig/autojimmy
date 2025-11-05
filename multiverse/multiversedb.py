@@ -1178,8 +1178,7 @@ class DbUniverse(object):
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
 # notes on the new object before writing it to the db.
-# TODO: I'm not a fan of the name of this. UniverseDb? MultiverseDb?
-class MapDb(object):
+class MultiverseDb(object):
     class Transaction(object):
         def __init__(
                 self,
@@ -1191,7 +1190,7 @@ class MapDb(object):
         def connection(self) -> sqlite3.Connection:
             return self._connection
 
-        def begin(self) -> 'MapDb.Transaction':
+        def begin(self) -> 'MultiverseDb.Transaction':
             if self._hasBegun:
                 raise RuntimeError('Invalid state to begin transaction')
 
@@ -1225,7 +1224,7 @@ class MapDb(object):
             finally:
                 self._teardown()
 
-        def __enter__(self) -> 'MapDb.Transaction':
+        def __enter__(self) -> 'MultiverseDb.Transaction':
             return self.begin()
 
         def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -1307,17 +1306,17 @@ class MapDb(object):
 
     def createTransaction(self) -> Transaction:
         connection = self._createConnection()
-        return MapDb.Transaction(connection=connection)
+        return MultiverseDb.Transaction(connection=connection)
 
     def hasDefaultUniverse(self) -> bool:
         try:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._getMetadata(
-                    key=MapDb._DefaultUniverseTimestampKey,
+                    key=MultiverseDb._DefaultUniverseTimestampKey,
                     cursor=connection.cursor()) is not None
         except Exception as ex:
-            logging.debug('MapDb failed to query default universe timestamp', exc_info=ex)
+            logging.debug('MultiverseDb failed to query default universe timestamp', exc_info=ex)
             return False
 
     # This returns true if the universe snapshot in the specified directory is
@@ -1333,10 +1332,10 @@ class MapDb(object):
             timestampPath = os.path.join(directoryPath, 'timestamp.txt')
             with open(timestampPath, 'r', encoding='utf-8-sig') as file:
                 timestampContent = file.read()
-            importTimestamp = MapDb._parseTimestamp(content=timestampContent)
+            importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
 
             currentTimestamp = self._getMetadata(
-                key=MapDb._DefaultUniverseTimestampKey,
+                key=MultiverseDb._DefaultUniverseTimestampKey,
                 cursor=connection.cursor())
             if not currentTimestamp:
                 # No timestamp means there is no default universe so the supplied
@@ -1347,7 +1346,7 @@ class MapDb(object):
                 currentTimestamp = datetime.datetime.fromisoformat(currentTimestamp)
             except Exception as ex:
                 logging.warning(
-                    f'MapDb failed to parse default universe timestamp "{currentTimestamp}"',
+                    f'MultiverseDb failed to parse default universe timestamp "{currentTimestamp}"',
                     exc_info=ex)
                 return True
 
@@ -1358,7 +1357,7 @@ class MapDb(object):
             directoryPath: str,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
             ) -> None:
-        logging.info(f'MapDb importing default universe from "{directoryPath}"')
+        logging.info(f'MultiverseDb importing default universe from "{directoryPath}"')
         with self.createTransaction() as transaction:
             connection = transaction.connection()
             self._internalImportDefaultUniverse(
@@ -1376,9 +1375,9 @@ class MapDb(object):
     def writeUniverse(
             self,
             universe: DbUniverse,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
-        logging.debug(f'MapDb writing universe {universe.id()}')
+        logging.debug(f'MultiverseDb writing universe {universe.id()}')
         if transaction != None:
             connection = transaction.connection()
             self._internalDeleteUniverse(
@@ -1400,9 +1399,9 @@ class MapDb(object):
     def readUniverse(
             self,
             universeId: str,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.Optional[DbUniverse]:
-        logging.debug(f'MapDb reading universe {universeId}')
+        logging.debug(f'MultiverseDb reading universe {universeId}')
         if transaction != None:
             connection = transaction.connection()
             return self._internalReadUniverse(
@@ -1418,9 +1417,9 @@ class MapDb(object):
     def deleteUniverse(
             self,
             universeId: str,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
-        logging.debug(f'MapDb deleting universe {universeId}')
+        logging.debug(f'MultiverseDb deleting universe {universeId}')
         if transaction != None:
             connection = transaction.connection()
             self._internalDeleteUniverse(
@@ -1436,9 +1435,9 @@ class MapDb(object):
     def writeSector(
             self,
             sector: DbSector,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
-        logging.debug(f'MapDb writing sector {sector.id()}')
+        logging.debug(f'MultiverseDb writing sector {sector.id()}')
 
         if not sector.id():
             raise RuntimeError('Sector cannot be saved as has no id')
@@ -1480,9 +1479,9 @@ class MapDb(object):
     def readSector(
             self,
             sectorId: str,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.Optional[DbSector]:
-        logging.debug(f'MapDb reading sector {sectorId}')
+        logging.debug(f'MultiverseDb reading sector {sectorId}')
         if transaction != None:
             connection = transaction.connection()
             self._internalReadSector(
@@ -1498,9 +1497,9 @@ class MapDb(object):
     def deleteSector(
             self,
             sectorId: str,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
-        logging.debug(f'MapDb deleting sector {sectorId}')
+        logging.debug(f'MultiverseDb deleting sector {sectorId}')
         if transaction != None:
             connection = transaction.connection()
             self._internalDeleteSector(
@@ -1515,9 +1514,9 @@ class MapDb(object):
 
     def listUniverseNames(
             self,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.List[typing.Tuple[str, str]]:
-        logging.debug(f'MapDb listing universe names')
+        logging.debug(f'MultiverseDb listing universe names')
         if transaction != None:
             connection = transaction.connection()
             return self._internalListUniverseNames(
@@ -1532,10 +1531,10 @@ class MapDb(object):
             self,
             universeId: str,
             milieu: typing.Optional[str] = None,
-            transaction: typing.Optional['MapDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.List[typing.Tuple[str, str]]:
         logging.debug(
-            f'MapDb listing sector names' + ('' if universeId is None else f' for universe {universeId}'))
+            f'MultiverseDb listing sector names' + ('' if universeId is None else f' for universe {universeId}'))
         if transaction != None:
             connection = transaction.connection()
             return self._internalListSectorNames(
@@ -1551,7 +1550,7 @@ class MapDb(object):
                     cursor=connection.cursor())
 
     def vacuumDatabase(self) -> None:
-        logging.debug('MapDb vacuuming database')
+        logging.debug('MultiverseDb vacuuming database')
 
         # NOTE: VACUUM can't be performed inside a transaction
         connection = self._createConnection()
@@ -1566,7 +1565,7 @@ class MapDb(object):
 
         connection = sqlite3.connect(self._path)
         logging.debug(f'ObjectDbManager created new connection {connection} to \'{self._path}\'')
-        connection.executescript(MapDb._PragmaScript)
+        connection.executescript(MultiverseDb._PragmaScript)
         # Uncomment this to have sqlite print the SQL that it executes
         #connection.set_trace_callback(print)
         return connection
@@ -1581,33 +1580,33 @@ class MapDb(object):
 
             # Create table schema table
             if not database.checkIfTableExists(
-                    tableName=MapDb._TableSchemaTableName,
+                    tableName=MultiverseDb._TableSchemaTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {table} (
                         name TEXT PRIMARY KEY NOT NULL,
                         version INTEGER NOT NULL
                     );
-                    """.format(table=MapDb._TableSchemaTableName)
-                logging.info(f'MapDb creating \'{MapDb._TableSchemaTableName}\' table')
+                    """.format(table=MultiverseDb._TableSchemaTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._TableSchemaTableName}\' table')
                 cursor.execute(sql)
 
             # Create metadata table
             if not database.checkIfTableExists(
-                    tableName=MapDb._MetadataTableName,
+                    tableName=MultiverseDb._MetadataTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {table} (
                         key TEXT PRIMARY KEY NOT NULL,
                         value TEXT
                     );
-                    """.format(table=MapDb._MetadataTableName)
-                logging.info(f'MapDb creating \'{MapDb._MetadataTableName}\' table')
+                    """.format(table=MultiverseDb._MetadataTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._MetadataTableName}\' table')
                 cursor.execute(sql)
 
             # Create universe table
             if not database.checkIfTableExists(
-                    tableName=MapDb._UniversesTableName,
+                    tableName=MultiverseDb._UniversesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {table} (
@@ -1616,27 +1615,27 @@ class MapDb(object):
                         description TEXT,
                         notes TEXT
                     );
-                    """.format(table=MapDb._UniversesTableName)
-                logging.info(f'MapDb creating \'{MapDb._UniversesTableName}\' table')
+                    """.format(table=MultiverseDb._UniversesTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._UniversesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._UniversesTableName,
-                    version=MapDb._UniversesTableSchema,
+                    table=MultiverseDb._UniversesTableName,
+                    version=MultiverseDb._UniversesTableSchema,
                     cursor=cursor)
 
                 # Create schema table indexes for id column. The id index is
                 # needed as, even though it's the primary key, it's of type
                 # TEXT so doesn't automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._UniversesTableName,
+                    table=MultiverseDb._UniversesTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
 
             # Create sectors table
             if not database.checkIfTableExists(
-                    tableName=MapDb._SectorsTableName,
+                    tableName=MultiverseDb._SectorsTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sectorsTable} (
@@ -1662,21 +1661,21 @@ class MapDb(object):
                         FOREIGN KEY(universe_id) REFERENCES {universesTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        sectorsTable=MapDb._SectorsTableName,
-                        universesTable=MapDb._UniversesTableName)
-                logging.info(f'MapDb creating \'{MapDb._SectorsTableName}\' table')
+                        sectorsTable=MultiverseDb._SectorsTableName,
+                        universesTable=MultiverseDb._UniversesTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._SectorsTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._SectorsTableName,
-                    version=MapDb._SectorsTableSchema,
+                    table=MultiverseDb._SectorsTableName,
+                    version=MultiverseDb._SectorsTableSchema,
                     cursor=cursor)
 
                 # Create indexes for id column. The id index is needed as, even
                 # though it's the primary key, it's of type TEXT so doesn't
                 # automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._SectorsTableName,
+                    table=MultiverseDb._SectorsTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
@@ -1684,7 +1683,7 @@ class MapDb(object):
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._SectorsTableName,
+                    table=MultiverseDb._SectorsTableName,
                     column='universe_id',
                     unique=False,
                     cursor=cursor)
@@ -1694,14 +1693,14 @@ class MapDb(object):
                 # should be used. The index is unique as each universe should
                 # only ever have one sector at a location for a given milieu
                 self._createMultiColumnIndex(
-                    table=MapDb._SectorsTableName,
+                    table=MultiverseDb._SectorsTableName,
                     columns=['universe_id', 'milieu', 'sector_x', 'sector_y'],
                     unique=True,
                     cursor=cursor)
 
             # Create sector alternate names table
             if not database.checkIfTableExists(
-                    tableName=MapDb._AlternateNamesTableName,
+                    tableName=MultiverseDb._AlternateNamesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {namesTable} (
@@ -1711,27 +1710,27 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        namesTable=MapDb._AlternateNamesTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._AlternateNamesTableName}\' table')
+                        namesTable=MultiverseDb._AlternateNamesTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._AlternateNamesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._AlternateNamesTableName,
-                    version=MapDb._AlternateNamesTableSchema,
+                    table=MultiverseDb._AlternateNamesTableName,
+                    version=MultiverseDb._AlternateNamesTableSchema,
                     cursor=cursor)
 
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._AlternateNamesTableName,
+                    table=MultiverseDb._AlternateNamesTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create subsector names table
             if not database.checkIfTableExists(
-                    tableName=MapDb._SubsectorNamesTableName,
+                    tableName=MultiverseDb._SubsectorNamesTableName,
                     cursor=cursor):
                 # TODO: Can I enforce a valid range for the code (0-15)
                 sql = """
@@ -1742,27 +1741,27 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        namesTable=MapDb._SubsectorNamesTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._SubsectorNamesTableName}\' table')
+                        namesTable=MultiverseDb._SubsectorNamesTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._SubsectorNamesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._SubsectorNamesTableName,
-                    version=MapDb._SubsectorNamesTableSchema,
+                    table=MultiverseDb._SubsectorNamesTableName,
+                    version=MultiverseDb._SubsectorNamesTableSchema,
                     cursor=cursor)
 
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._SubsectorNamesTableName,
+                    table=MultiverseDb._SubsectorNamesTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create allegiance names table
             if not database.checkIfTableExists(
-                    tableName=MapDb._AllegiancesTableName,
+                    tableName=MultiverseDb._AllegiancesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {allegiancesTable} (
@@ -1773,27 +1772,27 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        allegiancesTable=MapDb._AllegiancesTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._AllegiancesTableName}\' table')
+                        allegiancesTable=MultiverseDb._AllegiancesTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._AllegiancesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._AllegiancesTableName,
-                    version=MapDb._AllegiancesTableSchema,
+                    table=MultiverseDb._AllegiancesTableName,
+                    version=MultiverseDb._AllegiancesTableSchema,
                     cursor=cursor)
 
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._AllegiancesTableName,
+                    table=MultiverseDb._AllegiancesTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create products table
             if not database.checkIfTableExists(
-                    tableName=MapDb._ProductsTableName,
+                    tableName=MultiverseDb._ProductsTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {productsTable} (
@@ -1805,27 +1804,27 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        productsTable=MapDb._ProductsTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._ProductsTableName}\' table')
+                        productsTable=MultiverseDb._ProductsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._ProductsTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._ProductsTableName,
-                    version=MapDb._ProductsTableSchema,
+                    table=MultiverseDb._ProductsTableName,
+                    version=MultiverseDb._ProductsTableSchema,
                     cursor=cursor)
 
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._ProductsTableName,
+                    table=MultiverseDb._ProductsTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create systems table
             if not database.checkIfTableExists(
-                    tableName=MapDb._SystemsTableName,
+                    tableName=MultiverseDb._SystemsTableName,
                     cursor=cursor):
 
                 # TODO: I'm not sure what to do about importance. I don't think I use
@@ -1854,21 +1853,21 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        systemsTable=MapDb._SystemsTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._SystemsTableName}\' table')
+                        systemsTable=MultiverseDb._SystemsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._SystemsTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._SystemsTableName,
-                    version=MapDb._SystemsTableSchema,
+                    table=MultiverseDb._SystemsTableName,
+                    version=MultiverseDb._SystemsTableSchema,
                     cursor=cursor)
 
                 # Create indexes for id column. The id index is needed as, even
                 # though it's the primary key, it's of type TEXT so doesn't
                 # automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._SystemsTableName,
+                    table=MultiverseDb._SystemsTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
@@ -1876,14 +1875,14 @@ class MapDb(object):
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._SystemsTableName,
+                    table=MultiverseDb._SystemsTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create routes table
             if not database.checkIfTableExists(
-                    tableName=MapDb._RoutesTableName,
+                    tableName=MultiverseDb._RoutesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {routesTable} (
@@ -1901,21 +1900,21 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        routesTable=MapDb._RoutesTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._RoutesTableName}\' table')
+                        routesTable=MultiverseDb._RoutesTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._RoutesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._RoutesTableName,
-                    version=MapDb._RoutesTableSchema,
+                    table=MultiverseDb._RoutesTableName,
+                    version=MultiverseDb._RoutesTableSchema,
                     cursor=cursor)
 
                 # Create indexes for id column. The id index is needed as, even
                 # though it's the primary key, it's of type TEXT so doesn't
                 # automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._RoutesTableName,
+                    table=MultiverseDb._RoutesTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
@@ -1923,14 +1922,14 @@ class MapDb(object):
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._RoutesTableName,
+                    table=MultiverseDb._RoutesTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create borders table
             if not database.checkIfTableExists(
-                    tableName=MapDb._BordersTableName,
+                    tableName=MultiverseDb._BordersTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {bordersTable} (
@@ -1949,21 +1948,21 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        bordersTable=MapDb._BordersTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._BordersTableName}\' table')
+                        bordersTable=MultiverseDb._BordersTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._BordersTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._BordersTableName,
-                    version=MapDb._BordersTableSchema,
+                    table=MultiverseDb._BordersTableName,
+                    version=MultiverseDb._BordersTableSchema,
                     cursor=cursor)
 
                 # Create indexes for id column. The id index is needed as, even
                 # though it's the primary key, it's of type TEXT so doesn't
                 # automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._BordersTableName,
+                    table=MultiverseDb._BordersTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
@@ -1971,14 +1970,14 @@ class MapDb(object):
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._BordersTableName,
+                    table=MultiverseDb._BordersTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create border hexes table
             if not database.checkIfTableExists(
-                    tableName=MapDb._BorderHexesTableName,
+                    tableName=MultiverseDb._BorderHexesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {hexesTable} (
@@ -1988,20 +1987,20 @@ class MapDb(object):
                         FOREIGN KEY(border_id) REFERENCES {bordersTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        hexesTable=MapDb._BorderHexesTableName,
-                        bordersTable=MapDb._BordersTableName)
-                logging.info(f'MapDb creating \'{MapDb._BorderHexesTableName}\' table')
+                        hexesTable=MultiverseDb._BorderHexesTableName,
+                        bordersTable=MultiverseDb._BordersTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._BorderHexesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._BorderHexesTableName,
-                    version=MapDb._BorderHexesTableSchema,
+                    table=MultiverseDb._BorderHexesTableName,
+                    version=MultiverseDb._BorderHexesTableSchema,
                     cursor=cursor)
 
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._BorderHexesTableName,
+                    table=MultiverseDb._BorderHexesTableName,
                     column='border_id',
                     unique=False,
                     cursor=cursor)
@@ -2012,7 +2011,7 @@ class MapDb(object):
             # must be a way to do this that doesn't involve having two tables
             # and object definitions
             if not database.checkIfTableExists(
-                    tableName=MapDb._RegionsTableName,
+                    tableName=MultiverseDb._RegionsTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {regionsTable} (
@@ -2029,21 +2028,21 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        regionsTable=MapDb._RegionsTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._RegionsTableName}\' table')
+                        regionsTable=MultiverseDb._RegionsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._RegionsTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._RegionsTableName,
-                    version=MapDb._RegionsTableSchema,
+                    table=MultiverseDb._RegionsTableName,
+                    version=MultiverseDb._RegionsTableSchema,
                     cursor=cursor)
 
                 # Create indexes for id column. The id index is needed as, even
                 # though it's the primary key, it's of type TEXT so doesn't
                 # automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._RegionsTableName,
+                    table=MultiverseDb._RegionsTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
@@ -2051,14 +2050,14 @@ class MapDb(object):
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._RegionsTableName,
+                    table=MultiverseDb._RegionsTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
 
             # Create region hexes table
             if not database.checkIfTableExists(
-                    tableName=MapDb._RegionHexesTableName,
+                    tableName=MultiverseDb._RegionHexesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {hexesTable} (
@@ -2068,27 +2067,27 @@ class MapDb(object):
                         FOREIGN KEY(region_id) REFERENCES {regionsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        hexesTable=MapDb._RegionHexesTableName,
-                        regionsTable=MapDb._RegionsTableName)
-                logging.info(f'MapDb creating \'{MapDb._RegionHexesTableName}\' table')
+                        hexesTable=MultiverseDb._RegionHexesTableName,
+                        regionsTable=MultiverseDb._RegionsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._RegionHexesTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._RegionHexesTableName,
-                    version=MapDb._RegionHexesTableSchema,
+                    table=MultiverseDb._RegionHexesTableName,
+                    version=MultiverseDb._RegionHexesTableSchema,
                     cursor=cursor)
 
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._RegionHexesTableName,
+                    table=MultiverseDb._RegionHexesTableName,
                     column='region_id',
                     unique=False,
                     cursor=cursor)
 
             # Create labels table
             if not database.checkIfTableExists(
-                    tableName=MapDb._LabelsTableName,
+                    tableName=MultiverseDb._LabelsTableName,
                     cursor=cursor):
                 # TODO: Should offset be optional?
                 sql = """
@@ -2106,21 +2105,21 @@ class MapDb(object):
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        labelsTable=MapDb._LabelsTableName,
-                        sectorsTable=MapDb._SectorsTableName)
-                logging.info(f'MapDb creating \'{MapDb._LabelsTableName}\' table')
+                        labelsTable=MultiverseDb._LabelsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._LabelsTableName}\' table')
                 cursor.execute(sql)
 
                 self._writeSchemaVersion(
-                    table=MapDb._LabelsTableName,
-                    version=MapDb._LabelsTableSchema,
+                    table=MultiverseDb._LabelsTableName,
+                    version=MultiverseDb._LabelsTableSchema,
                     cursor=cursor)
 
                 # Create indexes for id column. The id index is needed as, even
                 # though it's the primary key, it's of type TEXT so doesn't
                 # automatically get indexes
                 self._createColumnIndex(
-                    table=MapDb._LabelsTableName,
+                    table=MultiverseDb._LabelsTableName,
                     column='id',
                     unique=True,
                     cursor=cursor)
@@ -2128,7 +2127,7 @@ class MapDb(object):
                 # Create index on parent id column as it's used a lot by reads
                 # and cascade deletes
                 self._createColumnIndex(
-                    table=MapDb._LabelsTableName,
+                    table=MultiverseDb._LabelsTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
@@ -2150,13 +2149,13 @@ class MapDb(object):
             version: int,
             cursor: sqlite3.Cursor
             ) -> None:
-        logging.info(f'MapDb setting schema for \'{table}\' table to {version}')
+        logging.info(f'MultiverseDb setting schema for \'{table}\' table to {version}')
         sql = """
             INSERT INTO {table} (name, version)
             VALUES (:name, :version)
             ON CONFLICT(name) DO UPDATE SET
                 version = excluded.version;
-            """.format(table=MapDb._TableSchemaTableName)
+            """.format(table=MultiverseDb._TableSchemaTableName)
         rowData = {
             'name': table,
             'version': version}
@@ -2169,7 +2168,7 @@ class MapDb(object):
             unique: bool,
             cursor: sqlite3.Cursor
             ) -> None:
-        logging.info(f'MapDb creating index for \'{column}\' in table \'{table}\'')
+        logging.info(f'MultiverseDb creating index for \'{column}\' in table \'{table}\'')
         database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createMultiColumnIndex(
@@ -2179,7 +2178,7 @@ class MapDb(object):
             unique: bool,
             cursor: sqlite3.Cursor
             ) -> None:
-        logging.info(f'MapDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
+        logging.info(f'MultiverseDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
         database.createMultiColumnIndex(table=table, columns=columns, unique=unique, cursor=cursor)
 
     def _setMetadata(
@@ -2188,13 +2187,13 @@ class MapDb(object):
             value: str,
             cursor: sqlite3.Cursor
             ) -> None:
-        logging.info(f'MapDb setting metadata \'{key}\' to {value}')
+        logging.info(f'MultiverseDb setting metadata \'{key}\' to {value}')
         sql = """
             INSERT INTO {table} (key, value)
             VALUES (:key, :value)
             ON CONFLICT(key) DO UPDATE SET
                 value = excluded.value;
-            """.format(table=MapDb._MetadataTableName)
+            """.format(table=MultiverseDb._MetadataTableName)
         rowData = {
             'key': key,
             'value': value}
@@ -2209,7 +2208,7 @@ class MapDb(object):
             SELECT value
             FROM {table}
             WHERE key = :key;
-            """.format(table=MapDb._MetadataTableName)
+            """.format(table=MultiverseDb._MetadataTableName)
         cursor.execute(sql, {'key': key})
         rowData = cursor.fetchone()
         return rowData[0] if rowData else None
@@ -2227,7 +2226,7 @@ class MapDb(object):
         timestampPath = os.path.join(directoryPath, 'timestamp.txt')
         with open(timestampPath, 'r', encoding='utf-8-sig') as file:
             timestampContent = file.read()
-        importTimestamp = MapDb._parseTimestamp(content=timestampContent)
+        importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
 
         universePath = os.path.join(directoryPath, 'milieu')
         rawData: typing.List[typing.Tuple[
@@ -2267,7 +2266,7 @@ class MapDb(object):
                     continue
 
         dbUniverse = DbUniverse(
-            id=MapDb._DefaultUniverseId,
+            id=MultiverseDb._DefaultUniverseId,
             name='Default Universe')
         for milieu, rawMetadata, rawSystems in rawData:
             try:
@@ -2447,7 +2446,7 @@ class MapDb(object):
 
         # TODO: Not sure how to do progress for this step
         self._internalDeleteUniverse(
-            universeId=MapDb._DefaultUniverseId,
+            universeId=MultiverseDb._DefaultUniverseId,
             cursor=cursor)
 
         self._internalInsertUniverse(
@@ -2456,7 +2455,7 @@ class MapDb(object):
             cursor=cursor)
 
         self._setMetadata(
-            key=MapDb._DefaultUniverseTimestampKey,
+            key=MultiverseDb._DefaultUniverseTimestampKey,
             value=importTimestamp.isoformat(),
             cursor=cursor)
 
@@ -2469,7 +2468,7 @@ class MapDb(object):
         sql = """
             INSERT INTO {table} (id, name, description, notes)
             VALUES (:id, :name, :description, :notes);
-            """.format(table=MapDb._UniversesTableName)
+            """.format(table=MultiverseDb._UniversesTableName)
         rowData = {
             'id': universe.id(),
             'name': universe.name(),
@@ -2495,7 +2494,7 @@ class MapDb(object):
             SELECT name, description, notes
             FROM {table}
             WHERE id = :id;
-            """.format(table=MapDb._UniversesTableName)
+            """.format(table=MultiverseDb._UniversesTableName)
         cursor.execute(sql, {'id': universeId})
         row = cursor.fetchone()
         if not row:
@@ -2525,7 +2524,7 @@ class MapDb(object):
                     AND u.sector_x = d.sector_x
                     AND u.sector_y = d.sector_y
             );
-            """.format(table=MapDb._SectorsTableName)
+            """.format(table=MultiverseDb._SectorsTableName)
         cursor.execute(sql, {'id': universeId})
         sectors = []
         for row in cursor.fetchall():
@@ -2554,7 +2553,7 @@ class MapDb(object):
             DELETE FROM {table}
             WHERE id = :id
             """.format(
-            table=MapDb._UniversesTableName)
+            table=MultiverseDb._UniversesTableName)
         cursor.execute(sql, {'id': universeId})
 
     def _internalInsertSector(
@@ -2571,7 +2570,7 @@ class MapDb(object):
                 :sector_x, :sector_y, :primary_name, :primary_language,
                 :abbreviation, :sector_label, :selected, :tags, :style_sheet,
                 :credits, :publication, :author, :publisher, :reference, :notes);
-            """.format(table=MapDb._SectorsTableName)
+            """.format(table=MultiverseDb._SectorsTableName)
         rowData = {
             'id': sector.id(),
             'universe_id': sector.universeId(),
@@ -2598,7 +2597,7 @@ class MapDb(object):
             sql = """
                 INSERT INTO {table} (sector_id, name, language)
                 VALUES (:sector_id, :name, :language);
-                """.format(table=MapDb._AlternateNamesTableName)
+                """.format(table=MultiverseDb._AlternateNamesTableName)
             rowData = []
             for name, language in sector.alternateNames():
                 rowData.append({
@@ -2611,7 +2610,7 @@ class MapDb(object):
             sql = """
                 INSERT INTO {table} (sector_id, code, name)
                 VALUES (:sector_id, :code, :name);
-                """.format(table=MapDb._SubsectorNamesTableName)
+                """.format(table=MultiverseDb._SubsectorNamesTableName)
             rowData = []
             for code, name in sector.subsectorNames():
                 rowData.append({
@@ -2626,7 +2625,7 @@ class MapDb(object):
                     publisher, reference)
                 VALUES (:sector_id, :publication, :author,
                     :publisher, :reference);
-                """.format(table=MapDb._ProductsTableName)
+                """.format(table=MultiverseDb._ProductsTableName)
             rowData = []
             for product in sector.products():
                 rowData.append({
@@ -2641,7 +2640,7 @@ class MapDb(object):
             sql = """
                 INSERT INTO {table} (sector_id, code, name, base)
                 VALUES (:sector_id, :code, :name, :base);
-                """.format(table=MapDb._AllegiancesTableName)
+                """.format(table=MultiverseDb._AllegiancesTableName)
             rowData = []
             for allegiance in sector.allegiances():
                 rowData.append({
@@ -2659,7 +2658,7 @@ class MapDb(object):
                 VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :uwp, :remarks,
                     :importance, :economics, :culture, :nobility, :bases, :zone, :pbg,
                     :system_worlds, :allegiance, :stellar, :notes);
-                """.format(table=MapDb._SystemsTableName)
+                """.format(table=MultiverseDb._SystemsTableName)
             rowData = []
             for system in sector.systems():
                 rowData.append({
@@ -2689,7 +2688,7 @@ class MapDb(object):
                     end_hex_x, end_hex_y, allegiance, type, style, colour, width)
                 VALUES (:id, :sector_id, :start_hex_x, :start_hex_y,
                     :end_hex_x, :end_hex_y, :allegiance, :type, :style, :colour, :width);
-                """.format(table=MapDb._RoutesTableName)
+                """.format(table=MultiverseDb._RoutesTableName)
             rowData = []
             for route in sector.routes():
                 rowData.append({
@@ -2714,11 +2713,11 @@ class MapDb(object):
                 VALUES (:id, :sector_id, :show_label, :wrap_label,
                     :label_hex_x, :label_hex_y, :label_offset_x, :label_offset_y,
                     :label, :colour, :style, :allegiance );
-                """.format(table=MapDb._BordersTableName)
+                """.format(table=MultiverseDb._BordersTableName)
             hexesSql =  """
                 INSERT INTO {table} (border_id, hex_x, hex_y)
                 VALUES (:border_id, :hex_x, :hex_y);
-                """.format(table=MapDb._BorderHexesTableName)
+                """.format(table=MultiverseDb._BorderHexesTableName)
             bordersData = []
             hexesData = []
             for border in sector.borders():
@@ -2751,11 +2750,11 @@ class MapDb(object):
                 VALUES (:id, :sector_id, :show_label, :wrap_label,
                     :label_hex_x, :label_hex_y, :label_offset_x, :label_offset_y,
                     :label, :colour);
-                """.format(table=MapDb._RegionsTableName)
+                """.format(table=MultiverseDb._RegionsTableName)
             hexesSql =  """
                 INSERT INTO {table} (region_id, hex_x, hex_y)
                 VALUES (:region_id, :hex_x, :hex_y);
-                """.format(table=MapDb._RegionHexesTableName)
+                """.format(table=MultiverseDb._RegionHexesTableName)
             regionsData = []
             hexesData = []
             for region in sector.regions():
@@ -2784,7 +2783,7 @@ class MapDb(object):
                     wrap, colour, size, offset_x, offset_y)
                 VALUES (:id, :sector_id, :text, :hex_x, :hex_y,
                     :wrap, :colour, :size, :offset_x, :offset_y);
-                """.format(table=MapDb._LabelsTableName)
+                """.format(table=MultiverseDb._LabelsTableName)
             rowData = []
             for label in sector.labels():
                 rowData.append({
@@ -2812,7 +2811,7 @@ class MapDb(object):
                 publisher, reference, notes
             FROM {table}
             WHERE id = :id;
-            """.format(table=MapDb._SectorsTableName)
+            """.format(table=MultiverseDb._SectorsTableName)
         cursor.execute(sql, {'id': sectorId})
         row = cursor.fetchone()
         if not row:
@@ -2843,7 +2842,7 @@ class MapDb(object):
             SELECT name, language
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._AlternateNamesTableName)
+            """.format(table=MultiverseDb._AlternateNamesTableName)
         cursor.execute(sql, {'id': sectorId})
         sector.setAlternateNames(
             [(row[0], row[1]) for row in cursor.fetchall()])
@@ -2852,7 +2851,7 @@ class MapDb(object):
             SELECT code, name
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._SubsectorNamesTableName)
+            """.format(table=MultiverseDb._SubsectorNamesTableName)
         cursor.execute(sql, {'id': sectorId})
         sector.setSubsectorNames(
             [(row[0], row[1]) for row in cursor.fetchall()])
@@ -2861,7 +2860,7 @@ class MapDb(object):
             SELECT publication, author, publisher, reference
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._ProductsTableName)
+            """.format(table=MultiverseDb._ProductsTableName)
         cursor.execute(sql, {'id': sectorId})
         products = []
         for row in cursor.fetchall():
@@ -2876,7 +2875,7 @@ class MapDb(object):
             SELECT code, name, base
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._AllegiancesTableName)
+            """.format(table=MultiverseDb._AllegiancesTableName)
         cursor.execute(sql, {'id': sectorId})
         allegiances = []
         for row in cursor.fetchall():
@@ -2892,7 +2891,7 @@ class MapDb(object):
                 system_worlds, allegiance, stellar, notes
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._SystemsTableName)
+            """.format(table=MultiverseDb._SystemsTableName)
         cursor.execute(sql, {'id': sectorId})
         systems = []
         for row in cursor.fetchall():
@@ -2921,7 +2920,7 @@ class MapDb(object):
                 allegiance, type, style, colour, width
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._RoutesTableName)
+            """.format(table=MultiverseDb._RoutesTableName)
         cursor.execute(sql, {'id': sectorId})
         routes = []
         for row in cursor.fetchall():
@@ -2944,7 +2943,7 @@ class MapDb(object):
                 label, colour, style, allegiance
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._BordersTableName)
+            """.format(table=MultiverseDb._BordersTableName)
         cursor.execute(sql, {'id': sectorId})
         borders = []
         for row in cursor.fetchall():
@@ -2954,7 +2953,7 @@ class MapDb(object):
                 SELECT hex_x, hex_y
                 FROM {table}
                 WHERE border_id = :id;
-                """.format(table=MapDb._BorderHexesTableName)
+                """.format(table=MultiverseDb._BorderHexesTableName)
             cursor.execute(hexesSql, {'id': borderId})
             hexes = []
             for hexRow in cursor.fetchall():
@@ -2981,7 +2980,7 @@ class MapDb(object):
                 label, colour
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._RegionsTableName)
+            """.format(table=MultiverseDb._RegionsTableName)
         cursor.execute(sql, {'id': sectorId})
         regions = []
         for row in cursor.fetchall():
@@ -2991,7 +2990,7 @@ class MapDb(object):
                 SELECT hex_x, hex_y
                 FROM {table}
                 WHERE region_id = :id;
-                """.format(table=MapDb._RegionHexesTableName)
+                """.format(table=MultiverseDb._RegionHexesTableName)
             cursor.execute(hexesSql, {'id': regionId})
             hexes = []
             for hexRow in cursor.fetchall():
@@ -3015,7 +3014,7 @@ class MapDb(object):
                 offset_x, offset_y
             FROM {table}
             WHERE sector_id = :id;
-            """.format(table=MapDb._LabelsTableName)
+            """.format(table=MultiverseDb._LabelsTableName)
         cursor.execute(sql, {'id': sectorId})
         labels = []
         for row in cursor.fetchall():
@@ -3045,7 +3044,7 @@ class MapDb(object):
             DELETE FROM {table}
             WHERE id = :id
             """.format(
-            table=MapDb._SectorsTableName)
+            table=MultiverseDb._SectorsTableName)
         queryData = {'id': sectorId}
 
         if milieu is not None and sectorX is not None and sectorY is not None:
@@ -3066,8 +3065,8 @@ class MapDb(object):
             FROM {table}
             WHERE id != :defaultId;
             """.format(
-            table=MapDb._UniversesTableName)
-        cursor.execute(sql, {'defaultId': MapDb._DefaultUniverseId})
+            table=MultiverseDb._UniversesTableName)
+        cursor.execute(sql, {'defaultId': MultiverseDb._DefaultUniverseId})
 
         universeList = []
         for row in cursor.fetchall():
@@ -3088,7 +3087,7 @@ class MapDb(object):
             SELECT id, primary_name
             FROM {table}
             WHERE universe_id = :id
-            """.format(table=MapDb._SectorsTableName)
+            """.format(table=MultiverseDb._SectorsTableName)
         selectData = {'id': universeId}
 
         if milieu:
@@ -3100,7 +3099,7 @@ class MapDb(object):
             SELECT d.id, d.primary_name
             FROM {table} d
             WHERE d.universe_id IS "default"
-            """.format(table=MapDb._SectorsTableName)
+            """.format(table=MultiverseDb._SectorsTableName)
 
         if milieu:
             sql += 'AND milieu = :milieu'
@@ -3114,7 +3113,7 @@ class MapDb(object):
                     AND u.sector_x = d.sector_x
                     AND u.sector_y = d.sector_y
             );
-            """.format(table=MapDb._SectorsTableName)
+            """.format(table=MultiverseDb._SectorsTableName)
 
         cursor.execute(sql, selectData)
 
@@ -3131,5 +3130,5 @@ class MapDb(object):
             ) -> datetime.datetime:
         timestamp = datetime.datetime.strptime(
             content,
-            MapDb._TimestampFormat)
+            MultiverseDb._TimestampFormat)
         return timestamp.replace(tzinfo=datetime.timezone.utc)

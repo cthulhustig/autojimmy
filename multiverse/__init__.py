@@ -28,6 +28,6 @@ from .route import *
 from .sectorsources import *
 from .sector import *
 from .main import *
-from .mapdb import *
+from .multiversedb import *
 from .universe import *
 from .worldmanager import *

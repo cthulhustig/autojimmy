@@ -415,7 +415,9 @@ def main() -> None:
             # Continue loading the app with the existing data
 
         databasePath = databasePath = os.path.join(appDir, 'universe.db')
-        database = multiverse.MapDb(path=databasePath)
+        database = multiverse.MultiverseDb(path=databasePath)
+
+
         importPath = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
         try:
             if database.isDefaultUniverseSnapshotNewer(directoryPath=importPath):
