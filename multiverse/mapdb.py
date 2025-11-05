@@ -8,17 +8,17 @@ import sqlite3
 import typing
 import uuid
 
-# TODO: Need something that updates the stock sectors from disk
-# - Will need to leave custom sectors so can't just delete the universe
-# - Should VACUUM the DB after an import to free space
 # TODO: Need something that does one time import of custom sectors from
 # filesystem to database
 # TODO: All the constructors and setters on DB objects should validate the
 # input
+# TODO: Need to handle updating db after snapshot update
 # TODO: Need to handle the initial import case where there is no DB
 # TODO: Need to handle the case where the version the default universe that
 # comes in the install directory is newer than the version that is in the
-# overlay directory
+# overlay directory. The snapshot manager should handle deleting the old
+# snapshot (so the install is used) but I'll need something to trigger
+# reimporting the data from the install directory into the database
 # TODO: Test with unicode in universe/sector names etc
 
 class DbSystem(object):
@@ -1178,6 +1178,7 @@ class DbUniverse(object):
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
 # notes on the new object before writing it to the db.
+# TODO: I'm not a fan of the name of this. UniverseDb? MultiverseDb?
 class MapDb(object):
     class Transaction(object):
         def __init__(
@@ -2178,19 +2179,6 @@ class MapDb(object):
             forceImport: bool,
             progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
             ) -> None:
-        # TODO: How to handle import
-        # - I still need to extract non-sector data (e.g. sophonts.json, candy images)
-        # - I think it probably makes sense to have an extracted copy of the sector data as well
-        # - With this approach I think what is currently DataStore still exists but is probably
-        #   renamed to SnapshotStore and code for custom sector support is removed.
-        #       - MapDb would then use data store to load the files
-        # - Update Process
-        #   - Extract archive to disk as normal
-        #       - Including version check logic for archive compatibility
-        #   - Import extracted map data into db as new default universe
-        #       - IMPORTANT: Store archive timestamp (from timestamp file) in db when importing.
-        #         even if I don't need it now it could be important in the future
-
         timestampPath = os.path.join(directoryPath, 'timestamp.txt')
         with open(timestampPath, 'r', encoding='utf-8-sig') as file:
             timestampContent = file.read()
