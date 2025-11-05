@@ -1,5 +1,5 @@
+import astronomer
 import enum
-import multiverse
 import typing
 
 class Route(object):
@@ -10,8 +10,8 @@ class Route(object):
 
     def __init__(
             self,
-            startHex: multiverse.HexPosition,
-            endHex: multiverse.HexPosition,
+            startHex: astronomer.HexPosition,
+            endHex: astronomer.HexPosition,
             allegiance: typing.Optional[str],
             type: typing.Optional[str],
             style: typing.Optional[Style],
@@ -26,10 +26,10 @@ class Route(object):
         self._colour = colour
         self._width = width
 
-    def startHex(self) -> multiverse.HexPosition:
+    def startHex(self) -> astronomer.HexPosition:
         return self._startHex
 
-    def endHex(self) -> multiverse.HexPosition:
+    def endHex(self) -> astronomer.HexPosition:
         return self._endHex
 
     def allegiance(self) -> typing.Optional[str]:

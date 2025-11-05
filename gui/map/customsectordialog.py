@@ -1,11 +1,11 @@
 import app
+import astronomer
 import cartographer
 import common
 import enum
 import gui
 import jobs
 import logging
-import multiverse
 import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -253,7 +253,7 @@ class _NewSectorDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
         self.setFixedHeight(self.sizeHint().height())
 
-    def sector(self) -> typing.Optional[multiverse.SectorInfo]:
+    def sector(self) -> typing.Optional[astronomer.SectorInfo]:
         return self._sector
 
     # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
@@ -416,18 +416,18 @@ class _NewSectorDialog(gui.DialogEx):
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
 
-            metadataFormat = multiverse.metadataFileFormatDetect(
+            metadataFormat = astronomer.metadataFileFormatDetect(
                 content=sectorMetadata)
             if not metadataFormat:
                 raise RuntimeError('Unknown metadata file format')
 
-            rawMetadata = multiverse.readMetadata(
+            rawMetadata = astronomer.readMetadata(
                 content=sectorMetadata,
                 format=metadataFormat,
                 identifier=metadataFilePath)
 
             # This will throw if there is a conflict with an existing sector
-            multiverse.DataStore.instance().customSectorConflictCheck(
+            astronomer.DataStore.instance().customSectorConflictCheck(
                 sectorName=rawMetadata.canonicalName(),
                 sectorX=rawMetadata.x(),
                 sectorY=rawMetadata.y(),
@@ -448,10 +448,10 @@ class _NewSectorDialog(gui.DialogEx):
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
 
-            sectorFormat = multiverse.sectorFileFormatDetect(content=sectorData)
+            sectorFormat = astronomer.sectorFileFormatDetect(content=sectorData)
             if not sectorFormat:
                 raise RuntimeError('Unknown sector file format')
-            multiverse.readSector(
+            astronomer.readSector(
                 content=sectorData,
                 format=sectorFormat,
                 identifier=sectorFilePath)
@@ -465,7 +465,7 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            self._sector = multiverse.DataStore.instance().createCustomSector(
+            self._sector = astronomer.DataStore.instance().createCustomSector(
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                 sectorContent=sectorData,
                 metadataContent=sectorMetadata) # Write the users metadata, not the xml metadata if it was converted
@@ -500,25 +500,25 @@ class _NewSectorDialog(gui.DialogEx):
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                     sectorMetadata = file.read()
 
-                metadataFormat = multiverse.metadataFileFormatDetect(
+                metadataFormat = astronomer.metadataFileFormatDetect(
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unknown metadata file format')
 
-                if metadataFormat == multiverse.MetadataFormat.XML:
+                if metadataFormat == astronomer.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
-                    multiverse.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
+                    astronomer.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
                 else:
                     gui.AutoSelectMessageBox.information(
                         parent=self,
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                    rawMetadata = multiverse.readMetadata(
+                    rawMetadata = astronomer.readMetadata(
                         content=sectorMetadata,
                         format=metadataFormat,
                         identifier=metadataFilePath)
-                    xmlMetadata = multiverse.writeXMLMetadata(
+                    xmlMetadata = astronomer.writeXMLMetadata(
                         metadata=rawMetadata,
                         identifier='Generated XML metadata')
             except Exception as ex:
@@ -587,19 +587,19 @@ class _CustomSectorTable(gui.ListTable):
 
         self.synchronise()
 
-    def sector(self, row: int) -> typing.Optional[multiverse.SectorInfo]:
+    def sector(self, row: int) -> typing.Optional[astronomer.SectorInfo]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def sectorRow(self, sector: multiverse.SectorInfo) -> int:
+    def sectorRow(self, sector: astronomer.SectorInfo) -> int:
         for row in range(self.rowCount()):
             if sector == self.sector(row):
                 return row
         return -1
 
-    def currentSector(self) -> typing.Optional[multiverse.SectorInfo]:
+    def currentSector(self) -> typing.Optional[astronomer.SectorInfo]:
         row = self.currentRow()
         if row < 0:
             return None
@@ -607,7 +607,7 @@ class _CustomSectorTable(gui.ListTable):
 
     def setCurrentSector(
             self,
-            sector: typing.Optional[multiverse.SectorInfo]
+            sector: typing.Optional[astronomer.SectorInfo]
             ) -> None:
         if sector:
             row = self.sectorRow(sector)
@@ -619,7 +619,7 @@ class _CustomSectorTable(gui.ListTable):
             self.setCurrentItem(None)
 
     def synchronise(self) -> None:
-        sectors = multiverse.DataStore.instance().sectors(
+        sectors = astronomer.DataStore.instance().sectors(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
 
         # Disable sorting while inserting multiple rows then sort once after they've
@@ -703,7 +703,7 @@ class _CustomSectorTable(gui.ListTable):
     def _fillRow(
             self,
             row: int,
-            sector: multiverse.SectorInfo
+            sector: astronomer.SectorInfo
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -850,7 +850,7 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMetadataTextEdit.setReadOnly(True)
 
         self._sectorMapWidget = gui.MapWidgetEx(
-            universe=multiverse.Universe(sectors=[]),
+            universe=astronomer.Universe(sectors=[]),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             rules=app.Config.instance().value(option=app.ConfigOption.Rules),
             style=app.Config.instance().value(option=app.ConfigOption.MapStyle),
@@ -894,18 +894,18 @@ class CustomSectorDialog(gui.DialogEx):
 
     def _syncSectorDataControls(
             self,
-            sectorInfo: typing.Optional[multiverse.SectorInfo]
+            sectorInfo: typing.Optional[astronomer.SectorInfo]
             ) -> None:
         if not sectorInfo:
             self._sectorFileTextEdit.clear()
             self._sectorMetadataTextEdit.clear()
-            self._sectorMapWidget.setUniverse(universe=multiverse.Universe(sectors=[]))
+            self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))
             return
 
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         try:
-            sectorContent = multiverse.DataStore.instance().sectorFileData(
+            sectorContent = astronomer.DataStore.instance().sectorFileData(
                 sectorName=sectorInfo.canonicalName(),
                 milieu=milieu)
             self._sectorFileTextEdit.setPlainText(sectorContent)
@@ -921,7 +921,7 @@ class CustomSectorDialog(gui.DialogEx):
             # Continue to try and sync other controls
 
         try:
-            metadataContent = multiverse.DataStore.instance().sectorMetaData(
+            metadataContent = astronomer.DataStore.instance().sectorMetaData(
                 sectorName=sectorInfo.canonicalName(),
                 milieu=milieu)
             self._sectorMetadataTextEdit.setPlainText(metadataContent)
@@ -936,7 +936,7 @@ class CustomSectorDialog(gui.DialogEx):
                 exception=ex)
             # Continue to try and sync other controls
 
-        universe, sector = multiverse.WorldManager.instance().createSectorUniverse(
+        universe, sector = astronomer.WorldManager.instance().createSectorUniverse(
             milieu=milieu,
             sectorContent=sectorContent,
             metadataContent=metadataContent)
@@ -988,7 +988,7 @@ class CustomSectorDialog(gui.DialogEx):
             return # User cancelled
 
         try:
-            multiverse.DataStore.instance().deleteCustomSector(
+            astronomer.DataStore.instance().deleteCustomSector(
                 sectorName=sector.canonicalName(),
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
         except Exception as ex:

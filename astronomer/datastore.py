@@ -1,9 +1,9 @@
+import astronomer
 import common
 import datetime
 import enum
 import json
 import logging
-import multiverse
 import os
 import threading
 import typing
@@ -21,8 +21,8 @@ class SectorInfo(object):
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            sectorFormat: multiverse.SectorFormat,
-            metadataFormat: multiverse.MetadataFormat,
+            sectorFormat: astronomer.SectorFormat,
+            metadataFormat: astronomer.MetadataFormat,
             modifiedTimestamp: datetime.datetime,
             isCustomSector: bool
             ) -> None:
@@ -47,10 +47,10 @@ class SectorInfo(object):
     def y(self) -> int:
         return self._y
 
-    def sectorFormat(self) -> multiverse.SectorFormat:
+    def sectorFormat(self) -> astronomer.SectorFormat:
         return self._sectorFormat
 
-    def metadataFormat(self) -> multiverse.MetadataFormat:
+    def metadataFormat(self) -> astronomer.MetadataFormat:
         return self._metadataFormat
 
     def modifiedTimestamp(self) -> datetime.datetime:
@@ -129,14 +129,14 @@ class SectorConflictException(RuntimeError):
 class UniverseInfo(object):
     def __init__(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         self._milieu = milieu
         self._stockSectorMap = SectorLookupMaps()
         self._customSectorMap = SectorLookupMaps()
         self._mergedSectorMap = SectorLookupMaps()
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
     def conflictCheck(
@@ -359,11 +359,11 @@ class DataStore(object):
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
-        multiverse.SectorFormat.T5Column: 'sec',
-        multiverse.SectorFormat.T5Tab: 'tab'}
+        astronomer.SectorFormat.T5Column: 'sec',
+        astronomer.SectorFormat.T5Tab: 'tab'}
     _MetadataFormatExtensions = {
-        multiverse.MetadataFormat.JSON: 'json',
-        multiverse.MetadataFormat.XML: 'xml'}
+        astronomer.MetadataFormat.JSON: 'json',
+        astronomer.MetadataFormat.XML: 'xml'}
 
     _instance = None # Singleton instance
     _lock = threading.RLock() # Recursive lock
@@ -399,7 +399,7 @@ class DataStore(object):
 
     def sectorCount(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             stockOnly: bool = False
             ) -> int:
         self._loadSectors(milieu=milieu)
@@ -411,7 +411,7 @@ class DataStore(object):
 
     def sectors(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             stockOnly: bool = False
             ) -> typing.Iterable[SectorInfo]:
         self._loadSectors(milieu=milieu)
@@ -424,7 +424,7 @@ class DataStore(object):
     def sector(
             self,
             sectorName: str,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors(milieu=milieu)
@@ -439,7 +439,7 @@ class DataStore(object):
     def sectorFileData(
             self,
             sectorName: str,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             stockOnly: bool = False
             ) -> str:
         self._loadSectors(milieu=milieu)
@@ -459,7 +459,7 @@ class DataStore(object):
     def sectorMetaData(
             self,
             sectorName: str,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             stockOnly: bool = False
             ) -> str:
         self._loadSectors(milieu=milieu)
@@ -490,7 +490,7 @@ class DataStore(object):
             sectorName: str,
             sectorX: int,
             sectorY: int,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         self._loadSectors(milieu=milieu)
 
@@ -504,21 +504,21 @@ class DataStore(object):
 
     def createCustomSector(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             sectorContent: str,
             metadataContent: str
             ) -> SectorInfo:
         self._loadSectors(milieu=milieu)
 
-        sectorFormat = multiverse.sectorFileFormatDetect(content=sectorContent)
+        sectorFormat = astronomer.sectorFileFormatDetect(content=sectorContent)
         if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
 
-        metadataFormat = multiverse.metadataFileFormatDetect(content=metadataContent)
+        metadataFormat = astronomer.metadataFileFormatDetect(content=metadataContent)
         if not metadataFormat:
             raise RuntimeError('Sector metadata content has an unknown format')
 
-        metadata = multiverse.readMetadata(
+        metadata = astronomer.readMetadata(
             content=metadataContent,
             format=metadataFormat,
             identifier='Custom Metadata')
@@ -527,7 +527,7 @@ class DataStore(object):
         # format. If it fails an exception will be raised and allowed to pass
         # back to the called. Doing this check is important as it prevents bad
         # data causing the app to barf when loading
-        multiverse.readSector(
+        astronomer.readSector(
             content=sectorContent,
             format=sectorFormat,
             identifier=f'Custom Sector {metadata.canonicalName()}')
@@ -581,7 +581,7 @@ class DataStore(object):
     def deleteCustomSector(
             self,
             sectorName: str,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         self._loadSectors(milieu=milieu)
 
@@ -662,7 +662,7 @@ class DataStore(object):
 
     def _loadSectors(
             self,
-            milieu: typing.Optional[multiverse.Milieu] = None,
+            milieu: typing.Optional[astronomer.Milieu] = None,
             reload: bool = False
             ) -> None:
         with self._lock:
@@ -670,9 +670,9 @@ class DataStore(object):
                 return # Already loaded
 
             if not self._universeMap:
-                self._universeMap: typing.Dict[multiverse.Milieu, UniverseInfo] = {}
+                self._universeMap: typing.Dict[astronomer.Milieu, UniverseInfo] = {}
 
-            milieuList = [milieu] if milieu else multiverse.Milieu
+            milieuList = [milieu] if milieu else astronomer.Milieu
             for milieu in milieuList:
                 logging.debug('{operation} sector info for {milieu}'.format(
                     operation='Reloading' if reload else 'Loading',
@@ -732,7 +732,7 @@ class DataStore(object):
     def _readMilieuFile(
             self,
             fileName: str,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             useCustomMapDir: bool
             ) -> bytes:
         relativePath = os.path.join(self._MilieuBaseDir, milieu.value, fileName)
@@ -752,7 +752,7 @@ class DataStore(object):
     # the format there.
     def _loadMilieuSectors(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             customSectors: bool
             ) -> typing.List[SectorInfo]:
         sectorType = 'custom' if customSectors else 'base'
@@ -820,18 +820,18 @@ class DataStore(object):
                 # If the universe doesn't specify the sector format it must be a standard traveller map
                 # universe file which means the corresponding sectors files all use T5 column format
                 sectorFormatTag = sectorElement.get('SectorFormat')
-                sectorFormat = multiverse.SectorFormat.T5Column
+                sectorFormat = astronomer.SectorFormat.T5Column
                 if sectorFormatTag != None:
-                    sectorFormat = multiverse.SectorFormat.__members__.get(
+                    sectorFormat = astronomer.SectorFormat.__members__.get(
                         str(sectorFormatTag),
                         sectorFormat)
 
                 # If the universe doesn't specify the metadata format it must be a standard traveller map
                 # universe file which means the corresponding metadata files all use XML format
                 metadataFormatTag = sectorElement.get('MetadataFormat')
-                metadataFormat = multiverse.MetadataFormat.XML
+                metadataFormat = astronomer.MetadataFormat.XML
                 if metadataFormatTag != None:
-                    metadataFormat = multiverse.MetadataFormat.__members__.get(
+                    metadataFormat = astronomer.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
                         metadataFormat)
 
@@ -866,7 +866,7 @@ class DataStore(object):
 
     def _saveCustomSectors(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         universeFilePath = os.path.join(
             self._customDir,

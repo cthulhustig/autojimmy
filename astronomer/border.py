@@ -1,8 +1,8 @@
+import astronomer
 import enum
-import multiverse
 import typing
 
-class Border(multiverse.Region):
+class Border(astronomer.Region):
     class Style(enum.Enum):
         Solid = 0
         Dashed = 1
@@ -10,10 +10,10 @@ class Border(multiverse.Region):
 
     def __init__(
             self,
-            hexList: typing.Iterable[multiverse.HexPosition],
+            hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[str],
             showLabel: bool,
-            labelHex: typing.Optional[multiverse.HexPosition],
+            labelHex: typing.Optional[astronomer.HexPosition],
             labelOffsetX: typing.Optional[float],
             labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],

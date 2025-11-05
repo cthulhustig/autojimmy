@@ -1,6 +1,6 @@
+import astronomer
 import cartographer
 import re
-import multiverse
 import typing
 
 class StyleStore(object):
@@ -18,8 +18,8 @@ class StyleStore(object):
         self._borderStyles = {}
         self._routeStyles = {}
 
-        content = multiverse.readCssContent(
-            multiverse.SnapshotManager.instance().loadTextResource(
+        content = astronomer.readCssContent(
+            astronomer.SnapshotManager.instance().loadTextResource(
                 filePath=StyleStore._DefaultStylePath))
         for group, properties in content.items():
             match = StyleStore._BorderPattern.match(group)

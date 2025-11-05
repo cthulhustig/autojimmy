@@ -1,10 +1,10 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
 import logging
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -233,7 +233,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             showAllOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -279,7 +279,7 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._worldsGroupBox.setLayout(groupLayout)
 
-    def _allowWorld(self, hex: multiverse.HexPosition) -> bool:
+    def _allowWorld(self, hex: astronomer.HexPosition) -> bool:
         return not self._worldManagementWidget.containsHex(hex)
 
     def _tradeGoodTableItemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
@@ -424,7 +424,7 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _findTradeOptions(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         try:
             traderWindow = gui.WindowManager.instance().showMultiWorldTradeOptionsWindow()
@@ -457,14 +457,14 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=[world.hex() for world in worlds])
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if not hexes:
             return

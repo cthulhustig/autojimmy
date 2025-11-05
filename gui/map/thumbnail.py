@@ -1,7 +1,7 @@
 import app
+import astronomer
 import cartographer
 import gui
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui
 
@@ -28,9 +28,9 @@ def _initThumbnailRenderer():
     _thumbnailRenderInitialised = True
 
 def generateThumbnail(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition,
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition,
         width: int,
         height: int,
         linearScale: float,

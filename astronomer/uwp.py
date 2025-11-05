@@ -1,5 +1,5 @@
+import astronomer
 import enum
-import multiverse
 import typing
 
 # Descriptions in these mappings are taken from the 2e core rules, https://travellermap.com/doc/secondsurvey
@@ -324,7 +324,7 @@ class UWP(object):
             default: int = -1
             ) -> int:
         code = self.code(element=element)
-        return multiverse.ehexToInteger(code, default)
+        return astronomer.ehexToInteger(code, default)
 
     def description(
             self,

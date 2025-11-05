@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import base64
 import enum
@@ -6,7 +7,6 @@ import functools
 import gui
 import logic
 import logging
-import multiverse
 import os
 import traveller
 import typing
@@ -190,8 +190,8 @@ class _RenderingTypeActionGroup(_EnumSelectActionGroup):
 class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(
@@ -306,8 +306,8 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -367,7 +367,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def setUniverse(
             self,
-            universe: multiverse.Universe
+            universe: astronomer.Universe
             ) -> None:
         if universe is self._universe:
             return
@@ -376,7 +376,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def setMilieu(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             ) -> None:
         if milieu is self._milieu:
             return
@@ -412,7 +412,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
     def setHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._hex = hex
         self._updateContent(self._label.width())
@@ -943,11 +943,11 @@ class _ConfigSectionLayout(QtWidgets.QGridLayout):
         self.addWidget(label, row, 1)
 
 class MapWidgetEx(QtWidgets.QWidget):
-    leftClicked = QtCore.pyqtSignal([multiverse.HexPosition])
-    rightClicked = QtCore.pyqtSignal([multiverse.HexPosition])
+    leftClicked = QtCore.pyqtSignal([astronomer.HexPosition])
+    rightClicked = QtCore.pyqtSignal([astronomer.HexPosition])
 
     mapStyleChanged = QtCore.pyqtSignal([cartographer.MapStyle])
-    mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of multiverse.Options
+    mapOptionsChanged = QtCore.pyqtSignal([set]) # Set of astronomer.Options
     mapRenderingChanged = QtCore.pyqtSignal([app.MapRendering])
     mapAnimationChanged = QtCore.pyqtSignal([bool])
 
@@ -980,8 +980,8 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             style: cartographer.MapStyle,
             options: typing.Collection[app.MapOption],
@@ -1012,7 +1012,7 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._selectionMode = MapWidgetEx.SelectionMode.NoSelect
         self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.Dict[
-            multiverse.HexPosition,
+            astronomer.HexPosition,
             str # Overlay key
             ] = {}
         self._selectionOutlineHandle = None
@@ -1342,12 +1342,12 @@ class MapWidgetEx(QtWidgets.QWidget):
         action.triggered.connect(self.promptExportImage)
         self.setMenuAction(MapWidgetEx.MenuAction.ExportImage, action)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
     def setUniverse(
             self,
-            universe: multiverse.Universe
+            universe: astronomer.Universe
             ) -> None:
         if universe is self._universe:
             return
@@ -1357,10 +1357,10 @@ class MapWidgetEx(QtWidgets.QWidget):
         self._searchWidget.setUniverse(universe=universe)
         self._infoWidget.setUniverse(universe=universe)
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -1571,20 +1571,20 @@ class MapWidgetEx(QtWidgets.QWidget):
     def hexAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         pos = self._mapWidget.mapFrom(self, pos)
         return self._mapWidget.hexAt(pos=pos)
 
     def worldAt(
             self,
             pos: typing.Union[QtCore.QPoint, QtCore.QPointF]
-            ) -> typing.Optional[multiverse.World]:
+            ) -> typing.Optional[astronomer.World]:
         pos = self._mapWidget.mapFrom(self, pos)
         return self._mapWidget.worldAt(pos=pos)
 
     def centerOnHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             scale: typing.Optional[gui.MapScale] = gui.MapScale(linear=64), # None keeps current scale
             immediate: bool = False
             ) -> None:
@@ -1595,7 +1595,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def centerOnHexes(
             self,
-            hexes: typing.Collection[multiverse.HexPosition],
+            hexes: typing.Collection[astronomer.HexPosition],
             immediate: bool = False
             ) -> None:
         self._mapWidget.centerOnHexes(
@@ -1625,7 +1625,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def highlightHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -1636,7 +1636,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def highlightHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             radius: float = 0.5,
             colour: QtGui.QColor = QtGui.QColor('#7F8080FF')
             ) -> None:
@@ -1647,7 +1647,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def clearHexHighlight(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         self._mapWidget.clearHexHighlight(hex=hex)
 
@@ -1657,11 +1657,11 @@ class MapWidgetEx(QtWidgets.QWidget):
     # Create an overlay with a primitive at each hex
     def createHexOverlay(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             primitive: gui.MapPrimitiveType,
             fillColour: typing.Optional[QtGui.QColor] = None,
             fillMap: typing.Optional[typing.Mapping[
-                multiverse.HexPosition,
+                astronomer.HexPosition,
                 QtGui.QColor
             ]] = None,
             radius: float = 0.5 # Only used for circle primitive
@@ -1675,7 +1675,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def createHexBordersOverlay(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition],
+            hexes: typing.Iterable[astronomer.HexPosition],
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
             fillColour: typing.Optional[QtGui.QColor] = None,
@@ -1690,7 +1690,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def createRadiusOverlay(
             self,
-            center: multiverse.HexPosition,
+            center: astronomer.HexPosition,
             radius: int,
             lineColour: typing.Optional[QtGui.QColor] = None,
             lineWidth: typing.Optional[int] = None, # In pixels
@@ -1718,12 +1718,12 @@ class MapWidgetEx(QtWidgets.QWidget):
     def hasSelection(self) -> bool:
         return len(self._selectedHexes) > 0
 
-    def selectedHexes(self) -> typing.Iterable[multiverse.HexPosition]:
+    def selectedHexes(self) -> typing.Iterable[astronomer.HexPosition]:
         return list(self._selectedHexes.keys())
 
     def selectHex(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             setInfoHex: bool = True
             ) -> None:
         if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
@@ -1758,7 +1758,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def selectHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if self._selectionMode == MapWidgetEx.SelectionMode.NoSelect:
             return
@@ -1798,7 +1798,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def deselectHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         if not self._removeSelectionHexOverlay(hex=hex):
             return # Hex wasn't selected
@@ -1872,7 +1872,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def setInfoHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._infoWidget.setHex(hex if self._infoButton.isChecked() else None)
         # Update the stored info hex even if the info widget isn't being shown. This is done so
@@ -2133,7 +2133,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _handleLeftClick(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         shouldSelect = False
         if self._enableDeadSpaceSelection:
@@ -2169,7 +2169,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _handleRightClick(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self.rightClicked.emit(hex)
 
@@ -2302,7 +2302,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _createSelectionHexOverlay(
             self,
-            hex: multiverse.HexPosition,
+            hex: astronomer.HexPosition,
             ) -> None:
         self._selectedHexes[hex] = self.createHexOverlay(
             hexes=[hex],
@@ -2311,7 +2311,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _removeSelectionHexOverlay(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> bool:
         overlayHandle = self._selectedHexes.get(hex)
         if not overlayHandle:
@@ -2346,7 +2346,7 @@ class MapWidgetEx(QtWidgets.QWidget):
 
     def _searchHexSelected(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if self._infoButton.isChecked():
             self.setInfoHex(hex=hex)

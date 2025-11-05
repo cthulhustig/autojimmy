@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import common
 import enum
@@ -8,7 +9,6 @@ import logging
 import logic
 import os
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -71,7 +71,7 @@ def _formatBerthingTypeString(
     world = pitStop.world()
 
     if world.hasStarPort():
-        starPortCode = world.uwp().code(multiverse.UWP.Element.StarPort)
+        starPortCode = world.uwp().code(astronomer.UWP.Element.StarPort)
         return f'Class {starPortCode} Star Port'
     elif world.isFuelCache():
         return 'Fuel Cache'
@@ -83,7 +83,7 @@ def _formatBerthingTypeString(
 class _HexFilter(logic.HexFilterInterface):
     def __init__(
             self,
-            avoidHexes: typing.List[multiverse.HexPosition],
+            avoidHexes: typing.List[astronomer.HexPosition],
             avoidFilters: typing.List[logic.WorldFilter],
             avoidFilterLogic: logic.FilterLogic,
             rules: traveller.Rules,
@@ -104,8 +104,8 @@ class _HexFilter(logic.HexFilterInterface):
     # IMPORTANT: This will be called from the route planner job thread
     def match(
             self,
-            hex: multiverse.HexPosition,
-            world: typing.Optional[multiverse.World]
+            hex: astronomer.HexPosition,
+            world: typing.Optional[astronomer.World]
             ) -> bool:
         if self._avoidHexes and hex in self._avoidHexes:
             # Filter out worlds on the avoid list
@@ -148,7 +148,7 @@ class _RefuellingPlanTable(gui.HexTable):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             outcomeColours: app.OutcomeColours,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -198,9 +198,9 @@ class _RefuellingPlanTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
-        world = multiverse.WorldManager.instance().worldByPosition(
+        world = astronomer.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
@@ -260,7 +260,7 @@ class _RefuellingPlanTable(gui.HexTable):
 
 class _StartFinishSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
-    showHexRequested = QtCore.pyqtSignal(multiverse.HexPosition)
+    showHexRequested = QtCore.pyqtSignal(astronomer.HexPosition)
 
     # The state version doesn't match the current class name for backwards
     # compatibility. The class name was changed when adding dead space routing
@@ -270,7 +270,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -317,7 +317,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         self._startWidget.setMilieu(milieu=milieu)
         self._finishWidget.setMilieu(milieu=milieu)
 
@@ -349,34 +349,34 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         self._startWidget.setTaggingColours(colours=colours)
         self._finishWidget.setTaggingColours(colours=colours)
 
-    def startHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def startHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._startWidget.selectedHex()
 
-    def finishHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def finishHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._finishWidget.selectedHex()
 
     def hexes(self) -> typing.Tuple[
-            typing.Optional[multiverse.HexPosition],
-            typing.Optional[multiverse.HexPosition]
+            typing.Optional[astronomer.HexPosition],
+            typing.Optional[astronomer.HexPosition]
             ]:
         return (self.startHex(), self.finishHex())
 
     def setStartHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._startWidget.setSelectedHex(hex=hex)
 
     def setFinishHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._finishWidget.setSelectedHex(hex=hex)
 
     def setHexes(
             self,
-            startHex: typing.Optional[multiverse.HexPosition],
-            finishHex: typing.Optional[multiverse.HexPosition]
+            startHex: typing.Optional[astronomer.HexPosition],
+            finishHex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         selectionChanged = False
 
@@ -453,7 +453,7 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
     def _handleShowHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex:
             self.showHexRequested.emit(hex)
@@ -1343,7 +1343,7 @@ class JumpRouteWindow(gui.WindowWidget):
             showRefuellingContentOnMapAction)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -1632,7 +1632,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            startWorld = multiverse.WorldManager.instance().worldByPosition(
+            startWorld = astronomer.WorldManager.instance().worldByPosition(
                 milieu=milieu,
                 hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
@@ -1667,7 +1667,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             fuelIssueWorldStrings = []
             for waypointHex in self._waypointsWidget.hexes():
-                waypointWorld = multiverse.WorldManager.instance().worldByPosition(
+                waypointWorld = astronomer.WorldManager.instance().worldByPosition(
                     milieu=milieu,
                     hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
@@ -1798,8 +1798,8 @@ class JumpRouteWindow(gui.WindowWidget):
         if isinstance(result, Exception):
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             startHex, finishHex = self._selectStartFinishWidget.hexes()
-            startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+            startString = astronomer.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+            finishString = astronomer.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1930,7 +1930,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         isValidStartFinish = isValidWaypoint = \
             self._routingTypeComboBox.currentEnum() is logic.RoutingType.DeadSpace or \
-            multiverse.WorldManager.instance().worldByPosition(
+            astronomer.WorldManager.instance().worldByPosition(
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
                 hex=hex) != None
         isValidAvoidHex = not isCurrentAvoidHex
@@ -2050,7 +2050,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _formatMapToolTip(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> typing.Optional[str]:
         if not hex:
             return None
@@ -2241,7 +2241,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexDetails(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showHexDetailsWindow()
         infoWindow.addHexes(hexes=hexes)
@@ -2263,7 +2263,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexOnMap(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._mapWrapperWidget)
@@ -2285,7 +2285,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexesOnMap(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if not hexes:
             return
@@ -2360,12 +2360,12 @@ class JumpRouteWindow(gui.WindowWidget):
                 option=app.ConfigOption.TaggingColours)
 
             try:
-                worlds = multiverse.WorldManager.instance().worldsInRadius(
+                worlds = astronomer.WorldManager.instance().worldsInRadius(
                     milieu=milieu,
                     center=startHex,
                     searchRadius=jumpRating)
             except Exception as ex:
-                startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+                startString = astronomer.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
                 logging.warning(
                     f'An exception occurred while finding worlds reachable from {startString}',
                     exc_info=ex)
@@ -2601,7 +2601,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._anomalyFuelCostSpinBox.setEnabled(isAnomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(isAnomalyRefuelling)
 
-    def _allowAvoidHex(self, hex: multiverse.HexPosition) -> bool:
+    def _allowAvoidHex(self, hex: astronomer.HexPosition) -> bool:
         if self._avoidHexesWidget.containsHex(hex):
             # Silently ignore worlds that are already in the table
             return False
@@ -2651,8 +2651,8 @@ class JumpRouteWindow(gui.WindowWidget):
         except Exception as ex:
             startHex = jumpRoute.startNode()
             finishHex = jumpRoute.finishNode()
-            startString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
-            finishString = multiverse.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
+            startString = astronomer.WorldManager.instance().canonicalHexName(milieu=milieu, hex=startHex)
+            finishString = astronomer.WorldManager.instance().canonicalHexName(milieu=milieu, hex=finishHex)
             message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                 start=startString,
                 finish=finishString)

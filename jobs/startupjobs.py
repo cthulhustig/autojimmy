@@ -1,6 +1,6 @@
+import astronomer
 import gunsmith
 import robots
-import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -45,7 +45,7 @@ class StartupJobBase(QtCore.QThread):
 
 class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:
-        multiverse.WorldManager.instance().loadSectors(
+        astronomer.WorldManager.instance().loadSectors(
             progressCallback=self._handleProgressUpdate)
 
 class LoadRobotsJob(StartupJobBase):

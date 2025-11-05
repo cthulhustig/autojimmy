@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import base64
 import common
@@ -6,14 +7,13 @@ import gui
 import html
 import logging
 import logic
-import multiverse
 import traveller
 import typing
 
 def createHexToolTip(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition,
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition,
         rules: traveller.Rules,
         width: int = 512, # 0 means no fixed width
         worldTagging: typing.Optional[logic.WorldTagging] = None,
@@ -92,13 +92,13 @@ def createHexToolTip(
             tagLevel = worldTagging.calculateZoneTagLevel(world=world) if worldTagging else None
             toolTip += '<li><span style="{style}">Zone: {zone}</span></li>'.format(
                 style=formatTaggingStyle(level=tagLevel),
-                zone=html.escape(multiverse.zoneTypeName(zone)))
+                zone=html.escape(astronomer.zoneTypeName(zone)))
 
     refuellingTypes = []
     if world:
         if traveller.worldHasStarPortRefuelling(world=world, rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
-                code=uwp.code(multiverse.UWP.Element.StarPort)))
+                code=uwp.code(astronomer.UWP.Element.StarPort)))
         if traveller.worldHasGasGiantRefuelling(world=world):
             refuellingTypes.append('Gas Giant(s)')
         if traveller.worldHasWaterRefuelling(world=world):
@@ -162,35 +162,35 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateStarPortTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Star Port: {uwp.code(multiverse.UWP.Element.StarPort)} - {html.escape(uwp.description(multiverse.UWP.Element.StarPort))}</span></li>'
+        toolTip += f'<li><span style="{style}">Star Port: {uwp.code(astronomer.UWP.Element.StarPort)} - {html.escape(uwp.description(astronomer.UWP.Element.StarPort))}</span></li>'
 
         tagLevel = worldTagging.calculateWorldSizeTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">World Size: {uwp.code(multiverse.UWP.Element.WorldSize)} - {html.escape(uwp.description(multiverse.UWP.Element.WorldSize))}</span></li>'
+        toolTip += f'<li><span style="{style}">World Size: {uwp.code(astronomer.UWP.Element.WorldSize)} - {html.escape(uwp.description(astronomer.UWP.Element.WorldSize))}</span></li>'
 
         tagLevel = worldTagging.calculateAtmosphereTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Atmosphere: {uwp.code(multiverse.UWP.Element.Atmosphere)} - {html.escape(uwp.description(multiverse.UWP.Element.Atmosphere))}</span></li>'
+        toolTip += f'<li><span style="{style}">Atmosphere: {uwp.code(astronomer.UWP.Element.Atmosphere)} - {html.escape(uwp.description(astronomer.UWP.Element.Atmosphere))}</span></li>'
 
         tagLevel = worldTagging.calculateHydrographicsTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Hydrographics: {uwp.code(multiverse.UWP.Element.Hydrographics)} - {html.escape(uwp.description(multiverse.UWP.Element.Hydrographics))}</span></li>'
+        toolTip += f'<li><span style="{style}">Hydrographics: {uwp.code(astronomer.UWP.Element.Hydrographics)} - {html.escape(uwp.description(astronomer.UWP.Element.Hydrographics))}</span></li>'
 
         tagLevel = worldTagging.calculatePopulationTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Population: {uwp.code(multiverse.UWP.Element.Population)} - {html.escape(uwp.description(multiverse.UWP.Element.Population))}</span></li>'
+        toolTip += f'<li><span style="{style}">Population: {uwp.code(astronomer.UWP.Element.Population)} - {html.escape(uwp.description(astronomer.UWP.Element.Population))}</span></li>'
 
         tagLevel = worldTagging.calculateGovernmentTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Government: {uwp.code(multiverse.UWP.Element.Government)} - {html.escape(uwp.description(multiverse.UWP.Element.Government))}</span></li>'
+        toolTip += f'<li><span style="{style}">Government: {uwp.code(astronomer.UWP.Element.Government)} - {html.escape(uwp.description(astronomer.UWP.Element.Government))}</span></li>'
 
         tagLevel = worldTagging.calculateLawLevelTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Law Level: {uwp.code(multiverse.UWP.Element.LawLevel)} - {html.escape(uwp.description(multiverse.UWP.Element.LawLevel))}</span></li>'
+        toolTip += f'<li><span style="{style}">Law Level: {uwp.code(astronomer.UWP.Element.LawLevel)} - {html.escape(uwp.description(astronomer.UWP.Element.LawLevel))}</span></li>'
 
         tagLevel = worldTagging.calculateTechLevelTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(multiverse.UWP.Element.TechLevel)} ({multiverse.ehexToInteger(value=uwp.code(multiverse.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(multiverse.UWP.Element.TechLevel))}</span></li>'
+        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(astronomer.UWP.Element.TechLevel)} ({astronomer.ehexToInteger(value=uwp.code(astronomer.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(astronomer.UWP.Element.TechLevel))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -203,19 +203,19 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateResourcesTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Resources: {economics.code(multiverse.Economics.Element.Resources)} - {html.escape(economics.description(multiverse.Economics.Element.Resources))}</span></li>'
+        toolTip += f'<li><span style="{style}">Resources: {economics.code(astronomer.Economics.Element.Resources)} - {html.escape(economics.description(astronomer.Economics.Element.Resources))}</span></li>'
 
         tagLevel = worldTagging.calculateLabourTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Labour: {economics.code(multiverse.Economics.Element.Labour)} - {html.escape(economics.description(multiverse.Economics.Element.Labour))}</span></li>'
+        toolTip += f'<li><span style="{style}">Labour: {economics.code(astronomer.Economics.Element.Labour)} - {html.escape(economics.description(astronomer.Economics.Element.Labour))}</span></li>'
 
         tagLevel = worldTagging.calculateInfrastructureTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Infrastructure: {economics.code(multiverse.Economics.Element.Infrastructure)} - {html.escape(economics.description(multiverse.Economics.Element.Infrastructure))}</span></li>'
+        toolTip += f'<li><span style="{style}">Infrastructure: {economics.code(astronomer.Economics.Element.Infrastructure)} - {html.escape(economics.description(astronomer.Economics.Element.Infrastructure))}</span></li>'
 
         tagLevel = worldTagging.calculateEfficiencyTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Efficiency: {economics.code(multiverse.Economics.Element.Efficiency)} - {html.escape(economics.description(multiverse.Economics.Element.Efficiency))}</span></li>'
+        toolTip += f'<li><span style="{style}">Efficiency: {economics.code(astronomer.Economics.Element.Efficiency)} - {html.escape(economics.description(astronomer.Economics.Element.Efficiency))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -228,19 +228,19 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateHeterogeneityTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Heterogeneity: {culture.code(multiverse.Culture.Element.Heterogeneity)} - {html.escape(culture.description(multiverse.Culture.Element.Heterogeneity))}</span></li>'
+        toolTip += f'<li><span style="{style}">Heterogeneity: {culture.code(astronomer.Culture.Element.Heterogeneity)} - {html.escape(culture.description(astronomer.Culture.Element.Heterogeneity))}</span></li>'
 
         tagLevel = worldTagging.calculateAcceptanceTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Acceptance: {culture.code(multiverse.Culture.Element.Acceptance)} - {html.escape(culture.description(multiverse.Culture.Element.Acceptance))}</span></li>'
+        toolTip += f'<li><span style="{style}">Acceptance: {culture.code(astronomer.Culture.Element.Acceptance)} - {html.escape(culture.description(astronomer.Culture.Element.Acceptance))}</span></li>'
 
         tagLevel = worldTagging.calculateStrangenessTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Strangeness: {culture.code(multiverse.Culture.Element.Strangeness)} - {html.escape(culture.description(multiverse.Culture.Element.Strangeness))}</span></li>'
+        toolTip += f'<li><span style="{style}">Strangeness: {culture.code(astronomer.Culture.Element.Strangeness)} - {html.escape(culture.description(astronomer.Culture.Element.Strangeness))}</span></li>'
 
         tagLevel = worldTagging.calculateSymbolsTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Symbols: {html.escape(culture.code(multiverse.Culture.Element.Symbols))} - {html.escape(culture.description(multiverse.Culture.Element.Symbols))}</span></li>'
+        toolTip += f'<li><span style="{style}">Symbols: {html.escape(culture.code(astronomer.Culture.Element.Symbols))} - {html.escape(culture.description(astronomer.Culture.Element.Symbols))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -254,7 +254,7 @@ def createHexToolTip(
             for nobilityType in nobilities:
                 tagLevel = worldTagging.calculateNobilityTagLevel(nobilityType) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">{multiverse.Nobilities.code(nobilityType)} - {html.escape(multiverse.Nobilities.description(nobilityType))}</span></li>'
+                toolTip += f'<li><span style="{style}">{astronomer.Nobilities.code(nobilityType)} - {html.escape(astronomer.Nobilities.description(nobilityType))}</span></li>'
             toolTip += '</ul>'
 
         #
@@ -271,7 +271,7 @@ def createHexToolTip(
                 for tradeCode in tradeCodes:
                     tagLevel = worldTagging.calculateTradeCodeTagLevel(tradeCode) if worldTagging else None
                     style = formatTaggingStyle(level=tagLevel)
-                    toolTip += f'<li><span style="{style}">{html.escape(multiverse.tradeCodeName(tradeCode))} - {html.escape(multiverse.tradeCodeDescription(tradeCode))}</span></li>'
+                    toolTip += f'<li><span style="{style}">{html.escape(astronomer.tradeCodeName(tradeCode))} - {html.escape(astronomer.tradeCodeDescription(tradeCode))}</span></li>'
                 toolTip += '</ul>'
 
             sophonts = remarks.sophonts()
@@ -289,9 +289,9 @@ def createHexToolTip(
         pbg = world.pbg()
         toolTip += f'<li><span>PBG: {html.escape(pbg.string())}</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Population Multiplier: {pbg.code(multiverse.PBG.Element.PopulationMultiplier)} ({multiverse.ehexToInteger(value=pbg.code(multiverse.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
-        toolTip += f'<li><span>Planetoid Belts: {pbg.code(multiverse.PBG.Element.PlanetoidBelts)} ({multiverse.ehexToInteger(value=pbg.code(multiverse.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
-        toolTip += f'<li><span>Gas Giants: {pbg.code(multiverse.PBG.Element.GasGiants)} ({multiverse.ehexToInteger(value=pbg.code(multiverse.PBG.Element.GasGiants), default="?")})</span></li>'
+        toolTip += f'<li><span>Population Multiplier: {pbg.code(astronomer.PBG.Element.PopulationMultiplier)} ({astronomer.ehexToInteger(value=pbg.code(astronomer.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
+        toolTip += f'<li><span>Planetoid Belts: {pbg.code(astronomer.PBG.Element.PlanetoidBelts)} ({astronomer.ehexToInteger(value=pbg.code(astronomer.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
+        toolTip += f'<li><span>Gas Giants: {pbg.code(astronomer.PBG.Element.GasGiants)} ({astronomer.ehexToInteger(value=pbg.code(astronomer.PBG.Element.GasGiants), default="?")})</span></li>'
         toolTip += '</ul>'
 
         #
@@ -308,12 +308,12 @@ def createHexToolTip(
 
                 tagLevel = worldTagging.calculateSpectralTagLevel(star) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">Spectral Class: {star.code(multiverse.Star.Element.SpectralClass)} - {html.escape(star.description(multiverse.Star.Element.SpectralClass))}</span></li>'
-                toolTip += f'<li><span style="{style}">Spectral Scale: {star.code(multiverse.Star.Element.SpectralScale)} - {html.escape(star.description(multiverse.Star.Element.SpectralScale))}</span></li>'
+                toolTip += f'<li><span style="{style}">Spectral Class: {star.code(astronomer.Star.Element.SpectralClass)} - {html.escape(star.description(astronomer.Star.Element.SpectralClass))}</span></li>'
+                toolTip += f'<li><span style="{style}">Spectral Scale: {star.code(astronomer.Star.Element.SpectralScale)} - {html.escape(star.description(astronomer.Star.Element.SpectralScale))}</span></li>'
 
                 tagLevel = worldTagging.calculateLuminosityTagLevel(star) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">Luminosity Class: {star.code(multiverse.Star.Element.LuminosityClass)} - {html.escape(star.description(multiverse.Star.Element.LuminosityClass))}</span></li>'
+                toolTip += f'<li><span style="{style}">Luminosity Class: {star.code(astronomer.Star.Element.LuminosityClass)} - {html.escape(star.description(astronomer.Star.Element.LuminosityClass))}</span></li>'
                 toolTip += '</ul>'
             toolTip += '</ul>'
 
@@ -327,7 +327,7 @@ def createHexToolTip(
             for base in bases:
                 tagLevel = worldTagging.calculateBaseTypeTagLevel(base) if worldTagging else None
                 style = formatTaggingStyle(level=tagLevel)
-                toolTip += f'<li><span style="{style}">{html.escape(multiverse.Bases.description(base))}</span></li>'
+                toolTip += f'<li><span style="{style}">{html.escape(astronomer.Bases.description(base))}</span></li>'
             toolTip += '</ul>'
 
         #

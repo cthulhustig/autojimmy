@@ -1,10 +1,10 @@
 import app
+import astronomer
 import enum
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -296,11 +296,11 @@ class ConfigDialog(gui.DialogEx):
 
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
-            type=multiverse.Milieu,
+            type=astronomer.Milieu,
             value=app.Config.instance().value(
                 option=app.ConfigOption.Milieu,
                 futureValue=True),
-            textMap={milieu: multiverse.milieuDescription(milieu) for milieu in  multiverse.Milieu})
+            textMap={milieu: astronomer.milieuDescription(milieu) for milieu in  astronomer.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
             '<p>The milieu to use when determining sector and world information</p>' +
             _RestartRequiredParagraph,
@@ -495,106 +495,106 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Zone,
             displayName='Zone',
-            keyDescriptions={zone: multiverse.zoneTypeName(zone) for zone in multiverse.ZoneType},
-            keyAliases={zone: multiverse.zoneTypeCode(zone) for zone in multiverse.ZoneType})
+            keyDescriptions={zone: astronomer.zoneTypeName(zone) for zone in astronomer.ZoneType},
+            keyAliases={zone: astronomer.zoneTypeCode(zone) for zone in astronomer.ZoneType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.StarPort,
             displayName='Star Port',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.StarPort))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.StarPort))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.WorldSize,
             displayName='World Size',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.WorldSize))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.WorldSize))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Atmosphere,
             displayName='Atmosphere',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Atmosphere))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Atmosphere))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Hydrographics,
             displayName='Hydrographics',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Hydrographics))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Hydrographics))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Population,
             displayName='Population',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Population))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Population))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Government,
             displayName='Government',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.Government))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.Government))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.LawLevel,
             displayName='Law Level',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.LawLevel))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.LawLevel))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TechLevel,
             displayName='Tech Level',
-            keyDescriptions=multiverse.UWP.descriptionMap(multiverse.UWP.Element.TechLevel))
+            keyDescriptions=astronomer.UWP.descriptionMap(astronomer.UWP.Element.TechLevel))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.BaseType,
             displayName='Base',
-            keyDescriptions={base: multiverse.Bases.description(base) for base in  multiverse.BaseType},
-            keyAliases={base: multiverse.Bases.code(base) for base in  multiverse.BaseType})
+            keyDescriptions={base: astronomer.Bases.description(base) for base in  astronomer.BaseType},
+            keyAliases={base: astronomer.Bases.code(base) for base in  astronomer.BaseType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TradeCode,
             displayName='Trade Code',
-            keyDescriptions={code: f'{multiverse.tradeCodeName(code)} - {multiverse.tradeCodeDescription(code)}' for code in  multiverse.TradeCode},
-            keyAliases={code: multiverse.tradeCodeString(code) for code in  multiverse.TradeCode})
+            keyDescriptions={code: f'{astronomer.tradeCodeName(code)} - {astronomer.tradeCodeDescription(code)}' for code in  astronomer.TradeCode},
+            keyAliases={code: astronomer.tradeCodeString(code) for code in  astronomer.TradeCode})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Resources,
             displayName='Resources',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Resources))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Resources))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Labour,
             displayName='Labour',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Labour))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Labour))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Infrastructure,
             displayName='Infrastructure',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Infrastructure))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Infrastructure))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Efficiency,
             displayName='Efficiency',
-            keyDescriptions=multiverse.Economics.descriptionMap(multiverse.Economics.Element.Efficiency))
+            keyDescriptions=astronomer.Economics.descriptionMap(astronomer.Economics.Element.Efficiency))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Heterogeneity,
             displayName='Heterogeneity',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Heterogeneity))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Heterogeneity))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Acceptance,
             displayName='Acceptance',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Acceptance))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Acceptance))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Strangeness,
             displayName='Strangeness',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Strangeness))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Strangeness))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Symbols,
             displayName='Symbols',
-            keyDescriptions=multiverse.Culture.descriptionMap(multiverse.Culture.Element.Symbols))
+            keyDescriptions=astronomer.Culture.descriptionMap(astronomer.Culture.Element.Symbols))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Nobility,
             displayName='Nobility',
-            keyDescriptions={nobility: multiverse.Nobilities.description(nobility) for nobility in multiverse.NobilityType},
-            keyAliases={nobility: multiverse.Nobilities.code(nobility) for nobility in multiverse.NobilityType})
+            keyDescriptions={nobility: astronomer.Nobilities.description(nobility) for nobility in astronomer.NobilityType},
+            keyAliases={nobility: astronomer.Nobilities.code(nobility) for nobility in astronomer.NobilityType})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Allegiance,
@@ -604,12 +604,12 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Spectral,
             displayName='Spectral Class',
-            keyDescriptions=multiverse.Star.descriptionMap(multiverse.Star.Element.SpectralClass))
+            keyDescriptions=astronomer.Star.descriptionMap(astronomer.Star.Element.SpectralClass))
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Luminosity,
             displayName='Luminosity Class',
-            keyDescriptions=multiverse.Star.descriptionMap(multiverse.Star.Element.LuminosityClass))
+            keyDescriptions=astronomer.Star.descriptionMap(astronomer.Star.Element.LuminosityClass))
 
     def _setupTaggingTab(
             self,
@@ -743,7 +743,7 @@ class ConfigDialog(gui.DialogEx):
             table.setTaggingColours(colours=colours)
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
-        universe = multiverse.WorldManager.instance().universe()
+        universe = astronomer.WorldManager.instance().universe()
         allegiances = universe.allegiances(
             milieu=self._milieuComboBox.currentEnum())
 

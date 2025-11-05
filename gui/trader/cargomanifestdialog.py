@@ -1,9 +1,9 @@
 import app
+import astronomer
 import common
 import gui
 import logging
 import logic
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -319,7 +319,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -401,7 +401,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:

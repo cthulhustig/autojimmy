@@ -1,17 +1,17 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class HexRadiusSelectDialog(gui.DialogEx):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Iterable[app.MapOption],
@@ -27,7 +27,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
             parent=parent)
 
         self._overlays: typing.List[str] = []
-        self._selectedHexes: typing.List[multiverse.HexPosition] = []
+        self._selectedHexes: typing.List[astronomer.HexPosition] = []
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(app.MinPossibleJumpRating, app.MaxSearchRadius)
@@ -47,7 +47,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
         selectionRadiusLayout.addStretch()
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -110,14 +110,14 @@ class HexRadiusSelectDialog(gui.DialogEx):
 
         self._updateOverlay()
 
-    def selectedHexes(self) -> typing.Collection[multiverse.HexPosition]:
+    def selectedHexes(self) -> typing.Collection[astronomer.HexPosition]:
         return list(self._selectedHexes)
 
-    def centerHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def centerHex(self) -> typing.Optional[astronomer.HexPosition]:
         selection = self._mapWidget.selectedHexes()
         return selection[0] if selection else None
 
-    def setCenterHex(self, hex: typing.Optional[multiverse.HexPosition]) -> None:
+    def setCenterHex(self, hex: typing.Optional[astronomer.HexPosition]) -> None:
         if hex == self.centerHex():
             return # Nothing to do
 
@@ -235,7 +235,7 @@ class HexRadiusSelectDialog(gui.DialogEx):
                 self._overlays.append(handle)
             else:
                 try:
-                    worlds = multiverse.WorldManager.instance().worldsInRadius(
+                    worlds = astronomer.WorldManager.instance().worldsInRadius(
                         milieu=self._mapWidget.milieu(),
                         center=centerHex,
                         searchRadius=searchRadius)

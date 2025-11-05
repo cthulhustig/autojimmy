@@ -1,6 +1,4 @@
-import cartographer
 import common
-import multiverse
 import typing
 
 def makeAlphaColour(

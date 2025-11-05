@@ -1,27 +1,27 @@
+import astronomer
 import math
-import multiverse
 import typing
 
 class World(object):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
             worldName: str,
             isNameGenerated: bool,
             sectorName: str,
             subsectorName: str,
-            allegiance: typing.Optional[multiverse.Allegiance],
-            uwp: multiverse.UWP,
-            economics: multiverse.Economics,
-            culture: multiverse.Culture,
-            nobilities: multiverse.Nobilities,
-            remarks: multiverse.Remarks,
-            zone: typing.Optional[multiverse.ZoneType],
-            stellar: multiverse.Stellar,
-            pbg: multiverse.PBG,
+            allegiance: typing.Optional[astronomer.Allegiance],
+            uwp: astronomer.UWP,
+            economics: astronomer.Economics,
+            culture: astronomer.Culture,
+            nobilities: astronomer.Nobilities,
+            remarks: astronomer.Remarks,
+            zone: typing.Optional[astronomer.ZoneType],
+            stellar: astronomer.Stellar,
+            pbg: astronomer.PBG,
             systemWorlds: int,
-            bases: multiverse.Bases
+            bases: astronomer.Bases
             ) -> None:
         self._milieu = milieu
         self._hex = hex
@@ -44,10 +44,10 @@ class World(object):
         self._systemWorlds = systemWorlds
         self._bases = bases
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def hex(self) -> multiverse.HexPosition:
+    def hex(self) -> astronomer.HexPosition:
         return self._hex
 
     def name(
@@ -68,52 +68,52 @@ class World(object):
         return self._subsectorName
 
     def sectorHex(self) -> str:
-        return multiverse.formatSectorHex(
+        return astronomer.formatSectorHex(
             sectorName=self._sectorName,
             offsetX=self._hex.offsetX(),
             offsetY=self._hex.offsetY())
 
-    def allegiance(self) -> typing.Optional[multiverse.Allegiance]:
+    def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance
 
-    def uwp(self) -> multiverse.UWP:
+    def uwp(self) -> astronomer.UWP:
         return self._uwp
 
-    def economics(self) -> multiverse.Economics:
+    def economics(self) -> astronomer.Economics:
         return self._economics
 
-    def culture(self) -> multiverse.Culture:
+    def culture(self) -> astronomer.Culture:
         return self._culture
 
-    def remarks(self) -> multiverse.Remarks:
+    def remarks(self) -> astronomer.Remarks:
         return self._remarks
 
     def hasRemark(self, remark: str) -> None:
         return self._remarks.hasRemark(remark=remark)
 
-    def zone(self) -> typing.Optional[multiverse.ZoneType]:
+    def zone(self) -> typing.Optional[astronomer.ZoneType]:
         return self._zone
 
-    def nobilities(self) -> multiverse.Nobilities:
+    def nobilities(self) -> astronomer.Nobilities:
         return self._nobilities
 
     def hasNobility(self, nobilityType: str) -> bool:
         return nobilityType in self._nobilities
 
-    def bases(self) -> multiverse.Bases:
+    def bases(self) -> astronomer.Bases:
         return self._bases
 
-    def hasBase(self, baseType: multiverse.BaseType) -> bool:
+    def hasBase(self, baseType: astronomer.BaseType) -> bool:
         return self._bases.hasBase(baseType)
 
-    def tradeCodes(self) -> typing.Iterable[multiverse.TradeCode]:
+    def tradeCodes(self) -> typing.Iterable[astronomer.TradeCode]:
         return self._remarks.tradeCodes()
 
-    def hasTradeCode(self, tradeCode: multiverse.TradeCode) -> bool:
+    def hasTradeCode(self, tradeCode: astronomer.TradeCode) -> bool:
         return self._remarks.hasTradeCode(tradeCode)
 
     def hasStarPort(self):
-        starPortCode = self._uwp.code(multiverse.UWP.Element.StarPort)
+        starPortCode = self._uwp.code(astronomer.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
     def hasOwner(self) -> bool:
@@ -145,21 +145,21 @@ class World(object):
     def isFuelCache(self) -> bool:
         return self._isFuelCache
 
-    def stellar(self) -> multiverse.Stellar:
+    def stellar(self) -> astronomer.Stellar:
         return self._stellar
 
     def numberOfStars(self) -> int:
         return self._stellar.starCount()
 
-    def pbg(self) -> multiverse.PBG:
+    def pbg(self) -> astronomer.PBG:
         return self._pbg
 
     def population(self) -> int:
-        multiplier = multiverse.ehexToInteger(
-            value=self._pbg.code(multiverse.PBG.Element.PopulationMultiplier),
+        multiplier = astronomer.ehexToInteger(
+            value=self._pbg.code(astronomer.PBG.Element.PopulationMultiplier),
             default=None)
-        exponent = multiverse.ehexToInteger(
-            value=self._uwp.code(multiverse.UWP.Element.Population),
+        exponent = astronomer.ehexToInteger(
+            value=self._uwp.code(astronomer.UWP.Element.Population),
             default=None)
 
         if multiplier == None or exponent == None:
@@ -175,13 +175,13 @@ class World(object):
         return int(math.pow(10, exponent)) * multiplier
 
     def numberOfPlanetoidBelts(self) -> int:
-        return multiverse.ehexToInteger(
-            value=self._pbg.code(multiverse.PBG.Element.PlanetoidBelts),
+        return astronomer.ehexToInteger(
+            value=self._pbg.code(astronomer.PBG.Element.PlanetoidBelts),
             default=-1)
 
     def numberOfGasGiants(self) -> int:
-        return multiverse.ehexToInteger(
-            value=self._pbg.code(multiverse.PBG.Element.GasGiants),
+        return astronomer.ehexToInteger(
+            value=self._pbg.code(astronomer.PBG.Element.GasGiants),
             default=-1)
 
     def numberOfSystemWorlds(self) -> int:
@@ -191,7 +191,7 @@ class World(object):
             self,
             dest: typing.Union[
                 'World',
-                multiverse.HexPosition
+                astronomer.HexPosition
             ]
             ) -> int:
         return self._hex.parsecsTo(

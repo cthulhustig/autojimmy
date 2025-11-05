@@ -1,7 +1,7 @@
+import astronomer
 import common
 import json
 import traveller
-import multiverse
 import typing
 
 class CargoRecord(object):
@@ -32,7 +32,7 @@ class CargoRecord(object):
 
 def generateSpeculativePurchaseCargo(
         ruleSystem: traveller.RuleSystem,
-        world: multiverse.World,
+        world: astronomer.World,
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         minSellerDm: typing.Union[int, common.ScalarCalculation],
         maxSellerDm: typing.Union[int, common.ScalarCalculation],
@@ -157,7 +157,7 @@ def generateSpeculativePurchaseCargo(
 
 def generateRandomPurchaseCargo(
         ruleSystem: traveller.RuleSystem,
-        world: multiverse.World,
+        world: astronomer.World,
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         sellerDm: typing.Union[int, common.ScalarCalculation],
         blackMarket: bool,
@@ -179,8 +179,8 @@ def generateRandomPurchaseCargo(
         # For the 2022 rules the number of randomly available trade goods is
         # determined by the population (see p242)
         population = common.ScalarCalculation(
-            value=multiverse.ehexToInteger(
-                value=world.uwp().code(multiverse.UWP.Element.Population),
+            value=astronomer.ehexToInteger(
+                value=world.uwp().code(astronomer.UWP.Element.Population),
                 default=0),
             name=f'{world.name(includeSubsector=True)} Population Code')
         numberOfRandomTradeGoods = common.Calculator.equals(
@@ -304,7 +304,7 @@ def generateRandomPurchaseCargo(
 
 def generateRandomSaleCargo(
         ruleSystem: traveller.RuleSystem,
-        world: multiverse.World,
+        world: astronomer.World,
         currentCargo: typing.Iterable[CargoRecord],
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         buyerDm: typing.Union[int, common.ScalarCalculation],

@@ -1,8 +1,8 @@
 import app
+import astronomer
 import cartographer
 import gui
 import logic
-import multiverse
 import traveller
 import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 class _CustomLabel(QtWidgets.QLabel):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             mapStyle: cartographer.MapStyle,
             mapOptions: typing.Collection[app.MapOption],
@@ -35,7 +35,7 @@ class _CustomLabel(QtWidgets.QLabel):
         self.setWordWrap(True)
         self.linkHovered.connect(self._linkHovered)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -84,7 +84,7 @@ class _CustomLabel(QtWidgets.QLabel):
 
     def setHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         if hex == self._hex:
             return
@@ -95,7 +95,7 @@ class _CustomLabel(QtWidgets.QLabel):
     def _updateContent(self) -> None:
         if self._hex:
             self.setText(gui.createHexToolTip(
-                universe=multiverse.WorldManager.instance().universe(),
+                universe=astronomer.WorldManager.instance().universe(),
                 milieu=self._milieu,
                 hex=self._hex,
                 rules=self._rules,
@@ -119,7 +119,7 @@ class HexDetailsWindow(gui.WindowWidget):
             title='Hex Details',
             configSection='HexDetailsWindow')
 
-        self._hexes: typing.List[multiverse.HexPosition] = []
+        self._hexes: typing.List[astronomer.HexPosition] = []
 
         self._tabBar = gui.VerticalTabBar()
         self._tabBar.setTabsClosable(True)
@@ -149,7 +149,7 @@ class HexDetailsWindow(gui.WindowWidget):
 
     def addHex(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         for index, existingHex in enumerate(self._hexes):
             if hex == existingHex:
@@ -157,7 +157,7 @@ class HexDetailsWindow(gui.WindowWidget):
                 self._hexLabel.setHex(hex)
                 return
 
-        tabName = multiverse.WorldManager.instance().canonicalHexName(
+        tabName = astronomer.WorldManager.instance().canonicalHexName(
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
             hex=hex)
         self._hexes.append(hex)
@@ -167,7 +167,7 @@ class HexDetailsWindow(gui.WindowWidget):
 
     def addHexes(
             self,
-            hexes: typing.Iterable[multiverse.HexPosition]
+            hexes: typing.Iterable[astronomer.HexPosition]
             ) -> None:
         if not hexes:
             return
@@ -176,7 +176,7 @@ class HexDetailsWindow(gui.WindowWidget):
         currentHexes = set(self._hexes)
         for hex in hexes:
             if hex not in currentHexes:
-                tabName = multiverse.WorldManager.instance().canonicalHexName(
+                tabName = astronomer.WorldManager.instance().canonicalHexName(
                     milieu=milieu,
                     hex=hex)
                 self._hexes.append(hex)
@@ -229,7 +229,7 @@ class HexDetailsWindow(gui.WindowWidget):
             ) -> None:
         if option is app.ConfigOption.Milieu:
             for index, hex in enumerate(self._hexes):
-                tabName = multiverse.WorldManager.instance().canonicalHexName(
+                tabName = astronomer.WorldManager.instance().canonicalHexName(
                     milieu=newValue,
                     hex=hex)
                 self._tabBar.setTabText(index, tabName)

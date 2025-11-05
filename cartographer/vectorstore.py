@@ -1,7 +1,7 @@
+import astronomer
 import base64
 import logging
 import cartographer
-import multiverse
 import typing
 import xml.etree.ElementTree
 
@@ -121,7 +121,7 @@ class VectorStore(object):
         for path in paths:
             try:
                 vectors.extend(self._parseFile(
-                    content=multiverse.SnapshotManager.instance().loadTextResource(
+                    content=astronomer.SnapshotManager.instance().loadTextResource(
                         filePath=path)))
             except Exception as ex:
                 logging.warning(f'Failed to parse vector object file "{path}"', exc_info=ex)

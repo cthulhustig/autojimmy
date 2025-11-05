@@ -1,6 +1,6 @@
+import astronomer
 import common
 import traveller
-import multiverse
 import typing
 
 # Fuel costs are the same for Mongoose 1e (p140), 2e (p226) & 2022 (p154)
@@ -47,14 +47,14 @@ def calculateFuelRequiredForJump(
     return calculation
 
 def worldHasStarPortRefuelling(
-        world: multiverse.World,
+        world: astronomer.World,
         rules: traveller.Rules,
         includeRefined: bool = True,
         includeUnrefined: bool = True
         ) -> bool:
     uwp = world.uwp()
     starPortFuelType = rules.starPortFuelType(
-        code=uwp.code(multiverse.UWP.Element.StarPort))
+        code=uwp.code(astronomer.UWP.Element.StarPort))
 
     if starPortFuelType is traveller.StarPortFuelType.AllTypes:
         return includeRefined or includeUnrefined
@@ -65,7 +65,7 @@ def worldHasStarPortRefuelling(
 
     return False
 
-def worldHasGasGiantRefuelling(world: multiverse.World) -> bool:
+def worldHasGasGiantRefuelling(world: astronomer.World) -> bool:
     return world.numberOfGasGiants() > 0
 
 # This method of detecting if the system has water is based on Traveller Maps (WaterPresent in
@@ -76,29 +76,29 @@ def worldHasGasGiantRefuelling(world: multiverse.World) -> bool:
 # as low as 6% water, such a low parentage could cause issues if you're trying to do water refuelling
 # - It includes worlds with atmosphere code 15. This is 'Unusual (Varies)' which doesn't sound like
 # it would guarantee accessible water for refuelling
-def worldHasWaterRefuelling(world: multiverse.World) -> bool:
-    if world.hasTradeCode(multiverse.TradeCode.WaterWorld):
+def worldHasWaterRefuelling(world: astronomer.World) -> bool:
+    if world.hasTradeCode(astronomer.TradeCode.WaterWorld):
         return True
 
     uwp = world.uwp()
     try:
-        hydrographics = multiverse.ehexToInteger(
-            value=uwp.code(multiverse.UWP.Element.Hydrographics),
+        hydrographics = astronomer.ehexToInteger(
+            value=uwp.code(astronomer.UWP.Element.Hydrographics),
             default=-1)
-        atmosphere = multiverse.ehexToInteger(
-            value=uwp.code(multiverse.UWP.Element.Atmosphere),
+        atmosphere = astronomer.ehexToInteger(
+            value=uwp.code(astronomer.UWP.Element.Atmosphere),
             default=-1)
     except ValueError:
         return False
 
     return (hydrographics > 0) and ((2 <= atmosphere <= 9) or (13 <= atmosphere <= 15))
 
-def worldHasWildernessRefuelling(world: multiverse.World) -> bool:
+def worldHasWildernessRefuelling(world: astronomer.World) -> bool:
     return worldHasGasGiantRefuelling(world=world) or \
         worldHasWaterRefuelling(world=world)
 
 def worldHasRefuelling(
-        world: multiverse.World,
+        world: astronomer.World,
         rules: traveller.Rules
         ) -> bool:
     return worldHasWildernessRefuelling(world=world) or \

@@ -1,7 +1,7 @@
 import common
 import re
 import logging
-import multiverse
+import astronomer
 import threading
 import typing
 
@@ -108,7 +108,7 @@ class _AllegianceTracker(object):
     # them no mater which milieu you have selected. In my implementation
     # they are only used for M1120
     _T5UnofficialAllegiancesMap = {
-        multiverse.Milieu.M1120: [
+        astronomer.Milieu.M1120: [
             # -----------------------
             # Unofficial/Unreviewed
             # -----------------------
@@ -133,7 +133,7 @@ class _AllegianceTracker(object):
 
     def __init__(self) -> None:
         self._milieuDataMap: typing.Dict[
-            multiverse.Milieu,
+            astronomer.Milieu,
             typing.Dict[
                 str,
                 _AllegianceCodeInfo]] = {}
@@ -141,7 +141,7 @@ class _AllegianceTracker(object):
 
     def allegiances(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> typing.Iterable[_AllegianceCodeInfo]:
         milieuData = self._milieuDataMap.get(milieu)
         if not milieuData:
@@ -150,7 +150,7 @@ class _AllegianceTracker(object):
 
     def allegianceName(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             code: str,
             sectorName: str
             ) -> typing.Optional[str]:
@@ -169,7 +169,7 @@ class _AllegianceTracker(object):
 
     def legacyCode(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             code: str
             ) -> typing.Optional[str]:
         if not code:
@@ -187,7 +187,7 @@ class _AllegianceTracker(object):
 
     def baseCode(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             code: str
             ) -> typing.Optional[str]:
         if not code:
@@ -205,7 +205,7 @@ class _AllegianceTracker(object):
 
     def uniqueAllegianceCode(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             code: str,
             sectorName: str
             ) -> typing.Optional[str]:
@@ -224,7 +224,7 @@ class _AllegianceTracker(object):
 
     def addSectorAllegiances(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             sectorName: str,
             allegiances: typing.Mapping[str, str]
             ) -> None:
@@ -236,12 +236,12 @@ class _AllegianceTracker(object):
     def _loadAllegiances(self) -> None:
         self._milieuDataMap.clear()
 
-        for milieu in multiverse.Milieu:
+        for milieu in astronomer.Milieu:
             self._milieuDataMap[milieu] = {}
 
         # Load the T5 second survey allegiances pulled from Traveller Map
-        _, results = multiverse.parseTabContent(
-            content=multiverse.SnapshotManager.instance().loadTextResource(
+        _, results = astronomer.parseTabContent(
+            content=astronomer.SnapshotManager.instance().loadTextResource(
                 filePath=_AllegianceTracker._T5OfficialAllegiancesPath))
 
         # Split results into global and local allegiances
@@ -261,7 +261,7 @@ class _AllegianceTracker(object):
             baseCode = allegiance['BaseCode']
             globalName = allegiance['Name']
 
-            for milieu in multiverse.Milieu:
+            for milieu in astronomer.Milieu:
                 self._addAllegianceCode(
                     milieu=milieu,
                     code=code,
@@ -273,11 +273,11 @@ class _AllegianceTracker(object):
         # sectors. The locations are specified using abbreviations so a per-milieu map
         # is generated for all abbreviations.
         abbreviationMap: typing.Dict[
-            typing.Tuple[multiverse.Milieu, str], # Milieu & abbreviation
+            typing.Tuple[astronomer.Milieu, str], # Milieu & abbreviation
             str # Canonical name
             ] = {}
-        for milieu in multiverse.Milieu:
-            for sectorInfo in multiverse.DataStore.instance().sectors(milieu=milieu):
+        for milieu in astronomer.Milieu:
+            for sectorInfo in astronomer.DataStore.instance().sectors(milieu=milieu):
                 abbreviation = sectorInfo.abbreviation()
                 if not abbreviation:
                     continue
@@ -292,7 +292,7 @@ class _AllegianceTracker(object):
 
             abbreviations = location.split('/')
 
-            for milieu in multiverse.Milieu:
+            for milieu in astronomer.Milieu:
                 codeInfo = self._addAllegianceCode(
                     milieu=milieu,
                     code=code,
@@ -311,7 +311,7 @@ class _AllegianceTracker(object):
                         allegianceName=localName)
 
         # Now unofficial global entries
-        for milieu in multiverse.Milieu:
+        for milieu in astronomer.Milieu:
             unofficialAllegiance = self._T5UnofficialAllegiancesMap.get(milieu)
             if unofficialAllegiance:
                 for code, legacyCode, baseCode, globalName in unofficialAllegiance:
@@ -324,7 +324,7 @@ class _AllegianceTracker(object):
 
     def _addAllegianceCode(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             code: str,
             legacyCode: typing.Optional[str] = None,
             baseCode: typing.Optional[str] = None,
@@ -350,7 +350,7 @@ class WorldManager(object):
     # M1105 is used as placeholders if the specified milieu doesn't have
     # a sector at that location. The world details may not be valid for the
     # specified milieu but the position is
-    _PlaceholderMilieu = multiverse.Milieu.M1105
+    _PlaceholderMilieu = astronomer.Milieu.M1105
 
     # Route and border style sheet regexes
     _BorderStylePattern = re.compile(r'border\.(\w+)')
@@ -363,7 +363,7 @@ class WorldManager(object):
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _universe: multiverse.Universe = None
+    _universe: astronomer.Universe = None
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -398,20 +398,20 @@ class WorldManager(object):
                 return
 
             totalSectorCount = 0
-            for milieu in multiverse.Milieu:
-                totalSectorCount += multiverse.DataStore.instance().sectorCount(milieu=milieu)
+            for milieu in astronomer.Milieu:
+                totalSectorCount += astronomer.DataStore.instance().sectorCount(milieu=milieu)
 
             maxProgress = totalSectorCount * 2
             currentProgress = 0
 
             rawData: typing.List[typing.Tuple[
-                multiverse.Milieu,
-                multiverse.RawMetadata,
-                typing.Iterable[multiverse.RawWorld],
+                astronomer.Milieu,
+                astronomer.RawMetadata,
+                typing.Iterable[astronomer.RawWorld],
                 bool # True if sector is a custom sector
                 ]] = []
-            for milieu in multiverse.Milieu:
-                for sectorInfo in multiverse.DataStore.instance().sectors(milieu=milieu):
+            for milieu in astronomer.Milieu:
+                for sectorInfo in astronomer.DataStore.instance().sectors(milieu=milieu):
                     canonicalName = sectorInfo.canonicalName()
                     logging.debug(f'Loading sector {canonicalName}')
 
@@ -421,20 +421,20 @@ class WorldManager(object):
                         progressCallback(stage, currentProgress, maxProgress)
 
                     try:
-                        metadataContent = multiverse.DataStore.instance().sectorMetaData(
+                        metadataContent = astronomer.DataStore.instance().sectorMetaData(
                             sectorName=canonicalName,
                             milieu=milieu)
 
-                        sectorContent = multiverse.DataStore.instance().sectorFileData(
+                        sectorContent = astronomer.DataStore.instance().sectorFileData(
                             sectorName=canonicalName,
                             milieu=milieu)
 
-                        rawMetadata = multiverse.readMetadata(
+                        rawMetadata = astronomer.readMetadata(
                             content=metadataContent,
                             format=sectorInfo.metadataFormat(),
                             identifier=canonicalName)
 
-                        rawWorlds = multiverse.readSector(
+                        rawWorlds = astronomer.readSector(
                             content=sectorContent,
                             format=sectorInfo.sectorFormat(),
                             identifier=canonicalName)
@@ -481,32 +481,32 @@ class WorldManager(object):
                 logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} in {milieu.value}')
                 sectors.append(sector)
 
-            self._universe = multiverse.Universe(
+            self._universe = astronomer.Universe(
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
 
     def createSectorUniverse(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             sectorContent: str,
             metadataContent: str
-            ) -> typing.Tuple[multiverse.Universe, multiverse.Sector]:
-        sectorFormat = multiverse.sectorFileFormatDetect(
+            ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
+        sectorFormat = astronomer.sectorFileFormatDetect(
             content=sectorContent)
         if not sectorFormat:
             raise ValueError('Unknown sector format')
 
-        metadataFormat = multiverse.metadataFileFormatDetect(
+        metadataFormat = astronomer.metadataFileFormatDetect(
             content=metadataContent)
         if not metadataContent:
             raise ValueError('Unknown metadata format')
 
-        rawWorlds = multiverse.readSector(
+        rawWorlds = astronomer.readSector(
             content=sectorContent,
             format=sectorFormat,
             identifier='Sector')
 
-        rawMetadata = multiverse.readMetadata(
+        rawMetadata = astronomer.readMetadata(
             content=metadataContent,
             format=metadataFormat,
             identifier='Metadata')
@@ -524,30 +524,30 @@ class WorldManager(object):
             allegianceTracker=allegianceTracker,
             isCustom=True)
 
-        return (multiverse.Universe(sectors=[sector]), sector)
+        return (astronomer.Universe(sectors=[sector]), sector)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
     def sectorNames(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> typing.Iterable[str]:
         return self._universe.sectorNames(milieu=milieu)
 
     def sectorByName(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             name: str
-            ) -> multiverse.Sector:
+            ) -> astronomer.Sector:
         return self._universe.sectorByName(milieu=milieu, name=name)
 
     def sectors(
             self,
-            milieu: multiverse.Milieu,
-            filterCallback: typing.Callable[[multiverse.Sector], bool] = None,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.Sector]:
+            ) -> typing.List[astronomer.Sector]:
         return self._universe.sectors(
             milieu=milieu,
             filterCallback=filterCallback,
@@ -555,10 +555,10 @@ class WorldManager(object):
 
     def subsectors(
             self,
-            milieu: multiverse.Milieu,
-            filterCallback: typing.Callable[[multiverse.Subsector], bool] = None,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.Subsector]:
+            ) -> typing.List[astronomer.Subsector]:
         return self._universe.subsectors(
             milieu=milieu,
             filterCallback=filterCallback,
@@ -566,19 +566,19 @@ class WorldManager(object):
 
     def worldBySectorHex(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             sectorHex: str,
-            ) -> typing.Optional[multiverse.World]:
+            ) -> typing.Optional[astronomer.World]:
         return self._universe.worldBySectorHex(
             milieu=milieu,
             sectorHex=sectorHex)
 
     def worldByPosition(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
             includePlaceholders: bool = False
-            ) -> typing.Optional[multiverse.World]:
+            ) -> typing.Optional[astronomer.World]:
         return self._universe.worldByPosition(
             milieu=milieu,
             hex=hex,
@@ -586,10 +586,10 @@ class WorldManager(object):
 
     def sectorByPosition(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
             includePlaceholders: bool = False
-            ) -> typing.Optional[multiverse.Sector]:
+            ) -> typing.Optional[astronomer.Sector]:
         return self._universe.sectorByPosition(
             milieu=milieu,
             hex=hex,
@@ -597,10 +597,10 @@ class WorldManager(object):
 
     def sectorBySectorIndex(
             self,
-            milieu: multiverse.Milieu,
-            index: multiverse.SectorIndex,
+            milieu: astronomer.Milieu,
+            index: astronomer.SectorIndex,
             includePlaceholders: bool = False
-            ) -> typing.Optional[multiverse.Sector]:
+            ) -> typing.Optional[astronomer.Sector]:
         return self._universe.sectorBySectorIndex(
             milieu=milieu,
             index=index,
@@ -608,10 +608,10 @@ class WorldManager(object):
 
     def subsectorByPosition(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
             includePlaceholders: bool = False
-            ) -> typing.Optional[multiverse.Subsector]:
+            ) -> typing.Optional[astronomer.Subsector]:
         return self._universe.subsectorByPosition(
             milieu=milieu,
             hex=hex,
@@ -619,12 +619,12 @@ class WorldManager(object):
 
     def sectorsInArea(
             self,
-            milieu: multiverse.Milieu,
-            upperLeft: multiverse.HexPosition,
-            lowerRight: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.Sector], bool] = None,
+            milieu: astronomer.Milieu,
+            upperLeft: astronomer.HexPosition,
+            lowerRight: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.Sector]:
+            ) -> typing.List[astronomer.Sector]:
         return self._universe.sectorsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
@@ -634,12 +634,12 @@ class WorldManager(object):
 
     def subsectorsInArea(
             self,
-            milieu: multiverse.Milieu,
-            upperLeft: multiverse.HexPosition,
-            lowerRight: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.Subsector], bool] = None,
+            milieu: astronomer.Milieu,
+            upperLeft: astronomer.HexPosition,
+            lowerRight: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.Subsector]:
+            ) -> typing.List[astronomer.Subsector]:
         return self._universe.subsectorsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
@@ -649,10 +649,10 @@ class WorldManager(object):
 
     def worlds(
             self,
-            milieu: multiverse.Milieu,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.World]:
+            ) -> typing.List[astronomer.World]:
         return self._universe.worlds(
             milieu=milieu,
             filterCallback=filterCallback,
@@ -660,12 +660,12 @@ class WorldManager(object):
 
     def worldsInArea(
             self,
-            milieu: multiverse.Milieu,
-            upperLeft: multiverse.HexPosition,
-            lowerRight: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            milieu: astronomer.Milieu,
+            upperLeft: astronomer.HexPosition,
+            lowerRight: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.World]:
+            ) -> typing.List[astronomer.World]:
         return self._universe.worldsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
@@ -675,12 +675,12 @@ class WorldManager(object):
 
     def worldsInRadius(
             self,
-            milieu: multiverse.Milieu,
-            center: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            center: astronomer.HexPosition,
             searchRadius: int,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.World]:
+            ) -> typing.List[astronomer.World]:
         return self._universe.worldsInRadius(
             milieu=milieu,
             center=center,
@@ -690,11 +690,11 @@ class WorldManager(object):
 
     def worldsInFlood(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.List[multiverse.World]:
+            ) -> typing.List[astronomer.World]:
         return self._universe.worldsInFlood(
             milieu=milieu,
             hex=hex,
@@ -703,8 +703,8 @@ class WorldManager(object):
 
     def positionToSectorHex(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
             includePlaceholders: bool = False
             ) -> str:
         return self._universe.positionToSectorHex(
@@ -714,26 +714,26 @@ class WorldManager(object):
 
     def sectorHexToPosition(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             sectorHex: str
-            ) -> typing.Optional[multiverse.HexPosition]:
+            ) -> typing.Optional[astronomer.HexPosition]:
         return self._universe.sectorHexToPosition(
             milieu=milieu,
             sectorHex=sectorHex)
 
     def stringToPosition(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             string: str,
-            ) -> multiverse.HexPosition:
+            ) -> astronomer.HexPosition:
         return self._universe.stringToPosition(
             milieu=milieu,
             string=string)
 
     def canonicalHexName(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
             ) -> str:
         return self._universe.canonicalHexName(
             milieu=milieu,
@@ -741,19 +741,19 @@ class WorldManager(object):
 
     def mainByPosition(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition
-            ) -> typing.Optional[multiverse.Main]:
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition
+            ) -> typing.Optional[astronomer.Main]:
         return self._universe.mainByPosition(
             milieu=milieu,
             hex=hex)
 
     def yieldSectors(
             self,
-            milieu: multiverse.Milieu,
-            filterCallback: typing.Callable[[multiverse.Sector], bool] = None,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.Sector, None, None]:
+            ) -> typing.Generator[astronomer.Sector, None, None]:
         return self._universe.yieldSectors(
             milieu=milieu,
             filterCallback=filterCallback,
@@ -761,12 +761,12 @@ class WorldManager(object):
 
     def yieldSectorsInArea(
             self,
-            milieu: multiverse.Milieu,
-            upperLeft: multiverse.HexPosition,
-            lowerRight: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.Sector], bool] = None,
+            milieu: astronomer.Milieu,
+            upperLeft: astronomer.HexPosition,
+            lowerRight: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.Sector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.Sector, None, None]:
+            ) -> typing.Generator[astronomer.Sector, None, None]:
         return self._universe.yieldSectorsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
@@ -776,10 +776,10 @@ class WorldManager(object):
 
     def yieldSubsectors(
             self,
-            milieu: multiverse.Milieu,
-            filterCallback: typing.Callable[[multiverse.Subsector], bool] = None,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.Subsector, None, None]:
+            ) -> typing.Generator[astronomer.Subsector, None, None]:
         return self._universe.yieldSubsectors(
             milieu=milieu,
             filterCallback=filterCallback,
@@ -787,12 +787,12 @@ class WorldManager(object):
 
     def yieldSubsectorsInArea(
             self,
-            milieu: multiverse.Milieu,
-            upperLeft: multiverse.HexPosition,
-            lowerRight: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.Subsector], bool] = None,
+            milieu: astronomer.Milieu,
+            upperLeft: astronomer.HexPosition,
+            lowerRight: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.Subsector], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.Subsector, None, None]:
+            ) -> typing.Generator[astronomer.Subsector, None, None]:
         return self._universe.yieldSubsectorsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
@@ -802,10 +802,10 @@ class WorldManager(object):
 
     def yieldWorlds(
             self,
-            milieu: multiverse.Milieu,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            milieu: astronomer.Milieu,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.World, None, None]:
+            ) -> typing.Generator[astronomer.World, None, None]:
         return self._universe.yieldWorlds(
             milieu=milieu,
             filterCallback=filterCallback,
@@ -813,12 +813,12 @@ class WorldManager(object):
 
     def yieldWorldsInArea(
             self,
-            milieu: multiverse.Milieu,
-            upperLeft: multiverse.HexPosition,
-            lowerRight: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            milieu: astronomer.Milieu,
+            upperLeft: astronomer.HexPosition,
+            lowerRight: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.World, None, None]:
+            ) -> typing.Generator[astronomer.World, None, None]:
         return self._universe.yieldWorldsInArea(
             milieu=milieu,
             upperLeft=upperLeft,
@@ -828,12 +828,12 @@ class WorldManager(object):
 
     def yieldWorldsInRadius(
             self,
-            milieu: multiverse.Milieu,
-            center: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            center: astronomer.HexPosition,
             radius: int,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.World, None, None]:
+            ) -> typing.Generator[astronomer.World, None, None]:
         return self._universe.yieldWorldsInRadius(
             milieu=milieu,
             center=center,
@@ -843,11 +843,11 @@ class WorldManager(object):
 
     def yieldWorldsInFlood(
             self,
-            milieu: multiverse.Milieu,
-            hex: multiverse.HexPosition,
-            filterCallback: typing.Callable[[multiverse.World], bool] = None,
+            milieu: astronomer.Milieu,
+            hex: astronomer.HexPosition,
+            filterCallback: typing.Callable[[astronomer.World], bool] = None,
             includePlaceholders: bool = False
-            ) -> typing.Generator[multiverse.World, None, None]:
+            ) -> typing.Generator[astronomer.World, None, None]:
         return self._universe.yieldWorldsInFlood(
             milieu=milieu,
             hex=hex,
@@ -856,10 +856,10 @@ class WorldManager(object):
 
     def searchForWorlds(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
-            ) -> typing.List[multiverse.World]:
+            ) -> typing.List[astronomer.World]:
         return self._universe.searchForWorlds(
             milieu=milieu,
             searchString=searchString,
@@ -867,10 +867,10 @@ class WorldManager(object):
 
     def searchForSubsectors(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
-            ) -> typing.List[multiverse.Subsector]:
+            ) -> typing.List[astronomer.Subsector]:
         return self._universe.searchForSubsectors(
             milieu=milieu,
             searchString=searchString,
@@ -878,10 +878,10 @@ class WorldManager(object):
 
     def searchForSectors(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
-            ) -> typing.List[multiverse.Sector]:
+            ) -> typing.List[astronomer.Sector]:
         return self._universe.searchForSectors(
             milieu=milieu,
             searchString=searchString,
@@ -889,8 +889,8 @@ class WorldManager(object):
 
     @staticmethod
     def _populateAllegiances(
-            milieu: multiverse.Milieu,
-            rawMetadata: multiverse.RawMetadata,
+            milieu: astronomer.Milieu,
+            rawMetadata: astronomer.RawMetadata,
             tracker: _AllegianceTracker
             ) -> None:
         allegianceNameMap: typing.Dict[
@@ -915,12 +915,12 @@ class WorldManager(object):
 
     @staticmethod
     def _processSector(
-            milieu: multiverse.Milieu,
-            rawMetadata: multiverse.RawMetadata,
-            rawWorlds: typing.Collection[multiverse.RawWorld],
+            milieu: astronomer.Milieu,
+            rawMetadata: astronomer.RawMetadata,
+            rawWorlds: typing.Collection[astronomer.RawWorld],
             allegianceTracker: _AllegianceTracker,
             isCustom: bool
-            ) -> multiverse.Sector:
+            ) -> astronomer.Sector:
         sectorName = rawMetadata.canonicalName()
         sectorX = rawMetadata.x()
         sectorY = rawMetadata.y()
@@ -933,7 +933,7 @@ class WorldManager(object):
                 ]] = {}
         subsectorWorldsMap: typing.Dict[
             str, # Subsector code (A-P)
-            typing.List[multiverse.World]
+            typing.List[astronomer.World]
         ] = {}
 
         # Setup default subsector names. Some sectors just use the code A-P but we need
@@ -955,8 +955,8 @@ class WorldManager(object):
 
         for rawWorld in rawWorlds:
             try:
-                hex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
-                worldName = rawWorld.attribute(multiverse.WorldAttribute.Name)
+                hex = rawWorld.attribute(astronomer.WorldAttribute.Hex)
+                worldName = rawWorld.attribute(astronomer.WorldAttribute.Name)
                 isNameGenerated = False
                 if not worldName:
                     # If the world doesn't have a name the sector combined with the hex. This format
@@ -968,10 +968,10 @@ class WorldManager(object):
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
                 subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                allegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+                allegianceCode = rawWorld.attribute(astronomer.WorldAttribute.Allegiance)
                 allegiance = None
                 if allegianceCode:
-                    allegiance = multiverse.Allegiance(
+                    allegiance = astronomer.Allegiance(
                         code=allegianceCode,
                         name=allegianceTracker.allegianceName(
                             milieu=milieu,
@@ -988,32 +988,32 @@ class WorldManager(object):
                             code=allegianceCode,
                             sectorName=sectorName))
 
-                zone = multiverse.parseZoneString(
-                    rawWorld.attribute(multiverse.WorldAttribute.Zone))
-                uwp = multiverse.UWP(
-                    rawWorld.attribute(multiverse.WorldAttribute.UWP))
-                economics = multiverse.Economics(
-                    rawWorld.attribute(multiverse.WorldAttribute.Economics))
-                culture = multiverse.Culture(
-                    rawWorld.attribute(multiverse.WorldAttribute.Culture))
-                nobilities = multiverse.Nobilities(
-                    rawWorld.attribute(multiverse.WorldAttribute.Nobility))
-                remarks = multiverse.Remarks(
-                    string=rawWorld.attribute(multiverse.WorldAttribute.Remarks),
+                zone = astronomer.parseZoneString(
+                    rawWorld.attribute(astronomer.WorldAttribute.Zone))
+                uwp = astronomer.UWP(
+                    rawWorld.attribute(astronomer.WorldAttribute.UWP))
+                economics = astronomer.Economics(
+                    rawWorld.attribute(astronomer.WorldAttribute.Economics))
+                culture = astronomer.Culture(
+                    rawWorld.attribute(astronomer.WorldAttribute.Culture))
+                nobilities = astronomer.Nobilities(
+                    rawWorld.attribute(astronomer.WorldAttribute.Nobility))
+                remarks = astronomer.Remarks(
+                    string=rawWorld.attribute(astronomer.WorldAttribute.Remarks),
                     sectorName=sectorName,
                     zone=zone)
-                stellar = multiverse.Stellar(
-                    rawWorld.attribute(multiverse.WorldAttribute.Stellar))
-                pbg = multiverse.PBG(
-                    rawWorld.attribute(multiverse.WorldAttribute.PBG))
-                systemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
+                stellar = astronomer.Stellar(
+                    rawWorld.attribute(astronomer.WorldAttribute.Stellar))
+                pbg = astronomer.PBG(
+                    rawWorld.attribute(astronomer.WorldAttribute.PBG))
+                systemWorlds = rawWorld.attribute(astronomer.WorldAttribute.SystemWorlds)
                 systemWorlds = int(systemWorlds) if systemWorlds else 1
-                bases = multiverse.Bases(
-                    rawWorld.attribute(multiverse.WorldAttribute.Bases))
+                bases = astronomer.Bases(
+                    rawWorld.attribute(astronomer.WorldAttribute.Bases))
 
-                world = multiverse.World(
+                world = astronomer.World(
                     milieu=milieu,
-                    hex=multiverse.HexPosition(
+                    hex=astronomer.HexPosition(
                         sectorX=sectorX,
                         sectorY=sectorY,
                         offsetX=int(hex[:2]),
@@ -1046,9 +1046,9 @@ class WorldManager(object):
         for subsectorCode in subsectorCodes:
             subsectorName, isNameGenerated = subsectorNameMap[subsectorCode]
             subsectorWorlds = subsectorWorldsMap[subsectorCode]
-            subsectors.append(multiverse.Subsector(
+            subsectors.append(astronomer.Subsector(
                 milieu=milieu,
-                index=multiverse.SubsectorIndex(
+                index=astronomer.SubsectorIndex(
                     sectorX=sectorX,
                     sectorY=sectorY,
                     code=subsectorCode),
@@ -1062,18 +1062,18 @@ class WorldManager(object):
             str, # Allegiance/Type
             typing.Tuple[
                 typing.Optional[str], # Colour
-                typing.Optional[multiverse.Border.Style] # Style
+                typing.Optional[astronomer.Border.Style] # Style
             ]] = {}
         routeStyleMap: typing.Dict[
             str, # Allegiance/Type
             typing.Tuple[
                 typing.Optional[str], # Colour
-                typing.Optional[multiverse.Route.Style], # Style
+                typing.Optional[astronomer.Route.Style], # Style
                 typing.Optional[float] # Width
             ]] = {}
         if styleSheet:
             try:
-                content = multiverse.readCssContent(styleSheet)
+                content = astronomer.readCssContent(styleSheet)
                 for styleKey, properties in content.items():
                     try:
                         match = WorldManager._BorderStylePattern.match(styleKey)
@@ -1109,14 +1109,14 @@ class WorldManager(object):
             for rawRoute in rawRoutes:
                 try:
                     startHex = rawRoute.startHex()
-                    startHex = multiverse.HexPosition(
+                    startHex = astronomer.HexPosition(
                         sectorX=sectorX + (rawRoute.startOffsetX() if rawRoute.startOffsetX() else 0),
                         sectorY=sectorY + (rawRoute.startOffsetY() if rawRoute.startOffsetY() else 0),
                         offsetX=int(startHex[:2]),
                         offsetY=int(startHex[-2:]))
 
                     endHex = rawRoute.endHex()
-                    endHex = multiverse.HexPosition(
+                    endHex = astronomer.HexPosition(
                         sectorX=sectorX + (rawRoute.endOffsetX() if rawRoute.endOffsetX() else 0),
                         sectorY=sectorY + (rawRoute.endOffsetY() if rawRoute.endOffsetY() else 0),
                         offsetX=int(endHex[:2]),
@@ -1148,7 +1148,7 @@ class WorldManager(object):
                         logging.debug(f'Ignoring invalid colour for border {rawRoute.fileIndex()} in sector {sectorName}')
                         colour = None
 
-                    routes.append(multiverse.Route(
+                    routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
                         allegiance=rawRoute.allegiance(),
@@ -1168,7 +1168,7 @@ class WorldManager(object):
                 try:
                     hexes = []
                     for rawHex in rawBorder.hexList():
-                        hexes.append(multiverse.HexPosition(
+                        hexes.append(astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
                             offsetX=int(rawHex[:2]),
@@ -1176,7 +1176,7 @@ class WorldManager(object):
 
                     labelHex = rawBorder.labelHex()
                     if labelHex:
-                        labelHex = multiverse.HexPosition(
+                        labelHex = astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
                             offsetX=int(labelHex[:2]),
@@ -1217,7 +1217,7 @@ class WorldManager(object):
                     if label and rawBorder.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
-                    borders.append(multiverse.Border(
+                    borders.append(astronomer.Border(
                         hexList=hexes,
                         allegiance=rawBorder.allegiance(),
                         # Show label use the same defaults as the traveller map Border class
@@ -1240,7 +1240,7 @@ class WorldManager(object):
                 try:
                     hexes = []
                     for rawHex in rawRegion.hexList():
-                        hexes.append(multiverse.HexPosition(
+                        hexes.append(astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
                             offsetX=int(rawHex[:2]),
@@ -1248,7 +1248,7 @@ class WorldManager(object):
 
                     labelHex = rawRegion.labelHex()
                     if labelHex:
-                        labelHex = multiverse.HexPosition(
+                        labelHex = astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
                             offsetX=int(labelHex[:2]),
@@ -1266,7 +1266,7 @@ class WorldManager(object):
                         logging.debug(f'Ignoring invalid colour for region {rawRegion.fileIndex()} in sector {sectorName}')
                         colour = None
 
-                    regions.append(multiverse.Region(
+                    regions.append(astronomer.Region(
                         hexList=hexes,
                         # Show label use the same defaults as the Traveller Map Border class
                         showLabel=rawRegion.showLabel() if rawRegion.showLabel() != None else True,
@@ -1286,7 +1286,7 @@ class WorldManager(object):
             for rawLabel in rawLabels:
                 try:
                     hex = rawLabel.hex()
-                    hex = multiverse.HexPosition(
+                    hex = astronomer.HexPosition(
                         sectorX=sectorX,
                         sectorY=sectorY,
                         offsetX=int(hex[:2]),
@@ -1302,7 +1302,7 @@ class WorldManager(object):
                         logging.debug(f'Ignoring invalid colour for label {rawLabel.fileIndex()} in sector {sectorName}')
                         colour = None
 
-                    labels.append(multiverse.Label(
+                    labels.append(astronomer.Label(
                         text=text,
                         hex=hex,
                         colour=colour,
@@ -1320,7 +1320,7 @@ class WorldManager(object):
             rawPrimary = rawSources.primary()
             primary = None
             if rawPrimary:
-                primary = multiverse.SectorSource(
+                primary = astronomer.SectorSource(
                     publication=rawPrimary.publication(),
                     author=rawPrimary.author(),
                     publisher=rawPrimary.publisher(),
@@ -1329,21 +1329,21 @@ class WorldManager(object):
             products = []
             if rawSources.products():
                 for rawProduct in rawSources.products():
-                    products.append(multiverse.SectorSource(
+                    products.append(astronomer.SectorSource(
                         publication=rawProduct.publication(),
                         author=rawProduct.author(),
                         publisher=rawProduct.publisher(),
                         reference=rawProduct.reference()))
 
-            sources = multiverse.SectorSources(
+            sources = astronomer.SectorSources(
                 credits=rawSources.credits(),
                 primary=primary,
                 products=products)
 
-        return multiverse.Sector(
+        return astronomer.Sector(
             name=sectorName,
             milieu=milieu,
-            index=multiverse.SectorIndex(
+            index=astronomer.SectorIndex(
                 sectorX=sectorX,
                 sectorY=sectorY),
             alternateNames=rawMetadata.alternateNames(),
@@ -1355,20 +1355,20 @@ class WorldManager(object):
             regions=regions,
             labels=labels,
             selected=rawMetadata.selected() if rawMetadata.selected() else False,
-            tags=multiverse.SectorTagging(rawMetadata.tags()),
+            tags=astronomer.SectorTagging(rawMetadata.tags()),
             sources=sources,
             isCustom=isCustom)
 
     _RouteStyleMap = {
-        'solid': multiverse.Route.Style.Solid,
-        'dashed': multiverse.Route.Style.Dashed,
-        'dotted': multiverse.Route.Style.Dotted,
+        'solid': astronomer.Route.Style.Solid,
+        'dashed': astronomer.Route.Style.Dashed,
+        'dotted': astronomer.Route.Style.Dotted,
     }
 
     @staticmethod
     def _mapRouteStyle(
             style: typing.Optional[str]
-            ) -> typing.Optional[multiverse.Route.Style]:
+            ) -> typing.Optional[astronomer.Route.Style]:
         if not style:
             return None
         lowerStyle = style.lower()
@@ -1378,15 +1378,15 @@ class WorldManager(object):
         return mappedStyle
 
     _BorderStyleMap = {
-        'solid': multiverse.Border.Style.Solid,
-        'dashed': multiverse.Border.Style.Dashed,
-        'dotted': multiverse.Border.Style.Dotted,
+        'solid': astronomer.Border.Style.Solid,
+        'dashed': astronomer.Border.Style.Dashed,
+        'dotted': astronomer.Border.Style.Dotted,
     }
 
     @staticmethod
     def _mapBorderStyle(
             style: typing.Optional[str]
-            ) -> typing.Optional[multiverse.Border.Style]:
+            ) -> typing.Optional[astronomer.Border.Style]:
         if not style:
             return None
         lowerStyle = style.lower()
@@ -1396,14 +1396,14 @@ class WorldManager(object):
         return mappedStyle
 
     _LabelSizeMap = {
-        'small': multiverse.Label.Size.Small,
-        'large': multiverse.Label.Size.Large,
+        'small': astronomer.Label.Size.Small,
+        'large': astronomer.Label.Size.Large,
     }
 
     @staticmethod
     def _mapLabelSize(
             size: typing.Optional[str]
-            ) -> typing.Optional[multiverse.Label.Size]:
+            ) -> typing.Optional[astronomer.Label.Size]:
         if not size:
             return None
         lowerSize = size.lower()
@@ -1422,14 +1422,14 @@ class WorldManager(object):
         worldX = int(relativeWorldHex[:2])
         worldY = int(relativeWorldHex[-2:])
 
-        subsectorX = (worldX - 1) // multiverse.SubsectorWidth
-        if subsectorX < 0 or subsectorX >= multiverse.HorzSubsectorsPerSector:
+        subsectorX = (worldX - 1) // astronomer.SubsectorWidth
+        if subsectorX < 0 or subsectorX >= astronomer.HorzSubsectorsPerSector:
             raise RuntimeError(f'Subsector X position for world hex "{relativeWorldHex}" is out of range')
 
-        subsectorY = (worldY - 1) // multiverse.SubsectorHeight
-        if subsectorY < 0 or subsectorY >= multiverse.VertSubsectorPerSector:
+        subsectorY = (worldY - 1) // astronomer.SubsectorHeight
+        if subsectorY < 0 or subsectorY >= astronomer.VertSubsectorPerSector:
             raise RuntimeError(f'Subsector Y position for world hex "{relativeWorldHex}" is out of range')
 
-        index = (subsectorY * multiverse.HorzSubsectorsPerSector) + subsectorX
+        index = (subsectorY * astronomer.HorzSubsectorsPerSector) + subsectorX
 
         return chr(ord('A') + index)
