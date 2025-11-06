@@ -1,5 +1,6 @@
 import astronomer
 import gunsmith
+import multiverse
 import robots
 import typing
 from PyQt5 import QtCore
@@ -42,6 +43,22 @@ class StartupJobBase(QtCore.QThread):
             total: int
             ) -> None:
         self._progressSignal[str, int, int].emit(stage, current, total)
+
+class SyncMultiverseDbJob(StartupJobBase):
+    def __init__(
+            self,
+            parent: QtCore.QObject,
+            directoryPath: str,
+            progressCallback: typing.Callable[[str, int, int], typing.Any],
+            finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
+            ) -> None:
+        super().__init__(parent, progressCallback, finishedCallback)
+        self._directoryPath = directoryPath
+
+    def executeJob(self) -> None:
+        multiverse.MultiverseDb.instance().importDefaultUniverse(
+            directoryPath=self._directoryPath,
+            progressCallback=self._handleProgressUpdate)
 
 class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:

@@ -5,6 +5,7 @@ import logging
 import multiverse
 import os
 import sqlite3
+import threading
 import typing
 import uuid
 
@@ -1178,6 +1179,10 @@ class DbUniverse(object):
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
 # notes on the new object before writing it to the db.
+# TODO: Do I need to add any kind of thread locking to public methods? I'm
+# not sure I do with the current implementation as I believe the sqlite
+# db is thread saf and I'm not maintaining an internal state. If I add
+# connection pooling I suspect I'll need something to protect the pool
 class MultiverseDb(object):
     class Transaction(object):
         def __init__(
@@ -1300,9 +1305,29 @@ class MultiverseDb(object):
 
     _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
 
-    def __init__(self, path: str):
-        self._path = path
-        self._initTables()
+    _lock = threading.RLock() # Recursive lock
+    _instance = None # Singleton instance
+    _databasePath = None
+
+    def __init__(self) -> None:
+        raise RuntimeError('Call instance() instead')
+
+    @classmethod
+    def instance(cls):
+        if not cls._instance:
+            with cls._lock:
+                # Recheck instance as another thread could have created it between the
+                # first check adn the lock
+                if not cls._instance:
+                    cls._instance = cls.__new__(cls)
+                    cls._instance._initTables()
+        return cls._instance
+
+    @staticmethod
+    def setDbPath(databasePath: str) -> None:
+        if MultiverseDb._instance:
+            raise RuntimeError('You can\'t set the database path after the singleton has been initialised')
+        MultiverseDb._databasePath = databasePath
 
     def createTransaction(self) -> Transaction:
         connection = self._createConnection()
@@ -1355,7 +1380,7 @@ class MultiverseDb(object):
     def importDefaultUniverse(
             self,
             directoryPath: str,
-            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
         logging.info(f'MultiverseDb importing default universe from "{directoryPath}"')
         with self.createTransaction() as transaction:
@@ -1372,47 +1397,69 @@ class MultiverseDb(object):
 
     # TODO: Write/Delete Universe/Sector functions should prevent
     # writing to the default universe
-    def writeUniverse(
+    def saveUniverse(
             self,
             universe: DbUniverse,
-            transaction: typing.Optional['MultiverseDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
-        logging.debug(f'MultiverseDb writing universe {universe.id()}')
+        logging.debug(f'MultiverseDb saving universe {universe.id()}')
+
+        insertProgressCallback = None
+        if progressCallback:
+            insertProgressCallback = lambda name, milieu, progress, total: progressCallback(f'Saving: {milieu} - {name}' if progress != total else 'Saving: Complete!', progress, total)
+
         if transaction != None:
             connection = transaction.connection()
+
+            # TODO: Not sure how to do progress for this step as it does take time
             self._internalDeleteUniverse(
                 universeId=universe.id(),
                 cursor=connection.cursor())
+
             self._internalInsertUniverse(
                 universe=universe,
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progressCallback=insertProgressCallback)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
+
+                # TODO: Not sure how to do progress for this step as it does take time
                 self._internalDeleteUniverse(
                     universeId=universe.id(),
                     cursor=connection.cursor())
+
                 self._internalInsertUniverse(
                     universe=universe,
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progressCallback=insertProgressCallback)
 
-    def readUniverse(
+    def loadUniverse(
             self,
             universeId: str,
-            transaction: typing.Optional['MultiverseDb.Transaction'] = None
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> typing.Optional[DbUniverse]:
-        logging.debug(f'MultiverseDb reading universe {universeId}')
+        logging.debug(f'MultiverseDb loading universe {universeId}')
+
+        readProgressCallback = None
+        if progressCallback:
+            readProgressCallback = lambda name, milieu, progress, total: progressCallback(f'Loading: {milieu} - {name}' if progress != total else 'Loading: Complete!', progress, total)
+
         if transaction != None:
             connection = transaction.connection()
             return self._internalReadUniverse(
                 universeId=universeId,
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                progressCallback=readProgressCallback)
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
                 return self._internalReadUniverse(
                     universeId=universeId,
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    progressCallback=readProgressCallback)
 
     def deleteUniverse(
             self,
@@ -1432,12 +1479,12 @@ class MultiverseDb(object):
                     universeId=universeId,
                     cursor=connection.cursor())
 
-    def writeSector(
+    def saveSector(
             self,
             sector: DbSector,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
-        logging.debug(f'MultiverseDb writing sector {sector.id()}')
+        logging.debug(f'MultiverseDb saving sector {sector.id()}')
 
         if not sector.id():
             raise RuntimeError('Sector cannot be saved as has no id')
@@ -1476,7 +1523,7 @@ class MultiverseDb(object):
                     sector=sector,
                     cursor=connection.cursor())
 
-    def readSector(
+    def loadSector(
             self,
             sectorId: str,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
@@ -1563,8 +1610,8 @@ class MultiverseDb(object):
     def _createConnection(self) -> sqlite3.Connection:
         # TODO: Connection pool like ObjectDb????
 
-        connection = sqlite3.connect(self._path)
-        logging.debug(f'ObjectDbManager created new connection {connection} to \'{self._path}\'')
+        connection = sqlite3.connect(self._databasePath)
+        logging.debug(f'ObjectDbManager created new connection {connection} to \'{self._databasePath}\'')
         connection.executescript(MultiverseDb._PragmaScript)
         # Uncomment this to have sqlite print the SQL that it executes
         #connection.set_trace_callback(print)
@@ -2221,7 +2268,7 @@ class MultiverseDb(object):
             self,
             directoryPath: str,
             cursor: sqlite3.Cursor,
-            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
         timestampPath = os.path.join(directoryPath, 'timestamp.txt')
         with open(timestampPath, 'r', encoding='utf-8-sig') as file:
@@ -2229,11 +2276,11 @@ class MultiverseDb(object):
         importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
 
         universePath = os.path.join(directoryPath, 'milieu')
-        rawData: typing.List[typing.Tuple[
+        milieuSectors: typing.List[typing.Tuple[
             str, # Milieu
-            multiverse.RawMetadata,
-            typing.Collection[multiverse.RawWorld]
-            ]] = []
+            typing.List[str] # List of sector names in the milieu
+        ]] = []
+        totalSectorCount = 0
         for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
             milieuPath = os.path.join(universePath, milieu)
             universeInfoPath = os.path.join(milieuPath, 'universe.json')
@@ -2241,34 +2288,73 @@ class MultiverseDb(object):
                 universeInfoContent = file.read()
             universeInfo = multiverse.readUniverseInfo(content=universeInfoContent)
 
+            sectorNames = []
             for sectorInfo in universeInfo.sectorInfos():
                 try:
                     nameInfos = sectorInfo.nameInfos()
                     canonicalName = nameInfos[0].name() if nameInfos else None
                     if not canonicalName:
                         raise RuntimeError('Sector has no name')
-                    escapedName = common.encodeFileName(rawFileName=canonicalName)
+                    sectorNames.append(canonicalName)
+                    totalSectorCount += 1
+                except Exception as ex:
+                    # TODO: Log something but continue
+                    continue
+
+            milieuSectors.append((milieu, sectorNames))
+
+        rawData: typing.List[typing.Tuple[
+            str, # Milieu
+            multiverse.RawMetadata,
+            typing.Collection[multiverse.RawWorld]
+            ]] = []
+        progressCount = 0
+        for milieu, sectorNames in milieuSectors:
+            milieuPath = os.path.join(universePath, milieu)
+            for sectorName in sectorNames:
+                try:
+                    if progressCallback:
+                        progressCallback(
+                            f'Loading: {milieu} - {sectorName}',
+                            progressCount,
+                            totalSectorCount)
+                        progressCount += 1
+
+                    escapedName = common.encodeFileName(rawFileName=sectorName)
 
                     metadataPath = os.path.join(milieuPath, escapedName + '.xml')
                     with open(metadataPath, 'r', encoding='utf-8-sig') as file:
                         rawMetadata = multiverse.readXMLMetadata(
                             content=file.read(),
-                            identifier=canonicalName)
+                            identifier=sectorName)
 
                     sectorPath = os.path.join(milieuPath, escapedName + '.sec')
                     with open(sectorPath, 'r', encoding='utf-8-sig') as file:
                         rawSystems = multiverse.readT5ColumnSector(
                             content=file.read(),
-                            identifier=canonicalName)
+                            identifier=sectorName)
                     rawData.append((milieu, rawMetadata, rawSystems))
                 except Exception as ex:
                     # TODO: Log something but continue
                     continue
 
+        if progressCallback:
+            progressCallback(
+                f'Loading: Complete!',
+                totalSectorCount,
+                totalSectorCount)
+
         dbUniverse = DbUniverse(
             id=MultiverseDb._DefaultUniverseId,
             name='Default Universe')
-        for milieu, rawMetadata, rawSystems in rawData:
+        totalSectorCount = len(rawData)
+        for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawData):
+            if progressCallback:
+                progressCallback(
+                    f'Processing: {milieu} - {rawMetadata.canonicalName()}',
+                    progressCount,
+                    totalSectorCount)
+
             try:
                 dbAlternateNames = None
                 if rawMetadata.alternateNames():
@@ -2444,15 +2530,26 @@ class MultiverseDb(object):
                 # TODO: Log something and continue
                 continue
 
-        # TODO: Not sure how to do progress for this step
+        if progressCallback:
+            progressCallback(
+                f'Processing: Complete!',
+                totalSectorCount,
+                totalSectorCount)
+
+        # TODO: Not sure how to do progress for this step as it does take time
         self._internalDeleteUniverse(
             universeId=MultiverseDb._DefaultUniverseId,
             cursor=cursor)
 
+        insertProgressCallback = None
+        if progressCallback:
+            insertProgressCallback = \
+                lambda name, milieu, progress, total: progressCallback(f'Importing: {milieu} - {name}' if progress != total else 'Importing: Complete!', progress, total)
         self._internalInsertUniverse(
             universe=dbUniverse,
             updateDefault=True,
-            cursor=cursor)
+            cursor=cursor,
+            progressCallback=insertProgressCallback)
 
         self._setMetadata(
             key=MultiverseDb._DefaultUniverseTimestampKey,
@@ -2463,7 +2560,8 @@ class MultiverseDb(object):
             self,
             universe: DbUniverse,
             cursor: sqlite3.Cursor,
-            updateDefault: bool = False
+            updateDefault: bool = False,
+            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
             ) -> None:
         sql = """
             INSERT INTO {table} (id, name, description, notes)
@@ -2476,8 +2574,17 @@ class MultiverseDb(object):
             'notes': universe.notes()}
         cursor.execute(sql, rowData)
 
-        if universe.sectors():
-            for sector in universe.sectors():
+        sectors = universe.sectors()
+        totalSectorCount = len(sectors) if sectors else 0
+        if sectors:
+            for progressCount, sector in enumerate(sectors):
+                if progressCallback:
+                    progressCallback(
+                        sector.milieu(),
+                        sector.primaryName(),
+                        progressCount,
+                        totalSectorCount)
+
                 if not updateDefault and not sector.isCustom():
                     continue # Only write custom sectors
 
@@ -2485,10 +2592,18 @@ class MultiverseDb(object):
                     sector=sector,
                     cursor=cursor)
 
+        if progressCallback:
+            progressCallback(
+                None,
+                None,
+                totalSectorCount,
+                totalSectorCount)
+
     def _internalReadUniverse(
             self,
             universeId: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
             ) -> typing.Optional[DbUniverse]:
         sql = """
             SELECT name, description, notes
@@ -2507,13 +2622,13 @@ class MultiverseDb(object):
         # information in a single select then just loading the sector child
         # data with individual selects.
         sql = """
-            SELECT id
+            SELECT id, name, milieu
             FROM {table}
             WHERE universe_id = :id
 
             UNION ALL
 
-            SELECT d.id
+            SELECT d.id, d.name, d.milieu
             FROM {table} d
             WHERE d.universe_id IS "default"
             AND NOT EXISTS (
@@ -2526,9 +2641,21 @@ class MultiverseDb(object):
             );
             """.format(table=MultiverseDb._SectorsTableName)
         cursor.execute(sql, {'id': universeId})
+        resultData = cursor.fetchall()
+        totalSectorCount = len(resultData)
         sectors = []
-        for row in cursor.fetchall():
+        for progressCount, row in enumerate(resultData):
             sectorId = row[0]
+            sectorName = row[1]
+            sectorMilieu = row[2]
+
+            if progressCallback:
+                progressCallback(
+                    sectorMilieu,
+                    sectorName,
+                    progressCount,
+                    totalSectorCount)
+
             sector = self._internalReadSector(
                 sectorId=sectorId,
                 cursor=cursor)
@@ -2536,6 +2663,13 @@ class MultiverseDb(object):
                 # TODO: Some kind of logging or error handling?
                 continue
             sectors.append(sector)
+
+        if progressCallback:
+            progressCallback(
+                None,
+                None,
+                totalSectorCount,
+                totalSectorCount)
 
         return DbUniverse(
             id=universeId,

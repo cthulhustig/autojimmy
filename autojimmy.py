@@ -373,8 +373,8 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
-        databasePath = os.path.join(appDir, 'autojimmy.db')
-        objectdb.ObjectDbManager.instance().initialise(databasePath=databasePath)
+        multiverseDbPath = os.path.join(appDir, 'autojimmy.db')
+        objectdb.ObjectDbManager.instance().initialise(databasePath=multiverseDbPath)
 
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
@@ -415,18 +415,18 @@ def main() -> None:
                 stateKey='UniverseUpdateErrorWhenChecking')
             # Continue loading the app with the existing data
 
-        databasePath = databasePath = os.path.join(appDir, 'universe.db')
-        database = multiverse.MultiverseDb(path=databasePath)
+        multiverseDbPath = multiverseDbPath = os.path.join(appDir, 'multiverse.db')
+        multiverse.MultiverseDb.setDbPath(databasePath=multiverseDbPath)
 
-
-        importPath = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
+        multiverseSyncDir = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
+        shouldSyncMultiverse = False
         try:
-            if database.isDefaultUniverseSnapshotNewer(directoryPath=importPath):
-                database.importDefaultUniverse(directoryPath=importPath)
+            shouldSyncMultiverse = multiverse.MultiverseDb.instance().isDefaultUniverseSnapshotNewer(
+                directoryPath=multiverseSyncDir)
         except Exception as ex:
             canContinue = False
             try:
-                canContinue = database.hasDefaultUniverse()
+                canContinue = multiverse.MultiverseDb.instance().hasDefaultUniverse()
             except:
                 pass
             if not canContinue:
@@ -436,6 +436,8 @@ def main() -> None:
                 raise ex
 
         startupProgress = gui.StartupProgressDialog()
+        if shouldSyncMultiverse:
+            startupProgress.setMultiverseSyncDir(syncDir=multiverseSyncDir)
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             exception = startupProgress.exception()
             if exception is not None:

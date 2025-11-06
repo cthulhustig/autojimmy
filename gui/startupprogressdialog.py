@@ -9,6 +9,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # can cause incorrect sizing if the font scaling is increased then decreased
 class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
+        jobs.SyncMultiverseDbJob: '',
         jobs.LoadSectorsJob: '',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
         jobs.LoadRobotsJob: 'Loading: Robot - '}
@@ -19,9 +20,11 @@ class StartupProgressDialog(QtWidgets.QDialog):
             ) -> None:
         super().__init__(parent=parent)
 
-        self._jobQueue: typing.List[typing.Type[jobs.StartupJobBase]] = [] # NOTE: This is a queue of job types
+        self._jobQueue: typing.List[jobs.StartupJobBase] = [] # NOTE: This is a queue of job types
         self._currentJob = None
         self._exception = None
+
+        self._multiverseSyncDir = None
 
         self._textLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
@@ -43,13 +46,32 @@ class StartupProgressDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
+    def setMultiverseSyncDir(self, syncDir: typing.Optional[str]) -> None:
+        self._multiverseSyncDir = syncDir = syncDir
+
     def exception(self) -> typing.Optional[Exception]:
         return self._exception
 
     def exec(self) -> int:
-        self._jobQueue.append(jobs.LoadSectorsJob)
-        self._jobQueue.append(jobs.LoadWeaponsJob)
-        self._jobQueue.append(jobs.LoadRobotsJob)
+        if self._multiverseSyncDir:
+            self._jobQueue.append(jobs.SyncMultiverseDbJob(
+                directoryPath=self._multiverseSyncDir,
+                progressCallback=self._updateProgress,
+                finishedCallback=self._jobFinished,
+                parent=self))
+
+        self._jobQueue.append(jobs.LoadSectorsJob(
+            progressCallback=self._updateProgress,
+            finishedCallback=self._jobFinished,
+            parent=self))
+        self._jobQueue.append(jobs.LoadWeaponsJob(
+            progressCallback=self._updateProgress,
+            finishedCallback=self._jobFinished,
+            parent=self))
+        self._jobQueue.append(jobs.LoadRobotsJob(
+            progressCallback=self._updateProgress,
+            finishedCallback=self._jobFinished,
+            parent=self))
 
         self._startNextJob()
 
@@ -66,11 +88,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
 
     def _startNextJob(self) -> None:
         try:
-            jobType = self._jobQueue.pop(0)
-            self._currentJob = jobType(
-                parent=self,
-                progressCallback=self._updateProgress,
-                finishedCallback=self._jobFinished)
+            self._currentJob = self._jobQueue.pop(0)
             self._currentJob.start()
         except Exception as ex:
             self._exception = ex
