@@ -7,7 +7,6 @@ import os
 import sqlite3
 import threading
 import typing
-import uuid
 
 # TODO: Need something that does one time import of custom sectors from
 # filesystem to database
@@ -22,1158 +21,6 @@ import uuid
 # reimporting the data from the install directory into the database
 # TODO: Test with unicode in universe/sector names etc
 
-class DbSystem(object):
-    def __init__(
-            self,
-            hexX: int,
-            hexY: int,
-            name: str, # TODO: Do worlds in sector files always have a name????
-            uwp: str, # TODO: Do worlds in sector files always have a UWP
-            remarks: typing.Optional[str] = None,
-            importance: typing.Optional[str] = None,
-            economics: typing.Optional[str] = None,
-            culture: typing.Optional[str] = None,
-            nobility: typing.Optional[str] = None,
-            bases: typing.Optional[str] = None,
-            zone: typing.Optional[str] = None,
-            pbg: typing.Optional[str] = None,
-            systemWorlds: int = 1,
-            allegiance: typing.Optional[str] = None,
-            stellar: typing.Optional[str] = None,
-            notes: typing.Optional[str] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self.setSectorId(sectorId)
-        self.setHexX(hexX)
-        self.setHexY(hexY)
-        self.setName(name)
-        self.setUWP(uwp)
-        self.setRemarks(remarks)
-        self.setImportance(importance)
-        self.setEconomics(economics)
-        self.setCulture(culture)
-        self.setNobility(nobility)
-        self.setBases(bases)
-        self.setZone(zone)
-        self.setPBG(pbg)
-        self.setSystemWorlds(systemWorlds)
-        self.setAllegiance(allegiance)
-        self.setStellar(stellar)
-        self.setNotes(notes)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbSystem):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._hexX == value._hexX and \
-            self._hexY == value._hexY and \
-            self._name == value._name and \
-            self._uwp == value._uwp and \
-            self._remarks == value._remarks and \
-            self._importance == value._importance and \
-            self._economics == value._economics and \
-            self._culture == value._culture and \
-            self._nobility == value._nobility and \
-            self._bases == value._bases and \
-            self._zone == value._zone and \
-            self._pbg == value._pbg and \
-            self._systemWorlds == value._systemWorlds and \
-            self._allegiance == value._allegiance and \
-            self._stellar == value._stellar and \
-            self._notes == value._notes
-
-    def id(self) -> str:
-        return self._id
-
-    def sectorId(self) -> typing.Optional[str]:
-        return self._sectorId
-
-    def setSectorId(self, sectorId: str) -> None:
-        self._sectorId = sectorId
-
-    def hexX(self) -> int:
-        return self._hexX
-
-    def setHexX(self, hexX: int) -> None:
-        self._hexX = hexX
-
-    def hexY(self) -> int:
-        return self._hexY
-
-    def setHexY(self, hexY: int) -> None:
-        self._hexY = hexY
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> None:
-        self._name = name
-
-    def uwp(self) -> str:
-        return self._uwp
-
-    def setUWP(self, uwp: str) -> None:
-        self._uwp = uwp
-
-    def remarks(self) -> typing.Optional[str]:
-        return self._remarks
-
-    def setRemarks(self, remarks: typing.Optional[str]) -> None:
-        self._remarks = remarks
-
-    def importance(self) -> typing.Optional[str]:
-        return self._importance
-
-    def setImportance(self, importance: typing.Optional[str]) -> None:
-        self._importance = importance
-
-    def economics(self) -> typing.Optional[str]:
-        return self._economics
-
-    def setEconomics(self, economics: typing.Optional[str]) -> None:
-        self._economics = economics
-
-    def culture(self) -> typing.Optional[str]:
-        return self._culture
-
-    def setCulture(self, culture: typing.Optional[str]) -> None:
-        self._culture = culture
-
-    def nobility(self) -> typing.Optional[str]:
-        return self._nobility
-
-    def setNobility(self, nobility: typing.Optional[str]) -> None:
-        self._nobility = nobility
-
-    def bases(self) -> typing.Optional[str]:
-        return self._bases
-
-    def setBases(self, bases: typing.Optional[str]) -> None:
-        self._bases = bases
-
-    def zone(self) -> typing.Optional[str]:
-        return self._zone
-
-    def setZone(self, zone: typing.Optional[str]) -> None:
-        self._zone = zone
-
-    def pbg(self) -> typing.Optional[str]:
-        return self._pbg
-
-    def setPBG(self, pbg: typing.Optional[str]) -> None:
-        self._pbg = pbg
-
-    def systemWorlds(self) -> int:
-        return self._systemWorlds
-
-    def setSystemWorlds(self, systemWorlds: int) -> None:
-        self._systemWorlds = systemWorlds
-
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
-
-    def setAllegiance(self, allegiance: typing.Optional[str]) -> None:
-        self._allegiance = allegiance
-
-    def stellar(self) -> typing.Optional[str]:
-        return self._stellar
-
-    def setStellar(self, stellar: typing.Optional[str]) -> None:
-        self._stellar = stellar
-
-    def notes(self) -> typing.Optional[str]:
-        return self._notes
-
-    def setNotes(self, notes: typing.Optional[str]) -> None:
-        self._notes = notes
-
-class DbRoute(object):
-    def __init__(
-            self,
-            startHexX: int,
-            startHexY: int,
-            endHexX: int,
-            endHexY: int,
-            allegiance: typing.Optional[str] = None,
-            type: typing.Optional[str] = None,
-            style: typing.Optional[str] = None,
-            colour: typing.Optional[str] = None,
-            width: typing.Optional[float] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self.setSectorId(sectorId)
-        self.setStartHexX(startHexX)
-        self.setStartHexY(startHexY)
-        self.setEndHexX(endHexX)
-        self.setEndHexY(endHexY)
-        self.setAllegiance(allegiance)
-        self.setType(type)
-        self.setStyle(style)
-        self.setColour(colour)
-        self.setWidth(width)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbRoute):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._startHexX == value._startHexX and \
-            self._startHexY == value._startHexY and \
-            self._endHexX == value._endHexX and \
-            self._endHexY == value._endHexY and \
-            self._allegiance == value._allegiance and \
-            self._type == value._type and \
-            self._style == value._style and \
-            self._colour == value._colour and \
-            self._width == value._width
-
-    def id(self) -> str:
-        return self._id
-
-    # TODO: As long as I only allow saving at the sector level, I don't think
-    # having the id as part of the structure makes sense as we always know
-    # what sector it's part of. The same goes for the other objects that also
-    # have the sector id
-    def sectorId(self) -> typing.Optional[str]:
-        return self._sectorId
-
-    def setSectorId(self, sectorId: str) -> None:
-        self._sectorId = sectorId
-
-    def startHexX(self) -> int:
-        return self._startHexX
-
-    def setStartHexX(self, startHexX: int) -> None:
-        self._startHexX = startHexX
-
-    def startHexY(self) -> int:
-        return self._startHexY
-
-    def setStartHexY(self, startHexY: int) -> None:
-        self._startHexY = startHexY
-
-    def endHexX(self) -> int:
-        return self._endHexX
-
-    def setEndHexX(self, endHexX: int) -> None:
-        self._endHexX = endHexX
-
-    def endHexY(self) -> int:
-        return self._endHexY
-
-    def setEndHexY(self, endHexY: int) -> None:
-        self._endHexY = endHexY
-
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
-
-    def setAllegiance(self, allegiance: typing.Optional[str]) -> None:
-        self._allegiance = allegiance
-
-    def type(self) -> typing.Optional[str]:
-        return self._type
-
-    def setType(self, type: typing.Optional[str]) -> None:
-        self._type = type
-
-    def style(self) -> typing.Optional[str]:
-        return self._style
-
-    def setStyle(self, style: typing.Optional[str]) -> None:
-        self._style = style
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def setColour(self, colour: typing.Optional[str]) -> None:
-        self._colour = colour
-
-    def width(self) -> typing.Optional[float]:
-        return self._width
-
-    def setWidth(self, width: typing.Optional[str]) -> None:
-        self._width = width
-
-class DbBorder(object):
-    def __init__(
-            self,
-            hexes: typing.Iterable[typing.Tuple[int, int]],
-            showLabel: bool,
-            wrapLabel: bool,
-            labelHexX: typing.Optional[int] = None,
-            labelHexY: typing.Optional[int] = None,
-            labelOffsetX: typing.Optional[float] = None,
-            labelOffsetY: typing.Optional[float] = None,
-            label: typing.Optional[str] = None,
-            colour: typing.Optional[str] = None,
-            style: typing.Optional[str] = None,
-            allegiance: typing.Optional[str] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self.setSectorId(sectorId)
-        self.setHexes(hexes)
-        self.setShowLabel(showLabel)
-        self.setWrapLabel(wrapLabel)
-        self.setLabelHexX(labelHexX)
-        self.setLabelHexY(labelHexY)
-        self.setLabelOffsetX(labelOffsetX)
-        self.setLabelOffsetY(labelOffsetY)
-        self.setLabel(label)
-        self.setColour(colour)
-        self.setStyle(style)
-        self.setAllegiance(allegiance)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbBorder):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._hexes == value._hexes and \
-            self._showLabel == value._showLabel and \
-            self._wrapLabel == value._wrapLabel and \
-            self._labelHexX == value._labelHexX and \
-            self._labelHexY == value._labelHexY and \
-            self._labelOffsetX == value._labelOffsetX and \
-            self._labelOffsetY == value._labelOffsetY and \
-            self._label == value._label and \
-            self._colour == value._colour and \
-            self._style == value._style and \
-            self._allegiance == value._allegiance
-
-    def id(self) -> str:
-        return self._id
-
-    def sectorId(self) -> typing.Optional[str]:
-        return self._sectorId
-
-    def setSectorId(self, sectorId: str) -> None:
-        self._sectorId = sectorId
-
-    def hexes(self) -> typing.Iterable[typing.Tuple[int, int]]:
-        return self._hexes
-
-    def setHexes(self, hexes: typing.Iterable[typing.Tuple[int, int]]) -> None:
-        self._hexes = list(hexes)
-
-    # TODO: I can maybe get rid of this here and in DbRegion if I uses the
-    # presence of label text to indicate if the label should be shown. I'd
-    # need to check the cartographer to see how it's actually used.
-    def showLabel(self) -> bool:
-        return self._showLabel
-
-    def setShowLabel(self, showLabel: bool) -> None:
-        self._showLabel = showLabel
-
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
-
-    def setWrapLabel(self, wrapLabel: bool) -> None:
-        self._wrapLabel = wrapLabel
-
-    def labelHexX(self) -> typing.Optional[int]:
-        return self._labelHexX
-
-    def setLabelHexX(self, labelHexX: typing.Optional[int]) -> None:
-        self._labelHexX = labelHexX
-
-    def labelHexY(self) -> typing.Optional[int]:
-        return self._labelHexY
-
-    def setLabelHexY(self, labelHexY: typing.Optional[int]) -> None:
-        self._labelHexY = labelHexY
-
-    def labelOffsetX(self) -> typing.Optional[float]:
-        return self._labelOffsetX
-
-    def setLabelOffsetX(self, labelOffsetX: typing.Optional[float]) -> None:
-        self._labelOffsetX = labelOffsetX
-
-    def labelOffsetY(self) -> typing.Optional[float]:
-        return self._labelOffsetY
-
-    def setLabelOffsetY(self, labelOffsetY: typing.Optional[float]) -> None:
-        self._labelOffsetY = labelOffsetY
-
-    def label(self) -> typing.Optional[str]:
-        return self._label
-
-    def setLabel(self, label: typing.Optional[str]) -> None:
-        self._label = label
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def setColour(self, colour: typing.Optional[str]) -> None:
-        self._colour = colour
-
-    def style(self) -> typing.Optional[str]:
-        return self._style
-
-    def setStyle(self, style: typing.Optional[str]) -> None:
-        self._style = style
-
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
-
-    def setAllegiance(self, allegiance: typing.Optional[str]) -> None:
-        self._allegiance = allegiance
-
-class DbRegion(object):
-    def __init__(
-            self,
-            hexes: typing.Iterable[typing.Tuple[int, int]],
-            showLabel: bool,
-            wrapLabel: bool,
-            labelHexX: typing.Optional[int] = None,
-            labelHexY: typing.Optional[int] = None,
-            labelOffsetX: typing.Optional[float] = None,
-            labelOffsetY: typing.Optional[float] = None,
-            label: typing.Optional[str] = None,
-            colour: typing.Optional[str] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self.setSectorId(sectorId)
-        self.setHexes(hexes)
-        self.setShowLabel(showLabel)
-        self.setWrapLabel(wrapLabel)
-        self.setLabelHexX(labelHexX)
-        self.setLabelHexY(labelHexY)
-        self.setLabelOffsetX(labelOffsetX)
-        self.setLabelOffsetY(labelOffsetY)
-        self.setLabel(label)
-        self.setColour(colour)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbRegion):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._hexes == value._hexes and \
-            self._showLabel == value._showLabel and \
-            self._wrapLabel == value._wrapLabel and \
-            self._labelHexX == value._labelHexX and \
-            self._labelHexY == value._labelHexY and \
-            self._labelOffsetX == value._labelOffsetX and \
-            self._labelOffsetY == value._labelOffsetY and \
-            self._label == value._label and \
-            self._colour == value._colour
-
-    def id(self) -> str:
-        return self._id
-
-    def sectorId(self) -> typing.Optional[str]:
-        return self._sectorId
-
-    def setSectorId(self, sectorId: str) -> None:
-        self._sectorId = sectorId
-
-    def hexes(self) -> typing.Iterable[typing.Tuple[int, int]]:
-        return self._hexes
-
-    def setHexes(self, hexes: typing.Iterable[typing.Tuple[int, int]]) -> None:
-        self._hexes = list(hexes)
-
-    def showLabel(self) -> bool:
-        return self._showLabel
-
-    def setShowLabel(self, showLabel: bool) -> None:
-        self._showLabel = showLabel
-
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
-
-    def setWrapLabel(self, wrapLabel: bool) -> None:
-        self._wrapLabel = wrapLabel
-
-    def labelHexX(self) -> typing.Optional[int]:
-        return self._labelHexX
-
-    def setLabelHexX(self, labelHexX: typing.Optional[int]) -> None:
-        self._labelHexX = labelHexX
-
-    def labelHexY(self) -> typing.Optional[int]:
-        return self._labelHexY
-
-    def setLabelHexY(self, labelHexY: typing.Optional[int]) -> None:
-        self._labelHexY = labelHexY
-
-    def labelOffsetX(self) -> typing.Optional[float]:
-        return self._labelOffsetX
-
-    def setLabelOffsetX(self, labelOffsetX: typing.Optional[float]) -> None:
-        self._labelOffsetX = labelOffsetX
-
-    def labelOffsetY(self) -> typing.Optional[float]:
-        return self._labelOffsetY
-
-    def setLabelOffsetY(self, labelOffsetY: typing.Optional[float]) -> None:
-        self._labelOffsetY = labelOffsetY
-
-    def label(self) -> typing.Optional[str]:
-        return self._label
-
-    def setLabel(self, label: typing.Optional[str]) -> None:
-        self._label = label
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def setColour(self, colour: typing.Optional[str]) -> None:
-        self._colour = colour
-
-class DbLabel(object):
-    def __init__(
-            self,
-            text: str,
-            hexX: int,
-            hexY: int,
-            wrap: bool,
-            colour: typing.Optional[str] = None,
-            size: typing.Optional[str] = None,
-            offsetX: typing.Optional[float] = None,
-            offsetY: typing.Optional[float] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            sectorId: typing.Optional[str] = None
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self.setSectorId(sectorId)
-        self.setText(text)
-        self.setHexX(hexX)
-        self.setHexY(hexY)
-        self.setWrap(wrap)
-        self.setColour(colour)
-        self.setSize(size)
-        self.setOffsetX(offsetX)
-        self.setOffsetY(offsetY)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbLabel):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._text == value._text and \
-            self._hexX == value._hexX and \
-            self._hexY == value._hexY and \
-            self._wrap == value._wrap and \
-            self._colour == value._colour and \
-            self._size == value._size and \
-            self._offsetX == value._offsetX and \
-            self._offsetY == value._offsetY
-
-    def id(self) -> str:
-        return self._id
-
-    # NOTE: Changing the id of an object isn't something that should
-    # ever happen. If for whatever reason I do enable it, I'll need
-    # to update the sector id of all child objects
-    #def setId(self, id: str) -> None:
-    #    self._id = id
-
-    def sectorId(self) -> typing.Optional[str]:
-        return self._sectorId
-
-    def setSectorId(self, sectorId: str) -> None:
-        self._sectorId = sectorId
-
-    def text(self) -> str:
-        return self._text
-
-    def setText(self, text: str) -> None:
-        self._text = text
-
-    def hexX(self) -> int:
-        return self._hexX
-
-    def setHexX(self, hexX: int) -> None:
-        self._hexX = hexX
-
-    def hexY(self) -> int:
-        return self._hexY
-
-    def setHexY(self, hexY: int) -> None:
-        self._hexY = hexY
-
-    def wrap(self) -> bool:
-        return self._wrap
-
-    def setWrap(self, wrap: int) -> None:
-        self._wrap = wrap
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def setColour(self, colour: typing.Optional[str]) -> None:
-        self._colour = colour
-
-    def size(self) -> typing.Optional[str]:
-        return self._size
-
-    def setSize(self, size: typing.Optional[str]) -> None:
-        self._size = size
-
-    def offsetX(self) -> typing.Optional[float]:
-        return self._offsetX
-
-    def setOffsetX(self, offsetX: typing.Optional[float]) -> None:
-        self._offsetX = offsetX
-
-    def offsetY(self) -> typing.Optional[float]:
-        return self._offsetY
-
-    def setOffsetY(self, offsetY: typing.Optional[float]) -> None:
-        self._offsetY = offsetY
-
-class DbAllegiance(object):
-    def __init__(
-            self,
-            code: str,
-            name: str,
-            base: typing.Optional[str] = None
-            ) -> None:
-        self.setCode(code)
-        self.setName(name)
-        self.setBase(base)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbAllegiance):
-            return NotImplemented
-
-        return \
-            self._code == value._code and \
-            self._name == value._name and \
-            self._base == value._base
-
-    def code(self) -> str:
-        return self._code
-
-    def setCode(self, code: str) -> None:
-        self._code = code
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> None:
-        self._name = name
-
-    def base(self) -> typing.Optional[str]:
-        return self._base
-
-    def setBase(self, base: typing.Optional[str]) -> None:
-        self._base = base
-
-class DbProduct(object):
-    def __init__(
-            self,
-            publication: typing.Optional[str] = None,
-            author: typing.Optional[str] = None,
-            publisher: typing.Optional[str] = None,
-            reference: typing.Optional[str] = None
-            ) -> None:
-        self.setPublication(publication)
-        self.setPublisher(publisher)
-        self.setAuthor(author)
-        self.setReference(reference)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbProduct):
-            return NotImplemented
-
-        return \
-            self._publication == value._publication and \
-            self._author == value._author and \
-            self._publisher == value._publisher and \
-            self._reference == value._reference
-
-    def publication(self) -> typing.Optional[str]:
-        return self._publication
-
-    def setPublication(self, publication: typing.Optional[str]) -> None:
-        self._publication = publication
-
-    def author(self) -> typing.Optional[str]:
-        return self._author
-
-    def setAuthor(self, author: typing.Optional[str]) -> None:
-        self._author = author
-
-    def publisher(self) -> typing.Optional[str]:
-        return self._publisher
-
-    def setPublisher(self, publisher: typing.Optional[str]) -> None:
-        self._publisher = publisher
-
-    def reference(self) -> typing.Optional[str]:
-        return self._reference
-
-    def setReference(self, reference: typing.Optional[str]) -> None:
-        self._reference = reference
-
-class DbSector(object):
-    def __init__(
-            self,
-            isCustom: bool,
-            milieu: str,
-            sectorX: int,
-            sectorY: int,
-            primaryName: str,
-            primaryLanguage: typing.Optional[str] = None,
-            alternateNames: typing.Optional[typing.Collection[typing.Tuple[str, typing.Optional[str]]]] = None, # (Name, Language)
-            abbreviation: typing.Optional[str] = None,
-            sectorLabel: typing.Optional[str] = None,
-            subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]] = None, # Maps subsector index (0-15) to the name of that sector
-            selected: bool = False,
-            tags: typing.Optional[str] = None,
-            styleSheet: typing.Optional[str] = None,
-            credits: typing.Optional[str] = None,
-            publication: typing.Optional[str] = None,
-            author: typing.Optional[str] = None,
-            publisher: typing.Optional[str] = None,
-            reference: typing.Optional[str] = None,
-            products: typing.Optional[typing.Collection[DbProduct]] = None,
-            allegiances: typing.Optional[typing.Collection[DbAllegiance]] = None,
-            systems: typing.Optional[typing.Collection[DbSystem]] = None,
-            routes: typing.Optional[typing.Collection[DbRoute]] = None,
-            borders: typing.Optional[typing.Collection[DbBorder]] = None,
-            regions: typing.Optional[typing.Collection[DbRegion]] = None,
-            labels: typing.Optional[typing.Collection[DbLabel]] = None,
-            notes: typing.Optional[str] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            universeId: typing.Optional[str] = None
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self.setUniverseId(universeId)
-        self.setIsCustom(isCustom)
-        self.setMilieu(milieu)
-        self.setSectorX(sectorX)
-        self.setSectorY(sectorY)
-        self.setPrimaryName(primaryName)
-        self.setPrimaryLanguage(primaryLanguage)
-        self.setAlternateNames(alternateNames)
-        self.setAbbreviation(abbreviation)
-        self.setSectorLabel(sectorLabel)
-        self.setSubsectorNames(subsectorNames)
-        self.setSelected(selected)
-        self.setTags(tags)
-        self.setStyleSheet(styleSheet)
-        self.setCredits(credits)
-        self.setPublication(publication)
-        self.setAuthor(author)
-        self.setPublisher(publisher)
-        self.setReference(reference)
-        self.setProducts(products)
-        self.setAllegiances(allegiances)
-        self.setSystems(systems)
-        self.setRoutes(routes)
-        self.setBorders(borders)
-        self.setLabels(labels)
-        self.setRegions(regions)
-        self.setNotes(notes)
-
-    # TODO: Remove the equality operators as they're not reliable
-    # due to the fact they use lists of children which are only
-    # equal if the order matches. There shouldn't be a need to use
-    # them outside of debug code
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbSector):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._universeId == value._universeId and \
-            self._isCustom == value._isCustom and \
-            self._milieu == value._milieu and \
-            self._sectorX == value._sectorX and \
-            self._sectorY == value._sectorY and \
-            self._primaryName == value._primaryName and \
-            self._primaryLanguage == value._primaryLanguage and \
-            self._alternateNames == value._alternateNames and \
-            self._abbreviation == value._abbreviation and \
-            self._sectorLabel == value._sectorLabel and \
-            self._subsectorNames == value._subsectorNames and \
-            self._selected == value._selected and \
-            self._tags == value._tags and \
-            self._styleSheet == value._styleSheet and \
-            self._credits == value._credits and \
-            self._publication == value._publication and \
-            self._author == value._author and \
-            self._publisher == value._publisher and \
-            self._reference == value._reference and \
-            self._products == value._products and \
-            self._allegiances == value._allegiances and \
-            self._systems == value._systems and \
-            self._routes == value._routes and \
-            self._borders == value._borders and \
-            self._labels == value._labels and \
-            self._regions == value._regions and \
-            self._notes == value._notes
-
-    def id(self) -> str:
-        return self._id
-
-    def universeId(self) -> typing.Optional[str]:
-        return self._universeId
-
-    def setUniverseId(self, universeId: str) -> None:
-        self._universeId = universeId
-
-    def isCustom(self) -> bool:
-        return self._isCustom
-
-    def setIsCustom(self, isCustom: bool) -> None:
-        self._isCustom = isCustom
-
-    def milieu(self) -> str:
-        return self._milieu
-
-    def setMilieu(self, milieu: str) -> None:
-        self._milieu = milieu
-
-    def sectorX(self) -> int:
-        return self._sectorX
-
-    def setSectorX(self, sectorX: int) -> None:
-        self._sectorX = sectorX
-
-    def sectorY(self) -> int:
-        return self._sectorY
-
-    def setSectorY(self, sectorY: int) -> None:
-        self._sectorY = sectorY
-
-    def primaryName(self) -> str:
-        return self._primaryName
-
-    def setPrimaryName(self, primaryName: str) -> None:
-        self._primaryName = primaryName
-
-    def primaryLanguage(self) -> typing.Optional[str]:
-        return self._primaryLanguage
-
-    def setPrimaryLanguage(self, primaryLanguage: typing.Optional[str]) -> None:
-        self._primaryLanguage = primaryLanguage
-
-    # Maps name to optional language
-    def alternateNames(self) -> typing.Optional[typing.Collection[typing.Tuple[str, typing.Optional[str]]]]:
-        return self._alternateNames
-
-    def setAlternateNames(self, alternateNames: typing.Optional[typing.Collection[typing.Tuple[str, typing.Optional[str]]]]) -> None:
-        self._alternateNames = list(alternateNames) if alternateNames else None
-
-    def abbreviation(self) -> typing.Optional[str]:
-        return self._abbreviation
-
-    def setAbbreviation(self, abbreviation: typing.Optional[str]) -> None:
-        self._abbreviation = abbreviation
-
-    def sectorLabel(self) -> typing.Optional[str]:
-        return self._sectorLabel
-
-    def setSectorLabel(self, sectorLabel: typing.Optional[str]) -> None:
-        self._sectorLabel = sectorLabel
-
-    # Maps subsector int index (0-15) to the name for that subsector
-    def subsectorNames(self) -> typing.Optional[typing.Collection[typing.Tuple[int, str]]]:
-        return self._subsectorNames
-
-    def setSubsectorNames(self, subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]]) -> None:
-        self._subsectorNames = list(subsectorNames) if subsectorNames else None
-
-    def selected(self) -> bool:
-        return self._selected
-
-    def setSelected(self, selected: bool) -> None:
-        self._selected = selected
-
-    def tags(self) -> typing.Optional[str]:
-        return self._tags
-
-    def setTags(self, tags: typing.Optional[str]) -> None:
-        self._tags = tags
-
-    def styleSheet(self) -> typing.Optional[str]:
-        return self._styleSheet
-
-    def setStyleSheet(self, styleSheet: typing.Optional[str]) -> None:
-        self._styleSheet = styleSheet
-
-    def credits(self) -> typing.Optional[str]:
-        return self._credits
-
-    def setCredits(self, credits: typing.Optional[str]) -> None:
-        self._credits = credits
-
-    def publication(self) -> typing.Optional[str]:
-        return self._publication
-
-    def setPublication(self, publication: typing.Optional[str]) -> None:
-        self._publication = publication
-
-    def author(self) -> typing.Optional[str]:
-        return self._author
-
-    def setAuthor(self, author: typing.Optional[str]) -> None:
-        self._author = author
-
-    def publisher(self) -> typing.Optional[str]:
-        return self._publisher
-
-    def setPublisher(self, publisher: typing.Optional[str]) -> None:
-        self._publisher = publisher
-
-    def reference(self) -> typing.Optional[str]:
-        return self._reference
-
-    def setReference(self, reference: typing.Optional[str]) -> None:
-        self._reference = reference
-
-    def products(self) -> typing.Optional[typing.Collection[DbProduct]]:
-        return self._products
-
-    def setProducts(self, products: typing.Optional[typing.Collection[DbProduct]]) -> None:
-        self._products = list(products) if products else None
-
-    def allegiances(self) -> typing.Optional[typing.Collection[DbAllegiance]]:
-        return self._allegiances
-
-    def setAllegiances(self, allegiances: typing.Optional[typing.Collection[DbAllegiance]]) -> None:
-        self._allegiances = list(allegiances) if allegiances else None
-
-    def systems(self) -> typing.Optional[typing.Collection[DbSystem]]:
-        return self._systems
-
-    def setSystems(self, systems: typing.Optional[typing.Collection[DbSystem]]) -> None:
-        self._systems = list(systems) if systems else None
-        if self._systems:
-            for system in self._systems:
-                system.setSectorId(self._id)
-
-    def addSystem(self, system: DbSystem) -> None:
-        if self._systems is None:
-            self._systems = []
-        self._systems.append(system)
-        system.setSectorId(self._id)
-
-    def removeSystem(self, systemId: str) -> None:
-        if self._systems is None:
-            return
-        for i in range(self._systems):
-            system = self._systems[i]
-            if system.id() == systemId:
-                del self._systems[i]
-                return
-
-    def routes(self) -> typing.Optional[typing.Collection[DbRoute]]:
-        return self._routes
-
-    def setRoutes(self, routes: typing.Optional[typing.Collection[DbRoute]]) -> None:
-        self._routes = list(routes) if routes else None
-        if self._routes:
-            for route in self._routes:
-                route.setSectorId(self._id)
-
-    def addRoute(self, route: DbRoute) -> None:
-        if self._routes is None:
-            self._routes = []
-        self._routes.append(route)
-        route.setSectorId(self._id)
-
-    def removeRoute(self, routeId: str) -> None:
-        if self._routes is None:
-            return
-        for i in range(self._routes):
-            route = self._routes[i]
-            if route.id() == routeId:
-                del self._routes[i]
-                return
-
-    def borders(self) -> typing.Optional[typing.Collection[DbBorder]]:
-        return self._borders
-
-    def setBorders(self, borders: typing.Optional[typing.Collection[DbBorder]]) -> None:
-        self._borders = list(borders) if borders else None
-        if self._borders:
-            for border in self._borders:
-                border.setSectorId(self._id)
-
-    def addBorder(self, border: DbBorder) -> None:
-        if self._borders is None:
-            self._borders = []
-        self._borders.append(border)
-        border.setSectorId(self._id)
-
-    def removeBorder(self, borderId: str) -> None:
-        if self._borders is None:
-            return
-        for i in range(self._borders):
-            border = self._borders[i]
-            if border.id() == borderId:
-                del self._borders[i]
-                return
-
-    def regions(self) -> typing.Optional[typing.Collection[DbRegion]]:
-        return self._regions
-
-    def setRegions(self, regions: typing.Optional[typing.Collection[DbRegion]]) -> None:
-        self._regions = list(regions) if regions else None
-        if self._regions:
-            for region in self._regions:
-                region.setSectorId(self._id)
-
-    def addRegion(self, region: DbRegion) -> None:
-        if self._regions is None:
-            self._regions = []
-        self._regions.append(region)
-        region.setSectorId(self._id)
-
-    def removeRegion(self, regionId: str) -> None:
-        if self._regions is None:
-            return
-        for i in range(self._regions):
-            region = self._regions[i]
-            if region.id() == regionId:
-                del self._regions[i]
-                return
-
-    def labels(self) -> typing.Optional[typing.Collection[DbLabel]]:
-        return self._labels
-
-    def setLabels(self, labels: typing.Optional[typing.Collection[DbLabel]]) -> None:
-        self._labels = list(labels) if labels else None
-        if self._labels:
-            for label in self._labels:
-                label.setSectorId(self._id)
-
-    def addLabel(self, label: DbLabel) -> None:
-        if self._labels is None:
-            self._labels = []
-        self._labels.append(label)
-        label.setSectorId(self._id)
-
-    def removeLabel(self, labelId: str) -> None:
-        if self._labels is None:
-            return
-        for i in range(self._labels):
-            label = self._labels[i]
-            if label.id() == labelId:
-                del self._labels[i]
-                return
-
-    def notes(self) -> typing.Optional[str]:
-        return self._notes
-
-    def setNotes(self, notes: typing.Optional[str]) -> None:
-        self._notes = notes
-
-class DbUniverse(object):
-    def __init__(
-            self,
-            name: str,
-            description: typing.Optional[str] = None,
-            notes: typing.Optional[str] = None,
-            sectors: typing.Optional[typing.Collection[DbSector]] = None,
-            id: typing.Optional[str] = None, # None means allocate an id
-            ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
-
-        self._sectorByMilieuPosition: typing.Dict[typing.Tuple[str, int, int], DbSector] = {}
-
-        self.setName(name)
-        self.setDescription(description)
-        self.setNotes(notes)
-        self.setSectors(sectors)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbUniverse):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._name == value._name and \
-            self._description == value._description and \
-            self._notes == value._notes and \
-            self._sectors == value._sectors
-
-    def id(self) -> str:
-        return self._id
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> None:
-        self._name = name
-
-    def description(self) -> typing.Optional[str]:
-        return self._description
-
-    def setDescription(self, description: typing.Optional[str]) -> None:
-        self._description = description
-
-    def notes(self) -> typing.Optional[str]:
-        return self._notes
-
-    def setNotes(self, notes: typing.Optional[str]) -> None:
-        self._notes = notes
-
-    def sectors(self) -> typing.Optional[typing.Collection[DbSector]]:
-        return self._sectors
-
-    def setSectors(self, sectors: typing.Optional[typing.Collection[DbSector]]) -> None:
-        if sectors is not None:
-            self._sectors = []
-            for sector in sectors:
-                self.addSector(sector=sector)
-        else:
-            self._sectors = None
-
-    def addSector(self, sector: DbSector) -> None:
-        if self._sectors is None:
-            self._sectors: typing.List[DbSector] = []
-
-        key = (sector.milieu(), sector.sectorX(), sector.sectorY())
-
-        oldSector = self._sectorByMilieuPosition.get(key)
-        if oldSector:
-            self._sectors.remove(oldSector)
-
-        self._sectors.append(sector)
-        self._sectorByMilieuPosition[key] = sector
-
-        sector.setUniverseId(self._id)
-
-    def removeSector(self, sectorId: str) -> None:
-        if self._sectors is None:
-            return
-        for i in range(self._sectors):
-            sector = self._sectors[i]
-            if sector.id() == sectorId:
-                del self._sectorByMilieuPosition[(sector.milieu(), sector.sectorX(), sector.sectorY())]
-                del self._sectors[i]
-                return
 
 # TODO: When updating snapshot I'll need to do something to make sure notes
 # are preserved on systems/sectors. I could split notes in a separate table
@@ -1399,7 +246,7 @@ class MultiverseDb(object):
     # writing to the default universe
     def saveUniverse(
             self,
-            universe: DbUniverse,
+            universe: multiverse.DbUniverse,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
@@ -1440,7 +287,7 @@ class MultiverseDb(object):
             universeId: str,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
-            ) -> typing.Optional[DbUniverse]:
+            ) -> typing.Optional[multiverse.DbUniverse]:
         logging.debug(f'MultiverseDb loading universe {universeId}')
 
         readProgressCallback = None
@@ -1481,7 +328,7 @@ class MultiverseDb(object):
 
     def saveSector(
             self,
-            sector: DbSector,
+            sector: multiverse.DbSector,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
         logging.debug(f'MultiverseDb saving sector {sector.id()}')
@@ -1527,7 +374,7 @@ class MultiverseDb(object):
             self,
             sectorId: str,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
-            ) -> typing.Optional[DbSector]:
+            ) -> typing.Optional[multiverse.DbSector]:
         logging.debug(f'MultiverseDb reading sector {sectorId}')
         if transaction != None:
             connection = transaction.connection()
@@ -1559,39 +406,46 @@ class MultiverseDb(object):
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
-    def listUniverseNames(
+    def listUniverses(
             self,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
-            ) -> typing.List[typing.Tuple[str, str]]:
+            ) -> typing.List[typing.Tuple[
+                str, # Universe ID
+                str, # Universe Name
+                typing.Optional[str]]]: # Universe description
         logging.debug(f'MultiverseDb listing universe names')
         if transaction != None:
             connection = transaction.connection()
-            return self._internalListUniverseNames(
+            return self._internalListUniverses(
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._internalListUniverseNames(
+                return self._internalListUniverses(
                     cursor=connection.cursor())
 
-    def listSectorNames(
+    def listSectors(
             self,
             universeId: str,
             milieu: typing.Optional[str] = None,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
-            ) -> typing.List[typing.Tuple[str, str]]:
+            ) -> typing.List[typing.Tuple[
+                str, # Sector ID
+                str, # Sector Name
+                int, # Sector X
+                int]]: # Sector Y
         logging.debug(
             f'MultiverseDb listing sector names' + ('' if universeId is None else f' for universe {universeId}'))
         if transaction != None:
             connection = transaction.connection()
-            return self._internalListSectorNames(
+            return self._internalListSectors(
                 universeId=universeId,
                 milieu=milieu,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._internalListSectorNames(
+                return self._internalListSectors(
                     universeId=universeId,
                     milieu=milieu,
                     cursor=connection.cursor())
@@ -1893,7 +747,7 @@ class MultiverseDb(object):
                         bases TEXT,
                         zone TEXT,
                         pbg TEXT,
-                        system_worlds INTEGER NOT NULL,
+                        system_worlds INTEGER,
                         allegiance TEXT,
                         stellar TEXT,
                         notes TEXT,
@@ -1939,6 +793,10 @@ class MultiverseDb(object):
                         start_hex_y INTEGER NOT NULL,
                         end_hex_x INTEGER NOT NULL,
                         end_hex_y INTEGER NOT NULL,
+                        start_offset_x INTEGER NOT NULL,
+                        start_offset_y INTEGER NOT NULL,
+                        end_offset_x INTEGER NOT NULL,
+                        end_offset_y INTEGER NOT NULL,
                         allegiance TEXT,
                         type TEXT,
                         style TEXT,
@@ -1982,13 +840,13 @@ class MultiverseDb(object):
                     CREATE TABLE IF NOT EXISTS {bordersTable} (
                         id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
+                        label TEXT,
                         show_label INTEGER NOT NULL,
                         wrap_label INTEGER NOT NULL,
                         label_hex_x INTEGER,
                         label_hex_y INTEGER,
                         label_offset_x REAL,
                         label_offset_y REAL,
-                        label TEXT,
                         colour TEXT,
                         style TEXT,
                         allegiance TEXT,
@@ -2064,13 +922,13 @@ class MultiverseDb(object):
                     CREATE TABLE IF NOT EXISTS {regionsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
+                        label TEXT,
                         show_label INTEGER NOT NULL,
                         wrap_label INTEGER NOT NULL,
                         label_hex_x INTEGER,
                         label_hex_y INTEGER,
                         label_offset_x REAL,
                         label_offset_y REAL,
-                        label TEXT,
                         colour TEXT,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
@@ -2234,7 +1092,7 @@ class MultiverseDb(object):
             value: str,
             cursor: sqlite3.Cursor
             ) -> None:
-        logging.info(f'MultiverseDb setting metadata \'{key}\' to {value}')
+        logging.debug(f'MultiverseDb setting metadata \'{key}\' to {value}')
         sql = """
             INSERT INTO {table} (key, value)
             VALUES (:key, :value)
@@ -2344,197 +1202,12 @@ class MultiverseDb(object):
                 totalSectorCount,
                 totalSectorCount)
 
-        dbUniverse = DbUniverse(
-            id=MultiverseDb._DefaultUniverseId,
-            name='Default Universe')
-        totalSectorCount = len(rawData)
-        for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawData):
-            if progressCallback:
-                progressCallback(
-                    f'Processing: {milieu} - {rawMetadata.canonicalName()}',
-                    progressCount,
-                    totalSectorCount)
-
-            try:
-                dbAlternateNames = None
-                if rawMetadata.alternateNames():
-                    dbAlternateNames = [(name, rawMetadata.nameLanguage(name)) for name in rawMetadata.alternateNames()]
-
-                dbSubsectorNames = None
-                if rawMetadata.subsectorNames():
-                    dbSubsectorNames = []
-                    for code, name in rawMetadata.subsectorNames().items():
-                        if not name:
-                            continue
-                        dbSubsectorNames.append((ord(code) - ord('A'), name))
-
-                dbProducts = None
-                rawSources = rawMetadata.sources()
-                rawPrimarySource = rawSources.primary() if rawSources else None
-                if rawSources and rawSources.products():
-                    dbProducts = []
-                    for product in rawSources.products():
-                        dbProducts.append(multiverse.DbProduct(
-                            publication=product.publication(),
-                            author=product.author(),
-                            publisher=product.publisher(),
-                            reference=product.reference()))
-
-                dbAllegiances = None
-                if rawMetadata.allegiances():
-                    dbAllegiances = []
-                    for rawAllegiance in rawMetadata.allegiances():
-                        dbAllegiances.append(multiverse.DbAllegiance(
-                            code=rawAllegiance.code(),
-                            name=rawAllegiance.name(),
-                            base=rawAllegiance.base()))
-
-                dbSystems = None
-                if rawSystems:
-                    dbSystems = []
-                    for rawWorld in rawSystems:
-                        rawHex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
-                        if not rawHex:
-                            assert(False) # TODO: Better error handling
-
-                        rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
-
-                        dbSystems.append(DbSystem(
-                            hexX=int(rawHex[:2]),
-                            hexY=int(rawHex[-2:]),
-                            name=rawWorld.attribute(multiverse.WorldAttribute.Name),
-                            uwp=rawWorld.attribute(multiverse.WorldAttribute.UWP),
-                            importance=rawWorld.attribute(multiverse.WorldAttribute.Importance),
-                            economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
-                            culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
-                            nobility=rawWorld.attribute(multiverse.WorldAttribute.Nobility),
-                            bases=rawWorld.attribute(multiverse.WorldAttribute.Bases),
-                            zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
-                            pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
-                            systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else 1,
-                            allegiance=rawWorld.attribute(multiverse.WorldAttribute.Allegiance),
-                            stellar=rawWorld.attribute(multiverse.WorldAttribute.Stellar)))
-
-                dbRoutes = None
-                if rawMetadata.routes():
-                    dbRoutes = []
-                    for rawRoute in rawMetadata.routes():
-                        rawStartHex = rawRoute.startHex()
-                        rawEndHex = rawRoute.endHex()
-
-                        dbRoutes.append(multiverse.DbRoute(
-                            startHexX=int(rawStartHex[:2]),
-                            startHexY=int(rawStartHex[-2:]),
-                            endHexX=int(rawEndHex[:2]),
-                            endHexY=int(rawEndHex[-2:]),
-                            allegiance=rawRoute.allegiance(),
-                            type=rawRoute.type(),
-                            style=rawRoute.style(),
-                            colour=rawRoute.colour(),
-                            width=rawRoute.width()))
-
-                dbBorders = None
-                if rawMetadata.borders():
-                    dbBorders = []
-                    for rawBorder in rawMetadata.borders():
-                        dbHexes = []
-                        for rawHex in rawBorder.hexList():
-                            dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
-
-                        rawLabelHex = rawBorder.labelHex()
-
-                        dbBorders.append(multiverse.DbBorder(
-                            hexes=dbHexes,
-                            showLabel=rawBorder.showLabel() if rawBorder.showLabel() is not None else False,
-                            wrapLabel=rawBorder.wrapLabel() if rawBorder.wrapLabel() is not None else False,
-                            # TODO: I think I should check that there is a label position if show label is True
-                            # (Need to check how the final value is used in the cartographer)
-                            labelHexX=int(rawLabelHex[:2]),
-                            labelHexY=int(rawLabelHex[-2:]),
-                            labelOffsetX=rawBorder.labelOffsetX(),
-                            labelOffsetY=rawBorder.labelOffsetY(),
-                            label=rawBorder.label(),
-                            colour=rawBorder.colour(),
-                            style=rawBorder.style(),
-                            allegiance=rawBorder.allegiance()))
-
-                dbRegions = None
-                if rawMetadata.regions():
-                    dbRegions = []
-                    for rawBorder in rawMetadata.regions():
-                        dbHexes = []
-                        for rawHex in rawBorder.hexList():
-                            dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
-
-                        rawShowLabel = rawBorder.showLabel()
-                        rawWrapLabel = rawBorder.wrapLabel()
-                        rawLabelHex = rawBorder.labelHex()
-
-                        dbRegions.append(multiverse.DbRegion(
-                            hexes=dbHexes,
-                            showLabel=rawShowLabel if rawShowLabel is not None else False,
-                            wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
-                            # TODO: I think I should check that there is a label position if show label is True
-                            # (Need to check how the final value is used in the cartographer)
-                            labelHexX=int(rawLabelHex[:2]),
-                            labelHexY=int(rawLabelHex[-2:]),
-                            labelOffsetX=rawBorder.labelOffsetX(),
-                            labelOffsetY=rawBorder.labelOffsetY(),
-                            label=rawBorder.label(),
-                            colour=rawBorder.colour()))
-
-                dbLabels = None
-                if rawMetadata.labels():
-                    dbLabels = []
-                    for rawLabel in rawMetadata.labels():
-                        rawHex = rawLabel.hex()
-                        rawWrap = rawLabel.wrap()
-
-                        dbLabels.append(multiverse.DbLabel(
-                            text=rawLabel.text(),
-                            hexX=int(rawHex[:2]),
-                            hexY=int(rawHex[-2:]),
-                            wrap=rawWrap if rawWrap is not None else False,
-                            colour=rawLabel.colour(),
-                            size=rawLabel.size(),
-                            offsetX=rawLabel.offsetX(),
-                            offsetY=rawLabel.offsetY()))
-
-                dbUniverse.addSector(multiverse.DbSector(
-                    isCustom=False,
-                    milieu=milieu, # Use name of enum as that is what is used when writing out elsewhere
-                    sectorX=rawMetadata.x(),
-                    sectorY=rawMetadata.y(),
-                    primaryName=rawMetadata.canonicalName(),
-                    primaryLanguage=rawMetadata.nameLanguage(rawMetadata.canonicalName()),
-                    alternateNames=dbAlternateNames,
-                    abbreviation=rawMetadata.abbreviation(),
-                    sectorLabel=rawMetadata.sectorLabel(),
-                    subsectorNames=dbSubsectorNames,
-                    selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
-                    tags=rawMetadata.tags(),
-                    styleSheet=rawMetadata.styleSheet(),
-                    credits=rawSources.credits() if rawSources else None,
-                    publication=rawPrimarySource.publication() if rawPrimarySource else None,
-                    author=rawPrimarySource.author() if rawPrimarySource else None,
-                    publisher=rawPrimarySource.publisher() if rawPrimarySource else None,
-                    reference=rawPrimarySource.reference() if rawPrimarySource else None,
-                    products=dbProducts,
-                    allegiances=dbAllegiances,
-                    systems=dbSystems,
-                    routes=dbRoutes,
-                    borders=dbBorders,
-                    regions=dbRegions,
-                    labels=dbLabels))
-            except Exception as ex:
-                # TODO: Log something and continue
-                continue
-
-        if progressCallback:
-            progressCallback(
-                f'Processing: Complete!',
-                totalSectorCount,
-                totalSectorCount)
+        dbUniverse = multiverse.convertRawUniverseToDbUniverse(
+            universeId=MultiverseDb._DefaultUniverseId,
+            universeName='Default Universe',
+            isCustom=True,
+            rawSectors=rawData,
+            progressCallback=progressCallback)
 
         # TODO: Not sure how to do progress for this step as it does take time
         self._internalDeleteUniverse(
@@ -2558,7 +1231,7 @@ class MultiverseDb(object):
 
     def _internalInsertUniverse(
             self,
-            universe: DbUniverse,
+            universe: multiverse.DbUniverse,
             cursor: sqlite3.Cursor,
             updateDefault: bool = False,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
@@ -2604,7 +1277,7 @@ class MultiverseDb(object):
             universeId: str,
             cursor: sqlite3.Cursor,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
-            ) -> typing.Optional[DbUniverse]:
+            ) -> typing.Optional[multiverse.DbUniverse]:
         sql = """
             SELECT name, description, notes
             FROM {table}
@@ -2622,13 +1295,13 @@ class MultiverseDb(object):
         # information in a single select then just loading the sector child
         # data with individual selects.
         sql = """
-            SELECT id, name, milieu
+            SELECT id, primary_name, milieu
             FROM {table}
             WHERE universe_id = :id
 
             UNION ALL
 
-            SELECT d.id, d.name, d.milieu
+            SELECT d.id, d.primary_name, d.milieu
             FROM {table} d
             WHERE d.universe_id IS "default"
             AND NOT EXISTS (
@@ -2671,7 +1344,7 @@ class MultiverseDb(object):
                 totalSectorCount,
                 totalSectorCount)
 
-        return DbUniverse(
+        return multiverse.DbUniverse(
             id=universeId,
             name=name,
             description=description,
@@ -2682,7 +1355,7 @@ class MultiverseDb(object):
             self,
             universeId: str,
             cursor: sqlite3.Cursor
-            ) -> typing.Optional[DbUniverse]:
+            ) -> typing.Optional[multiverse.DbUniverse]:
         sql = """
             DELETE FROM {table}
             WHERE id = :id
@@ -2692,7 +1365,7 @@ class MultiverseDb(object):
 
     def _internalInsertSector(
             self,
-            sector: DbSector,
+            sector: multiverse.DbSector,
             cursor: sqlite3.Cursor
             ) -> None:
         sql = """
@@ -2810,7 +1483,7 @@ class MultiverseDb(object):
                     'bases': system.bases(),
                     'zone': system.zone(),
                     'pbg': system.pbg(),
-                    'system_worlds': 1 if system.systemWorlds() is None else system.systemWorlds(),
+                    'system_worlds': system.systemWorlds(),
                     'allegiance': system.allegiance(),
                     'stellar': system.stellar(),
                     'notes': system.notes()})
@@ -2818,10 +1491,12 @@ class MultiverseDb(object):
 
         if sector.routes():
             sql = """
-                INSERT INTO {table} (id, sector_id, start_hex_x, start_hex_y,
-                    end_hex_x, end_hex_y, allegiance, type, style, colour, width)
-                VALUES (:id, :sector_id, :start_hex_x, :start_hex_y,
-                    :end_hex_x, :end_hex_y, :allegiance, :type, :style, :colour, :width);
+                INSERT INTO {table} (id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
+                    start_offset_x, start_offset_y, end_offset_x, end_offset_y, allegiance, type,
+                    style, colour, width)
+                VALUES (:id, :sector_id, :start_hex_x, :start_hex_y, :end_hex_x, :end_hex_y,
+                    :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :allegiance, :type,
+                    :style, :colour, :width);
                 """.format(table=MultiverseDb._RoutesTableName)
             rowData = []
             for route in sector.routes():
@@ -2832,6 +1507,10 @@ class MultiverseDb(object):
                     'start_hex_y': route.startHexY(),
                     'end_hex_x': route.endHexX(),
                     'end_hex_y': route.endHexY(),
+                    'start_offset_x': route.startOffsetX(),
+                    'start_offset_y': route.startOffsetY(),
+                    'end_offset_x': route.endOffsetX(),
+                    'end_offset_y': route.endOffsetY(),
                     'allegiance': route.allegiance(),
                     'type': route.type(),
                     'style': route.style(),
@@ -2937,7 +1616,7 @@ class MultiverseDb(object):
             self,
             sectorId: str,
             cursor: sqlite3.Cursor
-            ) -> typing.Optional[DbSector]:
+            ) -> typing.Optional[multiverse.DbSector]:
         sql = """
             SELECT universe_id, is_custom, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label,
@@ -2951,7 +1630,7 @@ class MultiverseDb(object):
         if not row:
             return None
 
-        sector = DbSector(
+        sector = multiverse.DbSector(
             id=sectorId,
             universeId=row[0],
             isCustom=True if row[1] else False,
@@ -2998,7 +1677,7 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         products = []
         for row in cursor.fetchall():
-            products.append(DbProduct(
+            products.append(multiverse.DbProduct(
                 publication=row[0],
                 author=row[1],
                 publisher=row[2],
@@ -3013,7 +1692,7 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         allegiances = []
         for row in cursor.fetchall():
-            allegiances.append(DbAllegiance(
+            allegiances.append(multiverse.DbAllegiance(
                 code=row[0],
                 name=row[1],
                 base=row[2]))
@@ -3029,7 +1708,7 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         systems = []
         for row in cursor.fetchall():
-            systems.append(DbSystem(
+            systems.append(multiverse.DbSystem(
                 id=row[0],
                 hexX=row[1],
                 hexY=row[2],
@@ -3051,6 +1730,7 @@ class MultiverseDb(object):
 
         sql = """
             SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
+                start_offset_x, start_offset_y, end_offset_x, end_offset_y,
                 allegiance, type, style, colour, width
             FROM {table}
             WHERE sector_id = :id;
@@ -3058,17 +1738,21 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         routes = []
         for row in cursor.fetchall():
-            routes.append(DbRoute(
+            routes.append(multiverse.DbRoute(
                 id=row[0],
                 startHexX=row[1],
                 startHexY=row[2],
                 endHexX=row[3],
                 endHexY=row[4],
-                allegiance=row[5],
-                type=row[6],
-                style=row[7],
-                colour=row[8],
-                width=row[9]))
+                startOffsetX=row[5],
+                startOffsetY=row[6],
+                endOffsetX=row[7],
+                endOffsetY=row[8],
+                allegiance=row[9],
+                type=row[10],
+                style=row[11],
+                colour=row[12],
+                width=row[13]))
         sector.setRoutes(routes)
 
         sql = """
@@ -3093,7 +1777,7 @@ class MultiverseDb(object):
             for hexRow in cursor.fetchall():
                 hexes.append((hexRow[0], hexRow[1]))
 
-            borders.append(DbBorder(
+            borders.append(multiverse.DbBorder(
                 id=borderId,
                 hexes=hexes,
                 showLabel=True if row[1] else False,
@@ -3130,7 +1814,7 @@ class MultiverseDb(object):
             for hexRow in cursor.fetchall():
                 hexes.append((hexRow[0], hexRow[1]))
 
-            regions.append(DbRegion(
+            regions.append(multiverse.DbRegion(
                 id=regionId,
                 hexes=hexes,
                 showLabel=True if row[1] else False,
@@ -3152,7 +1836,7 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         labels = []
         for row in cursor.fetchall():
-            labels.append(DbLabel(
+            labels.append(multiverse.DbLabel(
                 id=row[0],
                 text=row[1],
                 hexX=row[2],
@@ -3173,7 +1857,7 @@ class MultiverseDb(object):
             milieu: typing.Optional[str] = None,
             sectorX: typing.Optional[int] = None,
             sectorY: typing.Optional[int] = None,
-            ) -> typing.Optional[DbUniverse]:
+            ) -> typing.Optional[multiverse.DbUniverse]:
         sql = """
             DELETE FROM {table}
             WHERE id = :id
@@ -3190,12 +1874,15 @@ class MultiverseDb(object):
         sql += ';'
         cursor.execute(sql, queryData)
 
-    def _internalListUniverseNames(
+    def _internalListUniverses(
             self,
             cursor: sqlite3.Cursor
-            ) -> typing.List[typing.Tuple[str, str]]:
+            ) -> typing.List[typing.Tuple[
+                str, # Universe ID
+                str, # Universe Name
+                typing.Optional[str]]]: # Universe description
         sql = """
-            SELECT id, name
+            SELECT id, name, description
             FROM {table}
             WHERE id != :defaultId;
             """.format(
@@ -3204,21 +1891,26 @@ class MultiverseDb(object):
 
         universeList = []
         for row in cursor.fetchall():
-            universeId = row[0]
-            name = row[1]
-            universeList.append((universeId, name))
+            universeId = str(row[0])
+            name = str(row[1])
+            description = str(row[2]) if row[2] is not None else None
+            universeList.append((universeId, name, description))
         return universeList
 
     # TODO: This needs to include sector names from default sectors
     # in locations that don't have a sector in the actual universe
-    def _internalListSectorNames(
+    def _internalListSectors(
             self,
             universeId: str,
             milieu: typing.Optional[str],
             cursor: sqlite3.Cursor
-            ) -> typing.List[typing.Tuple[str, str]]:
+            ) -> typing.List[typing.Tuple[
+                str, # Sector ID
+                str, # Sector Name
+                int, # Sector X
+                int]]: # Sector Y
         sql = """
-            SELECT id, primary_name
+            SELECT id, primary_name, sector_x, sector_y
             FROM {table}
             WHERE universe_id = :id
             """.format(table=MultiverseDb._SectorsTableName)
@@ -3230,7 +1922,7 @@ class MultiverseDb(object):
 
         sql += """
             UNION ALL
-            SELECT d.id, d.primary_name
+            SELECT d.id, d.primary_name, d.sector_x, d.sector_y
             FROM {table} d
             WHERE d.universe_id IS "default"
             """.format(table=MultiverseDb._SectorsTableName)
@@ -3253,9 +1945,11 @@ class MultiverseDb(object):
 
         sectorList = []
         for row in cursor.fetchall():
-            sectorId = row[0]
-            name = row[1]
-            sectorList.append((sectorId, name))
+            sectorId = str(row[0])
+            name = str(row[1])
+            sectorX = int(row[2])
+            sectorY = int(row[3])
+            sectorList.append((sectorId, name, sectorX, sectorY))
         return sectorList
 
     @staticmethod

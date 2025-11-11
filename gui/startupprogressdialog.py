@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
         jobs.SyncMultiverseDbJob: '',
+        jobs.ImportCustomSectorsJob: '',
         jobs.LoadSectorsJob: '',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
         jobs.LoadRobotsJob: 'Loading: Robot - '}
@@ -25,6 +26,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
         self._exception = None
 
         self._multiverseSyncDir = None
+        self._customSectorImportDir = None
 
         self._textLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
@@ -46,8 +48,11 @@ class StartupProgressDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
-    def setMultiverseSyncDir(self, syncDir: typing.Optional[str]) -> None:
-        self._multiverseSyncDir = syncDir = syncDir
+    def setMultiverseSyncDir(self, directory: typing.Optional[str]) -> None:
+        self._multiverseSyncDir = directory
+
+    def setCustomSectorImportDir(self, directory: typing.Optional[str]) -> None:
+        self._customSectorImportDir = directory
 
     def exception(self) -> typing.Optional[Exception]:
         return self._exception
@@ -56,6 +61,13 @@ class StartupProgressDialog(QtWidgets.QDialog):
         if self._multiverseSyncDir:
             self._jobQueue.append(jobs.SyncMultiverseDbJob(
                 directoryPath=self._multiverseSyncDir,
+                progressCallback=self._updateProgress,
+                finishedCallback=self._jobFinished,
+                parent=self))
+
+        if self._customSectorImportDir:
+            self._jobQueue.append(jobs.ImportCustomSectorsJob(
+                directoryPath=self._customSectorImportDir,
                 progressCallback=self._updateProgress,
                 finishedCallback=self._jobFinished,
                 parent=self))

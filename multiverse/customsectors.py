@@ -1,0 +1,165 @@
+import common
+import json
+import logging
+import multiverse
+import os
+import typing
+
+# TODO: At some point in the future I should be able to delete this code.
+# However, I'll need to wait for a good few releases as I can only really
+# delete it once I'm sure nobody will be upgrading from a version so old
+# it will still be using custom sectors stored in the filesystem
+
+_ImportFlagFileName = 'database_import_flag_file'
+
+_SectorFormatExtensions = {
+    # NOTE: The sec format is short for second survey, not the legacy sec format
+    multiverse.SectorFormat.T5Column: 'sec',
+    multiverse.SectorFormat.T5Tab: 'tab'}
+_MetadataFormatExtensions = {
+    multiverse.MetadataFormat.JSON: 'json',
+    multiverse.MetadataFormat.XML: 'xml'}
+
+def haveCustomSectorsBeenImported(directoryPath: str) -> bool:
+    if not os.path.isdir(directoryPath):
+        return False # No directory means nothing to import
+
+    path = os.path.join(directoryPath, _ImportFlagFileName)
+    return os.path.exists(path)
+
+def importLegacyCustomSectors(
+        directoryPath: str,
+        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+        ) -> None:
+    flagFilePath = os.path.join(directoryPath, _ImportFlagFileName)
+    if os.path.exists(flagFilePath):
+        raise RuntimeError('Custom sectors have already been imported')
+
+    universePath = os.path.join(directoryPath, 'milieu')
+    milieuSectors: typing.List[typing.Tuple[
+        str, # Milieu
+        typing.List[typing.Tuple[
+            str, # Sector name
+            multiverse.MetadataFormat,
+            multiverse.SectorFormat
+        ]]]] = []
+    totalSectorCount = 0
+    for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
+        milieuPath = os.path.join(universePath, milieu)
+        universeInfoPath = os.path.join(milieuPath, 'universe.json')
+        try:
+            with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
+                universeInfoContent = file.read()
+            universeElement = json.loads(universeInfoContent)
+
+            sectorsElement = universeElement.get('Sectors')
+            if not sectorsElement:
+                raise RuntimeError(f'No Sectors element found in "{universeInfoPath}"')
+
+            sectorNames: typing.List[typing.Tuple[
+                str, # Sector name
+                multiverse.MetadataFormat,
+                multiverse.SectorFormat
+                ]] = []
+            for index, sectorElement in enumerate(sectorsElement):
+                namesElements = sectorElement.get('Names')
+                if not namesElements:
+                    raise RuntimeError(f'No Names element found for sector {index + 1} in "{universeInfoPath}"')
+
+                nameElement = namesElements[0]
+                sectorName = nameElement.get('Text')
+                if not sectorName:
+                    raise RuntimeError(f'No Text element for Sector {index + 1} Name element')
+                sectorName = str(sectorName)
+
+                # If the universe doesn't specify the metadata format it must be a standard traveller map
+                # universe file which means the corresponding metadata files all use XML format
+                metadataFormatTag = sectorElement.get('MetadataFormat')
+                metadataFormat = multiverse.MetadataFormat.XML
+                if metadataFormatTag != None:
+                    metadataFormat = multiverse.MetadataFormat.__members__.get(
+                        str(metadataFormatTag),
+                        metadataFormat)
+
+                # If the universe doesn't specify the sector format it must be a standard traveller map
+                # universe file which means the corresponding sectors files all use T5 column format
+                sectorFormatTag = sectorElement.get('SectorFormat')
+                sectorFormat = multiverse.SectorFormat.T5Column
+                if sectorFormatTag != None:
+                    sectorFormat = multiverse.SectorFormat.__members__.get(
+                        str(sectorFormatTag),
+                        sectorFormat)
+
+                sectorNames.append((str(sectorName), metadataFormat, sectorFormat))
+                totalSectorCount += 1
+
+            milieuSectors.append((milieu, sectorNames))
+        except Exception as ex:
+            # Log and continue to import any custom sectors that can be processed
+            # TODO: I should probably do something to inform the user that some
+            # of the data couldn't be imported
+            logging.warn(
+                f'Custom sector import failed to process "{universeInfoPath}"',
+                exc_info=ex)
+
+    rawData: typing.List[typing.Tuple[
+        str, # Milieu
+        multiverse.RawMetadata,
+        typing.Collection[multiverse.RawWorld]
+        ]] = []
+    progressCount = 0
+    for milieu, sectorNames in milieuSectors:
+        milieuPath = os.path.join(universePath, milieu)
+        for sectorName, metadataFormat, sectorFormat in sectorNames:
+            try:
+                if progressCallback:
+                    progressCallback(
+                        f'Loading: {milieu} - {sectorName}',
+                        progressCount,
+                        totalSectorCount)
+                    progressCount += 1
+
+                escapedName = common.encodeFileName(rawFileName=sectorName)
+
+                metadataExtension = _MetadataFormatExtensions[metadataFormat]
+                metadataPath = os.path.join(milieuPath, f'{escapedName}.{metadataExtension}')
+                with open(metadataPath, 'r', encoding='utf-8-sig') as file:
+                    rawMetadata = multiverse.readMetadata(
+                        content=file.read(),
+                        format=metadataFormat,
+                        identifier=sectorName)
+
+                sectorExtension = _SectorFormatExtensions[sectorFormat]
+                sectorPath = os.path.join(milieuPath, f'{escapedName}.{sectorExtension}')
+                with open(sectorPath, 'r', encoding='utf-8-sig') as file:
+                    rawSystems = multiverse.readSector(
+                        content=file.read(),
+                        format=sectorFormat,
+                        identifier=sectorName)
+                rawData.append((milieu, rawMetadata, rawSystems))
+            except Exception as ex:
+                # TODO: Log something but continue
+                continue
+
+    if progressCallback:
+        progressCallback(
+            f'Loading: Complete!',
+            totalSectorCount,
+            totalSectorCount)
+
+    dbUniverse = multiverse.convertRawUniverseToDbUniverse(
+        universeName='Custom Universe',
+        isCustom=True,
+        rawSectors=rawData,
+        progressCallback=progressCallback)
+
+    multiverse.MultiverseDb.instance().saveUniverse(
+        universe=dbUniverse,
+        progressCallback=progressCallback)
+
+    # Create flag file to indicate custom sectors have already been imported
+    # TODO: I should pass a transaction into the saveUniverse call and only
+    # commit it if I also manage to write the flag. If writing fails it should
+    # roll back the commit
+    with open(flagFilePath, 'w') as file:
+        file.write(common.utcnow().isoformat())

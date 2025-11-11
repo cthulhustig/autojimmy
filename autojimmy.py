@@ -435,9 +435,20 @@ def main() -> None:
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 raise ex
 
+        customSectorsDir = os.path.join(appDir, 'custom_map')
+        shouldImportCustomSectors = False
+        try:
+            shouldImportCustomSectors = not multiverse.haveCustomSectorsBeenImported(
+                directoryPath=customSectorsDir)
+        except Exception as ex:
+            # TODO: Not sure what to do here
+            pass
+
         startupProgress = gui.StartupProgressDialog()
         if shouldSyncMultiverse:
-            startupProgress.setMultiverseSyncDir(syncDir=multiverseSyncDir)
+            startupProgress.setMultiverseSyncDir(directory=multiverseSyncDir)
+        if shouldImportCustomSectors:
+            startupProgress.setCustomSectorImportDir(directory=customSectorsDir)
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             exception = startupProgress.exception()
             if exception is not None:

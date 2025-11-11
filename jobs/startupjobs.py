@@ -60,6 +60,22 @@ class SyncMultiverseDbJob(StartupJobBase):
             directoryPath=self._directoryPath,
             progressCallback=self._handleProgressUpdate)
 
+class ImportCustomSectorsJob(StartupJobBase):
+    def __init__(
+            self,
+            parent: QtCore.QObject,
+            directoryPath: str,
+            progressCallback: typing.Callable[[str, int, int], typing.Any],
+            finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
+            ) -> None:
+        super().__init__(parent, progressCallback, finishedCallback)
+        self._directoryPath = directoryPath
+
+    def executeJob(self) -> None:
+        multiverse.importLegacyCustomSectors(
+            directoryPath=self._directoryPath,
+            progressCallback=self._handleProgressUpdate)
+
 class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:
         astronomer.WorldManager.instance().loadSectors(
