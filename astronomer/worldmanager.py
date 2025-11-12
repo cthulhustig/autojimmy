@@ -1008,11 +1008,7 @@ class WorldManager(object):
                 pbg = astronomer.PBG(
                     rawWorld.attribute(multiverse.WorldAttribute.PBG))
                 systemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
-                # TODO: I think the defaulting to 1 if there is no system world is wrong
-                # at least it is in the case where the UWP is ???????-? as we don't know
-                # how many system worlds there are. Fixing this probably means I need to
-                # make the system worlds optional in astronomer.World
-                systemWorlds = int(systemWorlds) if systemWorlds else 1
+                systemWorlds = int(systemWorlds) if systemWorlds else None
                 bases = astronomer.Bases(
                     rawWorld.attribute(multiverse.WorldAttribute.Bases))
 

@@ -896,7 +896,7 @@ class HexTable(gui.FrozenColumnListTable):
                     else:
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.SystemWorldCount:
-                    if world:
+                    if world and world.numberOfSystemWorlds() is not None:
                         tableItem = gui.FormattedNumberTableWidgetItem(world.numberOfSystemWorlds())
                     else:
                         tableItem = QtWidgets.QTableWidgetItem()

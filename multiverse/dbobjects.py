@@ -16,7 +16,8 @@ class DbSystem(object):
             bases: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
             pbg: typing.Optional[str] = None,
-            # System worlds can be None if it's not known (e.g. if uwp is ???????-?)
+            # System worlds can be None if the number is not not known (e.g. if uwp is ???????-?)
+            # It can also be none due to it just not being specified in sector data
             systemWorlds: typing.Optional[int] = None,
             allegiance: typing.Optional[str] = None,
             stellar: typing.Optional[str] = None,
@@ -270,9 +271,6 @@ class DbRoute(object):
     def setEndHexY(self, endHexY: int) -> None:
         self._endHexY = endHexY
 
-
-
-
     def startOffsetX(self) -> int:
         return self._startOffsetX
 
@@ -296,9 +294,6 @@ class DbRoute(object):
 
     def setEndOffsetY(self, endOffsetY: int) -> None:
         self._endOffsetY = endOffsetY
-
-
-
 
     def allegiance(self) -> typing.Optional[str]:
         return self._allegiance

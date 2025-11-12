@@ -115,8 +115,10 @@ def createHexToolTip(
     toolTip += '<li><span style="{style}">Refuelling: {types}</span></li>'.format(
         style=formatTaggingStyle(level=None if refuellingTypes else logic.TagLevel.Danger),
         types=html.escape(common.humanFriendlyListString(refuellingTypes)) if refuellingTypes else 'None')
-    toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
-        count=world.numberOfSystemWorlds() if world else 0)
+
+    if world:
+        toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
+            count=world.numberOfSystemWorlds() if world.numberOfSystemWorlds() is not None else 'Unknown/Unspecified')
 
     if world:
         allegiance = world.allegiance()

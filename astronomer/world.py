@@ -20,7 +20,7 @@ class World(object):
             zone: typing.Optional[astronomer.ZoneType],
             stellar: astronomer.Stellar,
             pbg: astronomer.PBG,
-            systemWorlds: int,
+            systemWorlds: typing.Optional[int],
             bases: astronomer.Bases
             ) -> None:
         self._milieu = milieu
@@ -40,7 +40,6 @@ class World(object):
         self._isFuelCache = self._remarks.hasRemark('{Fuel}')
         self._stellar = stellar
         self._pbg = pbg
-        # There is always 1 system world (the main world)
         self._systemWorlds = systemWorlds
         self._bases = bases
 
@@ -184,7 +183,7 @@ class World(object):
             value=self._pbg.code(astronomer.PBG.Element.GasGiants),
             default=-1)
 
-    def numberOfSystemWorlds(self) -> int:
+    def numberOfSystemWorlds(self) -> typing.Optional[int]:
         return self._systemWorlds
 
     def parsecsTo(
