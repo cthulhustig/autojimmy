@@ -374,6 +374,10 @@ class WorldManager(object):
     _lock = threading.Lock()
     _universe: astronomer.Universe = None
 
+    # TODO: This is a bit of a hack that is needed while I only support a single
+    # universe. It gets set when the WorldManager is loading the sectors.
+    _dbUniverseId = None
+
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
 
@@ -406,9 +410,9 @@ class WorldManager(object):
                 # weren't loaded and the point it acquired the mutex.
                 return
 
-            universeList = multiverse.MultiverseDb.instance().listUniverses()
-            if universeList:
-                dbUniverseId, _, _ = universeList[0]
+            universeInfos = multiverse.MultiverseDb.instance().listUniverseInfo()
+            if universeInfos:
+                dbUniverseId = universeInfos[0].id()
             else:
                 # TODO: Log that universe is being created
                 dbUniverse = multiverse.DbUniverse(name=WorldManager._UniverseName)
@@ -470,52 +474,30 @@ class WorldManager(object):
             self._universe = astronomer.Universe(
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
+            self._dbUniverseId = dbUniverseId
 
+    # TODO: This function probably shouldn't be dealing with dbSectorIds
+    # _or_ the higher level astronomer Sector needs to use the same id
     def createSectorUniverse(
             self,
-            milieu: astronomer.Milieu,
-            sectorContent: str,
-            metadataContent: str
+            dbSectorId: str
             ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
-        # TODO: Need to update how custom sectors are created. They need to
-        # be added to the current universe and it (or at least the sector)
-        # needs to be saved
-        raise RuntimeError('Creating Custom Sectors Needs Updated')
-
-        sectorFormat = multiverse.sectorFileFormatDetect(
-            content=sectorContent)
-        if not sectorFormat:
-            raise ValueError('Unknown sector format')
-
-        metadataFormat = multiverse.metadataFileFormatDetect(
-            content=metadataContent)
-        if not metadataContent:
-            raise ValueError('Unknown metadata format')
-
-        rawWorlds = multiverse.readSector(
-            content=sectorContent,
-            format=sectorFormat,
-            identifier='Sector')
-
-        rawMetadata = multiverse.readMetadata(
-            content=metadataContent,
-            format=metadataFormat,
-            identifier='Metadata')
+        dbSector = multiverse.MultiverseDb.instance().loadSector(
+            sectorId=dbSectorId)
 
         allegianceTracker = _AllegianceTracker()
         self._populateAllegiances(
-            milieu=milieu,
-            dbSector=rawMetadata,
+            dbSector=dbSector,
             tracker=allegianceTracker)
 
         sector = self._processSector(
-            milieu=milieu,
-            dbSector=rawMetadata,
-            rawWorlds=rawWorlds,
-            allegianceTracker=allegianceTracker,
-            isCustom=True)
+            dbSector=dbSector,
+            allegianceTracker=allegianceTracker)
 
         return (astronomer.Universe(sectors=[sector]), sector)
+
+    def dbUniverseId(self) -> str:
+        return self._dbUniverseId
 
     def universe(self) -> astronomer.Universe:
         return self._universe

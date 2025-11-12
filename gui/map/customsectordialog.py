@@ -11,6 +11,25 @@ import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: Things that need done here
+# - New Sector dialog needs to add sector to universe
+#   1. Load the sector and metadata file
+#   2. Use convert function to convert it to a DbSector
+#       - This will need new convert functions to convert a single sector
+#   3. Use MultiverseDb to load a new copy of the current universe
+#       - QUESTION: How does it know which universe to load????
+#   4. Add DbSector to DbUniverse
+#       - This is important in order to set the DbSectors universe id
+#   5. Save DbSector
+#       - Shouldn't need to save the universe
+# - Drop sector/metadata text tabs from main dialog
+#       - This will also mean removing the tab bar as there will only be the map
+# - Delete button handler needs updated to delete from the database
+#       - QUESTION: Deleting will be done by sector id, how will it get that info?
+# - Main dialog needs to create a "Sector Universe" like it currently does whenever
+#   an existing sector is selected in order to display it
+#       - Currently the code to do this takes strings containing sector and metadata content
+
 _WelcomeMessage = """
     <html>
     <p>The Custom Sectors dialog allows you to add your own sectors to {name}.
@@ -588,19 +607,19 @@ class _CustomSectorTable(gui.ListTable):
 
         self.synchronise()
 
-    def sector(self, row: int) -> typing.Optional[astronomer.SectorInfo]:
+    def sector(self, row: int) -> typing.Optional[multiverse.DbSectorInfo]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def sectorRow(self, sector: astronomer.SectorInfo) -> int:
+    def sectorRow(self, sector: multiverse.DbSectorInfo) -> int:
         for row in range(self.rowCount()):
             if sector == self.sector(row):
                 return row
         return -1
 
-    def currentSector(self) -> typing.Optional[astronomer.SectorInfo]:
+    def currentSector(self) -> typing.Optional[multiverse.DbSectorInfo]:
         row = self.currentRow()
         if row < 0:
             return None
@@ -608,7 +627,7 @@ class _CustomSectorTable(gui.ListTable):
 
     def setCurrentSector(
             self,
-            sector: typing.Optional[astronomer.SectorInfo]
+            sector: typing.Optional[multiverse.DbSectorInfo]
             ) -> None:
         if sector:
             row = self.sectorRow(sector)
@@ -620,8 +639,12 @@ class _CustomSectorTable(gui.ListTable):
             self.setCurrentItem(None)
 
     def synchronise(self) -> None:
-        sectors = astronomer.DataStore.instance().sectors(
-            milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
+        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+
+        sectors = multiverse.MultiverseDb.instance().listSectorInfo(
+            universeId=astronomer.WorldManager.instance().dbUniverseId(),
+            milieu=milieu.name)
+        sectors = [sector for sector in sectors if sector.isCustom()]
 
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
@@ -638,8 +661,6 @@ class _CustomSectorTable(gui.ListTable):
                     currentSectors.add(sector)
 
             for sector in sectors:
-                if not sector.isCustomSector():
-                    continue # Ignore standard sectors
                 if sector in currentSectors:
                     continue # Table already has an entry for the sector
 
@@ -653,13 +674,18 @@ class _CustomSectorTable(gui.ListTable):
         if not self.hasSelection() and self.rowCount() > 0:
             self.setCurrentRow(0)
 
+    # TODO: These save/load the current selection by saving the sector name. Currently
+    # I don't enforce uniqueness in sector names in the database. If I want to allow
+    # sectors with the same name then I need to use a different id. I'm not sure the
+    # sector id is a good idea as I'm not sure if that is going to be static (e.g.
+    # when sectors are saved in the future or when snapshot updates happen now)
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_CustomSectorTable._StateVersion)
 
         currentSector = self.currentSector()
-        stream.writeQString(currentSector.canonicalName() if currentSector else '')
+        stream.writeQString(currentSector.name() if currentSector else '')
 
         baseState = super().saveState()
         stream.writeUInt32(baseState.count() if baseState else 0)
@@ -686,7 +712,7 @@ class _CustomSectorTable(gui.ListTable):
                 sector = self.sector(row)
                 if not sector:
                     continue
-                if sector.canonicalName() == sectorName:
+                if sector.name() == sectorName:
                     currentSector = sector
                     break
         if currentSector:
@@ -704,7 +730,7 @@ class _CustomSectorTable(gui.ListTable):
     def _fillRow(
             self,
             row: int,
-            sector: astronomer.SectorInfo
+            sector: multiverse.DbSectorInfo
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
         # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
@@ -717,10 +743,10 @@ class _CustomSectorTable(gui.ListTable):
                 tableItem = None
                 if columnType == self.ColumnType.Name:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, sector.canonicalName())
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, sector.name())
                 elif columnType == self.ColumnType.Location:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.x()}, {sector.y()})')
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.sectorX()}, {sector.sectorY()})')
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -787,13 +813,6 @@ class CustomSectorDialog(gui.DialogEx):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='SectorDataDisplayModeState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._sectorDataTabView.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
             key='SplitterState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -805,7 +824,6 @@ class CustomSectorDialog(gui.DialogEx):
         self._settings.beginGroup(self._configSection)
 
         self._settings.setValue('SectorTableState', self._sectorTable.saveState())
-        self._settings.setValue('SectorDataDisplayModeState', self._sectorDataTabView.saveState())
         self._settings.setValue('SplitterState', self._horizontalSplitter.saveState())
 
         self._settings.endGroup()
@@ -840,16 +858,6 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorListGroupBox.setLayout(groupLayout)
 
     def _setupSectorDataControls(self) -> None:
-        monospaceFont = gui.getMonospaceFont()
-
-        self._sectorFileTextEdit = QtWidgets.QPlainTextEdit()
-        self._sectorFileTextEdit.setFont(monospaceFont)
-        self._sectorFileTextEdit.setReadOnly(True)
-
-        self._sectorMetadataTextEdit = QtWidgets.QPlainTextEdit()
-        self._sectorMetadataTextEdit.setFont(monospaceFont)
-        self._sectorMetadataTextEdit.setReadOnly(True)
-
         self._sectorMapWidget = gui.MapWidgetEx(
             universe=astronomer.Universe(sectors=[]),
             milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
@@ -868,23 +876,10 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMapWidget.mapRenderingChanged.connect(self._mapRenderingChanged)
         self._sectorMapWidget.mapAnimationChanged.connect(self._mapAnimationChanged)
 
-        mapLayout = QtWidgets.QVBoxLayout()
-        mapLayout.setContentsMargins(0, 0, 0, 0)
-        mapLayout.setSpacing(0)
-        mapLayout.addWidget(self._sectorMapWidget)
-        mapLayoutWidget = QtWidgets.QWidget()
-        mapLayoutWidget.setLayout(mapLayout)
-
-        self._sectorDataTabView = gui.TabWidgetEx()
-        self._sectorDataTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
-        self._sectorDataTabView.addTab(self._sectorFileTextEdit, 'Sector')
-        self._sectorDataTabView.addTab(self._sectorMetadataTextEdit, 'Metadata')
-        self._sectorDataTabView.addTab(mapLayoutWidget, 'Maps')
-
         groupLayout = QtWidgets.QVBoxLayout()
-        groupLayout.addWidget(self._sectorDataTabView)
+        groupLayout.addWidget(self._sectorMapWidget)
 
-        self._sectorDataGroupBox = QtWidgets.QGroupBox('Map Images')
+        self._sectorDataGroupBox = QtWidgets.QGroupBox('Map')
         self._sectorDataGroupBox.setLayout(groupLayout)
 
         # Sync the controls to the currently selected sector
@@ -895,52 +890,14 @@ class CustomSectorDialog(gui.DialogEx):
 
     def _syncSectorDataControls(
             self,
-            sectorInfo: typing.Optional[astronomer.SectorInfo]
+            sectorInfo: typing.Optional[multiverse.DbSectorInfo]
             ) -> None:
         if not sectorInfo:
-            self._sectorFileTextEdit.clear()
-            self._sectorMetadataTextEdit.clear()
             self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))
             return
 
-        milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
-
-        try:
-            sectorContent = astronomer.DataStore.instance().sectorFileData(
-                sectorName=sectorInfo.canonicalName(),
-                milieu=milieu)
-            self._sectorFileTextEdit.setPlainText(sectorContent)
-        except Exception as ex:
-            self._sectorFileTextEdit.clear()
-
-            message = 'Failed to retrieve sector file data.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            # Continue to try and sync other controls
-
-        try:
-            metadataContent = astronomer.DataStore.instance().sectorMetaData(
-                sectorName=sectorInfo.canonicalName(),
-                milieu=milieu)
-            self._sectorMetadataTextEdit.setPlainText(metadataContent)
-        except Exception as ex:
-            self._sectorMetadataTextEdit.clear()
-
-            message = 'Failed to retrieve sector metadata.'
-            logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            # Continue to try and sync other controls
-
         universe, sector = astronomer.WorldManager.instance().createSectorUniverse(
-            milieu=milieu,
-            sectorContent=sectorContent,
-            metadataContent=metadataContent)
+            dbSectorId=sectorInfo.id())
 
         self._sectorMapWidget.setUniverse(universe=universe)
 
@@ -976,31 +933,29 @@ class CustomSectorDialog(gui.DialogEx):
             self._sectorTable.setCurrentRow(row)
 
     def _deleteSectorClicked(self) -> None:
-        sector = self._sectorTable.currentSector()
-        if not sector:
+        sectorInfo = self._sectorTable.currentSector()
+        if not sectorInfo:
             gui.MessageBoxEx.information(
                 parent=self,
                 text='No sector selected for deletion')
 
         answer = gui.MessageBoxEx.question(
             parent=self,
-            text=f'Are you sure you want to delete {sector.canonicalName()}')
+            text=f'Are you sure you want to delete {sectorInfo.name()}')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             return # User cancelled
 
         try:
-            astronomer.DataStore.instance().deleteCustomSector(
-                sectorName=sector.canonicalName(),
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
+            multiverse.MultiverseDb.instance().deleteSector(
+                sectorId=sectorInfo.id())
         except Exception as ex:
-            message = f'Failed to delete {sector.canonicalName()}'
+            message = f'Failed to delete {sectorInfo.name()}'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
-            # Continue in order to sync the table if an error occurs as we don't know what state
-            # the data store was left in after the error
+            return
 
         self._modified = True
         self._sectorTable.synchronise()

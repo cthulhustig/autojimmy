@@ -20,8 +20,6 @@ import typing
 # snapshot (so the install is used) but I'll need something to trigger
 # reimporting the data from the install directory into the database
 # TODO: Test with unicode in universe/sector names etc
-
-
 # TODO: When updating snapshot I'll need to do something to make sure notes
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
@@ -30,6 +28,78 @@ import typing
 # not sure I do with the current implementation as I believe the sqlite
 # db is thread saf and I'm not maintaining an internal state. If I add
 # connection pooling I suspect I'll need something to protect the pool
+
+class DbUniverseInfo(object):
+    def __init__(
+            self,
+            universeId: str,
+            name: str
+            ) -> None:
+        self._universeId = universeId
+        self._name = name
+
+        self._hash = None
+
+    def id(self) -> str:
+        return self._universeId
+
+    def name(self) -> str:
+        return self._name
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if not isinstance(other, DbUniverseInfo):
+            return NotImplemented
+        return self._universeId == other._universeId and self._name == other._name
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._universeId, self._name))
+        return self._hash
+
+class DbSectorInfo(object):
+    def __init__(
+            self,
+            id: str,
+            name: str,
+            sectorX: int,
+            sectorY: int,
+            isCustom: bool
+            ) -> None:
+        self._id = id
+        self._name = name
+        self._sectorX = sectorX
+        self._sectorY = sectorY
+        self._isCustom = isCustom
+
+        self._hash = None
+
+    def id(self) -> str:
+        return self._id
+
+    def name(self) -> str:
+        return self._name
+
+    def sectorX(self) -> int:
+        return self._sectorX
+
+    def sectorY(self) -> int:
+        return self._sectorY
+
+    def isCustom(self) -> bool:
+        return self._isCustom
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if not isinstance(other, DbSectorInfo):
+            return NotImplemented
+        return self._id == other._id and self._name == other._name and \
+            self._sectorX == other._sectorX and self._sectorY == other._sectorY and \
+            self._isCustom == self._isCustom
+
+    def __hash__(self) -> int:
+        if self._hash is None:
+            self._hash = hash((self._id, self._name, self._sectorX, self._sectorY, self._isCustom))
+        return self._hash
+
 class MultiverseDb(object):
     class Transaction(object):
         def __init__(
@@ -378,13 +448,13 @@ class MultiverseDb(object):
         logging.debug(f'MultiverseDb reading sector {sectorId}')
         if transaction != None:
             connection = transaction.connection()
-            self._internalReadSector(
+            return self._internalReadSector(
                 sectorId=sectorId,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                self._internalReadSector(
+                return self._internalReadSector(
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
@@ -406,46 +476,39 @@ class MultiverseDb(object):
                     sectorId=sectorId,
                     cursor=connection.cursor())
 
-    def listUniverses(
+    def listUniverseInfo(
             self,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
-            ) -> typing.List[typing.Tuple[
-                str, # Universe ID
-                str, # Universe Name
-                typing.Optional[str]]]: # Universe description
-        logging.debug(f'MultiverseDb listing universe names')
+            ) -> typing.List[DbUniverseInfo]:
+        logging.debug(f'MultiverseDb listing universe info')
         if transaction != None:
             connection = transaction.connection()
-            return self._internalListUniverses(
+            return self._internalListUniverseInfo(
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._internalListUniverses(
+                return self._internalListUniverseInfo(
                     cursor=connection.cursor())
 
-    def listSectors(
+    def listSectorInfo(
             self,
             universeId: str,
             milieu: typing.Optional[str] = None,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
-            ) -> typing.List[typing.Tuple[
-                str, # Sector ID
-                str, # Sector Name
-                int, # Sector X
-                int]]: # Sector Y
+            ) -> typing.List[DbSectorInfo]:
         logging.debug(
-            f'MultiverseDb listing sector names' + ('' if universeId is None else f' for universe {universeId}'))
+            f'MultiverseDb listing sector info' + ('' if universeId is None else f' for universe {universeId}'))
         if transaction != None:
             connection = transaction.connection()
-            return self._internalListSectors(
+            return self._internalListSectorInfo(
                 universeId=universeId,
                 milieu=milieu,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
-                return self._internalListSectors(
+                return self._internalListSectorInfo(
                     universeId=universeId,
                     milieu=milieu,
                     cursor=connection.cursor())
@@ -1205,7 +1268,7 @@ class MultiverseDb(object):
         dbUniverse = multiverse.convertRawUniverseToDbUniverse(
             universeId=MultiverseDb._DefaultUniverseId,
             universeName='Default Universe',
-            isCustom=True,
+            isCustom=False,
             rawSectors=rawData,
             progressCallback=progressCallback)
 
@@ -1874,15 +1937,12 @@ class MultiverseDb(object):
         sql += ';'
         cursor.execute(sql, queryData)
 
-    def _internalListUniverses(
+    def _internalListUniverseInfo(
             self,
             cursor: sqlite3.Cursor
-            ) -> typing.List[typing.Tuple[
-                str, # Universe ID
-                str, # Universe Name
-                typing.Optional[str]]]: # Universe description
+            ) -> typing.List[DbUniverseInfo]:
         sql = """
-            SELECT id, name, description
+            SELECT id, name
             FROM {table}
             WHERE id != :defaultId;
             """.format(
@@ -1891,26 +1951,21 @@ class MultiverseDb(object):
 
         universeList = []
         for row in cursor.fetchall():
-            universeId = str(row[0])
-            name = str(row[1])
-            description = str(row[2]) if row[2] is not None else None
-            universeList.append((universeId, name, description))
+            universeList.append(DbUniverseInfo(
+                universeId=row[0],
+                name=row[1]))
         return universeList
 
     # TODO: This needs to include sector names from default sectors
     # in locations that don't have a sector in the actual universe
-    def _internalListSectors(
+    def _internalListSectorInfo(
             self,
             universeId: str,
             milieu: typing.Optional[str],
             cursor: sqlite3.Cursor
-            ) -> typing.List[typing.Tuple[
-                str, # Sector ID
-                str, # Sector Name
-                int, # Sector X
-                int]]: # Sector Y
+            ) -> typing.List[DbSectorInfo]:
         sql = """
-            SELECT id, primary_name, sector_x, sector_y
+            SELECT id, primary_name, sector_x, sector_y, is_custom
             FROM {table}
             WHERE universe_id = :id
             """.format(table=MultiverseDb._SectorsTableName)
@@ -1922,7 +1977,7 @@ class MultiverseDb(object):
 
         sql += """
             UNION ALL
-            SELECT d.id, d.primary_name, d.sector_x, d.sector_y
+            SELECT d.id, d.primary_name, d.sector_x, d.sector_y, is_custom
             FROM {table} d
             WHERE d.universe_id IS "default"
             """.format(table=MultiverseDb._SectorsTableName)
@@ -1945,11 +2000,12 @@ class MultiverseDb(object):
 
         sectorList = []
         for row in cursor.fetchall():
-            sectorId = str(row[0])
-            name = str(row[1])
-            sectorX = int(row[2])
-            sectorY = int(row[3])
-            sectorList.append((sectorId, name, sectorX, sectorY))
+            sectorList.append(DbSectorInfo(
+                id=row[0],
+                name=row[1],
+                sectorX=row[2],
+                sectorY=row[3],
+                isCustom=True if row[4] else False))
         return sectorList
 
     @staticmethod

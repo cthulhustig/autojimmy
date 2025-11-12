@@ -425,47 +425,6 @@ class DataStore(object):
                 name=sectorName,
                 stockOnly=stockOnly)
 
-    def sectorFileData(
-            self,
-            sectorName: str,
-            milieu: astronomer.Milieu,
-            stockOnly: bool = False
-            ) -> str:
-        self._loadSectors(milieu=milieu)
-
-        with self._lock:
-            universeInfo = self._universeMap[milieu]
-            sectorInfo = universeInfo.lookupName(name=sectorName, stockOnly=stockOnly)
-        if not sectorInfo:
-            raise RuntimeError(f'Unable to retrieve sector file data for unknown sector {sectorName}')
-        escapedSectorName = common.encodeFileName(rawFileName=sectorInfo.canonicalName())
-        extension = DataStore._SectorFormatExtensions[sectorInfo.sectorFormat()]
-        return self._bytesToString(bytes=self._readMilieuFile(
-            fileName=f'{escapedSectorName}.{extension}',
-            milieu=milieu,
-            useCustomMapDir=sectorInfo.isCustomSector()))
-
-    def sectorMetaData(
-            self,
-            sectorName: str,
-            milieu: astronomer.Milieu,
-            stockOnly: bool = False
-            ) -> str:
-        self._loadSectors(milieu=milieu)
-
-        sector = self.sector(
-            sectorName=sectorName,
-            milieu=milieu,
-            stockOnly=stockOnly)
-        if not sector:
-            raise RuntimeError(f'Unable to retrieve sector meta data for unknown sector {sectorName}')
-        escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
-        extension = DataStore._MetadataFormatExtensions[sector.metadataFormat()]
-        return self._bytesToString(bytes=self._readMilieuFile(
-            fileName=f'{escapedSectorName}.{extension}',
-            milieu=milieu,
-            useCustomMapDir=sector.isCustomSector()))
-
     # This will throw a SectorConflictException if there is a conflict
     # TODO: I need to check to see if there are any conflict checks from
     # customSectorConflictCheck that I need to replicate in the database.
