@@ -424,9 +424,6 @@ class WorldManager(object):
             dbSectors = dbUniverse.sectors()
             totalSectorCount = len(dbSectors)
 
-            maxProgress = totalSectorCount * 2
-            currentProgress = 0
-
             # Generate allegiances for all sectors before processing them. This is
             # done so that any disambiguation that is needed can be done prior to
             # worlds being created as the unique disambiguated name is part of their
@@ -444,6 +441,8 @@ class WorldManager(object):
                     dbSector=dbSector,
                     tracker=allegianceTracker)
 
+            maxProgress = totalSectorCount
+            currentProgress = 0
             sectors = []
             for dbSector in dbSectors:
                 canonicalName = dbSector.primaryName()
