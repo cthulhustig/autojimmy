@@ -233,7 +233,13 @@ class _AllegianceTracker(object):
             codeInfo = self._addAllegianceCode(milieu=milieu, code=code)
             codeInfo.addLocalName(sectorName=sectorName, allegianceName=name)
 
-    # TODO: Should these live in the database as well?
+    # TODO: This needs to live in the database. I need to look at how the info
+    # loaded here is used compared to the allegiance info that is already in
+    # the database. I __think__ this stuff might just be used to resolve the
+    # allegiance in places where the system/border/other doesn't specify the
+    # allegiance. As part of the import I might want to resolve an explicit
+    # allegiance for every object that uses allegiances and store it in the
+    # database so it doesn't need loaded here.
     def _loadAllegiances(self) -> None:
         self._milieuDataMap.clear()
 
@@ -362,6 +368,8 @@ class WorldManager(object):
     # Use with `_WrapPattern.sub('\n', label)` to  replace
     _LineWrapPattern = re.compile(r'\s+(?![a-z])')
 
+    _UniverseName = 'Custom Universe'
+
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _universe: astronomer.Universe = None
@@ -398,70 +406,50 @@ class WorldManager(object):
                 # weren't loaded and the point it acquired the mutex.
                 return
 
-            totalSectorCount = 0
-            for milieu in astronomer.Milieu:
-                totalSectorCount += astronomer.DataStore.instance().sectorCount(milieu=milieu)
+            universeList = multiverse.MultiverseDb.instance().listUniverses()
+            if universeList:
+                dbUniverseId, _, _ = universeList[0]
+            else:
+                # TODO: Log that universe is being created
+                dbUniverse = multiverse.DbUniverse(name=WorldManager._UniverseName)
+                multiverse.MultiverseDb.instance().saveUniverse(universe=dbUniverse)
+                dbUniverseId = dbUniverse.id()
+                dbUniverse = None # Load universe to load sectors
+
+            dbUniverse = multiverse.MultiverseDb.instance().loadUniverse(
+                universeId=dbUniverseId,
+                # TODO: I probably need to wrap the progress callback so the text that
+                # gets put out makes sense
+                progressCallback=progressCallback)
+            dbSectors = dbUniverse.sectors()
+            totalSectorCount = len(dbSectors)
 
             maxProgress = totalSectorCount * 2
             currentProgress = 0
-
-            rawData: typing.List[typing.Tuple[
-                astronomer.Milieu,
-                multiverse.RawMetadata,
-                typing.Iterable[multiverse.RawWorld],
-                bool # True if sector is a custom sector
-                ]] = []
-            for milieu in astronomer.Milieu:
-                for sectorInfo in astronomer.DataStore.instance().sectors(milieu=milieu):
-                    canonicalName = sectorInfo.canonicalName()
-                    logging.debug(f'Loading sector {canonicalName}')
-
-                    if progressCallback:
-                        stage = f'Loading: {milieu.value} - {canonicalName}'
-                        currentProgress += 1
-                        progressCallback(stage, currentProgress, maxProgress)
-
-                    try:
-                        metadataContent = astronomer.DataStore.instance().sectorMetaData(
-                            sectorName=canonicalName,
-                            milieu=milieu)
-
-                        sectorContent = astronomer.DataStore.instance().sectorFileData(
-                            sectorName=canonicalName,
-                            milieu=milieu)
-
-                        rawMetadata = multiverse.readMetadata(
-                            content=metadataContent,
-                            format=sectorInfo.metadataFormat(),
-                            identifier=canonicalName)
-
-                        rawWorlds = multiverse.readSector(
-                            content=sectorContent,
-                            format=sectorInfo.sectorFormat(),
-                            identifier=canonicalName)
-
-                        rawData.append((milieu, rawMetadata, rawWorlds, sectorInfo.isCustomSector()))
-                    except Exception as ex:
-                        logging.error(f'Failed to load sector {canonicalName} in {milieu.value}', exc_info=ex)
-                        continue
 
             # Generate allegiances for all sectors before processing them. This is
             # done so that any disambiguation that is needed can be done prior to
             # worlds being created as the unique disambiguated name is part of their
             # construction
             allegianceTracker = _AllegianceTracker()
-            for milieu, rawMetadata, _, _ in rawData:
-                canonicalName = rawMetadata.canonicalName()
-                logging.debug(f'Populating allegiances for sector {canonicalName}')
+            for dbSector in dbSectors:
+                canonicalName = dbSector.primaryName()
+
+                # TODO: Doing this is ugly as hell. If it throws it will bork the
+                # entire process
+                milieu = astronomer.Milieu[dbSector.milieu()]
+
+                logging.debug(f'Populating allegiances for sector {canonicalName} from {milieu.value}')
                 WorldManager._populateAllegiances(
-                    milieu=milieu,
-                    rawMetadata=rawMetadata,
+                    dbSector=dbSector,
                     tracker=allegianceTracker)
 
             sectors = []
-            for milieu, rawMetadata, rawWorlds, isCustom in rawData:
-                canonicalName = rawMetadata.canonicalName()
-                logging.debug(f'Processing sector {canonicalName}')
+            for dbSector in dbSectors:
+                canonicalName = dbSector.primaryName()
+                milieu = astronomer.Milieu[dbSector.milieu()] # TODO: This is ugly
+
+                logging.debug(f'Processing sector {canonicalName} from {milieu.value}')
 
                 if progressCallback:
                     stage = f'Processing: {milieu.value} - {canonicalName}'
@@ -470,16 +458,14 @@ class WorldManager(object):
 
                 try:
                     sector = self._processSector(
-                        milieu=milieu,
-                        rawMetadata=rawMetadata,
-                        rawWorlds=rawWorlds,
-                        allegianceTracker=allegianceTracker,
-                        isCustom=isCustom)
+                        dbSector=dbSector,
+                        allegianceTracker=allegianceTracker)
                 except Exception as ex:
-                    logging.error(f'Failed to process sector {canonicalName} in {milieu.value}', exc_info=ex)
+                    logging.error(f'Failed to process sector {canonicalName} from {milieu.value}', exc_info=ex)
                     continue
 
-                logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName} in {milieu.value}')
+                worldCount = len(dbSector.systems()) if dbSector.systems() else 0
+                logging.debug(f'Loaded {worldCount} worlds for sector {canonicalName} from {milieu.value}')
                 sectors.append(sector)
 
             self._universe = astronomer.Universe(
@@ -492,6 +478,11 @@ class WorldManager(object):
             sectorContent: str,
             metadataContent: str
             ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
+        # TODO: Need to update how custom sectors are created. They need to
+        # be added to the current universe and it (or at least the sector)
+        # needs to be saved
+        raise RuntimeError('Creating Custom Sectors Needs Updated')
+
         sectorFormat = multiverse.sectorFileFormatDetect(
             content=sectorContent)
         if not sectorFormat:
@@ -515,12 +506,12 @@ class WorldManager(object):
         allegianceTracker = _AllegianceTracker()
         self._populateAllegiances(
             milieu=milieu,
-            rawMetadata=rawMetadata,
+            dbSector=rawMetadata,
             tracker=allegianceTracker)
 
         sector = self._processSector(
             milieu=milieu,
-            rawMetadata=rawMetadata,
+            dbSector=rawMetadata,
             rawWorlds=rawWorlds,
             allegianceTracker=allegianceTracker,
             isCustom=True)
@@ -890,8 +881,7 @@ class WorldManager(object):
 
     @staticmethod
     def _populateAllegiances(
-            milieu: astronomer.Milieu,
-            rawMetadata: multiverse.RawMetadata,
+            dbSector: multiverse.DbSector,
             tracker: _AllegianceTracker
             ) -> None:
         allegianceNameMap: typing.Dict[
@@ -899,7 +889,8 @@ class WorldManager(object):
             str # Allegiance name
         ] = {}
 
-        allegiances = rawMetadata.allegiances()
+        milieu = astronomer.Milieu[dbSector.milieu()] # TODO: This is ugly
+        allegiances = dbSector.allegiances()
         if allegiances:
             for allegiance in allegiances:
                 if not allegiance.code() or not allegiance.name():
@@ -911,20 +902,28 @@ class WorldManager(object):
 
         tracker.addSectorAllegiances(
             milieu=milieu,
-            sectorName=rawMetadata.canonicalName(),
+            sectorName=dbSector.primaryName(),
             allegiances=allegianceNameMap)
 
     @staticmethod
     def _processSector(
-            milieu: astronomer.Milieu,
-            rawMetadata: multiverse.RawMetadata,
-            rawWorlds: typing.Collection[multiverse.RawWorld],
-            allegianceTracker: _AllegianceTracker,
-            isCustom: bool
+            dbSector: multiverse.DbSector,
+            allegianceTracker: _AllegianceTracker
             ) -> astronomer.Sector:
-        sectorName = rawMetadata.canonicalName()
-        sectorX = rawMetadata.x()
-        sectorY = rawMetadata.y()
+        sectorName = dbSector.primaryName()
+        sectorX = dbSector.sectorX()
+        sectorY = dbSector.sectorY()
+
+        milieu = astronomer.Milieu[dbSector.milieu()] # TODO: This is ugly
+
+        # TODO: I'm currently throwing away the language info for the
+        # primary and alternate names
+        dbAlternateNames = dbSector.alternateNames()
+        alternateNames = None
+        if dbAlternateNames:
+            alternateNames = []
+            for name, _ in dbAlternateNames:
+                alternateNames.append(name)
 
         subsectorNameMap: typing.Dict[
             str, # Subsector code (A-P)
@@ -944,104 +943,110 @@ class WorldManager(object):
             subsectorNameMap[subsectorCode] = (f'{sectorName} Subsector {subsectorCode}', True)
             subsectorWorldsMap[subsectorCode] = []
 
-        subsectorNames = rawMetadata.subsectorNames()
+        subsectorNames = dbSector.subsectorNames()
         if subsectorNames:
-            for subsectorCode, subsectorName in subsectorNames.items():
-                if not subsectorCode or not subsectorName:
-                    continue
-
-                # NOTE: Unlike most other places, it's intentional that this is upper
-                subsectorCode = subsectorCode.upper()
+            for subsectorIndex, subsectorName in subsectorNames:
+                # NOTE: Unlike most other places, it's intentional that this is upper case
+                subsectorCode = chr(ord('A') + subsectorIndex)
                 subsectorNameMap[subsectorCode] = (subsectorName, False)
 
-        for rawWorld in rawWorlds:
-            try:
-                hex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
-                worldName = rawWorld.attribute(multiverse.WorldAttribute.Name)
-                isNameGenerated = False
-                if not worldName:
-                    # If the world doesn't have a name the sector combined with the hex. This format
-                    # is important as it's the same format as Traveller Map meaning searches will
-                    # work
-                    worldName = f'{sectorName} {hex}'
-                    isNameGenerated = True
+        dbSystems = dbSector.systems()
+        if dbSystems:
+            for dbSystem in dbSystems:
+                try:
+                    hex = f'{dbSystem.hexX():02d}{dbSystem.hexY():02d}' # TODO: I'm not a fan of having to create this
+                    worldName = dbSystem.name()
+                    isNameGenerated = False
+                    if not worldName:
+                        # If the world doesn't have a name the sector combined with the hex. This format
+                        # is important as it's the same format as Traveller Map meaning searches will
+                        # work
+                        # TODO: I don't like the fact I do this. It's done so all "worlds" (aka systems)
+                        # have a name. I think the only reason to really do this is so, when they're
+                        # displayed in tables and other places there is always something to show to
+                        # the user (in tables name is generally the first column in the table).
+                        # - Need to look to see what Traveller Map displays on map and in the info
+                        # dialog for worlds that have no name (but have a non ? UWP).
+                        worldName = f'{sectorName} {hex}'
+                        isNameGenerated = True
 
-                subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
-                subsectorName, _ = subsectorNameMap[subsectorCode]
+                    subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
+                    subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                allegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
-                allegiance = None
-                if allegianceCode:
-                    allegiance = astronomer.Allegiance(
-                        code=allegianceCode,
-                        name=allegianceTracker.allegianceName(
-                            milieu=milieu,
+                    allegianceCode = dbSystem.allegiance()
+                    allegiance = None
+                    if allegianceCode:
+                        allegiance = astronomer.Allegiance(
                             code=allegianceCode,
-                            sectorName=sectorName),
-                        legacyCode=allegianceTracker.legacyCode(
-                            milieu=milieu,
-                            code=allegianceCode),
-                        baseCode=allegianceTracker.baseCode(
-                            milieu=milieu,
-                            code=allegianceCode),
-                        uniqueCode=allegianceTracker.uniqueAllegianceCode(
-                            milieu=milieu,
-                            code=allegianceCode,
-                            sectorName=sectorName))
+                            name=allegianceTracker.allegianceName(
+                                milieu=milieu,
+                                code=allegianceCode,
+                                sectorName=sectorName),
+                            legacyCode=allegianceTracker.legacyCode(
+                                milieu=milieu,
+                                code=allegianceCode),
+                            baseCode=allegianceTracker.baseCode(
+                                milieu=milieu,
+                                code=allegianceCode),
+                            uniqueCode=allegianceTracker.uniqueAllegianceCode(
+                                milieu=milieu,
+                                code=allegianceCode,
+                                sectorName=sectorName))
 
-                zone = astronomer.parseZoneString(
-                    rawWorld.attribute(multiverse.WorldAttribute.Zone))
-                uwp = astronomer.UWP(
-                    rawWorld.attribute(multiverse.WorldAttribute.UWP))
-                economics = astronomer.Economics(
-                    rawWorld.attribute(multiverse.WorldAttribute.Economics))
-                culture = astronomer.Culture(
-                    rawWorld.attribute(multiverse.WorldAttribute.Culture))
-                nobilities = astronomer.Nobilities(
-                    rawWorld.attribute(multiverse.WorldAttribute.Nobility))
-                remarks = astronomer.Remarks(
-                    string=rawWorld.attribute(multiverse.WorldAttribute.Remarks),
-                    sectorName=sectorName,
-                    zone=zone)
-                stellar = astronomer.Stellar(
-                    rawWorld.attribute(multiverse.WorldAttribute.Stellar))
-                pbg = astronomer.PBG(
-                    rawWorld.attribute(multiverse.WorldAttribute.PBG))
-                systemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
-                systemWorlds = int(systemWorlds) if systemWorlds else None
-                bases = astronomer.Bases(
-                    rawWorld.attribute(multiverse.WorldAttribute.Bases))
+                    # TODO: All this checking for null and using an empty string instead
+                    # is ugly as hell
+                    zone = astronomer.parseZoneString(
+                        dbSystem.zone() if dbSystem.zone() else '')
+                    uwp = astronomer.UWP(
+                        dbSystem.uwp() if dbSystem.uwp() else '')
+                    economics = astronomer.Economics(
+                        dbSystem.economics() if dbSystem.economics() else '')
+                    culture = astronomer.Culture(
+                        dbSystem.culture() if dbSystem.culture() else '')
+                    nobilities = astronomer.Nobilities(
+                        dbSystem.nobility() if dbSystem.nobility() else '')
+                    remarks = astronomer.Remarks(
+                        string=dbSystem.remarks() if dbSystem.remarks() else '',
+                        sectorName=sectorName,
+                        zone=zone)
+                    stellar = astronomer.Stellar(
+                        dbSystem.stellar() if dbSystem.stellar() else '')
+                    pbg = astronomer.PBG(
+                        dbSystem.pbg() if dbSystem.pbg() else '')
+                    systemWorlds = dbSystem.systemWorlds()
+                    bases = astronomer.Bases(
+                        dbSystem.bases() if dbSystem.bases() else '')
 
-                world = astronomer.World(
-                    milieu=milieu,
-                    hex=astronomer.HexPosition(
-                        sectorX=sectorX,
-                        sectorY=sectorY,
-                        offsetX=int(hex[:2]),
-                        offsetY=int(hex[-2:])),
-                    worldName=worldName,
-                    isNameGenerated=isNameGenerated,
-                    sectorName=sectorName,
-                    subsectorName=subsectorName,
-                    allegiance=allegiance,
-                    uwp=uwp,
-                    economics=economics,
-                    culture=culture,
-                    nobilities=nobilities,
-                    remarks=remarks,
-                    zone=zone,
-                    stellar=stellar,
-                    pbg=pbg,
-                    systemWorlds=systemWorlds,
-                    bases=bases)
+                    world = astronomer.World(
+                        milieu=milieu,
+                        hex=astronomer.HexPosition(
+                            sectorX=sectorX,
+                            sectorY=sectorY,
+                            offsetX=dbSystem.hexX(),
+                            offsetY=dbSystem.hexY()),
+                        worldName=worldName,
+                        isNameGenerated=isNameGenerated,
+                        sectorName=sectorName,
+                        subsectorName=subsectorName,
+                        allegiance=allegiance,
+                        uwp=uwp,
+                        economics=economics,
+                        culture=culture,
+                        nobilities=nobilities,
+                        remarks=remarks,
+                        zone=zone,
+                        stellar=stellar,
+                        pbg=pbg,
+                        systemWorlds=systemWorlds,
+                        bases=bases)
 
-                subsectorWorlds = subsectorWorldsMap[subsectorCode]
-                subsectorWorlds.append(world)
-            except Exception as ex:
-                logging.warning(
-                    f'Failed to process world entry on line {rawWorld.lineNumber()} in data for sector {sectorName}',
-                    exc_info=ex)
-                continue # Continue trying to process the rest of the worlds
+                    subsectorWorlds = subsectorWorldsMap[subsectorCode]
+                    subsectorWorlds.append(world)
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to process system {dbSystem.id()} in data for sector {sectorName} from {milieu.value}',
+                        exc_info=ex)
+                    continue # Continue trying to process the rest of the worlds
 
         subsectors = []
         for subsectorCode in subsectorCodes:
@@ -1058,7 +1063,7 @@ class WorldManager(object):
                 sectorName=sectorName,
                 worlds=subsectorWorlds))
 
-        styleSheet = rawMetadata.styleSheet()
+        styleSheet = dbSector.styleSheet()
         borderStyleMap: typing.Dict[
             str, # Allegiance/Type
             typing.Tuple[
@@ -1097,42 +1102,40 @@ class WorldManager(object):
                                 routeStyleMap[tag] = (colour, style, width)
                     except Exception as ex:
                         logging.warning(
-                            f'Failed to process style sheet entry for {styleKey} in metadata for sector {sectorName}',
+                            f'Failed to process style sheet entry for {styleKey} in metadata for sector {sectorName} from {milieu.value}',
                             exc_info=ex)
             except Exception as ex:
                 logging.warning(
-                    f'Failed to parse style sheet for sector {sectorName}',
+                    f'Failed to parse style sheet for sector {sectorName} from {milieu.value}',
                     exc_info=ex)
 
-        rawRoutes = rawMetadata.routes()
+        dbRoutes = dbSector.routes()
         routes = []
-        if rawRoutes:
-            for rawRoute in rawRoutes:
+        if dbRoutes:
+            for dbRoute in dbRoutes:
                 try:
-                    startHex = rawRoute.startHex()
                     startHex = astronomer.HexPosition(
-                        sectorX=sectorX + (rawRoute.startOffsetX() if rawRoute.startOffsetX() else 0),
-                        sectorY=sectorY + (rawRoute.startOffsetY() if rawRoute.startOffsetY() else 0),
-                        offsetX=int(startHex[:2]),
-                        offsetY=int(startHex[-2:]))
+                        sectorX=sectorX + dbRoute.startOffsetX(),
+                        sectorY=sectorY + dbRoute.startOffsetY(),
+                        offsetX=dbRoute.startHexX(),
+                        offsetY=dbRoute.startHexY())
 
-                    endHex = rawRoute.endHex()
                     endHex = astronomer.HexPosition(
-                        sectorX=sectorX + (rawRoute.endOffsetX() if rawRoute.endOffsetX() else 0),
-                        sectorY=sectorY + (rawRoute.endOffsetY() if rawRoute.endOffsetY() else 0),
-                        offsetX=int(endHex[:2]),
-                        offsetY=int(endHex[-2:]))
+                        sectorX=sectorX + dbRoute.endOffsetX(),
+                        sectorY=sectorY + dbRoute.endOffsetY(),
+                        offsetX=dbRoute.endHexX(),
+                        offsetY=dbRoute.endHexY())
 
-                    colour = rawRoute.colour()
-                    style = WorldManager._mapRouteStyle(rawRoute.style())
-                    width = rawRoute.width()
+                    colour = dbRoute.colour()
+                    style = WorldManager._mapRouteStyle(dbRoute.style())
+                    width = dbRoute.width()
 
                     if not colour or not style or not width:
                         # This order of precedence matches the order in the Traveller Map
                         # DrawMicroRoutes code
                         stylePrecedence = [
-                            rawRoute.allegiance(),
-                            rawRoute.type(),
+                            dbRoute.allegiance(),
+                            dbRoute.type(),
                             'Im']
                         for tag in stylePrecedence:
                             if tag in routeStyleMap:
@@ -1146,53 +1149,54 @@ class WorldManager(object):
                                 break
 
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for border {rawRoute.fileIndex()} in sector {sectorName}')
+                        logging.debug(f'Ignoring invalid colour for border {dbRoute.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
-                        allegiance=rawRoute.allegiance(),
-                        type=rawRoute.type(),
+                        allegiance=dbRoute.allegiance(),
+                        type=dbRoute.type(),
                         style=style,
                         colour=colour,
                         width=width))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process route {rawRoute.fileIndex()} in metadata for sector {sectorName}',
+                        f'Failed to process route {dbRoute.id()} in metadata for sector {sectorName} from {milieu.value}',
                         exc_info=ex)
 
-        rawBorders = rawMetadata.borders()
+        dbBorders = dbSector.borders()
         borders = []
-        if rawBorders:
-            for rawBorder in rawBorders:
+        if dbBorders:
+            for dbBorder in dbBorders:
                 try:
                     hexes = []
-                    for rawHex in rawBorder.hexList():
+                    for hexX, hexY in dbBorder.hexes():
                         hexes.append(astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
-                            offsetX=int(rawHex[:2]),
-                            offsetY=int(rawHex[-2:])))
+                            offsetX=hexX,
+                            offsetY=hexY))
 
-                    labelHex = rawBorder.labelHex()
-                    if labelHex:
+                    labelHexX = dbBorder.labelHexX()
+                    labelHexY = dbBorder.labelHexY()
+                    if labelHexX is not None and labelHexY is not None:
                         labelHex = astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
-                            offsetX=int(labelHex[:2]),
-                            offsetY=int(labelHex[-2:]))
+                            offsetX=labelHexX,
+                            offsetY=labelHexY)
                     else:
                         labelHex = None
 
-                    colour = rawBorder.colour()
-                    style = WorldManager._mapBorderStyle(rawBorder.style())
+                    colour = dbBorder.colour()
+                    style = WorldManager._mapBorderStyle(dbBorder.style())
 
                     if not colour or not style:
                         # This order of precedence matches the order in the Traveller Map
                         # DrawMicroBorders code
                         stylePrecedence = [
-                            rawBorder.allegiance(),
+                            dbBorder.allegiance(),
                             'Im']
                         for tag in stylePrecedence:
                             if tag in borderStyleMap:
@@ -1204,140 +1208,148 @@ class WorldManager(object):
                                 break
 
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for border {rawBorder.fileIndex()} in sector {sectorName}')
+                        logging.debug(f'Ignoring invalid colour for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     # Default label to allegiance and word wrap now so it doesn't need
                     # to be done every time the border is rendered
-                    label = rawBorder.label()
-                    if not label and rawBorder.allegiance():
+                    label = dbBorder.label()
+                    if not label and dbBorder.allegiance():
                         label = allegianceTracker.allegianceName(
                             milieu=milieu,
-                            code=rawBorder.allegiance(),
+                            code=dbBorder.allegiance(),
                             sectorName=sectorName)
-                    if label and rawBorder.wrapLabel():
+                    if label and dbBorder.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
-                        allegiance=rawBorder.allegiance(),
+                        allegiance=dbBorder.allegiance(),
                         # Show label use the same defaults as the traveller map Border class
-                        showLabel=rawBorder.showLabel() if rawBorder.showLabel() != None else True,
+                        # TODO: I think I've broken something here as show label can't be null in the
+                        # DB. I suspect I need to move this logic to the converter
+                        showLabel=dbBorder.showLabel() if dbBorder.showLabel() != None else True,
                         label=label,
                         labelHex=labelHex,
-                        labelOffsetX=rawBorder.labelOffsetX(),
-                        labelOffsetY=rawBorder.labelOffsetY(),
+                        labelOffsetX=dbBorder.labelOffsetX(),
+                        labelOffsetY=dbBorder.labelOffsetY(),
                         style=style,
                         colour=colour))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process border {rawBorder.fileIndex()} in metadata for sector {sectorName}',
+                        f'Failed to process border {dbBorder.id()} in metadata for sector {sectorName} from {milieu.value}',
                         exc_info=ex)
 
-        rawRegions = rawMetadata.regions()
+        dbRegions = dbSector.regions()
         regions = []
-        if rawRegions:
-            for rawRegion in rawRegions:
+        if dbRegions:
+            for dbRegion in dbRegions:
                 try:
                     hexes = []
-                    for rawHex in rawRegion.hexList():
+                    for hexX, hexY in dbRegion.hexes():
                         hexes.append(astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
-                            offsetX=int(rawHex[:2]),
-                            offsetY=int(rawHex[-2:])))
+                            offsetX=hexX,
+                            offsetY=hexY))
 
-                    labelHex = rawRegion.labelHex()
-                    if labelHex:
+                    labelHexX = dbRegion.labelHexX()
+                    labelHexY = dbRegion.labelHexY()
+                    if labelHexX is not None and labelHexY is not None:
                         labelHex = astronomer.HexPosition(
                             sectorX=sectorX,
                             sectorY=sectorY,
-                            offsetX=int(labelHex[:2]),
-                            offsetY=int(labelHex[-2:]))
+                            offsetX=labelHexX,
+                            offsetY=labelHexY)
                     else:
                         labelHex = None
 
                     # Line wrap now so it doesn't need to be done every time the border is rendered
-                    label = rawRegion.label()
-                    if label and rawRegion.wrapLabel():
+                    label = dbRegion.label()
+                    if label and dbRegion.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
-                    colour = rawRegion.colour()
+                    colour = dbRegion.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for region {rawRegion.fileIndex()} in sector {sectorName}')
+                        logging.debug(f'Ignoring invalid colour for region {dbRegion.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     regions.append(astronomer.Region(
                         hexList=hexes,
                         # Show label use the same defaults as the Traveller Map Border class
-                        showLabel=rawRegion.showLabel() if rawRegion.showLabel() != None else True,
+                        # TODO: I think I've broken something here as show label can't be null in the
+                        # DB. I suspect I need to move this logic to the converter
+                        showLabel=dbRegion.showLabel() if dbRegion.showLabel() != None else True,
                         label=label,
                         labelHex=labelHex,
-                        labelOffsetX=rawRegion.labelOffsetX(),
-                        labelOffsetY=rawRegion.labelOffsetY(),
+                        labelOffsetX=dbRegion.labelOffsetX(),
+                        labelOffsetY=dbRegion.labelOffsetY(),
                         colour=colour))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process region {rawRegion.fileIndex()} in metadata for sector {sectorName}',
+                        f'Failed to process region {dbRegion.id()} in metadata for sector {sectorName} from {milieu.value}',
                         exc_info=ex)
 
-        rawLabels = rawMetadata.labels()
+        dbLabels = dbSector.labels()
         labels = []
-        if rawLabels:
-            for rawLabel in rawLabels:
+        if dbLabels:
+            for dbLabel in dbLabels:
                 try:
-                    hex = rawLabel.hex()
                     hex = astronomer.HexPosition(
                         sectorX=sectorX,
                         sectorY=sectorY,
-                        offsetX=int(hex[:2]),
-                        offsetY=int(hex[-2:]))
+                        offsetX=dbLabel.hexX(),
+                        offsetY=dbLabel.hexY())
 
                     # Line wrap now so it doesn't need to be done every time the border is rendered
-                    text = rawLabel.text()
-                    if rawLabel.wrap():
+                    text = dbLabel.text()
+                    if dbLabel.wrap():
                         text = WorldManager._LineWrapPattern.sub('\n', text)
 
-                    colour = rawLabel.colour()
+                    colour = dbLabel.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for label {rawLabel.fileIndex()} in sector {sectorName}')
+                        logging.debug(f'Ignoring invalid colour for label {dbLabel.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     labels.append(astronomer.Label(
                         text=text,
                         hex=hex,
                         colour=colour,
-                        size=WorldManager._mapLabelSize(rawLabel.size()),
-                        offsetX=rawLabel.offsetX(),
-                        offsetY=rawLabel.offsetY()))
+                        size=WorldManager._mapLabelSize(dbLabel.size()),
+                        offsetX=dbLabel.offsetX(),
+                        offsetY=dbLabel.offsetY()))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process label {rawLabel.fileIndex()} in metadata for sector {sectorName}',
+                        f'Failed to process label {dbLabel.id()} in metadata for sector {sectorName} from {milieu.value}',
                         exc_info=ex)
 
-        rawSources = rawMetadata.sources()
+        dbPrimaryPublication = dbSector.publication()
+        dbPrimaryAuthor = dbSector.author()
+        dbPrimaryPublisher = dbSector.publisher()
+        dbPrimaryReference = dbSector.reference()
+        dbCredits = dbSector.credits()
+        dbProducts = dbSector.products()
         sources = None
-        if rawSources:
-            rawPrimary = rawSources.primary()
+        if dbPrimaryPublication or dbPrimaryAuthor or dbPrimaryPublisher or dbPrimaryReference or dbCredits or dbProducts:
             primary = None
-            if rawPrimary:
+            if dbPrimaryPublication or dbPrimaryAuthor or dbPrimaryPublisher or dbPrimaryReference:
                 primary = astronomer.SectorSource(
-                    publication=rawPrimary.publication(),
-                    author=rawPrimary.author(),
-                    publisher=rawPrimary.publisher(),
-                    reference=rawPrimary.reference())
+                    publication=dbPrimaryPublication,
+                    author=dbPrimaryAuthor,
+                    publisher=dbPrimaryPublisher,
+                    reference=dbPrimaryReference)
 
             products = []
-            if rawSources.products():
-                for rawProduct in rawSources.products():
+            if dbProducts:
+                for dbProduct in dbProducts:
                     products.append(astronomer.SectorSource(
-                        publication=rawProduct.publication(),
-                        author=rawProduct.author(),
-                        publisher=rawProduct.publisher(),
-                        reference=rawProduct.reference()))
+                        publication=dbProduct.publication(),
+                        author=dbProduct.author(),
+                        publisher=dbProduct.publisher(),
+                        reference=dbProduct.reference()))
 
             sources = astronomer.SectorSources(
-                credits=rawSources.credits(),
+                credits=dbCredits,
                 primary=primary,
                 products=products)
 
@@ -1347,18 +1359,19 @@ class WorldManager(object):
             index=astronomer.SectorIndex(
                 sectorX=sectorX,
                 sectorY=sectorY),
-            alternateNames=rawMetadata.alternateNames(),
-            abbreviation=rawMetadata.abbreviation(),
-            sectorLabel=rawMetadata.sectorLabel(),
+            # TODO: This is ugly and it also means I'm throwing away the language information
+            alternateNames=alternateNames,
+            abbreviation=dbSector.abbreviation(),
+            sectorLabel=dbSector.sectorLabel(),
             subsectors=subsectors,
             routes=routes,
             borders=borders,
             regions=regions,
             labels=labels,
-            selected=rawMetadata.selected() if rawMetadata.selected() else False,
-            tags=astronomer.SectorTagging(rawMetadata.tags()),
+            selected=dbSector.selected() if dbSector.selected() else False,
+            tags=astronomer.SectorTagging(dbSector.tags()),
             sources=sources,
-            isCustom=isCustom)
+            isCustom=dbSector.isCustom())
 
     _RouteStyleMap = {
         'solid': astronomer.Route.Style.Solid,

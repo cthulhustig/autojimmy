@@ -398,18 +398,6 @@ class DataStore(object):
         DataStore._overlayDir = overlayDir
         DataStore._customDir = customDir
 
-    def sectorCount(
-            self,
-            milieu: astronomer.Milieu,
-            stockOnly: bool = False
-            ) -> int:
-        self._loadSectors(milieu=milieu)
-        with self._lock:
-            universeInfo = self._universeMap[milieu]
-            if not universeInfo:
-                return 0
-            return universeInfo.sectorCount(stockOnly=stockOnly)
-
     def sectors(
             self,
             milieu: astronomer.Milieu,
