@@ -498,7 +498,7 @@ class MultiverseDb(object):
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.List[DbSectorInfo]:
         logging.debug(
-            f'MultiverseDb listing sector info' + ('' if universeId is None else f' for universe {universeId}'))
+            'MultiverseDb listing sector info' + ('' if universeId is None else f' for universe {universeId}'))
         if transaction != None:
             connection = transaction.connection()
             return self._internalListSectorInfo(
@@ -511,6 +511,34 @@ class MultiverseDb(object):
                 return self._internalListSectorInfo(
                     universeId=universeId,
                     milieu=milieu,
+                    cursor=connection.cursor())
+
+    def sectorInfoByPosition(
+            self,
+            universeId: str,
+            milieu: str,
+            sectorX: int,
+            sectorY: int,
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
+            ) -> typing.Optional[DbSectorInfo]:
+        logging.debug(
+            f'MultiverseDb finding sector info at ({sectorX}, {sectorY}) for universe {universeId} from {milieu}')
+        if transaction != None:
+            connection = transaction.connection()
+            return self._internalSectorInfoByPosition(
+                universeId=universeId,
+                milieu=milieu,
+                sectorX=sectorX,
+                sectorY=sectorY,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._internalSectorInfoByPosition(
+                    universeId=universeId,
+                    milieu=milieu,
+                    sectorX=sectorX,
+                    sectorY=sectorY,
                     cursor=connection.cursor())
 
     def vacuumDatabase(self) -> None:
@@ -577,7 +605,8 @@ class MultiverseDb(object):
                         id TEXT PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
                         description TEXT,
-                        notes TEXT
+                        notes TEXT,
+                        UNIQUE (name)
                     );
                     """.format(table=MultiverseDb._UniversesTableName)
                 logging.info(f'MultiverseDb creating \'{MultiverseDb._UniversesTableName}\' table')
@@ -622,7 +651,8 @@ class MultiverseDb(object):
                         publisher TEXT,
                         reference TEXT,
                         notes TEXT,
-                        FOREIGN KEY(universe_id) REFERENCES {universesTable}(id) ON DELETE CASCADE
+                        FOREIGN KEY(universe_id) REFERENCES {universesTable}(id) ON DELETE CASCADE,
+                        UNIQUE (universe_id, milieu, sector_x, sector_y)
                     );
                     """.format(
                         sectorsTable=MultiverseDb._SectorsTableName,
@@ -702,7 +732,8 @@ class MultiverseDb(object):
                         sector_id TEXT NOT NULL,
                         code INTEGER NOT NULL,
                         name TEXT NOT NULL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (sector_id, code)
                     );
                     """.format(
                         namesTable=MultiverseDb._SubsectorNamesTableName,
@@ -814,7 +845,8 @@ class MultiverseDb(object):
                         allegiance TEXT,
                         stellar TEXT,
                         notes TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (sector_id, hex_x, hex_y)
                     );
                     """.format(
                         systemsTable=MultiverseDb._SystemsTableName,
@@ -1175,7 +1207,8 @@ class MultiverseDb(object):
         sql = """
             SELECT value
             FROM {table}
-            WHERE key = :key;
+            WHERE key = :key
+            LIMIT 1;
             """.format(table=MultiverseDb._MetadataTableName)
         cursor.execute(sql, {'key': key})
         rowData = cursor.fetchone()
@@ -1344,7 +1377,8 @@ class MultiverseDb(object):
         sql = """
             SELECT name, description, notes
             FROM {table}
-            WHERE id = :id;
+            WHERE id = :id
+            LIMIT 1;
             """.format(table=MultiverseDb._UniversesTableName)
         cursor.execute(sql, {'id': universeId})
         row = cursor.fetchone()
@@ -1686,7 +1720,8 @@ class MultiverseDb(object):
                 selected, tags, style_sheet, credits, publication, author,
                 publisher, reference, notes
             FROM {table}
-            WHERE id = :id;
+            WHERE id = :id
+            LIMIT 1;
             """.format(table=MultiverseDb._SectorsTableName)
         cursor.execute(sql, {'id': sectorId})
         row = cursor.fetchone()
@@ -2007,6 +2042,43 @@ class MultiverseDb(object):
                 sectorY=row[3],
                 isCustom=True if row[4] else False))
         return sectorList
+
+    def _internalSectorInfoByPosition(
+            self,
+            universeId: str,
+            milieu: str,
+            sectorX: int,
+            sectorY: int,
+            cursor: sqlite3.Cursor
+            ) -> typing.Optional[DbSectorInfo]:
+        sql = """
+            SELECT id, primary_name, is_custom
+            FROM {table}
+            WHERE (universe_id = :id OR universe_id = 'default')
+                AND milieu = :milieu
+                AND sector_x = :sector_x
+                AND sector_y = :sector_y
+            ORDER BY
+                CASE WHEN universe_id = :id THEN 0 ELSE 1 END
+            LIMIT 1;
+            """.format(table=MultiverseDb._SectorsTableName)
+        selectData = {
+            'id': universeId,
+            'milieu': milieu,
+            'sector_x': sectorX,
+            'sector_y': sectorY}
+
+        cursor.execute(sql, selectData)
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        return DbSectorInfo(
+            id=row[0],
+            name=row[1],
+            sectorX=sectorX,
+            sectorY=sectorY,
+            isCustom=True if row[2] else False)
 
     @staticmethod
     def _parseTimestamp(

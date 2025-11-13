@@ -410,21 +410,6 @@ class DataStore(object):
                 return []
             return universeInfo.sectors(stockOnly=stockOnly)
 
-    def sector(
-            self,
-            sectorName: str,
-            milieu: astronomer.Milieu,
-            stockOnly: bool = False
-            ) -> typing.Optional[SectorInfo]:
-        self._loadSectors(milieu=milieu)
-        with self._lock:
-            universeInfo = self._universeMap[milieu]
-            if not universeInfo:
-                return None
-            return universeInfo.lookupName(
-                name=sectorName,
-                stockOnly=stockOnly)
-
     # This will throw a SectorConflictException if there is a conflict
     # TODO: I need to check to see if there are any conflict checks from
     # customSectorConflictCheck that I need to replicate in the database.
@@ -449,134 +434,6 @@ class DataStore(object):
                 sectorX=sectorX,
                 sectorY=sectorY,
                 isCustomSector=True)
-
-    def createCustomSector(
-            self,
-            milieu: astronomer.Milieu,
-            sectorContent: str,
-            metadataContent: str
-            ) -> SectorInfo:
-        self._loadSectors(milieu=milieu)
-
-        sectorFormat = multiverse.sectorFileFormatDetect(content=sectorContent)
-        if not sectorFormat:
-            raise RuntimeError('Sector file content has an unknown format')
-
-        metadataFormat = multiverse.metadataFileFormatDetect(content=metadataContent)
-        if not metadataFormat:
-            raise RuntimeError('Sector metadata content has an unknown format')
-
-        metadata = multiverse.readMetadata(
-            content=metadataContent,
-            format=metadataFormat,
-            identifier='Custom Metadata')
-
-        # Do a full parse of the custom sector data based on the detected file
-        # format. If it fails an exception will be raised and allowed to pass
-        # back to the called. Doing this check is important as it prevents bad
-        # data causing the app to barf when loading
-        multiverse.readSector(
-            content=sectorContent,
-            format=sectorFormat,
-            identifier=f'Custom Sector {metadata.canonicalName()}')
-
-        milieuDirPath = os.path.join(
-            self._customDir,
-            DataStore._MilieuBaseDir,
-            milieu.value)
-        os.makedirs(milieuDirPath, exist_ok=True)
-
-        with self._lock:
-            universeInfo = self._universeMap[milieu]
-
-            # This will throw if the custom sector has a name/position conflicts with an existing sector.
-            # It's done now to prevent files being updated if the sector isn't going to be addable
-            universeInfo.conflictCheck(
-                sectorName=metadata.canonicalName(),
-                sectorX=metadata.x(),
-                sectorY=metadata.y(),
-                isCustomSector=True)
-
-            escapedSectorName = common.encodeFileName(rawFileName=metadata.canonicalName())
-
-            sectorExtension = DataStore._SectorFormatExtensions[sectorFormat]
-            sectorFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{sectorExtension}')
-            DataStore._writeFile(
-                path=sectorFilePath,
-                data=sectorContent)
-
-            metadataExtension = DataStore._MetadataFormatExtensions[metadataFormat]
-            metadataFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{metadataExtension}')
-            DataStore._writeFile(
-                path=metadataFilePath,
-                data=metadataContent)
-
-            sectorInfo = SectorInfo(
-                canonicalName=metadata.canonicalName(),
-                abbreviation=metadata.abbreviation(),
-                x=metadata.x(),
-                y=metadata.y(),
-                sectorFormat=sectorFormat,
-                metadataFormat=metadataFormat,
-                modifiedTimestamp=common.utcnow(),
-                isCustomSector=True)
-            universeInfo.addSector(sectorInfo)
-
-            self._saveCustomSectors(milieu=milieu)
-
-            return sectorInfo
-
-    def deleteCustomSector(
-            self,
-            sectorName: str,
-            milieu: astronomer.Milieu
-            ) -> None:
-        self._loadSectors(milieu=milieu)
-
-        milieuDirPath = os.path.join(
-            self._customDir,
-            DataStore._MilieuBaseDir,
-            milieu.value)
-
-        with self._lock:
-            universeInfo = self._universeMap[milieu]
-            sectorInfo = universeInfo.lookupName(name=sectorName, stockOnly=False)
-            if not sectorInfo:
-                raise RuntimeError(
-                    'Failed to delete custom sector {name} from {milieu} as it doesn\'t exist'.format(
-                        name=sectorName,
-                        milieu=milieu.value))
-
-            # Remove the sector from the custom universe file first. That way we don't leave a partially
-            # populated sector if deleting a file fails
-            universeInfo.removeSector(sectorInfo)
-            self._saveCustomSectors(milieu=milieu)
-
-            escapedSectorName = common.encodeFileName(rawFileName=sectorInfo.canonicalName())
-            sectorExtension = DataStore._SectorFormatExtensions[sectorInfo.sectorFormat()]
-            metadataExtension = DataStore._MetadataFormatExtensions[sectorInfo.metadataFormat()]
-            files = [
-                f'{escapedSectorName}.{sectorExtension}',
-                f'{escapedSectorName}.{metadataExtension}']
-
-            # Perform best effort attempt to delete files. If it fails log and continue,
-            # any undeleted files will have no effect since the sector has been deleted
-            # from the universe. If the user re-creates the a sector with the same name
-            # the files will hopefully be overwritten, if not an error will be generated
-            for file in files:
-                try:
-                    filePath = os.path.join(milieuDirPath, file)
-                    os.remove(filePath)
-                except Exception as ex:
-                    logging.warning(
-                        'Failed to delete custom sector file {file} from {milieu}'.format(
-                            file=filePath,
-                            milieu=milieu.value),
-                        exc_info=ex)
-
-            # Force reload of sectors for this milieu in order to load details of any
-            # sector that had been replaced by the custom sector that was deleted
-            self._loadSectors(milieu=milieu, reload=True)
 
     class SectorMetadataValidationError(Exception):
         def __init__(self, reason) -> None:
@@ -812,53 +669,6 @@ class DataStore(object):
 
         return sectors
 
-    def _saveCustomSectors(
-            self,
-            milieu: astronomer.Milieu
-            ) -> None:
-        universeFilePath = os.path.join(
-            self._customDir,
-            DataStore._MilieuBaseDir,
-            milieu.value,
-            DataStore._UniverseFileName)
-        timestampPath = os.path.join(
-            self._customDir,
-            self._TimestampFileName)
-
-        with self._lock:
-            universeInfo = self._universeMap[milieu]
-            sectorListData = []
-            for sectorInfo in universeInfo.sectors(stockOnly=False):
-                if not sectorInfo.isCustomSector():
-                    continue
-
-                sectorData = {
-                    'Names': [{'Text': sectorInfo.canonicalName()}],
-                    'X': sectorInfo.x(),
-                    'Y': sectorInfo.y()
-                    }
-
-                #
-                # The following elements are extensions and not part of the standard universe file format
-                #
-                sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
-                sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
-                sectorData['ModifiedTimestamp'] = \
-                    DataStore._formatTimestamp(sectorInfo.modifiedTimestamp()).decode()
-
-                sectorListData.append(sectorData)
-
-            universeData = {'Sectors': sectorListData}
-
-            DataStore._writeFile(
-                path=universeFilePath,
-                data=json.dumps(universeData, indent=4))
-
-            utcTime = common.utcnow()
-            DataStore._writeFile(
-                path=timestampPath,
-                data=DataStore._formatTimestamp(timestamp=utcTime))
-
     @staticmethod
     def _readFile(path: str) -> bytes:
         with open(path, 'rb') as file:
@@ -885,8 +695,3 @@ class DataStore(object):
             DataStore._bytesToString(data),
             DataStore._TimestampFormat)
         return timestamp.replace(tzinfo=datetime.timezone.utc)
-
-    @staticmethod
-    def _formatTimestamp(timestamp: datetime.datetime) -> bytes:
-        timestamp = timestamp.astimezone(datetime.timezone.utc)
-        return timestamp.strftime(DataStore._TimestampFormat).encode()

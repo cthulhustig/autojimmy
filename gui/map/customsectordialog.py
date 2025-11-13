@@ -273,7 +273,7 @@ class _NewSectorDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
         self.setFixedHeight(self.sizeHint().height())
 
-    def sector(self) -> typing.Optional[astronomer.SectorInfo]:
+    def sector(self) -> typing.Optional[multiverse.DbSector]:
         return self._sector
 
     # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
@@ -447,11 +447,14 @@ class _NewSectorDialog(gui.DialogEx):
                 identifier=metadataFilePath)
 
             # This will throw if there is a conflict with an existing sector
+            # TODO: I'll need an equivalent of this
+            """
             astronomer.DataStore.instance().customSectorConflictCheck(
                 sectorName=rawMetadata.canonicalName(),
                 sectorX=rawMetadata.x(),
                 sectorY=rawMetadata.y(),
                 milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
+            """
         except Exception as ex:
             message = 'Metadata validation failed.'
             logging.critical(message, exc_info=ex)
@@ -471,7 +474,7 @@ class _NewSectorDialog(gui.DialogEx):
             sectorFormat = multiverse.sectorFileFormatDetect(content=sectorData)
             if not sectorFormat:
                 raise RuntimeError('Unknown sector file format')
-            multiverse.readSector(
+            rawWorlds = multiverse.readSector(
                 content=sectorData,
                 format=sectorFormat,
                 identifier=sectorFilePath)
@@ -485,10 +488,14 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
-            self._sector = astronomer.DataStore.instance().createCustomSector(
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu),
-                sectorContent=sectorData,
-                metadataContent=sectorMetadata) # Write the users metadata, not the xml metadata if it was converted
+            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            dbSector = multiverse.convertRawSectorToDbSector(
+                milieu=milieu.name,
+                rawMetadata=rawMetadata,
+                rawSystems=rawWorlds,
+                isCustom=True,
+                universeId=astronomer.WorldManager.instance().dbUniverseId())
+            multiverse.MultiverseDb.instance().saveSector(sector=dbSector)
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
             logging.critical(message, exc_info=ex)
@@ -498,6 +505,7 @@ class _NewSectorDialog(gui.DialogEx):
                 exception=ex)
             return
 
+        self._sector = dbSector
         self.accept()
 
     def _lintClicked(self) -> None:
@@ -607,30 +615,36 @@ class _CustomSectorTable(gui.ListTable):
 
         self.synchronise()
 
-    def sector(self, row: int) -> typing.Optional[multiverse.DbSectorInfo]:
+    def sectorInfo(self, row: int) -> typing.Optional[multiverse.DbSectorInfo]:
         tableItem = self.item(row, 0)
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
-    def sectorRow(self, sector: multiverse.DbSectorInfo) -> int:
+    def sectorInfoRow(self, sector: multiverse.DbSectorInfo) -> int:
         for row in range(self.rowCount()):
-            if sector == self.sector(row):
+            if sector == self.sectorInfo(row):
                 return row
         return -1
 
-    def currentSector(self) -> typing.Optional[multiverse.DbSectorInfo]:
+    def sectorIdRow(self, sectorId: str) -> int:
+        for row in range(self.rowCount()):
+            sectorInfo = self.sectorInfo(row)
+            if sectorId == sectorInfo.id():
+                return row
+
+    def currentSectorInfo(self) -> typing.Optional[multiverse.DbSectorInfo]:
         row = self.currentRow()
         if row < 0:
             return None
-        return self.sector(row)
+        return self.sectorInfo(row)
 
-    def setCurrentSector(
+    def setCurrentSectorInfo(
             self,
             sector: typing.Optional[multiverse.DbSectorInfo]
             ) -> None:
         if sector:
-            row = self.sectorRow(sector)
+            row = self.sectorInfoRow(sector)
             if row < 0:
                 return
             item = self.item(row, 0)
@@ -641,10 +655,10 @@ class _CustomSectorTable(gui.ListTable):
     def synchronise(self) -> None:
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
-        sectors = multiverse.MultiverseDb.instance().listSectorInfo(
+        sectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
             universeId=astronomer.WorldManager.instance().dbUniverseId(),
             milieu=milieu.name)
-        sectors = [sector for sector in sectors if sector.isCustom()]
+        sectorInfos = [sector for sector in sectorInfos if sector.isCustom()]
 
         # Disable sorting while inserting multiple rows then sort once after they've
         # all been added
@@ -654,13 +668,13 @@ class _CustomSectorTable(gui.ListTable):
         try:
             currentSectors = set()
             for row in range(self.rowCount() - 1, -1, -1):
-                sector = self.sector(row)
-                if sector not in sectors:
+                sector = self.sectorInfo(row)
+                if sector not in sectorInfos:
                     self.removeRow(row)
                 else:
                     currentSectors.add(sector)
 
-            for sector in sectors:
+            for sector in sectorInfos:
                 if sector in currentSectors:
                     continue # Table already has an entry for the sector
 
@@ -684,7 +698,7 @@ class _CustomSectorTable(gui.ListTable):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_CustomSectorTable._StateVersion)
 
-        currentSector = self.currentSector()
+        currentSector = self.currentSectorInfo()
         stream.writeQString(currentSector.name() if currentSector else '')
 
         baseState = super().saveState()
@@ -709,14 +723,14 @@ class _CustomSectorTable(gui.ListTable):
         currentSector = None
         if sectorName:
             for row in range(self.rowCount()):
-                sector = self.sector(row)
+                sector = self.sectorInfo(row)
                 if not sector:
                     continue
                 if sector.name() == sectorName:
                     currentSector = sector
                     break
         if currentSector:
-            self.setCurrentSector(currentSector)
+            self.setCurrentSectorInfo(currentSector)
 
         count = stream.readUInt32()
         if count <= 0:
@@ -883,10 +897,10 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorDataGroupBox.setLayout(groupLayout)
 
         # Sync the controls to the currently selected sector
-        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
+        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSectorInfo())
 
     def _sectorSelectionChanged(self) -> None:
-        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
+        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSectorInfo())
 
     def _syncSectorDataControls(
             self,
@@ -928,12 +942,12 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorTable.synchronise()
 
         # Select the sector that was just added
-        row = self._sectorTable.sectorRow(newSector)
+        row = self._sectorTable.sectorIdRow(sectorId=newSector.id())
         if row >= 0:
             self._sectorTable.setCurrentRow(row)
 
     def _deleteSectorClicked(self) -> None:
-        sectorInfo = self._sectorTable.currentSector()
+        sectorInfo = self._sectorTable.currentSectorInfo()
         if not sectorInfo:
             gui.MessageBoxEx.information(
                 parent=self,
