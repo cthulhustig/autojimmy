@@ -7,3 +7,4 @@ from .map import *
 from .config import *
 from .hexhistory import *
 from .asyncrequest import *
+from .startupjob import *

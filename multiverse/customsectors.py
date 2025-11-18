@@ -114,7 +114,7 @@ def importLegacyCustomSectors(
             try:
                 if progressCallback:
                     progressCallback(
-                        f'Loading: {milieu} - {sectorName}',
+                        f'Reading: {milieu} - {sectorName}',
                         progressCount,
                         totalSectorCount)
                     progressCount += 1
@@ -143,7 +143,7 @@ def importLegacyCustomSectors(
 
     if progressCallback:
         progressCallback(
-            f'Loading: Complete!',
+            f'Reading: Complete!',
             totalSectorCount,
             totalSectorCount)
 

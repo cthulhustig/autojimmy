@@ -18,6 +18,7 @@ import os
 import pathlib
 import qasync
 import robots
+import startup
 import sys
 import uuid
 import typing
@@ -343,7 +344,6 @@ def main() -> None:
         print(f'{app.AppName} is already running.')
         return
 
-    exitCode = 0
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -419,46 +419,45 @@ def main() -> None:
         multiverse.MultiverseDb.setDbPath(databasePath=multiverseDbPath)
 
         multiverseSyncDir = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
-        shouldSyncMultiverse = False
+        hasDefaultUniverse = multiverse.MultiverseDb.instance().hasDefaultUniverse()
+        shouldSyncMultiverse = not hasDefaultUniverse
         try:
             shouldSyncMultiverse = multiverse.MultiverseDb.instance().isDefaultUniverseSnapshotNewer(
                 directoryPath=multiverseSyncDir)
         except Exception as ex:
-            canContinue = False
-            try:
-                canContinue = multiverse.MultiverseDb.instance().hasDefaultUniverse()
-            except:
-                pass
-            if not canContinue:
-                raise ex
-            answer = gui.MessageBoxEx.question(text='Failed to import new default universe snapshot.\nDo you want to continue with the previous data?')
-            if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-                raise ex
+            logging.warning('Failed to compare default universe snapshot age.', exc_info=ex)
 
         customSectorsDir = os.path.join(appDir, 'custom_map')
         shouldImportCustomSectors = False
         try:
-            shouldImportCustomSectors = not multiverse.haveCustomSectorsBeenImported(
-                directoryPath=customSectorsDir)
+            if os.path.isdir(customSectorsDir):
+                shouldImportCustomSectors = not multiverse.haveCustomSectorsBeenImported(
+                    directoryPath=customSectorsDir)
         except Exception as ex:
-            # TODO: Not sure what to do here
-            pass
+            logging.warning('Failed to check for imported custom sectors.', exc_info=ex)
 
-        startupProgress = gui.StartupProgressDialog()
+        startupProgressDlg = gui.StartupProgressDialog()
+
         if shouldSyncMultiverse:
-            startupProgress.setMultiverseSyncDir(directory=multiverseSyncDir)
+            startupProgressDlg.addJob(job=startup.SyncMultiverseDbJob(
+                directoryPath=multiverseSyncDir,
+                isInitialImport=not hasDefaultUniverse))
+
         if shouldImportCustomSectors:
-            startupProgress.setCustomSectorImportDir(directory=customSectorsDir)
-        if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            exception = startupProgress.exception()
-            if exception is not None:
-                raise exception
-            raise RuntimeError('Startup failed with an unknown error')
+            startupProgressDlg.addJob(job=startup.ImportCustomSectorsJob(
+                directoryPath=customSectorsDir))
+
+        startupProgressDlg.addJob(job=startup.LoadSectorsJob())
+        startupProgressDlg.addJob(job=startup.LoadWeaponsJob())
+        startupProgressDlg.addJob(job=startup.LoadRobotsJob())
+
+        if startupProgressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            sys.exit(1)
 
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        startupProgress.deleteLater()
+        startupProgressDlg.deleteLater()
 
         with qasync.QEventLoop() as asyncEventLoop:
             window = MainWindow()
@@ -470,9 +469,9 @@ def main() -> None:
         gui.MessageBoxEx.critical(
             text=message,
             exception=ex)
-        exitCode = 1
+        sys.exit(1)
 
-    sys.exit(exitCode)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

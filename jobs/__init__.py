@@ -1,4 +1,3 @@
-from .startupjobs import *
 from .snapshotdownloadjob import *
 from .routeplannerjobs import *
 from .traderjobs import *

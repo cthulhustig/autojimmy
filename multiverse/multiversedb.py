@@ -630,6 +630,10 @@ class MultiverseDb(object):
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._SectorsTableName,
                     cursor=cursor):
+                # TODO: I probably want to store the milieu as the integer year but I'll need
+                # something to support named milieu (e.g. IW for Interstellar War). It probably
+                # means a separate milieu description table that stores per universe year to
+                # name mapping
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sectorsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -1269,7 +1273,7 @@ class MultiverseDb(object):
                 try:
                     if progressCallback:
                         progressCallback(
-                            f'Loading: {milieu} - {sectorName}',
+                            f'Reading: {milieu} - {sectorName}',
                             progressCount,
                             totalSectorCount)
                         progressCount += 1
@@ -1294,7 +1298,7 @@ class MultiverseDb(object):
 
         if progressCallback:
             progressCallback(
-                f'Loading: Complete!',
+                f'Reading: Complete!',
                 totalSectorCount,
                 totalSectorCount)
 
