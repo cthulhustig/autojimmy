@@ -378,14 +378,9 @@ def main() -> None:
 
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')
-        customMapsDir = os.path.join(appDir, 'custom_map')
         multiverse.SnapshotManager.setSectorDirs(
             installDir=installMapsDir,
             overlayDir=overlayMapsDir)
-        astronomer.DataStore.setSectorDirs(
-            installDir=installMapsDir,
-            overlayDir=overlayMapsDir,
-            customDir=customMapsDir)
 
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),

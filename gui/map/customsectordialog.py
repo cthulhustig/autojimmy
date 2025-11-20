@@ -446,15 +446,14 @@ class _NewSectorDialog(gui.DialogEx):
                 format=metadataFormat,
                 identifier=metadataFilePath)
 
-            # This will throw if there is a conflict with an existing sector
-            # TODO: I'll need an equivalent of this
-            """
-            astronomer.DataStore.instance().customSectorConflictCheck(
-                sectorName=rawMetadata.canonicalName(),
+            milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
+            existingSectorInfo = multiverse.MultiverseDb.instance().sectorInfoByPosition(
+                universeId=multiverse.customUniverseId(),
+                milieu=milieu.name,
                 sectorX=rawMetadata.x(),
-                sectorY=rawMetadata.y(),
-                milieu=app.Config.instance().value(option=app.ConfigOption.Milieu))
-            """
+                sectorY=rawMetadata.y())
+            if existingSectorInfo and existingSectorInfo.isCustom():
+                raise RuntimeError(f'There is already a custom sector at ({rawMetadata.x()}, {rawMetadata.y()}) in {milieu.value}')
         except Exception as ex:
             message = 'Metadata validation failed.'
             logging.critical(message, exc_info=ex)
@@ -494,7 +493,7 @@ class _NewSectorDialog(gui.DialogEx):
                 rawMetadata=rawMetadata,
                 rawSystems=rawWorlds,
                 isCustom=True,
-                universeId=astronomer.WorldManager.instance().dbUniverseId())
+                universeId=multiverse.customUniverseId())
             multiverse.MultiverseDb.instance().saveSector(sector=dbSector)
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
@@ -535,7 +534,6 @@ class _NewSectorDialog(gui.DialogEx):
 
                 if metadataFormat == multiverse.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
-                    astronomer.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
                 else:
                     gui.AutoSelectMessageBox.information(
                         parent=self,
@@ -656,7 +654,7 @@ class _CustomSectorTable(gui.ListTable):
         milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
 
         sectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
-            universeId=astronomer.WorldManager.instance().dbUniverseId(),
+            universeId=multiverse.customUniverseId(),
             milieu=milieu.name)
         sectorInfos = [sector for sector in sectorInfos if sector.isCustom()]
 

@@ -63,13 +63,15 @@ class DbSectorInfo(object):
             name: str,
             sectorX: int,
             sectorY: int,
-            isCustom: bool
+            isCustom: bool,
+            abbreviation: typing.Optional[str]
             ) -> None:
         self._id = id
         self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
         self._isCustom = isCustom
+        self._abbreviation = abbreviation
 
         self._hash = None
 
@@ -88,16 +90,20 @@ class DbSectorInfo(object):
     def isCustom(self) -> bool:
         return self._isCustom
 
+    def abbreviation(self) -> typing.Optional[str]:
+        return self._abbreviation
+
     def __eq__(self, other: typing.Any) -> bool:
         if not isinstance(other, DbSectorInfo):
             return NotImplemented
         return self._id == other._id and self._name == other._name and \
             self._sectorX == other._sectorX and self._sectorY == other._sectorY and \
-            self._isCustom == self._isCustom
+            self._isCustom == self._isCustom and self._abbreviation == other._abbreviation
 
     def __hash__(self) -> int:
         if self._hash is None:
-            self._hash = hash((self._id, self._name, self._sectorX, self._sectorY, self._isCustom))
+            self._hash = hash((self._id, self._name, self._sectorX, self._sectorY,
+                               self._isCustom, self._abbreviation))
         return self._hash
 
 class MultiverseDb(object):
@@ -2098,7 +2104,7 @@ class MultiverseDb(object):
             cursor: sqlite3.Cursor
             ) -> typing.List[DbSectorInfo]:
         sql = """
-            SELECT id, primary_name, sector_x, sector_y, is_custom
+            SELECT id, primary_name, sector_x, sector_y, is_custom, abbreviation
             FROM {table}
             WHERE universe_id = :id
             """.format(table=MultiverseDb._SectorsTableName)
@@ -2111,7 +2117,7 @@ class MultiverseDb(object):
         if includeDefaultSectors:
             sql += """
                 UNION ALL
-                SELECT d.id, d.primary_name, d.sector_x, d.sector_y, is_custom
+                SELECT d.id, d.primary_name, d.sector_x, d.sector_y, is_custom, abbreviation
                 FROM {table} d
                 WHERE d.universe_id IS "default"
                 """.format(table=MultiverseDb._SectorsTableName)
@@ -2141,7 +2147,8 @@ class MultiverseDb(object):
                 name=row[1],
                 sectorX=row[2],
                 sectorY=row[3],
-                isCustom=True if row[4] else False))
+                isCustom=True if row[4] else False,
+                abbreviation=row[5]))
         return sectorList
 
     def _internalSectorInfoByPosition(
@@ -2153,7 +2160,7 @@ class MultiverseDb(object):
             cursor: sqlite3.Cursor
             ) -> typing.Optional[DbSectorInfo]:
         sql = """
-            SELECT id, primary_name, is_custom
+            SELECT id, primary_name, is_custom, abbreviation
             FROM {table}
             WHERE (universe_id = :id OR universe_id = 'default')
                 AND milieu = :milieu
@@ -2179,7 +2186,8 @@ class MultiverseDb(object):
             name=row[1],
             sectorX=sectorX,
             sectorY=sectorY,
-            isCustom=True if row[2] else False)
+            isCustom=True if row[2] else False,
+            abbreviation=row[3])
 
     @staticmethod
     def _parseTimestamp(

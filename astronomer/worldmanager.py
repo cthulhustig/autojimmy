@@ -284,11 +284,14 @@ class _AllegianceTracker(object):
             str # Canonical name
             ] = {}
         for milieu in astronomer.Milieu:
-            for sectorInfo in astronomer.DataStore.instance().sectors(milieu=milieu):
+            sectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
+                universeId=multiverse.customUniverseId(),
+                milieu=milieu.name)
+            for sectorInfo in sectorInfos:
                 abbreviation = sectorInfo.abbreviation()
                 if not abbreviation:
                     continue
-                abbreviationMap[(milieu, abbreviation)] = sectorInfo.canonicalName()
+                abbreviationMap[(milieu, abbreviation)] = sectorInfo.name()
 
         for allegiance in localAllegiances:
             code = allegiance['Code']
@@ -368,15 +371,9 @@ class WorldManager(object):
     # Use with `_WrapPattern.sub('\n', label)` to  replace
     _LineWrapPattern = re.compile(r'\s+(?![a-z])')
 
-    _UniverseName = 'Custom Universe'
-
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _universe: astronomer.Universe = None
-
-    # TODO: This is a bit of a hack that is needed while I only support a single
-    # universe. It gets set when the WorldManager is loading the sectors.
-    _dbUniverseId = None
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -410,18 +407,8 @@ class WorldManager(object):
                 # weren't loaded and the point it acquired the mutex.
                 return
 
-            universeInfos = multiverse.MultiverseDb.instance().listUniverseInfo()
-            if universeInfos:
-                dbUniverseId = universeInfos[0].id()
-            else:
-                # TODO: Log that universe is being created
-                dbUniverse = multiverse.DbUniverse(name=WorldManager._UniverseName)
-                multiverse.MultiverseDb.instance().saveUniverse(universe=dbUniverse)
-                dbUniverseId = dbUniverse.id()
-                dbUniverse = None # Load universe to load sectors
-
             dbUniverse = multiverse.MultiverseDb.instance().loadUniverse(
-                universeId=dbUniverseId,
+                universeId=multiverse.customUniverseId(),
                 # TODO: I probably need to wrap the progress callback so the text that
                 # gets put out makes sense
                 progressCallback=progressCallback)
@@ -474,7 +461,6 @@ class WorldManager(object):
             self._universe = astronomer.Universe(
                 sectors=sectors,
                 placeholderMilieu=WorldManager._PlaceholderMilieu)
-            self._dbUniverseId = dbUniverseId
 
     # TODO: This function probably shouldn't be dealing with dbSectorIds
     # _or_ the higher level astronomer Sector needs to use the same id
@@ -495,9 +481,6 @@ class WorldManager(object):
             allegianceTracker=allegianceTracker)
 
         return (astronomer.Universe(sectors=[sector]), sector)
-
-    def dbUniverseId(self) -> str:
-        return self._dbUniverseId
 
     def universe(self) -> astronomer.Universe:
         return self._universe

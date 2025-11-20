@@ -25,6 +25,9 @@ _MetadataFormatExtensions = {
     multiverse.MetadataFormat.JSON: 'json',
     multiverse.MetadataFormat.XML: 'xml'}
 
+def customUniverseId() -> str:
+    return _CustomUniverseId
+
 def hasCustomUniverseBeenCreated() -> bool:
     universeInfo = multiverse.MultiverseDb.instance().universeInfoById(
         universeId=_CustomUniverseId)

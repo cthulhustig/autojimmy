@@ -1,7 +1,6 @@
 from .milieu import *
 from .utils import *
 from .astrometrics import *
-from .datastore import *
 from .ehex import *
 from .sectorhex import *
 from .zone import *
