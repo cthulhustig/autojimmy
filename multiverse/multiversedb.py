@@ -8,18 +8,12 @@ import sqlite3
 import threading
 import typing
 
-# TODO: Need something that does one time import of custom sectors from
-# filesystem to database
-# TODO: All the constructors and setters on DB objects should validate the
-# input
 # TODO: Need to handle updating db after snapshot update
-# TODO: Need to handle the initial import case where there is no DB
 # TODO: Need to handle the case where the version the default universe that
 # comes in the install directory is newer than the version that is in the
 # overlay directory. The snapshot manager should handle deleting the old
 # snapshot (so the install is used) but I'll need something to trigger
 # reimporting the data from the install directory into the database
-# TODO: Test with unicode in universe/sector names etc
 # TODO: When updating snapshot I'll need to do something to make sure notes
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
@@ -318,8 +312,6 @@ class MultiverseDb(object):
         # TODO: Do I really want to do this here?
         self.vacuumDatabase()
 
-    # TODO: Write/Delete Universe/Sector functions should prevent
-    # writing to the default universe
     def saveUniverse(
             self,
             universe: multiverse.DbUniverse,
@@ -328,6 +320,9 @@ class MultiverseDb(object):
             ) -> None:
         logging.debug(f'MultiverseDb saving universe {universe.id()}')
 
+        if universe.id() == MultiverseDb._DefaultUniverseId:
+            raise RuntimeError('Saving the default universe is not allowed')
+
         insertProgressCallback = None
         if progressCallback:
             insertProgressCallback = lambda name, milieu, progress, total: progressCallback(f'Saving: {milieu} - {name}' if progress != total else 'Saving: Complete!', progress, total)
@@ -335,7 +330,6 @@ class MultiverseDb(object):
         if transaction != None:
             connection = transaction.connection()
 
-            # TODO: Not sure how to do progress for this step as it does take time
             self._internalDeleteUniverse(
                 universeId=universe.id(),
                 cursor=connection.cursor())
@@ -348,7 +342,6 @@ class MultiverseDb(object):
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
 
-                # TODO: Not sure how to do progress for this step as it does take time
                 self._internalDeleteUniverse(
                     universeId=universe.id(),
                     cursor=connection.cursor())
@@ -393,6 +386,10 @@ class MultiverseDb(object):
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
         logging.debug(f'MultiverseDb deleting universe {universeId}')
+
+        if universeId == MultiverseDb._DefaultUniverseId:
+            raise RuntimeError('Deleting the default universe is not allowed')
+
         if transaction != None:
             connection = transaction.connection()
             self._internalDeleteUniverse(
@@ -418,8 +415,11 @@ class MultiverseDb(object):
         if not sector.universeId():
             raise RuntimeError('Sector cannot be saved as has no universe id')
 
+        if sector.universeId() == MultiverseDb._DefaultUniverseId:
+            raise RuntimeError('Saving default sectors is not allowed')
+
         if not sector.isCustom():
-            raise RuntimeError('Sector cannot be saved as it is not a custom sector')
+            raise RuntimeError('Saving non-custom sectors is not allowed')
 
         if transaction != None:
             connection = transaction.connection()
@@ -473,14 +473,33 @@ class MultiverseDb(object):
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> None:
         logging.debug(f'MultiverseDb deleting sector {sectorId}')
+
         if transaction != None:
             connection = transaction.connection()
+
+            sectorInfo = self._internalSectorInfoById(
+                sectorId=sectorId,
+                cursor=connection.cursor())
+            if not sectorInfo:
+                return # Nothing to delete
+            if not sectorInfo.isCustom():
+                raise RuntimeError('Deleting default sectors is not allowed')
+
             self._internalDeleteSector(
                 sectorId=sectorId,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
                 connection = transaction.connection()
+
+                sectorInfo = self._internalSectorInfoById(
+                    sectorId=sectorId,
+                    cursor=connection.cursor())
+                if not sectorInfo:
+                    return # Nothing to delete
+                if not sectorInfo.isCustom():
+                    raise RuntimeError('Deleting default sectors is not allowed')
+
                 self._internalDeleteSector(
                     sectorId=sectorId,
                     cursor=connection.cursor())
@@ -684,6 +703,9 @@ class MultiverseDb(object):
                 # something to support named milieu (e.g. IW for Interstellar War). It probably
                 # means a separate milieu description table that stores per universe year to
                 # name mapping
+                # TODO: The is_custom column is technically redundant as the information can
+                # be implied by the universe id. I should probably remove it but it's currently
+                # making some queries a little easier
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sectorsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -1359,7 +1381,6 @@ class MultiverseDb(object):
             rawSectors=rawData,
             progressCallback=progressCallback)
 
-        # TODO: Not sure how to do progress for this step as it does take time
         self._internalDeleteUniverse(
             universeId=MultiverseDb._DefaultUniverseId,
             cursor=cursor)
@@ -2094,8 +2115,6 @@ class MultiverseDb(object):
             universeId=row[0],
             name=name)
 
-    # TODO: This needs to include sector names from default sectors
-    # in locations that don't have a sector in the actual universe
     def _internalListSectorInfo(
             self,
             universeId: str,
@@ -2150,6 +2169,32 @@ class MultiverseDb(object):
                 isCustom=True if row[4] else False,
                 abbreviation=row[5]))
         return sectorList
+
+    def _internalSectorInfoById(
+            self,
+            sectorId: str,
+            cursor: sqlite3.Cursor
+            ) -> typing.Optional[DbSectorInfo]:
+        sql = """
+            SELECT primary_name, sector_x, sector_y, is_custom, abbreviation
+            FROM {table}
+            WHERE id = :id
+            LIMIT 1;
+            """.format(table=MultiverseDb._SectorsTableName)
+        selectData = {'id': sectorId}
+
+        cursor.execute(sql, selectData)
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        return DbSectorInfo(
+            id=sectorId,
+            name=row[0],
+            sectorX=row[1],
+            sectorY=row[2],
+            isCustom=True if row[3] else False,
+            abbreviation=row[4])
 
     def _internalSectorInfoByPosition(
             self,

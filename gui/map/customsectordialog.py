@@ -11,25 +11,6 @@ import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Things that need done here
-# - New Sector dialog needs to add sector to universe
-#   1. Load the sector and metadata file
-#   2. Use convert function to convert it to a DbSector
-#       - This will need new convert functions to convert a single sector
-#   3. Use MultiverseDb to load a new copy of the current universe
-#       - QUESTION: How does it know which universe to load????
-#   4. Add DbSector to DbUniverse
-#       - This is important in order to set the DbSectors universe id
-#   5. Save DbSector
-#       - Shouldn't need to save the universe
-# - Drop sector/metadata text tabs from main dialog
-#       - This will also mean removing the tab bar as there will only be the map
-# - Delete button handler needs updated to delete from the database
-#       - QUESTION: Deleting will be done by sector id, how will it get that info?
-# - Main dialog needs to create a "Sector Universe" like it currently does whenever
-#   an existing sector is selected in order to display it
-#       - Currently the code to do this takes strings containing sector and metadata content
-
 _WelcomeMessage = """
     <html>
     <p>The Custom Sectors dialog allows you to add your own sectors to {name}.
@@ -934,7 +915,7 @@ class CustomSectorDialog(gui.DialogEx):
             return
 
         newSector = dialog.sector()
-        assert(newSector != None)
+        assert(newSector is not None)
 
         self._modified = True
         self._sectorTable.synchronise()

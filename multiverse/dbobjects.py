@@ -1,6 +1,9 @@
 import typing
 import uuid
 
+# TODO: These classes should probably do some level of validation on that
+# data they are passed
+
 class DbSystem(object):
     def __init__(
             self,
@@ -44,30 +47,6 @@ class DbSystem(object):
         self.setAllegiance(allegiance)
         self.setStellar(stellar)
         self.setNotes(notes)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbSystem):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._hexX == value._hexX and \
-            self._hexY == value._hexY and \
-            self._name == value._name and \
-            self._uwp == value._uwp and \
-            self._remarks == value._remarks and \
-            self._importance == value._importance and \
-            self._economics == value._economics and \
-            self._culture == value._culture and \
-            self._nobility == value._nobility and \
-            self._bases == value._bases and \
-            self._zone == value._zone and \
-            self._pbg == value._pbg and \
-            self._systemWorlds == value._systemWorlds and \
-            self._allegiance == value._allegiance and \
-            self._stellar == value._stellar and \
-            self._notes == value._notes
 
     def id(self) -> str:
         return self._id
@@ -213,27 +192,6 @@ class DbRoute(object):
         self.setColour(colour)
         self.setWidth(width)
 
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbRoute):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._startHexX == value._startHexX and \
-            self._startHexY == value._startHexY and \
-            self._endHexX == value._endHexX and \
-            self._endHexY == value._endHexY and \
-            self._startOffsetX == value._startOffsetX and \
-            self._startOffsetY == value._startOffsetY and \
-            self._endOffsetX == value._endOffsetX and \
-            self._endOffsetY == value._endOffsetY and \
-            self._allegiance == value._allegiance and \
-            self._type == value._type and \
-            self._style == value._style and \
-            self._colour == value._colour and \
-            self._width == value._width
-
     def id(self) -> str:
         return self._id
 
@@ -357,25 +315,6 @@ class DbBorder(object):
         self.setStyle(style)
         self.setAllegiance(allegiance)
 
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbBorder):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._hexes == value._hexes and \
-            self._showLabel == value._showLabel and \
-            self._wrapLabel == value._wrapLabel and \
-            self._labelHexX == value._labelHexX and \
-            self._labelHexY == value._labelHexY and \
-            self._labelOffsetX == value._labelOffsetX and \
-            self._labelOffsetY == value._labelOffsetY and \
-            self._label == value._label and \
-            self._colour == value._colour and \
-            self._style == value._style and \
-            self._allegiance == value._allegiance
-
     def id(self) -> str:
         return self._id
 
@@ -391,9 +330,6 @@ class DbBorder(object):
     def setHexes(self, hexes: typing.Iterable[typing.Tuple[int, int]]) -> None:
         self._hexes = list(hexes)
 
-    # TODO: I can maybe get rid of this here and in DbRegion if I uses the
-    # presence of label text to indicate if the label should be shown. I'd
-    # need to check the cartographer to see how it's actually used.
     def showLabel(self) -> bool:
         return self._showLabel
 
@@ -481,23 +417,6 @@ class DbRegion(object):
         self.setLabelOffsetX(labelOffsetX)
         self.setLabelOffsetY(labelOffsetY)
         self.setColour(colour)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbRegion):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._hexes == value._hexes and \
-            self._showLabel == value._showLabel and \
-            self._wrapLabel == value._wrapLabel and \
-            self._labelHexX == value._labelHexX and \
-            self._labelHexY == value._labelHexY and \
-            self._labelOffsetX == value._labelOffsetX and \
-            self._labelOffsetY == value._labelOffsetY and \
-            self._label == value._label and \
-            self._colour == value._colour
 
     def id(self) -> str:
         return self._id
@@ -588,22 +507,6 @@ class DbLabel(object):
         self.setOffsetX(offsetX)
         self.setOffsetY(offsetY)
 
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbLabel):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._sectorId == value._sectorId and \
-            self._text == value._text and \
-            self._hexX == value._hexX and \
-            self._hexY == value._hexY and \
-            self._wrap == value._wrap and \
-            self._colour == value._colour and \
-            self._size == value._size and \
-            self._offsetX == value._offsetX and \
-            self._offsetY == value._offsetY
-
     def id(self) -> str:
         return self._id
 
@@ -678,15 +581,6 @@ class DbAllegiance(object):
         self.setName(name)
         self.setBase(base)
 
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbAllegiance):
-            return NotImplemented
-
-        return \
-            self._code == value._code and \
-            self._name == value._name and \
-            self._base == value._base
-
     def code(self) -> str:
         return self._code
 
@@ -717,16 +611,6 @@ class DbProduct(object):
         self.setPublisher(publisher)
         self.setAuthor(author)
         self.setReference(reference)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbProduct):
-            return NotImplemented
-
-        return \
-            self._publication == value._publication and \
-            self._author == value._author and \
-            self._publisher == value._publisher and \
-            self._reference == value._reference
 
     def publication(self) -> typing.Optional[str]:
         return self._publication
@@ -813,44 +697,6 @@ class DbSector(object):
         self.setLabels(labels)
         self.setRegions(regions)
         self.setNotes(notes)
-
-    # TODO: Remove the equality operators as they're not reliable
-    # due to the fact they use lists of children which are only
-    # equal if the order matches. There shouldn't be a need to use
-    # them outside of debug code
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbSector):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._universeId == value._universeId and \
-            self._isCustom == value._isCustom and \
-            self._milieu == value._milieu and \
-            self._sectorX == value._sectorX and \
-            self._sectorY == value._sectorY and \
-            self._primaryName == value._primaryName and \
-            self._primaryLanguage == value._primaryLanguage and \
-            self._alternateNames == value._alternateNames and \
-            self._abbreviation == value._abbreviation and \
-            self._sectorLabel == value._sectorLabel and \
-            self._subsectorNames == value._subsectorNames and \
-            self._selected == value._selected and \
-            self._tags == value._tags and \
-            self._styleSheet == value._styleSheet and \
-            self._credits == value._credits and \
-            self._publication == value._publication and \
-            self._author == value._author and \
-            self._publisher == value._publisher and \
-            self._reference == value._reference and \
-            self._products == value._products and \
-            self._allegiances == value._allegiances and \
-            self._systems == value._systems and \
-            self._routes == value._routes and \
-            self._borders == value._borders and \
-            self._labels == value._labels and \
-            self._regions == value._regions and \
-            self._notes == value._notes
 
     def id(self) -> str:
         return self._id
@@ -1126,17 +972,6 @@ class DbUniverse(object):
         self.setDescription(description)
         self.setNotes(notes)
         self.setSectors(sectors)
-
-    def __eq__(self, value: typing.Any) -> bool:
-        if not isinstance(value, DbUniverse):
-            return NotImplemented
-
-        return \
-            self._id == value._id and \
-            self._name == value._name and \
-            self._description == value._description and \
-            self._notes == value._notes and \
-            self._sectors == value._sectors
 
     def id(self) -> str:
         return self._id
