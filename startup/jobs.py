@@ -5,7 +5,7 @@ import multiverse
 import robots
 import typing
 
-class SyncMultiverseDbJob(app.StartupJob):
+class ImportDefaultUniverseJob(app.StartupJob):
     def __init__(
             self,
             directoryPath: str,
@@ -35,6 +35,19 @@ class SyncMultiverseDbJob(app.StartupJob):
             ) -> None:
         multiverse.MultiverseDb.instance().importDefaultUniverse(
             directoryPath=self._directoryPath,
+            progressCallback=progressCallback)
+
+class CreateCustomUniverseJob(app.StartupJob):
+    def errorMessage(self) -> typing.Optional[str]:
+        if not self.exception():
+            return None
+        return 'Failed to create custom sector.'
+
+    def execute(
+            self,
+            progressCallback: typing.Callable[[str, int, int], typing.Any]
+            ) -> None:
+        multiverse.createCustomUniverse(
             progressCallback=progressCallback)
 
 class ImportCustomSectorsJob(app.StartupJob):

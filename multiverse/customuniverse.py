@@ -10,6 +10,11 @@ import typing
 # delete it once I'm sure nobody will be upgrading from a version so old
 # it will still be using custom sectors stored in the filesystem
 
+# For now we're not supporting multiple custom universes so a single universe
+# with a known id and name are used
+_CustomUniverseId = '35229f9b-c2e8-49c3-9334-0176a60015fd'
+_CustomUniverseName = 'Custom Universe'
+
 _ImportFlagFileName = 'database_import_flag_file'
 
 _SectorFormatExtensions = {
@@ -19,6 +24,25 @@ _SectorFormatExtensions = {
 _MetadataFormatExtensions = {
     multiverse.MetadataFormat.JSON: 'json',
     multiverse.MetadataFormat.XML: 'xml'}
+
+def hasCustomUniverseBeenCreated() -> bool:
+    universeInfo = multiverse.MultiverseDb.instance().universeInfoById(
+        universeId=_CustomUniverseId)
+    return universeInfo is not None
+
+def createCustomUniverse(
+        progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+        ) -> None:
+    if progressCallback:
+        progressCallback(f'Creating: Custom Universe', 0, 1)
+
+    universe = multiverse.DbUniverse(
+        id=_CustomUniverseId,
+        name=_CustomUniverseName)
+    multiverse.MultiverseDb.instance().saveUniverse(universe=universe)
+
+    if progressCallback:
+        progressCallback(f'Creating: Custom Universe', 1, 1)
 
 def haveCustomSectorsBeenImported(directoryPath: str) -> bool:
     if not os.path.isdir(directoryPath):
@@ -33,7 +57,7 @@ def importLegacyCustomSectors(
         ) -> None:
     flagFilePath = os.path.join(directoryPath, _ImportFlagFileName)
     if os.path.exists(flagFilePath):
-        raise RuntimeError('Custom sectors have already been imported')
+        raise RuntimeError('Legacy custom sectors have already been imported')
 
     universePath = os.path.join(directoryPath, 'milieu')
     milieuSectors: typing.List[typing.Tuple[
@@ -48,6 +72,8 @@ def importLegacyCustomSectors(
         milieuPath = os.path.join(universePath, milieu)
         universeInfoPath = os.path.join(milieuPath, 'universe.json')
         try:
+            logging.info(f'Loading legacy custom universe file {universeInfoPath}')
+
             with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
                 universeInfoContent = file.read()
             universeElement = json.loads(universeInfoContent)
@@ -99,7 +125,7 @@ def importLegacyCustomSectors(
             # TODO: I should probably do something to inform the user that some
             # of the data couldn't be imported
             logging.warn(
-                f'Custom sector import failed to process "{universeInfoPath}"',
+                f'Legacy custom sector import failed to process "{universeInfoPath}"',
                 exc_info=ex)
 
     rawData: typing.List[typing.Tuple[
@@ -123,6 +149,7 @@ def importLegacyCustomSectors(
 
                 metadataExtension = _MetadataFormatExtensions[metadataFormat]
                 metadataPath = os.path.join(milieuPath, f'{escapedName}.{metadataExtension}')
+                logging.info(f'Loading legacy custom metadata file {metadataPath}')
                 with open(metadataPath, 'r', encoding='utf-8-sig') as file:
                     rawMetadata = multiverse.readMetadata(
                         content=file.read(),
@@ -131,6 +158,7 @@ def importLegacyCustomSectors(
 
                 sectorExtension = _SectorFormatExtensions[sectorFormat]
                 sectorPath = os.path.join(milieuPath, f'{escapedName}.{sectorExtension}')
+                logging.info(f'Loading legacy custom sector file {sectorPath}')
                 with open(sectorPath, 'r', encoding='utf-8-sig') as file:
                     rawSystems = multiverse.readSector(
                         content=file.read(),
@@ -147,11 +175,43 @@ def importLegacyCustomSectors(
             totalSectorCount,
             totalSectorCount)
 
-    dbUniverse = multiverse.convertRawUniverseToDbUniverse(
-        universeName='Custom Universe',
-        isCustom=True,
-        rawSectors=rawData,
+    dbUniverse = multiverse.MultiverseDb.instance().loadUniverse(
+        universeId=_CustomUniverseId,
+        includeDefaultSectors=False,
         progressCallback=progressCallback)
+    if not dbUniverse:
+        raise RuntimeError('No custom universe to import legacy custom sectors into')
+
+    totalSectorCount = len(rawData)
+    for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawData):
+        existingSector = dbUniverse.sector(
+            milieu=milieu,
+            sectorX=rawMetadata.x(),
+            sectorY=rawMetadata.y())
+        if existingSector and existingSector.isCustom():
+            logging.warning(
+                f'Skipping import of legacy custom sector {rawMetadata.canonicalName()} at ({rawMetadata.x()}, {rawMetadata.y()}) from {milieu} as a custom sector already exists at that location')
+            continue
+
+        if progressCallback:
+            progressCallback(
+                f'Converting: {milieu} - {rawMetadata.canonicalName()}',
+                progressCount,
+                totalSectorCount)
+
+        logging.info(
+            f'Converting legacy custom sector {rawMetadata.canonicalName()} at ({rawMetadata.x()}, {rawMetadata.y()})')
+        dbUniverse.addSector(multiverse.convertRawSectorToDbSector(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawSystems=rawSystems,
+            isCustom=True))
+
+    if progressCallback:
+        progressCallback(
+            f'Converting: Complete!',
+            totalSectorCount,
+            totalSectorCount)
 
     multiverse.MultiverseDb.instance().saveUniverse(
         universe=dbUniverse,

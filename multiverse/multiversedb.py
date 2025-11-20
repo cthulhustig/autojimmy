@@ -355,6 +355,7 @@ class MultiverseDb(object):
     def loadUniverse(
             self,
             universeId: str,
+            includeDefaultSectors: bool = True,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> typing.Optional[multiverse.DbUniverse]:
@@ -368,6 +369,7 @@ class MultiverseDb(object):
             connection = transaction.connection()
             return self._internalReadUniverse(
                 universeId=universeId,
+                includeDefaultSectors=includeDefaultSectors,
                 cursor=connection.cursor(),
                 progressCallback=readProgressCallback)
         else:
@@ -375,6 +377,7 @@ class MultiverseDb(object):
                 connection = transaction.connection()
                 return self._internalReadUniverse(
                     universeId=universeId,
+                    includeDefaultSectors=includeDefaultSectors,
                     cursor=connection.cursor(),
                     progressCallback=readProgressCallback)
 
@@ -491,10 +494,49 @@ class MultiverseDb(object):
                 return self._internalListUniverseInfo(
                     cursor=connection.cursor())
 
+    def universeInfoById(
+            self,
+            universeId: str,
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
+            ) -> typing.Optional[DbUniverseInfo]:
+        logging.debug(
+            f'MultiverseDb retrieving info for sector with id "{universeId}"')
+        if transaction != None:
+            connection = transaction.connection()
+            return self._internalUniverseInfoById(
+                universeId=universeId,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._internalUniverseInfoById(
+                    universeId=universeId,
+                    cursor=connection.cursor())
+
+    def universeInfoByName(
+            self,
+            name: str,
+            transaction: typing.Optional['MultiverseDb.Transaction'] = None
+            ) -> typing.Optional[DbUniverseInfo]:
+        logging.debug(
+            f'MultiverseDb retrieving info for sector with name "{name}"')
+        if transaction != None:
+            connection = transaction.connection()
+            return self._internalUniverseInfoByName(
+                name=name,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
+                return self._internalUniverseInfoByName(
+                    name=name,
+                    cursor=connection.cursor())
+
     def listSectorInfo(
             self,
             universeId: str,
             milieu: typing.Optional[str] = None,
+            includeDefaultSectors: bool = True,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.List[DbSectorInfo]:
         logging.debug(
@@ -504,6 +546,7 @@ class MultiverseDb(object):
             return self._internalListSectorInfo(
                 universeId=universeId,
                 milieu=milieu,
+                includeDefaultSectors=includeDefaultSectors,
                 cursor=connection.cursor())
         else:
             with self.createTransaction() as transaction:
@@ -511,6 +554,7 @@ class MultiverseDb(object):
                 return self._internalListSectorInfo(
                     universeId=universeId,
                     milieu=milieu,
+                    includeDefaultSectors=includeDefaultSectors,
                     cursor=connection.cursor())
 
     def sectorInfoByPosition(
@@ -522,7 +566,7 @@ class MultiverseDb(object):
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
             ) -> typing.Optional[DbSectorInfo]:
         logging.debug(
-            f'MultiverseDb finding sector info at ({sectorX}, {sectorY}) for universe {universeId} from {milieu}')
+            f'MultiverseDb retrieving info for sector at ({sectorX}, {sectorY}) for universe {universeId} from {milieu}')
         if transaction != None:
             connection = transaction.connection()
             return self._internalSectorInfoByPosition(
@@ -1375,6 +1419,7 @@ class MultiverseDb(object):
     def _internalReadUniverse(
             self,
             universeId: str,
+            includeDefaultSectors: bool,
             cursor: sqlite3.Cursor,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
             ) -> typing.Optional[multiverse.DbUniverse]:
@@ -1399,21 +1444,25 @@ class MultiverseDb(object):
             SELECT id, primary_name, milieu
             FROM {table}
             WHERE universe_id = :id
-
-            UNION ALL
-
-            SELECT d.id, d.primary_name, d.milieu
-            FROM {table} d
-            WHERE d.universe_id IS "default"
-            AND NOT EXISTS (
-                SELECT 1
-                FROM {table} u
-                WHERE u.universe_id = :id
-                    AND u.milieu = d.milieu
-                    AND u.sector_x = d.sector_x
-                    AND u.sector_y = d.sector_y
-            );
             """.format(table=MultiverseDb._SectorsTableName)
+        if includeDefaultSectors:
+            sql += """
+                UNION ALL
+
+                SELECT d.id, d.primary_name, d.milieu
+                FROM {table} d
+                WHERE d.universe_id IS "default"
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM {table} u
+                    WHERE u.universe_id = :id
+                        AND u.milieu = d.milieu
+                        AND u.sector_x = d.sector_x
+                        AND u.sector_y = d.sector_y
+                )
+                """.format(table=MultiverseDb._SectorsTableName)
+        sql += ';'
+
         cursor.execute(sql, {'id': universeId})
         resultData = cursor.fetchall()
         totalSectorCount = len(resultData)
@@ -1995,12 +2044,57 @@ class MultiverseDb(object):
                 name=row[1]))
         return universeList
 
+    def _internalUniverseInfoById(
+            self,
+            universeId: str,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[DbUniverseInfo]:
+        sql = """
+            SELECT name
+            FROM {table}
+            WHERE id != :id
+            LIMIT 1;
+            """.format(
+            table=MultiverseDb._UniversesTableName)
+        cursor.execute(sql, {'id': universeId})
+
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        return DbUniverseInfo(
+            universeId=universeId,
+            name=row[0])
+
+    def _internalUniverseInfoByName(
+            self,
+            name: str,
+            cursor: sqlite3.Cursor
+            ) -> typing.List[DbUniverseInfo]:
+        sql = """
+            SELECT id
+            FROM {table}
+            WHERE name != :name
+            LIMIT 1;
+            """.format(
+            table=MultiverseDb._UniversesTableName)
+        cursor.execute(sql, {'name': name})
+
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        return DbUniverseInfo(
+            universeId=row[0],
+            name=name)
+
     # TODO: This needs to include sector names from default sectors
     # in locations that don't have a sector in the actual universe
     def _internalListSectorInfo(
             self,
             universeId: str,
             milieu: typing.Optional[str],
+            includeDefaultSectors: bool,
             cursor: sqlite3.Cursor
             ) -> typing.List[DbSectorInfo]:
         sql = """
@@ -2014,26 +2108,29 @@ class MultiverseDb(object):
             sql += 'AND milieu = :milieu'
             selectData['milieu'] = milieu
 
-        sql += """
-            UNION ALL
-            SELECT d.id, d.primary_name, d.sector_x, d.sector_y, is_custom
-            FROM {table} d
-            WHERE d.universe_id IS "default"
-            """.format(table=MultiverseDb._SectorsTableName)
+        if includeDefaultSectors:
+            sql += """
+                UNION ALL
+                SELECT d.id, d.primary_name, d.sector_x, d.sector_y, is_custom
+                FROM {table} d
+                WHERE d.universe_id IS "default"
+                """.format(table=MultiverseDb._SectorsTableName)
 
-        if milieu:
-            sql += 'AND milieu = :milieu'
+            if milieu:
+                sql += 'AND milieu = :milieu'
 
-        sql += """
-            AND NOT EXISTS (
-                SELECT 1
-                FROM {table} u
-                WHERE u.universe_id = :id
-                    AND u.milieu = d.milieu
-                    AND u.sector_x = d.sector_x
-                    AND u.sector_y = d.sector_y
-            );
-            """.format(table=MultiverseDb._SectorsTableName)
+            sql += """
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM {table} u
+                    WHERE u.universe_id = :id
+                        AND u.milieu = d.milieu
+                        AND u.sector_x = d.sector_x
+                        AND u.sector_y = d.sector_y
+                )
+                """.format(table=MultiverseDb._SectorsTableName)
+
+        sql += ';'
 
         cursor.execute(sql, selectData)
 

@@ -1162,6 +1162,15 @@ class DbUniverse(object):
     def sectors(self) -> typing.Optional[typing.Collection[DbSector]]:
         return self._sectors
 
+    def sector(
+            self,
+            milieu: str,
+            sectorX: int,
+            sectorY: int
+            ) -> typing.Optional[DbSector]:
+        key = (milieu, sectorX, sectorY)
+        return self._sectorByMilieuPosition.get(key)
+
     def setSectors(self, sectors: typing.Optional[typing.Collection[DbSector]]) -> None:
         if sectors is not None:
             self._sectors = []

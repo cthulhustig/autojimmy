@@ -427,6 +427,8 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to compare default universe snapshot age.', exc_info=ex)
 
+        shouldCreateCustomUniverse = not multiverse.hasCustomUniverseBeenCreated()
+
         customSectorsDir = os.path.join(appDir, 'custom_map')
         shouldImportCustomSectors = False
         try:
@@ -439,9 +441,12 @@ def main() -> None:
         startupProgressDlg = gui.StartupProgressDialog()
 
         if shouldSyncMultiverse:
-            startupProgressDlg.addJob(job=startup.SyncMultiverseDbJob(
+            startupProgressDlg.addJob(job=startup.ImportDefaultUniverseJob(
                 directoryPath=multiverseSyncDir,
                 isInitialImport=not hasDefaultUniverse))
+
+        if shouldCreateCustomUniverse:
+            startupProgressDlg.addJob(job=startup.CreateCustomUniverseJob())
 
         if shouldImportCustomSectors:
             startupProgressDlg.addJob(job=startup.ImportCustomSectorsJob(

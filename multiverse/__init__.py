@@ -4,4 +4,4 @@ from .sectorparsers import *
 from .snapshotmanager import *
 from .convert import *
 from .multiversedb import *
-from .customsectors import *
+from .customuniverse import *
