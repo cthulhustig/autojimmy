@@ -69,29 +69,6 @@ class _AllegianceCodeInfo(object):
 
         self._localNames[sectorName] = allegianceName
 
-    def uniqueNameMap(self) -> typing.Mapping[str, str]:
-        nameMap = {}
-        if self._globalName:
-            nameMap[self._code] = self._globalName
-
-            if self._consistentName:
-                # The allegiance has a consistent name so there is only one mapping, no need to
-                # look at local mappings
-                return nameMap
-
-        for sectorName, allegianceName in self._localNames.items():
-            if self._consistentName:
-                # The allegiance has a local name so just create a single mapping using the base
-                # code and this instance of the local name
-                nameMap[self._code] = allegianceName
-                break
-
-            # This allegiance doesn't have a consistent name so map the sectors unique code to the
-            # allegiance name
-            nameMap[self._formatUniqueCode(sectorName)] = allegianceName
-
-        return nameMap
-
     def _formatUniqueCode(
             self,
             sectorName: str
@@ -139,15 +116,6 @@ class _AllegianceTracker(object):
                 str,
                 _AllegianceCodeInfo]] = {}
         self._loadAllegiances()
-
-    def allegiances(
-            self,
-            milieu: astronomer.Milieu
-            ) -> typing.Iterable[_AllegianceCodeInfo]:
-        milieuData = self._milieuDataMap.get(milieu)
-        if not milieuData:
-            return []
-        return milieuData.values()
 
     def allegianceName(
             self,
@@ -247,26 +215,36 @@ class _AllegianceTracker(object):
             self._milieuDataMap[milieu] = {}
 
         # Load the T5 second survey allegiances pulled from Traveller Map
-        _, results = astronomer.parseTabContent(
+        allegiances = multiverse.readT5LegacyAllegiances(
             content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=_AllegianceTracker._T5OfficialAllegiancesPath))
 
         # Split results into global and local allegiances
-        globalAllegiances = []
-        localAllegiances = []
-        for allegiance in results:
-            location = allegiance.get('Location')
-            if not location or location.lower() == 'various':
+        globalAllegiances: typing.List[multiverse.RawLegacyAllegiance] = []
+        localAllegiances: typing.List[multiverse.RawLegacyAllegiance] = []
+        for allegiance in allegiances:
+            locations = allegiance.locations()
+            isGlobal = not locations
+            if locations:
+                hasVarious = False
+                for location in locations:
+                    if location.lower() == 'various':
+                        hasVarious = True
+                        break
+                if not hasVarious:
+                    isGlobal = False
+
+            if isGlobal:
                 globalAllegiances.append(allegiance)
             else:
                 localAllegiances.append(allegiance)
 
         # First the entries with no location or location of 'various' are added as global names
         for allegiance in globalAllegiances:
-            code = allegiance['Code']
-            legacyCode = allegiance['Legacy']
-            baseCode = allegiance['BaseCode']
-            globalName = allegiance['Name']
+            code = allegiance.code()
+            legacyCode = allegiance.legacy()
+            baseCode = allegiance.base()
+            globalName = allegiance.name()
 
             for milieu in astronomer.Milieu:
                 self._addAllegianceCode(
@@ -294,13 +272,11 @@ class _AllegianceTracker(object):
                 abbreviationMap[(milieu, abbreviation)] = sectorInfo.name()
 
         for allegiance in localAllegiances:
-            code = allegiance['Code']
-            legacyCode = allegiance['Legacy']
-            baseCode = allegiance['BaseCode']
-            localName = allegiance['Name']
-            location = allegiance['Location']
-
-            abbreviations = location.split('/')
+            code = allegiance.code()
+            legacyCode = allegiance.legacy()
+            baseCode = allegiance.base()
+            localName = allegiance.name()
+            abbreviations = allegiance.locations()
 
             for milieu in astronomer.Milieu:
                 codeInfo = self._addAllegianceCode(
@@ -1177,6 +1153,8 @@ class WorldManager(object):
 
                     # Default label to allegiance and word wrap now so it doesn't need
                     # to be done every time the border is rendered
+                    # TODO: This is probably bad, should be done in cartographer and border
+                    # should store a label and allegiance if the source data has both
                     label = dbBorder.label()
                     if not label and dbBorder.allegiance():
                         label = allegianceTracker.allegianceName(

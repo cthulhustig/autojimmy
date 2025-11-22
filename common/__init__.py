@@ -6,3 +6,4 @@ from .downloader import *
 from .stringfilter import *
 from .lrucache import *
 from .colour import *
+from .parsers import *

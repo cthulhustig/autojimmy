@@ -436,7 +436,7 @@ class _NewSectorDialog(gui.DialogEx):
             if existingSectorInfo and existingSectorInfo.isCustom():
                 raise RuntimeError(f'There is already a custom sector at ({rawMetadata.x()}, {rawMetadata.y()}) in {milieu.value}')
         except Exception as ex:
-            message = 'Metadata validation failed.'
+            message = 'Failed to load metadata file.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -459,7 +459,19 @@ class _NewSectorDialog(gui.DialogEx):
                 format=sectorFormat,
                 identifier=sectorFilePath)
         except Exception as ex:
-            message = 'Sector validation failed.'
+            message = 'Failed to load sector file.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+
+        try:
+            rawLegacyAllegiances = multiverse.readSnapshotLegacyAllegiances()
+        except:
+            message = 'Failed to load legacy allegiances.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -473,6 +485,7 @@ class _NewSectorDialog(gui.DialogEx):
                 milieu=milieu.name,
                 rawMetadata=rawMetadata,
                 rawSystems=rawWorlds,
+                rawLegacyAllegiances=rawLegacyAllegiances,
                 isCustom=True,
                 universeId=multiverse.customUniverseId())
             multiverse.MultiverseDb.instance().saveSector(sector=dbSector)

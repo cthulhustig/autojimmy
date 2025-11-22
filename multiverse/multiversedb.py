@@ -839,6 +839,7 @@ class MultiverseDb(object):
                         sector_id TEXT NOT NULL,
                         code TEXT NOT NULL,
                         name TEXT NOT NULL,
+                        legacy TEXT,
                         base TEXT,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
                     );
@@ -1294,6 +1295,9 @@ class MultiverseDb(object):
     # done due to the snapshot being older than the current snapshot.
     # If forceImport is true the snapshot will be imported even if
     # it is older
+    # TODO: I'm not sure if this should live here or be separate like
+    # the custom sector code. It feels like the two types of operation
+    # should be handled consistently
     def _internalImportDefaultUniverse(
             self,
             directoryPath: str,
@@ -1304,6 +1308,8 @@ class MultiverseDb(object):
         with open(timestampPath, 'r', encoding='utf-8-sig') as file:
             timestampContent = file.read()
         importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
+
+        rawLegacyAllegiances = multiverse.readSnapshotLegacyAllegiances()
 
         universePath = os.path.join(directoryPath, 'milieu')
         milieuSectors: typing.List[typing.Tuple[
@@ -1379,6 +1385,7 @@ class MultiverseDb(object):
             universeName='Default Universe',
             isCustom=False,
             rawSectors=rawData,
+            rawLegacyAllegiances=rawLegacyAllegiances,
             progressCallback=progressCallback)
 
         self._internalDeleteUniverse(
@@ -1622,8 +1629,8 @@ class MultiverseDb(object):
 
         if sector.allegiances():
             sql = """
-                INSERT INTO {table} (sector_id, code, name, base)
-                VALUES (:sector_id, :code, :name, :base);
+                INSERT INTO {table} (sector_id, code, name, legacy, base)
+                VALUES (:sector_id, :code, :name, :legacy, :base);
                 """.format(table=MultiverseDb._AllegiancesTableName)
             rowData = []
             for allegiance in sector.allegiances():
@@ -1631,6 +1638,7 @@ class MultiverseDb(object):
                     'sector_id': sector.id(),
                     'code': allegiance.code(),
                     'name': allegiance.name(),
+                    'legacy': allegiance.legacy(),
                     'base': allegiance.base()})
             cursor.executemany(sql, rowData)
 
@@ -1863,7 +1871,7 @@ class MultiverseDb(object):
         sector.setProducts(products)
 
         sql = """
-            SELECT code, name, base
+            SELECT code, name, legacy, base
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AllegiancesTableName)
@@ -1873,7 +1881,8 @@ class MultiverseDb(object):
             allegiances.append(multiverse.DbAllegiance(
                 code=row[0],
                 name=row[1],
-                base=row[2]))
+                legacy=row[2],
+                base=row[3]))
         sector.setAllegiances(allegiances)
 
         sql = """

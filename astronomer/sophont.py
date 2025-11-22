@@ -1,4 +1,4 @@
-import astronomer
+import common
 import multiverse
 import threading
 import typing
@@ -36,7 +36,7 @@ class SophontManager(object):
     # the mutex is locked
     # TODO: Should these live in the database a well?
     def _loadSophonts(self) -> None:
-        _, results = astronomer.parseTabContent(
+        _, results = common.parseTabTableContent(
             content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=SophontManager._T5OfficialSophontsPath))
 

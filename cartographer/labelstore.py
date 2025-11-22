@@ -75,7 +75,7 @@ class LabelStore(object):
 
     @staticmethod
     def _parseMapLabels(content: str) -> typing.List[MapLabel]:
-        _, rows = astronomer.parseTabContent(content=content)
+        _, rows = common.parseTabTableContent(content=content)
         labels = []
         for data in rows:
             labels.append(MapLabel(

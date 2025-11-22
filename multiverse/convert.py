@@ -2,14 +2,24 @@ import logging
 import multiverse
 import typing
 
+# TODO: Not sure where this should live
+_T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
+def readSnapshotLegacyAllegiances() -> typing.List[multiverse.RawLegacyAllegiance]:
+    return multiverse.readT5LegacyAllegiances(
+        content=multiverse.SnapshotManager.instance().loadTextResource(
+            filePath=_T5OfficialAllegiancesPath))
+
 def convertRawUniverseToDbUniverse(
         universeName: str,
         isCustom: bool,
-        rawSectors: typing.List[typing.Tuple[
+        rawSectors: typing.Collection[typing.Tuple[
             str, # Milieu
             multiverse.RawMetadata,
             typing.Collection[multiverse.RawWorld]
             ]],
+        rawLegacyAllegiances: typing.Optional[typing.Collection[
+            multiverse.RawLegacyAllegiance
+            ]] = None,
         universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
         ) -> multiverse.DbUniverse:
@@ -28,6 +38,7 @@ def convertRawUniverseToDbUniverse(
             milieu=milieu,
             rawMetadata=rawMetadata,
             rawSystems=rawSystems,
+            rawLegacyAllegiances=rawLegacyAllegiances,
             isCustom=isCustom))
 
     if progressCallback:
@@ -43,6 +54,9 @@ def convertRawSectorToDbSector(
         rawMetadata: multiverse.RawMetadata,
         rawSystems: typing.Collection[multiverse.RawWorld],
         isCustom: bool,
+        rawLegacyAllegiances: typing.Optional[typing.Collection[
+            multiverse.RawLegacyAllegiance
+            ]] = None,
         sectorId: typing.Optional[str] = None,
         universeId: typing.Optional[str] = None,
         ) -> multiverse.DbUniverse:
@@ -79,6 +93,55 @@ def convertRawSectorToDbSector(
                     name=rawAllegiance.name(),
                     base=rawAllegiance.base()))
 
+
+        # TODO: Remove debug code
+        rawGlobalLegacyAllegianceMap: typing.Dict[
+            str, # Code
+            multiverse.RawLegacyAllegiance] = {}
+        rawLocalLegacyAllegianceMap: typing.Dict[
+            str, # Code
+            multiverse.RawLegacyAllegiance] = {}
+        if rawLegacyAllegiances:
+            for rawLegacyAllegiance in rawLegacyAllegiances:
+                locations = rawLegacyAllegiance.locations()
+                isGlobal = not locations
+                if locations:
+                    hasVarious = False
+                    for location in locations:
+                        if location.lower() == 'various':
+                            hasVarious = True
+                            break
+                    if not hasVarious:
+                        isGlobal = False
+
+                if isGlobal:
+                    assert(rawLegacyAllegiance.code() not in rawGlobalLegacyAllegianceMap) # TODO:Remove debug code
+                    rawGlobalLegacyAllegianceMap[rawLegacyAllegiance.code()] = rawLegacyAllegiance
+                    rawGlobalLegacyAllegianceMap[rawLegacyAllegiance.legacy()] = rawLegacyAllegiance
+                else:
+                    assert(rawLegacyAllegiance.code() not in rawLocalLegacyAllegianceMap) # TODO:Remove debug code
+                    rawLocalLegacyAllegianceMap[rawLegacyAllegiance.code()] = rawLegacyAllegiance
+                    rawLocalLegacyAllegianceMap[rawLegacyAllegiance.legacy()] = rawLegacyAllegiance
+
+        rawSectorAllegianceMap: typing.Dict[
+            str, # Code
+            multiverse.RawLegacyAllegiance] = {}
+        if rawMetadata.allegiances():
+            for rawAllegiance in rawMetadata.allegiances():
+                rawSectorAllegianceMap[rawAllegiance.code()] = rawAllegiance
+
+                if rawAllegiance.code() in rawGlobalLegacyAllegianceMap:
+                    rawGLegacyAllegiance = rawGlobalLegacyAllegianceMap.get(rawAllegiance.code())
+                    #print(f'Collision: {rawMetadata.canonicalName()} {milieu} {rawAllegiance.code()} {rawAllegiance.name()} {rawGLegacyAllegiance.name()}')
+                if rawAllegiance.code() in rawGlobalLegacyAllegianceMap:
+                    rawGLegacyAllegiance = rawGlobalLegacyAllegianceMap.get(rawAllegiance.code())
+                    #print(f'Collision: {rawMetadata.canonicalName()} {milieu} {rawAllegiance.code()} {rawAllegiance.name()} {rawGLegacyAllegiance.name()}')
+        # TODO: Remove debug code above
+
+
+
+
+        notFoundAllegiances = set() # TODO: Remove debug code
         dbSystems = None
         if rawSystems:
             dbSystems = []
@@ -92,6 +155,21 @@ def convertRawSectorToDbSector(
                     assert(False) # TODO: Better error handling
 
                 rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
+
+                # TODO: Remove debug code
+                allegiance = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+                if allegiance:
+                    if allegiance not in rawSectorAllegianceMap:
+                        if allegiance in rawLocalLegacyAllegianceMap:
+                            rawLegacyAllegiance = rawLocalLegacyAllegianceMap.get(allegiance)
+                            #print(f'Found Local: {rawMetadata.canonicalName()} {milieu} {allegiance} {rawLegacyAllegiance.name()}')
+                        elif allegiance in rawGlobalLegacyAllegianceMap:
+                            rawLegacyAllegiance = rawGlobalLegacyAllegianceMap.get(allegiance)
+                            #print(f'Found Global: {rawMetadata.canonicalName()} {milieu} {allegiance} {rawLegacyAllegiance.name()}')
+                        else:
+                            #print(f'Not Found: {rawMetadata.canonicalName()} {milieu} {allegiance}')
+                            notFoundAllegiances.add(allegiance)
+
 
                 dbSystems.append(multiverse.DbSystem(
                     hexX=int(rawHex[:2]),
@@ -111,6 +189,9 @@ def convertRawSectorToDbSector(
                     systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
                     allegiance=rawWorld.attribute(multiverse.WorldAttribute.Allegiance),
                     stellar=rawWorld.attribute(multiverse.WorldAttribute.Stellar)))
+
+        if notFoundAllegiances:
+            print(f'{rawMetadata.canonicalName()} {milieu} {notFoundAllegiances}')
 
         dbRoutes = None
         if rawMetadata.routes():

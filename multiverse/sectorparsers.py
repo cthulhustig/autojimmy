@@ -1,3 +1,4 @@
+import enum
 import common
 import itertools
 import json
@@ -6,6 +7,18 @@ import multiverse
 import re
 import typing
 import xml.etree.ElementTree
+
+class SectorFormat(enum.Enum):
+    T5Column = 0, # aka Second Survey format
+    T5Tab = 1
+
+class MetadataFormat(enum.Enum):
+    JSON = 0
+    XML = 1
+
+class LegacyAllegiancesFormat(enum.Enum):
+    T5TAB = 0
+    JSON  = 1
 
 _XmlFloatDecimalPlaces = 2
 
@@ -94,7 +107,7 @@ def _optionalConvertToFloat(
     except Exception as ex:
         raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to float for {elementName} in {identifier} ({str(ex)})')
 
-def sectorFileFormatDetect(content: str) -> typing.Optional[multiverse.SectorFormat]:
+def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
     hasSeparator = False
     foundNames = None
@@ -134,23 +147,23 @@ def sectorFileFormatDetect(content: str) -> typing.Optional[multiverse.SectorFor
         return None
 
     if (not hasComment) and (not hasSeparator):
-        return multiverse.SectorFormat.T5Tab
+        return SectorFormat.T5Tab
 
     if hasSeparator:
-        return multiverse.SectorFormat.T5Column
+        return SectorFormat.T5Column
 
     return None
 
 def readSector(
         content: str,
-        format: multiverse.SectorFormat,
+        format: SectorFormat,
         identifier: str, # File name or some other identifier, used for logging and error generation
         ) -> typing.Collection[multiverse.RawWorld]:
-    if format == multiverse.SectorFormat.T5Column:
+    if format == SectorFormat.T5Column:
         return readT5ColumnSector(
             content=content,
             identifier=identifier)
-    elif format == multiverse.SectorFormat.T5Tab:
+    elif format == SectorFormat.T5Tab:
         return readT5RowSector(
             content=content,
             identifier=identifier)
@@ -318,12 +331,12 @@ def _readT5RowWorld(
 
 def writeSector(
         worlds: typing.Collection[multiverse.RawWorld],
-        format: multiverse.SectorFormat,
+        format: SectorFormat,
         identifier: str
         ) -> str:
-    if format is multiverse.SectorFormat.T5Column:
+    if format is SectorFormat.T5Column:
         return writeT5ColumnSector(worlds, identifier)
-    elif format is multiverse.SectorFormat.T5Tab:
+    elif format is SectorFormat.T5Tab:
         return writeT5RowSector(worlds, identifier)
     else:
         raise RuntimeError(f'Unknown sector format {format} for {identifier}')
@@ -393,16 +406,16 @@ def writeT5RowSector(
 
     return content
 
-def metadataFileFormatDetect(content: str) -> typing.Optional[multiverse.MetadataFormat]:
+def metadataFileFormatDetect(content: str) -> typing.Optional[MetadataFormat]:
     try:
         xml.etree.ElementTree.fromstring(content)
-        return multiverse.MetadataFormat.XML
+        return MetadataFormat.XML
     except:
         pass
 
     try:
         json.loads(content)
-        return multiverse.MetadataFormat.JSON
+        return MetadataFormat.JSON
     except:
         pass
 
@@ -410,14 +423,14 @@ def metadataFileFormatDetect(content: str) -> typing.Optional[multiverse.Metadat
 
 def readMetadata(
         content: str,
-        format: multiverse.MetadataFormat,
+        format: MetadataFormat,
         identifier: str
         ) -> multiverse.RawMetadata:
-    if format == multiverse.MetadataFormat.XML:
+    if format == MetadataFormat.XML:
         return readXMLMetadata(
             content=content,
             identifier=identifier)
-    elif format == multiverse.MetadataFormat.JSON:
+    elif format == MetadataFormat.JSON:
         return readJSONMetadata(
             content=content,
             identifier=identifier)
@@ -915,14 +928,14 @@ def readJSONMetadata(
 
 def writeMetadata(
         metadata: multiverse.RawMetadata,
-        format: multiverse.MetadataFormat,
+        format: MetadataFormat,
         identifier: str
         ) -> str:
-    if format == multiverse.MetadataFormat.XML:
+    if format == MetadataFormat.XML:
         return writeXMLMetadata(
             metadata=metadata,
             identifier=identifier)
-    elif format == multiverse.MetadataFormat.JSON:
+    elif format == MetadataFormat.JSON:
         return writeJSONMetadata(
             metadata=metadata,
             identifier=identifier)
@@ -1444,3 +1457,105 @@ def writeUniverseInfo(
     universeElement['Sectors'] = sectorsElement
 
     return json.dumps(universeElement, indent=4).encode()
+
+def _detectLegacyAllegiancesFormat(
+        content: str
+        ) -> LegacyAllegiancesFormat:
+    try:
+        result = json.loads(content)
+        if result:
+            return LegacyAllegiancesFormat.JSON
+    except:
+        pass
+
+    return LegacyAllegiancesFormat.T5TAB
+
+def readT5LegacyAllegiances(
+        content: str
+        ) -> typing.List[multiverse.RawLegacyAllegiance]:
+    _, results = common.parseTabTableContent(content=content)
+
+    allegiances: typing.List[multiverse.RawLegacyAllegiance] = []
+    for index, allegiance in enumerate(results):
+        code = allegiance.get('Code')
+        if not code:
+            raise RuntimeError(f'No code specified for legacy allegiance {index + 1}')
+        name = allegiance.get('Name')
+        if not name:
+            raise RuntimeError(f'No name specified for legacy allegiance {index + 1}')
+        legacy = allegiance.get('Legacy')
+        if not legacy:
+            raise RuntimeError(f'No legacy code specified for legacy allegiance {index + 1}')
+        base = allegiance.get('BaseCode')
+        locations = allegiance.get('Location')
+        if locations is not None:
+            locations = locations.split('/')
+
+        allegiances.append(multiverse.RawLegacyAllegiance(
+            code=code,
+            name=name,
+            legacy=legacy,
+            base=base,
+            locations=locations))
+
+    return allegiances
+
+def readJsonLegacyAllegiances(
+        content: str
+        ) -> typing.List[multiverse.RawLegacyAllegiance]:
+    jsonList = json.loads(content)
+    if not isinstance(jsonList, list):
+        raise RuntimeError(f'Content is not a json list')
+
+    allegiances: typing.List[multiverse.RawLegacyAllegiance] = []
+    for index, allegiance in enumerate(jsonList):
+        if not isinstance(allegiance, dict):
+            raise RuntimeError(f'Item {index + 1} is not a json object')
+
+        code = allegiance.get('Code')
+        if not code:
+            raise RuntimeError(f'No code specified for legacy allegiance {index + 1}')
+        if not isinstance(code, str):
+            raise RuntimeError(f'Code specified for legacy allegiance {index + 1} is not a string')
+
+        name = allegiance.get('Name')
+        if not name:
+            raise RuntimeError(f'No name specified for legacy allegiance {index + 1}')
+        if not isinstance(name, str):
+            raise RuntimeError(f'Name specified for legacy allegiance {index + 1} is not a string')
+
+        legacy = allegiance.get('Legacy')
+        if not legacy:
+            raise RuntimeError(f'No legacy code specified for legacy allegiance {index + 1}')
+        if not isinstance(legacy, str):
+            raise RuntimeError(f'Legacy code specified for legacy allegiance {index + 1} is not a string')
+
+        base = allegiance.get('BaseCode')
+        if base is not None and not isinstance(base, str):
+            raise RuntimeError(f'Base code specified for legacy allegiance {index + 1} is not a string')
+
+        locations = allegiance.get('Location')
+        if locations is not None:
+            if not isinstance(locations, str):
+                raise RuntimeError(f'Locations specified for legacy allegiance {index + 1} is not a string')
+            locations = locations.split('/')
+
+        allegiances.append(multiverse.RawLegacyAllegiance(
+            code=code,
+            name=name,
+            legacy=legacy,
+            base=base,
+            locations=locations))
+
+    return allegiances
+
+def readLegacyAllegiances(
+        content: str
+        ) -> typing.List[multiverse.RawLegacyAllegiance]:
+    format = _detectLegacyAllegiancesFormat(content=content)
+    if format is LegacyAllegiancesFormat.T5TAB:
+        return readT5LegacyAllegiances(content=content)
+    elif format is LegacyAllegiancesFormat.JSON:
+        return readJsonLegacyAllegiances(content=content)
+
+    raise ValueError('Unrecognised legacy allegiances content format')

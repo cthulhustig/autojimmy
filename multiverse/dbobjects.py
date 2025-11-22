@@ -575,10 +575,12 @@ class DbAllegiance(object):
             self,
             code: str,
             name: str,
+            legacy: typing.Optional[str] = None,
             base: typing.Optional[str] = None
             ) -> None:
         self.setCode(code)
         self.setName(name)
+        self.setLegacy(legacy)
         self.setBase(base)
 
     def code(self) -> str:
@@ -592,6 +594,12 @@ class DbAllegiance(object):
 
     def setName(self, name: str) -> None:
         self._name = name
+
+    def legacy(self) -> typing.Optional[str]:
+        return self._legacy
+
+    def setLegacy(self, legacy: typing.Optional[str]) -> None:
+        self._legacy = legacy
 
     def base(self) -> typing.Optional[str]:
         return self._base

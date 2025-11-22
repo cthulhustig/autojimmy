@@ -2,14 +2,6 @@
 import enum
 import typing
 
-class SectorFormat(enum.Enum):
-    T5Column = 0, # aka Second Survey format
-    T5Tab = 1
-
-class MetadataFormat(enum.Enum):
-    JSON = 0
-    XML = 1
-
 # TODO: Need to change this method of accessing the world attributes to something
 # more standard
 class WorldAttribute(enum.Enum):
@@ -30,12 +22,17 @@ class WorldAttribute(enum.Enum):
 
 # TODO: I don't like the naming of all these RawObjects. It probably
 # makes sense for them to be Fs* (for filesystem) rather than Raw*
+# TODO: Get rid of the file index, there must be a way to a decent
+# error message without them. The don't really mean much for most
+# of the items as they're read from xml/json. It only really makes
+# any sense for worlds as it's the line number in the source file
 
 class RawWorld(object):
     def __init__(
             self,
             lineNumber: int
             ) -> None:
+        super().__init__()
         self._lineNumber = lineNumber
         self._attributes: typing.Dict[WorldAttribute, str] = {}
 
@@ -63,6 +60,7 @@ class RawAllegiance(object):
             base: typing.Optional[str],
             fileIndex: int
             ) -> None:
+        super().__init__()
         self._code = code
         self._name = name
         self._base = base
@@ -96,6 +94,7 @@ class RawRoute(object):
             width: typing.Optional[float],
             fileIndex: int
             ) -> None:
+        super().__init__()
         self._startHex = startHex
         self._endHex = endHex
         self._startOffsetX = startOffsetX
@@ -162,6 +161,7 @@ class RawBorder(object):
             colour: typing.Optional[str],
             fileIndex: int
             ) -> None:
+        super().__init__()
         self._hexList = hexList
         self._allegiance = allegiance
         self._showLabel = showLabel
@@ -219,6 +219,7 @@ class RawLabel(object):
             offsetY: typing.Optional[float],
             fileIndex: int
             ) -> None:
+        super().__init__()
         self._text = text
         self._hex = hex
         self._colour = colour
@@ -267,6 +268,7 @@ class RawRegion(object):
             colour: typing.Optional[str],
             fileIndex: int
             ) -> None:
+        super().__init__()
         self._hexList = hexList
         self._showLabel = showLabel
         self._wrapLabel = wrapLabel
@@ -312,6 +314,7 @@ class RawSource(object):
             publisher: typing.Optional[str],
             reference: typing.Optional[str]
             ) -> None:
+        super().__init__()
         self._publication = publication
         self._publisher = publisher
         self._author = author
@@ -336,6 +339,7 @@ class RawSources(object):
             primary: typing.Optional[RawSource],
             products: typing.Optional[typing.Collection[RawSource]]
             ) -> None:
+        super().__init__()
         self._credits = credits
         self._primary = primary
         self._products = products
@@ -370,6 +374,7 @@ class RawMetadata(object):
             sources: typing.Optional[RawSources],
             styleSheet: typing.Optional[str]
             ) -> None:
+        super().__init__()
         self._canonicalName = canonicalName
         self._alternateNames = alternateNames
         self._nameLanguages = nameLanguages
@@ -457,6 +462,7 @@ class RawNameInfo(object):
             language: typing.Optional[str],
             source: typing.Optional[str]
             ):
+        super().__init__()
         self._name = name
         self._language = language
         self._source = source
@@ -480,6 +486,7 @@ class RawSectorInfo(object):
             tags: typing.Optional[str],
             nameInfos: typing.Optional[typing.Collection[RawNameInfo]],
             ) -> None:
+        super().__init__()
         self._x = x
         self._y = y
         self._milieu = milieu
@@ -510,7 +517,41 @@ class RawUniverseInfo(object):
             self,
             sectorInfos: typing.Collection[RawSectorInfo]
             ) -> None:
+        super().__init__()
         self._sectorInfos = sectorInfos
 
     def sectorInfos(self) -> typing.Collection[RawSectorInfo]:
         return self._sectorInfos
+
+class RawLegacyAllegiance(object):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            legacy: str,
+            base: typing.Optional[str],
+            locations: typing.Optional[typing.Collection[str]]
+            ) -> None:
+        super().__init__()
+        self._code = code
+        self._name = name
+        self._legacy = legacy
+        self._base = base
+        self._locations = locations
+
+    def code(self) -> str:
+        return self._code
+
+    def name(self) -> str:
+        return self._name
+
+    def legacy(self) -> str:
+        return self._legacy
+
+    def base(self) -> typing.Optional[str]:
+        return self._base
+
+    # Locations are specified as sector abbreviations. No locations mean
+    # the allegiance applies everywhere
+    def locations(self) -> typing.Optional[typing.Collection[str]]:
+        return self._locations
