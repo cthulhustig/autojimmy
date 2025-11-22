@@ -262,7 +262,7 @@ class MultiWorldTraderJob(TraderJobBase):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
-        self._routingType = routingType,
+        self._routingType = routingType
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
