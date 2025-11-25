@@ -2,10 +2,124 @@ import logging
 import multiverse
 import typing
 
+# These unofficial allegiances are taken from Traveller Map. It has a
+# comment saying they're for M1120 but as far as I can tell it uses
+# them no mater which milieu you have selected. In my implementation
+# they are only used for M1120 & M1121
+_T5UnofficialM112xAllegiances = [
+    # -----------------------
+    # Unofficial/Unreviewed
+    # -----------------------
+    multiverse.RawStockAllegiance(code='FdAr', legacy='Fa', base=None, name='Federation of Arden' ),
+    multiverse.RawStockAllegiance(code='BoWo', legacy='Bw', base=None, name='Border Worlds' ),
+    multiverse.RawStockAllegiance(code='LuIm', legacy='Li', base='Im', name='Lucan\'s Imperium' ),
+    multiverse.RawStockAllegiance(code='MaSt', legacy='Ma', base='Im', name='Maragaret\'s Domain' ),
+    multiverse.RawStockAllegiance(code='BaCl', legacy='Bc', base=None, name='Backman Cluster' ),
+    multiverse.RawStockAllegiance(code='FdDa', legacy='Fd', base='Im', name='Federation of Daibei' ),
+    multiverse.RawStockAllegiance(code='FdIl', legacy='Fi', base='Im', name='Federation of Ilelish' ),
+    multiverse.RawStockAllegiance(code='AvCn', legacy='Ac', base=None, name='Avalar Consulate' ),
+    multiverse.RawStockAllegiance(code='CoAl', legacy='Ca', base=None, name='Corsair Alliance' ),
+    multiverse.RawStockAllegiance(code='StIm', legacy='St', base='Im', name='Strephon\'s Worlds' ),
+    multiverse.RawStockAllegiance(code='ZiSi', legacy='Rv', base='Im', name='Restored Vilani Imperium' ), # Ziru Sirka
+    multiverse.RawStockAllegiance(code='VA16', legacy='V6', base=None, name='Assemblage of 1116' ),
+    multiverse.RawStockAllegiance(code='CRVi', legacy='CV', base=None, name='Vilani Cultural Region' ),
+    multiverse.RawStockAllegiance(code='CRGe', legacy='CG', base=None, name='Geonee Cultural Region' ),
+    multiverse.RawStockAllegiance(code='CRSu', legacy='CS', base=None, name='Suerrat Cultural Region' ),
+    multiverse.RawStockAllegiance(code='CRAk', legacy='CA', base=None, name='Anakudnu Cultural Region' )
+    ]
+_T5UnofficialAllegiancesMap = {
+    'M1120': _T5UnofficialM112xAllegiances,
+    'M1121': _T5UnofficialM112xAllegiances,
+    }
+
+# These allegiances are take from Traveller Map (SecondSurvey.cs)
+# Cases where T5SS codes don't apply: e.g. the Hierate or Imperium, or where no codes exist yet
+_LegacyAllegiances = [
+    multiverse.RawStockAllegiance(code='As', legacy='As', base=None, name='Aslan Hierate' ), # T5SS: Clan, client state, or unknown; no generic code
+    multiverse.RawStockAllegiance(code='Dr', legacy='Dr', base=None, name='Droyne' ), # T5SS: Polity name or unaligned w/ Droyne population
+    multiverse.RawStockAllegiance(code='Im', legacy='Im', base=None, name='Third Imperium' ), # T5SS: Domain or cultural region; no generic code
+    multiverse.RawStockAllegiance(code='Kk', legacy='Kk', base=None, name='The Two Thousand Worlds' ), # T5SS: (Not yet assigned)
+]
+
+# These mappings are taken from Traveller Map (SecondSurvey.cs)
+# Overrides or additions where Legacy -> T5SS code mapping is ambiguous.
+_LegacyAllegianceToT5Overrides = {
+    'J-': 'JuPr',
+    'Jp': 'JuPr',
+    'Ju': 'JuPr',
+    'Na': 'NaHu',
+    'So': 'SoCf',
+    'Va': 'NaVa',
+    'Zh': 'ZhCo',
+    '??': 'XXXX',
+    '--': 'XXXX'
+}
+
+# This is intended to mimic the logic of GetStockAllegianceFromCode from the
+# Traveller Map source code (SecondSurvey.cs). That code handles the precedence
+# of the various legacy allegiances by checking different maps in a specific
+# order each time it's called. My implementation creates a single map with all
+# the allegiances for the given sector. The way the map is populated is key to
+# maintaining the same precedence as Traveller Map
+def _calculateStockAllegiances(
+        milieu: str,
+        rawMetadata: multiverse.RawMetadata,
+        rawStockAllegiances: typing.Optional[typing.Collection[
+            multiverse.RawStockAllegiance
+            ]] = None,
+    ) -> typing.Dict[
+        str, # Code
+        multiverse.RawStockAllegiance]:
+    rawStockAllegianceMap: typing.Dict[
+        str, # Code
+        multiverse.RawStockAllegiance] = {}
+
+    if rawStockAllegiances:
+        rawAbbreviation = rawMetadata.abbreviation()
+        for rawStockAllegiance in rawStockAllegiances:
+            rawLocations = rawStockAllegiance.locations()
+            if rawLocations:
+                # The database allegiance if for specific locations so only use it if
+                # it specifies this sectors abbreviation or 'various'. I can't find
+                # an explicit definition for various but all that can really be done with
+                # it is to treat it as global and use it for any sector (the same as if
+                # no locations had been specified)
+                for rawLocation in rawLocations:
+                    if rawLocation == rawAbbreviation or rawLocation.lower() == 'various':
+                        rawStockAllegianceMap[rawStockAllegiance.code()] = rawStockAllegiance
+                        break
+            else:
+                # The database allegiance is global so it can be used for this sector
+                rawStockAllegianceMap[rawStockAllegiance.code()] = rawStockAllegiance
+
+    rawMilieuAllegiances = _T5UnofficialAllegiancesMap.get(milieu)
+    if rawMilieuAllegiances:
+        for rawStockAllegiance in rawMilieuAllegiances:
+            rawStockAllegianceMap[rawStockAllegiance.code()] = rawStockAllegiance
+
+    for code, override in _LegacyAllegianceToT5Overrides:
+        if code not in rawStockAllegianceMap:
+            rawStockAllegiance = rawStockAllegianceMap.get(override)
+            if rawStockAllegiance:
+                rawStockAllegianceMap[code] = rawStockAllegiance
+
+    for rawStockAllegiance in _LegacyAllegiances:
+        if rawStockAllegiance.code() not in rawStockAllegianceMap:
+            rawStockAllegianceMap[rawStockAllegiance.code()] = rawStockAllegiance
+
+    # Add a mapping for each allegiances legacy code. This is the lowest priority
+    # mapping so is only used if there is no other mapping for that code
+    for rawStockAllegiance in list(rawStockAllegianceMap.values()):
+        if rawStockAllegiance.legacy() not in rawStockAllegianceMap:
+            rawStockAllegianceMap[rawStockAllegiance.legacy()] = rawStockAllegiance
+
+    return rawStockAllegianceMap
+
+
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
-def readSnapshotLegacyAllegiances() -> typing.List[multiverse.RawLegacyAllegiance]:
-    return multiverse.readT5LegacyAllegiances(
+def readSnapshotStockAllegiances() -> typing.List[multiverse.RawStockAllegiance]:
+    return multiverse.readTabStockAllegiances(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialAllegiancesPath))
 
@@ -17,8 +131,8 @@ def convertRawUniverseToDbUniverse(
             multiverse.RawMetadata,
             typing.Collection[multiverse.RawWorld]
             ]],
-        rawLegacyAllegiances: typing.Optional[typing.Collection[
-            multiverse.RawLegacyAllegiance
+        rawStockAllegiances: typing.Optional[typing.Collection[
+            multiverse.RawStockAllegiance
             ]] = None,
         universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
@@ -38,7 +152,7 @@ def convertRawUniverseToDbUniverse(
             milieu=milieu,
             rawMetadata=rawMetadata,
             rawSystems=rawSystems,
-            rawLegacyAllegiances=rawLegacyAllegiances,
+            rawStockAllegiances=rawStockAllegiances,
             isCustom=isCustom))
 
     if progressCallback:
@@ -54,8 +168,8 @@ def convertRawSectorToDbSector(
         rawMetadata: multiverse.RawMetadata,
         rawSystems: typing.Collection[multiverse.RawWorld],
         isCustom: bool,
-        rawLegacyAllegiances: typing.Optional[typing.Collection[
-            multiverse.RawLegacyAllegiance
+        rawStockAllegiances: typing.Optional[typing.Collection[
+            multiverse.RawStockAllegiance
             ]] = None,
         sectorId: typing.Optional[str] = None,
         universeId: typing.Optional[str] = None,
@@ -84,64 +198,88 @@ def convertRawSectorToDbSector(
                     publisher=product.publisher(),
                     reference=product.reference()))
 
+        rawStockAllegianceMap = _calculateStockAllegiances(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawStockAllegiances=rawStockAllegiances)
+
+        rawUsedAllegianceCodes: typing.Set[str] = set()
+        if rawSystems:
+            for rawWorld in rawSystems:
+                rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+                if rawAllegianceCode:
+                    rawUsedAllegianceCodes.add(rawAllegianceCode)
+        if rawMetadata.borders():
+            for rawBorder in rawMetadata.borders():
+                rawAllegianceCode = rawBorder.allegiance()
+                if rawAllegianceCode:
+                    rawUsedAllegianceCodes.add(rawAllegianceCode)
+
+        rawDefinedAllegianceCodes: typing.Set[str] = set()
         dbAllegiances = None
         if rawMetadata.allegiances():
             dbAllegiances = []
             for rawAllegiance in rawMetadata.allegiances():
+                rawAllegianceCode = rawAllegiance.code()
+                rawAllegianceName = rawAllegiance.name()
+                rawAllegianceBase = rawAllegiance.base()
+                rawAllegianceLegacy = None
+
+                rawStockAllegiance = rawStockAllegianceMap.get(rawAllegianceCode)
+                if rawStockAllegiance:
+                    # Use the base code from the stock allegiance if we don't already
+                    # have one
+                    if not rawAllegianceBase:
+                        rawAllegianceBase = rawStockAllegiance.base()
+
+                    # Copy the legacy code from the stock allegiance as the allegiances
+                    # specified in the metadata don't specify them
+                    # TODO: I need to be VERY sure this isn't going to result in worlds
+                    # and borders having legacy allegiances drawn that they shouldn't have
+                    rawAllegianceLegacy = rawStockAllegiance.legacy()
+
                 dbAllegiances.append(multiverse.DbAllegiance(
-                    code=rawAllegiance.code(),
-                    name=rawAllegiance.name(),
-                    base=rawAllegiance.base()))
+                    code=rawAllegianceCode,
+                    name=rawAllegianceName,
+                    legacy=rawAllegianceLegacy,
+                    base=rawAllegianceBase))
+                rawDefinedAllegianceCodes.add(rawAllegianceCode)
 
+        rawMissingAllegianceCodes: typing.Set[str] = rawUsedAllegianceCodes - rawDefinedAllegianceCodes
+        if rawMissingAllegianceCodes:
+            # There are allegiances that are used but not defined, try to use the
+            # stock allegiances to populate entries in the database. This is only
+            # expected to resolve any allegiances if custom sector data is being
+            # converted. If the data being converted comes from a snapshot, it's
+            # expected that Traveller Map had already resolved everything as much
+            # as possible when the snapshot was created. There may be worlds/borders
+            # that refer to allegiances that aren't defined but it's not expected
+            # that this code will find a legacy code that matches the undefined
+            # allegiance.
 
-        # TODO: Remove debug code
-        rawGlobalLegacyAllegianceMap: typing.Dict[
-            str, # Code
-            multiverse.RawLegacyAllegiance] = {}
-        rawLocalLegacyAllegianceMap: typing.Dict[
-            str, # Code
-            multiverse.RawLegacyAllegiance] = {}
-        if rawLegacyAllegiances:
-            for rawLegacyAllegiance in rawLegacyAllegiances:
-                locations = rawLegacyAllegiance.locations()
-                isGlobal = not locations
-                if locations:
-                    hasVarious = False
-                    for location in locations:
-                        if location.lower() == 'various':
-                            hasVarious = True
-                            break
-                    if not hasVarious:
-                        isGlobal = False
+            if dbAllegiances is None:
+                dbAllegiances = []
 
-                if isGlobal:
-                    assert(rawLegacyAllegiance.code() not in rawGlobalLegacyAllegianceMap) # TODO:Remove debug code
-                    rawGlobalLegacyAllegianceMap[rawLegacyAllegiance.code()] = rawLegacyAllegiance
-                    rawGlobalLegacyAllegianceMap[rawLegacyAllegiance.legacy()] = rawLegacyAllegiance
+            for rawAllegianceCode in rawMissingAllegianceCodes:
+                rawStockAllegiance = rawStockAllegianceMap.get(rawAllegianceCode)
+                if rawStockAllegiance:
+                    # NOTE: It's important when creating the database allegiance that we use the
+                    # code taken from the rawStockAllegiance rather than the code that was used to
+                    # look it up as we want the actual code for the allegiance rather than whatever
+                    # mapping code might have been used to look it up
+                    # TODO: This should probably log that it's falling back to the stock allegiance
+                    dbAllegiances.append(multiverse.DbAllegiance(
+                        code=rawStockAllegiance.code(),
+                        name=rawStockAllegiance.name(),
+                        legacy=rawStockAllegiance.legacy(),
+                        base=rawStockAllegiance.base()))
                 else:
-                    assert(rawLegacyAllegiance.code() not in rawLocalLegacyAllegianceMap) # TODO:Remove debug code
-                    rawLocalLegacyAllegianceMap[rawLegacyAllegiance.code()] = rawLegacyAllegiance
-                    rawLocalLegacyAllegianceMap[rawLegacyAllegiance.legacy()] = rawLegacyAllegiance
+                    # TODO: This should probably log saying that there is a missing allegiance
+                    dbAllegiances.append(multiverse.DbAllegiance(
+                        code=rawAllegianceCode,
+                        name='Unknown'))
+                    print(f'Missing: Sector {rawMetadata.canonicalName()} from {milieu} allegiance {rawAllegianceCode}')
 
-        rawSectorAllegianceMap: typing.Dict[
-            str, # Code
-            multiverse.RawLegacyAllegiance] = {}
-        if rawMetadata.allegiances():
-            for rawAllegiance in rawMetadata.allegiances():
-                rawSectorAllegianceMap[rawAllegiance.code()] = rawAllegiance
-
-                if rawAllegiance.code() in rawGlobalLegacyAllegianceMap:
-                    rawGLegacyAllegiance = rawGlobalLegacyAllegianceMap.get(rawAllegiance.code())
-                    #print(f'Collision: {rawMetadata.canonicalName()} {milieu} {rawAllegiance.code()} {rawAllegiance.name()} {rawGLegacyAllegiance.name()}')
-                if rawAllegiance.code() in rawGlobalLegacyAllegianceMap:
-                    rawGLegacyAllegiance = rawGlobalLegacyAllegianceMap.get(rawAllegiance.code())
-                    #print(f'Collision: {rawMetadata.canonicalName()} {milieu} {rawAllegiance.code()} {rawAllegiance.name()} {rawGLegacyAllegiance.name()}')
-        # TODO: Remove debug code above
-
-
-
-
-        notFoundAllegiances = set() # TODO: Remove debug code
         dbSystems = None
         if rawSystems:
             dbSystems = []
@@ -156,20 +294,15 @@ def convertRawSectorToDbSector(
 
                 rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
 
-                # TODO: Remove debug code
-                allegiance = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
-                if allegiance:
-                    if allegiance not in rawSectorAllegianceMap:
-                        if allegiance in rawLocalLegacyAllegianceMap:
-                            rawLegacyAllegiance = rawLocalLegacyAllegianceMap.get(allegiance)
-                            #print(f'Found Local: {rawMetadata.canonicalName()} {milieu} {allegiance} {rawLegacyAllegiance.name()}')
-                        elif allegiance in rawGlobalLegacyAllegianceMap:
-                            rawLegacyAllegiance = rawGlobalLegacyAllegianceMap.get(allegiance)
-                            #print(f'Found Global: {rawMetadata.canonicalName()} {milieu} {allegiance} {rawLegacyAllegiance.name()}')
-                        else:
-                            #print(f'Not Found: {rawMetadata.canonicalName()} {milieu} {allegiance}')
-                            notFoundAllegiances.add(allegiance)
-
+                rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+                if rawAllegianceCode not in rawDefinedAllegianceCodes:
+                    # The allegiance used by this world isn't specified in the metadata so
+                    # it may be using a stock allegiance. If it is, use the primary code
+                    # rather than the legacy code
+                    # TODO: Can this still happen with the recent changes I've made?
+                    rawStockAllegiance = rawStockAllegianceMap.get(rawAllegianceCode)
+                    if rawStockAllegiance:
+                        rawAllegianceCode = rawStockAllegiance.code()
 
                 dbSystems.append(multiverse.DbSystem(
                     hexX=int(rawHex[:2]),
@@ -187,11 +320,8 @@ def convertRawSectorToDbSector(
                     zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
                     pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
                     systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
-                    allegiance=rawWorld.attribute(multiverse.WorldAttribute.Allegiance),
+                    allegiance=rawAllegianceCode,
                     stellar=rawWorld.attribute(multiverse.WorldAttribute.Stellar)))
-
-        if notFoundAllegiances:
-            print(f'{rawMetadata.canonicalName()} {milieu} {notFoundAllegiances}')
 
         dbRoutes = None
         if rawMetadata.routes():
@@ -232,9 +362,19 @@ def convertRawSectorToDbSector(
                 rawWrapLabel = rawBorder.wrapLabel()
                 rawLabelHex = rawBorder.labelHex()
 
+                rawAllegianceCode = rawBorder.allegiance()
+                if rawAllegianceCode not in rawDefinedAllegianceCodes:
+                    # The allegiance used by this world isn't specified in the metadata so
+                    # it may be using a stock allegiance. If it is, use the primary code
+                    # rather than the legacy code
+                    # TODO: Can this still happen with the recent changes I've made?
+                    rawStockAllegiance = rawStockAllegianceMap.get(rawAllegianceCode)
+                    if rawStockAllegiance:
+                        rawAllegianceCode = rawStockAllegiance.code()
+
                 dbBorders.append(multiverse.DbBorder(
                     hexes=dbHexes,
-                    showLabel=rawShowLabel if rawShowLabel is not None else False,
+                    showLabel=rawShowLabel if rawShowLabel is not None else True,
                     wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
                     label=rawLabel,
                     labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
@@ -243,7 +383,7 @@ def convertRawSectorToDbSector(
                     labelOffsetY=rawBorder.labelOffsetY(),
                     colour=rawBorder.colour(),
                     style=rawBorder.style(),
-                    allegiance=rawBorder.allegiance()))
+                    allegiance=rawAllegianceCode))
 
         dbRegions = None
         if rawMetadata.regions():
@@ -260,7 +400,7 @@ def convertRawSectorToDbSector(
 
                 dbRegions.append(multiverse.DbRegion(
                     hexes=dbHexes,
-                    showLabel=rawShowLabel if rawShowLabel is not None else False,
+                    showLabel=rawShowLabel if rawShowLabel is not None else True,
                     wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
                     label=rawRegion.label(),
                     labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,

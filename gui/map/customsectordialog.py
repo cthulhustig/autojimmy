@@ -469,9 +469,9 @@ class _NewSectorDialog(gui.DialogEx):
 
 
         try:
-            rawLegacyAllegiances = multiverse.readSnapshotLegacyAllegiances()
+            rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
         except:
-            message = 'Failed to load legacy allegiances.'
+            message = 'Failed to load stock allegiances.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -485,7 +485,7 @@ class _NewSectorDialog(gui.DialogEx):
                 milieu=milieu.name,
                 rawMetadata=rawMetadata,
                 rawSystems=rawWorlds,
-                rawLegacyAllegiances=rawLegacyAllegiances,
+                rawStockAllegiances=rawStockAllegiances,
                 isCustom=True,
                 universeId=multiverse.customUniverseId())
             multiverse.MultiverseDb.instance().saveSector(sector=dbSector)

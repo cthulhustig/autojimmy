@@ -118,7 +118,7 @@ def createHexToolTip(
 
     if world:
         toolTip += '<li><span>Total Worlds: {count}</span></li>'.format(
-            count=world.numberOfSystemWorlds() if world.numberOfSystemWorlds() is not None else 'Unknown/Unspecified')
+            count=world.numberOfSystemWorlds() if world.numberOfSystemWorlds() is not None else 'Unknown')
 
     if world:
         allegiance = world.allegiance()

@@ -16,8 +16,8 @@ class MetadataFormat(enum.Enum):
     JSON = 0
     XML = 1
 
-class LegacyAllegiancesFormat(enum.Enum):
-    T5TAB = 0
+class StockAllegiancesFormat(enum.Enum):
+    TAB = 0
     JSON  = 1
 
 _XmlFloatDecimalPlaces = 2
@@ -1458,40 +1458,40 @@ def writeUniverseInfo(
 
     return json.dumps(universeElement, indent=4).encode()
 
-def _detectLegacyAllegiancesFormat(
+def _detectStockAllegiancesFormat(
         content: str
-        ) -> LegacyAllegiancesFormat:
+        ) -> StockAllegiancesFormat:
     try:
         result = json.loads(content)
         if result:
-            return LegacyAllegiancesFormat.JSON
+            return StockAllegiancesFormat.JSON
     except:
         pass
 
-    return LegacyAllegiancesFormat.T5TAB
+    return StockAllegiancesFormat.TAB
 
-def readT5LegacyAllegiances(
+def readTabStockAllegiances(
         content: str
-        ) -> typing.List[multiverse.RawLegacyAllegiance]:
+        ) -> typing.List[multiverse.RawStockAllegiance]:
     _, results = common.parseTabTableContent(content=content)
 
-    allegiances: typing.List[multiverse.RawLegacyAllegiance] = []
+    allegiances: typing.List[multiverse.RawStockAllegiance] = []
     for index, allegiance in enumerate(results):
         code = allegiance.get('Code')
         if not code:
-            raise RuntimeError(f'No code specified for legacy allegiance {index + 1}')
+            raise RuntimeError(f'No code specified for stock allegiance {index + 1}')
         name = allegiance.get('Name')
         if not name:
-            raise RuntimeError(f'No name specified for legacy allegiance {index + 1}')
+            raise RuntimeError(f'No name specified for stock allegiance {index + 1}')
         legacy = allegiance.get('Legacy')
         if not legacy:
-            raise RuntimeError(f'No legacy code specified for legacy allegiance {index + 1}')
+            raise RuntimeError(f'No legacy code specified for stock allegiance {index + 1}')
         base = allegiance.get('BaseCode')
         locations = allegiance.get('Location')
         if locations is not None:
             locations = locations.split('/')
 
-        allegiances.append(multiverse.RawLegacyAllegiance(
+        allegiances.append(multiverse.RawStockAllegiance(
             code=code,
             name=name,
             legacy=legacy,
@@ -1500,47 +1500,47 @@ def readT5LegacyAllegiances(
 
     return allegiances
 
-def readJsonLegacyAllegiances(
+def readJsonStockAllegiances(
         content: str
-        ) -> typing.List[multiverse.RawLegacyAllegiance]:
+        ) -> typing.List[multiverse.RawStockAllegiance]:
     jsonList = json.loads(content)
     if not isinstance(jsonList, list):
         raise RuntimeError(f'Content is not a json list')
 
-    allegiances: typing.List[multiverse.RawLegacyAllegiance] = []
+    allegiances: typing.List[multiverse.RawStockAllegiance] = []
     for index, allegiance in enumerate(jsonList):
         if not isinstance(allegiance, dict):
             raise RuntimeError(f'Item {index + 1} is not a json object')
 
         code = allegiance.get('Code')
         if not code:
-            raise RuntimeError(f'No code specified for legacy allegiance {index + 1}')
+            raise RuntimeError(f'No code specified for stock allegiance {index + 1}')
         if not isinstance(code, str):
-            raise RuntimeError(f'Code specified for legacy allegiance {index + 1} is not a string')
+            raise RuntimeError(f'Code specified for stock allegiance {index + 1} is not a string')
 
         name = allegiance.get('Name')
         if not name:
-            raise RuntimeError(f'No name specified for legacy allegiance {index + 1}')
+            raise RuntimeError(f'No name specified for stock allegiance {index + 1}')
         if not isinstance(name, str):
-            raise RuntimeError(f'Name specified for legacy allegiance {index + 1} is not a string')
+            raise RuntimeError(f'Name specified for stock allegiance {index + 1} is not a string')
 
         legacy = allegiance.get('Legacy')
         if not legacy:
-            raise RuntimeError(f'No legacy code specified for legacy allegiance {index + 1}')
+            raise RuntimeError(f'No legacy code specified for stock allegiance {index + 1}')
         if not isinstance(legacy, str):
-            raise RuntimeError(f'Legacy code specified for legacy allegiance {index + 1} is not a string')
+            raise RuntimeError(f'Legacy code specified for stock allegiance {index + 1} is not a string')
 
         base = allegiance.get('BaseCode')
         if base is not None and not isinstance(base, str):
-            raise RuntimeError(f'Base code specified for legacy allegiance {index + 1} is not a string')
+            raise RuntimeError(f'Base code specified for stock allegiance {index + 1} is not a string')
 
         locations = allegiance.get('Location')
         if locations is not None:
             if not isinstance(locations, str):
-                raise RuntimeError(f'Locations specified for legacy allegiance {index + 1} is not a string')
+                raise RuntimeError(f'Locations specified for stock allegiance {index + 1} is not a string')
             locations = locations.split('/')
 
-        allegiances.append(multiverse.RawLegacyAllegiance(
+        allegiances.append(multiverse.RawStockAllegiance(
             code=code,
             name=name,
             legacy=legacy,
@@ -1549,13 +1549,13 @@ def readJsonLegacyAllegiances(
 
     return allegiances
 
-def readLegacyAllegiances(
+def readStockAllegiances(
         content: str
-        ) -> typing.List[multiverse.RawLegacyAllegiance]:
-    format = _detectLegacyAllegiancesFormat(content=content)
-    if format is LegacyAllegiancesFormat.T5TAB:
-        return readT5LegacyAllegiances(content=content)
-    elif format is LegacyAllegiancesFormat.JSON:
-        return readJsonLegacyAllegiances(content=content)
+        ) -> typing.List[multiverse.RawStockAllegiance]:
+    format = _detectStockAllegiancesFormat(content=content)
+    if format is StockAllegiancesFormat.TAB:
+        return readTabStockAllegiances(content=content)
+    elif format is StockAllegiancesFormat.JSON:
+        return readJsonStockAllegiances(content=content)
 
-    raise ValueError('Unrecognised legacy allegiances content format')
+    raise ValueError('Unrecognised stock allegiances content format')

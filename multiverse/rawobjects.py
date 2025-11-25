@@ -523,14 +523,14 @@ class RawUniverseInfo(object):
     def sectorInfos(self) -> typing.Collection[RawSectorInfo]:
         return self._sectorInfos
 
-class RawLegacyAllegiance(object):
+class RawStockAllegiance(object):
     def __init__(
             self,
             code: str,
             name: str,
             legacy: str,
-            base: typing.Optional[str],
-            locations: typing.Optional[typing.Collection[str]]
+            base: typing.Optional[str] = None,
+            locations: typing.Optional[typing.Collection[str]] = None
             ) -> None:
         super().__init__()
         self._code = code

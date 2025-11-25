@@ -1309,7 +1309,7 @@ class MultiverseDb(object):
             timestampContent = file.read()
         importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
 
-        rawLegacyAllegiances = multiverse.readSnapshotLegacyAllegiances()
+        rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
 
         universePath = os.path.join(directoryPath, 'milieu')
         milieuSectors: typing.List[typing.Tuple[
@@ -1385,7 +1385,7 @@ class MultiverseDb(object):
             universeName='Default Universe',
             isCustom=False,
             rawSectors=rawData,
-            rawLegacyAllegiances=rawLegacyAllegiances,
+            rawStockAllegiances=rawStockAllegiances,
             progressCallback=progressCallback)
 
         self._internalDeleteUniverse(

@@ -634,7 +634,7 @@ class RenderContext(object):
                     continue
 
                 subsectorName = subsector.name()
-                if not subsectorName:
+                if not subsectorName or subsector.isNameGenerated():
                     continue
 
                 ulHex, brHex = subsectorIndex.hexExtent()
