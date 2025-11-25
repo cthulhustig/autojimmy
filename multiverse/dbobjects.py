@@ -192,13 +192,13 @@ class DbRoute(object):
         self.setColour(colour)
         self.setWidth(width)
 
-    def id(self) -> str:
-        return self._id
-
     # TODO: As long as I only allow saving at the sector level, I don't think
     # having the id as part of the structure makes sense as we always know
     # what sector it's part of. The same goes for the other objects that also
     # have the sector id
+    def id(self) -> str:
+        return self._id
+
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
 

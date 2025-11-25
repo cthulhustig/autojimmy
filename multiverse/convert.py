@@ -297,9 +297,10 @@ def convertRawSectorToDbSector(
                 rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
                 if rawAllegianceCode not in rawDefinedAllegianceCodes:
                     # The allegiance used by this world isn't specified in the metadata so
-                    # it may be using a stock allegiance. If it is, use the primary code
-                    # rather than the legacy code
-                    # TODO: Can this still happen with the recent changes I've made?
+                    # it may be using a stock allegiance. If it is, use the code from the
+                    # stock allegiance rather than the code that was used to look it up.
+                    # The system might be using a legacy code that is mapped to a stock
+                    # allegiance and we want to use the real code in the database
                     rawStockAllegiance = rawStockAllegianceMap.get(rawAllegianceCode)
                     if rawStockAllegiance:
                         rawAllegianceCode = rawStockAllegiance.code()
@@ -365,9 +366,10 @@ def convertRawSectorToDbSector(
                 rawAllegianceCode = rawBorder.allegiance()
                 if rawAllegianceCode not in rawDefinedAllegianceCodes:
                     # The allegiance used by this world isn't specified in the metadata so
-                    # it may be using a stock allegiance. If it is, use the primary code
-                    # rather than the legacy code
-                    # TODO: Can this still happen with the recent changes I've made?
+                    # it may be using a stock allegiance. If it is, use the code from the
+                    # stock allegiance rather than the code that was used to look it up.
+                    # The border might be using a legacy code that is mapped to a stock
+                    # allegiance and we want to use the real code in the database
                     rawStockAllegiance = rawStockAllegianceMap.get(rawAllegianceCode)
                     if rawStockAllegiance:
                         rawAllegianceCode = rawStockAllegiance.code()

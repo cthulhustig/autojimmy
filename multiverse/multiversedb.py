@@ -9,11 +9,6 @@ import threading
 import typing
 
 # TODO: Need to handle updating db after snapshot update
-# TODO: Need to handle the case where the version the default universe that
-# comes in the install directory is newer than the version that is in the
-# overlay directory. The snapshot manager should handle deleting the old
-# snapshot (so the install is used) but I'll need something to trigger
-# reimporting the data from the install directory into the database
 # TODO: When updating snapshot I'll need to do something to make sure notes
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
