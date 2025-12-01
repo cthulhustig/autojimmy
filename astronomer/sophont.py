@@ -1,7 +1,5 @@
-import common
 import multiverse
 import threading
-import typing
 
 class SophontManager(object):
     _T5OfficialSophontsPath = "t5ss/sophont_codes.tab"
@@ -29,20 +27,14 @@ class SophontManager(object):
             return None
         return self._sophontMap[code]
 
-    def allSophontCodes(self) -> typing.Iterable[str]:
-        return self._sophontMap.keys()
-
     # This function assumes it's only called once when the singleton is created and that
     # the mutex is locked
     # TODO: Should these live in the database a well?
     def _loadSophonts(self) -> None:
-        _, results = common.parseTabTableContent(
+        rawSophonts = multiverse.readStockSophonts(
             content=multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=SophontManager._T5OfficialSophontsPath))
 
-        for sophont in results:
-            code = sophont['Code']
-            name = sophont['Name']
-
-            if code not in self._sophontMap:
-                self._sophontMap[code] = name
+        for rawSophont in rawSophonts:
+            if rawSophont.code() not in self._sophontMap:
+                self._sophontMap[rawSophont.code()] = rawSophont.name()

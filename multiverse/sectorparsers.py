@@ -20,6 +20,10 @@ class StockAllegiancesFormat(enum.Enum):
     TAB = 0
     JSON  = 1
 
+class StockSophontsFormat(enum.Enum):
+    TAB = 0
+    JSON  = 1
+
 _XmlFloatDecimalPlaces = 2
 
 _HeaderPattern = re.compile(r'(?:([\w{}()\[\]]+)\s*)')
@@ -1487,16 +1491,14 @@ def readTabStockAllegiances(
         if not legacy:
             raise RuntimeError(f'No legacy code specified for stock allegiance {index + 1}')
         base = allegiance.get('BaseCode')
-        locations = allegiance.get('Location')
-        if locations is not None:
-            locations = locations.split('/')
+        location = allegiance.get('Location')
 
         allegiances.append(multiverse.RawStockAllegiance(
             code=code,
             name=name,
             legacy=legacy,
             base=base,
-            locations=locations))
+            location=location))
 
     return allegiances
 
@@ -1534,18 +1536,16 @@ def readJsonStockAllegiances(
         if base is not None and not isinstance(base, str):
             raise RuntimeError(f'Base code specified for stock allegiance {index + 1} is not a string')
 
-        locations = allegiance.get('Location')
-        if locations is not None:
-            if not isinstance(locations, str):
-                raise RuntimeError(f'Locations specified for stock allegiance {index + 1} is not a string')
-            locations = locations.split('/')
+        location = allegiance.get('Location')
+        if location is not None and not isinstance(location, str):
+            raise RuntimeError(f'Location specified for stock allegiance {index + 1} is not a string')
 
         allegiances.append(multiverse.RawStockAllegiance(
             code=code,
             name=name,
             legacy=legacy,
             base=base,
-            locations=locations))
+            location=location))
 
     return allegiances
 
@@ -1559,3 +1559,83 @@ def readStockAllegiances(
         return readJsonStockAllegiances(content=content)
 
     raise ValueError('Unrecognised stock allegiances content format')
+
+def _detectStockSophontsFormat(
+        content: str
+        ) -> StockSophontsFormat:
+    try:
+        result = json.loads(content)
+        if result:
+            return StockSophontsFormat.JSON
+    except:
+        pass
+
+    return StockSophontsFormat.TAB
+
+def readTabStockSophonts(
+        content: str
+        ) -> typing.List[multiverse.RawStockSophont]:
+    _, results = common.parseTabTableContent(content=content)
+
+    sophonts: typing.List[multiverse.RawStockSophont] = []
+    for index, sophont in enumerate(results):
+        code = sophont.get('Code')
+        if not code:
+            raise RuntimeError(f'No code specified for stock sophont {index + 1}')
+        name = sophont.get('Name')
+        if not name:
+            raise RuntimeError(f'No name specified for stock sophont {index + 1}')
+        location = sophont.get('Location')
+
+        sophonts.append(multiverse.RawStockSophont(
+            code=code,
+            name=name,
+            location=location))
+
+    return sophonts
+
+def readJsonStockSophonts(
+        content: str
+        ) -> typing.List[multiverse.RawStockSophont]:
+    jsonList = json.loads(content)
+    if not isinstance(jsonList, list):
+        raise RuntimeError(f'Content is not a json list')
+
+    sophonts: typing.List[multiverse.RawStockSophont] = []
+    for index, sophont in enumerate(jsonList):
+        if not isinstance(sophont, dict):
+            raise RuntimeError(f'Item {index + 1} is not a json object')
+
+        code = sophont.get('Code')
+        if not code:
+            raise RuntimeError(f'No code specified for stock sophont {index + 1}')
+        if not isinstance(code, str):
+            raise RuntimeError(f'Code specified for stock sophont {index + 1} is not a string')
+
+        name = sophont.get('Name')
+        if not name:
+            raise RuntimeError(f'No name specified for stock sophont {index + 1}')
+        if not isinstance(name, str):
+            raise RuntimeError(f'Name specified for stock sophont {index + 1} is not a string')
+
+        location = sophont.get('Location')
+        if location is not None and not isinstance(location, str):
+            raise RuntimeError(f'Location specified for stock sophont {index + 1} is not a string')
+
+        sophonts.append(multiverse.RawStockSophont(
+            code=code,
+            name=name,
+            location=location))
+
+    return sophonts
+
+def readStockSophonts(
+        content: str
+        ) -> typing.List[multiverse.RawStockSophont]:
+    format = _detectStockSophontsFormat(content=content)
+    if format is StockSophontsFormat.TAB:
+        return readTabStockSophonts(content=content)
+    elif format is StockSophontsFormat.JSON:
+        return readJsonStockSophonts(content=content)
+
+    raise ValueError('Unrecognised stock sophonts content format')

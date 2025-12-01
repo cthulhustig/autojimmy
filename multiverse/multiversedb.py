@@ -213,12 +213,14 @@ class MultiverseDb(object):
     _SystemsTableSchema = 1
 
     _DefaultUniverseId = 'default'
+    _DefaultUniverseAppVersionKey = 'default_universe_app_version'
     _DefaultUniverseTimestampKey = 'default_universe_timestamp'
 
     _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
 
     _lock = threading.RLock() # Recursive lock
     _instance = None # Singleton instance
+    _appVersion = None
     _databasePath = None
 
     def __init__(self) -> None:
@@ -236,9 +238,13 @@ class MultiverseDb(object):
         return cls._instance
 
     @staticmethod
-    def setDbPath(databasePath: str) -> None:
+    def configure(
+        appVersion: str,
+        databasePath: str
+        ) -> None:
         if MultiverseDb._instance:
-            raise RuntimeError('You can\'t set the database path after the singleton has been initialised')
+            raise RuntimeError('You can\'t configure MultiverseDb after the singleton has been initialised')
+        MultiverseDb._appVersion = appVersion
         MultiverseDb._databasePath = databasePath
 
     def createTransaction(self) -> Transaction:
@@ -1396,6 +1402,15 @@ class MultiverseDb(object):
             updateDefault=True,
             cursor=cursor,
             progressCallback=insertProgressCallback)
+
+        # Write the app version fpr the import. This future new versions of the
+        # app to check which version the custom universe was imported with and
+        # force an re-import if needed (e.g. if I've found a bug with my import
+        # process).
+        self._setMetadata(
+            key=MultiverseDb._DefaultUniverseAppVersionKey,
+            value=MultiverseDb._appVersion,
+            cursor=cursor)
 
         self._setMetadata(
             key=MultiverseDb._DefaultUniverseTimestampKey,

@@ -2,6 +2,9 @@ import logging
 import multiverse
 import typing
 
+# TODO: The conversion process needs to give better error/warning/info
+# feedback to the user when converting custom sectors (converting the
+# default universe should just log)
 # These unofficial allegiances are taken from Traveller Map. It has a
 # comment saying they're for M1120 but as far as I can tell it uses
 # them no mater which milieu you have selected. In my implementation
@@ -77,7 +80,10 @@ def _calculateStockAllegiances(
     if rawStockAllegiances:
         rawAbbreviation = rawMetadata.abbreviation()
         for rawStockAllegiance in rawStockAllegiances:
-            rawLocations = rawStockAllegiance.locations()
+            rawLocations = rawStockAllegiance.location()
+            if rawLocations is not None:
+                rawLocations = rawLocations.split('/')
+
             if rawLocations:
                 # The database allegiance if for specific locations so only use it if
                 # it specifies this sectors abbreviation or 'various'. I can't find
@@ -289,7 +295,7 @@ def convertRawSectorToDbSector(
                     assert(False) # TODO: Better error handling
 
                 rawUWP = rawWorld.attribute(multiverse.WorldAttribute.UWP)
-                if rawUWP is None:
+                if not rawUWP:
                     assert(False) # TODO: Better error handling
 
                 rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)

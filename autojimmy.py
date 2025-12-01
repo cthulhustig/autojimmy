@@ -411,7 +411,9 @@ def main() -> None:
             # Continue loading the app with the existing data
 
         multiverseDbPath = multiverseDbPath = os.path.join(appDir, 'multiverse.db')
-        multiverse.MultiverseDb.setDbPath(databasePath=multiverseDbPath)
+        multiverse.MultiverseDb.configure(
+            appVersion=app.AppVersion,
+            databasePath=multiverseDbPath)
 
         multiverseSyncDir = overlayMapsDir if os.path.isdir(overlayMapsDir) else installMapsDir
         hasDefaultUniverse = multiverse.MultiverseDb.instance().hasDefaultUniverse()

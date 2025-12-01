@@ -530,14 +530,14 @@ class RawStockAllegiance(object):
             name: str,
             legacy: str,
             base: typing.Optional[str] = None,
-            locations: typing.Optional[typing.Collection[str]] = None
+            location: typing.Optional[str] = None
             ) -> None:
         super().__init__()
         self._code = code
         self._name = name
         self._legacy = legacy
         self._base = base
-        self._locations = locations
+        self._location = location
 
     def code(self) -> str:
         return self._code
@@ -551,7 +551,26 @@ class RawStockAllegiance(object):
     def base(self) -> typing.Optional[str]:
         return self._base
 
-    # Locations are specified as sector abbreviations. No locations mean
-    # the allegiance applies everywhere
-    def locations(self) -> typing.Optional[typing.Collection[str]]:
-        return self._locations
+    def location(self) -> typing.Optional[str]:
+        return self._location
+
+class RawStockSophont(object):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            location: typing.Optional[str] = None
+            ) -> None:
+        super().__init__()
+        self._code = code
+        self._name = name
+        self._location = location
+
+    def code(self) -> str:
+        return self._code
+
+    def name(self) -> str:
+        return self._name
+
+    def location(self) -> str:
+        return self._location

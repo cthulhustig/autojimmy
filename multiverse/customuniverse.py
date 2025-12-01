@@ -205,7 +205,7 @@ def importLegacyCustomSectors(
                 totalSectorCount)
 
         logging.info(
-            f'Converting legacy custom sector {rawMetadata.canonicalName()} at ({rawMetadata.x()}, {rawMetadata.y()})')
+            f'Converting legacy custom sector {rawMetadata.canonicalName()} at ({rawMetadata.x()}, {rawMetadata.y()}) from {milieu}')
         dbUniverse.addSector(multiverse.convertRawSectorToDbSector(
             milieu=milieu,
             rawMetadata=rawMetadata,
