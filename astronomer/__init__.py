@@ -11,7 +11,6 @@ from .bases import *
 from .economics import *
 from .culture import *
 from .nobility import *
-from .sophont import *
 from .remarks import *
 from .stellar import *
 from .sectortagging import *

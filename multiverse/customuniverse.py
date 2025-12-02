@@ -63,6 +63,7 @@ def importLegacyCustomSectors(
         raise RuntimeError('Legacy custom sectors have already been imported')
 
     rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+    rawStockSophonts = multiverse.readSnapshotStockSophonts()
 
     universePath = os.path.join(directoryPath, 'milieu')
     milieuSectors: typing.List[typing.Tuple[
@@ -211,6 +212,7 @@ def importLegacyCustomSectors(
             rawMetadata=rawMetadata,
             rawSystems=rawSystems,
             rawStockAllegiances=rawStockAllegiances,
+            rawStockSophonts=rawStockSophonts,
             isCustom=True))
 
     if progressCallback:

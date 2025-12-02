@@ -25,12 +25,14 @@ class Remarks(object):
             self,
             string: str,
             sectorName: str,
-            zone: astronomer.ZoneType
+            zone: astronomer.ZoneType,
+            sophontNames: typing.Mapping[str, str] # Maps sophont code to sophont name
             ) -> None:
         self._string = string
         self._tokenSet: typing.Set[str] = set()
         self._sectorName = sectorName
         self._zone = zone
+        self._sophontNames = dict(sophontNames)
         self._tradeCodes: typing.Set[astronomer.TradeCode] = set()
         self._isMajorHomeworld = False
         self._isMinorHomeworld = False
@@ -46,6 +48,11 @@ class Remarks(object):
         # Add custom trade codes for red/amber zone as it simplifies the
         # trade calculation logic as it can just deal with trade codes and
         # doesn't need to understand zones
+        # TODO: I probably want to undo this hack before interactive editing
+        # is added. I don't want the zone to be written to the database in the
+        # remarks as it'd duplication of information. I also don't want to
+        # be presenting them to the user as trade codes as they aren't. It might
+        # make sense to do it now so I don't forget
         if self._zone == astronomer.ZoneType.AmberZone:
             self._tradeCodes.add(astronomer.TradeCode.AmberZone)
         elif self._zone == astronomer.ZoneType.RedZone:
@@ -228,11 +235,15 @@ class Remarks(object):
             if result:
                 sophontShortCode = result.group(1)
                 sophontPercentageCode = result.group(2)
-                sophontName = astronomer.SophontManager.instance().sophontName(sophontShortCode)
-                if not sophontName:
-                    # We didn't manage to resolve the short code a name so use the code as the name
-                    sophontName = sophontShortCode
                 sophontPercentage = 100 if sophontPercentageCode == '' or sophontPercentageCode == 'W' else (int(sophontPercentageCode) * 10)
+
+                sophontName = self._sophontNames.get(sophontShortCode)
+                if not sophontName:
+                    # Just use the short code for the name. In theory this shouldn't happen
+                    # as the sophont entries should have been created in the database for
+                    # every sophont code used
+                    sophontName = sophontShortCode
+
                 self._sophontPercentages[sophontName] = sophontPercentage
                 continue
 

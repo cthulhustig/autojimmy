@@ -656,11 +656,17 @@ class WorldManager(object):
                 subsectorCode = chr(ord('A') + subsectorIndex)
                 subsectorNameMap[subsectorCode] = (subsectorName, False)
 
-        dbAllegianceMap: typing.Dict[str, multiverse.DbAllegiance] = {}
         dbAllegiances = dbSector.allegiances()
+        dbAllegianceMap: typing.Dict[str, multiverse.DbAllegiance] = {}
         if dbAllegiances:
             for dbAllegiance in dbAllegiances:
                 dbAllegianceMap[dbAllegiance.code()] = dbAllegiance
+
+        dbSophonts = dbSector.sophonts()
+        sophontsNameMap: typing.Dict[str, str] = {}
+        if dbSophonts:
+            for dbSophont in dbSophonts:
+                sophontsNameMap[dbSophont.code()] = dbSophont.name()
 
         dbSystems = dbSector.systems()
         if dbSystems:
@@ -723,7 +729,8 @@ class WorldManager(object):
                     remarks = astronomer.Remarks(
                         string=dbSystem.remarks() if dbSystem.remarks() else '',
                         sectorName=sectorName,
-                        zone=zone)
+                        zone=zone,
+                        sophontNames=sophontsNameMap)
                     stellar = astronomer.Stellar(
                         dbSystem.stellar() if dbSystem.stellar() else '')
                     pbg = astronomer.PBG(

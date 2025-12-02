@@ -188,6 +188,9 @@ class MultiverseDb(object):
     _AllegiancesTableName = 'allegiances'
     _AllegiancesTableSchema = 1
 
+    _SophontsTableName = 'sophonts'
+    _SophontsTableSchema = 1
+
     _ProductsTableName = 'products'
     _ProductsTableSchema = 1
 
@@ -216,7 +219,7 @@ class MultiverseDb(object):
     _DefaultUniverseAppVersionKey = 'default_universe_app_version'
     _DefaultUniverseTimestampKey = 'default_universe_timestamp'
 
-    _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
+    _SnapshotTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
 
     _lock = threading.RLock() # Recursive lock
     _instance = None # Singleton instance
@@ -272,10 +275,8 @@ class MultiverseDb(object):
         with self.createTransaction() as transaction:
             connection = transaction.connection()
 
-            timestampPath = os.path.join(directoryPath, 'timestamp.txt')
-            with open(timestampPath, 'r', encoding='utf-8-sig') as file:
-                timestampContent = file.read()
-            importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
+            importTimestamp = MultiverseDb._readSnapshotTimestamp(
+                directoryPath=directoryPath)
 
             currentTimestamp = self._getMetadata(
                 key=MultiverseDb._DefaultUniverseTimestampKey,
@@ -831,7 +832,7 @@ class MultiverseDb(object):
                     unique=False,
                     cursor=cursor)
 
-            # Create allegiance names table
+            # Create allegiances table
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._AllegiancesTableName,
                     cursor=cursor):
@@ -859,6 +860,36 @@ class MultiverseDb(object):
                 # and cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._AllegiancesTableName,
+                    column='sector_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create sophonts table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._SophontsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {sophontsTable} (
+                        sector_id TEXT NOT NULL,
+                        code TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                    );
+                    """.format(
+                        sophontsTable=MultiverseDb._SophontsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._SophontsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._SophontsTableName,
+                    version=MultiverseDb._SophontsTableSchema,
+                    cursor=cursor)
+
+                # Create index on parent id column as it's used a lot by reads
+                # and cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._SophontsTableName,
                     column='sector_id',
                     unique=False,
                     cursor=cursor)
@@ -1305,12 +1336,11 @@ class MultiverseDb(object):
             cursor: sqlite3.Cursor,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
-        timestampPath = os.path.join(directoryPath, 'timestamp.txt')
-        with open(timestampPath, 'r', encoding='utf-8-sig') as file:
-            timestampContent = file.read()
-        importTimestamp = MultiverseDb._parseTimestamp(content=timestampContent)
+        importTimestamp = MultiverseDb._readSnapshotTimestamp(
+            directoryPath=directoryPath)
 
         rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
+        rawStockSophonts = multiverse.readSnapshotStockSophonts()
 
         universePath = os.path.join(directoryPath, 'milieu')
         milieuSectors: typing.List[typing.Tuple[
@@ -1387,6 +1417,7 @@ class MultiverseDb(object):
             isCustom=False,
             rawSectors=rawData,
             rawStockAllegiances=rawStockAllegiances,
+            rawStockSophonts=rawStockSophonts,
             progressCallback=progressCallback)
 
         self._internalDeleteUniverse(
@@ -1652,6 +1683,19 @@ class MultiverseDb(object):
                     'base': allegiance.base()})
             cursor.executemany(sql, rowData)
 
+        if sector.sophonts():
+            sql = """
+                INSERT INTO {table} (sector_id, code, name)
+                VALUES (:sector_id, :code, :name);
+                """.format(table=MultiverseDb._SophontsTableName)
+            rowData = []
+            for sophont in sector.sophonts():
+                rowData.append({
+                    'sector_id': sector.id(),
+                    'code': sophont.code(),
+                    'name': sophont.name()})
+            cursor.executemany(sql, rowData)
+
         if sector.systems():
             sql = """
                 INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, uwp, remarks,
@@ -1894,6 +1938,19 @@ class MultiverseDb(object):
                 legacy=row[2],
                 base=row[3]))
         sector.setAllegiances(allegiances)
+
+        sql = """
+            SELECT code, name
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MultiverseDb._SophontsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        sophonts = []
+        for row in cursor.fetchall():
+            sophonts.append(multiverse.DbSophont(
+                code=row[0],
+                name=row[1]))
+        sector.setSophonts(sophonts)
 
         sql = """
             SELECT id, hex_x, hex_y, name, uwp, remarks, importance,
@@ -2254,10 +2311,14 @@ class MultiverseDb(object):
             abbreviation=row[3])
 
     @staticmethod
-    def _parseTimestamp(
-            content: str,
-            ) -> datetime.datetime:
+    def _readSnapshotTimestamp(directoryPath: str) -> datetime.datetime:
+        timestampPath = os.path.join(directoryPath, 'timestamp.txt')
+        with open(timestampPath, 'r', encoding='utf-8-sig') as file:
+            return MultiverseDb._parseSnapshotTimestamp(content=file.read())
+
+    @staticmethod
+    def _parseSnapshotTimestamp(content: str) -> datetime.datetime:
         timestamp = datetime.datetime.strptime(
             content,
-            MultiverseDb._TimestampFormat)
+            MultiverseDb._SnapshotTimestampFormat)
         return timestamp.replace(tzinfo=datetime.timezone.utc)

@@ -467,11 +467,21 @@ class _NewSectorDialog(gui.DialogEx):
                 exception=ex)
             return
 
-
         try:
             rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
         except:
             message = 'Failed to load stock allegiances.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            rawStockSophonts = multiverse.readSnapshotStockSophonts()
+        except:
+            message = 'Failed to load stock sophonts.'
             logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -486,6 +496,7 @@ class _NewSectorDialog(gui.DialogEx):
                 rawMetadata=rawMetadata,
                 rawSystems=rawWorlds,
                 rawStockAllegiances=rawStockAllegiances,
+                rawStockSophonts=rawStockSophonts,
                 isCustom=True,
                 universeId=multiverse.customUniverseId())
             multiverse.MultiverseDb.instance().saveSector(sector=dbSector)

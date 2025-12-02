@@ -1,10 +1,12 @@
 import logging
 import multiverse
+import re
 import typing
 
 # TODO: The conversion process needs to give better error/warning/info
 # feedback to the user when converting custom sectors (converting the
 # default universe should just log)
+
 # These unofficial allegiances are taken from Traveller Map. It has a
 # comment saying they're for M1120 but as far as I can tell it uses
 # them no mater which milieu you have selected. In my implementation
@@ -57,6 +59,9 @@ _LegacyAllegianceToT5Overrides = {
     '??': 'XXXX',
     '--': 'XXXX'
 }
+
+# This regex is intended to match sophonts specified as short codes
+_RemarkSophontShortCodePattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))(\S{4})([0-9W])(?=$|[\s,])')
 
 # This is intended to mimic the logic of GetStockAllegianceFromCode from the
 # Traveller Map source code (SecondSurvey.cs). That code handles the precedence
@@ -121,13 +126,18 @@ def _calculateStockAllegiances(
 
     return rawStockAllegianceMap
 
-
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
 def readSnapshotStockAllegiances() -> typing.List[multiverse.RawStockAllegiance]:
     return multiverse.readTabStockAllegiances(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialAllegiancesPath))
+
+_T5OfficialSophontsPath = "t5ss/sophont_codes.tab"
+def readSnapshotStockSophonts() -> typing.List[multiverse.RawStockSophont]:
+    return multiverse.readTabStockSophonts(
+        content=multiverse.SnapshotManager.instance().loadTextResource(
+            filePath=_T5OfficialSophontsPath))
 
 def convertRawUniverseToDbUniverse(
         universeName: str,
@@ -139,6 +149,9 @@ def convertRawUniverseToDbUniverse(
             ]],
         rawStockAllegiances: typing.Optional[typing.Collection[
             multiverse.RawStockAllegiance
+            ]] = None,
+        rawStockSophonts: typing.Optional[typing.Collection[
+            multiverse.RawStockSophont
             ]] = None,
         universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
@@ -159,6 +172,7 @@ def convertRawUniverseToDbUniverse(
             rawMetadata=rawMetadata,
             rawSystems=rawSystems,
             rawStockAllegiances=rawStockAllegiances,
+            rawStockSophonts=rawStockSophonts,
             isCustom=isCustom))
 
     if progressCallback:
@@ -176,6 +190,9 @@ def convertRawSectorToDbSector(
         isCustom: bool,
         rawStockAllegiances: typing.Optional[typing.Collection[
             multiverse.RawStockAllegiance
+            ]] = None,
+        rawStockSophonts: typing.Optional[typing.Collection[
+            multiverse.RawStockSophont
             ]] = None,
         sectorId: typing.Optional[str] = None,
         universeId: typing.Optional[str] = None,
@@ -283,8 +300,41 @@ def convertRawSectorToDbSector(
                     # TODO: This should probably log saying that there is a missing allegiance
                     dbAllegiances.append(multiverse.DbAllegiance(
                         code=rawAllegianceCode,
-                        name='Unknown'))
-                    print(f'Missing: Sector {rawMetadata.canonicalName()} from {milieu} allegiance {rawAllegianceCode}')
+                        name=rawAllegianceCode))
+                    # TODO: Remove debug code
+                    #print(f'Missing Allegiance: {rawAllegianceCode} for {rawMetadata.canonicalName()} from {milieu}')
+
+        rawStockSophontsMap: typing.Dict[str, multiverse.RawStockSophont] = {}
+        if rawStockSophonts:
+            for rawStockSophont in rawStockSophonts:
+                rawStockSophontsMap[rawStockSophont.code()] = rawStockSophont
+
+        rawUsedSophontCodes = set()
+        if rawSystems:
+            for rawWorld in rawSystems:
+                rawRemarks = rawWorld.attribute(multiverse.WorldAttribute.Remarks)
+                if not rawRemarks:
+                    continue
+                matches = _RemarkSophontShortCodePattern.findall(rawRemarks)
+                for match in matches:
+                    rawUsedSophontCodes.add(match[0])
+
+        dbSophonts = None
+        if rawUsedSophontCodes:
+            dbSophonts = []
+            for rawSophontCode in rawUsedSophontCodes:
+                rawStockSophont = rawStockSophontsMap.get(rawSophontCode)
+                if rawStockSophont:
+                    dbSophonts.append(multiverse.DbSophont(
+                        code=rawSophontCode,
+                        name=rawStockSophont.name()))
+                else:
+                    # TODO: Log something and, if it's a custom sector, inform the user directly
+                    dbSophonts.append(multiverse.DbSophont(
+                        code=rawSophontCode,
+                        name=rawSophontCode))
+                    # TODO: Remove debug code
+                    print(f'Missing Sophont: {rawSophontCode} for {rawMetadata.canonicalName()} from {milieu}')
 
         dbSystems = None
         if rawSystems:
@@ -457,6 +507,7 @@ def convertRawSectorToDbSector(
             reference=rawPrimarySource.reference() if rawPrimarySource else None,
             products=dbProducts,
             allegiances=dbAllegiances,
+            sophonts=dbSophonts,
             systems=dbSystems,
             routes=dbRoutes,
             borders=dbBorders,

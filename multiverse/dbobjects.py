@@ -607,6 +607,27 @@ class DbAllegiance(object):
     def setBase(self, base: typing.Optional[str]) -> None:
         self._base = base
 
+class DbSophont(object):
+    def __init__(
+            self,
+            code: str,
+            name: str
+            ) -> None:
+        self.setCode(code)
+        self.setName(name)
+
+    def code(self) -> str:
+        return self._code
+
+    def setCode(self, code: str) -> None:
+        self._code = code
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str) -> None:
+        self._name = name
+
 class DbProduct(object):
     def __init__(
             self,
@@ -667,6 +688,7 @@ class DbSector(object):
             reference: typing.Optional[str] = None,
             products: typing.Optional[typing.Collection[DbProduct]] = None,
             allegiances: typing.Optional[typing.Collection[DbAllegiance]] = None,
+            sophonts: typing.Optional[typing.Collection[DbSophont]] = None,
             systems: typing.Optional[typing.Collection[DbSystem]] = None,
             routes: typing.Optional[typing.Collection[DbRoute]] = None,
             borders: typing.Optional[typing.Collection[DbBorder]] = None,
@@ -699,6 +721,7 @@ class DbSector(object):
         self.setReference(reference)
         self.setProducts(products)
         self.setAllegiances(allegiances)
+        self.setSophonts(sophonts)
         self.setSystems(systems)
         self.setRoutes(routes)
         self.setBorders(borders)
@@ -836,6 +859,12 @@ class DbSector(object):
 
     def setAllegiances(self, allegiances: typing.Optional[typing.Collection[DbAllegiance]]) -> None:
         self._allegiances = list(allegiances) if allegiances else None
+
+    def sophonts(self) -> typing.Optional[typing.Collection[DbSophont]]:
+        return self._sophonts
+
+    def setSophonts(self, sophonts: typing.Optional[typing.Collection[DbSophont]]) -> None:
+        self._sophonts = list(sophonts) if sophonts else None
 
     def systems(self) -> typing.Optional[typing.Collection[DbSystem]]:
         return self._systems
