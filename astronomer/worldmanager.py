@@ -106,9 +106,10 @@ class WorldManager(object):
     # specified milieu but the position is
     _PlaceholderMilieu = astronomer.Milieu.M1105
 
-    # Route and border style sheet regexes
-    _BorderStylePattern = re.compile(r'border\.(\w+)')
-    _RouteStylePattern = re.compile(r'route\.(\w+)')
+    # Route and border style sheet regexes. Note that the names that follow
+    # the . can contain spaces
+    _BorderStylePattern = re.compile(r'border(?:\.(.+))?')
+    _RouteStylePattern = re.compile(r'route(?:\.(.+))?')
 
     # Pattern used by Traveller Map to replace white space with '\n' to do
     # word wrapping
@@ -868,15 +869,15 @@ class WorldManager(object):
                     if not colour or not style or not width:
                         # This order of precedence matches the order in the Traveller Map
                         # DrawMicroRoutes code
-                        # TODO: It feels like this code must have the same bug as the similar
-                        # code in RenderContext._drawMicroRoutes that meant I was drawing the
-                        # routes around Marsus green rather than grey (looks like this was a
-                        # bug that predates the database changes).
-                        stylePrecedence = [
-                            dbAllegiance.code() if dbAllegiance else None,
-                            dbRoute.type(),
-                            'Im']
-                        for tag in stylePrecedence:
+                        # TODO: Should this be done at convert time?
+                        precedence = []
+                        if dbRoute.allegiance():
+                            precedence.append(dbRoute.allegiance().code())
+                        elif dbRoute.type():
+                            precedence.append(dbRoute.type())
+                        precedence.append(None) # Use default if there is one
+
+                        for tag in precedence:
                             if tag in routeStyleMap:
                                 defaultColour, defaultStyle, defaultWidth = routeStyleMap[tag]
                                 if not colour:
@@ -935,14 +936,13 @@ class WorldManager(object):
                     if not colour or not style:
                         # This order of precedence matches the order in the Traveller Map
                         # DrawMicroBorders code
-                        # TODO: It feels like this code must have the same bug as the similar
-                        # code in RenderContext._drawMicroRoutes that meant I was drawing the
-                        # routes around Marsus green rather than grey (looks like this was a
-                        # bug that predates the database changes).
-                        stylePrecedence = [
-                            dbAllegiance.code() if dbAllegiance else None,
-                            'Im']
-                        for tag in stylePrecedence:
+                        # TODO: Should this be done at convert time?
+                        precedence = []
+                        if dbBorder.allegiance():
+                            precedence.append(dbBorder.allegiance().code())
+                        precedence.append(None) # Use default if there is one
+
+                        for tag in precedence:
                             if tag in borderStyleMap:
                                 defaultColour, defaultStyle = borderStyleMap[tag]
                                 if not colour:

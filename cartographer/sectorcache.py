@@ -271,6 +271,38 @@ class SectorCache(object):
 
         routes = []
         for (colour, width, style, type, allegiance), points in routePointsMap.items():
+            if style is astronomer.Route.Style.Solid:
+                style = cartographer.LineStyle.Solid
+            elif style is astronomer.Route.Style.Dashed:
+                style = cartographer.LineStyle.Dash
+            elif style is astronomer.Route.Style.Dotted:
+                style = cartographer.LineStyle.Dot
+            else:
+                style = None
+
+            if not colour or not style or not width:
+                # This code is intended to mimic the behaviour of code from
+                # Traveller Map DrawMicroRoutes
+                precedence = []
+                if allegiance:
+                    precedence.append(allegiance)
+                elif type:
+                    precedence.append(type)
+                else:
+                    precedence.append('Im')
+                precedence.append(None)
+
+                for key in precedence:
+                    if self._styleStore.hasRouteStyle(key):
+                        defaultColour, defaultStyle, defaultWidth = self._styleStore.routeStyle(key)
+                        if not colour:
+                            colour = defaultColour
+                        if not style:
+                            style = defaultStyle
+                        if not width:
+                            width = defaultWidth
+                        break
+
             routes.append(SectorLines(
                 points=self._graphics.createPointList(points=points),
                 colour=colour,
@@ -364,11 +396,22 @@ class SectorCache(object):
                 style = cartographer.LineStyle.Dot
 
             if not colour or not style:
-                defaultColour, defaultStyle = self._styleStore.borderStyle(source.allegiance())
-                if not colour:
-                    colour = defaultColour
-                if not style:
-                    style = defaultStyle
+                # This code is intended to mimic the behaviour of code from
+                # Traveller Map DrawMicroBorders
+                allegiance = source.allegiance()
+                precedence = []
+                if allegiance:
+                    precedence.append(allegiance)
+                precedence.append(None)
+
+                for key in precedence:
+                    if self._styleStore.hasBorderStyle(key):
+                        defaultColour, defaultStyle = self._styleStore.borderStyle(key)
+                        if not colour:
+                            colour = defaultColour
+                        if not style:
+                            style = defaultStyle
+                        break
 
         outline = source.worldOutline()
         drawPath = []

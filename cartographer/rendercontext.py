@@ -683,30 +683,7 @@ class RenderContext(object):
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
-                        # TODO: Something is wrong with this code. According to
-                        # the typing, cartographer. SectorLines.style returns a
-                        # cartographer.LineStyle.
-                        # Possibly the typing is wrong or maybe this code isn't working
-                        # as I think. Need to investigate. It feels like it should use
-                        # cartographer.LineStyle as SectorLines is part of the cartographer
-                        # namespace
-                        if route.style() is astronomer.Route.Style.Solid:
-                            routeStyle = cartographer.LineStyle.Solid
-                        elif route.style() is astronomer.Route.Style.Dashed:
-                            routeStyle = cartographer.LineStyle.Dash
-                        elif route.style() is astronomer.Route.Style.Dotted:
-                            routeStyle = cartographer.LineStyle.Dot
-
-                    if not routeWidth or not routeColour or not routeStyle:
-                        precedence = [route.allegiance(), route.type(), 'Im']
-                        for key in precedence:
-                            defaultColour, defaultStyle, defaultWidth = self._styleStore.routeStyle(key)
-                            if not routeColour:
-                                routeColour = defaultColour
-                            if not routeStyle:
-                                routeStyle = defaultStyle
-                            if not routeWidth:
-                                routeWidth = defaultWidth
+                        routeStyle = route.style()
 
                     # In grayscale, convert default colour and style to non-default style
                     if self._styleSheet.grayscale and (not routeColour) and (not routeStyle):
