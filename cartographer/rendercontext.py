@@ -683,6 +683,13 @@ class RenderContext(object):
                     routeWidth = route.width()
                     routeStyle = self._styleSheet.overrideLineStyle
                     if not routeStyle:
+                        # TODO: Something is wrong with this code. According to
+                        # the typing, cartographer. SectorLines.style returns a
+                        # cartographer.LineStyle.
+                        # Possibly the typing is wrong or maybe this code isn't working
+                        # as I think. Need to investigate. It feels like it should use
+                        # cartographer.LineStyle as SectorLines is part of the cartographer
+                        # namespace
                         if route.style() is astronomer.Route.Style.Solid:
                             routeStyle = cartographer.LineStyle.Solid
                         elif route.style() is astronomer.Route.Style.Dashed:
@@ -1569,8 +1576,8 @@ class RenderContext(object):
             remarks = world.remarks()
 
             allegianceCode = allegiance.code() if allegiance else None
-            droyne = allegianceCode == 'Dr' or allegianceCode == 'NaDr' or remarks.hasRemark('Droy')
-            chirpers = remarks.hasRemark('Chir')
+            droyne = allegianceCode == 'Dr' or allegianceCode == 'NaDr' or remarks.hasCustomRemark('Droy')
+            chirpers = remarks.hasCustomRemark('Chir')
 
             if droyne or chirpers:
                 glyph = self._styleSheet.droyneWorlds.content[0 if droyne else 1]
@@ -1587,8 +1594,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            remarks = world.remarks()
-            if remarks.isMinorHomeworld():
+            worldInfo = self._worldCache.worldInfo(hex=world.hex())
+            if worldInfo.isMinorHomeWorld:
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.minorHomeWorlds.content,
                     font=self._styleSheet.minorHomeWorlds.font,

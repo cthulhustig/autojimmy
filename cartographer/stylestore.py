@@ -4,6 +4,9 @@ import multiverse
 import re
 import typing
 
+# TODO: I think it might be possible to move all the processing this is
+# used for to conversion time.
+
 class StyleStore(object):
     _BorderPattern = re.compile(r'border\.(\w+)')
     _RoutePattern = re.compile(r'route\.(\w+)')

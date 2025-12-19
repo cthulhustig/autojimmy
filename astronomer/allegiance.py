@@ -4,7 +4,7 @@ class Allegiance(object):
     def __init__(
             self,
             code: str,
-            name: typing.Optional[str],
+            name: str,
             legacyCode: typing.Optional[str],
             baseCode: typing.Optional[str],
             uniqueCode: typing.Optional[str]
@@ -18,7 +18,7 @@ class Allegiance(object):
     def code(self) -> str:
         return self._code
 
-    def name(self) -> typing.Optional[str]:
+    def name(self) -> str:
         return self._name
 
     def legacyCode(self) -> typing.Optional[str]:

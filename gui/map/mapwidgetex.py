@@ -508,7 +508,8 @@ class _InfoWidget(QtWidgets.QWidget):
                 worldTagging=self._worldTagging,
                 taggingColours=self._taggingColours,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
-                includeHexImage=False)
+                includeHexImage=False,
+                includeCredits=True)
             self._label.setText(text)
         else:
             self._label.setText('')

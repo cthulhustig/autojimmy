@@ -6,6 +6,8 @@ import multiverse
 import threading
 import typing
 
+# TODO: Rename astronomer namespace to astrogator (check spelling)
+
 class _AllegianceCodeInfo(object):
     def __init__(
             self,
@@ -239,6 +241,13 @@ class WorldManager(object):
             name: str
             ) -> astronomer.Sector:
         return self._universe.sectorByName(milieu=milieu, name=name)
+
+    def sectorByAbbreviation(
+            self,
+            milieu: astronomer.Milieu,
+            abbreviation: str,
+            ) -> typing.List[astronomer.Sector]:
+        return self._universe.sectorsByAbbreviation(milieu=milieu, abbreviation=abbreviation)
 
     def sectors(
             self,
@@ -656,11 +665,27 @@ class WorldManager(object):
                 subsectorCode = chr(ord('A') + subsectorIndex)
                 subsectorNameMap[subsectorCode] = (subsectorName, False)
 
-        dbAllegiances = dbSector.allegiances()
-        dbAllegianceMap: typing.Dict[str, multiverse.DbAllegiance] = {}
-        if dbAllegiances:
-            for dbAllegiance in dbAllegiances:
-                dbAllegianceMap[dbAllegiance.code()] = dbAllegiance
+        allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
+        if dbSector.allegiances():
+            for dbAllegiance in dbSector.allegiances():
+                # TODO: Need to do something about this unique code stuff. I think
+                # it's only used to allow allegiance tagging when multiple sectors
+                # use the same code for different allegiances. I could just do it
+                # by code and have the UI list all the different names for a single
+                # code. It means you can't tag different uses of the same tag
+                # differently but I suspect that isn't really an issue as feels
+                # unlikely that two sectors next to each other will use the same code
+                # in a way that would be confusing (I could probably write some code
+                # to check that assumption)
+                allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
+                    code=dbAllegiance.code(),
+                    name=dbAllegiance.name(),
+                    legacyCode=dbAllegiance.legacy(),
+                    baseCode=dbAllegiance.base(),
+                    uniqueCode=allegianceTracker.uniqueAllegianceCode(
+                        milieu=milieu,
+                        sectorName=sectorName,
+                        code=dbAllegiance.code()))
 
         dbSophonts = dbSector.sophonts()
         sophontsNameMap: typing.Dict[str, str] = {}
@@ -691,28 +716,12 @@ class WorldManager(object):
                     subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
                     subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                    allegianceCode = dbSystem.allegiance()
-                    dbAllegiance = dbAllegianceMap.get(allegianceCode) if allegianceCode else None
+                    dbAllegiance = dbSystem.allegiance()
                     allegiance = None
                     if dbAllegiance:
-                        # TODO: Need to do something about this unique code stuff. I think
-                        # it's only used to allow allegiance tagging when multiple sectors
-                        # use the same code for different allegiances. I could just do it
-                        # by code and have the UI list all the different names for a single
-                        # code. It means you can't tag different uses of the same tag
-                        # differently but I suspect that isn't really an issue as feels
-                        # unlikely that two sectors next to each other will use the same code
-                        # in a way that would be confusing (I could probably write some code
-                        # to check that assumption)
-                        allegiance = astronomer.Allegiance(
-                            code=allegianceCode,
-                            name=dbAllegiance.name(),
-                            legacyCode=dbAllegiance.legacy(),
-                            baseCode=dbAllegiance.base(),
-                            uniqueCode=allegianceTracker.uniqueAllegianceCode(
-                                milieu=milieu,
-                                sectorName=sectorName,
-                                code=allegianceCode))
+                        allegiance = allegianceCodeMap.get(dbAllegiance.code())
+                        if not allegiance:
+                            raise RuntimeError(f'World {worldName} is using an allegiance that is not defined by the system')
 
                     # TODO: All this checking for null and using an empty string instead
                     # is ugly as hell
@@ -727,17 +736,20 @@ class WorldManager(object):
                     nobilities = astronomer.Nobilities(
                         dbSystem.nobility() if dbSystem.nobility() else '')
                     remarks = astronomer.Remarks(
-                        string=dbSystem.remarks() if dbSystem.remarks() else '',
-                        sectorName=sectorName,
                         zone=zone,
-                        sophontNames=sophontsNameMap)
-                    stellar = astronomer.Stellar(
-                        dbSystem.stellar() if dbSystem.stellar() else '')
+                        dbTradeCodes=dbSystem.tradeCodes(),
+                        dbSophonts=dbSector.sophonts(),
+                        dbPopulations=dbSystem.sophonts(),
+                        dbRulingAllegiances=dbSystem.rulingAllegiances(),
+                        dbOwningSystems=dbSystem.owningSystems(),
+                        dbColonySystems=dbSystem.colonySystems(),
+                        dbResearchStations=dbSystem.researchStations(),
+                        dbCustomRemarks=dbSystem.customRemarks())
+                    bases = astronomer.Bases(dbBases=dbSystem.bases())
+                    stellar = astronomer.Stellar(dbStars=dbSystem.stars())
                     pbg = astronomer.PBG(
                         dbSystem.pbg() if dbSystem.pbg() else '')
                     systemWorlds = dbSystem.systemWorlds()
-                    bases = astronomer.Bases(
-                        dbSystem.bases() if dbSystem.bases() else '')
 
                     world = astronomer.World(
                         milieu=milieu,
@@ -852,11 +864,16 @@ class WorldManager(object):
                     style = WorldManager._mapRouteStyle(dbRoute.style())
                     width = dbRoute.width()
 
+                    dbAllegiance = dbRoute.allegiance()
                     if not colour or not style or not width:
                         # This order of precedence matches the order in the Traveller Map
                         # DrawMicroRoutes code
+                        # TODO: It feels like this code must have the same bug as the similar
+                        # code in RenderContext._drawMicroRoutes that meant I was drawing the
+                        # routes around Marsus green rather than grey (looks like this was a
+                        # bug that predates the database changes).
                         stylePrecedence = [
-                            dbRoute.allegiance(),
+                            dbAllegiance.code() if dbAllegiance else None,
                             dbRoute.type(),
                             'Im']
                         for tag in stylePrecedence:
@@ -877,7 +894,7 @@ class WorldManager(object):
                     routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
-                        allegiance=dbRoute.allegiance(),
+                        allegiance=dbAllegiance.code() if dbAllegiance else None,
                         type=dbRoute.type(),
                         style=style,
                         colour=colour,
@@ -914,11 +931,16 @@ class WorldManager(object):
                     colour = dbBorder.colour()
                     style = WorldManager._mapBorderStyle(dbBorder.style())
 
+                    dbAllegiance = dbBorder.allegiance()
                     if not colour or not style:
                         # This order of precedence matches the order in the Traveller Map
                         # DrawMicroBorders code
+                        # TODO: It feels like this code must have the same bug as the similar
+                        # code in RenderContext._drawMicroRoutes that meant I was drawing the
+                        # routes around Marsus green rather than grey (looks like this was a
+                        # bug that predates the database changes).
                         stylePrecedence = [
-                            dbBorder.allegiance(),
+                            dbAllegiance.code() if dbAllegiance else None,
                             'Im']
                         for tag in stylePrecedence:
                             if tag in borderStyleMap:
@@ -938,21 +960,14 @@ class WorldManager(object):
                     # TODO: This is probably bad, should be done in cartographer and border
                     # should store a label and allegiance if the source data has both
                     label = dbBorder.label()
-                    if not label and dbBorder.allegiance():
-                        dbAllegiance = dbAllegianceMap.get(dbBorder.allegiance())
-                        if dbAllegiance:
-                            label = dbAllegiance.name()
-                        else:
-                            # TODO: Log something??? With the current traveller map bug
-                            # it's expected and could happen at any time with custom
-                            # sectors so should probably be logged at debug
-                            pass
+                    if not label and dbAllegiance:
+                        label = dbAllegiance.name()
                     if label and dbBorder.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
-                        allegiance=dbBorder.allegiance(),
+                        allegiance=dbAllegiance.code() if dbAllegiance else None,
                         # Show label use the same defaults as the traveller map Border class
                         # TODO: I think I've broken something here as show label can't be null in the
                         # DB. I suspect I need to move this logic to the converter
@@ -1084,14 +1099,13 @@ class WorldManager(object):
         return astronomer.Sector(
             name=sectorName,
             milieu=milieu,
-            index=astronomer.SectorIndex(
-                sectorX=sectorX,
-                sectorY=sectorY),
+            index=astronomer.SectorIndex(sectorX=sectorX, sectorY=sectorY),
             # TODO: This is ugly and it also means I'm throwing away the language information
             alternateNames=alternateNames,
             abbreviation=dbSector.abbreviation(),
             sectorLabel=dbSector.sectorLabel(),
             subsectors=subsectors,
+            allegiances=allegianceCodeMap.values(),
             routes=routes,
             borders=borders,
             regions=regions,

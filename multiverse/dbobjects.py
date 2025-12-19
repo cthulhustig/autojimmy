@@ -4,52 +4,448 @@ import uuid
 # TODO: These classes should probably do some level of validation on that
 # data they are passed
 
-class DbSystem(object):
+class DbObject(object):
+    def __init__(
+            self,
+            id: typing.Optional[str] = None, # None means allocate an id
+            ) -> None:
+        super().__init__()
+        self._id = id if id is not None else str(uuid.uuid4())
+
+    def id(self) -> str:
+        return self._id
+
+class DbTradeCode(DbObject):
+    def __init__(
+            self,
+            code: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setCode(code)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def code(self) -> typing.Optional[str]:
+        return self._code
+
+    def setCode(self, code: typing.Optional[str]) -> None:
+        self._code = code
+
+class DbAllegiance(DbObject):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            legacy: typing.Optional[str] = None,
+            base: typing.Optional[str] = None,
+            id: typing.Optional[str] = None, # None means allocate an id
+            sectorId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSectorId(sectorId)
+        self.setCode(code)
+        self.setName(name)
+        self.setLegacy(legacy)
+        self.setBase(base)
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
+
+    def code(self) -> str:
+        return self._code
+
+    def setCode(self, code: str) -> None:
+        self._code = code
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str) -> None:
+        self._name = name
+
+    def legacy(self) -> typing.Optional[str]:
+        return self._legacy
+
+    def setLegacy(self, legacy: typing.Optional[str]) -> None:
+        self._legacy = legacy
+
+    def base(self) -> typing.Optional[str]:
+        return self._base
+
+    def setBase(self, base: typing.Optional[str]) -> None:
+        self._base = base
+
+class DbRulingAllegiance(DbObject):
+    def __init__(
+            self,
+            allegiance: DbAllegiance,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setAllegiance(allegiance)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def allegiance(self) -> DbAllegiance:
+        return self._allegiance
+
+    def setAllegiance(self, allegiance: DbAllegiance) -> None:
+        self._allegiance = allegiance
+
+class DbSophont(DbObject):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            isMajor: bool,
+            id: typing.Optional[str] = None, # None means allocate an id
+            sectorId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSectorId(sectorId)
+        self.setCode(code)
+        self.setName(name)
+        self.setIsMajor(isMajor)
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
+
+    def code(self) -> str:
+        return self._code
+
+    def setCode(self, code: str) -> None:
+        self._code = code
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str) -> None:
+        self._name = name
+
+    def isMajor(self) -> bool:
+        return self._isMajor
+
+    def setIsMajor(self, isMajor: bool) -> None:
+        self._isMajor = isMajor
+
+# TODO: This should take a DbSophont object rather than an id in the same way
+# DbRulingAllegiance takes a DbAllegiance
+# TODO: I think everywhere I've got HomeWorld or Home_World, it should actually
+# be Homeworld (i.e. one word). This would include database tables.
+class DbSophontPopulation(DbObject):
+    def __init__(
+            self,
+            sophontId: str,
+            percentage: typing.Optional[int], # None means it's a die back sophont
+            isHomeWorld: bool,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setSophontId(sophontId)
+        self.setPercentage(percentage)
+        self.setIsHomeWorld(isHomeWorld)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def sophontId(self) -> str:
+        return self._sophontId
+
+    def setSophontId(self, sophontId: str) -> None:
+        self._sophontId = sophontId
+
+    def percentage(self) -> typing.Optional[int]:
+        return self._percentage
+
+    def setPercentage(self, percentage: typing.Optional[int]) -> None:
+        self._percentage = percentage
+
+    def isHomeWorld(self) -> bool:
+        return self._isHomeWorld
+
+    def setIsHomeWorld(self, isHomeWorld: bool) -> None:
+        self._isHomeWorld = isHomeWorld
+
+class DbOwningSystem(DbObject):
+    def __init__(
+            self,
+            hexX: int,
+            hexY: int,
+            sectorCode: typing.Optional[str], # None means current sector
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ):
+        super().__init__(id)
+
+        self.setSystemId(systemId)
+        self.setHexX(hexX)
+        self.setHexY(hexY)
+        self.setSectorCode(sectorCode)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def hexX(self) -> int:
+        return self._hexX
+
+    def setHexX(self, hexX: int) -> None:
+        self._hexX = hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def setHexY(self, hexY: int) -> None:
+        self._hexY = hexY
+
+    def sectorCode(self) -> typing.Optional[str]:
+        return self._sectorCode
+
+    def setSectorCode(self, sectorCode: typing.Optional[str]) -> None:
+        self._sectorCode = sectorCode
+
+class DbColonySystem(DbObject):
+    def __init__(
+            self,
+            hexX: int,
+            hexY: int,
+            sectorCode: typing.Optional[str], # None means current sector
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ):
+        super().__init__(id)
+
+        self.setSystemId(systemId)
+        self.setHexX(hexX)
+        self.setHexY(hexY)
+        self.setSectorCode(sectorCode)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def hexX(self) -> int:
+        return self._hexX
+
+    def setHexX(self, hexX: int) -> None:
+        self._hexX = hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def setHexY(self, hexY: int) -> None:
+        self._hexY = hexY
+
+    def sectorCode(self) -> typing.Optional[str]:
+        return self._sectorCode
+
+    def setSectorCode(self, sectorCode: typing.Optional[str]) -> None:
+        self._sectorCode = sectorCode
+
+class DbCustomRemark(DbObject):
+    def __init__(
+            self,
+            remark: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ):
+        super().__init__(id)
+
+        self.setSystemId(systemId)
+        self.setRemark(remark)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def remark(self) -> str:
+        return self._remark
+
+    def setRemark(self, remark: str) -> None:
+        self._remark = remark
+
+class DbBase(DbObject):
+    def __init__(
+            self,
+            code: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setCode(code)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def code(self) -> str:
+        return self._code
+
+    def setCode(self, code: str) -> None:
+        self._code = code
+
+# TODO: Should I consolidate bases and research stations at the db level
+# (and probably therefore at the astronomer level). They're basically the
+# same structure and would just need mapped to/from bases/remarks when
+# importing/exporting
+class DbResearchStation(DbObject):
+    def __init__(
+            self,
+            code: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setCode(code)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def code(self) -> str:
+        return self._code
+
+    def setCode(self, code: str) -> None:
+        self._code = code
+
+class DbStar(DbObject):
+    def __init__(
+            self,
+            luminosityClass: str,
+            spectralClass: typing.Optional[str],
+            spectralScale: typing.Optional[str],
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setLuminosityClass(luminosityClass)
+        self.setSpectralClass(spectralClass)
+        self.setSpectralScale(spectralScale)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def luminosityClass(self) -> str:
+        return self._luminosityClass
+
+    def setLuminosityClass(self, luminosityClass: str) -> None:
+        self._luminosityClass = luminosityClass
+
+    def spectralClass(self) -> typing.Optional[str]:
+        return self._spectralClass
+
+    def setSpectralClass(self, spectralClass: typing.Optional[str]) -> None:
+        self._spectralClass = spectralClass
+
+    def spectralScale(self) -> typing.Optional[str]:
+        return self._spectralScale
+
+    def setSpectralScale(self, spectralScale: typing.Optional[str]) -> None:
+        self._spectralScale = spectralScale
+
+class DbSystem(DbObject):
     def __init__(
             self,
             hexX: int,
             hexY: int,
             name: str, # TODO: Do worlds in sector files always have a name????
             uwp: str, # TODO: Do worlds in sector files always have a UWP
-            remarks: typing.Optional[str] = None,
             importance: typing.Optional[str] = None,
             economics: typing.Optional[str] = None,
             culture: typing.Optional[str] = None,
             nobility: typing.Optional[str] = None,
-            bases: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
             pbg: typing.Optional[str] = None,
             # System worlds can be None if the number is not not known (e.g. if uwp is ???????-?)
             # It can also be none due to it just not being specified in sector data
             systemWorlds: typing.Optional[int] = None,
-            allegiance: typing.Optional[str] = None,
-            stellar: typing.Optional[str] = None,
+            allegiance: typing.Optional[DbAllegiance] = None,
+            tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
+            sophonts: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
+            rulingAllegiances: typing.Optional[typing.Collection[DbRulingAllegiance]] = None,
+            owningSystems: typing.Optional[typing.Collection[DbOwningSystem]] = None,
+            colonySystems: typing.Optional[typing.Collection[DbColonySystem]] = None,
+            researchStations: typing.Optional[typing.Collection[DbResearchStation]] = None,
+            customRemarks: typing.Optional[typing.Collection[DbCustomRemark]] = None,
+            bases: typing.Optional[typing.Collection[DbBase]] = None,
+            stars: typing.Optional[typing.Collection[DbStar]] = None,
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self.setSectorId(sectorId)
         self.setHexX(hexX)
         self.setHexY(hexY)
         self.setName(name)
         self.setUWP(uwp)
-        self.setRemarks(remarks)
         self.setImportance(importance)
         self.setEconomics(economics)
         self.setCulture(culture)
         self.setNobility(nobility)
-        self.setBases(bases)
         self.setZone(zone)
         self.setPBG(pbg)
         self.setSystemWorlds(systemWorlds)
         self.setAllegiance(allegiance)
-        self.setStellar(stellar)
+        self.setTradeCodes(tradeCodes)
+        self.setSophonts(sophonts)
+        self.setRulingAllegiances(rulingAllegiances)
+        self.setOwningSystems(owningSystems)
+        self.setColonySystems(colonySystems)
+        self.setResearchStations(researchStations)
+        self.setCustomRemarks(customRemarks)
+        self.setBases(bases)
+        self.setStars(stars)
         self.setNotes(notes)
-
-    def id(self) -> str:
-        return self._id
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -81,12 +477,6 @@ class DbSystem(object):
     def setUWP(self, uwp: str) -> None:
         self._uwp = uwp
 
-    def remarks(self) -> typing.Optional[str]:
-        return self._remarks
-
-    def setRemarks(self, remarks: typing.Optional[str]) -> None:
-        self._remarks = remarks
-
     def importance(self) -> typing.Optional[str]:
         return self._importance
 
@@ -111,12 +501,6 @@ class DbSystem(object):
     def setNobility(self, nobility: typing.Optional[str]) -> None:
         self._nobility = nobility
 
-    def bases(self) -> typing.Optional[str]:
-        return self._bases
-
-    def setBases(self, bases: typing.Optional[str]) -> None:
-        self._bases = bases
-
     def zone(self) -> typing.Optional[str]:
         return self._zone
 
@@ -135,17 +519,95 @@ class DbSystem(object):
     def setSystemWorlds(self, systemWorlds: typing.Optional[int]) -> None:
         self._systemWorlds = systemWorlds
 
-    def allegiance(self) -> typing.Optional[str]:
+    def allegiance(self) -> typing.Optional[DbAllegiance]:
         return self._allegiance
 
-    def setAllegiance(self, allegiance: typing.Optional[str]) -> None:
+    def setAllegiance(self, allegiance: typing.Optional[DbAllegiance]) -> None:
         self._allegiance = allegiance
 
-    def stellar(self) -> typing.Optional[str]:
-        return self._stellar
+    def tradeCodes(self) -> typing.Optional[typing.Collection[DbTradeCode]]:
+        return self._tradeCodes
 
-    def setStellar(self, stellar: typing.Optional[str]) -> None:
-        self._stellar = stellar
+    def setTradeCodes(self, tradeCodes: typing.Optional[typing.Collection[DbTradeCode]]) -> None:
+        self._tradeCodes = list(tradeCodes) if tradeCodes else None
+        if self._tradeCodes:
+            for code in self._tradeCodes:
+                code.setSystemId(self._id)
+
+    def sophonts(self) -> typing.Optional[typing.Collection[DbSophontPopulation]]:
+        return self._sophonts
+
+    # TODO: Something needs to check that the sophont ids used by the
+    # supplied populations match a known sophont for the sector this
+    # world is part of
+    def setSophonts(self, sophonts: typing.Collection[DbSophontPopulation]) -> None:
+        self._sophonts = list(sophonts) if sophonts else None
+        if self._sophonts:
+            for sophont in self._sophonts:
+                sophont.setSystemId(self._id)
+
+    def rulingAllegiances(self) -> typing.Optional[typing.Collection[DbRulingAllegiance]]:
+        return self._rulingAllegiances
+
+    def setRulingAllegiances(self, allegiances: typing.Optional[typing.Collection[DbOwningSystem]]) -> None:
+        self._rulingAllegiances = list(allegiances) if allegiances else None
+        if self._rulingAllegiances:
+            for allegiance in self._rulingAllegiances:
+                allegiance.setSystemId(self._id)
+
+    def owningSystems(self) -> typing.Optional[typing.Collection[DbOwningSystem]]:
+        return self._owningSystems
+
+    def setOwningSystems(self, systems: typing.Optional[typing.Collection[DbOwningSystem]]) -> None:
+        self._owningSystems = list(systems) if systems else None
+        if self._owningSystems:
+            for system in self._owningSystems:
+                system.setSystemId(self._id)
+
+    def colonySystems(self) -> typing.Optional[typing.Collection[DbColonySystem]]:
+        return self._colonySystems
+
+    def setColonySystems(self, systems: typing.Optional[typing.Collection[DbColonySystem]]) -> None:
+        self._colonySystems = list(systems) if systems else None
+        if self._colonySystems:
+            for system in self._colonySystems:
+                system.setSystemId(self._id)
+
+    def researchStations(self) -> typing.Optional[typing.Collection[DbResearchStation]]:
+        return self._researchStations
+
+    def setResearchStations(self, stations: typing.Optional[typing.Collection[DbResearchStation]]) -> None:
+        self._researchStations = list(stations) if stations else None
+        if self._researchStations:
+            for station in self._researchStations:
+                station.setSystemId(self._id)
+
+    def customRemarks(self) -> typing.Optional[typing.Collection[DbCustomRemark]]:
+        return self._customRemarks
+
+    def setCustomRemarks(self, remarks: typing.Optional[typing.Collection[DbCustomRemark]]) -> None:
+        self._customRemarks = list(remarks) if remarks else None
+        if self._customRemarks:
+            for remark in self._customRemarks:
+                remark.setSystemId(self._id)
+
+    def bases(self) -> typing.Optional[typing.Collection[DbBase]]:
+        return self._bases
+
+    def setBases(self, bases: typing.Optional[typing.Collection[DbBase]]) -> None:
+        self._bases = list(bases) if bases else None
+        if self._bases:
+            for base in self._bases:
+                base.setSystemId(self._id)
+
+    def stars(self) -> typing.Optional[typing.Collection[DbStar]]:
+        return self._stars
+
+    def setStars(self, stars: typing.Optional[typing.Collection[DbStar]]) -> None:
+        self._stars = list(stars) if stars else None
+        if self._stars:
+            for star in self._stars:
+                star.setSystemId(self._id)
 
     def notes(self) -> typing.Optional[str]:
         return self._notes
@@ -153,7 +615,7 @@ class DbSystem(object):
     def setNotes(self, notes: typing.Optional[str]) -> None:
         self._notes = notes
 
-class DbRoute(object):
+class DbRoute(DbObject):
     def __init__(
             self,
             startHexX: int,
@@ -167,15 +629,15 @@ class DbRoute(object):
             startOffsetY: int = 0,
             endOffsetX: int = 0,
             endOffsetY: int = 0,
-            allegiance: typing.Optional[str] = None,
             type: typing.Optional[str] = None,
             style: typing.Optional[str] = None,
             colour: typing.Optional[str] = None,
             width: typing.Optional[float] = None,
+            allegiance: typing.Optional[DbAllegiance] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self.setSectorId(sectorId)
         self.setStartHexX(startHexX)
@@ -186,18 +648,11 @@ class DbRoute(object):
         self.setStartOffsetY(startOffsetY)
         self.setEndOffsetX(endOffsetX)
         self.setEndOffsetY(endOffsetY)
-        self.setAllegiance(allegiance)
         self.setType(type)
         self.setStyle(style)
         self.setColour(colour)
         self.setWidth(width)
-
-    # TODO: As long as I only allow saving at the sector level, I don't think
-    # having the id as part of the structure makes sense as we always know
-    # what sector it's part of. The same goes for the other objects that also
-    # have the sector id
-    def id(self) -> str:
-        return self._id
+        self.setAllegiance(allegiance)
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -253,12 +708,6 @@ class DbRoute(object):
     def setEndOffsetY(self, endOffsetY: int) -> None:
         self._endOffsetY = endOffsetY
 
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
-
-    def setAllegiance(self, allegiance: typing.Optional[str]) -> None:
-        self._allegiance = allegiance
-
     def type(self) -> typing.Optional[str]:
         return self._type
 
@@ -283,7 +732,13 @@ class DbRoute(object):
     def setWidth(self, width: typing.Optional[str]) -> None:
         self._width = width
 
-class DbBorder(object):
+    def allegiance(self) -> typing.Optional[DbAllegiance]:
+        return self._allegiance
+
+    def setAllegiance(self, allegiance: typing.Optional[DbAllegiance]) -> None:
+        self._allegiance = allegiance
+
+class DbBorder(DbObject):
     def __init__(
             self,
             hexes: typing.Iterable[typing.Tuple[int, int]],
@@ -296,11 +751,11 @@ class DbBorder(object):
             labelOffsetY: typing.Optional[float] = None,
             colour: typing.Optional[str] = None,
             style: typing.Optional[str] = None,
-            allegiance: typing.Optional[str] = None,
+            allegiance: typing.Optional[DbAllegiance] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self.setSectorId(sectorId)
         self.setHexes(hexes)
@@ -314,9 +769,6 @@ class DbBorder(object):
         self.setColour(colour)
         self.setStyle(style)
         self.setAllegiance(allegiance)
-
-    def id(self) -> str:
-        return self._id
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -384,13 +836,13 @@ class DbBorder(object):
     def setStyle(self, style: typing.Optional[str]) -> None:
         self._style = style
 
-    def allegiance(self) -> typing.Optional[str]:
+    def allegiance(self) -> typing.Optional[DbAllegiance]:
         return self._allegiance
 
-    def setAllegiance(self, allegiance: typing.Optional[str]) -> None:
+    def setAllegiance(self, allegiance: typing.Optional[DbAllegiance]) -> None:
         self._allegiance = allegiance
 
-class DbRegion(object):
+class DbRegion(DbObject):
     def __init__(
             self,
             hexes: typing.Iterable[typing.Tuple[int, int]],
@@ -405,7 +857,7 @@ class DbRegion(object):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self.setSectorId(sectorId)
         self.setHexes(hexes)
@@ -417,9 +869,6 @@ class DbRegion(object):
         self.setLabelOffsetX(labelOffsetX)
         self.setLabelOffsetY(labelOffsetY)
         self.setColour(colour)
-
-    def id(self) -> str:
-        return self._id
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -481,7 +930,7 @@ class DbRegion(object):
     def setColour(self, colour: typing.Optional[str]) -> None:
         self._colour = colour
 
-class DbLabel(object):
+class DbLabel(DbObject):
     def __init__(
             self,
             text: str,
@@ -495,7 +944,7 @@ class DbLabel(object):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self.setSectorId(sectorId)
         self.setText(text)
@@ -506,15 +955,6 @@ class DbLabel(object):
         self.setSize(size)
         self.setOffsetX(offsetX)
         self.setOffsetY(offsetY)
-
-    def id(self) -> str:
-        return self._id
-
-    # NOTE: Changing the id of an object isn't something that should
-    # ever happen. If for whatever reason I do enable it, I'll need
-    # to update the sector id of all child objects
-    #def setId(self, id: str) -> None:
-    #    self._id = id
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -570,64 +1010,7 @@ class DbLabel(object):
     def setOffsetY(self, offsetY: typing.Optional[float]) -> None:
         self._offsetY = offsetY
 
-class DbAllegiance(object):
-    def __init__(
-            self,
-            code: str,
-            name: str,
-            legacy: typing.Optional[str] = None,
-            base: typing.Optional[str] = None
-            ) -> None:
-        self.setCode(code)
-        self.setName(name)
-        self.setLegacy(legacy)
-        self.setBase(base)
-
-    def code(self) -> str:
-        return self._code
-
-    def setCode(self, code: str) -> None:
-        self._code = code
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> None:
-        self._name = name
-
-    def legacy(self) -> typing.Optional[str]:
-        return self._legacy
-
-    def setLegacy(self, legacy: typing.Optional[str]) -> None:
-        self._legacy = legacy
-
-    def base(self) -> typing.Optional[str]:
-        return self._base
-
-    def setBase(self, base: typing.Optional[str]) -> None:
-        self._base = base
-
-class DbSophont(object):
-    def __init__(
-            self,
-            code: str,
-            name: str
-            ) -> None:
-        self.setCode(code)
-        self.setName(name)
-
-    def code(self) -> str:
-        return self._code
-
-    def setCode(self, code: str) -> None:
-        self._code = code
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> None:
-        self._name = name
-
+# TODO: This should be a DbObject but it doesn't have an id in the table
 class DbProduct(object):
     def __init__(
             self,
@@ -665,7 +1048,7 @@ class DbProduct(object):
     def setReference(self, reference: typing.Optional[str]) -> None:
         self._reference = reference
 
-class DbSector(object):
+class DbSector(DbObject):
     def __init__(
             self,
             isCustom: bool,
@@ -698,7 +1081,7 @@ class DbSector(object):
             id: typing.Optional[str] = None, # None means allocate an id
             universeId: typing.Optional[str] = None
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self.setUniverseId(universeId)
         self.setIsCustom(isCustom)
@@ -728,9 +1111,6 @@ class DbSector(object):
         self.setLabels(labels)
         self.setRegions(regions)
         self.setNotes(notes)
-
-    def id(self) -> str:
-        return self._id
 
     def universeId(self) -> typing.Optional[str]:
         return self._universeId
@@ -859,12 +1239,18 @@ class DbSector(object):
 
     def setAllegiances(self, allegiances: typing.Optional[typing.Collection[DbAllegiance]]) -> None:
         self._allegiances = list(allegiances) if allegiances else None
+        if self._allegiances:
+            for allegiance in self._allegiances:
+                allegiance.setSectorId(self._id)
 
     def sophonts(self) -> typing.Optional[typing.Collection[DbSophont]]:
         return self._sophonts
 
     def setSophonts(self, sophonts: typing.Optional[typing.Collection[DbSophont]]) -> None:
         self._sophonts = list(sophonts) if sophonts else None
+        if self._sophonts:
+            for sophont in self._sophonts:
+                sophont.setSectorId(self._id)
 
     def systems(self) -> typing.Optional[typing.Collection[DbSystem]]:
         return self._systems
@@ -992,7 +1378,7 @@ class DbSector(object):
     def setNotes(self, notes: typing.Optional[str]) -> None:
         self._notes = notes
 
-class DbUniverse(object):
+class DbUniverse(DbObject):
     def __init__(
             self,
             name: str,
@@ -1001,7 +1387,7 @@ class DbUniverse(object):
             sectors: typing.Optional[typing.Collection[DbSector]] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             ) -> None:
-        self._id = id if id is not None else str(uuid.uuid4())
+        super().__init__(id=id)
 
         self._sectorByMilieuPosition: typing.Dict[typing.Tuple[str, int, int], DbSector] = {}
 
@@ -1009,9 +1395,6 @@ class DbUniverse(object):
         self.setDescription(description)
         self.setNotes(notes)
         self.setSectors(sectors)
-
-    def id(self) -> str:
-        return self._id
 
     def name(self) -> str:
         return self._name

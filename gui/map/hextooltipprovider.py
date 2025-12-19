@@ -67,7 +67,11 @@ class HexTooltipProvider(object):
             milieu=self._milieu,
             hex=hex,
             rules=self._rules,
-            includeHexImage=True, # Always show hex images
+            # Always show hex images
+            includeHexImage=True,
+            # Don't include credits as they can take up a lot of space meaning the tooltip
+            # doesn't fit on the screen
+            includeCredits=False,
             hexImageStyle=self._mapStyle,
             hexImageOptions=self._mapOptions,
             worldTagging=self._worldTagging,

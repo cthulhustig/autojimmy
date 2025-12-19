@@ -1,5 +1,6 @@
 import enum
 import logging
+import multiverse
 import typing
 
 # There are two sets of base codes, an older set from before Traveller 5th
@@ -79,6 +80,7 @@ _BaseTypeToCodeMap = {
     BaseType.ZhodaniDepot: 'Y',
     BaseType.ZhodaniNavalMilitaryBase: 'Z'
 }
+assert(set(_BaseTypeToCodeMap.keys()) == set(BaseType))
 
 _BaseTypeDescriptionMap = {
     BaseType.ExplorationBase: 'Exploration Base',
@@ -125,16 +127,20 @@ _MilitaryBaseTypes = [
 class Bases(object):
     def __init__(
             self,
-            string: str
+            dbBases: typing.Optional[typing.Collection[multiverse.DbBase]]
             ) -> None:
-        self._string = string
-        self._bases = Bases._parseString(self._string)
-
-    def string(self) -> str:
-        return self._string
+        self._bases = []
+        if dbBases:
+            for dbBase in dbBases:
+                baseTypes = _CodeToBaseTypeMap.get(dbBase.code())
+                if baseTypes is None:
+                    logging.debug(f'Ignoring unknown base code "{dbBase.code()}"')
+                    continue
+                self._bases.extend(baseTypes)
+        self._string = None
 
     def isEmpty(self) -> bool:
-        return not self._string
+        return not self._bases
 
     def count(self) -> int:
         return len(self._bases)
@@ -172,6 +178,12 @@ class Bases(object):
                 militaryBases.add(base)
         return militaryBases
 
+    def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemBasesString(
+                bases=[_BaseTypeToCodeMap[b] for b in self._bases])
+        return self._string
+
     @staticmethod
     def code(baseType: BaseType) -> str:
         return _BaseTypeToCodeMap[baseType]
@@ -183,18 +195,6 @@ class Bases(object):
     @staticmethod
     def descriptionMap() -> typing.Mapping[BaseType, str]:
         return _BaseTypeDescriptionMap
-
-    @staticmethod
-    def _parseString(string: str) -> typing.List[BaseType]:
-        bases = list()
-        for code in string:
-            codeBaseTypes = _CodeToBaseTypeMap.get(code)
-            if not codeBaseTypes:
-                logging.debug(f'Ignoring unknown base code "{code}"')
-                continue
-
-            bases.extend(codeBaseTypes)
-        return bases
 
     def __getitem__(self, index: int) -> BaseType:
         return self._bases.__getitem__(index)

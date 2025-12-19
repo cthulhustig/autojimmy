@@ -196,9 +196,11 @@ class WorldTagging(object):
             if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
                 worldTagLevel = tempTagLevel
 
-        tempTagLevel = self.calculateAllegianceTagLevel(world)
-        if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
-            worldTagLevel = tempTagLevel
+        allegiance = world.allegiance()
+        if allegiance:
+            tempTagLevel = self.calculateAllegianceTagLevel(allegiance)
+            if tempTagLevel and (not worldTagLevel or (tempTagLevel > worldTagLevel)):
+                worldTagLevel = tempTagLevel
 
         for star in world.stellar():
             tempTagLevel = self.calculateSpectralTagLevel(star)
@@ -373,11 +375,8 @@ class WorldTagging(object):
 
     def calculateAllegianceTagLevel(
             self,
-            world: astronomer.World
+            allegiance: astronomer.Allegiance
             ) -> typing.Optional[logic.TagLevel]:
-        allegiance = world.allegiance()
-        if not allegiance:
-            return None
         return self._propertyTagLevel(
             property=TaggingProperty.Allegiance,
             code=allegiance.uniqueCode())
@@ -386,9 +385,12 @@ class WorldTagging(object):
             self,
             star: astronomer.Star
             ) -> typing.Optional[logic.TagLevel]:
+        code = star.code(astronomer.Star.Element.SpectralClass)
+        if code is None:
+            return None
         return self._propertyTagLevel(
             property=TaggingProperty.Spectral,
-            code=star.code(astronomer.Star.Element.SpectralClass))
+            code=code)
 
     def calculateLuminosityTagLevel(
             self,

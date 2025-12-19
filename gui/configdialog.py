@@ -752,8 +752,6 @@ class ConfigDialog(gui.DialogEx):
 
         descriptions: typing.Mapping[str, str] = {}
         for allegiance in allegiances:
-            name = allegiance.name()
-            if name:
-                descriptions[allegiance.code()] = name
+            descriptions[allegiance.code()] = allegiance.name()
 
         return descriptions

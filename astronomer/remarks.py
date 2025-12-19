@@ -1,49 +1,89 @@
 import astronomer
+import common
 import logging
-import re
+import multiverse
 import typing
 
-class Remarks(object):
-    # Most of these are based on the descriptions here https://travellermap.com/doc/secondsurvey
-    # with the exception of Colony which I found here https://wiki.travellerrpg.com/Trade_classification
-    _TradeCodePattern = re.compile(r'^([A-Za-z]{2})$') # Argument gives trade code
-    _MilitaryRulePattern = re.compile(r'^Mr\((\S{4})\)$') # Argument gives the controlling allegiance short code
-    _ResearchStationPattern = re.compile(r'^Rs([ABGDEZHIO]?)$') # Argument gives grade of research station
-    _OwnershipPattern = re.compile(r'^O:(?:(\S{4})-)?(\d{4})$') # Argument gives the owning world
-    _ColonyPattern = re.compile(r'^C:(?:(\S{4})-)?(\d{4})$') # Argument gives the colony world
-    _SophontMajorRacePattern = re.compile(r'^\[(.*)\]$') # Argument gives major sophont
-    _SophontMinorRacePattern = re.compile(r'^\((.*)\)([0-9W]?)$') # Argument gives minor sophont with optional percentage
-    _SophontDiebackWorldPattern = re.compile(r'^Di\((.+)\)$') # Argument gives previously inhabiting sophont
-    _SophontShortCodePattern = re.compile(r'^(\S{4})([0-9W])$') # Argument gives sophont short code with optional percentage
-
-    # Default to Gamma as per Traveller Map FromResearchCode. This is
-    # used when the world just has the trade code 'Rs' with no level
-    # character
-    _DefaultResearchStation = 'G'
-
+class WorldReference(object):
     def __init__(
             self,
-            string: str,
-            sectorName: str,
-            zone: astronomer.ZoneType,
-            sophontNames: typing.Mapping[str, str] # Maps sophont code to sophont name
+            hexX: int,
+            hexY: int,
+            sectorAbbreviation: typing.Optional[str] = None # None means current system
             ) -> None:
-        self._string = string
-        self._tokenSet: typing.Set[str] = set()
-        self._sectorName = sectorName
-        self._zone = zone
-        self._sophontNames = dict(sophontNames)
-        self._tradeCodes: typing.Set[astronomer.TradeCode] = set()
-        self._isMajorHomeworld = False
-        self._isMinorHomeworld = False
-        self._sophontPercentages: typing.Dict[str, int] = dict()
-        self._diebackSophonts: typing.List[str] = list()
-        self._owningWorld = None
-        self._colonyWorlds = []
-        self._rulingAllegiance = None
-        self._researchStation = None
+        self._hexX = hexX
+        self._hexY = hexY
+        self._sectorAbbreviation = sectorAbbreviation
 
-        self._parseRemarks()
+    def hexX(self) -> int:
+        return self._hexX
+
+    def hexY(self) -> int:
+        return self._hexY
+
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
+
+class SophontPopulation(object):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            percentage: typing.Optional[int], # None means die back
+            isHomeWorld: bool,
+            isMajorRace: bool
+            ) -> None:
+        self._code = code
+        self._name = name
+        self._percentage = percentage
+        self._isHomeWorld = isHomeWorld
+        self._isMajorRace = isMajorRace
+
+    def code(self) -> int:
+        return self._code
+
+    def name(self) -> int:
+        return self._name
+
+    def percentage(self) -> typing.Optional[int]:
+        return self._percentage
+
+    def isHomeWorld(self) -> bool:
+        return self._isHomeWorld
+
+    def isMajorRace(self) -> bool:
+        return self._isMajorRace
+
+class Remarks(object):
+    def __init__(
+            self,
+            zone: astronomer.ZoneType,
+            dbTradeCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]],
+            dbSophonts: typing.Optional[typing.Collection[multiverse.DbSophont]],
+            dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
+            dbRulingAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
+            dbOwningSystems: typing.Optional[typing.Collection[multiverse.DbOwningSystem]],
+            dbColonySystems: typing.Optional[typing.Collection[multiverse.DbColonySystem]],
+            dbResearchStations: typing.Optional[typing.Collection[multiverse.DbResearchStation]],
+            dbCustomRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]]
+            ) -> None:
+        self._zone = zone
+        self._tradeCodes = common.OrderedSet[astronomer.TradeCode]()
+        self._rulingAllegiances = list[str]()
+        self._owningWorlds = list[WorldReference]()
+        self._colonyWorlds = list[WorldReference]()
+        self._researchStations = common.OrderedSet[str]()
+        self._sophontPopulations = list[SophontPopulation]()
+        self._customRemarks = common.OrderedSet[str]()
+        self._string = None
+
+        self._processTradeCodes(dbCodes=dbTradeCodes)
+        self._processSophonts(dbSophonts=dbSophonts, dbPopulations=dbPopulations)
+        self._processRulingAllegiances(dbAllegiances=dbRulingAllegiances)
+        self._processOwningSystems(dbSystems=dbOwningSystems)
+        self._processColonySystems(dbSystems=dbColonySystems)
+        self._processResearchStations(dbStations=dbResearchStations)
+        self._processCustomRemarks(dbRemarks=dbCustomRemarks)
 
         # Add custom trade codes for red/amber zone as it simplifies the
         # trade calculation logic as it can just deal with trade codes and
@@ -59,15 +99,14 @@ class Remarks(object):
             self._tradeCodes.add(astronomer.TradeCode.RedZone)
 
     def string(self) -> str:
+        if self._string is None:
+            self._string = self._generateRemarksString()
         return self._string
 
     def isEmpty(self) -> bool:
-        return not self._string
+        return len(self.string()) == 0
 
-    def hasRemark(self, remark: str) -> bool:
-        return remark in self._tokenSet
-
-    def tradeCodes(self) -> typing.Iterable[astronomer.TradeCode]:
+    def tradeCodes(self) -> typing.Collection[astronomer.TradeCode]:
         return self._tradeCodes
 
     def hasTradeCode(
@@ -76,218 +115,175 @@ class Remarks(object):
             ) -> bool:
         return tradeCode in self._tradeCodes
 
-    def sophonts(self) -> typing.Iterable[str]:
-        return self._sophontPercentages.keys()
+    def sophonts(self) -> typing.Collection[SophontPopulation]:
+        return self._sophontPopulations
 
-    def hasSophont(
-            self,
-            sophont: str
-            ) -> bool:
-        return sophont in self._sophontPercentages
+    # NOTE: This includes die back sophonts
+    def sophontCount(self) -> int:
+        return len(self._sophontPopulations)
 
-    def isMajorHomeworld(self) -> bool:
-        return self._isMajorHomeworld
+    def rulingAllegiances(self) -> typing.Optional[str]:
+        return self._rulingAllegiances
 
-    def isMinorHomeworld(self) -> bool:
-        return self._isMinorHomeworld
+    def ownerCount(self) -> int:
+        return len(self._owningWorlds)
 
-    def sophontPercentage(
-            self,
-            sophont: str
-            ) -> int:
-        if sophont not in self._sophontPercentages:
-            return 0
-        return self._sophontPercentages[sophont]
-
-    def hasDiebackSophonts(self) -> bool:
-        return len(self._diebackSophonts) > 0
-
-    def diebackSophonts(self) -> typing.Iterable[str]:
-        return self._diebackSophonts
-
-    def hasOwner(self) -> bool:
-        return self._owningWorld != None
-
-    def ownerSectorHex(self) -> typing.Optional[str]:
-        return self._owningWorld
-
-    def hasColony(self) -> bool:
-        return len(self._colonyWorlds) > 0
+    def ownerWorlds(self) -> typing.Collection[WorldReference]:
+        return self._owningWorlds
 
     def colonyCount(self) -> int:
         return len(self._colonyWorlds)
 
-    def colonySectorHexes(self) -> typing.Iterable[str]:
+    def colonyWorlds(self) -> typing.Collection[WorldReference]:
         return self._colonyWorlds
 
-    def rulingAllegiance(self) -> typing.Optional[str]:
-        return self._rulingAllegiance
+    def researchStations(self) -> typing.Optional[str]:
+        return self._researchStations
 
-    """
-    Research Stations:
-    'A' == Alpha
-    'B' == Beta
-    'G' == Gamma
-    'D' == Delta
-    'E' == Epsilon
-    'Z' == Zeta
-    'H' == Eta
-    'T' == Theta
-    'O' == Omicron
-    """
+    def researchStationCount(self) -> int:
+        return len(self._researchStations)
 
-    def researchStation(self) -> typing.Optional[str]:
-        return self._researchStation
+    def hasResearchStation(self, code: str) -> bool:
+        return code in self._researchStations
 
-    def _parseRemarks(self) -> None:
-        if not self._string:
+    def customRemarks(self) -> typing.Collection[str]:
+        return self._customRemarks
+
+    def hasCustomRemark(self, remark: str) -> bool:
+        return remark in self._customRemarks
+
+    def _processTradeCodes(
+            self,
+            dbCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]]
+            ) -> None:
+        if not dbCodes:
             return
 
-        tokens = self._tokeniseRemarks()
-        for remark in tokens:
-            self._tokenSet.add(remark)
-
-            result = self._TradeCodePattern.match(remark)
-            if result:
-                tradeCodeGlyph = result.group(1)
-                tradeCode = astronomer.tradeCode(tradeCodeGlyph)
-                if not tradeCode:
-                    # Only log this at debug as it can happen a lot in some sectors
-                    logging.debug(f'Ignoring unknown Trade Code glyph "{tradeCodeGlyph}"')
-                    continue
-                self._tradeCodes.add(tradeCode)
-
-                if tradeCode == astronomer.TradeCode.ResearchStation:
-                    self._researchStation = Remarks._DefaultResearchStation
+        for dbCode in dbCodes:
+            tradeCode = astronomer.tradeCode(tradeCodeString=dbCode.code())
+            if not tradeCode:
+                # TODO: Should log this
                 continue
+            self._tradeCodes.add(tradeCode)
 
-            result = self._MilitaryRulePattern.match(remark)
-            if result:
-                self._tradeCodes.add(astronomer.TradeCode.MilitaryRule)
+    def _processSophonts(
+            self,
+            dbSophonts: typing.Optional[typing.Collection[multiverse.DbSophont]],
+            dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]]
+            ) -> None:
+        if not dbPopulations:
+            return
 
-                allegiance = result.group(1)
-                if allegiance:
-                    self._rulingAllegiance = allegiance
-                continue
+        if not dbSophonts:
+            raise ValueError('Sophont populations supplied without sophonts')
 
-            result = self._ResearchStationPattern.match(remark)
-            if result:
-                self._researchStation = result.group(1)
-                if not self._researchStation:
-                    self._researchStation = Remarks._DefaultResearchStation
+        # TODO: Generating this map each time is inefficient
+        sophontMap = {s.id():s for s in dbSophonts}
+        for dbPopulation in dbPopulations:
+            dbSophont = sophontMap.get(dbPopulation.sophontId())
+            if not dbSophont:
+                raise ValueError(f'No sophont with id {dbPopulation.sophontId()} for population {dbPopulation.id()}')
 
-                self._tradeCodes.add(astronomer.TradeCode.ResearchStation)
-                continue
+            self._sophontPopulations.append(SophontPopulation(
+                code=dbSophont.code(),
+                name=dbSophont.name(),
+                percentage=dbPopulation.percentage(),
+                isHomeWorld=dbPopulation.isHomeWorld(),
+                isMajorRace=dbSophont.isMajor()))
 
-            result = self._OwnershipPattern.match(remark)
-            if result:
-                # This indicates the world is owned by a world elsewhere
-                sector = result.group(1)
-                if not sector:
-                    # Empty string means current sector
-                    sector = self._sectorName
+    def _processRulingAllegiances(
+            self,
+            dbAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]]
+            ) -> None:
+        if not dbAllegiances:
+            return
 
-                hex = result.group(2) # Hex in sector coordinates
+        for dbAllegiance in dbAllegiances:
+            self._rulingAllegiances.append(dbAllegiance.allegiance().code())
 
-                assert(not self._owningWorld) # Should only have one owning world
-                self._owningWorld = f'{sector} {hex}'
-                continue
+    def _processOwningSystems(
+            self,
+            dbSystems: typing.Optional[typing.Collection[multiverse.DbOwningSystem]]
+            ) -> None:
+        if not dbSystems:
+            return
 
-            result = self._ColonyPattern.match(remark)
-            if result:
-                # This indicates this world has a colony elsewhere
-                sector = result.group(1)
-                if not sector:
-                    # Empty string means current sector
-                    sector = self._sectorName
+        for dbSystem in dbSystems:
+            self._owningWorlds.append(WorldReference(
+                hexX=dbSystem.hexX(),
+                hexY=dbSystem.hexY(),
+                sectorAbbreviation=dbSystem.sectorCode()))
 
-                hex = result.group(2) # Hex in sector coordinates
+    def _processColonySystems(
+            self,
+            dbSystems: typing.Optional[typing.Collection[multiverse.DbColonySystem]]
+            ) -> None:
+        if not dbSystems:
+            return
 
-                self._colonyWorlds.append(f'{sector} {hex}')
-                continue
+        for dbSystem in dbSystems:
+            self._colonyWorlds.append(WorldReference(
+                hexX=dbSystem.hexX(),
+                hexY=dbSystem.hexY(),
+                sectorAbbreviation=dbSystem.sectorCode()))
 
-            result = self._SophontMajorRacePattern.match(remark)
-            if result:
-                sophontName = result.group(1)
-                self._sophontPercentages[sophontName] = 100
-                self._isMajorHomeworld = True
-                continue
+    def _processResearchStations(
+            self,
+            dbStations: typing.Optional[typing.Collection[multiverse.DbResearchStation]]
+            ) -> None:
+        if not dbStations:
+            return
 
-            result = self._SophontMinorRacePattern.match(remark)
-            if result:
-                sophontName = result.group(1)
-                sophontPercentageCode = result.group(2)
-                sophontPercentage = 100 if sophontPercentageCode == '' or sophontPercentageCode == 'W' else (int(sophontPercentageCode) * 10)
-                self._sophontPercentages[sophontName] = sophontPercentage
-                self._isMinorHomeworld = True
-                continue
+        for dbStation in dbStations:
+            self._researchStations.add(dbStation.code())
 
-            result = self._SophontDiebackWorldPattern.match(remark)
-            if result:
-                self._tradeCodes.add(astronomer.TradeCode.DieBackWorld)
+    def _processCustomRemarks(
+            self,
+            dbRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]]
+            ) -> None:
+        if not dbRemarks:
+            return
 
-                sophont = result.group(1)
-                if sophont:
-                    self._diebackSophonts.append(sophont)
-                continue
+        for dbRemark in dbRemarks:
+            self._customRemarks.add(dbRemark.remark())
 
-            result = self._SophontShortCodePattern.match(remark)
-            if result:
-                sophontShortCode = result.group(1)
-                sophontPercentageCode = result.group(2)
-                sophontPercentage = 100 if sophontPercentageCode == '' or sophontPercentageCode == 'W' else (int(sophontPercentageCode) * 10)
+    def _generateRemarksString(self) -> str:
+        tradeCodes = []
+        majorRaceHomeWorlds = []
+        minorRaceHomeWorlds = []
+        sophontPopulations = []
+        dieBackSophonts = []
+        owningSystems = []
+        colonySystems = []
 
-                sophontName = self._sophontNames.get(sophontShortCode)
-                if not sophontName:
-                    # Just use the short code for the name. In theory this shouldn't happen
-                    # as the sophont entries should have been created in the database for
-                    # every sophont code used
-                    sophontName = sophontShortCode
+        for tradeCode in self._tradeCodes:
+            tradeCodes.append(astronomer.tradeCodeString(tradeCode))
 
-                self._sophontPercentages[sophontName] = sophontPercentage
-                continue
-
-            # This is logged at a low log level as only a subset of remarks are parsed
-            logging.debug(f'Ignoring unknown remark "{remark}"')
-
-    # This function returns a list rather than storing tokens in _tokenSet so that the tokens will
-    # be processed in the order they're written
-    def _tokeniseRemarks(self) -> typing.Iterable[str]:
-        tokens = []
-        remark = None
-        bracketNesting = 0
-        for char in self._string:
-            if bracketNesting > 0:
-                # We're processing bracketed data so just add the character to the current remark no
-                # mater what it is
-                assert(remark != None)
-                remark += char
-            elif char.isspace() or char == ',':
-                # We've hit the end of the current remark if there is one in progress, most remark data
-                # is white space separated but a small number of Traveller Map worlds have comma
-                # separated trade codes
-                if remark != None:
-                    tokens.append(remark)
-                    remark = None
-            else:
-                if remark != None:
-                    # We're processing a remark so just add the current character to it
-                    remark += char
+        for sophont in self._sophontPopulations:
+            if sophont.percentage() is None:
+                dieBackSophonts.append(sophont.name())
+            elif sophont.isHomeWorld():
+                if sophont.isMajorRace():
+                    majorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
                 else:
-                    # We're not processing a remark so start a new one
-                    remark = char
+                    minorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
+            else:
+                sophontPopulations.append((sophont.code(), sophont.percentage()))
 
-            # Check for begin/end of bracketed data. Note this parsing is really noddy, no attempt
-            # is made to validate closing bracket types match opening bracket types and there is no
-            # support for nested brackets
-            if char == '[' or char == '(' or char == '{':
-                bracketNesting += 1
-            elif char == ']' or char == ')' or char == '}':
-                assert(bracketNesting)
-                bracketNesting -= 1
+        for owner in self._owningWorlds:
+            owningSystems.append((owner.hexX(), owner.hexY(), owner.sectorAbbreviation()))
 
-        if remark != None:
-            # Add the in progress remark to the array
-            tokens.append(remark)
+        for colony in self._colonyWorlds:
+            colonySystems.append((colony.hexX(), colony.hexY(), colony.sectorAbbreviation()))
 
-        return tokens
+        return multiverse.formatSystemRemarksString(
+            tradeCodes=tradeCodes,
+            majorRaceHomeWorlds=majorRaceHomeWorlds,
+            minorRaceHomeWorlds=minorRaceHomeWorlds,
+            sophontPopulations=sophontPopulations,
+            dieBackSophonts=dieBackSophonts,
+            owningSystems=owningSystems,
+            colonySystems=colonySystems,
+            rulingAllegiances=self._rulingAllegiances,
+            researchStations=self._researchStations,
+            customRemarks=self._customRemarks)

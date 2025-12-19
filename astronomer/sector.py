@@ -69,6 +69,7 @@ class Sector(object):
             sectorLabel: typing.Optional[str],
             # Subsectors should be ordered in subsector order (i.e. A-P)
             subsectors: typing.Iterable[Subsector],
+            allegiances: typing.Iterable[astronomer.Allegiance],
             routes: typing.Iterable[astronomer.Route],
             borders: typing.Iterable[astronomer.Border],
             regions: typing.Iterable[astronomer.Region],
@@ -84,6 +85,7 @@ class Sector(object):
         self._alternateNames = list(alternateNames) if alternateNames else None
         self._abbreviation = abbreviation
         self._sectorLabel = sectorLabel
+        self._allegiances = list(allegiances)
         self._routes = list(routes)
         self._borders = list(borders)
         self._regions = list(regions)
@@ -104,6 +106,12 @@ class Sector(object):
             self._subsectorCodeMap[subsectorIndex.code()] = subsector
             for world in subsector.worlds():
                 self._worlds.append(world)
+
+        self._allegiances: typing.List[astronomer.Allegiance] = []
+        self._allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
+        for allegiance in allegiances:
+            self._allegiances.append(allegiance)
+            self._allegianceCodeMap[allegiance.code()] = allegiance
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -137,6 +145,16 @@ class Sector(object):
     def yieldWorlds(self) -> typing.Generator[astronomer.World, None, None]:
         for world in self._worlds:
             yield world
+
+    def allegiances(self) -> typing.List[astronomer.Allegiance]:
+        return list(self._allegiances)
+
+    def yieldAllegiances(self) -> typing.Generator[astronomer.Allegiance, None, None]:
+        for allegiance in self._allegiances:
+            yield allegiance
+
+    def allegianceByCode(self, code: str) -> typing.Optional[astronomer.Allegiance]:
+        return self._allegianceCodeMap.get(code)
 
     def routes(self) -> typing.Collection[astronomer.Route]:
         return list(self._routes)

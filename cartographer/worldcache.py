@@ -127,8 +127,11 @@ class WorldInfo(object):
             baseCode = astronomer.Bases.code(bases[0])
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
-            # Special case: Show Zho Naval+Military as diamond
-            if baseAllegiance == 'Zh' and bases.string() == 'KM':
+            # Special case: Show Zho Naval+Military as diamond. The Traveller Map
+            # checks for the base code 'KM' which maps to Naval & Military bases
+            if baseAllegiance == 'Zh' and \
+                    bases.hasBase(astronomer.BaseType.NavalBase) and \
+                    bases.hasBase(astronomer.BaseType.MilitaryBase):
                 baseCode = 'Z'
                 ignoreSecondBase = True
 
@@ -148,8 +151,17 @@ class WorldInfo(object):
 
         remarks = world.remarks()
         if remarks.hasTradeCode(astronomer.TradeCode.ResearchStation):
-            self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(
-                remarks.researchStation())
+            foundStation = False
+            for stationCode in 'ABGDEZHTO':
+                if remarks.hasResearchStation(code=stationCode):
+                    self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(stationCode)
+                    foundStation = True
+                    break
+            if not foundStation:
+                # Default to Gamma as per Traveller Map FromResearchCode. This is
+                # used when the world just has the trade code 'Rs' rather than the
+                # 'RsX' format
+                self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation('G')
         elif remarks.hasTradeCode(astronomer.TradeCode.Reserve):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
         elif remarks.hasTradeCode(astronomer.TradeCode.PenalColony):
@@ -175,6 +187,12 @@ class WorldInfo(object):
             (importance - 0.5) * astronomer.ParsecScaleX \
             if importance > 0 else \
             0
+
+        self.isMinorHomeWorld = False
+        for sophontPopulation in remarks.sophonts():
+            if sophontPopulation.isHomeWorld() and not sophontPopulation.isMajorRace():
+                self.isMinorHomeWorld = True
+                break
 
     @staticmethod
     def _calcIsPlaceholder(world: astronomer.World) -> bool:
@@ -251,7 +269,7 @@ class WorldInfo(object):
         return remarks.hasTradeCode(astronomer.TradeCode.SectorCapital) or \
             remarks.hasTradeCode(astronomer.TradeCode.SubsectorCapital) or \
             remarks.hasTradeCode(astronomer.TradeCode.ImperialCapital) or \
-            remarks.hasRemark('Capital')
+            remarks.hasCustomRemark('Capital')
 
     # This is based on code from Traveller Map which I believe is
     # based on the T5.10 rules

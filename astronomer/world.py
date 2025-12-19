@@ -36,8 +36,8 @@ class World(object):
         self._nobilities = nobilities
         self._zone = zone
         self._remarks = remarks
-        self._isAnomaly = self._remarks.hasRemark('{Anomaly}')
-        self._isFuelCache = self._remarks.hasRemark('{Fuel}')
+        self._isAnomaly = self._remarks.hasCustomRemark('{Anomaly}')
+        self._isFuelCache = self._remarks.hasCustomRemark('{Fuel}')
         self._stellar = stellar
         self._pbg = pbg
         self._systemWorlds = systemWorlds
@@ -88,7 +88,7 @@ class World(object):
         return self._remarks
 
     def hasRemark(self, remark: str) -> None:
-        return self._remarks.hasRemark(remark=remark)
+        return self._remarks.hasCustomRemark(remark=remark)
 
     def zone(self) -> typing.Optional[astronomer.ZoneType]:
         return self._zone
@@ -115,20 +115,17 @@ class World(object):
         starPortCode = self._uwp.code(astronomer.UWP.Element.StarPort)
         return starPortCode == 'A' or starPortCode == 'B' or starPortCode == 'C' or starPortCode == 'D' or starPortCode == 'E'
 
-    def hasOwner(self) -> bool:
-        return self._remarks.hasOwner()
+    def ownerCount(self) -> bool:
+        return self._remarks.ownerCount()
 
-    def ownerSectorHex(self) -> typing.Optional[str]:
-        return self._remarks.ownerSectorHex()
-
-    def hasColony(self) -> bool:
-        return self._remarks.hasColony()
+    def ownerWorldReferences(self) -> typing.Optional[typing.Collection[astronomer.WorldReference]]:
+        return self._remarks.ownerWorlds()
 
     def colonyCount(self) -> int:
         return self._remarks.colonyCount()
 
-    def colonySectorHexes(self) -> typing.Optional[typing.Iterable[str]]:
-        return self._remarks.colonySectorHexes()
+    def colonyWorldReferences(self) -> typing.Optional[typing.Collection[astronomer.WorldReference]]:
+        return self._remarks.colonyWorlds()
 
     # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:

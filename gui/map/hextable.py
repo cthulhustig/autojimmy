@@ -113,7 +113,7 @@ class HexTable(gui.FrozenColumnListTable):
         Bases = 'Bases'
         ScoutBase = 'Scout Base'
         MilitaryBase = 'Military Base'
-        OwnerWorld = 'Owner'
+        OwnerWorlds = 'Owners\n(Count)'
         ColonyWorlds = 'Colonies\n(Count)'
         Remarks = 'Remarks'
 
@@ -155,7 +155,7 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Bases,
         ColumnType.ScoutBase,
         ColumnType.MilitaryBase,
-        ColumnType.OwnerWorld,
+        ColumnType.OwnerWorlds,
         ColumnType.ColonyWorlds,
         ColumnType.Anomaly,
         ColumnType.Remarks
@@ -178,7 +178,7 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Bases,
         ColumnType.ScoutBase,
         ColumnType.MilitaryBase,
-        ColumnType.OwnerWorld,
+        ColumnType.OwnerWorlds,
         ColumnType.ColonyWorlds,
         ColumnType.Anomaly,
     ]
@@ -828,7 +828,7 @@ class HexTable(gui.FrozenColumnListTable):
                         allegiance = world.allegiance()
                         if allegiance:
                             tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, allegiance.code())
-                            tagLevel = self._worldTagging.calculateAllegianceTagLevel(world=world) if self._worldTagging else None
+                            tagLevel = self._worldTagging.calculateAllegianceTagLevel(allegiance=allegiance) if self._worldTagging else None
                             tagColour = self._taggingColour(level=tagLevel)
                 elif columnType == self.ColumnType.Sophont:
                     tableItem = QtWidgets.QTableWidgetItem()
@@ -836,9 +836,13 @@ class HexTable(gui.FrozenColumnListTable):
                         displayText = ''
                         remarks = world.remarks()
                         for sophont in remarks.sophonts():
-                            percentage = remarks.sophontPercentage(sophont)
-                            displayText += f', {sophont}' if displayText else sophont
-                            displayText += f' ({percentage}%)'
+                            if displayText:
+                                displayText += ', '
+                            displayText += sophont.name()
+                            if sophont.percentage() is not None:
+                                displayText += f' ({sophont.percentage()}%)'
+                            else:
+                                displayText += ' (Die Back)'
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
                 elif columnType == self.ColumnType.TradeCodes:
                     tableItem = QtWidgets.QTableWidgetItem()
@@ -941,40 +945,71 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, 'yes' if militaryBases else 'no')
                         if highestTagLevel:
                             tagColour = self._taggingColour(level=highestTagLevel)
-                elif columnType == self.ColumnType.OwnerWorld:
+                elif columnType == self.ColumnType.OwnerWorlds:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        ownerString = None
-                        tagLevel = None
-                        if world.hasOwner():
-                            try:
-                                ownerWorld = astronomer.WorldManager.instance().worldBySectorHex(
-                                    milieu=self._milieu,
-                                    sectorHex=world.ownerSectorHex())
-                            except Exception:
-                                ownerWorld = None
+                        highestTagLevel = None
+                        if self._worldTagging:
+                            for ownerWorldRef in world.ownerWorldReferences():
+                                ownerSector = None
+                                if ownerWorldRef.sectorAbbreviation():
+                                    matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                                        milieu=self._milieu,
+                                        abbreviation=ownerWorldRef.sectorAbbreviation())
+                                    if matchSectors:
+                                        ownerSector = matchSectors[0]
+                                else:
+                                    ownerSector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                                        milieu=self._milieu,
+                                        index=hex.sectorIndex())
 
-                            if ownerWorld:
-                                ownerString = ownerWorld.name(includeSubsector=True)
-                                tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld) if self._worldTagging else None
-                            else:
-                                # We don't know about this world so just display the sector hex and tag it as danger
-                                ownerString = world.ownerSectorHex()
-                                tagLevel = logic.TagLevel.Danger
-                            tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, ownerString)
-                        if tagLevel:
-                            tagColour = self._taggingColour(level=tagLevel)
+                                ownerWorld = None
+                                if ownerSector:
+                                    ownerHex = astronomer.HexPosition(
+                                        sectorIndex=ownerSector.index(),
+                                        offsetX=ownerWorldRef.hexX(),
+                                        offsetY=ownerWorldRef.hexY())
+                                    ownerWorld = astronomer.WorldManager.instance().worldByPosition(
+                                        milieu=self._milieu,
+                                        hex=ownerHex)
+
+                                if ownerWorld:
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
+                                    if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
+                                        highestTagLevel = tagLevel
+                                else:
+                                    # We don't know about this world so the tag level is error, no need to continue looking
+                                    highestTagLevel = logic.TagLevel.Danger
+                                    break
+                        tableItem = gui.FormattedNumberTableWidgetItem(world.ownerCount())
+                        if highestTagLevel:
+                            tagColour = self._taggingColour(level=highestTagLevel)
                 elif columnType == self.ColumnType.ColonyWorlds:
                     if world:
                         highestTagLevel = None
                         if self._worldTagging:
-                            for colonySectorHex in world.colonySectorHexes():
-                                try:
-                                    colonyWorld = astronomer.WorldManager.instance().worldBySectorHex(
+                            for colonyWorldRef in world.colonyWorldReferences():
+                                colonySector = None
+                                if colonyWorldRef.sectorAbbreviation():
+                                    matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
                                         milieu=self._milieu,
-                                        sectorHex=colonySectorHex)
-                                except Exception:
-                                    colonyWorld = None
+                                        abbreviation=colonyWorldRef.sectorAbbreviation())
+                                    if matchSectors:
+                                        colonySector = matchSectors[0]
+                                else:
+                                    colonySector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                                        milieu=self._milieu,
+                                        index=hex.sectorIndex())
+
+                                colonyWorld = None
+                                if colonySector:
+                                    colonyHex = astronomer.HexPosition(
+                                        sectorIndex=colonySector.index(),
+                                        offsetX=colonyWorldRef.hexX(),
+                                        offsetY=colonyWorldRef.hexY())
+                                    colonyWorld = astronomer.WorldManager.instance().worldByPosition(
+                                        milieu=self._milieu,
+                                        hex=colonyHex)
 
                                 if colonyWorld:
                                     tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
@@ -1089,15 +1124,15 @@ class HexTable(gui.FrozenColumnListTable):
             allegiance = world.allegiance()
             if not allegiance:
                 return None
-            allegianceName = allegiance.name()
-            return gui.createStringToolTip(allegianceName if allegianceName else allegiance.code())
+            return gui.createStringToolTip(allegiance.name())
         elif columnType == self.ColumnType.Sophont:
             lines = []
             remarks = world.remarks()
             for sophont in remarks.sophonts():
-                percentage = remarks.sophontPercentage(sophont)
-                sophont += f' ({percentage}%)'
-                lines.append(sophont)
+                lines.append(
+                    f'{sophont.name()} ({sophont.percentage()}%)'
+                    if sophont.percentage() is not None else
+                    f'{sophont.name()} (Die Back)')
             if lines:
                 return gui.createListToolTip(
                     title='Sophonts:',
@@ -1117,31 +1152,33 @@ class HexTable(gui.FrozenColumnListTable):
             stellar = world.stellar()
             for star in stellar:
                 lines.append(f'Classification: {star.string()}')
-                spectralClass = f'Spectral Class: {star.code(astronomer.Star.Element.SpectralClass)} - {star.description(astronomer.Star.Element.SpectralClass)}'
-                spectralScale = f'Spectral Scale: {star.code(astronomer.Star.Element.SpectralScale)} - {star.description(astronomer.Star.Element.SpectralScale)}'
-                luminosityClass = f'Luminosity Class: {star.code(astronomer.Star.Element.LuminosityClass)} - {star.description(astronomer.Star.Element.LuminosityClass)}'
-                lines.append(spectralClass)
-                lines.append(spectralScale)
+
+                luminosityClass = star.code(astronomer.Star.Element.LuminosityClass)
+                luminosityClass = f'Luminosity Class: {luminosityClass} - {star.description(astronomer.Star.Element.LuminosityClass)}'
                 lines.append(luminosityClass)
-
-                # There could be collisions when adding to dicts in the following code as multiple
-                # stars can have the same spectral/luminosity text. This isn't an issue though as
-                # the mapping value will always be the same for a given piece of text
-                lineIndents[spectralClass] = 1
-                lineIndents[spectralScale] = 1
                 lineIndents[luminosityClass] = 1
-
-                tagLevel = self._worldTagging.calculateSpectralTagLevel(star=star) if self._worldTagging else None
-                if tagLevel:
-                    lineColours[spectralClass] = self._taggingColour(level=tagLevel)
-
                 tagLevel = self._worldTagging.calculateLuminosityTagLevel(star=star) if self._worldTagging else None
                 if tagLevel:
                     lineColours[luminosityClass] = self._taggingColour(level=tagLevel)
 
+                spectralClass = star.code(astronomer.Star.Element.SpectralClass)
+                if spectralClass is not None:
+                    spectralClass = f'Spectral Class: {spectralClass} - {star.description(astronomer.Star.Element.SpectralClass)}'
+                    lines.append(spectralClass)
+                    lineIndents[spectralClass] = 1
+                    tagLevel = self._worldTagging.calculateSpectralTagLevel(star=star) if self._worldTagging else None
+                    if tagLevel:
+                        lineColours[spectralClass] = self._taggingColour(level=tagLevel)
+
+                    spectralScale = star.code(astronomer.Star.Element.SpectralScale)
+                    if spectralScale is not None:
+                        spectralScale = f'Spectral Scale: {spectralScale} - {star.description(astronomer.Star.Element.SpectralScale)}'
+                        lines.append(spectralScale)
+                        lineIndents[spectralScale] = 1
+
             if lines:
                 return gui.createListToolTip(
-                    title=f'Stars: {stellar.string()}',
+                    title=f'Stellar: {stellar.string()}',
                     strings=lines,
                     stringColours=lineColours,
                     stringIndents=lineIndents)
@@ -1178,35 +1215,77 @@ class HexTable(gui.FrozenColumnListTable):
                     includeBaseTypes=militaryBases,
                     worldTagging=self._worldTagging,
                     taggingColours=self._taggingColours)
-        elif columnType == self.ColumnType.OwnerWorld:
-            if world.hasOwner():
-                try:
-                    ownerWorld = astronomer.WorldManager.instance().worldBySectorHex(
-                        milieu=self._milieu,
-                        sectorHex=world.ownerSectorHex())
-                except Exception:
-                    ownerWorld = None
-
-                if ownerWorld:
-                    if self._hexTooltipProvider:
-                        return self._hexTooltipProvider.tooltip(hex=ownerWorld.hex())
-                    else:
-                        return astronomer.WorldManager.instance().canonicalHexName(
-                            milieu=ownerWorld.milieu(),
-                            hex=ownerWorld.hex())
-                else:
-                    return gui.createStringToolTip(f'Unknown world at {world.ownerSectorHex()}')
-        elif columnType == self.ColumnType.ColonyWorlds:
-            if world.hasColony():
+        elif columnType == self.ColumnType.OwnerWorlds:
+            if world.ownerCount() > 0:
                 listStrings = []
                 listColours = {}
-                for colonySectorHex in world.colonySectorHexes():
-                    try:
-                        colonyWorld = astronomer.WorldManager.instance().worldBySectorHex(
+                for ownerWorldRef in world.ownerWorldReferences():
+                    ownerSector = None
+                    if ownerWorldRef.sectorAbbreviation():
+                        matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
                             milieu=self._milieu,
-                            sectorHex=colonySectorHex)
-                    except Exception:
-                        colonyWorld = None
+                            abbreviation=ownerWorldRef.sectorAbbreviation())
+                        if matchSectors:
+                            ownerSector = matchSectors[0]
+                    else:
+                        ownerSector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                            milieu=self._milieu,
+                            index=hex.sectorIndex())
+
+                    ownerWorld = None
+                    if ownerSector:
+                        ownerHex = astronomer.HexPosition(
+                            sectorIndex=ownerSector.index(),
+                            offsetX=ownerWorldRef.hexX(),
+                            offsetY=ownerWorldRef.hexY())
+                        ownerWorld = astronomer.WorldManager.instance().worldByPosition(
+                            milieu=self._milieu,
+                            hex=ownerHex)
+
+                    if ownerWorld:
+                        ownerString = ownerWorld.name(includeSubsector=True)
+                        listStrings.append(ownerString)
+                        tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld) if self._worldTagging else None
+                        if tagLevel:
+                            listColours[ownerString] = self._taggingColour(level=tagLevel)
+                    else:
+                        ownerString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
+                            sector=ownerSector.name() if ownerSector else 'Unknown Sector',
+                            x=ownerWorldRef.hexX(),
+                            y=ownerWorldRef.hexY())
+                        listStrings.append(ownerString)
+                        listColours[ownerString] = self._taggingColour(
+                            level=logic.TagLevel.Danger)
+                return gui.createListToolTip(
+                    title='Owner Worlds',
+                    strings=listStrings,
+                    stringColours=listColours)
+        elif columnType == self.ColumnType.ColonyWorlds:
+            if world.colonyCount() > 0:
+                listStrings = []
+                listColours = {}
+                for colonyWorldRef in world.colonyWorldReferences():
+                    colonySector = None
+                    if colonyWorldRef.sectorAbbreviation():
+                        matchSectors = astronomer.WorldManager.instance().sectorByAbbreviation(
+                            milieu=self._milieu,
+                            abbreviation=colonyWorldRef.sectorAbbreviation())
+                        if matchSectors:
+                            colonySector = matchSectors[0]
+                    else:
+                        colonySector = astronomer.WorldManager.instance().sectorBySectorIndex(
+                            milieu=self._milieu,
+                            index=hex.sectorIndex())
+
+                    colonyWorld = None
+                    if colonySector:
+                        colonyHex = astronomer.HexPosition(
+                            sectorIndex=colonySector.index(),
+                            offsetX=colonyWorldRef.hexX(),
+                            offsetY=colonyWorldRef.hexY())
+                        colonyWorld = astronomer.WorldManager.instance().worldByPosition(
+                            milieu=self._milieu,
+                            hex=colonyHex)
 
                     if colonyWorld:
                         colonyString = colonyWorld.name(includeSubsector=True)
@@ -1215,7 +1294,10 @@ class HexTable(gui.FrozenColumnListTable):
                         if tagLevel:
                             listColours[colonyString] = self._taggingColour(level=tagLevel)
                     else:
-                        colonyString = f'Unknown world at {colonySectorHex}'
+                        colonyString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
+                            sector=colonySector.name() if colonySector else 'Unknown Sector',
+                            x=colonyWorldRef.hexX(),
+                            y=colonyWorldRef.hexY())
                         listStrings.append(colonyString)
                         listColours[colonyString] = self._taggingColour(
                             level=logic.TagLevel.Danger)

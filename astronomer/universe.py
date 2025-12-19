@@ -11,6 +11,7 @@ class Universe(object):
             self.sectorList: typing.List[astronomer.Sector] = []
             self.canonicalNameMap: typing.Dict[str, astronomer.Sector] = {}
             self.alternateNameMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
+            self.abbreviationMap: typing.Dict[str, typing.List[astronomer.Sector]] = {}
             self.sectorIndexMap: typing.Dict[typing.Tuple[int, int], astronomer.Sector] = {}
             self.subsectorNameMap: typing.Dict[str, typing.List[astronomer.Subsector]] = {}
             self.subsectorSectorMap: typing.Dict[astronomer.Subsector, astronomer.Sector] = {}
@@ -63,7 +64,6 @@ class Universe(object):
             # case insensitive
             milieuData.canonicalNameMap[sector.name().lower()] = sector
 
-            # Add alternate names and abbreviations to the alternate name map
             alternateNames = sector.alternateNames()
             if alternateNames:
                 for alternateName in alternateNames:
@@ -76,11 +76,12 @@ class Universe(object):
 
             abbreviation = sector.abbreviation()
             if abbreviation:
-                abbreviation = abbreviation.lower()
-                sectorList = milieuData.alternateNameMap.get(abbreviation)
+                # NOTE: Unlike most string -> sector lookups, the abbreviation
+                # map is case sensitive
+                sectorList = milieuData.abbreviationMap.get(abbreviation)
                 if not sectorList:
                     sectorList = []
-                    milieuData.alternateNameMap[abbreviation] = sectorList
+                    milieuData.abbreviationMap[abbreviation] = sectorList
                 sectorList.append(sector)
 
             for subsector in sector.subsectors():
@@ -98,8 +99,8 @@ class Universe(object):
                 hex = world.hex()
                 milieuData.worldPositionMap[(hex.absoluteX(), hex.absoluteY())] = world
 
-                allegiance = world.allegiance()
-                if allegiance and (allegiance.uniqueCode() not in milieuData.allegiances):
+            for allegiance in sector.allegiances():
+                if allegiance.uniqueCode() not in milieuData.allegiances:
                     milieuData.allegiances[allegiance.uniqueCode()] = allegiance
 
             for route in sector.routes():
@@ -132,6 +133,19 @@ class Universe(object):
         if not milieuData:
             return None
         return milieuData.canonicalNameMap.get(name.lower())
+
+    def sectorsByAbbreviation(
+            self,
+            milieu: astronomer.Milieu,
+            abbreviation: str
+            ) -> typing.List[astronomer.Sector]:
+        milieuData = self._milieuDataMap.get(milieu)
+        if not milieuData:
+            return []
+        sectors = milieuData.abbreviationMap.get(abbreviation)
+        if not sectors:
+            return []
+        return list(sectors)
 
     def sectors(
             self,
@@ -351,34 +365,39 @@ class Universe(object):
             milieu: astronomer.Milieu,
             sectorHex: str
             ) -> typing.Optional[astronomer.HexPosition]:
-        sectorName, offsetX, offsetY = astronomer.splitSectorHex(
+        originalSectorName, offsetX, offsetY = astronomer.splitSectorHex(
             sectorHex=sectorHex)
 
         # Sector name lookup is case insensitive. The sector name map stores
         # sector names in lower so search name should be converted to lower case
         # before searching
-        sectorName = sectorName.lower()
+        lowerCaseSectorName = originalSectorName.lower()
 
         # Check to see if the sector name is a canonical sector name
         milieuData = self._milieuDataMap.get(milieu)
         sector = None
         if milieuData:
-            sector = milieuData.canonicalNameMap.get(sectorName)
+            sector = milieuData.canonicalNameMap.get(lowerCaseSectorName)
             if not sector:
                 # Make a best effort attempt to find the sector by looking at
-                # abbreviations/alternate names and subsector names. This is
-                # important as in some places the official data does ths for things
-                # like owner/colony worlds sector hexes. These matches are not
-                # always unique so just use the first if more than one is found
-                sectors = milieuData.alternateNameMap.get(sectorName)
+                # abbreviations, alternate names and subsector names. These
+                # matches are not always unique so just use the first if more
+                # than one is found
+                sectors = milieuData.alternateNameMap.get(lowerCaseSectorName)
                 if sectors:
                     # Alternate sector name match
                     sector = sectors[0]
                 else:
-                    subsectors = milieuData.subsectorNameMap.get(sectorName)
-                    if subsectors:
-                        # Subsector name match
-                        sector = milieuData.subsectorSectorMap.get(subsectors[0])
+                    # NOTE: Use original case for abbreviation lookup as in theory two
+                    # sectors abbreviations could vary by case
+                    sectors = milieuData.abbreviationMap.get(originalSectorName)
+                    if sectors:
+                        sector = sectors[0]
+                    else:
+                        subsectors = milieuData.subsectorNameMap.get(lowerCaseSectorName)
+                        if subsectors:
+                            # Subsector name match
+                            sector = milieuData.subsectorSectorMap.get(subsectors[0])
 
         if sector:
             return astronomer.HexPosition(
@@ -389,7 +408,7 @@ class Universe(object):
         # Check to see if the sector name is a sector x/y separated by a colon.
         # This is the format used by positionToSectorHex if there is no sector
         # at the specified hex
-        tokens = sectorName.split(':')
+        tokens = lowerCaseSectorName.split(':')
         if len(tokens) == 2:
             try:
                 sectorX = int(tokens[0])

@@ -104,7 +104,8 @@ class _CustomLabel(QtWidgets.QLabel):
                 width=0,
                 includeHexImage=True, # Always show image of the hex in hex detail window
                 hexImageStyle=self._mapStyle,
-                hexImageOptions=self._mapOptions))
+                hexImageOptions=self._mapOptions,
+                includeCredits=True))
         else:
             self.clear()
 

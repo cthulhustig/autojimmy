@@ -17,6 +17,24 @@ import typing
 # not sure I do with the current implementation as I believe the sqlite
 # db is thread saf and I'm not maintaining an internal state. If I add
 # connection pooling I suspect I'll need something to protect the pool
+# TODO: I think pretty much every table should use a unique id for rows,
+# possibly with a few exceptions like the array used to store points.
+# It means I can do individual addressing of elements in the future without
+# needing a migration. I think DB objects would need updated to mirror the
+# fact objects in the table have ids but I don't think I'd actually need to
+# make use of it right now.
+# TODO: Long term I suspect I'm going to want to be able to have multiple
+# worlds in a system with different details (UWP, trade codes etc) for each.
+# It will probably be easier to make the split now.
+# - When importing I would create a system for each line in the sector file.
+#   Generally there would also be a single world created for the system that
+#   has the same name as the system. If the world data has ? for everything
+#   other than the name then I could create a system that has no worlds
+# - Would need a way to mark a world as the main world for the system. For
+#   now the main world would be used for everything
+# - Stars would need to be for the system rather than for the world
+# TODO: All the objects that take universe/sector/system id, should take the
+# object rather than the id (similar to what happens for system Allegiance)
 
 class DbUniverseInfo(object):
     def __init__(
@@ -188,8 +206,29 @@ class MultiverseDb(object):
     _AllegiancesTableName = 'allegiances'
     _AllegiancesTableSchema = 1
 
+    _TradeCodesTableName = 'trade_codes'
+    _TradeCodesTableSchema = 1
+
     _SophontsTableName = 'sophonts'
     _SophontsTableSchema = 1
+
+    _SophontPopulationsTableName = 'sophont_populations'
+    _SophontPopulationsTableSchema = 1
+
+    _RulingAllegiancesTableName = 'ruling_allegiances'
+    _RulingAllegiancesTableSchema = 1
+
+    _OwningSystemsTableName = 'owning_systems'
+    _OwningSystemsTableSchema = 1
+
+    _ColonySystemsTableName = 'colony_systems'
+    _ColonySystemsTableSchema = 1
+
+    _ResearchStationTableName = 'research_stations'
+    _ResearchStationTableSchema = 1
+
+    _CustomRemarksTableName = 'custom_remarks'
+    _CustomRemarksTableSchema = 1
 
     _ProductsTableName = 'products'
     _ProductsTableSchema = 1
@@ -214,6 +253,12 @@ class MultiverseDb(object):
 
     _SystemsTableName = 'systems'
     _SystemsTableSchema = 1
+
+    _BasesTableName = 'bases'
+    _BasesTableSchema = 1
+
+    _StarsTableName = 'stars'
+    _StarsTableSchema = 1
 
     _DefaultUniverseId = 'default'
     _DefaultUniverseAppVersionKey = 'default_universe_app_version'
@@ -327,7 +372,7 @@ class MultiverseDb(object):
 
         insertProgressCallback = None
         if progressCallback:
-            insertProgressCallback = lambda name, milieu, progress, total: progressCallback(f'Saving: {milieu} - {name}' if progress != total else 'Saving: Complete!', progress, total)
+            insertProgressCallback = lambda milieu, name, progress, total: progressCallback(f'Saving: {milieu} - {name}' if progress != total else 'Saving: Complete!', progress, total)
 
         if transaction != None:
             connection = transaction.connection()
@@ -353,6 +398,11 @@ class MultiverseDb(object):
                     cursor=connection.cursor(),
                     progressCallback=insertProgressCallback)
 
+    # TODO: I think once I'm finished I should be able to make loading a single stage
+    # for each system (rather than separate loading/processing stages) as each
+    # sector should be completely self contained. To do this I'll need to drop the
+    # whole unique allegiance code thing as I believe getting the list of all allegiances
+    # before processing the systems was the only reason that was done
     def loadUniverse(
             self,
             universeId: str,
@@ -364,7 +414,7 @@ class MultiverseDb(object):
 
         readProgressCallback = None
         if progressCallback:
-            readProgressCallback = lambda name, milieu, progress, total: progressCallback(f'Loading: {milieu} - {name}' if progress != total else 'Loading: Complete!', progress, total)
+            readProgressCallback = lambda milieu, name, progress, total: progressCallback(f'Loading: {milieu} - {name}' if progress != total else 'Loading: Complete!', progress, total)
 
         if transaction != None:
             connection = transaction.connection()
@@ -633,6 +683,10 @@ class MultiverseDb(object):
         #connection.set_trace_callback(print)
         return connection
 
+    # TODO: Need to make sure I want to go with all the unique constraints as
+    # it could cause problems if stock data changes in the future or with
+    # custom sectors. I need to make sure the database classes enforce the
+    # constraints so it shouldn't get to the point of failing a DB write.
     def _initTables(self) -> None:
         connection = None
         cursor = None
@@ -708,6 +762,8 @@ class MultiverseDb(object):
                 # TODO: The is_custom column is technically redundant as the information can
                 # be implied by the universe id. I should probably remove it but it's currently
                 # making some queries a little easier
+                # TODO: Tags should maybe be split off into it's own table with a row per tag.
+                # This would be consistent with what I've done for systems
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sectorsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -752,8 +808,7 @@ class MultiverseDb(object):
                     unique=True,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._SectorsTableName,
                     column='universe_id',
@@ -780,6 +835,7 @@ class MultiverseDb(object):
                         name TEXT NOT NULL,
                         language TEXT,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        UNIQUE (sector_id, name)
                     );
                     """.format(
                         namesTable=MultiverseDb._AlternateNamesTableName,
@@ -792,8 +848,7 @@ class MultiverseDb(object):
                     version=MultiverseDb._AlternateNamesTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._AlternateNamesTableName,
                     column='sector_id',
@@ -824,8 +879,7 @@ class MultiverseDb(object):
                     version=MultiverseDb._SubsectorNamesTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._SubsectorNamesTableName,
                     column='sector_id',
@@ -833,17 +887,21 @@ class MultiverseDb(object):
                     cursor=cursor)
 
             # Create allegiances table
+            # TODO: This should be more like sophonts where name is before code and code is
+            # optional. along with any unique constraints
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._AllegiancesTableName,
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {allegiancesTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
                         code TEXT NOT NULL,
                         name TEXT NOT NULL,
                         legacy TEXT,
                         base TEXT,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        UNIQUE (sector_id, code)
                     );
                     """.format(
                         allegiancesTable=MultiverseDb._AllegiancesTableName,
@@ -856,8 +914,16 @@ class MultiverseDb(object):
                     version=MultiverseDb._AllegiancesTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._AllegiancesTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._AllegiancesTableName,
                     column='sector_id',
@@ -870,10 +936,14 @@ class MultiverseDb(object):
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sophontsTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
                         code TEXT NOT NULL,
                         name TEXT NOT NULL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        is_major INTEGER NOT NULL,
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (sector_id, name),
+                        UNIQUE (sector_id, code)
                     );
                     """.format(
                         sophontsTable=MultiverseDb._SophontsTableName,
@@ -886,8 +956,16 @@ class MultiverseDb(object):
                     version=MultiverseDb._SophontsTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._SophontsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._SophontsTableName,
                     column='sector_id',
@@ -918,8 +996,7 @@ class MultiverseDb(object):
                     version=MultiverseDb._ProductsTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._ProductsTableName,
                     column='sector_id',
@@ -934,6 +1011,54 @@ class MultiverseDb(object):
                 # TODO: I'm not sure what to do about importance. I don't think I use
                 # it anywhere. I think this might be the same as the importance value
                 # I calculate in the cartographer
+                # TODO: I think I should split this up more
+                # - UWP (column for each)
+                #   - Starport
+                #   - World Size
+                #   - Atmosphere
+                #   - Hydrographics
+                #   - Population
+                #   - Government
+                #   - LawLevel
+                #   - TechLevel
+                # - Economics (column for each)
+                #   - Resources
+                #   - Labour
+                #   - Infrastructure
+                #   - Efficiency
+                # - Culture (column for each)
+                #   - Heterogeneity
+                #   - Acceptance
+                #   - Strangeness
+                #   - Symbols
+                # - PBG (column for each)
+                #   - PopulationMultiplier
+                #   - PlanetoidBelts
+                #   - GasGiants
+                # - Remarks
+                #   - Table for sophonts
+                #       - System Id
+                #       - Code
+                #       - Name
+                #       - Percentage
+                #       - Homeworld (major/minor/none)
+                #       - Dieback
+                #   - Table for trade codes
+                #       - System Id
+                #       - Trade Code
+                #   - Table for nobilities
+                #       - System Id
+                #       - Nobility
+                #   - Table for colonies
+                #       - System Id
+                #       - Sector X
+                #       - Sector Y
+                #       - Hex X
+                #       - Hex Y
+                #   - Column for owner
+                #   - Column for ruling allegiance (Military Rule)
+                #   - Column for research station
+                #   - Column for unrecognised trade code string (Need to filter out stuff like random '/')
                 sql = """
                     CREATE TABLE IF NOT EXISTS {systemsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -942,24 +1067,23 @@ class MultiverseDb(object):
                         hex_y INTEGER NOT NULL,
                         name TEXT NOT NULL,
                         uwp TEXT NOT NULL,
-                        remarks TEXT,
                         importance TEXT,
                         economics TEXT,
                         culture TEXT,
                         nobility TEXT,
-                        bases TEXT,
                         zone TEXT,
                         pbg TEXT,
                         system_worlds INTEGER,
-                        allegiance TEXT,
-                        stellar TEXT,
+                        allegiance_id TEXT,
                         notes TEXT,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
+                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE SET NULL,
                         UNIQUE (sector_id, hex_x, hex_y)
                     );
                     """.format(
                         systemsTable=MultiverseDb._SystemsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
+                        sectorsTable=MultiverseDb._SectorsTableName,
+                        allegiancesTable=MultiverseDb._AllegiancesTableName)
                 logging.info(f'MultiverseDb creating \'{MultiverseDb._SystemsTableName}\' table')
                 cursor.execute(sql)
 
@@ -977,11 +1101,386 @@ class MultiverseDb(object):
                     unique=True,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._SystemsTableName,
                     column='sector_id',
+                    unique=False,
+                    cursor=cursor)
+                self._createColumnIndex(
+                    table=MultiverseDb._SystemsTableName,
+                    column='allegiance_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create trade codes table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._TradeCodesTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {tradeCodeTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        code TEXT NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (system_id, code)
+                    );
+                    """.format(
+                        tradeCodeTable=MultiverseDb._TradeCodesTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._TradeCodesTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._TradeCodesTableName,
+                    version=MultiverseDb._TradeCodesTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._TradeCodesTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._TradeCodesTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create sophont populations table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._SophontPopulationsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {populationsTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        sophont_id TEXT NOT NULL,
+                        percentage INTEGER,
+                        is_home_world INTEGER NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
+                        FOREIGN KEY(sophont_id) REFERENCES {sophontsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (system_id, sophont_id)
+                    );
+                    """.format(
+                        populationsTable=MultiverseDb._SophontPopulationsTableName,
+                        sophontsTable=MultiverseDb._SophontsTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._SophontPopulationsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._SophontPopulationsTableName,
+                    version=MultiverseDb._SophontPopulationsTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._SophontPopulationsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._SophontPopulationsTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+                self._createColumnIndex(
+                    table=MultiverseDb._SophontPopulationsTableName,
+                    column='sophont_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create ruling allegiances table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._RulingAllegiancesTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {rulingTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        allegiance_id TEXT NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
+                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE CASCADE,
+                        UNIQUE (system_id, allegiance_id)
+                    );
+                    """.format(
+                        rulingTable=MultiverseDb._RulingAllegiancesTableName,
+                        systemsTable=MultiverseDb._SystemsTableName,
+                        allegiancesTable=MultiverseDb._AllegiancesTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._RulingAllegiancesTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._RulingAllegiancesTableName,
+                    version=MultiverseDb._RulingAllegiancesTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._RulingAllegiancesTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._RulingAllegiancesTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+                self._createColumnIndex(
+                    table=MultiverseDb._RulingAllegiancesTableName,
+                    column='allegiance_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create owning system table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._OwningSystemsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {ownerTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        hex_x INTEGER NOT NULL,
+                        hex_y INTEGER NOT NULL,
+                        sector_code TEXT,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (system_id, hex_x, hex_y, sector_code)
+                    );
+                    """.format(
+                        ownerTable=MultiverseDb._OwningSystemsTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._OwningSystemsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._OwningSystemsTableName,
+                    version=MultiverseDb._OwningSystemsTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._OwningSystemsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._OwningSystemsTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create colony system table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._ColonySystemsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {colonyTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        hex_x INTEGER NOT NULL,
+                        hex_y INTEGER NOT NULL,
+                        sector_code TEXT,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (system_id, hex_x, hex_y, sector_code)
+                    );
+                    """.format(
+                        colonyTable=MultiverseDb._ColonySystemsTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._ColonySystemsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._ColonySystemsTableName,
+                    version=MultiverseDb._ColonySystemsTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._ColonySystemsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._ColonySystemsTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create research stations
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._ResearchStationTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {stationsTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        code TEXT NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
+                        UNIQUE (system_id, code)
+                    );
+                    """.format(
+                        stationsTable=MultiverseDb._ResearchStationTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._ResearchStationTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._ResearchStationTableName,
+                    version=MultiverseDb._BasesTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._ResearchStationTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._ResearchStationTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create custom remarks table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._CustomRemarksTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {remarksTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        remark TEXT NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
+                    );
+                    """.format(
+                        remarksTable=MultiverseDb._CustomRemarksTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._CustomRemarksTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._CustomRemarksTableName,
+                    version=MultiverseDb._CustomRemarksTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._CustomRemarksTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._CustomRemarksTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create bases table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._BasesTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {basesTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        code TEXT NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
+                        UNIQUE (system_id, code)
+                    );
+                    """.format(
+                        basesTable=MultiverseDb._BasesTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._BasesTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._BasesTableName,
+                    version=MultiverseDb._BasesTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._BasesTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._BasesTableName,
+                    column='system_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create stars table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._StarsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {starsTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        luminosity_class TEXT NOT NULL,
+                        spectral_class TEXT,
+                        spectral_scale TEXT,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
+                    );
+                    """.format(
+                        starsTable=MultiverseDb._StarsTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._StarsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._StarsTableName,
+                    version=MultiverseDb._StarsTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._StarsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._StarsTableName,
+                    column='system_id',
                     unique=False,
                     cursor=cursor)
 
@@ -1001,16 +1500,18 @@ class MultiverseDb(object):
                         start_offset_y INTEGER NOT NULL,
                         end_offset_x INTEGER NOT NULL,
                         end_offset_y INTEGER NOT NULL,
-                        allegiance TEXT,
                         type TEXT,
                         style TEXT,
                         colour TEXT,
                         width REAL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        allegiance_id TEXT,
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
+                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE SET NULL
                     );
                     """.format(
                         routesTable=MultiverseDb._RoutesTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
+                        sectorsTable=MultiverseDb._SectorsTableName,
+                        allegiancesTable=MultiverseDb._AllegiancesTableName)
                 logging.info(f'MultiverseDb creating \'{MultiverseDb._RoutesTableName}\' table')
                 cursor.execute(sql)
 
@@ -1028,11 +1529,15 @@ class MultiverseDb(object):
                     unique=True,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._RoutesTableName,
                     column='sector_id',
+                    unique=False,
+                    cursor=cursor)
+                self._createColumnIndex(
+                    table=MultiverseDb._RoutesTableName,
+                    column='allegiance_id',
                     unique=False,
                     cursor=cursor)
 
@@ -1053,12 +1558,14 @@ class MultiverseDb(object):
                         label_offset_y REAL,
                         colour TEXT,
                         style TEXT,
-                        allegiance TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                        allegiance_id TEXT,
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
+                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE SET NULL
                     );
                     """.format(
                         bordersTable=MultiverseDb._BordersTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
+                        sectorsTable=MultiverseDb._SectorsTableName,
+                        allegiancesTable=MultiverseDb._AllegiancesTableName)
                 logging.info(f'MultiverseDb creating \'{MultiverseDb._BordersTableName}\' table')
                 cursor.execute(sql)
 
@@ -1076,11 +1583,15 @@ class MultiverseDb(object):
                     unique=True,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._BordersTableName,
                     column='sector_id',
+                    unique=False,
+                    cursor=cursor)
+                self._createColumnIndex(
+                    table=MultiverseDb._BordersTableName,
+                    column='allegiance_id',
                     unique=False,
                     cursor=cursor)
 
@@ -1106,8 +1617,7 @@ class MultiverseDb(object):
                     version=MultiverseDb._BorderHexesTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._BorderHexesTableName,
                     column='border_id',
@@ -1156,8 +1666,7 @@ class MultiverseDb(object):
                     unique=True,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._RegionsTableName,
                     column='sector_id',
@@ -1186,8 +1695,7 @@ class MultiverseDb(object):
                     version=MultiverseDb._RegionHexesTableSchema,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._RegionHexesTableName,
                     column='region_id',
@@ -1233,8 +1741,7 @@ class MultiverseDb(object):
                     unique=True,
                     cursor=cursor)
 
-                # Create index on parent id column as it's used a lot by reads
-                # and cascade deletes
+                # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._LabelsTableName,
                     column='sector_id',
@@ -1427,7 +1934,7 @@ class MultiverseDb(object):
         insertProgressCallback = None
         if progressCallback:
             insertProgressCallback = \
-                lambda name, milieu, progress, total: progressCallback(f'Importing: {milieu} - {name}' if progress != total else 'Importing: Complete!', progress, total)
+                lambda milieu, name, progress, total: progressCallback(f'Importing: {milieu} - {name}' if progress != total else 'Importing: Complete!', progress, total)
         self._internalInsertUniverse(
             universe=dbUniverse,
             updateDefault=True,
@@ -1603,7 +2110,7 @@ class MultiverseDb(object):
                 :abbreviation, :sector_label, :selected, :tags, :style_sheet,
                 :credits, :publication, :author, :publisher, :reference, :notes);
             """.format(table=MultiverseDb._SectorsTableName)
-        rowData = {
+        rows = {
             'id': sector.id(),
             'universe_id': sector.universeId(),
             'is_custom': 1 if sector.isCustom() else 0,
@@ -1623,33 +2130,33 @@ class MultiverseDb(object):
             'publisher': sector.publisher(),
             'reference': sector.reference(),
             'notes': sector.notes()}
-        cursor.execute(sql, rowData)
+        cursor.execute(sql, rows)
 
         if sector.alternateNames():
             sql = """
                 INSERT INTO {table} (sector_id, name, language)
                 VALUES (:sector_id, :name, :language);
                 """.format(table=MultiverseDb._AlternateNamesTableName)
-            rowData = []
+            rows = []
             for name, language in sector.alternateNames():
-                rowData.append({
+                rows.append({
                     'sector_id': sector.id(),
                     'name': name,
                     'language': language})
-            cursor.executemany(sql, rowData)
+            cursor.executemany(sql, rows)
 
         if sector.subsectorNames():
             sql = """
                 INSERT INTO {table} (sector_id, code, name)
                 VALUES (:sector_id, :code, :name);
                 """.format(table=MultiverseDb._SubsectorNamesTableName)
-            rowData = []
+            rows = []
             for code, name in sector.subsectorNames():
-                rowData.append({
+                rows.append({
                     'sector_id': sector.id(),
                     'code': code,
                     'name': name})
-            cursor.executemany(sql, rowData)
+            cursor.executemany(sql, rows)
 
         if sector.products():
             sql = """
@@ -1658,88 +2165,226 @@ class MultiverseDb(object):
                 VALUES (:sector_id, :publication, :author,
                     :publisher, :reference);
                 """.format(table=MultiverseDb._ProductsTableName)
-            rowData = []
+            rows = []
             for product in sector.products():
-                rowData.append({
+                rows.append({
                     'sector_id': sector.id(),
                     'publication': product.publication(),
                     'author': product.author(),
                     'publisher': product.publisher(),
                     'reference': product.reference()})
-            cursor.executemany(sql, rowData)
+            cursor.executemany(sql, rows)
 
         if sector.allegiances():
             sql = """
-                INSERT INTO {table} (sector_id, code, name, legacy, base)
-                VALUES (:sector_id, :code, :name, :legacy, :base);
+                INSERT INTO {table} (id, sector_id, code, name, legacy, base)
+                VALUES (:id, :sector_id, :code, :name, :legacy, :base);
                 """.format(table=MultiverseDb._AllegiancesTableName)
-            rowData = []
+            rows = []
             for allegiance in sector.allegiances():
-                rowData.append({
+                rows.append({
+                    'id': allegiance.id(),
                     'sector_id': sector.id(),
                     'code': allegiance.code(),
                     'name': allegiance.name(),
                     'legacy': allegiance.legacy(),
                     'base': allegiance.base()})
-            cursor.executemany(sql, rowData)
+            cursor.executemany(sql, rows)
 
         if sector.sophonts():
             sql = """
-                INSERT INTO {table} (sector_id, code, name)
-                VALUES (:sector_id, :code, :name);
+                INSERT INTO {table} (id, sector_id, code, name, is_major)
+                VALUES (:id, :sector_id, :code, :name, :is_major);
                 """.format(table=MultiverseDb._SophontsTableName)
-            rowData = []
+            rows = []
             for sophont in sector.sophonts():
-                rowData.append({
-                    'sector_id': sector.id(),
+                rows.append({
+                    'id': sophont.id(),
+                    'sector_id': sophont.sectorId(),
                     'code': sophont.code(),
-                    'name': sophont.name()})
-            cursor.executemany(sql, rowData)
+                    'name': sophont.name(),
+                    'is_major': 1 if sophont.isMajor() else 0})
+            cursor.executemany(sql, rows)
 
         if sector.systems():
-            sql = """
-                INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, uwp, remarks,
-                    importance, economics, culture, nobility, bases, zone, pbg,
-                    system_worlds, allegiance, stellar, notes)
-                VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :uwp, :remarks,
-                    :importance, :economics, :culture, :nobility, :bases, :zone, :pbg,
-                    :system_worlds, :allegiance, :stellar, :notes);
-                """.format(table=MultiverseDb._SystemsTableName)
-            rowData = []
+            systemRows = []
+            tradeCodeRows = []
+            sophontPopulationRows = []
+            rulingAllegianceRows = []
+            owningSystemRows = []
+            colonySystemRows = []
+            researchStationRows = []
+            customRemarkRows = []
+            baseRows = []
+            starRows = []
             for system in sector.systems():
-                rowData.append({
+                allegiance = system.allegiance()
+                systemRows.append({
                     'id': system.id(),
                     'sector_id': system.sectorId(),
                     'hex_x': system.hexX(),
                     'hex_y': system.hexY(),
                     'name': system.name(),
                     'uwp': system.uwp(),
-                    'remarks': system.remarks(),
                     'importance': system.importance(),
                     'economics': system.economics(),
                     'culture': system.culture(),
                     'nobility': system.nobility(),
-                    'bases': system.bases(),
                     'zone': system.zone(),
                     'pbg': system.pbg(),
                     'system_worlds': system.systemWorlds(),
-                    'allegiance': system.allegiance(),
-                    'stellar': system.stellar(),
+                    'allegiance_id': allegiance.id() if allegiance else None,
                     'notes': system.notes()})
-            cursor.executemany(sql, rowData)
+
+                if system.tradeCodes():
+                    for code in system.tradeCodes():
+                        tradeCodeRows.append({
+                            'id': code.id(),
+                            'system_id': code.systemId(),
+                            'code': code.code()})
+
+                if system.sophonts():
+                    for sophont in system.sophonts():
+                        sophontPopulationRows.append({
+                            'id': sophont.id(),
+                            'system_id': sophont.systemId(),
+                            'sophont_id': sophont.sophontId(),
+                            'percentage': sophont.percentage(),
+                            'is_home_world': 1 if sophont.isHomeWorld() else 0})
+
+                if system.rulingAllegiances():
+                    for rulingAllegiance in system.rulingAllegiances():
+                        rulingAllegianceRows.append({
+                            'id': rulingAllegiance.id(),
+                            'system_id': rulingAllegiance.systemId(),
+                            'allegiance_id': rulingAllegiance.allegiance().id()})
+
+                if system.owningSystems():
+                    for owningSystem in system.owningSystems():
+                        owningSystemRows.append({
+                            'id': owningSystem.id(),
+                            'system_id': owningSystem.systemId(),
+                            'hex_x': owningSystem.hexX(),
+                            'hex_y': owningSystem.hexY(),
+                            'sector_code': owningSystem.sectorCode()})
+
+                if system.colonySystems():
+                    for colonySystem in system.colonySystems():
+                        colonySystemRows.append({
+                            'id': colonySystem.id(),
+                            'system_id': colonySystem.systemId(),
+                            'hex_x': colonySystem.hexX(),
+                            'hex_y': colonySystem.hexY(),
+                            'sector_code': colonySystem.sectorCode()})
+
+                if system.researchStations():
+                    for station in system.researchStations():
+                        researchStationRows.append({
+                            'id': station.id(),
+                            'system_id': station.systemId(),
+                            'code': station.code()})
+
+                if system.customRemarks():
+                    for remark in system.customRemarks():
+                        customRemarkRows.append({
+                            'id': remark.id(),
+                            'system_id': remark.systemId(),
+                            'remark': remark.remark()})
+
+                if system.bases():
+                    for base in system.bases():
+                        baseRows.append({
+                            'id': base.id(),
+                            'system_id': base.systemId(),
+                            'code': base.code()})
+
+                if system.stars():
+                    for star in system.stars():
+                        starRows.append({
+                            'id': star.id(),
+                            'system_id': star.systemId(),
+                            'luminosity_class': star.luminosityClass(),
+                            'spectral_class': star.spectralClass(),
+                            'spectral_scale': star.spectralScale()})
+
+            if systemRows:
+                sql = """
+                    INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, uwp,
+                        importance, economics, culture, nobility, zone, pbg,
+                        system_worlds, allegiance_id, notes)
+                    VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :uwp,
+                        :importance, :economics, :culture, :nobility, :zone, :pbg,
+                        :system_worlds, :allegiance_id, :notes);
+                    """.format(table=MultiverseDb._SystemsTableName)
+                cursor.executemany(sql, systemRows)
+            if tradeCodeRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, code)
+                    VALUES (:id, :system_id, :code)
+                    """.format(table=MultiverseDb._TradeCodesTableName)
+                cursor.executemany(sql, tradeCodeRows)
+            if sophontPopulationRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, sophont_id, percentage, is_home_world)
+                    VALUES (:id, :system_id, :sophont_id, :percentage, :is_home_world)
+                    """.format(table=MultiverseDb._SophontPopulationsTableName)
+                cursor.executemany(sql, sophontPopulationRows)
+            if rulingAllegianceRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, allegiance_id)
+                    VALUES (:id, :system_id, :allegiance_id)
+                    """.format(table=MultiverseDb._RulingAllegiancesTableName)
+                cursor.executemany(sql, rulingAllegianceRows)
+            if owningSystemRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, hex_x, hex_y, sector_code)
+                    VALUES (:id, :system_id, :hex_x, :hex_y, :sector_code)
+                    """.format(table=MultiverseDb._OwningSystemsTableName)
+                cursor.executemany(sql, owningSystemRows)
+            if colonySystemRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, hex_x, hex_y, sector_code)
+                    VALUES (:id, :system_id, :hex_x, :hex_y, :sector_code)
+                    """.format(table=MultiverseDb._ColonySystemsTableName)
+                cursor.executemany(sql, colonySystemRows)
+            if researchStationRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, code)
+                    VALUES (:id, :system_id, :code);
+                    """.format(table=MultiverseDb._ResearchStationTableName)
+                cursor.executemany(sql, researchStationRows)
+            if customRemarkRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, remark)
+                    VALUES (:id, :system_id, :remark)
+                    """.format(table=MultiverseDb._CustomRemarksTableName)
+                cursor.executemany(sql, customRemarkRows)
+            if baseRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, code)
+                    VALUES (:id, :system_id, :code);
+                    """.format(table=MultiverseDb._BasesTableName)
+                cursor.executemany(sql, baseRows)
+            if starRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, luminosity_class, spectral_class, spectral_scale)
+                    VALUES (:id, :system_id, :luminosity_class, :spectral_class, :spectral_scale);
+                    """.format(table=MultiverseDb._StarsTableName)
+                cursor.executemany(sql, starRows)
 
         if sector.routes():
             sql = """
                 INSERT INTO {table} (id, sector_id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
-                    start_offset_x, start_offset_y, end_offset_x, end_offset_y, allegiance, type,
-                    style, colour, width)
+                    start_offset_x, start_offset_y, end_offset_x, end_offset_y, type, style,
+                    colour, width, allegiance_id)
                 VALUES (:id, :sector_id, :start_hex_x, :start_hex_y, :end_hex_x, :end_hex_y,
-                    :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :allegiance, :type,
-                    :style, :colour, :width);
+                    :start_offset_x, :start_offset_y, :end_offset_x, :end_offset_y, :type, :style,
+                    :colour, :width, :allegiance_id);
                 """.format(table=MultiverseDb._RoutesTableName)
-            rowData = []
+            rows = []
             for route in sector.routes():
-                rowData.append({
+                allegiance = route.allegiance()
+                rows.append({
                     'id': route.id(),
                     'sector_id': route.sectorId(),
                     'start_hex_x': route.startHexX(),
@@ -1750,30 +2395,31 @@ class MultiverseDb(object):
                     'start_offset_y': route.startOffsetY(),
                     'end_offset_x': route.endOffsetX(),
                     'end_offset_y': route.endOffsetY(),
-                    'allegiance': route.allegiance(),
                     'type': route.type(),
                     'style': route.style(),
                     'colour': route.colour(),
-                    'width': route.width()})
-            cursor.executemany(sql, rowData)
+                    'width': route.width(),
+                    'allegiance_id': allegiance.id() if allegiance else None})
+            cursor.executemany(sql, rows)
 
         if sector.borders():
             bordersSql = """
                 INSERT INTO {table} (id, sector_id, show_label, wrap_label,
                     label_hex_x, label_hex_y, label_offset_x, label_offset_y,
-                    label, colour, style, allegiance)
+                    label, colour, style, allegiance_id)
                 VALUES (:id, :sector_id, :show_label, :wrap_label,
                     :label_hex_x, :label_hex_y, :label_offset_x, :label_offset_y,
-                    :label, :colour, :style, :allegiance );
+                    :label, :colour, :style, :allegiance_id);
                 """.format(table=MultiverseDb._BordersTableName)
             hexesSql =  """
                 INSERT INTO {table} (border_id, hex_x, hex_y)
                 VALUES (:border_id, :hex_x, :hex_y);
                 """.format(table=MultiverseDb._BorderHexesTableName)
-            bordersData = []
-            hexesData = []
+            borderRows = []
+            hexRows = []
             for border in sector.borders():
-                bordersData.append({
+                allegiance = border.allegiance()
+                borderRows.append({
                     'id': border.id(),
                     'sector_id': border.sectorId(),
                     'show_label': 1 if border.showLabel() else 0,
@@ -1785,14 +2431,14 @@ class MultiverseDb(object):
                     'label': border.label(),
                     'colour': border.colour(),
                     'style': border.style(),
-                    'allegiance': border.allegiance()})
+                    'allegiance_id': allegiance.id() if allegiance else None})
                 for hexX, hexY in border.hexes():
-                    hexesData.append({
+                    hexRows.append({
                         'border_id': border.id(),
                         'hex_x': hexX,
                         'hex_y': hexY})
-            cursor.executemany(bordersSql, bordersData)
-            cursor.executemany(hexesSql, hexesData)
+            cursor.executemany(bordersSql, borderRows)
+            cursor.executemany(hexesSql, hexRows)
 
         if sector.regions():
             regionsSql = """
@@ -1807,10 +2453,10 @@ class MultiverseDb(object):
                 INSERT INTO {table} (region_id, hex_x, hex_y)
                 VALUES (:region_id, :hex_x, :hex_y);
                 """.format(table=MultiverseDb._RegionHexesTableName)
-            regionsData = []
-            hexesData = []
+            regionsRows = []
+            hexRows = []
             for region in sector.regions():
-                regionsData.append({
+                regionsRows.append({
                     'id': region.id(),
                     'sector_id': region.sectorId(),
                     'show_label': 1 if region.showLabel() else 0,
@@ -1822,12 +2468,12 @@ class MultiverseDb(object):
                     'label': region.label(),
                     'colour': region.colour()})
                 for hexX, hexY in region.hexes():
-                    hexesData.append({
+                    hexRows.append({
                         'region_id': region.id(),
                         'hex_x': hexX,
                         'hex_y': hexY})
-            cursor.executemany(regionsSql, regionsData)
-            cursor.executemany(hexesSql, hexesData)
+            cursor.executemany(regionsSql, regionsRows)
+            cursor.executemany(hexesSql, hexRows)
 
         if sector.labels():
             sql = """
@@ -1836,9 +2482,9 @@ class MultiverseDb(object):
                 VALUES (:id, :sector_id, :text, :hex_x, :hex_y,
                     :wrap, :colour, :size, :offset_x, :offset_y);
                 """.format(table=MultiverseDb._LabelsTableName)
-            rowData = []
+            rows = []
             for label in sector.labels():
-                rowData.append({
+                rows.append({
                     'id': label.id(),
                     'sector_id': label.sectorId(),
                     'text': label.text(),
@@ -1849,7 +2495,7 @@ class MultiverseDb(object):
                     'size': label.size(),
                     'offset_x': label.offsetX(),
                     'offset_y': label.offsetY()})
-            cursor.executemany(sql, rowData)
+            cursor.executemany(sql, rows)
 
     def _internalReadSector(
             self,
@@ -1925,22 +2571,25 @@ class MultiverseDb(object):
         sector.setProducts(products)
 
         sql = """
-            SELECT code, name, legacy, base
+            SELECT id, code, name, legacy, base
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AllegiancesTableName)
         cursor.execute(sql, {'id': sectorId})
-        allegiances = []
+        allegianceIdMap: typing.Dict[str, multiverse.DbAllegiance] = {}
         for row in cursor.fetchall():
-            allegiances.append(multiverse.DbAllegiance(
-                code=row[0],
-                name=row[1],
-                legacy=row[2],
-                base=row[3]))
-        sector.setAllegiances(allegiances)
+            allegiance = multiverse.DbAllegiance(
+                id=row[0],
+                sectorId=sectorId,
+                code=row[1],
+                name=row[2],
+                legacy=row[3],
+                base=row[4])
+            allegianceIdMap[allegiance.id()] = allegiance
+        sector.setAllegiances(allegianceIdMap.values())
 
         sql = """
-            SELECT code, name
+            SELECT id, code, name, is_major
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SophontsTableName)
@@ -1948,44 +2597,221 @@ class MultiverseDb(object):
         sophonts = []
         for row in cursor.fetchall():
             sophonts.append(multiverse.DbSophont(
-                code=row[0],
-                name=row[1]))
+                id=row[0],
+                sectorId=sectorId,
+                code=row[1],
+                name=row[2],
+                isMajor=True if row[3] else False))
         sector.setSophonts(sophonts)
 
-        sql = """
-            SELECT id, hex_x, hex_y, name, uwp, remarks, importance,
-                economics, culture, nobility, bases, zone, pbg,
-                system_worlds, allegiance, stellar, notes
+        systemsSql = """
+            SELECT id, hex_x, hex_y, name, uwp, importance,
+                economics, culture, nobility, zone, pbg,
+                system_worlds, allegiance_id, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
+        tradeCodesSql = """
+            SELECT id, code
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._TradeCodesTableName)
+        sophontPopulationsSql = """
+            SELECT id, sophont_id, percentage, is_home_world
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._SophontPopulationsTableName)
+        rulingAllegiancesSql = """
+            SELECT id, allegiance_id
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._RulingAllegiancesTableName)
+        owningSystemsSql = """
+            SELECT id, hex_x, hex_y, sector_code
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._OwningSystemsTableName)
+        colonySystemsSql = """
+            SELECT id, hex_x, hex_y, sector_code
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._ColonySystemsTableName)
+        researchStationsSql = """
+            SELECT id, code
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._ResearchStationTableName)
+        customRemarksSql = """
+            SELECT id, remark
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._CustomRemarksTableName)
+        basesSql = """
+            SELECT id, code
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._BasesTableName)
+        starsSql = """
+            SELECT id, luminosity_class, spectral_class, spectral_scale
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._StarsTableName)
+        cursor.execute(systemsSql, {'id': sectorId})
         systems = []
         for row in cursor.fetchall():
+            systemId = row[0]
+            hexX = row[1]
+            hexY = row[2]
+            name = row[3]
+            uwp = row[4]
+            importance = row[5]
+            economics = row[6]
+            culture = row[7]
+            nobility = row[8]
+            zone = row[9]
+            pbg = row[10]
+            systemWorlds=row[11]
+            allegiance = allegianceIdMap.get(row[12])
+            notes = row[13]
+
+            cursor.execute(tradeCodesSql, {'id': systemId})
+            tradeCodeRows = cursor.fetchall()
+            tradeCodes = None
+            if tradeCodeRows:
+                tradeCodes = []
+                for codeRow in tradeCodeRows:
+                    tradeCodes.append(multiverse.DbTradeCode(
+                        id=codeRow[0],
+                        systemId=systemId,
+                        code=codeRow[1]))
+
+            cursor.execute(sophontPopulationsSql, {'id': systemId})
+            sophontRows = cursor.fetchall()
+            sophontPopulations = None
+            if sophontRows:
+                sophontPopulations = []
+                for sophontRow in sophontRows:
+                    sophontPopulations.append(multiverse.DbSophontPopulation(
+                        id=sophontRow[0],
+                        systemId=systemId,
+                        sophontId=sophontRow[1],
+                        percentage=sophontRow[2],
+                        isHomeWorld=True if sophontRow[3] else False))
+
+            cursor.execute(rulingAllegiancesSql, {'id': systemId})
+            rulingRows = cursor.fetchall()
+            rulingAllegiances = None
+            if rulingRows:
+                rulingAllegiances = []
+                for rulingRow in rulingRows:
+                    allegiance = allegianceIdMap.get(rulingRow[1])
+                    rulingAllegiances.append(multiverse.DbRulingAllegiance(
+                        id=rulingRow[0],
+                        systemId=systemId,
+                        allegiance=allegiance))
+
+            cursor.execute(owningSystemsSql, {'id': systemId})
+            ownerRows = cursor.fetchall()
+            owningSystems = None
+            if ownerRows:
+                owningSystems = []
+                for ownerRow in ownerRows:
+                    owningSystems.append(multiverse.DbOwningSystem(
+                        id=ownerRow[0],
+                        systemId=systemId,
+                        hexX=ownerRow[1],
+                        hexY=ownerRow[2],
+                        sectorCode=ownerRow[3]))
+
+            cursor.execute(colonySystemsSql, {'id': systemId})
+            colonyRows = cursor.fetchall()
+            colonySystems = None
+            if colonyRows:
+                colonySystems = []
+                for colonyRow in colonyRows:
+                    colonySystems.append(multiverse.DbColonySystem(
+                        id=colonyRow[0],
+                        systemId=systemId,
+                        hexX=colonyRow[1],
+                        hexY=colonyRow[2],
+                        sectorCode=colonyRow[3]))
+
+            cursor.execute(researchStationsSql, {'id': systemId})
+            researchStationRows = cursor.fetchall()
+            researchStations = None
+            if researchStationRows:
+                researchStations = []
+                for researchRow in researchStationRows:
+                    researchStations.append(multiverse.DbResearchStation(
+                        id=researchRow[0],
+                        systemId=systemId,
+                        code=researchRow[1]))
+
+            cursor.execute(customRemarksSql, {'id': systemId})
+            remarkRows = cursor.fetchall()
+            customRemarks = None
+            if remarkRows:
+                customRemarks = []
+                for remarkRow in remarkRows:
+                    customRemarks.append(multiverse.DbCustomRemark(
+                        id=remarkRow[0],
+                        systemId=systemId,
+                        remark=remarkRow[1]))
+
+            cursor.execute(basesSql, {'id': systemId})
+            baseRows = cursor.fetchall()
+            bases = None
+            if baseRows:
+                bases = []
+                for baseRow in baseRows:
+                    bases.append(multiverse.DbBase(
+                        id=baseRow[0],
+                        systemId=systemId,
+                        code=baseRow[1]))
+
+            cursor.execute(starsSql, {'id': systemId})
+            starRows = cursor.fetchall()
+            stars = None
+            if starRows:
+                stars = []
+                for starRow in starRows:
+                    stars.append(multiverse.DbStar(
+                        id=starRow[0],
+                        systemId=systemId,
+                        luminosityClass=starRow[1],
+                        spectralClass=starRow[2],
+                        spectralScale=starRow[3]))
+
             systems.append(multiverse.DbSystem(
-                id=row[0],
-                hexX=row[1],
-                hexY=row[2],
-                name=row[3],
-                uwp=row[4],
-                remarks=row[5],
-                importance=row[6],
-                economics=row[7],
-                culture=row[8],
-                nobility=row[9],
-                bases=row[10],
-                zone=row[11],
-                pbg=row[12],
-                systemWorlds=row[13],
-                allegiance=row[14],
-                stellar=row[15],
-                notes=row[16]))
+                id=systemId,
+                hexX=hexX,
+                hexY=hexY,
+                name=name,
+                uwp=uwp,
+                importance=importance,
+                economics=economics,
+                culture=culture,
+                nobility=nobility,
+                zone=zone,
+                pbg=pbg,
+                systemWorlds=systemWorlds,
+                allegiance=allegiance,
+                tradeCodes=tradeCodes,
+                sophonts=sophontPopulations,
+                owningSystems=owningSystems,
+                colonySystems=colonySystems,
+                rulingAllegiances=rulingAllegiances,
+                researchStations=researchStations,
+                customRemarks=customRemarks,
+                bases=bases,
+                stars=stars,
+                notes=notes))
         sector.setSystems(systems)
 
         sql = """
             SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
                 start_offset_x, start_offset_y, end_offset_x, end_offset_y,
-                allegiance, type, style, colour, width
+                type, style, colour, width, allegiance_id
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._RoutesTableName)
@@ -2002,17 +2828,17 @@ class MultiverseDb(object):
                 startOffsetY=row[6],
                 endOffsetX=row[7],
                 endOffsetY=row[8],
-                allegiance=row[9],
-                type=row[10],
-                style=row[11],
-                colour=row[12],
-                width=row[13]))
+                type=row[9],
+                style=row[10],
+                colour=row[11],
+                width=row[12],
+                allegiance=allegianceIdMap.get(row[13])))
         sector.setRoutes(routes)
 
         sql = """
             SELECT id, show_label, wrap_label,
                 label_hex_x, label_hex_y, label_offset_x, label_offset_y,
-                label, colour, style, allegiance
+                label, colour, style, allegiance_id
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._BordersTableName)
@@ -2043,7 +2869,7 @@ class MultiverseDb(object):
                 label=row[7],
                 colour=row[8],
                 style=row[9],
-                allegiance=row[10]))
+                allegiance=allegianceIdMap.get(row[10])))
         sector.setBorders(borders)
 
         sql = """

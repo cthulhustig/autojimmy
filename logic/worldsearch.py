@@ -112,7 +112,9 @@ class NameFiler(WorldFilter):
         self._operation = operation
         self._value = value
 
-        self._regex = re.compile(self._value, re.IGNORECASE)
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def type(self) -> Type:
         return self._type
@@ -553,7 +555,10 @@ class AllegianceFilter(WorldFilter):
         super().__init__()
         self._operation = operation
         self._value = value
-        self._regex = re.compile(self._value, re.IGNORECASE)
+
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def operation(self) -> StringFilterOperation:
         return self._operation
@@ -589,15 +594,15 @@ class AllegianceFilter(WorldFilter):
             raise ValueError('Invalid allegiance filter operation')
 
         allegianceName = allegiance.name()
-        if allegianceName:
-            if self._operation == StringFilterOperation.ContainsString:
-                if self._regex.search(allegianceName):
-                    return True
-            elif self._operation == StringFilterOperation.MatchRegex:
-                if self._regex.match(allegianceName):
-                    return True
-            else:
-                raise ValueError('Invalid allegiance filter operation')
+        if self._operation == StringFilterOperation.ContainsString:
+            if self._regex.search(allegianceName):
+                return True
+        elif self._operation == StringFilterOperation.MatchRegex:
+            if self._regex.match(allegianceName):
+                return True
+        else:
+            raise ValueError('Invalid allegiance filter operation')
+
         return False
 
 class SophontFilter(WorldFilter):
@@ -609,7 +614,10 @@ class SophontFilter(WorldFilter):
         super().__init__()
         self._operation = operation
         self._value = value
-        self._regex = re.compile(self._value, re.IGNORECASE)
+
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def operation(self) -> StringFilterOperation:
         return self._operation
@@ -635,11 +643,11 @@ class SophontFilter(WorldFilter):
             sophonts = remarks.sophonts()
             if self._operation == StringFilterOperation.ContainsString:
                 for sophont in sophonts:
-                    if self._regex.search(sophont):
+                    if self._regex.search(sophont.name()):
                         return True
             elif self._operation == StringFilterOperation.MatchRegex:
                 for sophont in sophonts:
-                    if self._regex.match(sophont):
+                    if self._regex.match(sophont.name()):
                         return True
             else:
                 raise ValueError('Invalid sophont filter operation')
@@ -782,7 +790,10 @@ class RemarksFilter(WorldFilter):
         super().__init__()
         self._operation = operation
         self._value = value
-        self._regex = re.compile(self._value, re.IGNORECASE)
+
+        self._regex = re.compile(
+            self._value if operation is StringFilterOperation.MatchRegex else re.escape(self._value),
+            re.IGNORECASE)
 
     def operation(self) -> StringFilterOperation:
         return self._operation

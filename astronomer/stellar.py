@@ -1,5 +1,5 @@
 import enum
-import re
+import multiverse
 import typing
 
 # https://en.wikipedia.org/wiki/Stellar_classification
@@ -13,8 +13,7 @@ _SpectralClassDescriptionMap = {
     'F': 'Yellow-White - 6,000-7,500K Kelvin',
     'G': 'Yellow - 5,200-6,000 Kelvin',
     'K': 'Orange - 3,700-5,200 Kelvin',
-    'M': 'Red - 2,000-3,700 Kelvin',
-    '?': 'Unknown' # This was added my me
+    'M': 'Red - 2,000-3,700 Kelvin'
 }
 
 _SpectralScaleDescriptionMap = {
@@ -27,8 +26,7 @@ _SpectralScaleDescriptionMap = {
     '6': '60%',
     '7': '70%',
     '8': '80%',
-    '9': '90%',
-    '?': 'Unknown' # This was added my me
+    '9': '90%'
 }
 
 _LuminosityDescriptionMap = {
@@ -44,8 +42,7 @@ _LuminosityDescriptionMap = {
     'BD': 'Brown Dwarf - Unknown Diameter',
     'BH': 'Black Hole - Unknown Diameter',
     'NS': 'Neutron Star - Unknown Diameter',
-    'PSR': 'Pulsar - Unknown Diameter',
-    '?': 'Unknown', # This was added my me
+    'PSR': 'Pulsar - Unknown Diameter'
 }
 
 class Star(object):
@@ -62,20 +59,21 @@ class Star(object):
 
     def __init__(
             self,
-            classification: str,
-            spectralClass: str,
-            spectralScale: str,
-            luminosityClass: str
+            dbStar: multiverse.DbStar
             ) -> None:
-        self._classification = classification
-        self._spectralClass = spectralClass
-        self._spectralScale = spectralScale
-        self._luminosityClass = luminosityClass
+        self._luminosityClass = dbStar.luminosityClass()
+        self._spectralClass = dbStar.spectralClass()
+        self._spectralScale = dbStar.spectralScale()
+        self._string = None
 
-    def string(self) -> str:
-        return self._classification
+    @typing.overload
+    def code(self, element: typing.Literal[Element.LuminosityClass]) -> str: ...
+    @typing.overload
+    def code(self, element: typing.Literal[Element.SpectralClass]) -> typing.Optional[str]: ...
+    @typing.overload
+    def code(self, element: typing.Literal[Element.SpectralScale]) -> typing.Optional[str]: ...
 
-    def code(self, element: Element) -> str:
+    def code(self, element: Element) -> typing.Optional[str]:
         if element == Star.Element.SpectralClass:
             return self._spectralClass
         elif element == Star.Element.SpectralScale:
@@ -85,32 +83,36 @@ class Star(object):
         raise ValueError('Invalid star element')
 
     def description(self, element: Element) -> str:
-        return Star._elementDescriptionMaps[element.value][self.code(element)]
+        code = self.code(element)
+        if code is None:
+            return 'Unknown'
+        return Star._elementDescriptionMaps[element.value][code]
+
+    def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemStellarString(
+                stars=[(self._luminosityClass, self._spectralClass, self._spectralScale)])
+        return self._string
 
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:
         return Star._elementDescriptionMaps[element.value]
 
 class Stellar(object):
-    # Details of the format of the stars string can be found here
-    # https://travellermap.com/doc/secondsurvey#stellar
-    # https://travellermap.com/doc/fileformats#legacy-sec-format
-    _StellarPattern = re.compile(r'([OBAFGKM][0-9])\s*(D|Ia|Ib|III|II|IV|VII|VI|V||)|(DB|DA|DF|DG|DK|DM|D)|(BD|BH|NS|PSR)')
-
     def __init__(
             self,
-            string: str
+            dbStars: typing.Optional[typing.Collection[multiverse.DbStar]]
             ) -> None:
-        self._string = string
-        self._stars = self._parseString(self._string)
-
-    def string(self) -> str:
-        return self._string
+        self._stars = []
+        if dbStars:
+            for dbStar in dbStars:
+                self._stars.append(Star(dbStar=dbStar))
+        self._string = None
 
     def isEmpty(self) -> bool:
-        return not self._string
+        return not self._stars
 
-    def stars(self) -> typing.Iterable[Star]:
+    def stars(self) -> typing.List[Star]:
         return list(self._stars)
 
     def yieldStars(self) -> typing.Generator[Star, None, None]:
@@ -120,29 +122,11 @@ class Stellar(object):
     def starCount(self) -> int:
         return len(self._stars)
 
-    @staticmethod
-    def _parseString(string) -> typing.List[Star]:
-        stars = []
-        for match in Stellar._StellarPattern.finditer(string):
-            if match[1] and match[2]:
-                stars.append(Star(
-                    classification=match[0],
-                    spectralClass=match[1][0],
-                    spectralScale=match[1][1],
-                    luminosityClass=match[2]))
-            elif match[3]:
-                stars.append(Star(
-                    classification=match[0],
-                    spectralClass='?' if len(match[3]) == 1 else match[3][1],
-                    spectralScale='?',
-                    luminosityClass=match[3][0]))
-            elif match[4]:
-                stars.append(Star(
-                    classification=match[0],
-                    spectralClass='?',
-                    spectralScale='?',
-                    luminosityClass=match[4]))
-        return stars
+    def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemStellarString(
+                stars=[(s.code(Star.Element.LuminosityClass), s.code(Star.Element.SpectralClass), s.code(Star.Element.SpectralScale)) for s in self._stars])
+        return self._string
 
     def __getitem__(self, index: int) -> Star:
         return self._stars.__getitem__(index)

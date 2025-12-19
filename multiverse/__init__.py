@@ -2,6 +2,9 @@ from .rawobjects import *
 from .dbobjects import *
 from .sectorparsers import *
 from .snapshotmanager import *
+from .bases import *
+from .stellar import *
+from .remarks import *
 from .convert import *
 from .multiversedb import *
 from .customuniverse import *
