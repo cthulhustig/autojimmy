@@ -910,7 +910,6 @@ def convertRawSectorToDbSector(
                     # (e.g. some of the ones that have a UWP of ???????-?).
                     name=rawWorld.attribute(multiverse.WorldAttribute.Name),
                     uwp=rawUWP,
-                    importance=rawWorld.attribute(multiverse.WorldAttribute.Importance),
                     economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
                     culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
                     nobility=rawWorld.attribute(multiverse.WorldAttribute.Nobility),

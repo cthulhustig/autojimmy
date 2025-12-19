@@ -398,7 +398,6 @@ class DbSystem(DbObject):
             hexY: int,
             name: str, # TODO: Do worlds in sector files always have a name????
             uwp: str, # TODO: Do worlds in sector files always have a UWP
-            importance: typing.Optional[str] = None,
             economics: typing.Optional[str] = None,
             culture: typing.Optional[str] = None,
             nobility: typing.Optional[str] = None,
@@ -428,7 +427,6 @@ class DbSystem(DbObject):
         self.setHexY(hexY)
         self.setName(name)
         self.setUWP(uwp)
-        self.setImportance(importance)
         self.setEconomics(economics)
         self.setCulture(culture)
         self.setNobility(nobility)
@@ -476,12 +474,6 @@ class DbSystem(DbObject):
 
     def setUWP(self, uwp: str) -> None:
         self._uwp = uwp
-
-    def importance(self) -> typing.Optional[str]:
-        return self._importance
-
-    def setImportance(self, importance: typing.Optional[str]) -> None:
-        self._importance = importance
 
     def economics(self) -> typing.Optional[str]:
         return self._economics

@@ -1008,9 +1008,6 @@ class MultiverseDb(object):
                     tableName=MultiverseDb._SystemsTableName,
                     cursor=cursor):
 
-                # TODO: I'm not sure what to do about importance. I don't think I use
-                # it anywhere. I think this might be the same as the importance value
-                # I calculate in the cartographer
                 # TODO: I think I should split this up more
                 # - UWP (column for each)
                 #   - Starport
@@ -1035,30 +1032,11 @@ class MultiverseDb(object):
                 #   - PopulationMultiplier
                 #   - PlanetoidBelts
                 #   - GasGiants
-                # - Remarks
-                #   - Table for sophonts
-                #       - System Id
-                #       - Code
-                #       - Name
-                #       - Percentage
-                #       - Homeworld (major/minor/none)
-                #       - Dieback
-                #   - Table for trade codes
-                #       - System Id
-                #       - Trade Code
-                #   - Table for nobilities
-                #       - System Id
-                #       - Nobility
-                #   - Table for colonies
-                #       - System Id
-                #       - Sector X
-                #       - Sector Y
-                #       - Hex X
-                #       - Hex Y
-                #   - Column for owner
-                #   - Column for ruling allegiance (Military Rule)
-                #   - Column for research station
-                #   - Column for unrecognised trade code string (Need to filter out stuff like random '/')
+                # - Table for nobilities
+                #   - System Id
+                #   - Nobility
+                # TODO: The ordering of these columns is a little odd, why is zone
+                # between pbg and the other similar strings
                 sql = """
                     CREATE TABLE IF NOT EXISTS {systemsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -1067,7 +1045,6 @@ class MultiverseDb(object):
                         hex_y INTEGER NOT NULL,
                         name TEXT NOT NULL,
                         uwp TEXT NOT NULL,
-                        importance TEXT,
                         economics TEXT,
                         culture TEXT,
                         nobility TEXT,
@@ -2226,7 +2203,6 @@ class MultiverseDb(object):
                     'hex_y': system.hexY(),
                     'name': system.name(),
                     'uwp': system.uwp(),
-                    'importance': system.importance(),
                     'economics': system.economics(),
                     'culture': system.culture(),
                     'nobility': system.nobility(),
@@ -2310,11 +2286,11 @@ class MultiverseDb(object):
             if systemRows:
                 sql = """
                     INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, uwp,
-                        importance, economics, culture, nobility, zone, pbg,
-                        system_worlds, allegiance_id, notes)
+                        economics, culture, nobility, zone, pbg, system_worlds,
+                        allegiance_id, notes)
                     VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :uwp,
-                        :importance, :economics, :culture, :nobility, :zone, :pbg,
-                        :system_worlds, :allegiance_id, :notes);
+                        :economics, :culture, :nobility, :zone, :pbg, :system_worlds,
+                        :allegiance_id, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
                 cursor.executemany(sql, systemRows)
             if tradeCodeRows:
@@ -2605,9 +2581,8 @@ class MultiverseDb(object):
         sector.setSophonts(sophonts)
 
         systemsSql = """
-            SELECT id, hex_x, hex_y, name, uwp, importance,
-                economics, culture, nobility, zone, pbg,
-                system_worlds, allegiance_id, notes
+            SELECT id, hex_x, hex_y, name, uwp, economics, culture, nobility,
+                zone, pbg, system_worlds, allegiance_id, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
@@ -2664,15 +2639,14 @@ class MultiverseDb(object):
             hexY = row[2]
             name = row[3]
             uwp = row[4]
-            importance = row[5]
-            economics = row[6]
-            culture = row[7]
-            nobility = row[8]
-            zone = row[9]
-            pbg = row[10]
-            systemWorlds=row[11]
-            allegiance = allegianceIdMap.get(row[12])
-            notes = row[13]
+            economics = row[5]
+            culture = row[6]
+            nobility = row[7]
+            zone = row[8]
+            pbg = row[9]
+            systemWorlds=row[10]
+            allegiance = allegianceIdMap.get(row[11])
+            notes = row[12]
 
             cursor.execute(tradeCodesSql, {'id': systemId})
             tradeCodeRows = cursor.fetchall()
@@ -2788,7 +2762,6 @@ class MultiverseDb(object):
                 hexY=hexY,
                 name=name,
                 uwp=uwp,
-                importance=importance,
                 economics=economics,
                 culture=culture,
                 nobility=nobility,
