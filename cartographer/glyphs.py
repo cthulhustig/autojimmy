@@ -1,3 +1,4 @@
+import common
 import enum
 import fnmatch
 import re
@@ -50,7 +51,26 @@ class GlyphDefs(object):
     Square = Glyph('\u25A0') # U+25A0 (BLACK SQUARE)
     Star4Point = Glyph('\u2726') # U+2726 (BLACK FOUR POINTED STAR)
     Star5Point = Glyph('\u2605') # U+2605 (BLACK STAR)
-    StarStar = Glyph('**') # Would prefer U+2217 (ASTERISK OPERATOR) but font coverage is poor
+    # The Traveller Map code uses "**" for StarStar and is currently rendering
+    # it as a pair of 5 pointed asterisks. However Windows (at least on my
+    # system) renders this as a 6 pointed asterisk. On Linux & macOS it renders
+    # as a 5 pointed asterisk (at least on the versions I've tried).
+    # There is a comment in the Traveller Map code saying U+2217 would be
+    # preferred but font coverage isn't good. It's not clear if that's just to
+    # make it consistent with the rest of the code that uses unicode rather than
+    # ascii characters _or_ if it's because a slightly different symbol would be
+    # more desirable. It doesn't look like there is a canonical representation of
+    # U+2217, googling shows that in some places it has 5 points and others 6.
+    # There are alternative unicode characters that explicitly state how many
+    # points they have with U+1F7B0 having 5 points and U+1F7B6 having 6.
+    # These characters are supported by Windows but, unfortunately, they're not
+    # supported by macOS. They are supported by Ubuntu but Ive no idea how other
+    # Linux distros will handle them.
+    # As I don't know if 5 or 6 points is most desirable, I've gone with the
+    # approach of using 5 points to be consistent with Traveller Map. As I can't
+    # be sure how Linux and macOS will render U+1F7B0, and they seem to be
+    # rendering * as 5 point anyway, I've chosen to only use the code on Windows.
+    StarStar = Glyph('\U0001F7B0\U0001F7B0' if common.isWindows() else '**')
 
     # Research Stations
     Alpha = Glyph('\u0391', highlight=True)
