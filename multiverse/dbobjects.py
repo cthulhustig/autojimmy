@@ -182,18 +182,20 @@ class DbSophont(DbObject):
 class DbSophontPopulation(DbObject):
     def __init__(
             self,
-            sophontId: str,
+            sophont: DbSophont,
             percentage: typing.Optional[int], # None means it's a die back sophont
             isHomeWorld: bool,
+            isDieBack: bool,
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
         super().__init__(id=id)
 
         self.setSystemId(systemId)
-        self.setSophontId(sophontId)
+        self.setSophont(sophont)
         self.setPercentage(percentage)
         self.setIsHomeWorld(isHomeWorld)
+        self.setIsDieBack(isDieBack)
 
     def systemId(self) -> typing.Optional[str]:
         return self._systemId
@@ -201,11 +203,11 @@ class DbSophontPopulation(DbObject):
     def setSystemId(self, systemId: str) -> None:
         self._systemId = systemId
 
-    def sophontId(self) -> str:
-        return self._sophontId
+    def sophont(self) -> DbSophont:
+        return self._sophont
 
-    def setSophontId(self, sophontId: str) -> None:
-        self._sophontId = sophontId
+    def setSophont(self, sophont: DbSophont) -> None:
+        self._sophont = sophont
 
     def percentage(self) -> typing.Optional[int]:
         return self._percentage
@@ -218,6 +220,12 @@ class DbSophontPopulation(DbObject):
 
     def setIsHomeWorld(self, isHomeWorld: bool) -> None:
         self._isHomeWorld = isHomeWorld
+
+    def isDieBack(self) -> bool:
+        return self._isDieBack
+
+    def setIsDieBack(self, isDieback: bool) -> None:
+        self._isDieBack = isDieback
 
 class DbOwningSystem(DbObject):
     def __init__(
@@ -432,7 +440,7 @@ class DbSystem(DbObject):
             allegiance: typing.Optional[DbAllegiance] = None,
             nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
             tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
-            sophonts: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
+            sophontPopulations: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
             rulingAllegiances: typing.Optional[typing.Collection[DbRulingAllegiance]] = None,
             owningSystems: typing.Optional[typing.Collection[DbOwningSystem]] = None,
             colonySystems: typing.Optional[typing.Collection[DbColonySystem]] = None,
@@ -459,7 +467,7 @@ class DbSystem(DbObject):
         self.setAllegiance(allegiance)
         self.setNobilities(nobilities)
         self.setTradeCodes(tradeCodes)
-        self.setSophonts(sophonts)
+        self.setSophontPopulations(sophontPopulations)
         self.setRulingAllegiances(rulingAllegiances)
         self.setOwningSystems(owningSystems)
         self.setColonySystems(colonySystems)
@@ -553,16 +561,16 @@ class DbSystem(DbObject):
             for code in self._tradeCodes:
                 code.setSystemId(self._id)
 
-    def sophonts(self) -> typing.Optional[typing.Collection[DbSophontPopulation]]:
-        return self._sophonts
+    def sophontPopulations(self) -> typing.Optional[typing.Collection[DbSophontPopulation]]:
+        return self._sophontPopulations
 
     # TODO: Something needs to check that the sophont ids used by the
     # supplied populations match a known sophont for the sector this
     # world is part of
-    def setSophonts(self, sophonts: typing.Collection[DbSophontPopulation]) -> None:
-        self._sophonts = list(sophonts) if sophonts else None
-        if self._sophonts:
-            for sophont in self._sophonts:
+    def setSophontPopulations(self, sophonts: typing.Collection[DbSophontPopulation]) -> None:
+        self._sophontPopulations = list(sophonts) if sophonts else None
+        if self._sophontPopulations:
+            for sophont in self._sophontPopulations:
                 sophont.setSystemId(self._id)
 
     def rulingAllegiances(self) -> typing.Optional[typing.Collection[DbRulingAllegiance]]:

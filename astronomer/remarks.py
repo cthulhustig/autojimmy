@@ -29,15 +29,17 @@ class SophontPopulation(object):
             self,
             code: str,
             name: str,
-            percentage: typing.Optional[int], # None means die back
+            percentage: typing.Optional[int], # None means unknown percentage
+            isMajorRace: bool,
             isHomeWorld: bool,
-            isMajorRace: bool
+            isDieBack: bool
             ) -> None:
         self._code = code
         self._name = name
         self._percentage = percentage
-        self._isHomeWorld = isHomeWorld
         self._isMajorRace = isMajorRace
+        self._isHomeWorld = isHomeWorld
+        self._isDieBack = isDieBack
 
     def code(self) -> int:
         return self._code
@@ -48,19 +50,21 @@ class SophontPopulation(object):
     def percentage(self) -> typing.Optional[int]:
         return self._percentage
 
+    def isMajorRace(self) -> bool:
+        return self._isMajorRace
+
     def isHomeWorld(self) -> bool:
         return self._isHomeWorld
 
-    def isMajorRace(self) -> bool:
-        return self._isMajorRace
+    def isDieBack(self) -> bool:
+        return self._isDieBack
 
 class Remarks(object):
     def __init__(
             self,
             zone: astronomer.ZoneType,
             dbTradeCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]],
-            dbSophonts: typing.Optional[typing.Collection[multiverse.DbSophont]],
-            dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
+            dbSophontPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
             dbRulingAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
             dbOwningSystems: typing.Optional[typing.Collection[multiverse.DbOwningSystem]],
             dbColonySystems: typing.Optional[typing.Collection[multiverse.DbColonySystem]],
@@ -78,7 +82,7 @@ class Remarks(object):
         self._string = None
 
         self._processTradeCodes(dbCodes=dbTradeCodes)
-        self._processSophonts(dbSophonts=dbSophonts, dbPopulations=dbPopulations)
+        self._processSophontPopulations(dbPopulations=dbSophontPopulations)
         self._processRulingAllegiances(dbAllegiances=dbRulingAllegiances)
         self._processOwningSystems(dbSystems=dbOwningSystems)
         self._processColonySystems(dbSystems=dbColonySystems)
@@ -166,30 +170,22 @@ class Remarks(object):
                 continue
             self._tradeCodes.add(tradeCode)
 
-    def _processSophonts(
+    def _processSophontPopulations(
             self,
-            dbSophonts: typing.Optional[typing.Collection[multiverse.DbSophont]],
             dbPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]]
             ) -> None:
         if not dbPopulations:
             return
 
-        if not dbSophonts:
-            raise ValueError('Sophont populations supplied without sophonts')
-
-        # TODO: Generating this map each time is inefficient
-        sophontMap = {s.id():s for s in dbSophonts}
         for dbPopulation in dbPopulations:
-            dbSophont = sophontMap.get(dbPopulation.sophontId())
-            if not dbSophont:
-                raise ValueError(f'No sophont with id {dbPopulation.sophontId()} for population {dbPopulation.id()}')
-
+            dbSophont = dbPopulation.sophont()
             self._sophontPopulations.append(SophontPopulation(
                 code=dbSophont.code(),
                 name=dbSophont.name(),
                 percentage=dbPopulation.percentage(),
+                isMajorRace=dbSophont.isMajor(),
                 isHomeWorld=dbPopulation.isHomeWorld(),
-                isMajorRace=dbSophont.isMajor()))
+                isDieBack=dbPopulation.isDieBack()))
 
     def _processRulingAllegiances(
             self,
@@ -260,14 +256,21 @@ class Remarks(object):
             tradeCodes.append(astronomer.tradeCodeString(tradeCode))
 
         for sophont in self._sophontPopulations:
-            if sophont.percentage() is None:
-                dieBackSophonts.append(sophont.name())
-            elif sophont.isHomeWorld():
+            # NOTE: Home world and die back checks are intentionally separate so
+            # that a sophonts home world can be marked as die back if they user
+            # wants. If it is marked as die back, any population other than None
+            # doesn't really make sense but I'm not doing anything to prevent it.
+            if sophont.isHomeWorld():
                 if sophont.isMajorRace():
                     majorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
                 else:
                     minorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
-            else:
+
+            if sophont.isDieBack():
+                dieBackSophonts.append(sophont.name())
+            elif not sophont.isHomeWorld():
+                # It's not die back and not a home world so just add a standard
+                # population entry
                 sophontPopulations.append((sophont.code(), sophont.percentage()))
 
         for owner in self._owningWorlds:

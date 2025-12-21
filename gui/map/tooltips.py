@@ -337,11 +337,19 @@ def createHexToolTip(
                 toolTip += '<li>Sophonts:</li>'
                 toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
                 for sophont in sophonts:
-                    percentage = sophont.percentage()
-                    toolTip += '<li><span>{sophont} - {percentage}{homeworld}</span></li>'.format(
+                    tags = ''
+
+                    if sophont.isHomeWorld():
+                        tags += ' (Home World)'
+
+                    if sophont.isDieBack():
+                        tags += ' (Die Back)'
+                    elif sophont.percentage() is not None:
+                        tags += f' (Population: {sophont.percentage()}%)'
+
+                    toolTip += '<li><span>{sophont}{tags}</span></li>'.format(
                         sophont=html.escape(sophont.name()),
-                        percentage=f'{percentage}%' if percentage is not None else 'Die Back',
-                        homeworld=' - Homeworld' if sophont.isHomeWorld() else '')
+                        tags=html.escape(tags))
                 toolTip += '</ul>'
 
         #

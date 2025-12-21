@@ -738,8 +738,7 @@ class WorldManager(object):
                     remarks = astronomer.Remarks(
                         zone=zone,
                         dbTradeCodes=dbSystem.tradeCodes(),
-                        dbSophonts=dbSector.sophonts(),
-                        dbPopulations=dbSystem.sophonts(),
+                        dbSophontPopulations=dbSystem.sophontPopulations(),
                         dbRulingAllegiances=dbSystem.rulingAllegiances(),
                         dbOwningSystems=dbSystem.owningSystems(),
                         dbColonySystems=dbSystem.colonySystems(),

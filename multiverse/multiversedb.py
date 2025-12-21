@@ -1178,6 +1178,7 @@ class MultiverseDb(object):
                         sophont_id TEXT NOT NULL,
                         percentage INTEGER,
                         is_home_world INTEGER NOT NULL,
+                        is_die_back INTEGER NOT NULL,
                         FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
                         FOREIGN KEY(sophont_id) REFERENCES {sophontsTable}(id) ON DELETE CASCADE,
                         UNIQUE (system_id, sophont_id)
@@ -2264,14 +2265,15 @@ class MultiverseDb(object):
                             'system_id': code.systemId(),
                             'code': code.code()})
 
-                if system.sophonts():
-                    for sophont in system.sophonts():
+                if system.sophontPopulations():
+                    for sophont in system.sophontPopulations():
                         sophontPopulationRows.append({
                             'id': sophont.id(),
                             'system_id': sophont.systemId(),
-                            'sophont_id': sophont.sophontId(),
+                            'sophont_id': sophont.sophont().id(),
                             'percentage': sophont.percentage(),
-                            'is_home_world': 1 if sophont.isHomeWorld() else 0})
+                            'is_home_world': 1 if sophont.isHomeWorld() else 0,
+                            'is_die_back': 1 if sophont.isDieBack() else 0})
 
                 if system.rulingAllegiances():
                     for rulingAllegiance in system.rulingAllegiances():
@@ -2352,8 +2354,8 @@ class MultiverseDb(object):
                 cursor.executemany(sql, tradeCodeRows)
             if sophontPopulationRows:
                 sql = """
-                    INSERT INTO {table} (id, system_id, sophont_id, percentage, is_home_world)
-                    VALUES (:id, :system_id, :sophont_id, :percentage, :is_home_world)
+                    INSERT INTO {table} (id, system_id, sophont_id, percentage, is_home_world, is_die_back)
+                    VALUES (:id, :system_id, :sophont_id, :percentage, :is_home_world, :is_die_back)
                     """.format(table=MultiverseDb._SophontPopulationsTableName)
                 cursor.executemany(sql, sophontPopulationRows)
             if rulingAllegianceRows:
@@ -2621,15 +2623,16 @@ class MultiverseDb(object):
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SophontsTableName)
         cursor.execute(sql, {'id': sectorId})
-        sophonts = []
+        sophontIdMap: typing.Dict[str, multiverse.DbSophont] = {}
         for row in cursor.fetchall():
-            sophonts.append(multiverse.DbSophont(
+            sophont = multiverse.DbSophont(
                 id=row[0],
                 sectorId=sectorId,
                 code=row[1],
                 name=row[2],
-                isMajor=True if row[3] else False))
-        sector.setSophonts(sophonts)
+                isMajor=True if row[3] else False)
+            sophontIdMap[sophont.id()] = sophont
+        sector.setSophonts(sophontIdMap.values())
 
         systemsSql = """
             SELECT id, hex_x, hex_y, name, uwp, economics, culture,
@@ -2648,7 +2651,7 @@ class MultiverseDb(object):
             WHERE system_id = :id;
             """.format(table=MultiverseDb._TradeCodesTableName)
         sophontPopulationsSql = """
-            SELECT id, sophont_id, percentage, is_home_world
+            SELECT id, sophont_id, percentage, is_home_world, is_die_back
             FROM {table}
             WHERE system_id = :id;
             """.format(table=MultiverseDb._SophontPopulationsTableName)
@@ -2731,12 +2734,14 @@ class MultiverseDb(object):
             if sophontRows:
                 sophontPopulations = []
                 for sophontRow in sophontRows:
+                    sophont = sophontIdMap.get(sophontRow[1])
                     sophontPopulations.append(multiverse.DbSophontPopulation(
                         id=sophontRow[0],
                         systemId=systemId,
-                        sophontId=sophontRow[1],
+                        sophont=sophont,
                         percentage=sophontRow[2],
-                        isHomeWorld=True if sophontRow[3] else False))
+                        isHomeWorld=True if sophontRow[3] else False,
+                        isDieBack=True if sophontRow[4] else False))
 
             cursor.execute(rulingAllegiancesSql, {'id': systemId})
             rulingRows = cursor.fetchall()
@@ -2836,7 +2841,7 @@ class MultiverseDb(object):
                 allegiance=allegiance,
                 nobilities=nobilities,
                 tradeCodes=tradeCodes,
-                sophonts=sophontPopulations,
+                sophontPopulations=sophontPopulations,
                 owningSystems=owningSystems,
                 colonySystems=colonySystems,
                 rulingAllegiances=rulingAllegiances,

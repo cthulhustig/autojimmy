@@ -63,36 +63,57 @@ _LegacyAllegianceToT5Overrides = {
     '--': 'XXXX'
 }
 
-_MilitaryRuleRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))Mr\((\S{4})\)(?:[0-9W]?)(?=$|[\s,])')
+_MilitaryRuleRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))Mr\((\S{4})\)(?=$|[\s,])')
 
-# This pattern matches sophonts using the XXXX# format, where XXXX is a T5 sophont
-# code and # is the population in 10s of percentage or W to indicate 100%
-# NOTE: I support an optional : separator between the code and population. It's
-# not part of the of the second survey spec but some sector files do use it.
-_T5SophontPopulationRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))(\S{4}):?(?:[0-9W])(?=$|[\s,])')
+# This pattern matches major sophont home worlds using the official [Name]#
+# format where # is an optional population percentage in 10s of precent
+# _and_ the unofficial [Name]###% format where # is the population in percent.
+# NOTE: This should be kept up to date with parseSystemRemarksString
+# NOTE: The second survey spec only has the population percentage for minor home
+# worlds but it seems odd to assume the home world is always 100%
+# NOTE: The docs only have 'W' as meaning 100% for but I've allowed 'w' in order
+# to be more accepting
+# NOTE: The percentage can be set to '?' to mean unknown population. It's not
+# mentioned documentation but they are used in the Traveller Map sectors
+_MajorSophontHomeWorldRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))\[\s*(?=\S)([^]]+?)\s*\](?:[0-9Ww?]?|(?:0|[1-9][0-9]?|100)%)(?=$|[\s,])')
 
-# This pattern matches sophonts using the X# format, where XXXX is a legacy
-# single letter sophont code and # is the population in 10s of percentage or w to
-# indicate 100%
-# NOTE: The pattern should really contain 'F' as well which would map to "Non-Hiver
-# Federation Member" but I don't know what T5 sophont that is so I can't do anything
-# with it
-_LegacySophontPopulationRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))([ACDHIMVXZ]):?(?:[0-9w])(?=$|[\s,])')
+# This pattern matches minor sophont home worlds using the official (Name)#
+# format where # is an optional population percentage in 10s of precent
+# _and_ the unofficial (Name)###% format where # is the population in percent.
+# NOTE: The docs only have 'W' as meaning 100% for but I've allowed 'w' in order
+# to be more accepting
+# NOTE: The percentage can be set to '?' to mean unknown population. It's not
+# mentioned documentation but they are used in the Traveller Map sectors
+_MinorSophontHomeWorldRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))\(\s*(?=\S)([^)]+?)\s*\)(?:[0-9Ww?]?|(?:0|[1-9][0-9]?|100)%)(?=$|[\s,])')
 
-# This pattern matches major sophont home worlds using [Name]# format, where
-# # is the optional population in 10s of percentage (100% if not specified).
-# NOTE: The documented format only specifies that a population percentage
-# can be supplied for a minor race home world not a major race home world.
-# This seems odd so I've chosen to allow it for both
-# NOTE: The documented format doesn't specify that W can be used for 100%
-# but some sectors use it so we accept it
-_MajorSophontHomeWorldRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))\[\s*(?=\S)([^]]+?)\s*\](?:[0-9W]?)(?=$|[\s,])')
 
-# This pattern matches minor sophont home worlds using (Name)# format, where
-# # is the optional population in 10s of percentage (100% if not specified).
-# NOTE: The documented format doesn't specify that W can be used for 100%
-# but some sectors use it so we accept it
-_MinorSophontHomeWorldRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))\(\s*(?=\S)([^)]+?)\s*\)(?:[0-9W]?)(?=$|[\s,])')
+# This pattern matches sophont using the official XXXX# where XXXX is a T5
+# sophont code and # is the population in 10s of percentage or W to indicate
+# 100% _and_ the unofficial XXXX###% format where # is the population in
+# percent.
+# NOTE: I support an optional ':' separator between the code and population.
+# It's not part of the of the second survey spec but some sector files do use
+# it.
+# NOTE: I've used \S (anything that's not a space) for the code (rather than \w)
+# as there are some uses of none alphabetic characters (notably Za'tW in M1105
+# Wrenton)
+# NOTE: The docs only have 'W' as meaning 100% for but I've allowed 'w' in order
+# to be more accepting
+# NOTE: The percentage can be set to '?' to mean unknown population. It's not
+# mentioned documentation but they are used in the Traveller Map sectors
+_T5SophontPopulationRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))(\S{4}):?(?:[0-9Ww?]|(?:0|[1-9][0-9]?|100)%)(?=$|[\s,])')
+
+# This pattern matches sophont using the official X# where X is a legacy sophont
+# code and # is the population in 10s of percentage or W to indicate 100% _and_
+# the unofficial X###% format where # is the population in percent.
+# NOTE: I've made the ':' separator optional as a separator isn't required due
+# to the fields being a fixed length
+# NOTE: The docs only have 'w' as meaning 100% for but I've allowed 'W' in order
+# to be more accepting
+# NOTE: The percentage can be set to '?' to mean unknown population. It's not
+# mentioned documentation but they are used in the Traveller Map sectors
+_LegacySophontPopulationRemarkPattern = re.compile(r'(?:(?<=^)|(?<=[\s,]))([ACDHIMVXZ]):?(?:[0-9wW?]|(?:0|[1-9][0-9]?|100)%)(?=$|[\s,])')
+
 
 # This pattern matches sophonts using the Di(Name) format to indicate a
 # die back sophont
@@ -795,9 +816,10 @@ def convertRawSectorToDbSector(
                             seenDbSophonts.add(dbSophont)
 
                             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophontId=dbSophont.id(),
+                                sophont=dbSophont,
                                 percentage=rawPopulation,
-                                isHomeWorld=True))
+                                isHomeWorld=True,
+                                isDieBack=False))
 
                         for rawSophontName, rawPopulation in rawMinorHomeWorlds:
                             dbSophont = dbSophontNameMap.get(rawSophontName)
@@ -816,9 +838,10 @@ def convertRawSectorToDbSector(
                             seenDbSophonts.add(dbSophont)
 
                             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophontId=dbSophont.id(),
+                                sophont=dbSophont,
                                 percentage=rawPopulation,
-                                isHomeWorld=True))
+                                isHomeWorld=True,
+                                isDieBack=False))
 
                         for rawSophontCode, rawPopulation in rawSophontPopulations:
                             dbSophont = dbSophontCodeMap.get(rawSophontCode)
@@ -837,9 +860,10 @@ def convertRawSectorToDbSector(
                             seenDbSophonts.add(dbSophont)
 
                             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophontId=dbSophont.id(),
+                                sophont=dbSophont,
                                 percentage=rawPopulation,
-                                isHomeWorld=False))
+                                isHomeWorld=False,
+                                isDieBack=False))
 
                         for rawSophontName in rawDieBackSophonts:
                             dbSophont = dbSophontNameMap.get(rawSophontName)
@@ -858,9 +882,10 @@ def convertRawSectorToDbSector(
                             seenDbSophonts.add(dbSophont)
 
                             dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophontId=dbSophont.id(),
+                                sophont=dbSophont,
                                 percentage=None,
-                                isHomeWorld=False))
+                                isHomeWorld=False,
+                                isDieBack=True))
 
                             # Add the Die Back trade code if the system doesn't already have it
                             if not dbTradeCodes:
@@ -937,7 +962,7 @@ def convertRawSectorToDbSector(
                     allegiance=dbAllegiance,
                     nobilities=dbNobilities,
                     tradeCodes=dbTradeCodes,
-                    sophonts=dbSophontPopulations,
+                    sophontPopulations=dbSophontPopulations,
                     rulingAllegiances=dbRulingAllegiances,
                     owningSystems=dbOwningSystems,
                     colonySystems=dbColonySystems,

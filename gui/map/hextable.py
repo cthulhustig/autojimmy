@@ -839,10 +839,15 @@ class HexTable(gui.FrozenColumnListTable):
                             if displayText:
                                 displayText += ', '
                             displayText += sophont.name()
-                            if sophont.percentage() is not None:
-                                displayText += f' ({sophont.percentage()}%)'
-                            else:
+
+                            if sophont.isHomeWorld():
+                                displayText += ' (Home World)'
+
+                            if sophont.isDieBack():
                                 displayText += ' (Die Back)'
+                            elif sophont.percentage() is not None:
+                                displayText += f' (Population: {sophont.percentage()}%)'
+
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
                 elif columnType == self.ColumnType.TradeCodes:
                     tableItem = QtWidgets.QTableWidgetItem()
@@ -1129,10 +1134,17 @@ class HexTable(gui.FrozenColumnListTable):
             lines = []
             remarks = world.remarks()
             for sophont in remarks.sophonts():
-                lines.append(
-                    f'{sophont.name()} ({sophont.percentage()}%)'
-                    if sophont.percentage() is not None else
-                    f'{sophont.name()} (Die Back)')
+                line = sophont.name()
+
+                if sophont.isHomeWorld():
+                    line += ' (Home World)'
+
+                if sophont.isDieBack():
+                    line += ' (Die Back)'
+                elif sophont.percentage() is not None:
+                    line += f' (Population: {sophont.percentage()}%)'
+
+                lines.append(line)
             if lines:
                 return gui.createListToolTip(
                     title='Sophonts:',
