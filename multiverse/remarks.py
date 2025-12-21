@@ -53,14 +53,6 @@ _OwnershipPattern = re.compile(r'^O:(?:(\S{4})-?)?(0[1-9]|[12][0-9]|3[0-2])(0[1-
 # in other codes (e.g. Sophont Populations) and I want to be consistent
 _ColonyPattern = re.compile(r'^C:(?:(\S{4})-?)?(0[1-9]|[12][0-9]|3[0-2])(0[1-9]|[1-3][0-9]|40)$')
 
-# TODO: In the Traveller Map data there are quite a few places that use ? as the
-# population when specifying major/minor home worlds and T5/Legacy populations.
-# I assume this is to indicate that the sophont is present but the population
-# isn't known (which seems like a very valid state). Ideally I should probably
-# support this but it would need to be the whole way through (database,
-# astronomer etc). I'd also need a new way to represent die back sophonts in the
-# database as currently they're a sophont population with a null value.
-
 # Major Race Home World: "[NAME]" or "[NAME]#" where NAME is the sophont name
 # and # is the optional population percentage in 10 percent intervals. If no
 # population is specified it is taken to be 100%.
@@ -462,7 +454,6 @@ def formatSystemRemarksString(
     if owningSystems:
         for hexX, hexY, sector in owningSystems:
             if sector:
-                # TODO: Check this formatting is correct
                 remarks.append('O:{sector}-{x:02d}{y:02d}'.format(
                     x=hexX,
                     y=hexY,

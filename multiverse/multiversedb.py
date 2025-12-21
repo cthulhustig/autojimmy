@@ -8,7 +8,6 @@ import sqlite3
 import threading
 import typing
 
-# TODO: Need to handle updating db after snapshot update
 # TODO: When updating snapshot I'll need to do something to make sure notes
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
@@ -862,14 +861,14 @@ class MultiverseDb(object):
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._SubsectorNamesTableName,
                     cursor=cursor):
-                # TODO: Can I enforce a valid range for the code (0-15)
                 sql = """
                     CREATE TABLE IF NOT EXISTS {namesTable} (
                         sector_id TEXT NOT NULL,
                         code INTEGER NOT NULL,
                         name TEXT NOT NULL,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (sector_id, code)
+                        UNIQUE (sector_id, code),
+                        CHECK (code BETWEEN 0 AND 15)
                     );
                     """.format(
                         namesTable=MultiverseDb._SubsectorNamesTableName,
@@ -890,8 +889,6 @@ class MultiverseDb(object):
                     cursor=cursor)
 
             # Create allegiances table
-            # TODO: This should be more like sophonts where name is before code and code is
-            # optional. along with any unique constraints
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._AllegiancesTableName,
                     cursor=cursor):

@@ -175,10 +175,6 @@ class DbSophont(DbObject):
     def setIsMajor(self, isMajor: bool) -> None:
         self._isMajor = isMajor
 
-# TODO: This should take a DbSophont object rather than an id in the same way
-# DbRulingAllegiance takes a DbAllegiance
-# TODO: I think everywhere I've got HomeWorld or Home_World, it should actually
-# be Homeworld (i.e. one word). This would include database tables.
 class DbSophontPopulation(DbObject):
     def __init__(
             self,
