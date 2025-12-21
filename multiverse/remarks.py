@@ -28,7 +28,7 @@ _MilitaryRulePattern = re.compile(r'^Mr\(\s*(\S{4})\s*\)$')
 # 'H' == Eta
 # 'T' == Theta
 # 'O' == Omicron
-_ResearchStationPattern = re.compile(r'^Rs([ABGDEZHIO]?)$')
+_ResearchStationPattern = re.compile(r'^Rs([ABGDEZHTO]?)$')
 
 # Owning System: "O:####" or "O:XXXX-####" where XXXX is the system abbreviation or current
 # system if not specified and #### is the hex in sector coordinates. The range of hex values
