@@ -206,6 +206,9 @@ class MultiverseDb(object):
     _AllegiancesTableName = 'allegiances'
     _AllegiancesTableSchema = 1
 
+    _NobilitiesTableName = 'nobilities'
+    _NobilitiesTableSchema = 1
+
     _TradeCodesTableName = 'trade_codes'
     _TradeCodesTableSchema = 1
 
@@ -1032,9 +1035,6 @@ class MultiverseDb(object):
                 #   - PopulationMultiplier
                 #   - PlanetoidBelts
                 #   - GasGiants
-                # - Table for nobilities
-                #   - System Id
-                #   - Nobility
                 # TODO: The ordering of these columns is a little odd, why is zone
                 # between pbg and the other similar strings
                 sql = """
@@ -1047,7 +1047,6 @@ class MultiverseDb(object):
                         uwp TEXT NOT NULL,
                         economics TEXT,
                         culture TEXT,
-                        nobility TEXT,
                         zone TEXT,
                         pbg TEXT,
                         system_worlds INTEGER,
@@ -1087,6 +1086,45 @@ class MultiverseDb(object):
                 self._createColumnIndex(
                     table=MultiverseDb._SystemsTableName,
                     column='allegiance_id',
+                    unique=False,
+                    cursor=cursor)
+
+            # Create nobilities table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._NobilitiesTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {nobilitiesTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        system_id TEXT NOT NULL,
+                        code TEXT NOT NULL,
+                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
+                        UNIQUE (system_id, code)
+                    );
+                    """.format(
+                        nobilitiesTable=MultiverseDb._NobilitiesTableName,
+                        systemsTable=MultiverseDb._SystemsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._NobilitiesTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._NobilitiesTableName,
+                    version=MultiverseDb._NobilitiesTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._NobilitiesTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._NobilitiesTableName,
+                    column='system_id',
                     unique=False,
                     cursor=cursor)
 
@@ -2185,6 +2223,7 @@ class MultiverseDb(object):
 
         if sector.systems():
             systemRows = []
+            nobilitiesRows = []
             tradeCodeRows = []
             sophontPopulationRows = []
             rulingAllegianceRows = []
@@ -2205,12 +2244,18 @@ class MultiverseDb(object):
                     'uwp': system.uwp(),
                     'economics': system.economics(),
                     'culture': system.culture(),
-                    'nobility': system.nobility(),
                     'zone': system.zone(),
                     'pbg': system.pbg(),
                     'system_worlds': system.systemWorlds(),
                     'allegiance_id': allegiance.id() if allegiance else None,
                     'notes': system.notes()})
+
+                if system.nobilities():
+                    for nobility in system.nobilities():
+                        nobilitiesRows.append({
+                            'id': nobility.id(),
+                            'system_id': nobility.systemId(),
+                            'code': nobility.code()})
 
                 if system.tradeCodes():
                     for code in system.tradeCodes():
@@ -2286,13 +2331,19 @@ class MultiverseDb(object):
             if systemRows:
                 sql = """
                     INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, uwp,
-                        economics, culture, nobility, zone, pbg, system_worlds,
+                        economics, culture, zone, pbg, system_worlds,
                         allegiance_id, notes)
                     VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :uwp,
-                        :economics, :culture, :nobility, :zone, :pbg, :system_worlds,
+                        :economics, :culture, :zone, :pbg, :system_worlds,
                         :allegiance_id, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
                 cursor.executemany(sql, systemRows)
+            if nobilitiesRows:
+                sql = """
+                    INSERT INTO {table} (id, system_id, code)
+                    VALUES (:id, :system_id, :code)
+                    """.format(table=MultiverseDb._NobilitiesTableName)
+                cursor.executemany(sql, nobilitiesRows)
             if tradeCodeRows:
                 sql = """
                     INSERT INTO {table} (id, system_id, code)
@@ -2581,11 +2632,16 @@ class MultiverseDb(object):
         sector.setSophonts(sophonts)
 
         systemsSql = """
-            SELECT id, hex_x, hex_y, name, uwp, economics, culture, nobility,
+            SELECT id, hex_x, hex_y, name, uwp, economics, culture,
                 zone, pbg, system_worlds, allegiance_id, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
+        nobilitiesSql = """
+            SELECT id, code
+            FROM {table}
+            WHERE system_id = :id;
+            """.format(table=MultiverseDb._NobilitiesTableName)
         tradeCodesSql = """
             SELECT id, code
             FROM {table}
@@ -2641,12 +2697,22 @@ class MultiverseDb(object):
             uwp = row[4]
             economics = row[5]
             culture = row[6]
-            nobility = row[7]
-            zone = row[8]
-            pbg = row[9]
-            systemWorlds=row[10]
-            allegiance = allegianceIdMap.get(row[11])
-            notes = row[12]
+            zone = row[7]
+            pbg = row[8]
+            systemWorlds=row[9]
+            allegiance = allegianceIdMap.get(row[10])
+            notes = row[11]
+
+            cursor.execute(nobilitiesSql, {'id': systemId})
+            nobilityRows = cursor.fetchall()
+            nobilities = None
+            if nobilityRows:
+                nobilities = []
+                for nobilityRow in nobilityRows:
+                    nobilities.append(multiverse.DbNobility(
+                        id=nobilityRow[0],
+                        systemId=systemId,
+                        code=nobilityRow[1]))
 
             cursor.execute(tradeCodesSql, {'id': systemId})
             tradeCodeRows = cursor.fetchall()
@@ -2764,11 +2830,11 @@ class MultiverseDb(object):
                 uwp=uwp,
                 economics=economics,
                 culture=culture,
-                nobility=nobility,
                 zone=zone,
                 pbg=pbg,
                 systemWorlds=systemWorlds,
                 allegiance=allegiance,
+                nobilities=nobilities,
                 tradeCodes=tradeCodes,
                 sophonts=sophontPopulations,
                 owningSystems=owningSystems,

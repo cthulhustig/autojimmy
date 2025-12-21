@@ -15,6 +15,30 @@ class DbObject(object):
     def id(self) -> str:
         return self._id
 
+class DbNobility(DbObject):
+    def __init__(
+            self,
+            code: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            systemId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSystemId(systemId)
+        self.setCode(code)
+
+    def systemId(self) -> typing.Optional[str]:
+        return self._systemId
+
+    def setSystemId(self, systemId: str) -> None:
+        self._systemId = systemId
+
+    def code(self) -> typing.Optional[str]:
+        return self._code
+
+    def setCode(self, code: typing.Optional[str]) -> None:
+        self._code = code
+
 class DbTradeCode(DbObject):
     def __init__(
             self,
@@ -400,13 +424,13 @@ class DbSystem(DbObject):
             uwp: str, # TODO: Do worlds in sector files always have a UWP
             economics: typing.Optional[str] = None,
             culture: typing.Optional[str] = None,
-            nobility: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
             pbg: typing.Optional[str] = None,
             # System worlds can be None if the number is not not known (e.g. if uwp is ???????-?)
             # It can also be none due to it just not being specified in sector data
             systemWorlds: typing.Optional[int] = None,
             allegiance: typing.Optional[DbAllegiance] = None,
+            nobilities: typing.Optional[typing.Collection[DbNobility]] = None,
             tradeCodes: typing.Optional[typing.Collection[DbTradeCode]] = None,
             sophonts: typing.Optional[typing.Collection[DbSophontPopulation]] = None,
             rulingAllegiances: typing.Optional[typing.Collection[DbRulingAllegiance]] = None,
@@ -429,11 +453,11 @@ class DbSystem(DbObject):
         self.setUWP(uwp)
         self.setEconomics(economics)
         self.setCulture(culture)
-        self.setNobility(nobility)
         self.setZone(zone)
         self.setPBG(pbg)
         self.setSystemWorlds(systemWorlds)
         self.setAllegiance(allegiance)
+        self.setNobilities(nobilities)
         self.setTradeCodes(tradeCodes)
         self.setSophonts(sophonts)
         self.setRulingAllegiances(rulingAllegiances)
@@ -487,12 +511,6 @@ class DbSystem(DbObject):
     def setCulture(self, culture: typing.Optional[str]) -> None:
         self._culture = culture
 
-    def nobility(self) -> typing.Optional[str]:
-        return self._nobility
-
-    def setNobility(self, nobility: typing.Optional[str]) -> None:
-        self._nobility = nobility
-
     def zone(self) -> typing.Optional[str]:
         return self._zone
 
@@ -516,6 +534,15 @@ class DbSystem(DbObject):
 
     def setAllegiance(self, allegiance: typing.Optional[DbAllegiance]) -> None:
         self._allegiance = allegiance
+
+    def nobilities(self) -> typing.Optional[typing.Collection[DbNobility]]:
+        return self._nobilities
+
+    def setNobilities(self, nobilities: typing.Optional[typing.Collection[DbNobility]]) -> None:
+        self._nobilities = list(nobilities) if nobilities else None
+        if self._nobilities:
+            for code in self._nobilities:
+                code.setSystemId(self._id)
 
     def tradeCodes(self) -> typing.Optional[typing.Collection[DbTradeCode]]:
         return self._tradeCodes

@@ -711,11 +711,28 @@ def convertRawSectorToDbSector(
                     # if it's a custom sector it should also warn the user
                     raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
+                rawNobilities = rawWorld.attribute(multiverse.WorldAttribute.Nobility)
+                dbNobilities = None
+                if rawNobilities:
+                    dbNobilities = []
+                    seenNobilities = set()
+                    for nobilityCode in multiverse.parseSystemNobilityString(string=rawNobilities):
+                        if nobilityCode in seenNobilities:
+                            continue # Ignore duplicates
+                        seenNobilities.add(nobilityCode)
+
+                        dbNobilities.append(multiverse.DbNobility(code=nobilityCode))
+
                 rawBases = rawWorld.attribute(multiverse.WorldAttribute.Bases)
                 dbBases = None
                 if rawBases:
                     dbBases = []
+                    seenBases = set()
                     for baseCode in multiverse.parseSystemBasesString(string=rawBases):
+                        if baseCode in seenBases:
+                            continue # Ignore duplicates
+                        seenBases.add(baseCode)
+
                         dbBases.append(multiverse.DbBase(code=baseCode))
 
                 rawStellar = rawWorld.attribute(multiverse.WorldAttribute.Stellar)
@@ -912,16 +929,13 @@ def convertRawSectorToDbSector(
                     uwp=rawUWP,
                     economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
                     culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
-                    nobility=rawWorld.attribute(multiverse.WorldAttribute.Nobility),
                     zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
                     pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
                     # TODO: I think the Traveller Map second survey page clarifies that
                     # system worlds is the number of worlds excluding the main world
                     systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
-                    # TODO: The database should be updated to store the allegiance id rather than the code
-                    # Ideally it would be set to automatically null the column if the allegiance is
-                    # deleted.
                     allegiance=dbAllegiance,
+                    nobilities=dbNobilities,
                     tradeCodes=dbTradeCodes,
                     sophonts=dbSophontPopulations,
                     rulingAllegiances=dbRulingAllegiances,

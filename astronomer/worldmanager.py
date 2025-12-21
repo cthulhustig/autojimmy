@@ -734,8 +734,7 @@ class WorldManager(object):
                         dbSystem.economics() if dbSystem.economics() else '')
                     culture = astronomer.Culture(
                         dbSystem.culture() if dbSystem.culture() else '')
-                    nobilities = astronomer.Nobilities(
-                        dbSystem.nobility() if dbSystem.nobility() else '')
+                    nobilities = astronomer.Nobilities(dbSystem.nobilities())
                     remarks = astronomer.Remarks(
                         zone=zone,
                         dbTradeCodes=dbSystem.tradeCodes(),

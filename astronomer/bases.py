@@ -82,7 +82,7 @@ _BaseTypeToCodeMap = {
 }
 assert(set(_BaseTypeToCodeMap.keys()) == set(BaseType))
 
-_BaseTypeDescriptionMap = {
+_BaseTypeToDescriptionMap = {
     BaseType.ExplorationBase: 'Exploration Base',
     BaseType.MilitaryBase: 'Military Base',
     BaseType.NavalDepot: 'Naval Depot',
@@ -190,11 +190,11 @@ class Bases(object):
 
     @staticmethod
     def description(baseType: BaseType) -> str:
-        return _BaseTypeDescriptionMap[baseType]
+        return _BaseTypeToDescriptionMap[baseType]
 
     @staticmethod
     def descriptionMap() -> typing.Mapping[BaseType, str]:
-        return _BaseTypeDescriptionMap
+        return _BaseTypeToDescriptionMap
 
     def __getitem__(self, index: int) -> BaseType:
         return self._bases.__getitem__(index)
