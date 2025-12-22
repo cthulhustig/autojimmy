@@ -548,6 +548,12 @@ class DbSystem(DbObject):
             for code in self._nobilities:
                 code.setSystemId(self._id)
 
+    def addNobility(self, nobility: DbNobility) -> None:
+        if self._nobilities is None:
+            self._nobilities = []
+        self._nobilities.append(nobility)
+        nobility.setSystemId(self._id)
+
     def tradeCodes(self) -> typing.Optional[typing.Collection[DbTradeCode]]:
         return self._tradeCodes
 
@@ -557,26 +563,44 @@ class DbSystem(DbObject):
             for code in self._tradeCodes:
                 code.setSystemId(self._id)
 
+    def addTradeCode(self, tradeCode: DbTradeCode) -> None:
+        if self._tradeCodes is None:
+            self._tradeCodes = []
+        self._tradeCodes.append(tradeCode)
+        tradeCode.setSystemId(self._id)
+
     def sophontPopulations(self) -> typing.Optional[typing.Collection[DbSophontPopulation]]:
         return self._sophontPopulations
 
     # TODO: Something needs to check that the sophont ids used by the
     # supplied populations match a known sophont for the sector this
     # world is part of
-    def setSophontPopulations(self, sophonts: typing.Collection[DbSophontPopulation]) -> None:
-        self._sophontPopulations = list(sophonts) if sophonts else None
+    def setSophontPopulations(self, populations: typing.Collection[DbSophontPopulation]) -> None:
+        self._sophontPopulations = list(populations) if populations else None
         if self._sophontPopulations:
             for sophont in self._sophontPopulations:
                 sophont.setSystemId(self._id)
 
+    def addSophontPopulation(self, population: DbSophontPopulation) -> None:
+        if self._sophontPopulations is None:
+            self._sophontPopulations = []
+        self._sophontPopulations.append(population)
+        population.setSystemId(self._id)
+
     def rulingAllegiances(self) -> typing.Optional[typing.Collection[DbRulingAllegiance]]:
         return self._rulingAllegiances
 
-    def setRulingAllegiances(self, allegiances: typing.Optional[typing.Collection[DbOwningSystem]]) -> None:
+    def setRulingAllegiances(self, allegiances: typing.Optional[typing.Collection[DbRulingAllegiance]]) -> None:
         self._rulingAllegiances = list(allegiances) if allegiances else None
         if self._rulingAllegiances:
             for allegiance in self._rulingAllegiances:
                 allegiance.setSystemId(self._id)
+
+    def addRulingAllegiance(self, allegiance: DbRulingAllegiance) -> None:
+        if self._rulingAllegiances is None:
+            self._rulingAllegiances = []
+        self._rulingAllegiances.append(allegiance)
+        allegiance.setSystemId(self._id)
 
     def owningSystems(self) -> typing.Optional[typing.Collection[DbOwningSystem]]:
         return self._owningSystems
@@ -587,6 +611,12 @@ class DbSystem(DbObject):
             for system in self._owningSystems:
                 system.setSystemId(self._id)
 
+    def addOwningSystem(self, system: DbOwningSystem) -> None:
+        if self._owningSystems is None:
+            self._owningSystems = []
+        self._owningSystems.append(system)
+        system.setSystemId(self._id)
+
     def colonySystems(self) -> typing.Optional[typing.Collection[DbColonySystem]]:
         return self._colonySystems
 
@@ -595,6 +625,12 @@ class DbSystem(DbObject):
         if self._colonySystems:
             for system in self._colonySystems:
                 system.setSystemId(self._id)
+
+    def addColonySystem(self, system: DbColonySystem) -> None:
+        if self._colonySystems is None:
+            self._colonySystems = []
+        self._colonySystems.append(system)
+        system.setSystemId(self._id)
 
     def researchStations(self) -> typing.Optional[typing.Collection[DbResearchStation]]:
         return self._researchStations
@@ -605,6 +641,12 @@ class DbSystem(DbObject):
             for station in self._researchStations:
                 station.setSystemId(self._id)
 
+    def addResearchStation(self, station: DbResearchStation) -> None:
+        if self._researchStations is None:
+            self._researchStations = []
+        self._researchStations.append(station)
+        station.setSystemId(self._id)
+
     def customRemarks(self) -> typing.Optional[typing.Collection[DbCustomRemark]]:
         return self._customRemarks
 
@@ -613,6 +655,12 @@ class DbSystem(DbObject):
         if self._customRemarks:
             for remark in self._customRemarks:
                 remark.setSystemId(self._id)
+
+    def addCustomRemark(self, remark: DbCustomRemark) -> None:
+        if self._customRemarks is None:
+            self._customRemarks = []
+        self._customRemarks.append(remark)
+        remark.setSystemId(self._id)
 
     def bases(self) -> typing.Optional[typing.Collection[DbBase]]:
         return self._bases
@@ -623,6 +671,12 @@ class DbSystem(DbObject):
             for base in self._bases:
                 base.setSystemId(self._id)
 
+    def addBase(self, base: DbBase) -> None:
+        if self._bases is None:
+            self._bases = []
+        self._bases.append(base)
+        base.setSystemId(self._id)
+
     def stars(self) -> typing.Optional[typing.Collection[DbStar]]:
         return self._stars
 
@@ -631,6 +685,12 @@ class DbSystem(DbObject):
         if self._stars:
             for star in self._stars:
                 star.setSystemId(self._id)
+
+    def addStar(self, star: DbStar) -> None:
+        if self._stars is None:
+            self._stars = []
+        self._stars.append(star)
+        star.setSystemId(self._id)
 
     def notes(self) -> typing.Optional[str]:
         return self._notes

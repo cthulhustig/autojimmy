@@ -2602,7 +2602,7 @@ class MultiverseDb(object):
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AllegiancesTableName)
         cursor.execute(sql, {'id': sectorId})
-        allegianceIdMap: typing.Dict[str, multiverse.DbAllegiance] = {}
+        idToAllegianceMap: typing.Dict[str, multiverse.DbAllegiance] = {}
         for row in cursor.fetchall():
             allegiance = multiverse.DbAllegiance(
                 id=row[0],
@@ -2611,8 +2611,8 @@ class MultiverseDb(object):
                 name=row[2],
                 legacy=row[3],
                 base=row[4])
-            allegianceIdMap[allegiance.id()] = allegiance
-        sector.setAllegiances(allegianceIdMap.values())
+            idToAllegianceMap[allegiance.id()] = allegiance
+        sector.setAllegiances(idToAllegianceMap.values())
 
         sql = """
             SELECT id, code, name, is_major
@@ -2620,7 +2620,7 @@ class MultiverseDb(object):
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SophontsTableName)
         cursor.execute(sql, {'id': sectorId})
-        sophontIdMap: typing.Dict[str, multiverse.DbSophont] = {}
+        idToSophontMap: typing.Dict[str, multiverse.DbSophont] = {}
         for row in cursor.fetchall():
             sophont = multiverse.DbSophont(
                 id=row[0],
@@ -2628,67 +2628,18 @@ class MultiverseDb(object):
                 code=row[1],
                 name=row[2],
                 isMajor=True if row[3] else False)
-            sophontIdMap[sophont.id()] = sophont
-        sector.setSophonts(sophontIdMap.values())
+            idToSophontMap[sophont.id()] = sophont
+        sector.setSophonts(idToSophontMap.values())
 
-        systemsSql = """
+        sql = """
             SELECT id, hex_x, hex_y, name, uwp, economics, culture,
                 zone, pbg, system_worlds, allegiance_id, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
-        nobilitiesSql = """
-            SELECT id, code
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._NobilitiesTableName)
-        tradeCodesSql = """
-            SELECT id, code
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._TradeCodesTableName)
-        sophontPopulationsSql = """
-            SELECT id, sophont_id, percentage, is_home_world, is_die_back
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._SophontPopulationsTableName)
-        rulingAllegiancesSql = """
-            SELECT id, allegiance_id
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._RulingAllegiancesTableName)
-        owningSystemsSql = """
-            SELECT id, hex_x, hex_y, sector_code
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._OwningSystemsTableName)
-        colonySystemsSql = """
-            SELECT id, hex_x, hex_y, sector_code
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._ColonySystemsTableName)
-        researchStationsSql = """
-            SELECT id, code
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._ResearchStationTableName)
-        customRemarksSql = """
-            SELECT id, remark
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._CustomRemarksTableName)
-        basesSql = """
-            SELECT id, code
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._BasesTableName)
-        starsSql = """
-            SELECT id, luminosity_class, spectral_class, spectral_scale
-            FROM {table}
-            WHERE system_id = :id;
-            """.format(table=MultiverseDb._StarsTableName)
-        cursor.execute(systemsSql, {'id': sectorId})
+        cursor.execute(sql, {'id': sectorId})
         systems = []
+        idToSystemMap: typing.Dict[str, multiverse.DbSystem] = {}
         for row in cursor.fetchall():
             systemId = row[0]
             hexX = row[1]
@@ -2700,131 +2651,10 @@ class MultiverseDb(object):
             zone = row[7]
             pbg = row[8]
             systemWorlds=row[9]
-            allegiance = allegianceIdMap.get(row[10])
+            allegiance = idToAllegianceMap.get(row[10])
             notes = row[11]
 
-            cursor.execute(nobilitiesSql, {'id': systemId})
-            nobilityRows = cursor.fetchall()
-            nobilities = None
-            if nobilityRows:
-                nobilities = []
-                for nobilityRow in nobilityRows:
-                    nobilities.append(multiverse.DbNobility(
-                        id=nobilityRow[0],
-                        systemId=systemId,
-                        code=nobilityRow[1]))
-
-            cursor.execute(tradeCodesSql, {'id': systemId})
-            tradeCodeRows = cursor.fetchall()
-            tradeCodes = None
-            if tradeCodeRows:
-                tradeCodes = []
-                for codeRow in tradeCodeRows:
-                    tradeCodes.append(multiverse.DbTradeCode(
-                        id=codeRow[0],
-                        systemId=systemId,
-                        code=codeRow[1]))
-
-            cursor.execute(sophontPopulationsSql, {'id': systemId})
-            sophontRows = cursor.fetchall()
-            sophontPopulations = None
-            if sophontRows:
-                sophontPopulations = []
-                for sophontRow in sophontRows:
-                    sophont = sophontIdMap.get(sophontRow[1])
-                    sophontPopulations.append(multiverse.DbSophontPopulation(
-                        id=sophontRow[0],
-                        systemId=systemId,
-                        sophont=sophont,
-                        percentage=sophontRow[2],
-                        isHomeWorld=True if sophontRow[3] else False,
-                        isDieBack=True if sophontRow[4] else False))
-
-            cursor.execute(rulingAllegiancesSql, {'id': systemId})
-            rulingRows = cursor.fetchall()
-            rulingAllegiances = None
-            if rulingRows:
-                rulingAllegiances = []
-                for rulingRow in rulingRows:
-                    allegiance = allegianceIdMap.get(rulingRow[1])
-                    rulingAllegiances.append(multiverse.DbRulingAllegiance(
-                        id=rulingRow[0],
-                        systemId=systemId,
-                        allegiance=allegiance))
-
-            cursor.execute(owningSystemsSql, {'id': systemId})
-            ownerRows = cursor.fetchall()
-            owningSystems = None
-            if ownerRows:
-                owningSystems = []
-                for ownerRow in ownerRows:
-                    owningSystems.append(multiverse.DbOwningSystem(
-                        id=ownerRow[0],
-                        systemId=systemId,
-                        hexX=ownerRow[1],
-                        hexY=ownerRow[2],
-                        sectorCode=ownerRow[3]))
-
-            cursor.execute(colonySystemsSql, {'id': systemId})
-            colonyRows = cursor.fetchall()
-            colonySystems = None
-            if colonyRows:
-                colonySystems = []
-                for colonyRow in colonyRows:
-                    colonySystems.append(multiverse.DbColonySystem(
-                        id=colonyRow[0],
-                        systemId=systemId,
-                        hexX=colonyRow[1],
-                        hexY=colonyRow[2],
-                        sectorCode=colonyRow[3]))
-
-            cursor.execute(researchStationsSql, {'id': systemId})
-            researchStationRows = cursor.fetchall()
-            researchStations = None
-            if researchStationRows:
-                researchStations = []
-                for researchRow in researchStationRows:
-                    researchStations.append(multiverse.DbResearchStation(
-                        id=researchRow[0],
-                        systemId=systemId,
-                        code=researchRow[1]))
-
-            cursor.execute(customRemarksSql, {'id': systemId})
-            remarkRows = cursor.fetchall()
-            customRemarks = None
-            if remarkRows:
-                customRemarks = []
-                for remarkRow in remarkRows:
-                    customRemarks.append(multiverse.DbCustomRemark(
-                        id=remarkRow[0],
-                        systemId=systemId,
-                        remark=remarkRow[1]))
-
-            cursor.execute(basesSql, {'id': systemId})
-            baseRows = cursor.fetchall()
-            bases = None
-            if baseRows:
-                bases = []
-                for baseRow in baseRows:
-                    bases.append(multiverse.DbBase(
-                        id=baseRow[0],
-                        systemId=systemId,
-                        code=baseRow[1]))
-
-            cursor.execute(starsSql, {'id': systemId})
-            starRows = cursor.fetchall()
-            stars = None
-            if starRows:
-                stars = []
-                for starRow in starRows:
-                    stars.append(multiverse.DbStar(
-                        id=starRow[0],
-                        systemId=systemId,
-                        luminosityClass=starRow[1],
-                        spectralClass=starRow[2],
-                        spectralScale=starRow[3]))
-
-            systems.append(multiverse.DbSystem(
+            system = multiverse.DbSystem(
                 id=systemId,
                 hexX=hexX,
                 hexY=hexY,
@@ -2836,18 +2666,191 @@ class MultiverseDb(object):
                 pbg=pbg,
                 systemWorlds=systemWorlds,
                 allegiance=allegiance,
-                nobilities=nobilities,
-                tradeCodes=tradeCodes,
-                sophontPopulations=sophontPopulations,
-                owningSystems=owningSystems,
-                colonySystems=colonySystems,
-                rulingAllegiances=rulingAllegiances,
-                researchStations=researchStations,
-                customRemarks=customRemarks,
-                bases=bases,
-                stars=stars,
-                notes=notes))
+                notes=notes)
+            systems.append(system)
+            idToSystemMap[system.id()] = system
         sector.setSystems(systems)
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {nobilitiesTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                nobilitiesTable=MultiverseDb._NobilitiesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addNobility(multiverse.DbNobility(
+                id=row[0],
+                systemId=system.id(),
+                code=row[2]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {tradeTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                tradeTable=MultiverseDb._TradeCodesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addTradeCode(multiverse.DbTradeCode(
+                id=row[0],
+                systemId=system.id(),
+                code=row[2]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
+            FROM {populationsTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                populationsTable=MultiverseDb._SophontPopulationsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            sophont = idToSophontMap[row[2]]
+            system.addSophontPopulation(multiverse.DbSophontPopulation(
+                id=row[0],
+                systemId=system.id(),
+                sophont=sophont,
+                percentage=row[3],
+                isHomeWorld=True if row[4] else False,
+                isDieBack=True if row[5] else False))
+
+        sql = """
+            SELECT t.id, t.system_id, t.allegiance_id
+            FROM {rulingTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                rulingTable=MultiverseDb._RulingAllegiancesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            allegiance = idToAllegianceMap[row[2]]
+            system.addRulingAllegiance(multiverse.DbRulingAllegiance(
+                id=row[0],
+                systemId=system.id(),
+                allegiance=allegiance))
+
+        sql = """
+            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_code
+            FROM {ownersTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                ownersTable=MultiverseDb._OwningSystemsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addOwningSystem(multiverse.DbOwningSystem(
+                id=row[0],
+                systemId=system.id(),
+                hexX=row[2],
+                hexY=row[3],
+                sectorCode=row[4]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_code
+            FROM {coloniesTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                coloniesTable=MultiverseDb._ColonySystemsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addColonySystem(multiverse.DbColonySystem(
+                id=row[0],
+                systemId=system.id(),
+                hexX=row[2],
+                hexY=row[3],
+                sectorCode=row[4]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {stationsTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                stationsTable=MultiverseDb._ResearchStationTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addResearchStation(multiverse.DbResearchStation(
+                id=row[0],
+                systemId=system.id(),
+                code=row[2]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.remark
+            FROM {remarksTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                remarksTable=MultiverseDb._CustomRemarksTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addCustomRemark(multiverse.DbCustomRemark(
+                id=row[0],
+                systemId=system.id(),
+                remark=row[2]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {basesTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                basesTable=MultiverseDb._BasesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addBase(multiverse.DbBase(
+                id=row[0],
+                systemId=system.id(),
+                code=row[2]))
+
+        sql = """
+            SELECT t.id, t.system_id, t.luminosity_class, t.spectral_class, t.spectral_scale
+            FROM {starsTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                starsTable=MultiverseDb._StarsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        for row in cursor.fetchall():
+            system = idToSystemMap[row[1]]
+            system.addStar(multiverse.DbStar(
+                id=row[0],
+                systemId=system.id(),
+                luminosityClass=row[2],
+                spectralClass=row[3],
+                spectralScale=row[4]))
 
         sql = """
             SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
@@ -2873,7 +2876,7 @@ class MultiverseDb(object):
                 style=row[10],
                 colour=row[11],
                 width=row[12],
-                allegiance=allegianceIdMap.get(row[13])))
+                allegiance=idToAllegianceMap.get(row[13])))
         sector.setRoutes(routes)
 
         sql = """
@@ -2910,7 +2913,7 @@ class MultiverseDb(object):
                 label=row[7],
                 colour=row[8],
                 style=row[9],
-                allegiance=allegianceIdMap.get(row[10])))
+                allegiance=idToAllegianceMap.get(row[10])))
         sector.setBorders(borders)
 
         sql = """
