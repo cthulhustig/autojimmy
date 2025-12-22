@@ -18,7 +18,6 @@ class Universe(object):
             self.worldPositionMap: typing.Dict[typing.Tuple[int, int], astronomer.World] = {}
             self.mainsList: typing.List[astronomer.Main] = []
             self.hexMainMap: typing.Dict[astronomer.HexPosition, astronomer.Main] = {}
-            self.allegiances: typing.Dict[str, astronomer.Allegiance] = {}
             self.hexRoutesMap: typing.Dict[astronomer.HexPosition, typing.List[astronomer.Route]] = {}
 
     # The absolute and relative hex patterns match search strings formatted
@@ -98,10 +97,6 @@ class Universe(object):
             for world in sector.worlds():
                 hex = world.hex()
                 milieuData.worldPositionMap[(hex.absoluteX(), hex.absoluteY())] = world
-
-            for allegiance in sector.allegiances():
-                if allegiance.uniqueCode() not in milieuData.allegiances:
-                    milieuData.allegiances[allegiance.uniqueCode()] = allegiance
 
             for route in sector.routes():
                 for hex in [route.startHex(), route.endHex()]:
@@ -978,15 +973,6 @@ class Universe(object):
             return matches[:maxResults]
 
         return matches
-
-    def allegiances(
-            self,
-            milieu: astronomer.Milieu
-            ) -> typing.List[astronomer.Allegiance]:
-        milieuData = self._milieuDataMap.get(milieu)
-        if not milieuData:
-            return []
-        return list(milieuData.allegiances.values())
 
     def hasRoutes(
             self,

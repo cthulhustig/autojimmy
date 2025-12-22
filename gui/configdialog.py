@@ -1,5 +1,6 @@
 import app
 import astronomer
+import common
 import enum
 import gui
 import logging
@@ -60,16 +61,33 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     """ + _RestartRequiredParagraph,
     escape=False)
 
-class _InPlaceTagLevelComboBox(gui.TagLevelComboBox):
+class _InPlaceComboBoxWrapper(QtWidgets.QWidget):
     def __init__(self, colours, parent=None, value=None):
-        super().__init__(colours, parent, value)
+        super().__init__(parent)
+
+        self._comboBox = gui.TagLevelComboBox(colours=colours, value=value)
+
         # NOTE: Change focus policy and install event filter to prevent
         # accidental changes to the value if, while scrolling the list the
         # widget is contained in, the spin box happens to move under the
         # cursor
         self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
-        self.installEventFilter(self._noWheelFilter)
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._comboBox.installEventFilter(self._noWheelFilter)
+        self._comboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+        # Wrap combo box in a layout with a stretch so the combo box
+        # doesn't get stretched if the rows are multi-line
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._comboBox)
+        layout.addStretch()
+        self.setLayout(layout)
+
+    def currentTagLevel(self) -> typing.Optional[logic.TagLevel]:
+        return self._comboBox.currentTagLevel()
+
+    def setColours(self, colours: app.TaggingColours) -> None:
+        self._comboBox.setColours(colours)
 
 class _TaggingTable(gui.ListTable):
     def __init__(
@@ -140,8 +158,8 @@ class _TaggingTable(gui.ListTable):
 
         tagging = {}
         for row in range(self.rowCount()):
-            comboBox: _InPlaceTagLevelComboBox = self.cellWidget(row, 1)
-            if not isinstance(comboBox, _InPlaceTagLevelComboBox):
+            comboBox: _InPlaceComboBoxWrapper = self.cellWidget(row, 1)
+            if not isinstance(comboBox, _InPlaceComboBoxWrapper):
                 continue
 
             tagLevel = comboBox.currentTagLevel()
@@ -174,6 +192,7 @@ class _TaggingTable(gui.ListTable):
             item = QtWidgets.QTableWidgetItem(keyText)
             item.setData(QtCore.Qt.ItemDataRole.UserRole, key)
             item.setToolTip(toolTip)
+            item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
             self.setItem(row, 0, item)
 
             tagLevel = self._keyTagging.get(key)
@@ -181,7 +200,7 @@ class _TaggingTable(gui.ListTable):
             item = QtWidgets.QTableWidgetItem()
             item.setToolTip(toolTip)
             self.setItem(row, 1, item)
-            comboBox = _InPlaceTagLevelComboBox(
+            comboBox = _InPlaceComboBoxWrapper(
                 value=tagLevel,
                 colours=self._taggingColours)
             # Set the background role of the combo box to the same background role that will be used
@@ -195,10 +214,12 @@ class _TaggingTable(gui.ListTable):
             item.setToolTip(toolTip)
             self.setItem(row, 2, item)
 
+            self.resizeRowToContents(row)
+
     def _syncToTagging(self) -> None:
         for row in range(self.rowCount()):
-            comboBox: _InPlaceTagLevelComboBox = self.cellWidget(row, 1)
-            if isinstance(comboBox, _InPlaceTagLevelComboBox):
+            comboBox: _InPlaceComboBoxWrapper = self.cellWidget(row, 1)
+            if isinstance(comboBox, _InPlaceComboBoxWrapper):
                 comboBox.setColours(self._taggingColours)
 
 class ConfigDialog(gui.DialogEx):
@@ -744,14 +765,54 @@ class ConfigDialog(gui.DialogEx):
 
     def _generateAllegianceDescriptions(self) -> typing.Mapping[str, str]:
         universe = astronomer.WorldManager.instance().universe()
-        allegiances = universe.allegiances(
-            milieu=self._milieuComboBox.currentEnum())
+        milieu = self._milieuComboBox.currentEnum()
 
-        # Create a copy of the allegiances list and sort it by code
-        allegiances.sort(key=lambda x: x.code())
+        codeToAllegianceMap: typing.Dict[
+            str, # Allegiance Code
+            typing.List[typing.Tuple[
+                astronomer.Sector,
+                astronomer.Allegiance]]] = {}
+        for sector in universe.yieldSectors(milieu=milieu):
+            for allegiance in sector.allegiances():
+                allegianceList = codeToAllegianceMap.get(allegiance.code())
+                if allegianceList is None:
+                    allegianceList = []
+                    codeToAllegianceMap[allegiance.code()] = allegianceList
+                allegianceList.append((sector, allegiance))
 
-        descriptions: typing.Mapping[str, str] = {}
-        for allegiance in allegiances:
-            descriptions[allegiance.code()] = allegiance.name()
+        codeToDescriptionMap: typing.Dict[str, str] = {}
+        for allegianceCode, allegianceList in codeToAllegianceMap.items():
+            nameToSectorMap: typing.Dict[
+                str, # Lower case allegiance name
+                typing.List[typing.Tuple[
+                    str, # Normal case allegiance name
+                    str # Sector name
+                    ]]] = {}
+            for sector, allegiance in allegianceList:
+                lowerName = allegiance.name().lower()
+                _, sectorList = nameToSectorMap.get(lowerName, (None, None))
+                if sectorList is None:
+                    sectorList = []
+                    nameToSectorMap[lowerName] = (allegiance.name(), sectorList)
+                sectorList.append(sector.name())
 
-        return descriptions
+            description = ''
+            for allegianceName, sectorList in nameToSectorMap.values():
+                if len(nameToSectorMap) == 1:
+                    description = allegianceName
+                    break
+
+                if description:
+                    description += '\n'
+                description += '{name} in {sectors}'.format(
+                    name=allegianceName,
+                    sectors=common.humanFriendlyListString(sectorList))
+
+            codeToDescriptionMap[allegianceCode] = description
+
+        # Sort by code
+        tempList = [(code, desc) for code, desc in codeToDescriptionMap.items()]
+        tempList.sort(key=lambda data: data[0])
+        codeToDescriptionMap = {code: desc for code, desc in tempList}
+
+        return codeToDescriptionMap

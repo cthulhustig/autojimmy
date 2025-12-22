@@ -8,95 +8,6 @@ import typing
 
 # TODO: Rename astronomer namespace to astrogator (check spelling)
 
-class _AllegianceCodeInfo(object):
-    def __init__(
-            self,
-            code: str
-            ) -> None:
-        self._code = code
-        self._names: typing.Dict[str, str] = {}
-        self._consistentName = True
-
-    def uniqueCode(self, sectorName) -> str:
-        if not self._consistentName and sectorName in self._names:
-            return self._formatUniqueCode(sectorName)
-        return self._code
-
-    def addName(
-            self,
-            sectorName: str,
-            allegianceName: str
-            ) -> None:
-        if self._consistentName and len(self._names) > 0:
-            if allegianceName.lower() not in (name.lower() for name in self._names.values()):
-                # This name is different to other local names so this allegiance no longer
-                # has a consistent local name
-                self._consistentName = False
-
-        self._names[sectorName] = allegianceName
-
-    def _formatUniqueCode(
-            self,
-            sectorName: str
-            ) -> str:
-        return f'{self._code} ({sectorName})'
-
-
-# NOTE: Mapping allegiance codes to names needs to be case sensitive as some sectors have
-# allegiances that differ only by case (e.g. Knaeleng, Kharrthon, Phlange, Kruse)
-class _AllegianceTracker(object):
-    def __init__(self) -> None:
-        self._milieuDataMap: typing.Dict[
-            astronomer.Milieu,
-            typing.Dict[
-                str,
-                _AllegianceCodeInfo]] = {}
-        for milieu in astronomer.Milieu:
-            self._milieuDataMap[milieu] = {}
-
-    def uniqueAllegianceCode(
-            self,
-            milieu: astronomer.Milieu,
-            sectorName: str,
-            code: str
-            ) -> typing.Optional[str]:
-        if not code:
-            return None
-
-        milieuData = self._milieuDataMap.get(milieu)
-        if not milieuData:
-            return None
-
-        codeInfo = milieuData.get(code)
-        if not codeInfo:
-            return None
-
-        return codeInfo.uniqueCode(sectorName)
-
-    def addSectorAllegiances(
-            self,
-            milieu: astronomer.Milieu,
-            sectorName: str,
-            allegiances: typing.Mapping[str, str]
-            ) -> None:
-        for code, name in allegiances.items():
-            codeInfo = self._addAllegianceCode(milieu=milieu, code=code)
-            codeInfo.addName(sectorName=sectorName, allegianceName=name)
-
-    def _addAllegianceCode(
-            self,
-            milieu: astronomer.Milieu,
-            code: str
-            ) -> _AllegianceCodeInfo:
-        milieuData = self._milieuDataMap.get(milieu)
-        codeInfo = None
-        if milieuData:
-            codeInfo = milieuData.get(code)
-        if not codeInfo:
-            codeInfo = _AllegianceCodeInfo(code=code)
-            milieuData[code] = codeInfo
-        return codeInfo
-
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
@@ -160,23 +71,6 @@ class WorldManager(object):
             dbSectors = dbUniverse.sectors()
             totalSectorCount = len(dbSectors)
 
-            # Generate allegiances for all sectors before processing them. This is
-            # done so that any disambiguation that is needed can be done prior to
-            # worlds being created as the unique disambiguated name is part of their
-            # construction
-            allegianceTracker = _AllegianceTracker()
-            for dbSector in dbSectors:
-                canonicalName = dbSector.primaryName()
-
-                # TODO: Doing this is ugly as hell. If it throws it will bork the
-                # entire process
-                milieu = astronomer.Milieu[dbSector.milieu()]
-
-                logging.debug(f'Populating allegiances for sector {canonicalName} from {milieu.value}')
-                WorldManager._populateAllegiances(
-                    dbSector=dbSector,
-                    tracker=allegianceTracker)
-
             maxProgress = totalSectorCount
             currentProgress = 0
             sectors = []
@@ -192,9 +86,7 @@ class WorldManager(object):
                     progressCallback(stage, currentProgress, maxProgress)
 
                 try:
-                    sector = self._processSector(
-                        dbSector=dbSector,
-                        allegianceTracker=allegianceTracker)
+                    sector = self._processSector(dbSector=dbSector)
                 except Exception as ex:
                     logging.error(f'Failed to process sector {canonicalName} from {milieu.value}', exc_info=ex)
                     continue
@@ -215,16 +107,7 @@ class WorldManager(object):
             ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
         dbSector = multiverse.MultiverseDb.instance().loadSector(
             sectorId=dbSectorId)
-
-        allegianceTracker = _AllegianceTracker()
-        self._populateAllegiances(
-            dbSector=dbSector,
-            tracker=allegianceTracker)
-
-        sector = self._processSector(
-            dbSector=dbSector,
-            allegianceTracker=allegianceTracker)
-
+        sector = self._processSector(dbSector=dbSector)
         return (astronomer.Universe(sectors=[sector]), sector)
 
     def universe(self) -> astronomer.Universe:
@@ -596,35 +479,8 @@ class WorldManager(object):
             maxResults=maxResults)
 
     @staticmethod
-    def _populateAllegiances(
-            dbSector: multiverse.DbSector,
-            tracker: _AllegianceTracker
-            ) -> None:
-        allegianceNameMap: typing.Dict[
-            str, # Allegiance code
-            str # Allegiance name
-        ] = {}
-
-        milieu = astronomer.Milieu[dbSector.milieu()] # TODO: This is ugly
-        allegiances = dbSector.allegiances()
-        if allegiances:
-            for allegiance in allegiances:
-                if not allegiance.code() or not allegiance.name():
-                    continue
-
-                # NOTE: The code here is intentionally left with the case as it appears int metadata as
-                # there are some sectors where allegiances vary only by case (see AllegianceManager)
-                allegianceNameMap[allegiance.code()] = allegiance.name()
-
-        tracker.addSectorAllegiances(
-            milieu=milieu,
-            sectorName=dbSector.primaryName(),
-            allegiances=allegianceNameMap)
-
-    @staticmethod
     def _processSector(
-            dbSector: multiverse.DbSector,
-            allegianceTracker: _AllegianceTracker
+            dbSector: multiverse.DbSector
             ) -> astronomer.Sector:
         sectorName = dbSector.primaryName()
         sectorX = dbSector.sectorX()
@@ -669,24 +525,11 @@ class WorldManager(object):
         allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
         if dbSector.allegiances():
             for dbAllegiance in dbSector.allegiances():
-                # TODO: Need to do something about this unique code stuff. I think
-                # it's only used to allow allegiance tagging when multiple sectors
-                # use the same code for different allegiances. I could just do it
-                # by code and have the UI list all the different names for a single
-                # code. It means you can't tag different uses of the same tag
-                # differently but I suspect that isn't really an issue as feels
-                # unlikely that two sectors next to each other will use the same code
-                # in a way that would be confusing (I could probably write some code
-                # to check that assumption)
                 allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
                     code=dbAllegiance.code(),
                     name=dbAllegiance.name(),
                     legacyCode=dbAllegiance.legacy(),
-                    baseCode=dbAllegiance.base(),
-                    uniqueCode=allegianceTracker.uniqueAllegianceCode(
-                        milieu=milieu,
-                        sectorName=sectorName,
-                        code=dbAllegiance.code()))
+                    baseCode=dbAllegiance.base())
 
         dbSophonts = dbSector.sophonts()
         sophontsNameMap: typing.Dict[str, str] = {}

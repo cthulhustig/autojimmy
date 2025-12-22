@@ -379,7 +379,7 @@ class WorldTagging(object):
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.Allegiance,
-            code=allegiance.uniqueCode())
+            code=allegiance.code())
 
     def calculateSpectralTagLevel(
             self,
