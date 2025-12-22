@@ -720,8 +720,17 @@ def convertRawSectorToDbSector(
                     assert(False) # TODO: Better error handling
 
                 rawUWP = rawWorld.attribute(multiverse.WorldAttribute.UWP)
-                if not rawUWP:
-                    assert(False) # TODO: Better error handling
+                dbStarport = None
+                dbWorldSize = None
+                dbAtmosphere = None
+                dbHydrographics = None
+                dbPopulation = None
+                dbGovernment = None
+                dbLawLevel = None
+                dbTechLevel = None
+                if rawUWP:
+                    dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, dbPopulation, \
+                        dbGovernment, dbLawLevel, dbTechLevel = multiverse.parseSystemUWPString(uwp=rawUWP)
 
                 rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
 
@@ -951,7 +960,14 @@ def convertRawSectorToDbSector(
                     # TODO: Should I make name optional? Some sectors don't have names
                     # (e.g. some of the ones that have a UWP of ???????-?).
                     name=rawWorld.attribute(multiverse.WorldAttribute.Name),
-                    uwp=rawUWP,
+                    starport=dbStarport,
+                    worldSize=dbWorldSize,
+                    atmosphere=dbAtmosphere,
+                    hydrographics=dbHydrographics,
+                    population=dbPopulation,
+                    government=dbGovernment,
+                    lawLevel=dbLawLevel,
+                    techLevel=dbTechLevel,
                     economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
                     culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
                     zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),

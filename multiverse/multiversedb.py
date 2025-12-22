@@ -1041,9 +1041,16 @@ class MultiverseDb(object):
                         hex_x INTEGER NOT NULL,
                         hex_y INTEGER NOT NULL,
                         name TEXT NOT NULL,
-                        uwp TEXT NOT NULL,
                         economics TEXT,
                         culture TEXT,
+                        starport TEXT,
+                        world_size TEXT,
+                        atmosphere TEXT,
+                        hydrographics TEXT,
+                        population TEXT,
+                        government TEXT,
+                        law_level TEXT,
+                        tech_level TEXT,
                         zone TEXT,
                         pbg TEXT,
                         system_worlds INTEGER,
@@ -2239,9 +2246,16 @@ class MultiverseDb(object):
                     'hex_x': system.hexX(),
                     'hex_y': system.hexY(),
                     'name': system.name(),
-                    'uwp': system.uwp(),
                     'economics': system.economics(),
                     'culture': system.culture(),
+                    'starport': system.starport(),
+                    'world_size': system.worldSize(),
+                    'atmosphere': system.atmosphere(),
+                    'hydrographics': system.hydrographics(),
+                    'population': system.population(),
+                    'government': system.government(),
+                    'law_level': system.lawLevel(),
+                    'tech_level': system.techLevel(),
                     'zone': system.zone(),
                     'pbg': system.pbg(),
                     'system_worlds': system.systemWorlds(),
@@ -2329,12 +2343,12 @@ class MultiverseDb(object):
 
             if systemRows:
                 sql = """
-                    INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, uwp,
-                        economics, culture, zone, pbg, system_worlds,
-                        allegiance_id, notes)
-                    VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :uwp,
-                        :economics, :culture, :zone, :pbg, :system_worlds,
-                        :allegiance_id, :notes);
+                    INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, economics, culture,
+                        starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
+                        zone, pbg, system_worlds, allegiance_id, notes)
+                    VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :economics, :culture,
+                        :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
+                        :zone, :pbg, :system_worlds, :allegiance_id, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
                 cursor.executemany(sql, systemRows)
             if nobilitiesRows:
@@ -2632,7 +2646,8 @@ class MultiverseDb(object):
         sector.setSophonts(idToSophontMap.values())
 
         sql = """
-            SELECT id, hex_x, hex_y, name, uwp, economics, culture,
+            SELECT id, hex_x, hex_y, name, economics, culture,
+                starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
                 zone, pbg, system_worlds, allegiance_id, notes
             FROM {table}
             WHERE sector_id = :id;
@@ -2641,32 +2656,26 @@ class MultiverseDb(object):
         systems = []
         idToSystemMap: typing.Dict[str, multiverse.DbSystem] = {}
         for row in cursor.fetchall():
-            systemId = row[0]
-            hexX = row[1]
-            hexY = row[2]
-            name = row[3]
-            uwp = row[4]
-            economics = row[5]
-            culture = row[6]
-            zone = row[7]
-            pbg = row[8]
-            systemWorlds=row[9]
-            allegiance = idToAllegianceMap.get(row[10])
-            notes = row[11]
-
             system = multiverse.DbSystem(
-                id=systemId,
-                hexX=hexX,
-                hexY=hexY,
-                name=name,
-                uwp=uwp,
-                economics=economics,
-                culture=culture,
-                zone=zone,
-                pbg=pbg,
-                systemWorlds=systemWorlds,
-                allegiance=allegiance,
-                notes=notes)
+                id=row[0],
+                hexX=row[1],
+                hexY=row[2],
+                name=row[3],
+                economics=row[4],
+                culture=row[5],
+                starport=row[6],
+                worldSize=row[7],
+                atmosphere=row[8],
+                hydrographics=row[9],
+                population=row[10],
+                government=row[11],
+                lawLevel=row[12],
+                techLevel=row[13],
+                zone=row[14],
+                pbg=row[15],
+                systemWorlds=row[16],
+                allegiance=idToAllegianceMap.get(row[17]),
+                notes=row[18])
             systems.append(system)
             idToSystemMap[system.id()] = system
         sector.setSystems(systems)

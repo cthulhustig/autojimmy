@@ -1,5 +1,6 @@
 import astronomer
 import enum
+import multiverse
 import typing
 
 # Descriptions in these mappings are taken from the 2e core rules, https://travellermap.com/doc/secondsurvey
@@ -40,16 +41,16 @@ _StarPortStringMap = {
 
 # The source of these values is a bit convoluted. The diameter and gravity
 # values come from world_util.js in the Traveller Map repo. However I don't know
-# what where the masses used to calculate the gravity values came from. The
-# gravity values are also different to https://travellermap.com/doc/secondsurvey.
+# where the masses used to calculate the gravity values came from. The gravity
+# values are also different to https://travellermap.com/doc/secondsurvey.
 # As world_util.js doesn't have escape velocity values and the ones on
-# https://travellermap.com/doc/secondsurvey appear to be innacurate. I used this
+# https://travellermap.com/doc/secondsurvey appear to be inaccurate. I used this
 # link to calculate the mass from the gravity and diameter values, doing this
 # also gives the escape velocity values.
 # https://www.wolframalpha.com/input?i=surface+gravity+calculator
 #
 # I've not included the mass in the description as I don't think it's would
-# really be of intereast to anyone. These were the masses calculated, I've
+# really be of interest to anyone. These were the masses calculated, I've
 # converted them from kg to earths (i.e. multiples of 12800km)
 # 1 = 0.0019, 2 = 0.0156, 3 = 0.0534, 4 = 0.1250,
 # 5 = 0.2461, 6 = 0.4218, 7 = 0.6737, 8 = 1.0000,
@@ -277,7 +278,6 @@ _TechLevelStringMap = {
 
 class UWP(object):
     class Element(enum.Enum):
-        # Enum values are the index into the UWP string
         StarPort = 0
         WorldSize = 1
         Atmosphere = 2
@@ -285,83 +285,88 @@ class UWP(object):
         Population = 4
         Government = 5
         LawLevel = 6
-        TechLevel = 8
+        TechLevel = 7
 
-    _elementDescriptionMaps: typing.List[typing.Mapping[str, str]] = [
-        _StarPortStringMap,
-        _WorldSizeStringMap,
-        _AtmosphereStringMap,
-        _HydrographicsStringMap,
-        _PopulationStringMap,
-        _GovernmentStringMap,
-        _LawLevelStringMap,
-        None, # This accounts for the '-' in the UWP string
-        _TechLevelStringMap
-    ]
+    _ValueDescriptionsMap: typing.Dict[Element, typing.Mapping[str, str]] = {
+        Element.StarPort: _StarPortStringMap,
+        Element.WorldSize: _WorldSizeStringMap,
+        Element.Atmosphere: _AtmosphereStringMap,
+        Element.Hydrographics: _HydrographicsStringMap,
+        Element.Population: _PopulationStringMap,
+        Element.Government: _GovernmentStringMap,
+        Element.LawLevel: _LawLevelStringMap,
+        Element.TechLevel: _TechLevelStringMap}
 
     def __init__(
             self,
-            string: str
+            starport: typing.Optional[str] = None,
+            worldSize: typing.Optional[str] = None,
+            atmosphere: typing.Optional[str] = None,
+            hydrographics: typing.Optional[str] = None,
+            population: typing.Optional[str] = None,
+            government: typing.Optional[str] = None,
+            lawLevel: typing.Optional[str] = None,
+            techLevel: typing.Optional[str] = None
             ) -> None:
-        self._string = string
-        self._sanitised = self._sanitise(self._string)
+        self._valueMap: typing.Dict[UWP.Element, str] = {}
+
+        if starport is not None:
+            self._valueMap[UWP.Element.StarPort] = starport
+        if worldSize is not None:
+            self._valueMap[UWP.Element.WorldSize] = worldSize
+        if atmosphere is not None:
+            self._valueMap[UWP.Element.Atmosphere] = atmosphere
+        if hydrographics is not None:
+            self._valueMap[UWP.Element.Hydrographics] = hydrographics
+        if population is not None:
+            self._valueMap[UWP.Element.Population] = population
+        if government is not None:
+            self._valueMap[UWP.Element.Government] = government
+        if lawLevel is not None:
+            self._valueMap[UWP.Element.LawLevel] = lawLevel
+        if techLevel is not None:
+            self._valueMap[UWP.Element.TechLevel] = techLevel
+
+        self._string = None
 
     def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemUWPString(
+                starport=self._valueMap.get(UWP.Element.StarPort),
+                worldSize=self._valueMap.get(UWP.Element.WorldSize),
+                atmosphere=self._valueMap.get(UWP.Element.Atmosphere),
+                hydrographics=self._valueMap.get(UWP.Element.Hydrographics),
+                population=self._valueMap.get(UWP.Element.Population),
+                government=self._valueMap.get(UWP.Element.Government),
+                lawLevel=self._valueMap.get(UWP.Element.LawLevel),
+                techLevel=self._valueMap.get(UWP.Element.TechLevel))
         return self._string
-
-    def sanitised(self) -> str:
-        return self._sanitised
 
     def code(
             self,
             element: Element
             ) -> str:
-        return self._sanitised[element.value]
+        return self._valueMap.get(element, '?')
 
     def numeric(
             self,
             element: Element,
             default: int = -1
             ) -> int:
-        code = self.code(element=element)
+        code = self._valueMap.get(element)
+        if code is None:
+            return default
         return astronomer.ehexToInteger(code, default)
 
     def description(
             self,
             element: Element
             ) -> str:
-        return UWP._elementDescriptionMaps[element.value][self.code(element)]
+        return UWP._ValueDescriptionsMap[element][self.code(element)]
 
-    @staticmethod
-    def codeList(element: Element) -> typing.Iterable[str]:
-        return UWP._elementDescriptionMaps[element.value].keys()
+    def isUnknown(self) -> bool:
+        return len(self._valueMap) == 0
 
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:
-        return UWP._elementDescriptionMaps[element.value]
-
-    @staticmethod
-    def _sanitise(uwp: str) -> str:
-        sanitized = ''
-
-        # Check for worlds where the UWP is all X and replace it with all ?. This is important to
-        # stop the star port and government values (which have valid mappings for X) from being
-        # miss-detected
-        if uwp == 'XXXXXXX-X':
-            return '???????-?'
-
-        for index in range(9):
-            if index != 7:
-                sanitized += UWP._sanitiseElement(index, uwp)
-            else:
-                sanitized += '-'
-        return sanitized
-
-    @staticmethod
-    def _sanitiseElement(index: int, uwp: str) -> str:
-        if index >= len(uwp):
-            return '?'
-        code = uwp[index].upper()
-        if code not in UWP._elementDescriptionMaps[index]:
-            return '?'
-        return code
+        return UWP._ValueDescriptionsMap[element]

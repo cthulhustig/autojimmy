@@ -425,7 +425,14 @@ class DbSystem(DbObject):
             hexX: int,
             hexY: int,
             name: str, # TODO: Do worlds in sector files always have a name????
-            uwp: str, # TODO: Do worlds in sector files always have a UWP
+            starport: typing.Optional[str] = None,
+            worldSize: typing.Optional[str] = None,
+            atmosphere: typing.Optional[str] = None,
+            hydrographics: typing.Optional[str] = None,
+            population: typing.Optional[str] = None,
+            government: typing.Optional[str] = None,
+            lawLevel: typing.Optional[str] = None,
+            techLevel: typing.Optional[str] = None,
             economics: typing.Optional[str] = None,
             culture: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
@@ -454,7 +461,14 @@ class DbSystem(DbObject):
         self.setHexX(hexX)
         self.setHexY(hexY)
         self.setName(name)
-        self.setUWP(uwp)
+        self.setStarport(starport)
+        self.setWorldSize(worldSize)
+        self.setAtmosphere(atmosphere)
+        self.setHydrographics(hydrographics)
+        self.setPopulation(population)
+        self.setGovernment(government)
+        self.setLawLevel(lawLevel)
+        self.setTechLevel(techLevel)
         self.setEconomics(economics)
         self.setCulture(culture)
         self.setZone(zone)
@@ -497,11 +511,53 @@ class DbSystem(DbObject):
     def setName(self, name: str) -> None:
         self._name = name
 
-    def uwp(self) -> str:
-        return self._uwp
+    def starport(self) -> typing.Optional[str]:
+        return self._starport
 
-    def setUWP(self, uwp: str) -> None:
-        self._uwp = uwp
+    def setStarport(self, starport: typing.Optional[str]) -> None:
+        self._starport = starport
+
+    def worldSize(self) -> typing.Optional[str]:
+        return self._worldSize
+
+    def setWorldSize(self, worldSize: typing.Optional[str]) -> None:
+        self._worldSize = worldSize
+
+    def atmosphere(self) -> typing.Optional[str]:
+        return self._atmosphere
+
+    def setAtmosphere(self, atmosphere: typing.Optional[str]) -> None:
+        self._atmosphere = atmosphere
+
+    def hydrographics(self) -> typing.Optional[str]:
+        return self._hydrographics
+
+    def setHydrographics(self, hydrographics: typing.Optional[str]) -> None:
+        self._hydrographics = hydrographics
+
+    def population(self) -> typing.Optional[str]:
+        return self._population
+
+    def setPopulation(self, population: typing.Optional[str]) -> None:
+        self._population = population
+
+    def government(self) -> typing.Optional[str]:
+        return self._government
+
+    def setGovernment(self, government: typing.Optional[str]) -> None:
+        self._government = government
+
+    def lawLevel(self) -> typing.Optional[str]:
+        return self._lawLevel
+
+    def setLawLevel(self, lawLevel: typing.Optional[str]) -> None:
+        self._lawLevel = lawLevel
+
+    def techLevel(self) -> typing.Optional[str]:
+        return self._techLevel
+
+    def setTechLevel(self, techLevel: typing.Optional[str]) -> None:
+        self._techLevel = techLevel
 
     def economics(self) -> typing.Optional[str]:
         return self._economics

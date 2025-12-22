@@ -572,7 +572,14 @@ class WorldManager(object):
                     zone = astronomer.parseZoneString(
                         dbSystem.zone() if dbSystem.zone() else '')
                     uwp = astronomer.UWP(
-                        dbSystem.uwp() if dbSystem.uwp() else '')
+                        starport=dbSystem.starport(),
+                        worldSize=dbSystem.worldSize(),
+                        atmosphere=dbSystem.atmosphere(),
+                        hydrographics=dbSystem.hydrographics(),
+                        population=dbSystem.population(),
+                        government=dbSystem.government(),
+                        lawLevel=dbSystem.lawLevel(),
+                        techLevel=dbSystem.techLevel())
                     economics = astronomer.Economics(
                         dbSystem.economics() if dbSystem.economics() else '')
                     culture = astronomer.Culture(

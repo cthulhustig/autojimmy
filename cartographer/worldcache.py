@@ -197,7 +197,7 @@ class WorldInfo(object):
     @staticmethod
     def _calcIsPlaceholder(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        return uwp.sanitised() == '???????-?'
+        return uwp.isUnknown()
 
     @staticmethod
     def _calcHasWater(world: astronomer.World) -> bool:
