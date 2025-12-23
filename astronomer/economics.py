@@ -1,5 +1,6 @@
 import astronomer
 import enum
+import multiverse
 import typing
 
 # Types and ehex mappings taken from Traveller Map source code (world_utils.js).
@@ -92,64 +93,67 @@ class Economics(object):
         Infrastructure = 2
         Efficiency = 3
 
-    _elementDescriptionMaps: typing.List[typing.Mapping[str, str]] = [
-        _ResourcesDescriptionMap,
-        _LabourDescriptionMap,
-        _InfrastructureDescriptionMap,
-        _EfficiencyDescriptionMap
-    ]
+    _ValueDescriptionsMap: typing.Dict[Element, typing.Mapping[str, str]] = {
+        Element.Resources: _ResourcesDescriptionMap,
+        Element.Labour: _LabourDescriptionMap,
+        Element.Infrastructure: _InfrastructureDescriptionMap,
+        Element.Efficiency: _EfficiencyDescriptionMap
+    }
 
     def __init__(
             self,
-            string: str
+            resources: typing.Optional[str] = None,
+            labour: typing.Optional[str] = None,
+            infrastructure: typing.Optional[str] = None,
+            efficiency: typing.Optional[str] = None
             ) -> None:
-        self._string = string
-        self._sanitised = self._sanitise(self._string)
+        self._valueMap: typing.Dict[Economics.Element, str] = {}
+        self._string = None
+
+        if resources is not None:
+            self._valueMap[Economics.Element.Resources] = resources
+        if labour is not None:
+            self._valueMap[Economics.Element.Labour] = labour
+        if infrastructure is not None:
+            self._valueMap[Economics.Element.Infrastructure] = infrastructure
+        if efficiency is not None:
+            self._valueMap[Economics.Element.Efficiency] = efficiency
 
     def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemEconomicsString(
+                resources=self._valueMap.get(Economics.Element.Resources),
+                labour=self._valueMap.get(Economics.Element.Labour),
+                infrastructure=self._valueMap.get(Economics.Element.Infrastructure),
+                efficiency=self._valueMap.get(Economics.Element.Efficiency))
         return self._string
-
-    def sanitised(self) -> str:
-        return self._sanitised
 
     def code(
             self,
             element: Element
             ) -> str:
-        if element == Economics.Element.Efficiency:
-            return self._sanitised[element.value:]
-        return self._sanitised[element.value]
+        return self._valueMap.get(element, '?')
+
+    def numeric(
+            self,
+            element: Element,
+            default: int = -1
+            ) -> int:
+        code = self._valueMap.get(element)
+        if code is None:
+            return default
+        return astronomer.ehexToInteger(code, default)
 
     def description(
             self,
             element: Element
             ) -> str:
-        return Economics._elementDescriptionMaps[element.value][self.code(element)]
+        return Economics._ValueDescriptionsMap[element][self.code(element)]
 
-    @staticmethod
-    def codeList(element: Element) -> typing.Iterable[str]:
-        return Economics._elementDescriptionMaps[element.value].keys()
+    def isUnknown(self) -> bool:
+        return len(self._valueMap) == 0
 
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:
-        return Economics._elementDescriptionMaps[element.value]
+        return Economics._ValueDescriptionsMap[element]
 
-    @staticmethod
-    def _sanitise(culture: str) -> str:
-        culture = culture.strip('()')
-        sanitized = ''
-        for index in range(4):
-            sanitized += Economics._sanitiseElement(index, culture)
-        return sanitized
-
-    @staticmethod
-    def _sanitiseElement(index: int, culture: str) -> str:
-        if index >= len(culture):
-            return '?'
-        if index != Economics.Element.Efficiency.value:
-            code = culture[index].upper()
-        else:
-            code = culture[index:]
-        if code not in Economics._elementDescriptionMaps[index]:
-            return '?'
-        return code

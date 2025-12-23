@@ -727,6 +727,12 @@ def convertRawSectorToDbSector(
                         dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
                         multiverse.parseSystemUWPString(uwp=rawUWP)
 
+                rawEconomics = rawWorld.attribute(multiverse.WorldAttribute.Economics)
+                dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
+                if rawEconomics:
+                    dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
+                        multiverse.parseSystemEconomicsString(economics=rawEconomics)
+
                 rawCulture = rawWorld.attribute(multiverse.WorldAttribute.Culture)
                 dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
                 if rawCulture:
@@ -969,11 +975,14 @@ def convertRawSectorToDbSector(
                     government=dbGovernment,
                     lawLevel=dbLawLevel,
                     techLevel=dbTechLevel,
+                    resources=dbResources,
+                    labour=dbLabour,
+                    infrastructure=dbInfrastructure,
+                    efficiency=dbEfficiency,
                     heterogeneity=dbHeterogeneity,
                     acceptance=dbAcceptance,
                     strangeness=dbStrangeness,
                     symbols=dbSymbols,
-                    economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
                     zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
                     pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
                     # TODO: I think the Traveller Map second survey page clarifies that

@@ -3,6 +3,7 @@ from .dbobjects import *
 from .sectorparsers import *
 from .snapshotmanager import *
 from .uwp import *
+from .economics import *
 from .culture import *
 from .nobility import *
 from .bases import *

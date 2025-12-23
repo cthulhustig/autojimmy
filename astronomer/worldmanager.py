@@ -587,7 +587,10 @@ class WorldManager(object):
                         lawLevel=dbSystem.lawLevel(),
                         techLevel=dbSystem.techLevel())
                     economics = astronomer.Economics(
-                        dbSystem.economics() if dbSystem.economics() else '')
+                        resources=dbSystem.resources(),
+                        labour=dbSystem.labour(),
+                        infrastructure=dbSystem.infrastructure(),
+                        efficiency=dbSystem.efficiency())
                     culture = astronomer.Culture(
                         heterogeneity=dbSystem.heterogeneity(),
                         acceptance=dbSystem.acceptance(),

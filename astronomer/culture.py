@@ -121,7 +121,6 @@ class Culture(object):
         if symbols is not None:
             self._valueMap[Culture.Element.Symbols] = symbols
 
-
     def string(self) -> str:
         if self._string is None:
             self._string = multiverse.formatSystemCultureString(

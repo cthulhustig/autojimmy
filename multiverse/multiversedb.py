@@ -1027,7 +1027,6 @@ class MultiverseDb(object):
                         hex_x INTEGER NOT NULL,
                         hex_y INTEGER NOT NULL,
                         name TEXT NOT NULL,
-                        economics TEXT,
                         starport TEXT,
                         world_size TEXT,
                         atmosphere TEXT,
@@ -1036,6 +1035,10 @@ class MultiverseDb(object):
                         government TEXT,
                         law_level TEXT,
                         tech_level TEXT,
+                        resources TEXT,
+                        labour TEXT,
+                        infrastructure TEXT,
+                        efficiency TEXT,
                         heterogeneity TEXT,
                         acceptance TEXT,
                         strangeness TEXT,
@@ -2235,7 +2238,6 @@ class MultiverseDb(object):
                     'hex_x': system.hexX(),
                     'hex_y': system.hexY(),
                     'name': system.name(),
-                    'economics': system.economics(),
                     'starport': system.starport(),
                     'world_size': system.worldSize(),
                     'atmosphere': system.atmosphere(),
@@ -2244,6 +2246,10 @@ class MultiverseDb(object):
                     'government': system.government(),
                     'law_level': system.lawLevel(),
                     'tech_level': system.techLevel(),
+                    'resources': system.resources(),
+                    'labour': system.labour(),
+                    'infrastructure': system.infrastructure(),
+                    'efficiency': system.efficiency(),
                     'heterogeneity': system.heterogeneity(),
                     'acceptance': system.acceptance(),
                     'strangeness': system.strangeness(),
@@ -2335,12 +2341,14 @@ class MultiverseDb(object):
 
             if systemRows:
                 sql = """
-                    INSERT INTO {table} (id, sector_id, hex_x, hex_y, name, economics,
+                    INSERT INTO {table} (id, sector_id, hex_x, hex_y, name,
                         starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
+                        resources, labour, infrastructure, efficiency,
                         heterogeneity, acceptance, strangeness, symbols,
                         zone, pbg, system_worlds, allegiance_id, notes)
-                    VALUES (:id, :sector_id, :hex_x, :hex_y, :name, :economics,
+                    VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
                         :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
+                        :resources, :labour, :infrastructure, :efficiency,
                         :heterogeneity, :acceptance, :strangeness, :symbols,
                         :zone, :pbg, :system_worlds, :allegiance_id, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
@@ -2640,8 +2648,9 @@ class MultiverseDb(object):
         sector.setSophonts(idToSophontMap.values())
 
         sql = """
-            SELECT id, hex_x, hex_y, name, economics,
+            SELECT id, hex_x, hex_y, name,
                 starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
+                resources, labour, infrastructure, efficiency,
                 heterogeneity, acceptance, strangeness, symbols,
                 zone, pbg, system_worlds, allegiance_id, notes
             FROM {table}
@@ -2656,24 +2665,27 @@ class MultiverseDb(object):
                 hexX=row[1],
                 hexY=row[2],
                 name=row[3],
-                economics=row[4],
-                starport=row[5],
-                worldSize=row[6],
-                atmosphere=row[7],
-                hydrographics=row[8],
-                population=row[9],
-                government=row[10],
-                lawLevel=row[11],
-                techLevel=row[12],
-                heterogeneity=row[13],
-                acceptance=row[14],
-                strangeness=row[15],
-                symbols=row[16],
-                zone=row[17],
-                pbg=row[18],
-                systemWorlds=row[19],
-                allegiance=idToAllegianceMap.get(row[20]),
-                notes=row[21])
+                starport=row[4],
+                worldSize=row[5],
+                atmosphere=row[6],
+                hydrographics=row[7],
+                population=row[8],
+                government=row[9],
+                lawLevel=row[10],
+                techLevel=row[11],
+                resources=row[12],
+                labour=row[13],
+                infrastructure=row[14],
+                efficiency=row[15],
+                heterogeneity=row[16],
+                acceptance=row[17],
+                strangeness=row[18],
+                symbols=row[19],
+                zone=row[20],
+                pbg=row[21],
+                systemWorlds=row[22],
+                allegiance=idToAllegianceMap.get(row[23]),
+                notes=row[24])
             systems.append(system)
             idToSystemMap[system.id()] = system
         sector.setSystems(systems)

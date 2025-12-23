@@ -434,7 +434,11 @@ class DbSystem(DbObject):
             government: typing.Optional[str] = None,
             lawLevel: typing.Optional[str] = None,
             techLevel: typing.Optional[str] = None,
-            economics: typing.Optional[str] = None,
+            # Economics
+            resources: typing.Optional[str] = None,
+            labour: typing.Optional[str] = None,
+            infrastructure: typing.Optional[str] = None,
+            efficiency: typing.Optional[str] = None,
             # Culture
             heterogeneity: typing.Optional[str] = None,
             acceptance: typing.Optional[str] = None,
@@ -474,7 +478,10 @@ class DbSystem(DbObject):
         self.setGovernment(government)
         self.setLawLevel(lawLevel)
         self.setTechLevel(techLevel)
-        self.setEconomics(economics)
+        self.setResources(resources)
+        self.setLabour(labour)
+        self.setInfrastructure(infrastructure)
+        self.setEfficiency(efficiency)
         self.setHeterogeneity(heterogeneity)
         self.setAcceptance(acceptance)
         self.setStrangeness(strangeness)
@@ -567,15 +574,29 @@ class DbSystem(DbObject):
     def setTechLevel(self, techLevel: typing.Optional[str]) -> None:
         self._techLevel = techLevel
 
+    def resources(self ) -> typing.Optional[str]:
+        return self._resources
 
+    def setResources(self, resources: typing.Optional[str]) -> None:
+        self._resources = resources
 
-    def economics(self) -> typing.Optional[str]:
-        return self._economics
+    def labour(self ) -> typing.Optional[str]:
+        return self._labour
 
-    def setEconomics(self, economics: typing.Optional[str]) -> None:
-        self._economics = economics
+    def setLabour(self, labour: typing.Optional[str]) -> None:
+        self._labour = labour
 
+    def infrastructure(self ) -> typing.Optional[str]:
+        return self._infrastructure
 
+    def setInfrastructure(self, infrastructure: typing.Optional[str]) -> None:
+        self._infrastructure = infrastructure
+
+    def efficiency(self ) -> typing.Optional[str]:
+        return self._efficiency
+
+    def setEfficiency(self, efficiency: typing.Optional[str]) -> None:
+        self._efficiency = efficiency
 
     def heterogeneity(self) -> typing.Optional[str]:
         return self._heterogeneity
@@ -600,12 +621,6 @@ class DbSystem(DbObject):
 
     def setSymbols(self, symbols: typing.Optional[str]) -> None:
         self._symbols = symbols
-
-    def culture(self) -> typing.Optional[str]:
-        return self._culture
-
-    def setCulture(self, culture: typing.Optional[str]) -> None:
-        self._culture = culture
 
     def zone(self) -> typing.Optional[str]:
         return self._zone

@@ -13,11 +13,14 @@ def _processParsedCode(
         name: str,
         strict: bool
         ) -> typing.Optional[str]:
+    if code == '?':
+        return None
+
     code = code.upper()
     if code in allowed:
         return code
 
-    if code == '?' or not strict:
+    if not strict:
         return None
 
     raise ValueError(f'Invalid Culture {name} code "{code}"')
