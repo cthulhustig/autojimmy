@@ -66,7 +66,8 @@ def worldHasStarPortRefuelling(
     return False
 
 def worldHasGasGiantRefuelling(world: astronomer.World) -> bool:
-    return world.numberOfGasGiants() > 0
+    numberOfGasGiants = world.numberOfGasGiants()
+    return numberOfGasGiants is not None and numberOfGasGiants > 0
 
 # This method of detecting if the system has water is based on Traveller Maps (WaterPresent in
 # World.cs). I've added the check for the water world trade code as it gives a quick out.

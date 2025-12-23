@@ -170,15 +170,15 @@ class World(object):
 
         return int(math.pow(10, exponent)) * multiplier
 
-    def numberOfPlanetoidBelts(self) -> int:
-        return astronomer.ehexToInteger(
-            value=self._pbg.code(astronomer.PBG.Element.PlanetoidBelts),
-            default=-1)
+    def numberOfPlanetoidBelts(self) -> typing.Optional[int]:
+        return self._pbg.numeric(
+            element=astronomer.PBG.Element.PlanetoidBelts,
+            default=None)
 
-    def numberOfGasGiants(self) -> int:
-        return astronomer.ehexToInteger(
-            value=self._pbg.code(astronomer.PBG.Element.GasGiants),
-            default=-1)
+    def numberOfGasGiants(self) -> typing.Optional[int]:
+        return self._pbg.numeric(
+            element=astronomer.PBG.Element.GasGiants,
+            default=None)
 
     def numberOfSystemWorlds(self) -> typing.Optional[int]:
         return self._systemWorlds
