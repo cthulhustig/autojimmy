@@ -1,5 +1,6 @@
 import astronomer
 import enum
+import multiverse
 import typing
 
 _PopulationMultiplierDescriptionMap = {
@@ -31,74 +32,62 @@ class PBG(object):
         PlanetoidBelts = 1
         GasGiants = 2
 
-    _elementDescriptionMaps: typing.List[typing.Mapping[str, str]] = [
-        _PopulationMultiplierDescriptionMap,
-        _PlanetoidBeltDescriptionMap,
-        _GasGiantDescriptionMap
-    ]
+    _ValueDescriptionsMap: typing.Dict[Element, typing.Mapping[str, str]] = {
+        Element.PopulationMultiplier: _PopulationMultiplierDescriptionMap,
+        Element.PlanetoidBelts: _PlanetoidBeltDescriptionMap,
+        Element.GasGiants: _GasGiantDescriptionMap
+    }
 
     def __init__(
             self,
-            string
+            populationMultiplier: typing.Optional[str] = None,
+            planetoidBelts: typing.Optional[str] = None,
+            gasGiants: typing.Optional[str] = None
             ) -> None:
-        self._string = string
-        self._sanitised = PBG._sanitise(self._string)
+        self._valueMap: typing.Dict[PBG.Element, str] = {}
+        self._string = None
+
+        if populationMultiplier is not None:
+            self._valueMap[PBG.Element.PopulationMultiplier] = populationMultiplier
+        if planetoidBelts is not None:
+            self._valueMap[PBG.Element.PlanetoidBelts] = planetoidBelts
+        if gasGiants is not None:
+            self._valueMap[PBG.Element.GasGiants] = gasGiants
 
     def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemPBGString(
+                populationMultiplier=self._valueMap.get(PBG.Element.PopulationMultiplier),
+                planetoidBelts=self._valueMap.get(PBG.Element.PlanetoidBelts),
+                gasGiants=self._valueMap.get(PBG.Element.GasGiants))
         return self._string
-
-    def sanitised(self) -> str:
-        return self._sanitised
 
     def code(
             self,
             element: Element
             ) -> str:
-        return self._sanitised[element.value]
+        return self._valueMap.get(element, '?')
+
+    def numeric(
+            self,
+            element: Element,
+            default: int = -1
+            ) -> int:
+        code = self._valueMap.get(element)
+        if code is None:
+            return default
+        return astronomer.ehexToInteger(code, default)
 
     def description(
             self,
             element: Element
             ) -> str:
-        return PBG._elementDescriptionMaps[element.value][self.code(element)]
+        return PBG._ValueDescriptionsMap[element][self.code(element)]
 
-    @staticmethod
-    def codeList(element: Element) -> typing.Iterable[str]:
-        return PBG._elementDescriptionMaps[element.value].keys()
+    def isUnknown(self) -> bool:
+        return len(self._valueMap) == 0
 
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:
-        return PBG._elementDescriptionMaps[element.value]
+        return PBG._ValueDescriptionsMap[element]
 
-    @staticmethod
-    def _sanitise(pbg: str) -> str:
-        sanitized = ''
-        for index in range(3):
-            sanitized += PBG._sanitiseElement(index, pbg)
-        return sanitized
-
-    @staticmethod
-    def _sanitiseElement(index: int, pbg: str) -> str:
-        if index >= len(pbg):
-            return '?'
-        code = pbg[index].upper()
-        value = astronomer.ehexToInteger(value=code, default=None)
-        if value == None:
-            return '?'
-
-        if index == PBG.Element.PopulationMultiplier.value:
-            # Some worlds use X as the population multiplier to indicate unknown. In reality a
-            # multipliers over 9 doesn't make sense as it would push the world up another UWP
-            # population code so it should be safe to ignore anything higher. No worlds currently
-            # have a multiplier over 9
-            if value > 9:
-                return '?'
-        elif index == PBG.Element.PlanetoidBelts.value or index == PBG.Element.GasGiants.value:
-            # Some worlds use X as the planetoid belt and gas giant counts to indicate unknown.
-            # In theory any ehex value could be a valid planetoid belt and gas giant count, however
-            # in practice no worlds currently have more than 14 planetoid belts or 12 gas giants.
-            # It seems safe to just replace any X with ? for unknown
-            if code == 'X':
-                return '?'
-
-        return code

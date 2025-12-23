@@ -1007,19 +1007,6 @@ class MultiverseDb(object):
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._SystemsTableName,
                     cursor=cursor):
-
-                # TODO: I think I should split this up more
-                # - Economics (column for each)
-                #   - Resources
-                #   - Labour
-                #   - Infrastructure
-                #   - Efficiency
-                # - PBG (column for each)
-                #   - PopulationMultiplier
-                #   - PlanetoidBelts
-                #   - GasGiants
-                # TODO: The ordering of these columns is a little odd, why is zone
-                # between pbg and the other similar strings
                 sql = """
                     CREATE TABLE IF NOT EXISTS {systemsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -1043,8 +1030,10 @@ class MultiverseDb(object):
                         acceptance TEXT,
                         strangeness TEXT,
                         symbols TEXT,
+                        population_multiplier TEXT,
+                        planetoid_belts TEXT,
+                        gas_giants TEXT,
                         zone TEXT,
-                        pbg TEXT,
                         system_worlds INTEGER,
                         allegiance_id TEXT,
                         notes TEXT,
@@ -2254,8 +2243,10 @@ class MultiverseDb(object):
                     'acceptance': system.acceptance(),
                     'strangeness': system.strangeness(),
                     'symbols': system.symbols(),
+                    'population_multiplier': system.populationMultiplier(),
+                    'planetoid_belts': system.planetoidBelts(),
+                    'gas_giants': system.gasGiants(),
                     'zone': system.zone(),
-                    'pbg': system.pbg(),
                     'system_worlds': system.systemWorlds(),
                     'allegiance_id': allegiance.id() if allegiance else None,
                     'notes': system.notes()})
@@ -2345,12 +2336,14 @@ class MultiverseDb(object):
                         starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
                         resources, labour, infrastructure, efficiency,
                         heterogeneity, acceptance, strangeness, symbols,
-                        zone, pbg, system_worlds, allegiance_id, notes)
+                        population_multiplier, planetoid_belts, gas_giants,
+                        zone, system_worlds, allegiance_id, notes)
                     VALUES (:id, :sector_id, :hex_x, :hex_y, :name,
                         :starport, :world_size, :atmosphere, :hydrographics, :population, :government, :law_level, :tech_level,
                         :resources, :labour, :infrastructure, :efficiency,
                         :heterogeneity, :acceptance, :strangeness, :symbols,
-                        :zone, :pbg, :system_worlds, :allegiance_id, :notes);
+                        :population_multiplier, :planetoid_belts, :gas_giants,
+                        :zone, :system_worlds, :allegiance_id, :notes);
                     """.format(table=MultiverseDb._SystemsTableName)
                 cursor.executemany(sql, systemRows)
             if nobilitiesRows:
@@ -2652,7 +2645,8 @@ class MultiverseDb(object):
                 starport, world_size, atmosphere, hydrographics, population, government, law_level, tech_level,
                 resources, labour, infrastructure, efficiency,
                 heterogeneity, acceptance, strangeness, symbols,
-                zone, pbg, system_worlds, allegiance_id, notes
+                population_multiplier, planetoid_belts, gas_giants,
+                zone, system_worlds, allegiance_id, notes
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SystemsTableName)
@@ -2681,11 +2675,13 @@ class MultiverseDb(object):
                 acceptance=row[17],
                 strangeness=row[18],
                 symbols=row[19],
-                zone=row[20],
-                pbg=row[21],
-                systemWorlds=row[22],
-                allegiance=idToAllegianceMap.get(row[23]),
-                notes=row[24])
+                populationMultiplier=row[20],
+                planetoidBelts=row[21],
+                gasGiants=row[22],
+                zone=row[23],
+                systemWorlds=row[24],
+                allegiance=idToAllegianceMap.get(row[25]),
+                notes=row[26])
             systems.append(system)
             idToSystemMap[system.id()] = system
         sector.setSystems(systems)

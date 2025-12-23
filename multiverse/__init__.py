@@ -5,6 +5,7 @@ from .snapshotmanager import *
 from .uwp import *
 from .economics import *
 from .culture import *
+from .pbg import *
 from .nobility import *
 from .bases import *
 from .stellar import *

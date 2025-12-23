@@ -130,8 +130,8 @@ class _CultureCodeComboBox(_CodeComboBox):
 class _PBGCodeComboBox(_CodeComboBox):
     def setElement(self, element: astronomer.PBG.Element) -> None:
         self.clear()
-        for code in astronomer.PBG.codeList(element=element):
-            self.addItem(f'{code}', code)
+        for code in astronomer.PBG.descriptionMap(element=element).keys():
+            self.addItem(code, code)
 
 class _VerticallyResizingStackWidget(QtWidgets.QStackedWidget):
     def sizeHint(self) -> QtCore.QSize:

@@ -21,6 +21,7 @@ def _processParsedCode(
         return code
 
     if not strict:
+        # TODO: This should log something and probably inform the user for custom sectors
         return None
 
     raise ValueError(f'Invalid Culture {name} code "{code}"')

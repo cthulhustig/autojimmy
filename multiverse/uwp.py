@@ -25,6 +25,7 @@ def _processParsedCode(
 
     code = code.upper()
     if code in allowed:
+        # TODO: This should log something and probably inform the user for custom sectors
         return code
 
     if not strict:
@@ -48,7 +49,7 @@ def parseSystemUWPString(
     # (equivalent of ???????-?). This format is used by a number of the Traveller Map
     # sectors. It's important to treat it as a special case rather than treating 'X' as
     # unknown for individual fields as 'X' is a valid value for starport and government.
-    if uwp == 'XXXXXXX-X':
+    if not strict and uwp == 'XXXXXXX-X':
         return (None, None, None, None, None, None, None, None)
 
     result = _UWPPattern.match(uwp)

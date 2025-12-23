@@ -444,8 +444,11 @@ class DbSystem(DbObject):
             acceptance: typing.Optional[str] = None,
             strangeness: typing.Optional[str] = None,
             symbols: typing.Optional[str] = None,
+            # PBG
+            populationMultiplier: typing.Optional[str] = None,
+            planetoidBelts: typing.Optional[str] = None,
+            gasGiants: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
-            pbg: typing.Optional[str] = None,
             # System worlds can be None if the number is not not known (e.g. if uwp is ???????-?)
             # It can also be none due to it just not being specified in sector data
             systemWorlds: typing.Optional[int] = None,
@@ -486,8 +489,10 @@ class DbSystem(DbObject):
         self.setAcceptance(acceptance)
         self.setStrangeness(strangeness)
         self.setSymbols(symbols)
+        self.setPopulationMultiplier(populationMultiplier)
+        self.setPlanetoidBelts(planetoidBelts)
+        self.setGasGiants(gasGiants)
         self.setZone(zone)
-        self.setPBG(pbg)
         self.setSystemWorlds(systemWorlds)
         self.setAllegiance(allegiance)
         self.setNobilities(nobilities)
@@ -622,17 +627,29 @@ class DbSystem(DbObject):
     def setSymbols(self, symbols: typing.Optional[str]) -> None:
         self._symbols = symbols
 
+    def populationMultiplier(self) -> typing.Optional[str]:
+        return self._populationMultiplier
+
+    def setPopulationMultiplier(self, multiplier: typing.Optional[str]) -> None:
+        self._populationMultiplier = multiplier
+
+    def planetoidBelts(self) -> typing.Optional[str]:
+        return self._planetoidBelts
+
+    def setPlanetoidBelts(self, belts: typing.Optional[str]) -> None:
+        self._planetoidBelts = belts
+
+    def gasGiants(self) -> typing.Optional[str]:
+        return self._gasGiants
+
+    def setGasGiants(self, giants: typing.Optional[str]) -> None:
+        self._gasGiants = giants
+
     def zone(self) -> typing.Optional[str]:
         return self._zone
 
     def setZone(self, zone: typing.Optional[str]) -> None:
         self._zone = zone
-
-    def pbg(self) -> typing.Optional[str]:
-        return self._pbg
-
-    def setPBG(self, pbg: typing.Optional[str]) -> None:
-        self._pbg = pbg
 
     def systemWorlds(self) -> typing.Optional[int]:
         return self._systemWorlds

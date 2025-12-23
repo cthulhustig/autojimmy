@@ -609,7 +609,9 @@ class WorldManager(object):
                     bases = astronomer.Bases(dbBases=dbSystem.bases())
                     stellar = astronomer.Stellar(dbStars=dbSystem.stars())
                     pbg = astronomer.PBG(
-                        dbSystem.pbg() if dbSystem.pbg() else '')
+                        populationMultiplier=dbSystem.populationMultiplier(),
+                        planetoidBelts=dbSystem.planetoidBelts(),
+                        gasGiants=dbSystem.gasGiants())
                     systemWorlds = dbSystem.systemWorlds()
 
                     world = astronomer.World(
@@ -1023,21 +1025,3 @@ class WorldManager(object):
         if not mappedSize:
             raise ValueError(f'Invalid label size "{size}"')
         return mappedSize
-
-    @staticmethod
-    def _calculateSubsectorCode(
-            worldHex: astronomer.HexPosition
-            ) -> str:
-        worldHex.subsectorIndex()
-
-        subsectorX = (worldHex.offsetX() - 1) // astronomer.SubsectorWidth
-        if subsectorX < 0 or subsectorX >= astronomer.HorzSubsectorsPerSector:
-            raise RuntimeError(f'Subsector X position for world hex "{relativeWorldHex}" is out of range')
-
-        subsectorY = (worldY - 1) // astronomer.SubsectorHeight
-        if subsectorY < 0 or subsectorY >= astronomer.VertSubsectorPerSector:
-            raise RuntimeError(f'Subsector Y position for world hex "{relativeWorldHex}" is out of range')
-
-        index = (subsectorY * astronomer.HorzSubsectorsPerSector) + subsectorX
-
-        return chr(ord('A') + index)

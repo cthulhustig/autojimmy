@@ -739,6 +739,12 @@ def convertRawSectorToDbSector(
                     dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
                         multiverse.parseSystemCultureString(culture=rawCulture)
 
+                rawPBG = rawWorld.attribute(multiverse.WorldAttribute.PBG)
+                dbPopulationMultiplier = dbPlanetoidBelts = dbGasGiants = None
+                if rawPBG:
+                    dbPopulationMultiplier, dbPlanetoidBelts, dbGasGiants = \
+                        multiverse.parseSystemPBGString(pbg=rawPBG)
+
                 rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
 
                 rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
@@ -983,8 +989,10 @@ def convertRawSectorToDbSector(
                     acceptance=dbAcceptance,
                     strangeness=dbStrangeness,
                     symbols=dbSymbols,
+                    populationMultiplier=dbPopulationMultiplier,
+                    planetoidBelts=dbPlanetoidBelts,
+                    gasGiants=dbGasGiants,
                     zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
-                    pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
                     # TODO: I think the Traveller Map second survey page clarifies that
                     # system worlds is the number of worlds excluding the main world
                     systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
