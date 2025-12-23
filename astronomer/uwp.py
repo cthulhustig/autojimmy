@@ -309,6 +309,7 @@ class UWP(object):
             techLevel: typing.Optional[str] = None
             ) -> None:
         self._valueMap: typing.Dict[UWP.Element, str] = {}
+        self._string = None
 
         if starport is not None:
             self._valueMap[UWP.Element.StarPort] = starport
@@ -326,8 +327,6 @@ class UWP(object):
             self._valueMap[UWP.Element.LawLevel] = lawLevel
         if techLevel is not None:
             self._valueMap[UWP.Element.TechLevel] = techLevel
-
-        self._string = None
 
     def string(self) -> str:
         if self._string is None:

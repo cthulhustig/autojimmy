@@ -425,6 +425,7 @@ class DbSystem(DbObject):
             hexX: int,
             hexY: int,
             name: str, # TODO: Do worlds in sector files always have a name????
+            # UWP
             starport: typing.Optional[str] = None,
             worldSize: typing.Optional[str] = None,
             atmosphere: typing.Optional[str] = None,
@@ -434,7 +435,11 @@ class DbSystem(DbObject):
             lawLevel: typing.Optional[str] = None,
             techLevel: typing.Optional[str] = None,
             economics: typing.Optional[str] = None,
-            culture: typing.Optional[str] = None,
+            # Culture
+            heterogeneity: typing.Optional[str] = None,
+            acceptance: typing.Optional[str] = None,
+            strangeness: typing.Optional[str] = None,
+            symbols: typing.Optional[str] = None,
             zone: typing.Optional[str] = None,
             pbg: typing.Optional[str] = None,
             # System worlds can be None if the number is not not known (e.g. if uwp is ???????-?)
@@ -470,7 +475,10 @@ class DbSystem(DbObject):
         self.setLawLevel(lawLevel)
         self.setTechLevel(techLevel)
         self.setEconomics(economics)
-        self.setCulture(culture)
+        self.setHeterogeneity(heterogeneity)
+        self.setAcceptance(acceptance)
+        self.setStrangeness(strangeness)
+        self.setSymbols(symbols)
         self.setZone(zone)
         self.setPBG(pbg)
         self.setSystemWorlds(systemWorlds)
@@ -559,11 +567,39 @@ class DbSystem(DbObject):
     def setTechLevel(self, techLevel: typing.Optional[str]) -> None:
         self._techLevel = techLevel
 
+
+
     def economics(self) -> typing.Optional[str]:
         return self._economics
 
     def setEconomics(self, economics: typing.Optional[str]) -> None:
         self._economics = economics
+
+
+
+    def heterogeneity(self) -> typing.Optional[str]:
+        return self._heterogeneity
+
+    def setHeterogeneity(self, heterogeneity: typing.Optional[str]) -> None:
+        self._heterogeneity = heterogeneity
+
+    def acceptance(self) -> typing.Optional[str]:
+        return self._acceptance
+
+    def setAcceptance(self, acceptance: typing.Optional[str]) -> None:
+        self._acceptance = acceptance
+
+    def strangeness(self) -> typing.Optional[str]:
+        return self._strangeness
+
+    def setStrangeness(self, strangeness: typing.Optional[str]) -> None:
+        self._strangeness = strangeness
+
+    def symbols(self) -> typing.Optional[str]:
+        return self._symbols
+
+    def setSymbols(self, symbols: typing.Optional[str]) -> None:
+        self._symbols = symbols
 
     def culture(self) -> typing.Optional[str]:
         return self._culture

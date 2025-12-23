@@ -541,7 +541,12 @@ class WorldManager(object):
         if dbSystems:
             for dbSystem in dbSystems:
                 try:
-                    hex = f'{dbSystem.hexX():02d}{dbSystem.hexY():02d}' # TODO: I'm not a fan of having to create this
+                    worldHex = astronomer.HexPosition(
+                        sectorX=sectorX,
+                        sectorY=sectorY,
+                        offsetX=dbSystem.hexX(),
+                        offsetY=dbSystem.hexY())
+
                     worldName = dbSystem.name()
                     isNameGenerated = False
                     if not worldName:
@@ -554,10 +559,11 @@ class WorldManager(object):
                         # the user (in tables name is generally the first column in the table).
                         # - Need to look to see what Traveller Map displays on map and in the info
                         # dialog for worlds that have no name (but have a non ? UWP).
-                        worldName = f'{sectorName} {hex}'
+                        worldName = f'{sectorName} {dbSystem.hexX():02d}{dbSystem.hexY():02d}'
                         isNameGenerated = True
 
-                    subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
+                    subsectorIndex = worldHex.subsectorIndex()
+                    subsectorCode = subsectorIndex.code()
                     subsectorName, _ = subsectorNameMap[subsectorCode]
 
                     dbAllegiance = dbSystem.allegiance()
@@ -583,7 +589,10 @@ class WorldManager(object):
                     economics = astronomer.Economics(
                         dbSystem.economics() if dbSystem.economics() else '')
                     culture = astronomer.Culture(
-                        dbSystem.culture() if dbSystem.culture() else '')
+                        heterogeneity=dbSystem.heterogeneity(),
+                        acceptance=dbSystem.acceptance(),
+                        strangeness=dbSystem.strangeness(),
+                        symbols=dbSystem.symbols())
                     nobilities = astronomer.Nobilities(dbSystem.nobilities())
                     remarks = astronomer.Remarks(
                         zone=zone,
@@ -602,11 +611,7 @@ class WorldManager(object):
 
                     world = astronomer.World(
                         milieu=milieu,
-                        hex=astronomer.HexPosition(
-                            sectorX=sectorX,
-                            sectorY=sectorY,
-                            offsetX=dbSystem.hexX(),
-                            offsetY=dbSystem.hexY()),
+                        hex=worldHex,
                         worldName=worldName,
                         isNameGenerated=isNameGenerated,
                         sectorName=sectorName,
@@ -886,7 +891,7 @@ class WorldManager(object):
         if dbLabels:
             for dbLabel in dbLabels:
                 try:
-                    hex = astronomer.HexPosition(
+                    hexString = astronomer.HexPosition(
                         sectorX=sectorX,
                         sectorY=sectorY,
                         offsetX=dbLabel.hexX(),
@@ -904,7 +909,7 @@ class WorldManager(object):
 
                     labels.append(astronomer.Label(
                         text=text,
-                        hex=hex,
+                        hex=hexString,
                         colour=colour,
                         size=WorldManager._mapLabelSize(dbLabel.size()),
                         offsetX=dbLabel.offsetX(),
@@ -1018,15 +1023,11 @@ class WorldManager(object):
 
     @staticmethod
     def _calculateSubsectorCode(
-            relativeWorldHex: str
+            worldHex: astronomer.HexPosition
             ) -> str:
-        if len(relativeWorldHex) != 4:
-            raise RuntimeError(f'Invalid relative world hex "{relativeWorldHex}"')
+        worldHex.subsectorIndex()
 
-        worldX = int(relativeWorldHex[:2])
-        worldY = int(relativeWorldHex[-2:])
-
-        subsectorX = (worldX - 1) // astronomer.SubsectorWidth
+        subsectorX = (worldHex.offsetX() - 1) // astronomer.SubsectorWidth
         if subsectorX < 0 or subsectorX >= astronomer.HorzSubsectorsPerSector:
             raise RuntimeError(f'Subsector X position for world hex "{relativeWorldHex}" is out of range')
 

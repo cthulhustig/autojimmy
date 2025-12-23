@@ -720,17 +720,18 @@ def convertRawSectorToDbSector(
                     assert(False) # TODO: Better error handling
 
                 rawUWP = rawWorld.attribute(multiverse.WorldAttribute.UWP)
-                dbStarport = None
-                dbWorldSize = None
-                dbAtmosphere = None
-                dbHydrographics = None
-                dbPopulation = None
-                dbGovernment = None
-                dbLawLevel = None
-                dbTechLevel = None
+                dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
+                    dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
                 if rawUWP:
-                    dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, dbPopulation, \
-                        dbGovernment, dbLawLevel, dbTechLevel = multiverse.parseSystemUWPString(uwp=rawUWP)
+                    dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
+                        dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
+                        multiverse.parseSystemUWPString(uwp=rawUWP)
+
+                rawCulture = rawWorld.attribute(multiverse.WorldAttribute.Culture)
+                dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
+                if rawCulture:
+                    dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
+                        multiverse.parseSystemCultureString(culture=rawCulture)
 
                 rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
 
@@ -968,8 +969,11 @@ def convertRawSectorToDbSector(
                     government=dbGovernment,
                     lawLevel=dbLawLevel,
                     techLevel=dbTechLevel,
+                    heterogeneity=dbHeterogeneity,
+                    acceptance=dbAcceptance,
+                    strangeness=dbStrangeness,
+                    symbols=dbSymbols,
                     economics=rawWorld.attribute(multiverse.WorldAttribute.Economics),
-                    culture=rawWorld.attribute(multiverse.WorldAttribute.Culture),
                     zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
                     pbg=rawWorld.attribute(multiverse.WorldAttribute.PBG),
                     # TODO: I think the Traveller Map second survey page clarifies that

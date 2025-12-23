@@ -1,5 +1,6 @@
 import astronomer
 import enum
+import multiverse
 import typing
 
 # Types and ehex mappings taken from Traveller Map source code (world_utils.js).
@@ -94,59 +95,68 @@ class Culture(object):
         Strangeness = 2
         Symbols = 3
 
-    _elementDescriptionMaps: typing.List[typing.Mapping[str, str]] = [
-        _HeterogeneityDescriptionMap,
-        _AcceptanceDescriptionMap,
-        _StrangenessDescriptionMap,
-        _SymbolsDescriptionMap
-    ]
+    _ValueDescriptionsMap: typing.Dict[Element, typing.Mapping[str, str]] = {
+        Element.Heterogeneity: _HeterogeneityDescriptionMap,
+        Element.Acceptance: _AcceptanceDescriptionMap,
+        Element.Strangeness: _StrangenessDescriptionMap,
+        Element.Symbols: _SymbolsDescriptionMap
+    }
 
     def __init__(
             self,
-            string: str
+            heterogeneity: typing.Optional[str],
+            acceptance: typing.Optional[str],
+            strangeness: typing.Optional[str],
+            symbols: typing.Optional[str]
             ) -> None:
-        self._string = string
-        self._sanitised = self._sanitise(self._string)
+        self._valueMap: typing.Dict[Culture.Element, str] = {}
+        self._string = None
+
+        if heterogeneity is not None:
+            self._valueMap[Culture.Element.Heterogeneity] = heterogeneity
+        if acceptance is not None:
+            self._valueMap[Culture.Element.Acceptance] = acceptance
+        if strangeness is not None:
+            self._valueMap[Culture.Element.Strangeness] = strangeness
+        if symbols is not None:
+            self._valueMap[Culture.Element.Symbols] = symbols
+
 
     def string(self) -> str:
+        if self._string is None:
+            self._string = multiverse.formatSystemCultureString(
+                heterogeneity=self._valueMap.get(Culture.Element.Heterogeneity),
+                acceptance=self._valueMap.get(Culture.Element.Acceptance),
+                strangeness=self._valueMap.get(Culture.Element.Strangeness),
+                symbols=self._valueMap.get(Culture.Element.Symbols))
         return self._string
-
-    def sanitised(self) -> str:
-        return self._sanitised
 
     def code(
             self,
             element: Element
             ) -> str:
-        return self._sanitised[element.value]
+        return self._valueMap.get(element, '?')
+
+    def numeric(
+            self,
+            element: Element,
+            default: int = -1
+            ) -> int:
+        code = self._valueMap.get(element)
+        if code is None:
+            return default
+        return astronomer.ehexToInteger(code, default)
 
     def description(
             self,
             element: Element
             ) -> str:
-        return Culture._elementDescriptionMaps[element.value][self.code(element)]
+        return Culture._ValueDescriptionsMap[element][self.code(element)]
 
-    @staticmethod
-    def codeList(element: Element) -> typing.Iterable[str]:
-        return Culture._elementDescriptionMaps[element.value].keys()
+    def isUnknown(self) -> bool:
+        return len(self._valueMap) == 0
 
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:
-        return Culture._elementDescriptionMaps[element.value]
+        return Culture._ValueDescriptionsMap[element]
 
-    @staticmethod
-    def _sanitise(culture: str) -> str:
-        culture = culture.strip('[]')
-        sanitized = ''
-        for index in range(4):
-            sanitized += Culture._sanitiseElement(index, culture)
-        return sanitized
-
-    @staticmethod
-    def _sanitiseElement(index: int, culture: str) -> str:
-        if index >= len(culture):
-            return '?'
-        code = culture[index].upper()
-        if code not in Culture._elementDescriptionMaps[index]:
-            return '?'
-        return code
