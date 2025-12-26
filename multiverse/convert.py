@@ -605,6 +605,444 @@ def _createDbSophonts(
 
     return (dbSophontCodeMap, dbSophontNameMap)
 
+def _createDbSystems(
+        milieu: str,
+        rawMetadata: multiverse.RawMetadata,
+        rawSystems: typing.Collection[multiverse.RawWorld],
+        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
+        dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
+        dbSophontNameMap: typing.Dict[str, multiverse.DbSophont],
+        ) -> typing.List[multiverse.DbSystem]:
+    dbSystems = []
+
+    for rawWorld in rawSystems:
+        rawHex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
+        if not rawHex:
+            assert(False) # TODO: Better error handling
+
+        dbSystemName = rawWorld.attribute(multiverse.WorldAttribute.Name)
+
+        rawUWP = rawWorld.attribute(multiverse.WorldAttribute.UWP)
+        dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
+            dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
+        if rawUWP:
+            dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
+                dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
+                multiverse.parseSystemUWPString(uwp=rawUWP)
+
+        rawEconomics = rawWorld.attribute(multiverse.WorldAttribute.Economics)
+        dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
+        if rawEconomics:
+            dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
+                multiverse.parseSystemEconomicsString(economics=rawEconomics)
+
+        rawCulture = rawWorld.attribute(multiverse.WorldAttribute.Culture)
+        dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
+        if rawCulture:
+            dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
+                multiverse.parseSystemCultureString(culture=rawCulture)
+
+        rawPBG = rawWorld.attribute(multiverse.WorldAttribute.PBG)
+        dbPopulationMultiplier = dbPlanetoidBelts = dbGasGiants = None
+        if rawPBG:
+            dbPopulationMultiplier, dbPlanetoidBelts, dbGasGiants = \
+                multiverse.parseSystemPBGString(pbg=rawPBG)
+
+        rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
+
+        rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+        dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+        if rawAllegianceCode and not dbAllegiance:
+            # TODO: This should probably log and continue with no allegiance,
+            # if it's a custom sector it should also warn the user
+            raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
+
+        rawNobilities = rawWorld.attribute(multiverse.WorldAttribute.Nobility)
+        dbNobilities = None
+        if rawNobilities:
+            dbNobilities = []
+            seenNobilities = set()
+            for nobilityCode in multiverse.parseSystemNobilityString(string=rawNobilities):
+                if nobilityCode in seenNobilities:
+                    continue # Ignore duplicates
+                seenNobilities.add(nobilityCode)
+
+                dbNobilities.append(multiverse.DbNobility(code=nobilityCode))
+
+        rawBases = rawWorld.attribute(multiverse.WorldAttribute.Bases)
+        dbBases = None
+        if rawBases:
+            dbBases = []
+            seenBases = set()
+            for baseCode in multiverse.parseSystemBasesString(string=rawBases):
+                if baseCode in seenBases:
+                    continue # Ignore duplicates
+                seenBases.add(baseCode)
+
+                dbBases.append(multiverse.DbBase(code=baseCode))
+
+        rawStellar = rawWorld.attribute(multiverse.WorldAttribute.Stellar)
+        dbStars = None
+        if rawStellar:
+            dbStars = []
+            for luminosityClass, spectralClass, spectralScale in multiverse.parseSystemStellarString(string=rawStellar):
+                dbStars.append(multiverse.DbStar(
+                    luminosityClass=luminosityClass,
+                    spectralClass=spectralClass,
+                    spectralScale=spectralScale))
+
+        rawRemarks = rawWorld.attribute(multiverse.WorldAttribute.Remarks)
+        dbTradeCodes: typing.Optional[typing.List[multiverse.DbTradeCode]] = None
+        dbSophontPopulations: typing.Optional[typing.List[multiverse.DbSophontPopulation]]  = None
+        dbRulingAllegiances: typing.Optional[typing.List[multiverse.RawAllegiance]]  = None
+        dbOwningSystems: typing.Optional[typing.List[multiverse.DbOwningSystem]]  = None
+        dbColonySystems: typing.Optional[typing.List[multiverse.DbColonySystem]]  = None
+        dbResearchStations: typing.Optional[typing.List[multiverse.DbResearchStation]]  = None
+        dbCustomRemarks: typing.Optional[typing.List[multiverse.DbCustomRemark]]  = None
+        if rawRemarks:
+            rawTradeCodes, rawMajorHomeWorlds, rawMinorHomeWorlds, rawSophontPopulations, \
+                rawDieBackSophonts, rawOwningSystems, rawColonySystems, rawRulingAllegiances, \
+                rawResearchStations, rawUnrecognisedRemarks = multiverse.parseSystemRemarksString(rawRemarks)
+
+            if rawTradeCodes:
+                # It's important to process the explicit trade codes first as
+                # trade codes may be added by later steps (e.g. for die back
+                # worlds)
+                dbTradeCodes = []
+                seenTradeCodes = set()
+                for rawTradeCode in rawTradeCodes:
+                    if rawTradeCode in seenTradeCodes:
+                        continue # Skip duplicates
+                    seenTradeCodes.add(rawTradeCode)
+
+                    dbTradeCodes.append(multiverse.DbTradeCode(code=rawTradeCode))
+
+            if rawMajorHomeWorlds or rawMinorHomeWorlds or rawSophontPopulations or rawDieBackSophonts:
+                dbSophontPopulations = []
+                seenDbSophonts = set()
+
+                for rawSophontName, rawPopulation in rawMajorHomeWorlds:
+                    dbSophont = dbSophontNameMap.get(rawSophontName)
+                    if not dbSophont:
+                        # This should never happen, the remarks should already have been
+                        # processed to extract all the used sophont names & codes and
+                        # DbSophont instances should have been created for all of them
+                        # TODO: Better exception string
+                        raise RuntimeError('This shouldn\'t happen')
+                    if dbSophont in seenDbSophonts:
+                        # There is already a population entry for this sophont so
+                        # ignore this one
+                        # TODO: This should log and probably inform the user if it's
+                        # a custom sector that's being converted
+                        # TODO: I think I need to write my own linting code that
+                        # will check for things like repeated sophonts or multiple
+                        # owning worlds in remarks
+                        continue
+                    seenDbSophonts.add(dbSophont)
+
+                    dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                        sophont=dbSophont,
+                        percentage=rawPopulation,
+                        isHomeWorld=True,
+                        isDieBack=False))
+
+                for rawSophontName, rawPopulation in rawMinorHomeWorlds:
+                    dbSophont = dbSophontNameMap.get(rawSophontName)
+                    if not dbSophont:
+                        # This should never happen, the remarks should already have been
+                        # processed to extract all the used sophont names & codes and
+                        # DbSophont instances should have been created for all of them
+                        # TODO: Better exception string
+                        raise RuntimeError('This shouldn\'t happen')
+                    if dbSophont in seenDbSophonts:
+                        # There is already a population entry for this sophont so
+                        # ignore this one
+                        # TODO: This should log and probably inform the user if it's
+                        # a custom sector that's being converted
+                        continue
+                    seenDbSophonts.add(dbSophont)
+
+                    dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                        sophont=dbSophont,
+                        percentage=rawPopulation,
+                        isHomeWorld=True,
+                        isDieBack=False))
+
+                for rawSophontCode, rawPopulation in rawSophontPopulations:
+                    dbSophont = dbSophontCodeMap.get(rawSophontCode)
+                    if not dbSophont:
+                        # This should never happen, the remarks should already have been
+                        # processed to extract all the used sophont names & codes and
+                        # DbSophont instances should have been created for all of them
+                        # TODO: Better exception string
+                        raise RuntimeError('This shouldn\'t happen')
+                    if dbSophont in seenDbSophonts:
+                        # There is already a population entry for this sophont so
+                        # ignore this one
+                        # TODO: This should log and probably inform the user if it's
+                        # a custom sector that's being converted
+                        continue
+                    seenDbSophonts.add(dbSophont)
+
+                    dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                        sophont=dbSophont,
+                        percentage=rawPopulation,
+                        isHomeWorld=False,
+                        isDieBack=False))
+
+                for rawSophontName in rawDieBackSophonts:
+                    dbSophont = dbSophontNameMap.get(rawSophontName)
+                    if not dbSophont:
+                        # This should never happen, the remarks should already have been
+                        # processed to extract all the used sophont names & codes and
+                        # DbSophont instances should have been created for all of them
+                        # TODO: Better exception string
+                        raise RuntimeError('This shouldn\'t happen')
+                    if dbSophont in seenDbSophonts:
+                        # There is already a population entry for this sophont so
+                        # ignore this one
+                        # TODO: This should log and probably inform the user if it's
+                        # a custom sector that's being converted
+                        continue
+                    seenDbSophonts.add(dbSophont)
+
+                    dbSophontPopulations.append(multiverse.DbSophontPopulation(
+                        sophont=dbSophont,
+                        percentage=None,
+                        isHomeWorld=False,
+                        isDieBack=True))
+
+                    # Add the Die Back trade code if the system doesn't already have it
+                    if not dbTradeCodes:
+                        dbTradeCodes = [multiverse.DbTradeCode(code='Di')]
+                    elif not any(dbCode.code() == 'Di' for dbCode in dbTradeCodes):
+                        dbTradeCodes.append(multiverse.DbTradeCode(code='Di'))
+
+            if rawOwningSystems:
+                dbOwningSystems = []
+                for hexX, hexY, sectorCode in rawOwningSystems:
+                    dbOwningSystems.append(multiverse.DbOwningSystem(
+                        hexX=hexX,
+                        hexY=hexY,
+                        # If the sector code is the same as the current sector code
+                        # (aka abbreviation) then set a value of None to indicate the
+                        # current sector
+                        sectorCode=sectorCode if sectorCode != rawMetadata.abbreviation() else None))
+
+            if rawColonySystems:
+                dbColonySystems = []
+                for hexX, hexY, sectorCode in rawColonySystems:
+                    dbColonySystems.append(multiverse.DbColonySystem(
+                        hexX=hexX,
+                        hexY=hexY,
+                        # If the sector code is the same as the current sector code
+                        # (aka abbreviation) then set a value of None to indicate the
+                        # current sector
+                        sectorCode=sectorCode if sectorCode != rawMetadata.abbreviation() else None))
+
+            if rawRulingAllegiances:
+                dbRulingAllegiances = []
+                seenRulingAllegiances = set()
+                for rawAllegianceCode in rawRulingAllegiances:
+                    if rawAllegianceCode in seenRulingAllegiances:
+                        continue # Skip duplicates
+                    seenRulingAllegiances.add(rawAllegianceCode)
+
+                    dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode)
+                    if not dbAllegiance:
+                        # TODO: This should probably log and continue with no allegiance,
+                        # if it's a custom sector it should also warn the user
+                        raise RuntimeError(f'Military rule trade code (Mr) in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
+                    dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegiance=dbAllegiance))
+
+            if rawResearchStations:
+                dbResearchStations = []
+                seenResearchStations = set()
+                for rawResearchStation in rawResearchStations:
+                    if rawResearchStation in seenResearchStations:
+                        continue # Skip duplicates
+                    seenResearchStations.add(rawResearchStation)
+
+                    dbResearchStations.append(multiverse.DbResearchStation(code=rawResearchStation))
+
+            if rawUnrecognisedRemarks:
+                dbCustomRemarks = []
+                for remark in rawUnrecognisedRemarks:
+                    dbCustomRemarks.append(multiverse.DbCustomRemark(remark=remark))
+
+        dbSystems.append(multiverse.DbSystem(
+            hexX=int(rawHex[:2]),
+            hexY=int(rawHex[-2:]),
+            # TODO: Should I make name optional? Some sectors don't have names
+            # (e.g. some of the ones that have a UWP of ???????-?).
+            name=dbSystemName,
+            starport=dbStarport,
+            worldSize=dbWorldSize,
+            atmosphere=dbAtmosphere,
+            hydrographics=dbHydrographics,
+            population=dbPopulation,
+            government=dbGovernment,
+            lawLevel=dbLawLevel,
+            techLevel=dbTechLevel,
+            resources=dbResources,
+            labour=dbLabour,
+            infrastructure=dbInfrastructure,
+            efficiency=dbEfficiency,
+            heterogeneity=dbHeterogeneity,
+            acceptance=dbAcceptance,
+            strangeness=dbStrangeness,
+            symbols=dbSymbols,
+            populationMultiplier=dbPopulationMultiplier,
+            planetoidBelts=dbPlanetoidBelts,
+            gasGiants=dbGasGiants,
+            zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
+            # TODO: I think the Traveller Map second survey page clarifies that
+            # system worlds is the number of worlds excluding the main world
+            systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
+            allegiance=dbAllegiance,
+            nobilities=dbNobilities,
+            tradeCodes=dbTradeCodes,
+            sophontPopulations=dbSophontPopulations,
+            rulingAllegiances=dbRulingAllegiances,
+            owningSystems=dbOwningSystems,
+            colonySystems=dbColonySystems,
+            researchStations=dbResearchStations,
+            customRemarks=dbCustomRemarks,
+            bases=dbBases,
+            stars=dbStars))
+
+    return dbSystems
+
+def _createDbRoutes(
+        milieu: str,
+        rawMetadata: multiverse.RawMetadata,
+        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance]
+        ) -> typing.List[multiverse.DbRoute]:
+    dbRoutes = []
+
+    if rawMetadata.routes():
+        for rawRoute in rawMetadata.routes():
+            rawStartHex = rawRoute.startHex()
+            rawEndHex = rawRoute.endHex()
+            rawStartOffsetX = rawRoute.startOffsetX()
+            rawStartOffsetY = rawRoute.startOffsetY()
+            rawEndOffsetX = rawRoute.endOffsetX()
+            rawEndOffsetY = rawRoute.endOffsetY()
+
+            rawAllegianceCode = rawRoute.allegiance()
+            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+            if rawAllegianceCode and not dbAllegiance:
+                # TODO: This should probably log and continue with no allegiance,
+                # if it's a custom sector it should also warn the user
+                raise RuntimeError(f'Route in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
+
+            dbRoutes.append(multiverse.DbRoute(
+                startHexX=int(rawStartHex[:2]),
+                startHexY=int(rawStartHex[-2:]),
+                endHexX=int(rawEndHex[:2]),
+                endHexY=int(rawEndHex[-2:]),
+                startOffsetX=rawStartOffsetX if rawStartOffsetX is not None else 0,
+                startOffsetY=rawStartOffsetY if rawStartOffsetY is not None else 0,
+                endOffsetX=rawEndOffsetX if rawEndOffsetX is not None else 0,
+                endOffsetY=rawEndOffsetY if rawEndOffsetY is not None else 0,
+                type=rawRoute.type(),
+                style=rawRoute.style(),
+                colour=rawRoute.colour(),
+                width=rawRoute.width(),
+                allegiance=dbAllegiance))
+
+    return dbRoutes
+
+def _createDbBorders(
+        milieu: str,
+        rawMetadata: multiverse.RawMetadata,
+        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance]
+        ) -> typing.List[multiverse.DbBorder]:
+    dbBorders = []
+
+    if rawMetadata.borders():
+        for rawBorder in rawMetadata.borders():
+            dbHexes = []
+            for rawHex in rawBorder.hexList():
+                dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
+
+            rawLabel = rawBorder.label()
+            rawShowLabel = rawBorder.showLabel()
+            rawWrapLabel = rawBorder.wrapLabel()
+            rawLabelHex = rawBorder.labelHex()
+
+            rawAllegianceCode = rawBorder.allegiance()
+            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
+            if rawAllegianceCode and not dbAllegiance:
+                # TODO: This should probably log and continue with no allegiance,
+                # if it's a custom sector it should also warn the user
+                raise RuntimeError(f'Border in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
+
+            dbBorders.append(multiverse.DbBorder(
+                hexes=dbHexes,
+                showLabel=rawShowLabel if rawShowLabel is not None else True,
+                wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
+                label=rawLabel,
+                labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
+                labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
+                labelOffsetX=rawBorder.labelOffsetX(),
+                labelOffsetY=rawBorder.labelOffsetY(),
+                colour=rawBorder.colour(),
+                style=rawBorder.style(),
+                allegiance=dbAllegiance))
+
+    return dbBorders
+
+def _createDbRegions(
+        rawMetadata: multiverse.RawMetadata,
+        ) -> typing.List[multiverse.DbBorder]:
+    dbRegions = []
+
+    if rawMetadata.regions():
+        for rawRegion in rawMetadata.regions():
+            dbHexes = []
+            for rawHex in rawRegion.hexList():
+                dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
+
+            rawShowLabel = rawRegion.showLabel()
+            rawWrapLabel = rawRegion.wrapLabel()
+            rawLabelHex = rawRegion.labelHex()
+
+            dbRegions.append(multiverse.DbRegion(
+                hexes=dbHexes,
+                showLabel=rawShowLabel if rawShowLabel is not None else True,
+                wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
+                label=rawRegion.label(),
+                labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
+                labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
+                labelOffsetX=rawRegion.labelOffsetX(),
+                labelOffsetY=rawRegion.labelOffsetY(),
+                colour=rawRegion.colour()))
+
+    return dbRegions
+
+def _createDbLabels(
+        rawMetadata: multiverse.RawMetadata,
+        ) -> typing.List[multiverse.DbLabel]:
+    dbLabels = []
+
+    if rawMetadata.labels():
+        for rawLabel in rawMetadata.labels():
+            rawHex = rawLabel.hex()
+            rawWrap = rawLabel.wrap()
+
+            dbLabels.append(multiverse.DbLabel(
+                text=rawLabel.text(),
+                hexX=int(rawHex[:2]),
+                hexY=int(rawHex[-2:]),
+                wrap=rawWrap if rawWrap is not None else False,
+                colour=rawLabel.colour(),
+                size=rawLabel.size(),
+                offsetX=rawLabel.offsetX(),
+                offsetY=rawLabel.offsetY()))
+
+    return dbLabels
+
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
 def readSnapshotStockAllegiances() -> typing.List[multiverse.RawStockAllegiance]:
@@ -711,409 +1149,27 @@ def convertRawSectorToDbSector(
             rawSystems=rawSystems,
             rawStockSophonts=rawStockSophonts)
 
-        dbSystems = None
-        if rawSystems:
-            dbSystems = []
-            for rawWorld in rawSystems:
-                rawHex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
-                if not rawHex:
-                    assert(False) # TODO: Better error handling
+        dbSystems = _createDbSystems(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            rawSystems=rawSystems,
+            dbAllegianceCodeMap=dbAllegianceCodeMap,
+            dbSophontCodeMap=dbSophontCodeMap,
+            dbSophontNameMap=dbSophontNameMap)
 
-                rawUWP = rawWorld.attribute(multiverse.WorldAttribute.UWP)
-                dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
-                    dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
-                if rawUWP:
-                    dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
-                        dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
-                        multiverse.parseSystemUWPString(uwp=rawUWP)
+        dbRoutes = _createDbRoutes(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            dbAllegianceCodeMap=dbAllegianceCodeMap)
 
-                rawEconomics = rawWorld.attribute(multiverse.WorldAttribute.Economics)
-                dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
-                if rawEconomics:
-                    dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
-                        multiverse.parseSystemEconomicsString(economics=rawEconomics)
+        dbBorders = _createDbBorders(
+            milieu=milieu,
+            rawMetadata=rawMetadata,
+            dbAllegianceCodeMap=dbAllegianceCodeMap)
 
-                rawCulture = rawWorld.attribute(multiverse.WorldAttribute.Culture)
-                dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
-                if rawCulture:
-                    dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
-                        multiverse.parseSystemCultureString(culture=rawCulture)
+        dbRegions = _createDbRegions(rawMetadata=rawMetadata)
 
-                rawPBG = rawWorld.attribute(multiverse.WorldAttribute.PBG)
-                dbPopulationMultiplier = dbPlanetoidBelts = dbGasGiants = None
-                if rawPBG:
-                    dbPopulationMultiplier, dbPlanetoidBelts, dbGasGiants = \
-                        multiverse.parseSystemPBGString(pbg=rawPBG)
-
-                rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
-
-                rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
-                dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
-                if rawAllegianceCode and not dbAllegiance:
-                    # TODO: This should probably log and continue with no allegiance,
-                    # if it's a custom sector it should also warn the user
-                    raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
-
-                rawNobilities = rawWorld.attribute(multiverse.WorldAttribute.Nobility)
-                dbNobilities = None
-                if rawNobilities:
-                    dbNobilities = []
-                    seenNobilities = set()
-                    for nobilityCode in multiverse.parseSystemNobilityString(string=rawNobilities):
-                        if nobilityCode in seenNobilities:
-                            continue # Ignore duplicates
-                        seenNobilities.add(nobilityCode)
-
-                        dbNobilities.append(multiverse.DbNobility(code=nobilityCode))
-
-                rawBases = rawWorld.attribute(multiverse.WorldAttribute.Bases)
-                dbBases = None
-                if rawBases:
-                    dbBases = []
-                    seenBases = set()
-                    for baseCode in multiverse.parseSystemBasesString(string=rawBases):
-                        if baseCode in seenBases:
-                            continue # Ignore duplicates
-                        seenBases.add(baseCode)
-
-                        dbBases.append(multiverse.DbBase(code=baseCode))
-
-                rawStellar = rawWorld.attribute(multiverse.WorldAttribute.Stellar)
-                dbStars = None
-                if rawStellar:
-                    dbStars = []
-                    for luminosityClass, spectralClass, spectralScale in multiverse.parseSystemStellarString(string=rawStellar):
-                        dbStars.append(multiverse.DbStar(
-                            luminosityClass=luminosityClass,
-                            spectralClass=spectralClass,
-                            spectralScale=spectralScale))
-
-                rawRemarks = rawWorld.attribute(multiverse.WorldAttribute.Remarks)
-                dbTradeCodes: typing.Optional[typing.List[multiverse.DbTradeCode]] = None
-                dbSophontPopulations: typing.Optional[typing.List[multiverse.DbSophontPopulation]]  = None
-                dbRulingAllegiances: typing.Optional[typing.List[multiverse.RawAllegiance]]  = None
-                dbOwningSystems: typing.Optional[typing.List[multiverse.DbOwningSystem]]  = None
-                dbColonySystems: typing.Optional[typing.List[multiverse.DbColonySystem]]  = None
-                dbResearchStations: typing.Optional[typing.List[multiverse.DbResearchStation]]  = None
-                dbCustomRemarks: typing.Optional[typing.List[multiverse.DbCustomRemark]]  = None
-                if rawRemarks:
-                    rawTradeCodes, rawMajorHomeWorlds, rawMinorHomeWorlds, rawSophontPopulations, \
-                        rawDieBackSophonts, rawOwningSystems, rawColonySystems, rawRulingAllegiances, \
-                        rawResearchStations, rawUnrecognisedRemarks = multiverse.parseSystemRemarksString(rawRemarks)
-
-                    if rawTradeCodes:
-                        # It's important to process the explicit trade codes first as
-                        # trade codes may be added by later steps (e.g. for die back
-                        # worlds)
-                        dbTradeCodes = []
-                        seenTradeCodes = set()
-                        for rawTradeCode in rawTradeCodes:
-                            if rawTradeCode in seenTradeCodes:
-                                continue # Skip duplicates
-                            seenTradeCodes.add(rawTradeCode)
-
-                            dbTradeCodes.append(multiverse.DbTradeCode(code=rawTradeCode))
-
-                    if rawMajorHomeWorlds or rawMinorHomeWorlds or rawSophontPopulations or rawDieBackSophonts:
-                        dbSophontPopulations = []
-                        seenDbSophonts = set()
-
-                        for rawSophontName, rawPopulation in rawMajorHomeWorlds:
-                            dbSophont = dbSophontNameMap.get(rawSophontName)
-                            if not dbSophont:
-                                # This should never happen, the remarks should already have been
-                                # processed to extract all the used sophont names & codes and
-                                # DbSophont instances should have been created for all of them
-                                # TODO: Better exception string
-                                raise RuntimeError('This shouldn\'t happen')
-                            if dbSophont in seenDbSophonts:
-                                # There is already a population entry for this sophont so
-                                # ignore this one
-                                # TODO: This should log and probably inform the user if it's
-                                # a custom sector that's being converted
-                                # TODO: I think I need to write my own linting code that
-                                # will check for things like repeated sophonts or multiple
-                                # owning worlds in remarks
-                                continue
-                            seenDbSophonts.add(dbSophont)
-
-                            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophont=dbSophont,
-                                percentage=rawPopulation,
-                                isHomeWorld=True,
-                                isDieBack=False))
-
-                        for rawSophontName, rawPopulation in rawMinorHomeWorlds:
-                            dbSophont = dbSophontNameMap.get(rawSophontName)
-                            if not dbSophont:
-                                # This should never happen, the remarks should already have been
-                                # processed to extract all the used sophont names & codes and
-                                # DbSophont instances should have been created for all of them
-                                # TODO: Better exception string
-                                raise RuntimeError('This shouldn\'t happen')
-                            if dbSophont in seenDbSophonts:
-                                # There is already a population entry for this sophont so
-                                # ignore this one
-                                # TODO: This should log and probably inform the user if it's
-                                # a custom sector that's being converted
-                                continue
-                            seenDbSophonts.add(dbSophont)
-
-                            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophont=dbSophont,
-                                percentage=rawPopulation,
-                                isHomeWorld=True,
-                                isDieBack=False))
-
-                        for rawSophontCode, rawPopulation in rawSophontPopulations:
-                            dbSophont = dbSophontCodeMap.get(rawSophontCode)
-                            if not dbSophont:
-                                # This should never happen, the remarks should already have been
-                                # processed to extract all the used sophont names & codes and
-                                # DbSophont instances should have been created for all of them
-                                # TODO: Better exception string
-                                raise RuntimeError('This shouldn\'t happen')
-                            if dbSophont in seenDbSophonts:
-                                # There is already a population entry for this sophont so
-                                # ignore this one
-                                # TODO: This should log and probably inform the user if it's
-                                # a custom sector that's being converted
-                                continue
-                            seenDbSophonts.add(dbSophont)
-
-                            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophont=dbSophont,
-                                percentage=rawPopulation,
-                                isHomeWorld=False,
-                                isDieBack=False))
-
-                        for rawSophontName in rawDieBackSophonts:
-                            dbSophont = dbSophontNameMap.get(rawSophontName)
-                            if not dbSophont:
-                                # This should never happen, the remarks should already have been
-                                # processed to extract all the used sophont names & codes and
-                                # DbSophont instances should have been created for all of them
-                                # TODO: Better exception string
-                                raise RuntimeError('This shouldn\'t happen')
-                            if dbSophont in seenDbSophonts:
-                                # There is already a population entry for this sophont so
-                                # ignore this one
-                                # TODO: This should log and probably inform the user if it's
-                                # a custom sector that's being converted
-                                continue
-                            seenDbSophonts.add(dbSophont)
-
-                            dbSophontPopulations.append(multiverse.DbSophontPopulation(
-                                sophont=dbSophont,
-                                percentage=None,
-                                isHomeWorld=False,
-                                isDieBack=True))
-
-                            # Add the Die Back trade code if the system doesn't already have it
-                            if not dbTradeCodes:
-                                dbTradeCodes = [multiverse.DbTradeCode(code='Di')]
-                            elif not any(dbCode.code() == 'Di' for dbCode in dbTradeCodes):
-                                dbTradeCodes.append(multiverse.DbTradeCode(code='Di'))
-
-                    if rawOwningSystems:
-                        dbOwningSystems = []
-                        for hexX, hexY, sectorCode in rawOwningSystems:
-                            dbOwningSystems.append(multiverse.DbOwningSystem(
-                                hexX=hexX,
-                                hexY=hexY,
-                                # If the sector code is the same as the current sector code
-                                # (aka abbreviation) then set a value of None to indicate the
-                                # current sector
-                                sectorCode=sectorCode if sectorCode != rawMetadata.abbreviation() else None))
-
-                    if rawColonySystems:
-                        dbColonySystems = []
-                        for hexX, hexY, sectorCode in rawColonySystems:
-                            dbColonySystems.append(multiverse.DbColonySystem(
-                                hexX=hexX,
-                                hexY=hexY,
-                                # If the sector code is the same as the current sector code
-                                # (aka abbreviation) then set a value of None to indicate the
-                                # current sector
-                                sectorCode=sectorCode if sectorCode != rawMetadata.abbreviation() else None))
-
-                    if rawRulingAllegiances:
-                        dbRulingAllegiances = []
-                        seenRulingAllegiances = set()
-                        for rawAllegianceCode in rawRulingAllegiances:
-                            if rawAllegianceCode in seenRulingAllegiances:
-                                continue # Skip duplicates
-                            seenRulingAllegiances.add(rawAllegianceCode)
-
-                            dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode)
-                            if not dbAllegiance:
-                                # TODO: This should probably log and continue with no allegiance,
-                                # if it's a custom sector it should also warn the user
-                                raise RuntimeError(f'Military rule trade code (Mr) in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
-                            dbRulingAllegiances.append(multiverse.DbRulingAllegiance(allegiance=dbAllegiance))
-
-                    if rawResearchStations:
-                        dbResearchStations = []
-                        seenResearchStations = set()
-                        for rawResearchStation in rawResearchStations:
-                            if rawResearchStation in seenResearchStations:
-                                continue # Skip duplicates
-                            seenResearchStations.add(rawResearchStation)
-
-                            dbResearchStations.append(multiverse.DbResearchStation(code=rawResearchStation))
-
-                    if rawUnrecognisedRemarks:
-                        dbCustomRemarks = []
-                        for remark in rawUnrecognisedRemarks:
-                            dbCustomRemarks.append(multiverse.DbCustomRemark(remark=remark))
-
-                dbSystems.append(multiverse.DbSystem(
-                    hexX=int(rawHex[:2]),
-                    hexY=int(rawHex[-2:]),
-                    # TODO: Should I make name optional? Some sectors don't have names
-                    # (e.g. some of the ones that have a UWP of ???????-?).
-                    name=rawWorld.attribute(multiverse.WorldAttribute.Name),
-                    starport=dbStarport,
-                    worldSize=dbWorldSize,
-                    atmosphere=dbAtmosphere,
-                    hydrographics=dbHydrographics,
-                    population=dbPopulation,
-                    government=dbGovernment,
-                    lawLevel=dbLawLevel,
-                    techLevel=dbTechLevel,
-                    resources=dbResources,
-                    labour=dbLabour,
-                    infrastructure=dbInfrastructure,
-                    efficiency=dbEfficiency,
-                    heterogeneity=dbHeterogeneity,
-                    acceptance=dbAcceptance,
-                    strangeness=dbStrangeness,
-                    symbols=dbSymbols,
-                    populationMultiplier=dbPopulationMultiplier,
-                    planetoidBelts=dbPlanetoidBelts,
-                    gasGiants=dbGasGiants,
-                    zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
-                    # TODO: I think the Traveller Map second survey page clarifies that
-                    # system worlds is the number of worlds excluding the main world
-                    systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
-                    allegiance=dbAllegiance,
-                    nobilities=dbNobilities,
-                    tradeCodes=dbTradeCodes,
-                    sophontPopulations=dbSophontPopulations,
-                    rulingAllegiances=dbRulingAllegiances,
-                    owningSystems=dbOwningSystems,
-                    colonySystems=dbColonySystems,
-                    researchStations=dbResearchStations,
-                    customRemarks=dbCustomRemarks,
-                    bases=dbBases,
-                    stars=dbStars))
-
-        dbRoutes = None
-        if rawMetadata.routes():
-            dbRoutes = []
-            for rawRoute in rawMetadata.routes():
-                rawStartHex = rawRoute.startHex()
-                rawEndHex = rawRoute.endHex()
-                rawStartOffsetX = rawRoute.startOffsetX()
-                rawStartOffsetY = rawRoute.startOffsetY()
-                rawEndOffsetX = rawRoute.endOffsetX()
-                rawEndOffsetY = rawRoute.endOffsetY()
-
-                rawAllegianceCode = rawRoute.allegiance()
-                dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
-                if rawAllegianceCode and not dbAllegiance:
-                    # TODO: This should probably log and continue with no allegiance,
-                    # if it's a custom sector it should also warn the user
-                    raise RuntimeError(f'Route in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
-
-                dbRoutes.append(multiverse.DbRoute(
-                    startHexX=int(rawStartHex[:2]),
-                    startHexY=int(rawStartHex[-2:]),
-                    endHexX=int(rawEndHex[:2]),
-                    endHexY=int(rawEndHex[-2:]),
-                    startOffsetX=rawStartOffsetX if rawStartOffsetX is not None else 0,
-                    startOffsetY=rawStartOffsetY if rawStartOffsetY is not None else 0,
-                    endOffsetX=rawEndOffsetX if rawEndOffsetX is not None else 0,
-                    endOffsetY=rawEndOffsetY if rawEndOffsetY is not None else 0,
-                    type=rawRoute.type(),
-                    style=rawRoute.style(),
-                    colour=rawRoute.colour(),
-                    width=rawRoute.width(),
-                    allegiance=dbAllegiance))
-
-        dbBorders = None
-        if rawMetadata.borders():
-            dbBorders = []
-            for rawBorder in rawMetadata.borders():
-                dbHexes = []
-                for rawHex in rawBorder.hexList():
-                    dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
-
-                rawLabel = rawBorder.label()
-                rawShowLabel = rawBorder.showLabel()
-                rawWrapLabel = rawBorder.wrapLabel()
-                rawLabelHex = rawBorder.labelHex()
-
-                rawAllegianceCode = rawBorder.allegiance()
-                dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
-                if rawAllegianceCode and not dbAllegiance:
-                    # TODO: This should probably log and continue with no allegiance,
-                    # if it's a custom sector it should also warn the user
-                    raise RuntimeError(f'Border in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
-
-                dbBorders.append(multiverse.DbBorder(
-                    hexes=dbHexes,
-                    showLabel=rawShowLabel if rawShowLabel is not None else True,
-                    wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
-                    label=rawLabel,
-                    labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
-                    labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
-                    labelOffsetX=rawBorder.labelOffsetX(),
-                    labelOffsetY=rawBorder.labelOffsetY(),
-                    colour=rawBorder.colour(),
-                    style=rawBorder.style(),
-                    allegiance=dbAllegiance))
-
-        dbRegions = None
-        if rawMetadata.regions():
-            dbRegions = []
-            for rawRegion in rawMetadata.regions():
-                dbHexes = []
-                for rawHex in rawRegion.hexList():
-                    dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
-
-                rawLabel = rawRegion.label()
-                rawShowLabel = rawRegion.showLabel()
-                rawWrapLabel = rawRegion.wrapLabel()
-                rawLabelHex = rawRegion.labelHex()
-
-                dbRegions.append(multiverse.DbRegion(
-                    hexes=dbHexes,
-                    showLabel=rawShowLabel if rawShowLabel is not None else True,
-                    wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
-                    label=rawRegion.label(),
-                    labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
-                    labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
-                    labelOffsetX=rawRegion.labelOffsetX(),
-                    labelOffsetY=rawRegion.labelOffsetY(),
-                    colour=rawRegion.colour()))
-
-        dbLabels = None
-        if rawMetadata.labels():
-            dbLabels = []
-            for rawLabel in rawMetadata.labels():
-                rawHex = rawLabel.hex()
-                rawWrap = rawLabel.wrap()
-
-                dbLabels.append(multiverse.DbLabel(
-                    text=rawLabel.text(),
-                    hexX=int(rawHex[:2]),
-                    hexY=int(rawHex[-2:]),
-                    wrap=rawWrap if rawWrap is not None else False,
-                    colour=rawLabel.colour(),
-                    size=rawLabel.size(),
-                    offsetX=rawLabel.offsetX(),
-                    offsetY=rawLabel.offsetY()))
+        dbLabels = _createDbLabels(rawMetadata=rawMetadata)
 
         return multiverse.DbSector(
             id=sectorId,
