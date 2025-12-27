@@ -1,12 +1,12 @@
+import astronomer
 import common
 import traveller
-import multiverse
 import typing
 
 class TradeScore(object):
     def __init__(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             ruleSystem: traveller.RuleSystem,
             tradeGoods: typing.Optional[typing.Iterable[traveller.TradeGood]] = None
             ) -> None:
@@ -44,7 +44,7 @@ class TradeScore(object):
             values=list(self._saleScores.values()) + self._quantityModifiers,
             name=f'Sale Trade Score for {worldName}')
 
-    def world(self) -> multiverse.World:
+    def world(self) -> astronomer.World:
         return self._world
 
     def ruleSystem(self) -> traveller.RuleSystem:
@@ -86,7 +86,7 @@ class TradeScore(object):
 
     @staticmethod
     def _calculatePurchaseScore(
-            world: multiverse.World,
+            world: astronomer.World,
             tradeGood: traveller.TradeGood
             ) -> typing.Optional[common.ScalarCalculation]:
         purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
@@ -112,7 +112,7 @@ class TradeScore(object):
 
     @staticmethod
     def _calculateSaleScore(
-            world: multiverse.World,
+            world: astronomer.World,
             tradeGood: traveller.TradeGood
             ) -> common.ScalarCalculation:
         purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
