@@ -6,8 +6,6 @@ import multiverse
 import threading
 import typing
 
-# TODO: Rename astronomer namespace to astrogator (check spelling)
-
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
@@ -16,11 +14,6 @@ class WorldManager(object):
     # a sector at that location. The world details may not be valid for the
     # specified milieu but the position is
     _PlaceholderMilieu = astronomer.Milieu.M1105
-
-    # Route and border style sheet regexes. Note that the names that follow
-    # the . can contain spaces
-    _BorderStylePattern = re.compile(r'border(?:\.(.+))?')
-    _RouteStylePattern = re.compile(r'route(?:\.(.+))?')
 
     # Pattern used by Traveller Map to replace white space with '\n' to do
     # word wrapping
@@ -656,52 +649,6 @@ class WorldManager(object):
                 sectorName=sectorName,
                 worlds=subsectorWorlds))
 
-        styleSheet = dbSector.styleSheet()
-        borderStyleMap: typing.Dict[
-            str, # Allegiance/Type
-            typing.Tuple[
-                typing.Optional[str], # Colour
-                typing.Optional[astronomer.Border.Style] # Style
-            ]] = {}
-        routeStyleMap: typing.Dict[
-            str, # Allegiance/Type
-            typing.Tuple[
-                typing.Optional[str], # Colour
-                typing.Optional[astronomer.Route.Style], # Style
-                typing.Optional[float] # Width
-            ]] = {}
-        if styleSheet:
-            try:
-                content = astronomer.readCssContent(styleSheet)
-                for styleKey, properties in content.items():
-                    try:
-                        match = WorldManager._BorderStylePattern.match(styleKey)
-                        if match:
-                            tag = match.group(1)
-                            colour = properties.get('color')
-                            style = WorldManager._mapBorderStyle(properties.get('style'))
-                            if colour or style:
-                                borderStyleMap[tag] = (colour, style)
-
-                        match = WorldManager._RouteStylePattern.match(styleKey)
-                        if match:
-                            tag = match.group(1)
-                            colour = properties.get('color')
-                            style = WorldManager._mapRouteStyle(properties.get('style'))
-                            width = properties.get('width')
-                            if width:
-                                width = float(width)
-                            if colour or style or width:
-                                routeStyleMap[tag] = (colour, style, width)
-                    except Exception as ex:
-                        logging.warning(
-                            f'Failed to process style sheet entry for {styleKey} in metadata for sector {sectorName} from {milieu.value}',
-                            exc_info=ex)
-            except Exception as ex:
-                logging.warning(
-                    f'Failed to parse style sheet for sector {sectorName} from {milieu.value}',
-                    exc_info=ex)
-
         dbRoutes = dbSector.routes()
         routes = []
         if dbRoutes:
@@ -720,44 +667,20 @@ class WorldManager(object):
                         offsetY=dbRoute.endHexY())
 
                     colour = dbRoute.colour()
-                    style = WorldManager._mapRouteStyle(dbRoute.style())
-                    width = dbRoute.width()
-
-                    dbAllegiance = dbRoute.allegiance()
-                    if not colour or not style or not width:
-                        # This order of precedence matches the order in the Traveller Map
-                        # DrawMicroRoutes code
-                        # TODO: Should this be done at convert time?
-                        precedence = []
-                        if dbRoute.allegiance():
-                            precedence.append(dbRoute.allegiance().code())
-                        elif dbRoute.type():
-                            precedence.append(dbRoute.type())
-                        precedence.append(None) # Use default if there is one
-
-                        for tag in precedence:
-                            if tag in routeStyleMap:
-                                defaultColour, defaultStyle, defaultWidth = routeStyleMap[tag]
-                                if not colour:
-                                    colour = defaultColour
-                                if not style:
-                                    style = defaultStyle
-                                if not width:
-                                    width = defaultWidth
-                                break
-
                     if colour and not common.validateHtmlColour(htmlColour=colour):
                         logging.debug(f'Ignoring invalid colour for border {dbRoute.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
+
+                    dbAllegiance = dbRoute.allegiance()
 
                     routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
                         allegiance=dbAllegiance.code() if dbAllegiance else None,
                         type=dbRoute.type(),
-                        style=style,
+                        style=WorldManager._mapRouteStyle(dbRoute.style()),
                         colour=colour,
-                        width=width))
+                        width=dbRoute.width()))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process route {dbRoute.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -788,30 +711,11 @@ class WorldManager(object):
                         labelHex = None
 
                     colour = dbBorder.colour()
-                    style = WorldManager._mapBorderStyle(dbBorder.style())
-
-                    dbAllegiance = dbBorder.allegiance()
-                    if not colour or not style:
-                        # This order of precedence matches the order in the Traveller Map
-                        # DrawMicroBorders code
-                        # TODO: Should this be done at convert time?
-                        precedence = []
-                        if dbBorder.allegiance():
-                            precedence.append(dbBorder.allegiance().code())
-                        precedence.append(None) # Use default if there is one
-
-                        for tag in precedence:
-                            if tag in borderStyleMap:
-                                defaultColour, defaultStyle = borderStyleMap[tag]
-                                if not colour:
-                                    colour = defaultColour
-                                if not style:
-                                    style = defaultStyle
-                                break
-
                     if colour and not common.validateHtmlColour(htmlColour=colour):
                         logging.debug(f'Ignoring invalid colour for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
+
+                    dbAllegiance = dbBorder.allegiance()
 
                     # Default label to allegiance and word wrap now so it doesn't need
                     # to be done every time the border is rendered
@@ -834,7 +738,7 @@ class WorldManager(object):
                         labelHex=labelHex,
                         labelOffsetX=dbBorder.labelOffsetX(),
                         labelOffsetY=dbBorder.labelOffsetY(),
-                        style=style,
+                        style=WorldManager._mapBorderStyle(dbBorder.style()),
                         colour=colour))
                 except Exception as ex:
                     logging.warning(

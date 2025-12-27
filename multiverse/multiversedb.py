@@ -781,7 +781,6 @@ class MultiverseDb(object):
                         sector_label TEXT,
                         selected INTEGER NOT NULL,
                         tags TEXT,
-                        style_sheet TEXT,
                         credits TEXT,
                         publication TEXT,
                         author TEXT,
@@ -2105,11 +2104,11 @@ class MultiverseDb(object):
         sql = """
             INSERT INTO {table} (id, universe_id, is_custom, milieu,
                 sector_x, sector_y, primary_name, primary_language,
-                abbreviation, sector_label, selected, tags, style_sheet,
+                abbreviation, sector_label, selected, tags,
                 credits, publication, author, publisher, reference, notes)
             VALUES (:id, :universe_id, :is_custom, :milieu,
                 :sector_x, :sector_y, :primary_name, :primary_language,
-                :abbreviation, :sector_label, :selected, :tags, :style_sheet,
+                :abbreviation, :sector_label, :selected, :tags,
                 :credits, :publication, :author, :publisher, :reference, :notes);
             """.format(table=MultiverseDb._SectorsTableName)
         rows = {
@@ -2125,7 +2124,6 @@ class MultiverseDb(object):
             'sector_label': sector.sectorLabel(),
             'selected': 1 if sector.selected() else 0,
             'tags': sector.tags(),
-            'style_sheet': sector.styleSheet(),
             'credits': sector.credits(),
             'publication': sector.publication(),
             'author': sector.author(),
@@ -2541,8 +2539,8 @@ class MultiverseDb(object):
         sql = """
             SELECT universe_id, is_custom, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label,
-                selected, tags, style_sheet, credits, publication, author,
-                publisher, reference, notes
+                selected, tags, credits, publication, author, publisher,
+                reference, notes
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -2565,13 +2563,12 @@ class MultiverseDb(object):
             sectorLabel=row[8],
             selected=True if row[9] else False,
             tags=row[10],
-            styleSheet=row[11],
-            credits=row[12],
-            publication=row[13],
-            author=row[14],
-            publisher=row[15],
-            reference=row[16],
-            notes=row[17])
+            credits=row[11],
+            publication=row[12],
+            author=row[13],
+            publisher=row[14],
+            reference=row[15],
+            notes=row[16])
 
         sql = """
             SELECT name, language

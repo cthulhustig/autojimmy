@@ -1441,9 +1441,9 @@ def writeUniverseInfo(
         if sectorInfo.tags():
             sectorElement['Tags'] = sectorInfo.tags()
 
-        if sectorInfo.names():
+        if sectorInfo.nameInfos():
             namesElement = []
-            for nameInfo in sectorInfo.names():
+            for nameInfo in sectorInfo.nameInfos():
                 nameElement = {'Text': nameInfo.name()}
 
                 if nameInfo.language():

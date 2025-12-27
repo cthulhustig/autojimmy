@@ -1,7 +1,7 @@
-import astronomer
 import cartographer
 import multiverse
 import re
+import survey
 import typing
 
 # Useful Test Locations:
@@ -59,7 +59,7 @@ class StyleStore(object):
                 typing.Optional[float] # Width
             ]] = {}
 
-        content = astronomer.readCssContent(
+        content = survey.readCssContent(
             multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=StyleStore._DefaultStylePath))
         for group, properties in content.items():

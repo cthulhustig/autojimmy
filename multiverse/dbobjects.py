@@ -1266,7 +1266,6 @@ class DbSector(DbObject):
             subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]] = None, # Maps subsector index (0-15) to the name of that sector
             selected: bool = False,
             tags: typing.Optional[str] = None,
-            styleSheet: typing.Optional[str] = None,
             credits: typing.Optional[str] = None,
             publication: typing.Optional[str] = None,
             author: typing.Optional[str] = None,
@@ -1299,7 +1298,6 @@ class DbSector(DbObject):
         self.setSubsectorNames(subsectorNames)
         self.setSelected(selected)
         self.setTags(tags)
-        self.setStyleSheet(styleSheet)
         self.setCredits(credits)
         self.setPublication(publication)
         self.setAuthor(author)
@@ -1394,12 +1392,6 @@ class DbSector(DbObject):
 
     def setTags(self, tags: typing.Optional[str]) -> None:
         self._tags = tags
-
-    def styleSheet(self) -> typing.Optional[str]:
-        return self._styleSheet
-
-    def setStyleSheet(self, styleSheet: typing.Optional[str]) -> None:
-        self._styleSheet = styleSheet
 
     def credits(self) -> typing.Optional[str]:
         return self._credits

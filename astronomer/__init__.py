@@ -1,5 +1,4 @@
 from .milieu import *
-from .utils import *
 from .astrometrics import *
 from .sectorhex import *
 from .zone import *

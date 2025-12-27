@@ -651,7 +651,6 @@ def _createDbSystems(
 
         rawSystemWorlds = rawWorld.attribute(survey.WorldAttribute.SystemWorlds)
 
-
         rawAllegianceCode = rawWorld.attribute(survey.WorldAttribute.Allegiance)
         dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
         if rawAllegianceCode and not dbAllegiance:
@@ -918,7 +917,14 @@ def _createDbSystems(
 def _createDbRoutes(
         milieu: str,
         rawMetadata: survey.RawMetadata,
-        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance]
+        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
+        rawStyleMap: typing.Optional[typing.Dict[
+            str,
+            typing.Tuple[
+                typing.Optional[str], # Colour
+                typing.Optional[str], # Style
+                typing.Optional[float] # Width
+                ]]]
         ) -> typing.List[multiverse.DbRoute]:
     dbRoutes = []
 
@@ -938,6 +944,32 @@ def _createDbRoutes(
                 # if it's a custom sector it should also warn the user
                 raise RuntimeError(f'Route in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
+            dbType = rawRoute.type()
+            dbColour = rawRoute.colour()
+            dbStyle = rawRoute.style()
+            dbWidth = rawRoute.width()
+
+            if rawStyleMap and (not dbColour or not dbStyle or not dbWidth):
+                # This order of precedence matches the order in the Traveller Map
+                # DrawMicroRoutes code
+                precedence = []
+                if dbAllegiance:
+                    precedence.append(dbAllegiance.code())
+                elif dbType:
+                    precedence.append(dbType)
+                precedence.append(None) # Use default if there is one
+
+                for tag in precedence:
+                    if tag in rawStyleMap:
+                        defaultColour, defaultStyle, defaultWidth = rawStyleMap[tag]
+                        if not dbColour:
+                            dbColour = defaultColour
+                        if not dbStyle:
+                            dbStyle = defaultStyle
+                        if not dbWidth:
+                            dbWidth = defaultWidth
+                        break
+
             dbRoutes.append(multiverse.DbRoute(
                 startHexX=int(rawStartHex[:2]),
                 startHexY=int(rawStartHex[-2:]),
@@ -947,10 +979,10 @@ def _createDbRoutes(
                 startOffsetY=rawStartOffsetY if rawStartOffsetY is not None else 0,
                 endOffsetX=rawEndOffsetX if rawEndOffsetX is not None else 0,
                 endOffsetY=rawEndOffsetY if rawEndOffsetY is not None else 0,
-                type=rawRoute.type(),
-                style=rawRoute.style(),
-                colour=rawRoute.colour(),
-                width=rawRoute.width(),
+                type=dbType,
+                style=dbStyle,
+                colour=dbColour,
+                width=dbWidth,
                 allegiance=dbAllegiance))
 
     return dbRoutes
@@ -958,7 +990,13 @@ def _createDbRoutes(
 def _createDbBorders(
         milieu: str,
         rawMetadata: survey.RawMetadata,
-        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance]
+        dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
+        rawStyleMap: typing.Optional[typing.Dict[
+            str,
+            typing.Tuple[
+                typing.Optional[str], # Colour
+                typing.Optional[str] # Style
+                ]]]
         ) -> typing.List[multiverse.DbBorder]:
     dbBorders = []
 
@@ -980,6 +1018,26 @@ def _createDbBorders(
                 # if it's a custom sector it should also warn the user
                 raise RuntimeError(f'Border in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
+            dbColour = rawBorder.colour()
+            dbStyle = rawBorder.style()
+
+            if rawStyleMap and (not dbColour or not dbStyle):
+                # This order of precedence matches the order in the Traveller Map
+                # DrawMicroBorders code
+                precedence = []
+                if dbAllegiance:
+                    precedence.append(dbAllegiance.code())
+                precedence.append(None) # Use default if there is one
+
+                for tag in precedence:
+                    if tag in rawStyleMap:
+                        defaultColour, defaultStyle = rawStyleMap[tag]
+                        if not dbColour:
+                            dbColour = defaultColour
+                        if not dbStyle:
+                            dbStyle = defaultStyle
+                        break
+
             dbBorders.append(multiverse.DbBorder(
                 hexes=dbHexes,
                 showLabel=rawShowLabel if rawShowLabel is not None else True,
@@ -989,8 +1047,8 @@ def _createDbBorders(
                 labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
                 labelOffsetX=rawBorder.labelOffsetX(),
                 labelOffsetY=rawBorder.labelOffsetY(),
-                colour=rawBorder.colour(),
-                style=rawBorder.style(),
+                colour=dbColour,
+                style=dbStyle,
                 allegiance=dbAllegiance))
 
     return dbBorders
@@ -1117,88 +1175,94 @@ def convertRawSectorToDbSector(
         sectorId: typing.Optional[str] = None,
         universeId: typing.Optional[str] = None,
         ) -> multiverse.DbUniverse:
-        dbAlternateNames = None
-        if rawMetadata.alternateNames():
-            dbAlternateNames = [(name, rawMetadata.nameLanguage(name)) for name in rawMetadata.alternateNames()]
+    rawBorderStyleMap = rawRouteStyleMap = None
+    if rawMetadata.styleSheet():
+        rawBorderStyleMap, rawRouteStyleMap = survey.parseSectorStyleSheet(
+            content=rawMetadata.styleSheet())
 
-        dbSubsectorNames = None
-        if rawMetadata.subsectorNames():
-            dbSubsectorNames = []
-            for code, name in rawMetadata.subsectorNames().items():
-                if not name:
-                    continue
-                dbSubsectorNames.append((ord(code) - ord('A'), name))
+    dbAlternateNames = None
+    if rawMetadata.alternateNames():
+        dbAlternateNames = [(name, rawMetadata.nameLanguage(name)) for name in rawMetadata.alternateNames()]
 
-        dbProducts = None
-        rawSources = rawMetadata.sources()
-        rawPrimarySource = rawSources.primary() if rawSources else None
-        if rawSources and rawSources.products():
-            dbProducts = []
-            for product in rawSources.products():
-                dbProducts.append(multiverse.DbProduct(
-                    publication=product.publication(),
-                    author=product.author(),
-                    publisher=product.publisher(),
-                    reference=product.reference()))
+    dbSubsectorNames = None
+    if rawMetadata.subsectorNames():
+        dbSubsectorNames = []
+        for code, name in rawMetadata.subsectorNames().items():
+            if not name:
+                continue
+            dbSubsectorNames.append((ord(code) - ord('A'), name))
 
-        dbAllegianceCodeMap = _createDbAllegiances(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawSystems=rawSystems,
-            rawStockAllegiances=rawStockAllegiances)
+    dbProducts = None
+    rawSources = rawMetadata.sources()
+    rawPrimarySource = rawSources.primary() if rawSources else None
+    if rawSources and rawSources.products():
+        dbProducts = []
+        for product in rawSources.products():
+            dbProducts.append(multiverse.DbProduct(
+                publication=product.publication(),
+                author=product.author(),
+                publisher=product.publisher(),
+                reference=product.reference()))
 
-        dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
-            rawSystems=rawSystems,
-            rawStockSophonts=rawStockSophonts)
+    dbAllegianceCodeMap = _createDbAllegiances(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawSystems=rawSystems,
+        rawStockAllegiances=rawStockAllegiances)
 
-        dbSystems = _createDbSystems(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            rawSystems=rawSystems,
-            dbAllegianceCodeMap=dbAllegianceCodeMap,
-            dbSophontCodeMap=dbSophontCodeMap,
-            dbSophontNameMap=dbSophontNameMap)
+    dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
+        rawSystems=rawSystems,
+        rawStockSophonts=rawStockSophonts)
 
-        dbRoutes = _createDbRoutes(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            dbAllegianceCodeMap=dbAllegianceCodeMap)
+    dbSystems = _createDbSystems(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        rawSystems=rawSystems,
+        dbAllegianceCodeMap=dbAllegianceCodeMap,
+        dbSophontCodeMap=dbSophontCodeMap,
+        dbSophontNameMap=dbSophontNameMap)
 
-        dbBorders = _createDbBorders(
-            milieu=milieu,
-            rawMetadata=rawMetadata,
-            dbAllegianceCodeMap=dbAllegianceCodeMap)
+    dbRoutes = _createDbRoutes(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        dbAllegianceCodeMap=dbAllegianceCodeMap,
+        rawStyleMap=rawRouteStyleMap)
 
-        dbRegions = _createDbRegions(rawMetadata=rawMetadata)
+    dbBorders = _createDbBorders(
+        milieu=milieu,
+        rawMetadata=rawMetadata,
+        dbAllegianceCodeMap=dbAllegianceCodeMap,
+        rawStyleMap=rawBorderStyleMap)
 
-        dbLabels = _createDbLabels(rawMetadata=rawMetadata)
+    dbRegions = _createDbRegions(rawMetadata=rawMetadata)
 
-        return multiverse.DbSector(
-            id=sectorId,
-            universeId=universeId,
-            isCustom=isCustom,
-            milieu=milieu,
-            sectorX=rawMetadata.x(),
-            sectorY=rawMetadata.y(),
-            primaryName=rawMetadata.canonicalName(),
-            primaryLanguage=rawMetadata.nameLanguage(rawMetadata.canonicalName()),
-            alternateNames=dbAlternateNames,
-            abbreviation=rawMetadata.abbreviation(),
-            sectorLabel=rawMetadata.sectorLabel(),
-            subsectorNames=dbSubsectorNames,
-            selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
-            tags=rawMetadata.tags(),
-            styleSheet=rawMetadata.styleSheet(),
-            credits=rawSources.credits() if rawSources else None,
-            publication=rawPrimarySource.publication() if rawPrimarySource else None,
-            author=rawPrimarySource.author() if rawPrimarySource else None,
-            publisher=rawPrimarySource.publisher() if rawPrimarySource else None,
-            reference=rawPrimarySource.reference() if rawPrimarySource else None,
-            products=dbProducts,
-            allegiances=set(dbAllegianceCodeMap.values()), # Use unique allegiances
-            sophonts=set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())), # Use unique sophonts
-            systems=dbSystems,
-            routes=dbRoutes,
-            borders=dbBorders,
-            regions=dbRegions,
-            labels=dbLabels)
+    dbLabels = _createDbLabels(rawMetadata=rawMetadata)
+
+    return multiverse.DbSector(
+        id=sectorId,
+        universeId=universeId,
+        isCustom=isCustom,
+        milieu=milieu,
+        sectorX=rawMetadata.x(),
+        sectorY=rawMetadata.y(),
+        primaryName=rawMetadata.canonicalName(),
+        primaryLanguage=rawMetadata.nameLanguage(rawMetadata.canonicalName()),
+        alternateNames=dbAlternateNames,
+        abbreviation=rawMetadata.abbreviation(),
+        sectorLabel=rawMetadata.sectorLabel(),
+        subsectorNames=dbSubsectorNames,
+        selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
+        tags=rawMetadata.tags(),
+        credits=rawSources.credits() if rawSources else None,
+        publication=rawPrimarySource.publication() if rawPrimarySource else None,
+        author=rawPrimarySource.author() if rawPrimarySource else None,
+        publisher=rawPrimarySource.publisher() if rawPrimarySource else None,
+        reference=rawPrimarySource.reference() if rawPrimarySource else None,
+        products=dbProducts,
+        allegiances=set(dbAllegianceCodeMap.values()), # Use unique allegiances
+        sophonts=set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())), # Use unique sophonts
+        systems=dbSystems,
+        routes=dbRoutes,
+        borders=dbBorders,
+        regions=dbRegions,
+        labels=dbLabels)

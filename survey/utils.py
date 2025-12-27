@@ -28,11 +28,3 @@ def readCssContent(content: str) -> typing.Mapping[
 
             results[group] = properties.copy()
     return results
-
-def readCssFile(path: str) -> typing.Mapping[
-    str, # Group
-    typing.Mapping[
-        str, # Key
-        str]]: # Value
-    with open(path, encoding='utf-8-sig') as file:
-        return readCssContent(content=file.read())
