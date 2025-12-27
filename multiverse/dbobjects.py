@@ -351,10 +351,6 @@ class DbBase(DbObject):
     def setCode(self, code: str) -> None:
         self._code = code
 
-# TODO: Should I consolidate bases and research stations at the db level
-# (and probably therefore at the astronomer level). They're basically the
-# same structure and would just need mapped to/from bases/remarks when
-# importing/exporting
 class DbResearchStation(DbObject):
     def __init__(
             self,
@@ -424,7 +420,7 @@ class DbSystem(DbObject):
             self,
             hexX: int,
             hexY: int,
-            name: str, # TODO: Do worlds in sector files always have a name????
+            name: typing.Optional[str] = None,
             # UWP
             starport: typing.Optional[str] = None,
             worldSize: typing.Optional[str] = None,
@@ -525,10 +521,10 @@ class DbSystem(DbObject):
     def setHexY(self, hexY: int) -> None:
         self._hexY = hexY
 
-    def name(self) -> str:
+    def name(self) -> typing.Optional[str]:
         return self._name
 
-    def setName(self, name: str) -> None:
+    def setName(self, name: typing.Optional[str]) -> None:
         self._name = name
 
     def starport(self) -> typing.Optional[str]:

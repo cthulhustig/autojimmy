@@ -1014,7 +1014,7 @@ class MultiverseDb(object):
                         sector_id TEXT NOT NULL,
                         hex_x INTEGER NOT NULL,
                         hex_y INTEGER NOT NULL,
-                        name TEXT NOT NULL,
+                        name TEXT,
                         starport TEXT,
                         world_size TEXT,
                         atmosphere TEXT,
