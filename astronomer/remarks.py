@@ -1,7 +1,7 @@
 import astronomer
 import common
-import logging
 import multiverse
+import survey
 import typing
 
 class WorldReference(object):
@@ -279,7 +279,7 @@ class Remarks(object):
         for colony in self._colonyWorlds:
             colonySystems.append((colony.hexX(), colony.hexY(), colony.sectorAbbreviation()))
 
-        return multiverse.formatSystemRemarksString(
+        return survey.formatSystemRemarksString(
             tradeCodes=tradeCodes,
             majorRaceHomeWorlds=majorRaceHomeWorlds,
             minorRaceHomeWorlds=minorRaceHomeWorlds,

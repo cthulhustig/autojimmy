@@ -1,6 +1,5 @@
-import astronomer
 import enum
-import multiverse
+import survey
 import typing
 
 _PopulationMultiplierDescriptionMap = {
@@ -20,7 +19,7 @@ _PopulationMultiplierDescriptionMap = {
 # There can be any number of planetoid belts or gas giants up to the max allowed by ehex.
 # The mapping shouldn't be modified so the same mapping can be used for both.
 _PlanetoidBeltDescriptionMap = {}
-for code, value in astronomer.ehexCodeMap().items():
+for code, value in survey.ehexCodeMap().items():
     _PlanetoidBeltDescriptionMap[code] = str(value)
 _PlanetoidBeltDescriptionMap['?'] = 'Unknown'
 
@@ -56,7 +55,7 @@ class PBG(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemPBGString(
+            self._string = survey.formatSystemPBGString(
                 populationMultiplier=self._valueMap.get(PBG.Element.PopulationMultiplier),
                 planetoidBelts=self._valueMap.get(PBG.Element.PlanetoidBelts),
                 gasGiants=self._valueMap.get(PBG.Element.GasGiants))
@@ -71,12 +70,12 @@ class PBG(object):
     def numeric(
             self,
             element: Element,
-            default: int = -1
+            default: typing.Any = -1
             ) -> int:
         code = self._valueMap.get(element)
         if code is None:
             return default
-        return astronomer.ehexToInteger(code, default)
+        return survey.ehexToInteger(code, default)
 
     def description(
             self,

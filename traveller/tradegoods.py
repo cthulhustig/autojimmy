@@ -1,6 +1,7 @@
 import astronomer
 import common
 import enum
+import survey
 import traveller
 import typing
 
@@ -75,7 +76,7 @@ class _TradeGoodData(object):
 
         self._illegalLawLevel = None
         if illegalLawLevelCode:
-            self._illegalLawLevel = astronomer.ehexToInteger(
+            self._illegalLawLevel = survey.ehexToInteger(
                 value=illegalLawLevelCode,
                 default=None)
 
@@ -171,8 +172,8 @@ class TradeGood(object):
         # Check if the world law level is greater or equal to the law level where the trade goode
         # becomes illegal. If the law level is unknown use a default of -1 so that it will never be
         # higher (i.e. trade goods aren't world illegal if the law level is unknown)
-        worldLawLevel = astronomer.ehexToInteger(
-            value=world.uwp().code(astronomer.UWP.Element.LawLevel),
+        worldLawLevel = world.uwp().numeric(
+            element=astronomer.UWP.Element.LawLevel,
             default=-1)
         return worldLawLevel >= self._data.illegalLawLevel()
 
@@ -444,9 +445,7 @@ class TradeGood(object):
             baseDm: common.ScalarCalculation
             ) -> common.ScalarCalculation:
         worldLawLevel = common.ScalarCalculation(
-            value=astronomer.ehexToInteger(
-                value=world.uwp().code(astronomer.UWP.Element.LawLevel),
-                default=-1),
+            value=world.uwp().numeric(astronomer.UWP.Element.LawLevel, default=-1),
             name='World Law Level')
         illegalLawLevel = common.ScalarCalculation(
             value=self._data.illegalLawLevel(),
@@ -608,9 +607,8 @@ def worldCargoQuantityModifiers(
     # In Mongoose 2022 rules, the amount of cargo available is affected by population. Worlds with
     # a population <= 3 get DM-3 modifier to the available quantity roll. Worlds with a population
     # >= 9 get a DM+3 modifier. Note that this can cause an available quantity of <= 0
-    population = astronomer.ehexToInteger(
-        value=world.uwp().code(astronomer.UWP.Element.Population),
-        default=0) # If unknown, assume 0 to be pessimistic
+    # If population is unknown, assume 0 to be pessimistic.
+    population = world.uwp().numeric(astronomer.UWP.Element.Population, default=0)
     if population <= 3:
         modifiers.append(common.ScalarCalculation(
             value=-3,

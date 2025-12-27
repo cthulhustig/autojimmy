@@ -2,6 +2,7 @@ import astronomer
 import enum
 import logic
 import re
+import survey
 import traveller
 import typing
 
@@ -275,7 +276,7 @@ class UWPFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = astronomer.ehexToInteger(value=self._value, default=None)
+        self._integer = survey.ehexToInteger(value=self._value, default=None)
 
     def element(self) -> astronomer.UWP.Element:
         return self._element
@@ -320,9 +321,7 @@ class UWPFilter(WorldFilter):
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=astronomer.ehexToInteger(
-                value=world.uwp().code(self._element),
-                default=None),
+            worldValue=world.uwp().numeric(element=self._element, default=None),
             compareValue=self._integer)
 
 class EconomicsFilter(WorldFilter):
@@ -340,7 +339,7 @@ class EconomicsFilter(WorldFilter):
         if self._element == astronomer.Economics.Element.Efficiency:
             self._integer = int(self._value) if self._value != '?' else None
         else:
-            self._integer = astronomer.ehexToInteger(value=self._value, default=None)
+            self._integer = survey.ehexToInteger(value=self._value, default=None)
 
     def element(self) -> astronomer.Economics.Element:
         return self._element
@@ -375,13 +374,9 @@ class EconomicsFilter(WorldFilter):
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        code = world.economics().code(self._element)
-        if self._element == astronomer.Economics.Element.Efficiency:
-            worldValue = int(code) if code != '?' else None
-        else:
-            worldValue = astronomer.ehexToInteger(
-                value=code,
-                default=None)
+        worldValue = world.economics().numeric(
+            element=self._element,
+            default=None)
 
         return _performComparisonOperation(
             operation=self._operation,
@@ -399,7 +394,7 @@ class CultureFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = astronomer.ehexToInteger(value=self._value, default=None)
+        self._integer = survey.ehexToInteger(value=self._value, default=None)
 
     def element(self) -> astronomer.Culture.Element:
         return self._element
@@ -436,9 +431,7 @@ class CultureFilter(WorldFilter):
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=astronomer.ehexToInteger(
-                value=world.culture().code(self._element),
-                default=None),
+            worldValue=world.culture().numeric(element=self._element, default=None),
             compareValue=self._integer)
 
 class RefuellingFilter(WorldFilter):
@@ -900,7 +893,7 @@ class PBGFilter(WorldFilter):
         self._element = element
         self._operation = operation
         self._value = value
-        self._integer = astronomer.ehexToInteger(value=self._value, default=None)
+        self._integer = survey.ehexToInteger(value=self._value, default=None)
 
     def element(self) -> astronomer.UWP.Element:
         return self._element
@@ -935,9 +928,7 @@ class PBGFilter(WorldFilter):
             ) -> bool:
         return _performComparisonOperation(
             operation=self._operation,
-            worldValue=astronomer.ehexToInteger(
-                value=world.pbg().code(self._element),
-                default=None),
+            worldValue=world.pbg().numeric(element=self._element, default=None),
             compareValue=self._integer)
 
 class WorldSearch(object):

@@ -249,7 +249,7 @@ def createHexToolTip(
 
         tagLevel = worldTagging.calculateTechLevelTagLevel(world=world) if worldTagging else None
         style = formatTaggingStyle(level=tagLevel)
-        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(astronomer.UWP.Element.TechLevel)} ({astronomer.ehexToInteger(value=uwp.code(astronomer.UWP.Element.TechLevel), default="?")}) - {html.escape(uwp.description(astronomer.UWP.Element.TechLevel))}</span></li>'
+        toolTip += f'<li><span style="{style}">Tech Level: {uwp.code(astronomer.UWP.Element.TechLevel)} ({uwp.numeric(astronomer.UWP.Element.TechLevel, default="?")}) - {html.escape(uwp.description(astronomer.UWP.Element.TechLevel))}</span></li>'
 
         toolTip += '</ul>'
 
@@ -358,9 +358,9 @@ def createHexToolTip(
         pbg = world.pbg()
         toolTip += f'<li><span>PBG: {html.escape(pbg.string())}</span></li>'
         toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-        toolTip += f'<li><span>Population Multiplier: {pbg.code(astronomer.PBG.Element.PopulationMultiplier)} ({astronomer.ehexToInteger(value=pbg.code(astronomer.PBG.Element.PopulationMultiplier), default="?")})</span></li>'
-        toolTip += f'<li><span>Planetoid Belts: {pbg.code(astronomer.PBG.Element.PlanetoidBelts)} ({astronomer.ehexToInteger(value=pbg.code(astronomer.PBG.Element.PlanetoidBelts), default="?")})</span></li>'
-        toolTip += f'<li><span>Gas Giants: {pbg.code(astronomer.PBG.Element.GasGiants)} ({astronomer.ehexToInteger(value=pbg.code(astronomer.PBG.Element.GasGiants), default="?")})</span></li>'
+        toolTip += f'<li><span>Population Multiplier: {pbg.code(astronomer.PBG.Element.PopulationMultiplier)} ({pbg.numeric(astronomer.PBG.Element.PopulationMultiplier, default="?")})</span></li>'
+        toolTip += f'<li><span>Planetoid Belts: {pbg.code(astronomer.PBG.Element.PlanetoidBelts)} ({pbg.numeric(astronomer.PBG.Element.PlanetoidBelts, default="?")})</span></li>'
+        toolTip += f'<li><span>Gas Giants: {pbg.code(astronomer.PBG.Element.GasGiants)} ({pbg.numeric(astronomer.PBG.Element.GasGiants, default="?")})</span></li>'
         toolTip += '</ul>'
 
         #

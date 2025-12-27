@@ -151,11 +151,11 @@ class World(object):
         return self._pbg
 
     def population(self) -> int:
-        multiplier = astronomer.ehexToInteger(
-            value=self._pbg.code(astronomer.PBG.Element.PopulationMultiplier),
+        multiplier = self._pbg.numeric(
+            element=astronomer.PBG.Element.PopulationMultiplier,
             default=None)
-        exponent = astronomer.ehexToInteger(
-            value=self._uwp.code(astronomer.UWP.Element.Population),
+        exponent = self._uwp.numeric(
+            element=astronomer.UWP.Element.Population,
             default=None)
 
         if multiplier == None or exponent == None:

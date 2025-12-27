@@ -3,6 +3,7 @@ import json
 import logging
 import multiverse
 import os
+import survey
 import typing
 
 # TODO: At some point in the future I should be able to delete this code.
@@ -19,11 +20,11 @@ _ImportFlagFileName = 'database_import_flag_file'
 
 _SectorFormatExtensions = {
     # NOTE: The sec format is short for second survey, not the legacy sec format
-    multiverse.SectorFormat.T5Column: 'sec',
-    multiverse.SectorFormat.T5Tab: 'tab'}
+    survey.SectorFormat.T5Column: 'sec',
+    survey.SectorFormat.T5Tab: 'tab'}
 _MetadataFormatExtensions = {
-    multiverse.MetadataFormat.JSON: 'json',
-    multiverse.MetadataFormat.XML: 'xml'}
+    survey.MetadataFormat.JSON: 'json',
+    survey.MetadataFormat.XML: 'xml'}
 
 def customUniverseId() -> str:
     return _CustomUniverseId
@@ -70,8 +71,8 @@ def importLegacyCustomSectors(
         str, # Milieu
         typing.List[typing.Tuple[
             str, # Sector name
-            multiverse.MetadataFormat,
-            multiverse.SectorFormat
+            survey.MetadataFormat,
+            survey.SectorFormat
         ]]]] = []
     totalSectorCount = 0
     for milieu in [d for d in os.listdir(universePath) if os.path.isdir(os.path.join(universePath, d))]:
@@ -90,8 +91,8 @@ def importLegacyCustomSectors(
 
             sectorNames: typing.List[typing.Tuple[
                 str, # Sector name
-                multiverse.MetadataFormat,
-                multiverse.SectorFormat
+                survey.MetadataFormat,
+                survey.SectorFormat
                 ]] = []
             for index, sectorElement in enumerate(sectorsElement):
                 namesElements = sectorElement.get('Names')
@@ -107,18 +108,18 @@ def importLegacyCustomSectors(
                 # If the universe doesn't specify the metadata format it must be a standard traveller map
                 # universe file which means the corresponding metadata files all use XML format
                 metadataFormatTag = sectorElement.get('MetadataFormat')
-                metadataFormat = multiverse.MetadataFormat.XML
+                metadataFormat = survey.MetadataFormat.XML
                 if metadataFormatTag != None:
-                    metadataFormat = multiverse.MetadataFormat.__members__.get(
+                    metadataFormat = survey.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
                         metadataFormat)
 
                 # If the universe doesn't specify the sector format it must be a standard traveller map
                 # universe file which means the corresponding sectors files all use T5 column format
                 sectorFormatTag = sectorElement.get('SectorFormat')
-                sectorFormat = multiverse.SectorFormat.T5Column
+                sectorFormat = survey.SectorFormat.T5Column
                 if sectorFormatTag != None:
-                    sectorFormat = multiverse.SectorFormat.__members__.get(
+                    sectorFormat = survey.SectorFormat.__members__.get(
                         str(sectorFormatTag),
                         sectorFormat)
 
@@ -136,8 +137,8 @@ def importLegacyCustomSectors(
 
     rawData: typing.List[typing.Tuple[
         str, # Milieu
-        multiverse.RawMetadata,
-        typing.Collection[multiverse.RawWorld]
+        survey.RawMetadata,
+        typing.Collection[survey.RawWorld]
         ]] = []
     progressCount = 0
     for milieu, sectorNames in milieuSectors:
@@ -157,7 +158,7 @@ def importLegacyCustomSectors(
                 metadataPath = os.path.join(milieuPath, f'{escapedName}.{metadataExtension}')
                 logging.info(f'Loading legacy custom metadata file {metadataPath}')
                 with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                    rawMetadata = multiverse.readMetadata(
+                    rawMetadata = survey.readMetadata(
                         content=file.read(),
                         format=metadataFormat,
                         identifier=sectorName)
@@ -166,7 +167,7 @@ def importLegacyCustomSectors(
                 sectorPath = os.path.join(milieuPath, f'{escapedName}.{sectorExtension}')
                 logging.info(f'Loading legacy custom sector file {sectorPath}')
                 with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                    rawSystems = multiverse.readSector(
+                    rawSystems = survey.readSector(
                         content=file.read(),
                         format=sectorFormat,
                         identifier=sectorName)

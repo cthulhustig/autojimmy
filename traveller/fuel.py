@@ -83,11 +83,11 @@ def worldHasWaterRefuelling(world: astronomer.World) -> bool:
 
     uwp = world.uwp()
     try:
-        hydrographics = astronomer.ehexToInteger(
-            value=uwp.code(astronomer.UWP.Element.Hydrographics),
+        hydrographics = uwp.numeric(
+            element=astronomer.UWP.Element.Hydrographics,
             default=-1)
-        atmosphere = astronomer.ehexToInteger(
-            value=uwp.code(astronomer.UWP.Element.Atmosphere),
+        atmosphere = uwp.numeric(
+            element=astronomer.UWP.Element.Atmosphere,
             default=-1)
     except ValueError:
         return False

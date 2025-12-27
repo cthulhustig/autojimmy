@@ -5,6 +5,7 @@ import logging
 import multiverse
 import os
 import sqlite3
+import survey
 import threading
 import typing
 
@@ -1861,7 +1862,7 @@ class MultiverseDb(object):
             universeInfoPath = os.path.join(milieuPath, 'universe.json')
             with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
                 universeInfoContent = file.read()
-            universeInfo = multiverse.readUniverseInfo(content=universeInfoContent)
+            universeInfo = survey.readUniverseInfo(content=universeInfoContent)
 
             sectorNames = []
             for sectorInfo in universeInfo.sectorInfos():
@@ -1880,8 +1881,8 @@ class MultiverseDb(object):
 
         rawData: typing.List[typing.Tuple[
             str, # Milieu
-            multiverse.RawMetadata,
-            typing.Collection[multiverse.RawWorld]
+            survey.RawMetadata,
+            typing.Collection[survey.RawWorld]
             ]] = []
         progressCount = 0
         for milieu, sectorNames in milieuSectors:
@@ -1899,13 +1900,13 @@ class MultiverseDb(object):
 
                     metadataPath = os.path.join(milieuPath, escapedName + '.xml')
                     with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                        rawMetadata = multiverse.readXMLMetadata(
+                        rawMetadata = survey.readXMLMetadata(
                             content=file.read(),
                             identifier=sectorName)
 
                     sectorPath = os.path.join(milieuPath, escapedName + '.sec')
                     with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                        rawSystems = multiverse.readT5ColumnSector(
+                        rawSystems = survey.readT5ColumnSector(
                             content=file.read(),
                             identifier=sectorName)
                     rawData.append((milieu, rawMetadata, rawSystems))

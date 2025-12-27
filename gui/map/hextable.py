@@ -868,8 +868,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.PopulationMultiplier:
                     if world:
-                        count = astronomer.ehexToInteger(
-                            value=pbg.code(element=astronomer.PBG.Element.PopulationMultiplier),
+                        count = pbg.numeric(
+                            element=astronomer.PBG.Element.PopulationMultiplier,
                             default=None)
                         if count != None:
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
@@ -879,8 +879,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.PlanetoidBeltCount:
                     if world:
-                        count = astronomer.ehexToInteger(
-                            value=pbg.code(element=astronomer.PBG.Element.PlanetoidBelts),
+                        count = pbg.numeric(
+                            element=astronomer.PBG.Element.PlanetoidBelts,
                             default=None)
                         if count != None:
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)
@@ -890,8 +890,8 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem = QtWidgets.QTableWidgetItem()
                 elif columnType == self.ColumnType.GasGiantCount:
                     if world:
-                        count = astronomer.ehexToInteger(
-                            value=pbg.code(element=astronomer.PBG.Element.GasGiants),
+                        count = pbg.numeric(
+                            element=astronomer.PBG.Element.GasGiants,
                             default=None)
                         if count != None:
                             tableItem = gui.FormattedNumberTableWidgetItem(value=count)

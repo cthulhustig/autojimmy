@@ -1,6 +1,5 @@
-import astronomer
 import enum
-import multiverse
+import survey
 import typing
 
 # Types and ehex mappings taken from Traveller Map source code (world_utils.js).
@@ -123,7 +122,7 @@ class Culture(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemCultureString(
+            self._string = survey.formatSystemCultureString(
                 heterogeneity=self._valueMap.get(Culture.Element.Heterogeneity),
                 acceptance=self._valueMap.get(Culture.Element.Acceptance),
                 strangeness=self._valueMap.get(Culture.Element.Strangeness),
@@ -139,12 +138,12 @@ class Culture(object):
     def numeric(
             self,
             element: Element,
-            default: int = -1
+            default: typing.Any = -1
             ) -> int:
         code = self._valueMap.get(element)
         if code is None:
             return default
-        return astronomer.ehexToInteger(code, default)
+        return survey.ehexToInteger(code, default)
 
     def description(
             self,

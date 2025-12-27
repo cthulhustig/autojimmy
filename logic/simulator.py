@@ -1,8 +1,8 @@
 import astronomer
 import common
 import enum
-import logic
 import functools
+import logic
 import time
 import traveller
 import typing
@@ -559,7 +559,7 @@ class Simulator(object):
                 False, # Not online
                 True, # Black market buyer/seller
                 0))
-        if self._playerAdminDm != None and astronomer.ehexToInteger(value=world.uwp().code(astronomer.UWP.Element.TechLevel), default=-1) >= 8:
+        if self._playerAdminDm != None and world.uwp().numeric(astronomer.UWP.Element.TechLevel, default=-1) >= 8:
             if lookForLegalTrader:
                 methods.append(MethodState(
                     self._playerAdminDm,

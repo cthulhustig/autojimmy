@@ -1,6 +1,7 @@
 import astronomer
 import common
 import json
+import survey
 import traveller
 import typing
 
@@ -179,7 +180,7 @@ def generateRandomPurchaseCargo(
         # For the 2022 rules the number of randomly available trade goods is
         # determined by the population (see p242)
         population = common.ScalarCalculation(
-            value=astronomer.ehexToInteger(
+            value=survey.ehexToInteger(
                 value=world.uwp().code(astronomer.UWP.Element.Population),
                 default=0),
             name=f'{world.name(includeSubsector=True)} Population Code')

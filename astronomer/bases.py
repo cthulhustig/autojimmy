@@ -1,6 +1,7 @@
 import enum
 import logging
 import multiverse
+import survey
 import typing
 
 # There are two sets of base codes, an older set from before Traveller 5th
@@ -180,7 +181,7 @@ class Bases(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemBasesString(
+            self._string = survey.formatSystemBasesString(
                 bases=[_BaseTypeToCodeMap[b] for b in self._bases])
         return self._string
 

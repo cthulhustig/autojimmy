@@ -2,6 +2,7 @@ import logging
 import itertools
 import multiverse
 import re
+import survey
 import typing
 
 # TODO: The conversion process needs to give better error/warning/info
@@ -18,22 +19,22 @@ _T5UnofficialM112xAllegiances = [
     # -----------------------
     # Unofficial/Unreviewed
     # -----------------------
-    multiverse.RawStockAllegiance(code='FdAr', legacy='Fa', base=None, name='Federation of Arden' ),
-    multiverse.RawStockAllegiance(code='BoWo', legacy='Bw', base=None, name='Border Worlds' ),
-    multiverse.RawStockAllegiance(code='LuIm', legacy='Li', base='Im', name='Lucan\'s Imperium' ),
-    multiverse.RawStockAllegiance(code='MaSt', legacy='Ma', base='Im', name='Maragaret\'s Domain' ),
-    multiverse.RawStockAllegiance(code='BaCl', legacy='Bc', base=None, name='Backman Cluster' ),
-    multiverse.RawStockAllegiance(code='FdDa', legacy='Fd', base='Im', name='Federation of Daibei' ),
-    multiverse.RawStockAllegiance(code='FdIl', legacy='Fi', base='Im', name='Federation of Ilelish' ),
-    multiverse.RawStockAllegiance(code='AvCn', legacy='Ac', base=None, name='Avalar Consulate' ),
-    multiverse.RawStockAllegiance(code='CoAl', legacy='Ca', base=None, name='Corsair Alliance' ),
-    multiverse.RawStockAllegiance(code='StIm', legacy='St', base='Im', name='Strephon\'s Worlds' ),
-    multiverse.RawStockAllegiance(code='ZiSi', legacy='Rv', base='Im', name='Restored Vilani Imperium' ), # Ziru Sirka
-    multiverse.RawStockAllegiance(code='VA16', legacy='V6', base=None, name='Assemblage of 1116' ),
-    multiverse.RawStockAllegiance(code='CRVi', legacy='CV', base=None, name='Vilani Cultural Region' ),
-    multiverse.RawStockAllegiance(code='CRGe', legacy='CG', base=None, name='Geonee Cultural Region' ),
-    multiverse.RawStockAllegiance(code='CRSu', legacy='CS', base=None, name='Suerrat Cultural Region' ),
-    multiverse.RawStockAllegiance(code='CRAk', legacy='CA', base=None, name='Anakudnu Cultural Region' )
+    survey.RawStockAllegiance(code='FdAr', legacy='Fa', base=None, name='Federation of Arden' ),
+    survey.RawStockAllegiance(code='BoWo', legacy='Bw', base=None, name='Border Worlds' ),
+    survey.RawStockAllegiance(code='LuIm', legacy='Li', base='Im', name='Lucan\'s Imperium' ),
+    survey.RawStockAllegiance(code='MaSt', legacy='Ma', base='Im', name='Maragaret\'s Domain' ),
+    survey.RawStockAllegiance(code='BaCl', legacy='Bc', base=None, name='Backman Cluster' ),
+    survey.RawStockAllegiance(code='FdDa', legacy='Fd', base='Im', name='Federation of Daibei' ),
+    survey.RawStockAllegiance(code='FdIl', legacy='Fi', base='Im', name='Federation of Ilelish' ),
+    survey.RawStockAllegiance(code='AvCn', legacy='Ac', base=None, name='Avalar Consulate' ),
+    survey.RawStockAllegiance(code='CoAl', legacy='Ca', base=None, name='Corsair Alliance' ),
+    survey.RawStockAllegiance(code='StIm', legacy='St', base='Im', name='Strephon\'s Worlds' ),
+    survey.RawStockAllegiance(code='ZiSi', legacy='Rv', base='Im', name='Restored Vilani Imperium' ), # Ziru Sirka
+    survey.RawStockAllegiance(code='VA16', legacy='V6', base=None, name='Assemblage of 1116' ),
+    survey.RawStockAllegiance(code='CRVi', legacy='CV', base=None, name='Vilani Cultural Region' ),
+    survey.RawStockAllegiance(code='CRGe', legacy='CG', base=None, name='Geonee Cultural Region' ),
+    survey.RawStockAllegiance(code='CRSu', legacy='CS', base=None, name='Suerrat Cultural Region' ),
+    survey.RawStockAllegiance(code='CRAk', legacy='CA', base=None, name='Anakudnu Cultural Region' )
     ]
 _T5UnofficialAllegiancesMap = {
     'M1120': _T5UnofficialM112xAllegiances,
@@ -43,10 +44,10 @@ _T5UnofficialAllegiancesMap = {
 # These allegiances are take from Traveller Map (SecondSurvey.cs)
 # Cases where T5SS codes don't apply: e.g. the Hierate or Imperium, or where no codes exist yet
 _LegacyAllegiances = [
-    multiverse.RawStockAllegiance(code='As', legacy='As', base='As', name='Aslan Hierate' ), # T5SS: Clan, client state, or unknown; no generic code
-    multiverse.RawStockAllegiance(code='Dr', legacy='Dr', base='Dr', name='Droyne' ), # T5SS: Polity name or unaligned w/ Droyne population
-    multiverse.RawStockAllegiance(code='Im', legacy='Im', base='Im', name='Third Imperium' ), # T5SS: Domain or cultural region; no generic code
-    multiverse.RawStockAllegiance(code='Kk', legacy='Kk', base='Kk', name='The Two Thousand Worlds' ), # T5SS: (Not yet assigned)
+    survey.RawStockAllegiance(code='As', legacy='As', base='As', name='Aslan Hierate' ), # T5SS: Clan, client state, or unknown; no generic code
+    survey.RawStockAllegiance(code='Dr', legacy='Dr', base='Dr', name='Droyne' ), # T5SS: Polity name or unaligned w/ Droyne population
+    survey.RawStockAllegiance(code='Im', legacy='Im', base='Im', name='Third Imperium' ), # T5SS: Domain or cultural region; no generic code
+    survey.RawStockAllegiance(code='Kk', legacy='Kk', base='Kk', name='The Two Thousand Worlds' ), # T5SS: (Not yet assigned)
 ]
 
 # These mappings are taken from Traveller Map (SecondSurvey.cs)
@@ -144,17 +145,17 @@ _LegacySophontMap = {
 }
 
 def _findUsedAllegianceCodes(
-        rawMetadata: multiverse.RawMetadata,
-        rawSystems: typing.Collection[multiverse.RawWorld]
+        rawMetadata: survey.RawMetadata,
+        rawSystems: typing.Collection[survey.RawWorld]
         ) -> typing.Set[str]:
     usedCodes: typing.Set[str] = set()
     if rawSystems:
         for rawWorld in rawSystems:
-            rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+            rawAllegianceCode = rawWorld.attribute(survey.WorldAttribute.Allegiance)
             if rawAllegianceCode:
                 usedCodes.add(rawAllegianceCode)
 
-            rawRemarks = rawWorld.attribute(multiverse.WorldAttribute.Remarks)
+            rawRemarks = rawWorld.attribute(survey.WorldAttribute.Remarks)
             if rawRemarks:
                 matches = _MilitaryRuleRemarkPattern.findall(rawRemarks)
                 for match in matches:
@@ -173,12 +174,12 @@ def _findUsedAllegianceCodes(
 
 def _filterStockAllegiances(
         milieu: str,
-        rawMetadata: multiverse.RawMetadata,
+        rawMetadata: survey.RawMetadata,
         rawUsedAllegianceCodes: typing.Collection[str],
-        rawStockAllegiances: typing.Collection[multiverse.RawStockAllegiance] = None,
-        ) -> typing.List[multiverse.RawStockAllegiance]:
-    rawLocalAllegiances: typing.Collection[multiverse.RawStockAllegiance] = []
-    rawGlobalAllegiances: typing.Collection[multiverse.RawStockAllegiance]  = []
+        rawStockAllegiances: typing.Collection[survey.RawStockAllegiance] = None,
+        ) -> typing.List[survey.RawStockAllegiance]:
+    rawLocalAllegiances: typing.Collection[survey.RawStockAllegiance] = []
+    rawGlobalAllegiances: typing.Collection[survey.RawStockAllegiance]  = []
     rawSeenAllegianceCodes = set()
 
     if rawStockAllegiances:
@@ -246,10 +247,10 @@ def _filterStockAllegiances(
 # maintaining the same precedence as Traveller Map
 def _createDbAllegiances(
         milieu: str,
-        rawMetadata: multiverse.RawMetadata,
-        rawSystems: typing.Collection[multiverse.RawWorld],
+        rawMetadata: survey.RawMetadata,
+        rawSystems: typing.Collection[survey.RawWorld],
         rawStockAllegiances: typing.Optional[typing.Collection[
-            multiverse.RawStockAllegiance
+            survey.RawStockAllegiance
             ]] = None,
         ) -> typing.Dict[str, multiverse.DbAllegiance]: # Returns code to DbAllegiance map
     dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance] = {}
@@ -335,7 +336,7 @@ def _createDbAllegiances(
     if rawMissingAllegianceCodes:
         # Create mapping to use for legacy codes. Only stock allegiances are used here as
         # allegiances defined in the metadata don't support legacy codes.
-        rawStockAllegianceLegacyMap: typing.Dict[str, multiverse.RawStockAllegiance] = {}
+        rawStockAllegianceLegacyMap: typing.Dict[str, survey.RawStockAllegiance] = {}
         for rawStockAllegiance in rawStockAllegiances:
             if rawStockAllegiance.legacy() and rawStockAllegiance.legacy() not in rawStockAllegianceLegacyMap:
                 rawStockAllegianceLegacyMap[rawStockAllegiance.legacy()] = rawStockAllegiance
@@ -461,15 +462,15 @@ def _generateSophontCode(name: str, existingCodes: typing.Collection[str]) -> st
     raise RuntimeError(f'Unable to generate unused code for sophont {name}')
 
 def _createDbSophonts(
-        rawSystems: typing.Collection[multiverse.RawWorld],
+        rawSystems: typing.Collection[survey.RawWorld],
         rawStockSophonts: typing.Optional[typing.Collection[
-            multiverse.RawStockSophont
+            survey.RawStockSophont
             ]] = None,
         ) -> typing.Tuple[
             typing.Dict[str, multiverse.DbSophont], # Code to DbSophont map
             typing.Dict[str, multiverse.DbSophont]]: # Name to DbSophont map
-    rawStockSophontCodeMap: typing.Dict[str, multiverse.RawStockSophont] = {}
-    rawStockSophontNameMap: typing.Dict[str, multiverse.RawStockSophont] = {}
+    rawStockSophontCodeMap: typing.Dict[str, survey.RawStockSophont] = {}
+    rawStockSophontNameMap: typing.Dict[str, survey.RawStockSophont] = {}
     if rawStockSophonts:
         for rawStockSophont in rawStockSophonts:
             if rawStockSophont.code() in rawStockSophontCodeMap:
@@ -485,7 +486,7 @@ def _createDbSophonts(
     rawMajorSophontNames: typing.Set[str] = set(_StockMajorSophonts)
     if rawSystems:
         for rawWorld in rawSystems:
-            rawRemarks = rawWorld.attribute(multiverse.WorldAttribute.Remarks)
+            rawRemarks = rawWorld.attribute(survey.WorldAttribute.Remarks)
             if not rawRemarks:
                 continue
             matches = _T5SophontPopulationRemarkPattern.findall(rawRemarks)
@@ -607,8 +608,8 @@ def _createDbSophonts(
 
 def _createDbSystems(
         milieu: str,
-        rawMetadata: multiverse.RawMetadata,
-        rawSystems: typing.Collection[multiverse.RawWorld],
+        rawMetadata: survey.RawMetadata,
+        rawSystems: typing.Collection[survey.RawWorld],
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
         dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont],
         dbSophontNameMap: typing.Dict[str, multiverse.DbSophont],
@@ -616,85 +617,86 @@ def _createDbSystems(
     dbSystems = []
 
     for rawWorld in rawSystems:
-        rawHex = rawWorld.attribute(multiverse.WorldAttribute.Hex)
+        rawHex = rawWorld.attribute(survey.WorldAttribute.Hex)
         if not rawHex:
             assert(False) # TODO: Better error handling
 
-        dbSystemName = rawWorld.attribute(multiverse.WorldAttribute.Name)
+        dbSystemName = rawWorld.attribute(survey.WorldAttribute.Name)
 
-        rawUWP = rawWorld.attribute(multiverse.WorldAttribute.UWP)
+        rawUWP = rawWorld.attribute(survey.WorldAttribute.UWP)
         dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
             dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
         if rawUWP:
             dbStarport, dbWorldSize, dbAtmosphere, dbHydrographics, \
                 dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
-                multiverse.parseSystemUWPString(uwp=rawUWP)
+                survey.parseSystemUWPString(uwp=rawUWP)
 
-        rawEconomics = rawWorld.attribute(multiverse.WorldAttribute.Economics)
+        rawEconomics = rawWorld.attribute(survey.WorldAttribute.Economics)
         dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
         if rawEconomics:
             dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
-                multiverse.parseSystemEconomicsString(economics=rawEconomics)
+                survey.parseSystemEconomicsString(economics=rawEconomics)
 
-        rawCulture = rawWorld.attribute(multiverse.WorldAttribute.Culture)
+        rawCulture = rawWorld.attribute(survey.WorldAttribute.Culture)
         dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
         if rawCulture:
             dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
-                multiverse.parseSystemCultureString(culture=rawCulture)
+                survey.parseSystemCultureString(culture=rawCulture)
 
-        rawPBG = rawWorld.attribute(multiverse.WorldAttribute.PBG)
+        rawPBG = rawWorld.attribute(survey.WorldAttribute.PBG)
         dbPopulationMultiplier = dbPlanetoidBelts = dbGasGiants = None
         if rawPBG:
             dbPopulationMultiplier, dbPlanetoidBelts, dbGasGiants = \
-                multiverse.parseSystemPBGString(pbg=rawPBG)
+                survey.parseSystemPBGString(pbg=rawPBG)
 
-        rawSystemWorlds = rawWorld.attribute(multiverse.WorldAttribute.SystemWorlds)
+        rawSystemWorlds = rawWorld.attribute(survey.WorldAttribute.SystemWorlds)
 
-        rawAllegianceCode = rawWorld.attribute(multiverse.WorldAttribute.Allegiance)
+
+        rawAllegianceCode = rawWorld.attribute(survey.WorldAttribute.Allegiance)
         dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
         if rawAllegianceCode and not dbAllegiance:
             # TODO: This should probably log and continue with no allegiance,
             # if it's a custom sector it should also warn the user
             raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
-        rawNobilities = rawWorld.attribute(multiverse.WorldAttribute.Nobility)
+        rawNobilities = rawWorld.attribute(survey.WorldAttribute.Nobility)
         dbNobilities = None
         if rawNobilities:
             dbNobilities = []
             seenNobilities = set()
-            for nobilityCode in multiverse.parseSystemNobilityString(string=rawNobilities):
+            for nobilityCode in survey.parseSystemNobilityString(string=rawNobilities):
                 if nobilityCode in seenNobilities:
                     continue # Ignore duplicates
                 seenNobilities.add(nobilityCode)
 
                 dbNobilities.append(multiverse.DbNobility(code=nobilityCode))
 
-        rawBases = rawWorld.attribute(multiverse.WorldAttribute.Bases)
+        rawBases = rawWorld.attribute(survey.WorldAttribute.Bases)
         dbBases = None
         if rawBases:
             dbBases = []
             seenBases = set()
-            for baseCode in multiverse.parseSystemBasesString(string=rawBases):
+            for baseCode in survey.parseSystemBasesString(string=rawBases):
                 if baseCode in seenBases:
                     continue # Ignore duplicates
                 seenBases.add(baseCode)
 
                 dbBases.append(multiverse.DbBase(code=baseCode))
 
-        rawStellar = rawWorld.attribute(multiverse.WorldAttribute.Stellar)
+        rawStellar = rawWorld.attribute(survey.WorldAttribute.Stellar)
         dbStars = None
         if rawStellar:
             dbStars = []
-            for luminosityClass, spectralClass, spectralScale in multiverse.parseSystemStellarString(string=rawStellar):
+            for luminosityClass, spectralClass, spectralScale in survey.parseSystemStellarString(string=rawStellar):
                 dbStars.append(multiverse.DbStar(
                     luminosityClass=luminosityClass,
                     spectralClass=spectralClass,
                     spectralScale=spectralScale))
 
-        rawRemarks = rawWorld.attribute(multiverse.WorldAttribute.Remarks)
+        rawRemarks = rawWorld.attribute(survey.WorldAttribute.Remarks)
         dbTradeCodes: typing.Optional[typing.List[multiverse.DbTradeCode]] = None
         dbSophontPopulations: typing.Optional[typing.List[multiverse.DbSophontPopulation]]  = None
-        dbRulingAllegiances: typing.Optional[typing.List[multiverse.RawAllegiance]]  = None
+        dbRulingAllegiances: typing.Optional[typing.List[survey.RawAllegiance]]  = None
         dbOwningSystems: typing.Optional[typing.List[multiverse.DbOwningSystem]]  = None
         dbColonySystems: typing.Optional[typing.List[multiverse.DbColonySystem]]  = None
         dbResearchStations: typing.Optional[typing.List[multiverse.DbResearchStation]]  = None
@@ -702,7 +704,7 @@ def _createDbSystems(
         if rawRemarks:
             rawTradeCodes, rawMajorHomeWorlds, rawMinorHomeWorlds, rawSophontPopulations, \
                 rawDieBackSophonts, rawOwningSystems, rawColonySystems, rawRulingAllegiances, \
-                rawResearchStations, rawUnrecognisedRemarks = multiverse.parseSystemRemarksString(rawRemarks)
+                rawResearchStations, rawUnrecognisedRemarks = survey.parseSystemRemarksString(rawRemarks)
 
             if rawTradeCodes:
                 # It's important to process the explicit trade codes first as
@@ -895,7 +897,7 @@ def _createDbSystems(
             populationMultiplier=dbPopulationMultiplier,
             planetoidBelts=dbPlanetoidBelts,
             gasGiants=dbGasGiants,
-            zone=rawWorld.attribute(multiverse.WorldAttribute.Zone),
+            zone=rawWorld.attribute(survey.WorldAttribute.Zone),
             # TODO: I think the Traveller Map second survey page clarifies that
             # system worlds is the number of worlds excluding the main world
             systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
@@ -915,7 +917,7 @@ def _createDbSystems(
 
 def _createDbRoutes(
         milieu: str,
-        rawMetadata: multiverse.RawMetadata,
+        rawMetadata: survey.RawMetadata,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance]
         ) -> typing.List[multiverse.DbRoute]:
     dbRoutes = []
@@ -955,7 +957,7 @@ def _createDbRoutes(
 
 def _createDbBorders(
         milieu: str,
-        rawMetadata: multiverse.RawMetadata,
+        rawMetadata: survey.RawMetadata,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance]
         ) -> typing.List[multiverse.DbBorder]:
     dbBorders = []
@@ -994,7 +996,7 @@ def _createDbBorders(
     return dbBorders
 
 def _createDbRegions(
-        rawMetadata: multiverse.RawMetadata,
+        rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbBorder]:
     dbRegions = []
 
@@ -1022,7 +1024,7 @@ def _createDbRegions(
     return dbRegions
 
 def _createDbLabels(
-        rawMetadata: multiverse.RawMetadata,
+        rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbLabel]:
     dbLabels = []
 
@@ -1045,14 +1047,14 @@ def _createDbLabels(
 
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
-def readSnapshotStockAllegiances() -> typing.List[multiverse.RawStockAllegiance]:
-    return multiverse.readTabStockAllegiances(
+def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
+    return survey.readTabStockAllegiances(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialAllegiancesPath))
 
 _T5OfficialSophontsPath = "t5ss/sophont_codes.tab"
-def readSnapshotStockSophonts() -> typing.List[multiverse.RawStockSophont]:
-    return multiverse.readTabStockSophonts(
+def readSnapshotStockSophonts() -> typing.List[survey.RawStockSophont]:
+    return survey.readTabStockSophonts(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialSophontsPath))
 
@@ -1061,14 +1063,14 @@ def convertRawUniverseToDbUniverse(
         isCustom: bool,
         rawSectors: typing.Collection[typing.Tuple[
             str, # Milieu
-            multiverse.RawMetadata,
-            typing.Collection[multiverse.RawWorld]
+            survey.RawMetadata,
+            typing.Collection[survey.RawWorld]
             ]],
         rawStockAllegiances: typing.Optional[typing.Collection[
-            multiverse.RawStockAllegiance
+            survey.RawStockAllegiance
             ]] = None,
         rawStockSophonts: typing.Optional[typing.Collection[
-            multiverse.RawStockSophont
+            survey.RawStockSophont
             ]] = None,
         universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
@@ -1103,14 +1105,14 @@ def convertRawUniverseToDbUniverse(
 # TODO: This should do some basic sanity tests on the passed on data (e.g. doesn't have multiple worlds with the same hex)
 def convertRawSectorToDbSector(
         milieu: str,
-        rawMetadata: multiverse.RawMetadata,
-        rawSystems: typing.Collection[multiverse.RawWorld],
+        rawMetadata: survey.RawMetadata,
+        rawSystems: typing.Collection[survey.RawWorld],
         isCustom: bool,
         rawStockAllegiances: typing.Optional[typing.Collection[
-            multiverse.RawStockAllegiance
+            survey.RawStockAllegiance
             ]] = None,
         rawStockSophonts: typing.Optional[typing.Collection[
-            multiverse.RawStockSophont
+            survey.RawStockSophont
             ]] = None,
         sectorId: typing.Optional[str] = None,
         universeId: typing.Optional[str] = None,

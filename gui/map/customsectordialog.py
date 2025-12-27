@@ -8,6 +8,7 @@ import jobs
 import logging
 import multiverse
 import os
+import survey
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -417,12 +418,12 @@ class _NewSectorDialog(gui.DialogEx):
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
 
-            metadataFormat = multiverse.metadataFileFormatDetect(
+            metadataFormat = survey.metadataFileFormatDetect(
                 content=sectorMetadata)
             if not metadataFormat:
                 raise RuntimeError('Unknown metadata file format')
 
-            rawMetadata = multiverse.readMetadata(
+            rawMetadata = survey.readMetadata(
                 content=sectorMetadata,
                 format=metadataFormat,
                 identifier=metadataFilePath)
@@ -451,10 +452,10 @@ class _NewSectorDialog(gui.DialogEx):
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
 
-            sectorFormat = multiverse.sectorFileFormatDetect(content=sectorData)
+            sectorFormat = survey.sectorFileFormatDetect(content=sectorData)
             if not sectorFormat:
                 raise RuntimeError('Unknown sector file format')
-            rawWorlds = multiverse.readSector(
+            rawWorlds = survey.readSector(
                 content=sectorData,
                 format=sectorFormat,
                 identifier=sectorFilePath)
@@ -532,12 +533,12 @@ class _NewSectorDialog(gui.DialogEx):
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                     sectorMetadata = file.read()
 
-                metadataFormat = multiverse.metadataFileFormatDetect(
+                metadataFormat = survey.metadataFileFormatDetect(
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unknown metadata file format')
 
-                if metadataFormat == multiverse.MetadataFormat.XML:
+                if metadataFormat == survey.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
                 else:
                     gui.AutoSelectMessageBox.information(
@@ -545,11 +546,11 @@ class _NewSectorDialog(gui.DialogEx):
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                    rawMetadata = multiverse.readMetadata(
+                    rawMetadata = survey.readMetadata(
                         content=sectorMetadata,
                         format=metadataFormat,
                         identifier=metadataFilePath)
-                    xmlMetadata = multiverse.writeXMLMetadata(
+                    xmlMetadata = survey.writeXMLMetadata(
                         metadata=rawMetadata,
                         identifier='Generated XML metadata')
             except Exception as ex:

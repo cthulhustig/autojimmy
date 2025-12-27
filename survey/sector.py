@@ -3,8 +3,8 @@ import common
 import itertools
 import json
 import logging
-import multiverse
 import re
+import survey
 import typing
 import xml.etree.ElementTree
 
@@ -29,36 +29,36 @@ _XmlFloatDecimalPlaces = 2
 _HeaderPattern = re.compile(r'(?:([\w{}()\[\]]+)\s*)')
 _SeparatorPattern = re.compile(r'(?:([-]+)\s?)')
 _T5Column_ColumnNameToAttributeMap = {
-    'Name': multiverse.WorldAttribute.Name,
-    'Hex': multiverse.WorldAttribute.Hex,
-    'UWP': multiverse.WorldAttribute.UWP,
-    'B': multiverse.WorldAttribute.Bases,
-    'Remarks': multiverse.WorldAttribute.Remarks,
-    'Z': multiverse.WorldAttribute.Zone,
-    'PBG': multiverse.WorldAttribute.PBG,
-    'A': multiverse.WorldAttribute.Allegiance,
-    '{Ix}': multiverse.WorldAttribute.Importance,
-    '(Ex)': multiverse.WorldAttribute.Economics,
-    '[Cx]': multiverse.WorldAttribute.Culture,
-    'N': multiverse.WorldAttribute.Nobility,
-    'W': multiverse.WorldAttribute.SystemWorlds,
-    'Stellar': multiverse.WorldAttribute.Stellar
+    'Name': survey.WorldAttribute.Name,
+    'Hex': survey.WorldAttribute.Hex,
+    'UWP': survey.WorldAttribute.UWP,
+    'B': survey.WorldAttribute.Bases,
+    'Remarks': survey.WorldAttribute.Remarks,
+    'Z': survey.WorldAttribute.Zone,
+    'PBG': survey.WorldAttribute.PBG,
+    'A': survey.WorldAttribute.Allegiance,
+    '{Ix}': survey.WorldAttribute.Importance,
+    '(Ex)': survey.WorldAttribute.Economics,
+    '[Cx]': survey.WorldAttribute.Culture,
+    'N': survey.WorldAttribute.Nobility,
+    'W': survey.WorldAttribute.SystemWorlds,
+    'Stellar': survey.WorldAttribute.Stellar
 }
 _T5Row_ColumnNameToAttributeMap = {
-    'Hex': multiverse.WorldAttribute.Hex,
-    'Name': multiverse.WorldAttribute.Name,
-    'UWP': multiverse.WorldAttribute.UWP,
-    'Remarks': multiverse.WorldAttribute.Remarks,
-    '{Ix}': multiverse.WorldAttribute.Importance,
-    '(Ex)': multiverse.WorldAttribute.Economics,
-    '[Cx]': multiverse.WorldAttribute.Culture,
-    'Nobility': multiverse.WorldAttribute.Nobility,
-    'Bases': multiverse.WorldAttribute.Bases,
-    'Zone': multiverse.WorldAttribute.Zone,
-    'PBG': multiverse.WorldAttribute.PBG,
-    'W': multiverse.WorldAttribute.SystemWorlds,
-    'Allegiance': multiverse.WorldAttribute.Allegiance,
-    'Stars': multiverse.WorldAttribute.Stellar
+    'Hex': survey.WorldAttribute.Hex,
+    'Name': survey.WorldAttribute.Name,
+    'UWP': survey.WorldAttribute.UWP,
+    'Remarks': survey.WorldAttribute.Remarks,
+    '{Ix}': survey.WorldAttribute.Importance,
+    '(Ex)': survey.WorldAttribute.Economics,
+    '[Cx]': survey.WorldAttribute.Culture,
+    'Nobility': survey.WorldAttribute.Nobility,
+    'Bases': survey.WorldAttribute.Bases,
+    'Zone': survey.WorldAttribute.Zone,
+    'PBG': survey.WorldAttribute.PBG,
+    'W': survey.WorldAttribute.SystemWorlds,
+    'Allegiance': survey.WorldAttribute.Allegiance,
+    'Stars': survey.WorldAttribute.Stellar
 }
 
 def _isAllDashes(string: str) -> bool:
@@ -162,7 +162,7 @@ def readSector(
         content: str,
         format: SectorFormat,
         identifier: str, # File name or some other identifier, used for logging and error generation
-        ) -> typing.Collection[multiverse.RawWorld]:
+        ) -> typing.Collection[survey.RawWorld]:
     if format == SectorFormat.T5Column:
         return readT5ColumnSector(
             content=content,
@@ -177,7 +177,7 @@ def readSector(
 def readT5ColumnSector(
         content: str,
         identifier: str
-        ) -> typing.Collection[multiverse.RawWorld]:
+        ) -> typing.Collection[survey.RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None
@@ -240,10 +240,10 @@ def readT5ColumnSector(
 def _readT5ColumnWorld(
         line: str,
         lineNumber: int,
-        columnAttributes: typing.Collection[multiverse.WorldAttribute],
+        columnAttributes: typing.Collection[survey.WorldAttribute],
         columnWidths: typing.Collection[int]
-        ) -> multiverse.RawWorld:
-    worldData = multiverse.RawWorld(lineNumber=lineNumber)
+        ) -> survey.RawWorld:
+    worldData = survey.RawWorld(lineNumber=lineNumber)
     lineLength = len(line)
     startIndex = 0
     finishIndex = 0
@@ -266,7 +266,7 @@ def _readT5ColumnWorld(
 def readT5RowSector(
         content: str,
         identifier: str
-        ) -> typing.Collection[multiverse.RawWorld]:
+        ) -> typing.Collection[survey.RawWorld]:
     worlds = []
     columnNames = None
     columnAttributes = None
@@ -317,13 +317,13 @@ def readT5RowSector(
 def _readT5RowWorld(
         line: str,
         lineNumber: int,
-        columnAttributes: typing.Collection[multiverse.WorldAttribute],
-        ) -> multiverse.RawWorld:
+        columnAttributes: typing.Collection[survey.WorldAttribute],
+        ) -> survey.RawWorld:
     columnData = line.split('\t')
     if len(columnData) != len(columnAttributes):
         raise RuntimeError('Line has incorrect number of columns')
 
-    worldData = multiverse.RawWorld(lineNumber=lineNumber)
+    worldData = survey.RawWorld(lineNumber=lineNumber)
     for attribute, data in itertools.zip_longest(columnAttributes, columnData):
         if data and _isAllDashes(data):
             data = '' # Replace no data marker with empty string
@@ -334,7 +334,7 @@ def _readT5RowWorld(
     return worldData
 
 def writeSector(
-        worlds: typing.Collection[multiverse.RawWorld],
+        worlds: typing.Collection[survey.RawWorld],
         format: SectorFormat,
         identifier: str
         ) -> str:
@@ -346,7 +346,7 @@ def writeSector(
         raise RuntimeError(f'Unknown sector format {format} for {identifier}')
 
 def writeT5ColumnSector(
-        worlds: typing.Collection[multiverse.RawWorld],
+        worlds: typing.Collection[survey.RawWorld],
         identifier: str
         ) -> str:
     content = ''
@@ -356,8 +356,8 @@ def writeT5ColumnSector(
         maxLength = 0
         if worlds:
             maxLength = max([len(w.attribute(attribute=columnAttribute)) for w in worlds])
-            if columnAttribute is multiverse.WorldAttribute.Name or \
-                columnAttribute is multiverse.WorldAttribute.Remarks:
+            if columnAttribute is survey.WorldAttribute.Name or \
+                columnAttribute is survey.WorldAttribute.Remarks:
                 # For some reason Traveller Map adds an extra space separation for sector
                 # name and remarks. I've replicated this to make diffing files easier
                 maxLength += 1
@@ -392,7 +392,7 @@ def writeT5ColumnSector(
 # (e.g. Sector or SS for Subsector) which my raw format doesn't have as
 # I don't need it
 def writeT5RowSector(
-        worlds: typing.Collection[multiverse.RawWorld],
+        worlds: typing.Collection[survey.RawWorld],
         identifier: str
         ) -> str:
     content = ''
@@ -429,7 +429,7 @@ def readMetadata(
         content: str,
         format: MetadataFormat,
         identifier: str
-        ) -> multiverse.RawMetadata:
+        ) -> survey.RawMetadata:
     if format == MetadataFormat.XML:
         return readXMLMetadata(
             content=content,
@@ -444,7 +444,7 @@ def readMetadata(
 def readXMLMetadata(
         content: str,
         identifier: str
-        ) -> multiverse.RawMetadata:
+        ) -> survey.RawMetadata:
     sectorElement = xml.etree.ElementTree.fromstring(content)
 
     nameElements = sectorElement.findall('./Name')
@@ -506,7 +506,7 @@ def readXMLMetadata(
 
             # Ignore allegiances that are just a sequence of '-'
             if code and not _isAllDashes(code):
-                allegiances.append(multiverse.RawAllegiance(
+                allegiances.append(survey.RawAllegiance(
                     code=code,
                     name=element.text,
                     base=element.get('Base'),
@@ -531,7 +531,7 @@ def readXMLMetadata(
             endOffsetY = _optionalConvertToInt(element.get('EndOffsetY'), 'EndOffsetY', 'Route', identifier)
             width = _optionalConvertToFloat(element.get('Width'), 'Width', 'Route', identifier)
 
-            routes.append(multiverse.RawRoute(
+            routes.append(survey.RawRoute(
                 startHex=startHex,
                 endHex=endHex,
                 startOffsetX=startOffsetX,
@@ -556,7 +556,7 @@ def readXMLMetadata(
             labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
             labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
 
-            borders.append(multiverse.RawBorder(
+            borders.append(survey.RawBorder(
                 hexList=path,
                 allegiance=element.get('Allegiance'),
                 showLabel=showLabel,
@@ -586,7 +586,7 @@ def readXMLMetadata(
             offsetX = _optionalConvertToFloat(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
             offsetY = _optionalConvertToFloat(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
 
-            labels.append(multiverse.RawLabel(
+            labels.append(survey.RawLabel(
                 text=element.text,
                 hex=hex,
                 colour=colour,
@@ -607,7 +607,7 @@ def readXMLMetadata(
             labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
             labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
 
-            regions.append(multiverse.RawRegion(
+            regions.append(survey.RawRegion(
                 hexList=path,
                 showLabel=showLabel,
                 wrapLabel=wrapLabel,
@@ -631,7 +631,7 @@ def readXMLMetadata(
             reference = primaryElements.get('Ref')
 
             if publication or author or publisher or reference:
-                primary = multiverse.RawSource(
+                primary = survey.RawSource(
                     publication=publication,
                     author=author,
                     publisher=publisher,
@@ -641,13 +641,13 @@ def readXMLMetadata(
         if productsElements != None:
             products = []
             for element in productsElements:
-                products.append(multiverse.RawSource(
+                products.append(survey.RawSource(
                     publication=element.get('Title'),
                     author=element.get('Author'),
                     publisher=element.get('Publisher'),
                     reference=element.get('Ref')))
 
-        sources = multiverse.RawSources(
+        sources = survey.RawSources(
             credits=creditsElements.text if creditsElements != None else None,
             primary=primary,
             products=products)
@@ -655,7 +655,7 @@ def readXMLMetadata(
     styleSheetElement = sectorElement.find('./Stylesheet')
     styleSheet = styleSheetElement.text if styleSheetElement != None else None
 
-    return multiverse.RawMetadata(
+    return survey.RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
@@ -677,7 +677,7 @@ def readXMLMetadata(
 def readJSONMetadata(
         content: str,
         identifier: str
-        ) -> multiverse.RawMetadata:
+        ) -> survey.RawMetadata:
     sectorElement = json.loads(content)
 
     nameElements = sectorElement.get('Names')
@@ -749,7 +749,7 @@ def readJSONMetadata(
 
                 # Ignore allegiances that are just a sequence of '-'
                 if code and not _isAllDashes(code):
-                    allegiances.append(multiverse.RawAllegiance(
+                    allegiances.append(survey.RawAllegiance(
                         code=code,
                         name=name,
                         base=element.get('Base'),
@@ -774,7 +774,7 @@ def readJSONMetadata(
             endOffsetY = _optionalConvertToInt(element.get('EndOffsetY'), 'EndOffsetY', 'Route', identifier)
             width = _optionalConvertToFloat(element.get('Width'), 'Width', 'Route', identifier)
 
-            routes.append(multiverse.RawRoute(
+            routes.append(survey.RawRoute(
                 startHex=startHex,
                 endHex=endHex,
                 startOffsetX=startOffsetX,
@@ -803,7 +803,7 @@ def readJSONMetadata(
             labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
             labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
 
-            borders.append(multiverse.RawBorder(
+            borders.append(survey.RawBorder(
                 hexList=path,
                 allegiance=element.get('Allegiance'),
                 showLabel=showLabel,
@@ -837,7 +837,7 @@ def readJSONMetadata(
             offsetX = _optionalConvertToFloat(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
             offsetY = _optionalConvertToFloat(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
 
-            labels.append(multiverse.RawLabel(
+            labels.append(survey.RawLabel(
                 text=text,
                 hex=hex,
                 colour=colour,
@@ -862,7 +862,7 @@ def readJSONMetadata(
             labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
             labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
 
-            regions.append(multiverse.RawRegion(
+            regions.append(survey.RawRegion(
                 hexList=path,
                 showLabel=showLabel,
                 wrapLabel=wrapLabel,
@@ -886,7 +886,7 @@ def readJSONMetadata(
             reference = primaryElements.get('Ref')
 
             if publication or author or publisher or reference:
-                primary = multiverse.RawSource(
+                primary = survey.RawSource(
                     publication=publication,
                     author=author,
                     publisher=publisher,
@@ -896,7 +896,7 @@ def readJSONMetadata(
         if productsElements != None:
             products = []
             for element in productsElements:
-                products.append(multiverse.RawSource(
+                products.append(survey.RawSource(
                     publication=element.get('Title'),
                     author=element.get('Author'),
                     publisher=element.get('Publisher'),
@@ -906,12 +906,12 @@ def readJSONMetadata(
         # know what structure they use. The Traveller Map metadata API always
         # returns an empty list
         if primary or products:
-            sources = multiverse.RawSources(
+            sources = survey.RawSources(
                 credits=None,
                 primary=primary,
                 products=products)
 
-    return multiverse.RawMetadata(
+    return survey.RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
@@ -931,7 +931,7 @@ def readJSONMetadata(
         styleSheet=sectorElement.get('StyleSheet'))
 
 def writeMetadata(
-        metadata: multiverse.RawMetadata,
+        metadata: survey.RawMetadata,
         format: MetadataFormat,
         identifier: str
         ) -> str:
@@ -947,7 +947,7 @@ def writeMetadata(
         raise RuntimeError(f'Unknown metadata format {format} for {identifier}')
 
 def writeXMLMetadata(
-        metadata: multiverse.RawMetadata,
+        metadata: survey.RawMetadata,
         identifier: str
         ) -> str:
     sectorAttributes = {}
@@ -1159,7 +1159,7 @@ def writeXMLMetadata(
     return resultBytes.decode('utf-8')
 
 def writeJSONMetadata(
-        metadata: multiverse.RawMetadata,
+        metadata: survey.RawMetadata,
         identifier: str
         ) -> str:
     sectorElement = {}
@@ -1358,7 +1358,7 @@ def writeJSONMetadata(
 
 def readUniverseInfo(
         content: str
-        ) -> multiverse.RawUniverseInfo:
+        ) -> survey.RawUniverseInfo:
     universeElement = json.loads(content)
 
     sectorsElement = universeElement.get('Sectors')
@@ -1407,12 +1407,12 @@ def readUniverseInfo(
                 if source is not None:
                     source = str(source)
 
-                nameInfos.append(multiverse.RawNameInfo(
+                nameInfos.append(survey.RawNameInfo(
                     name=name,
                     language=language,
                     source=source))
 
-        sectorInfos.append(multiverse.RawSectorInfo(
+        sectorInfos.append(survey.RawSectorInfo(
             x=sectorX,
             y=sectorY,
             milieu=milieu,
@@ -1420,11 +1420,11 @@ def readUniverseInfo(
             tags=tags,
             nameInfos=nameInfos))
 
-    return multiverse.RawUniverseInfo(
+    return survey.RawUniverseInfo(
         sectorInfos=sectorInfos)
 
 def writeUniverseInfo(
-        universeInfo: multiverse.RawUniverseInfo
+        universeInfo: survey.RawUniverseInfo
         ) -> str:
     universeElement = {}
 
@@ -1476,10 +1476,10 @@ def _detectStockAllegiancesFormat(
 
 def readTabStockAllegiances(
         content: str
-        ) -> typing.List[multiverse.RawStockAllegiance]:
+        ) -> typing.List[survey.RawStockAllegiance]:
     _, results = common.parseTabTableContent(content=content)
 
-    allegiances: typing.List[multiverse.RawStockAllegiance] = []
+    allegiances: typing.List[survey.RawStockAllegiance] = []
     for index, allegiance in enumerate(results):
         code = allegiance.get('Code')
         if not code:
@@ -1493,7 +1493,7 @@ def readTabStockAllegiances(
         base = allegiance.get('BaseCode')
         location = allegiance.get('Location')
 
-        allegiances.append(multiverse.RawStockAllegiance(
+        allegiances.append(survey.RawStockAllegiance(
             code=code,
             name=name,
             legacy=legacy,
@@ -1504,12 +1504,12 @@ def readTabStockAllegiances(
 
 def readJsonStockAllegiances(
         content: str
-        ) -> typing.List[multiverse.RawStockAllegiance]:
+        ) -> typing.List[survey.RawStockAllegiance]:
     jsonList = json.loads(content)
     if not isinstance(jsonList, list):
         raise RuntimeError(f'Content is not a json list')
 
-    allegiances: typing.List[multiverse.RawStockAllegiance] = []
+    allegiances: typing.List[survey.RawStockAllegiance] = []
     for index, allegiance in enumerate(jsonList):
         if not isinstance(allegiance, dict):
             raise RuntimeError(f'Item {index + 1} is not a json object')
@@ -1540,7 +1540,7 @@ def readJsonStockAllegiances(
         if location is not None and not isinstance(location, str):
             raise RuntimeError(f'Location specified for stock allegiance {index + 1} is not a string')
 
-        allegiances.append(multiverse.RawStockAllegiance(
+        allegiances.append(survey.RawStockAllegiance(
             code=code,
             name=name,
             legacy=legacy,
@@ -1551,7 +1551,7 @@ def readJsonStockAllegiances(
 
 def readStockAllegiances(
         content: str
-        ) -> typing.List[multiverse.RawStockAllegiance]:
+        ) -> typing.List[survey.RawStockAllegiance]:
     format = _detectStockAllegiancesFormat(content=content)
     if format is StockAllegiancesFormat.TAB:
         return readTabStockAllegiances(content=content)
@@ -1574,10 +1574,10 @@ def _detectStockSophontsFormat(
 
 def readTabStockSophonts(
         content: str
-        ) -> typing.List[multiverse.RawStockSophont]:
+        ) -> typing.List[survey.RawStockSophont]:
     _, results = common.parseTabTableContent(content=content)
 
-    sophonts: typing.List[multiverse.RawStockSophont] = []
+    sophonts: typing.List[survey.RawStockSophont] = []
     for index, sophont in enumerate(results):
         code = sophont.get('Code')
         if not code:
@@ -1587,7 +1587,7 @@ def readTabStockSophonts(
             raise RuntimeError(f'No name specified for stock sophont {index + 1}')
         location = sophont.get('Location')
 
-        sophonts.append(multiverse.RawStockSophont(
+        sophonts.append(survey.RawStockSophont(
             code=code,
             name=name,
             location=location))
@@ -1596,12 +1596,12 @@ def readTabStockSophonts(
 
 def readJsonStockSophonts(
         content: str
-        ) -> typing.List[multiverse.RawStockSophont]:
+        ) -> typing.List[survey.RawStockSophont]:
     jsonList = json.loads(content)
     if not isinstance(jsonList, list):
         raise RuntimeError(f'Content is not a json list')
 
-    sophonts: typing.List[multiverse.RawStockSophont] = []
+    sophonts: typing.List[survey.RawStockSophont] = []
     for index, sophont in enumerate(jsonList):
         if not isinstance(sophont, dict):
             raise RuntimeError(f'Item {index + 1} is not a json object')
@@ -1622,7 +1622,7 @@ def readJsonStockSophonts(
         if location is not None and not isinstance(location, str):
             raise RuntimeError(f'Location specified for stock sophont {index + 1} is not a string')
 
-        sophonts.append(multiverse.RawStockSophont(
+        sophonts.append(survey.RawStockSophont(
             code=code,
             name=name,
             location=location))
@@ -1631,7 +1631,7 @@ def readJsonStockSophonts(
 
 def readStockSophonts(
         content: str
-        ) -> typing.List[multiverse.RawStockSophont]:
+        ) -> typing.List[survey.RawStockSophont]:
     format = _detectStockSophontsFormat(content=content)
     if format is StockSophontsFormat.TAB:
         return readTabStockSophonts(content=content)

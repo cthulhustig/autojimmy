@@ -1,6 +1,5 @@
-import astronomer
 import enum
-import multiverse
+import survey
 import typing
 
 # Types and ehex mappings taken from Traveller Map source code (world_utils.js).
@@ -121,7 +120,7 @@ class Economics(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemEconomicsString(
+            self._string = survey.formatSystemEconomicsString(
                 resources=self._valueMap.get(Economics.Element.Resources),
                 labour=self._valueMap.get(Economics.Element.Labour),
                 infrastructure=self._valueMap.get(Economics.Element.Infrastructure),
@@ -137,12 +136,22 @@ class Economics(object):
     def numeric(
             self,
             element: Element,
-            default: int = -1
+            default: typing.Any = -1
             ) -> int:
         code = self._valueMap.get(element)
         if code is None:
             return default
-        return astronomer.ehexToInteger(code, default)
+
+        if element == Economics.Element.Efficiency:
+            if code == '?':
+                return default
+
+            try:
+                return int(code)
+            except:
+                return default
+
+        return survey.ehexToInteger(code, default)
 
     def description(
             self,

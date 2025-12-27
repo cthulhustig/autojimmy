@@ -1,5 +1,6 @@
 import enum
 import multiverse
+import survey
 import typing
 
 # https://en.wikipedia.org/wiki/Stellar_classification
@@ -90,7 +91,7 @@ class Star(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemStellarString(
+            self._string = survey.formatSystemStellarString(
                 stars=[(self._luminosityClass, self._spectralClass, self._spectralScale)])
         return self._string
 
@@ -103,7 +104,7 @@ class Stellar(object):
             self,
             dbStars: typing.Optional[typing.Collection[multiverse.DbStar]]
             ) -> None:
-        self._stars = []
+        self._stars: typing.List[Star] = []
         if dbStars:
             for dbStar in dbStars:
                 self._stars.append(Star(dbStar=dbStar))
@@ -124,7 +125,7 @@ class Stellar(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemStellarString(
+            self._string = survey.formatSystemStellarString(
                 stars=[(s.code(Star.Element.LuminosityClass), s.code(Star.Element.SpectralClass), s.code(Star.Element.SpectralScale)) for s in self._stars])
         return self._string
 

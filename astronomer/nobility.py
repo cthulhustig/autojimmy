@@ -1,6 +1,7 @@
 import enum
 import logging
 import multiverse
+import survey
 import typing
 
 class NobilityType(enum.Enum):
@@ -65,7 +66,7 @@ class Nobilities(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemNobilityString(
+            self._string = survey.formatSystemNobilityString(
                 nobilities=[_NobilityTypeToCodeMap[n] for n in self._nobilities])
         return self._string
 

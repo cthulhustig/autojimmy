@@ -1,6 +1,5 @@
-import astronomer
 import enum
-import multiverse
+import survey
 import typing
 
 # Descriptions in these mappings are taken from the 2e core rules, https://travellermap.com/doc/secondsurvey
@@ -330,7 +329,7 @@ class UWP(object):
 
     def string(self) -> str:
         if self._string is None:
-            self._string = multiverse.formatSystemUWPString(
+            self._string = survey.formatSystemUWPString(
                 starport=self._valueMap.get(UWP.Element.StarPort),
                 worldSize=self._valueMap.get(UWP.Element.WorldSize),
                 atmosphere=self._valueMap.get(UWP.Element.Atmosphere),
@@ -350,12 +349,12 @@ class UWP(object):
     def numeric(
             self,
             element: Element,
-            default: int = -1
+            default: typing.Any = -1
             ) -> int:
         code = self._valueMap.get(element)
         if code is None:
             return default
-        return astronomer.ehexToInteger(code, default)
+        return survey.ehexToInteger(code, default)
 
     def description(
             self,
