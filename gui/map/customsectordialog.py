@@ -418,15 +418,7 @@ class _NewSectorDialog(gui.DialogEx):
             with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorMetadata = file.read()
 
-            metadataFormat = survey.metadataFileFormatDetect(
-                content=sectorMetadata)
-            if not metadataFormat:
-                raise RuntimeError('Unknown metadata file format')
-
-            rawMetadata = survey.readMetadata(
-                content=sectorMetadata,
-                format=metadataFormat,
-                identifier=metadataFilePath)
+            rawMetadata = survey.parseMetadata(content=sectorMetadata)
 
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             existingSectorInfo = multiverse.MultiverseDb.instance().sectorInfoByPosition(
@@ -452,13 +444,7 @@ class _NewSectorDialog(gui.DialogEx):
             with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
                 sectorData = file.read()
 
-            sectorFormat = survey.sectorFileFormatDetect(content=sectorData)
-            if not sectorFormat:
-                raise RuntimeError('Unknown sector file format')
-            rawWorlds = survey.readSector(
-                content=sectorData,
-                format=sectorFormat,
-                identifier=sectorFilePath)
+            rawWorlds = survey.parseSector(content=sectorData)
         except Exception as ex:
             message = 'Failed to load sector file.'
             logging.critical(message, exc_info=ex)
@@ -533,7 +519,7 @@ class _NewSectorDialog(gui.DialogEx):
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
                     sectorMetadata = file.read()
 
-                metadataFormat = survey.metadataFileFormatDetect(
+                metadataFormat = survey.detectMetadataFormat(
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unknown metadata file format')
@@ -546,13 +532,11 @@ class _NewSectorDialog(gui.DialogEx):
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
 
-                    rawMetadata = survey.readMetadata(
+                    rawMetadata = survey.parseMetadata(
                         content=sectorMetadata,
-                        format=metadataFormat,
-                        identifier=metadataFilePath)
-                    xmlMetadata = survey.writeXMLMetadata(
-                        metadata=rawMetadata,
-                        identifier='Generated XML metadata')
+                        format=metadataFormat)
+                    xmlMetadata = survey.formatXMLMetadata(
+                        metadata=rawMetadata)
             except Exception as ex:
                 message = 'Failed to load metadata file.'
                 logging.critical(message, exc_info=ex)

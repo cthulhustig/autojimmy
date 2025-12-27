@@ -1106,13 +1106,13 @@ def _createDbLabels(
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
 def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
-    return survey.readTabStockAllegiances(
+    return survey.parseTabStockAllegiances(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialAllegiancesPath))
 
 _T5OfficialSophontsPath = "t5ss/sophont_codes.tab"
 def readSnapshotStockSophonts() -> typing.List[survey.RawStockSophont]:
-    return survey.readTabStockSophonts(
+    return survey.parseTabStockSophonts(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialSophontsPath))
 

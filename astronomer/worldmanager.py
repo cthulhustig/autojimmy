@@ -872,7 +872,7 @@ class WorldManager(object):
             borders=borders,
             regions=regions,
             labels=labels,
-            selected=dbSector.selected() if dbSector.selected() else False,
+            selected=dbSector.selected(),
             tags=astronomer.SectorTagging(dbSector.tags()),
             sources=sources,
             isCustom=dbSector.isCustom())

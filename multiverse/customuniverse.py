@@ -158,19 +158,17 @@ def importLegacyCustomSectors(
                 metadataPath = os.path.join(milieuPath, f'{escapedName}.{metadataExtension}')
                 logging.info(f'Loading legacy custom metadata file {metadataPath}')
                 with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                    rawMetadata = survey.readMetadata(
+                    rawMetadata = survey.parseMetadata(
                         content=file.read(),
-                        format=metadataFormat,
-                        identifier=sectorName)
+                        format=metadataFormat)
 
                 sectorExtension = _SectorFormatExtensions[sectorFormat]
                 sectorPath = os.path.join(milieuPath, f'{escapedName}.{sectorExtension}')
                 logging.info(f'Loading legacy custom sector file {sectorPath}')
                 with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                    rawSystems = survey.readSector(
+                    rawSystems = survey.parseSector(
                         content=file.read(),
-                        format=sectorFormat,
-                        identifier=sectorName)
+                        format=sectorFormat)
                 rawData.append((milieu, rawMetadata, rawSystems))
             except Exception as ex:
                 # TODO: Log something but continue

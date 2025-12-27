@@ -1861,7 +1861,7 @@ class MultiverseDb(object):
             universeInfoPath = os.path.join(milieuPath, 'universe.json')
             with open(universeInfoPath, 'r', encoding='utf-8-sig') as file:
                 universeInfoContent = file.read()
-            universeInfo = survey.readUniverseInfo(content=universeInfoContent)
+            universeInfo = survey.parseUniverseInfo(content=universeInfoContent)
 
             sectorNames = []
             for sectorInfo in universeInfo.sectorInfos():
@@ -1899,15 +1899,11 @@ class MultiverseDb(object):
 
                     metadataPath = os.path.join(milieuPath, escapedName + '.xml')
                     with open(metadataPath, 'r', encoding='utf-8-sig') as file:
-                        rawMetadata = survey.readXMLMetadata(
-                            content=file.read(),
-                            identifier=sectorName)
+                        rawMetadata = survey.parseXMLMetadata(content=file.read())
 
                     sectorPath = os.path.join(milieuPath, escapedName + '.sec')
                     with open(sectorPath, 'r', encoding='utf-8-sig') as file:
-                        rawSystems = survey.readT5ColumnSector(
-                            content=file.read(),
-                            identifier=sectorName)
+                        rawSystems = survey.parseT5ColumnSector(content=file.read())
                     rawData.append((milieu, rawMetadata, rawSystems))
                 except Exception as ex:
                     # TODO: Log something but continue
