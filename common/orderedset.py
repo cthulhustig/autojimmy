@@ -9,56 +9,45 @@ class OrderedSet(typing.Generic[_T]):
     def __init__(self, iterable: typing.Iterable[_T]) -> None: ...
 
     def __init__(self, iterable: typing.Optional[typing.Iterable[_T]] = None) -> None:
-        self._orderedList = list[_T](iterable) if iterable is not None else list[_T]()
-        self._unorderedSet = set[_T](self._orderedList)
+        self._dict = dict.fromkeys(iterable) if iterable is not None else dict()
 
     def add(self, element: _T) -> None:
-        if element in self._unorderedSet:
-            return
-
-        self._unorderedSet.add(element)
-        self._orderedList.append(element)
+        self._dict[element] = None
 
     def clear(self) -> None:
-        self._unorderedSet.clear()
-        self._orderedList.clear()
+        self._dict.clear()
 
     def copy(self) -> 'OrderedSet[_T]':
-        return OrderedSet(iterable=self._orderedList)
+        return OrderedSet(iterable=self._dict.keys())
 
     def discard(self, element: _T) -> None:
-        if element not in self._unorderedSet:
-            return
-
-        self._unorderedSet.discard(element)
-        self._orderedList.remove(element)
-
-    def pop(self) -> _T:
-        element = self._orderedList.pop() # Pop in order
-        self._unorderedSet.discard(element)
-        return element
+        self._dict.pop(element, None)
 
     def remove(self, element: _T) -> None:
-        self._unorderedSet.remove(element)
-        self._orderedList.remove(element)
+        del self._dict[element]
 
     def __len__(self) -> int:
-        return self._orderedList.__len__()
+        return len(self._dict)
 
     def __contains__(self, element: object) -> bool:
-        return self._unorderedSet.__contains__(element)
+        return element in self._dict
 
     def __iter__(self) -> typing.Iterator[_T]:
-        return self._orderedList.__iter__()
+        return iter(self._dict.keys())
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, OrderedSet):
-            return self._orderedList.__eq__(value._orderedList)
+            return self._dict == value._dict
         if isinstance(value, list):
-            return self._orderedList.__eq__(value)
+            if len(self._dict) != len(value):
+                return False
+            for v in value:
+                if v not in self._dict:
+                    return False
+            return True
         if isinstance(value, set):
-            return self._unorderedSet.__eq__(value)
+            return self._dict.keys() == value
         return NotImplemented
 
     def __str__(self) -> str:
-        return self._orderedList.__str__()
+        return '{{{contents}}}'.format(contents=', '.join(map(str, self._dict.keys())))
