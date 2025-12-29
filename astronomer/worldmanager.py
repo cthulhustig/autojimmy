@@ -499,7 +499,7 @@ class WorldManager(object):
         subsectorWorldsMap: typing.Dict[
             str, # Subsector code (A-P)
             typing.List[astronomer.World]
-        ] = {}
+            ] = {}
 
         # Setup default subsector names. Some sectors just use the code A-P but we need
         # something unique
@@ -828,6 +828,8 @@ class WorldManager(object):
                         f'Failed to process label {dbLabel.id()} in metadata for sector {sectorName} from {milieu.value}',
                         exc_info=ex)
 
+        tags = astronomer.SectorTagging(dbTags=dbSector.tags())
+
         dbPrimaryPublication = dbSector.publication()
         dbPrimaryAuthor = dbSector.author()
         dbPrimaryPublisher = dbSector.publisher()
@@ -873,7 +875,7 @@ class WorldManager(object):
             regions=regions,
             labels=labels,
             selected=dbSector.selected(),
-            tags=astronomer.SectorTagging(dbSector.tags()),
+            tags=tags,
             sources=sources,
             isCustom=dbSector.isCustom())
 

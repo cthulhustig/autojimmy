@@ -254,6 +254,9 @@ class MultiverseDb(object):
     _LabelsTableName = 'labels'
     _LabelsTableSchema = 1
 
+    _SectorTagsTableName = 'sector_tags'
+    _SectorTagsTableSchema = 1
+
     _SystemsTableName = 'systems'
     _SystemsTableSchema = 1
 
@@ -765,8 +768,6 @@ class MultiverseDb(object):
                 # TODO: The is_custom column is technically redundant as the information can
                 # be implied by the universe id. I should probably remove it but it's currently
                 # making some queries a little easier
-                # TODO: Tags should maybe be split off into it's own table with a row per tag.
-                # This would be consistent with what I've done for systems
                 sql = """
                     CREATE TABLE IF NOT EXISTS {sectorsTable} (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -780,7 +781,6 @@ class MultiverseDb(object):
                         abbreviation TEXT,
                         sector_label TEXT,
                         selected INTEGER NOT NULL,
-                        tags TEXT,
                         credits TEXT,
                         publication TEXT,
                         author TEXT,
@@ -1749,6 +1749,44 @@ class MultiverseDb(object):
                     unique=False,
                     cursor=cursor)
 
+            # Create sector tags table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._SectorTagsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {labelsTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        sector_id TEXT NOT NULL,
+                        value TEXT NOT NULL,
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                    );
+                    """.format(
+                        labelsTable=MultiverseDb._SectorTagsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._SectorTagsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._SectorTagsTableName,
+                    version=MultiverseDb._SectorTagsTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._SectorTagsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._SectorTagsTableName,
+                    column='sector_id',
+                    unique=False,
+                    cursor=cursor)
+
             cursor.execute('END;')
         except:
             if cursor:
@@ -2100,11 +2138,11 @@ class MultiverseDb(object):
         sql = """
             INSERT INTO {table} (id, universe_id, is_custom, milieu,
                 sector_x, sector_y, primary_name, primary_language,
-                abbreviation, sector_label, selected, tags,
+                abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes)
             VALUES (:id, :universe_id, :is_custom, :milieu,
                 :sector_x, :sector_y, :primary_name, :primary_language,
-                :abbreviation, :sector_label, :selected, :tags,
+                :abbreviation, :sector_label, :selected,
                 :credits, :publication, :author, :publisher, :reference, :notes);
             """.format(table=MultiverseDb._SectorsTableName)
         rows = {
@@ -2119,7 +2157,6 @@ class MultiverseDb(object):
             'abbreviation': sector.abbreviation(),
             'sector_label': sector.sectorLabel(),
             'selected': 1 if sector.selected() else 0,
-            'tags': sector.tags(),
             'credits': sector.credits(),
             'publication': sector.publication(),
             'author': sector.author(),
@@ -2527,6 +2564,19 @@ class MultiverseDb(object):
                     'offset_y': label.offsetY()})
             cursor.executemany(sql, rows)
 
+        if sector.tags():
+            sql = """
+                INSERT INTO {table} (id, sector_id, value)
+                VALUES (:id, :sector_id, :value);
+                """.format(table=MultiverseDb._SectorTagsTableName)
+            rows = []
+            for tag in sector.tags():
+                rows.append({
+                    'id': tag.id(),
+                    'sector_id': tag.sectorId(),
+                    'value': tag.value()})
+            cursor.executemany(sql, rows)
+
     def _internalReadSector(
             self,
             sectorId: str,
@@ -2535,7 +2585,7 @@ class MultiverseDb(object):
         sql = """
             SELECT universe_id, is_custom, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label,
-                selected, tags, credits, publication, author, publisher,
+                selected, credits, publication, author, publisher,
                 reference, notes
             FROM {table}
             WHERE id = :id
@@ -2558,13 +2608,12 @@ class MultiverseDb(object):
             abbreviation=row[7],
             sectorLabel=row[8],
             selected=True if row[9] else False,
-            tags=row[10],
-            credits=row[11],
-            publication=row[12],
-            author=row[13],
-            publisher=row[14],
-            reference=row[15],
-            notes=row[16])
+            credits=row[10],
+            publication=row[11],
+            author=row[12],
+            publisher=row[13],
+            reference=row[14],
+            notes=row[15])
 
         sql = """
             SELECT name, language
@@ -2980,6 +3029,19 @@ class MultiverseDb(object):
                 offsetX=row[7],
                 offsetY=row[8]))
         sector.setLabels(labels)
+
+        sql = """
+            SELECT id, value
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MultiverseDb._SectorTagsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        tags = []
+        for row in cursor.fetchall():
+            tags.append(multiverse.DbTag(
+                id=row[0],
+                value=row[1]))
+        sector.setTags(tags)
 
         return sector
 

@@ -1103,6 +1103,19 @@ def _createDbLabels(
 
     return dbLabels
 
+def _createDbTags(
+        rawMetadata: survey.RawMetadata
+        ) -> typing.List[multiverse.DbTag]:
+    dbTags = []
+
+    rawTags = rawMetadata.tags()
+    if rawTags:
+        for tag in rawTags.split():
+            dbTags.append(multiverse.DbTag(value=tag))
+
+    return dbTags
+
+
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
 def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
@@ -1238,6 +1251,8 @@ def convertRawSectorToDbSector(
 
     dbLabels = _createDbLabels(rawMetadata=rawMetadata)
 
+    dbTags = _createDbTags(rawMetadata=rawMetadata)
+
     return multiverse.DbSector(
         id=sectorId,
         universeId=universeId,
@@ -1252,7 +1267,6 @@ def convertRawSectorToDbSector(
         sectorLabel=rawMetadata.sectorLabel(),
         subsectorNames=dbSubsectorNames,
         selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
-        tags=rawMetadata.tags(),
         credits=rawSources.credits() if rawSources else None,
         publication=rawPrimarySource.publication() if rawPrimarySource else None,
         author=rawPrimarySource.author() if rawPrimarySource else None,
@@ -1265,4 +1279,5 @@ def convertRawSectorToDbSector(
         routes=dbRoutes,
         borders=dbBorders,
         regions=dbRegions,
-        labels=dbLabels)
+        labels=dbLabels,
+        tags=dbTags)

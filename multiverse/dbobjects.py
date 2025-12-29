@@ -1251,6 +1251,30 @@ class DbProduct(object):
     def setReference(self, reference: typing.Optional[str]) -> None:
         self._reference = reference
 
+class DbTag(DbObject):
+    def __init__(
+            self,
+            value: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            sectorId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSectorId(sectorId)
+        self.setValue(value)
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
+
+    def value(self) -> str:
+        return self._string
+
+    def setValue(self, tag: str) -> None:
+        self._string = tag
+
 class DbSector(DbObject):
     def __init__(
             self,
@@ -1265,7 +1289,6 @@ class DbSector(DbObject):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]] = None, # Maps subsector index (0-15) to the name of that sector
             selected: bool = False,
-            tags: typing.Optional[str] = None,
             credits: typing.Optional[str] = None,
             publication: typing.Optional[str] = None,
             author: typing.Optional[str] = None,
@@ -1279,6 +1302,7 @@ class DbSector(DbObject):
             borders: typing.Optional[typing.Collection[DbBorder]] = None,
             regions: typing.Optional[typing.Collection[DbRegion]] = None,
             labels: typing.Optional[typing.Collection[DbLabel]] = None,
+            tags: typing.Optional[typing.Collection[DbTag]] = None,
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             universeId: typing.Optional[str] = None
@@ -1297,7 +1321,6 @@ class DbSector(DbObject):
         self.setSectorLabel(sectorLabel)
         self.setSubsectorNames(subsectorNames)
         self.setSelected(selected)
-        self.setTags(tags)
         self.setCredits(credits)
         self.setPublication(publication)
         self.setAuthor(author)
@@ -1311,6 +1334,7 @@ class DbSector(DbObject):
         self.setBorders(borders)
         self.setLabels(labels)
         self.setRegions(regions)
+        self.setTags(tags)
         self.setNotes(notes)
 
     def universeId(self) -> typing.Optional[str]:
@@ -1387,12 +1411,6 @@ class DbSector(DbObject):
     def setSelected(self, selected: bool) -> None:
         self._selected = selected
 
-    def tags(self) -> typing.Optional[str]:
-        return self._tags
-
-    def setTags(self, tags: typing.Optional[str]) -> None:
-        self._tags = tags
-
     def credits(self) -> typing.Optional[str]:
         return self._credits
 
@@ -1456,21 +1474,6 @@ class DbSector(DbObject):
             for system in self._systems:
                 system.setSectorId(self._id)
 
-    def addSystem(self, system: DbSystem) -> None:
-        if self._systems is None:
-            self._systems = []
-        self._systems.append(system)
-        system.setSectorId(self._id)
-
-    def removeSystem(self, systemId: str) -> None:
-        if self._systems is None:
-            return
-        for i in range(self._systems):
-            system = self._systems[i]
-            if system.id() == systemId:
-                del self._systems[i]
-                return
-
     def routes(self) -> typing.Optional[typing.Collection[DbRoute]]:
         return self._routes
 
@@ -1479,21 +1482,6 @@ class DbSector(DbObject):
         if self._routes:
             for route in self._routes:
                 route.setSectorId(self._id)
-
-    def addRoute(self, route: DbRoute) -> None:
-        if self._routes is None:
-            self._routes = []
-        self._routes.append(route)
-        route.setSectorId(self._id)
-
-    def removeRoute(self, routeId: str) -> None:
-        if self._routes is None:
-            return
-        for i in range(self._routes):
-            route = self._routes[i]
-            if route.id() == routeId:
-                del self._routes[i]
-                return
 
     def borders(self) -> typing.Optional[typing.Collection[DbBorder]]:
         return self._borders
@@ -1504,21 +1492,6 @@ class DbSector(DbObject):
             for border in self._borders:
                 border.setSectorId(self._id)
 
-    def addBorder(self, border: DbBorder) -> None:
-        if self._borders is None:
-            self._borders = []
-        self._borders.append(border)
-        border.setSectorId(self._id)
-
-    def removeBorder(self, borderId: str) -> None:
-        if self._borders is None:
-            return
-        for i in range(self._borders):
-            border = self._borders[i]
-            if border.id() == borderId:
-                del self._borders[i]
-                return
-
     def regions(self) -> typing.Optional[typing.Collection[DbRegion]]:
         return self._regions
 
@@ -1527,21 +1500,6 @@ class DbSector(DbObject):
         if self._regions:
             for region in self._regions:
                 region.setSectorId(self._id)
-
-    def addRegion(self, region: DbRegion) -> None:
-        if self._regions is None:
-            self._regions = []
-        self._regions.append(region)
-        region.setSectorId(self._id)
-
-    def removeRegion(self, regionId: str) -> None:
-        if self._regions is None:
-            return
-        for i in range(self._regions):
-            region = self._regions[i]
-            if region.id() == regionId:
-                del self._regions[i]
-                return
 
     def labels(self) -> typing.Optional[typing.Collection[DbLabel]]:
         return self._labels
@@ -1552,20 +1510,14 @@ class DbSector(DbObject):
             for label in self._labels:
                 label.setSectorId(self._id)
 
-    def addLabel(self, label: DbLabel) -> None:
-        if self._labels is None:
-            self._labels = []
-        self._labels.append(label)
-        label.setSectorId(self._id)
+    def tags(self) -> typing.Optional[typing.Collection[DbTag]]:
+        return self._tags
 
-    def removeLabel(self, labelId: str) -> None:
-        if self._labels is None:
-            return
-        for i in range(self._labels):
-            label = self._labels[i]
-            if label.id() == labelId:
-                del self._labels[i]
-                return
+    def setTags(self, tags: typing.Optional[typing.Collection[DbTag]]) -> None:
+        self._tags = list(tags) if tags else None
+        if self._tags:
+            for tag in self._tags:
+                tag.setSectorId(self._id)
 
     def notes(self) -> typing.Optional[str]:
         return self._notes
