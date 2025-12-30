@@ -972,37 +972,6 @@ class MultiverseDb(object):
                     unique=False,
                     cursor=cursor)
 
-            # Create products table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._ProductsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {productsTable} (
-                        sector_id TEXT NOT NULL,
-                        publication TEXT,
-                        author TEXT,
-                        publisher TEXT,
-                        reference TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        productsTable=MultiverseDb._ProductsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._ProductsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._ProductsTableName,
-                    version=MultiverseDb._ProductsTableSchema,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._ProductsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
             # Create systems table
             if not database.checkIfTableExists(
                     tableName=MultiverseDb._SystemsTableName,
@@ -1787,6 +1756,47 @@ class MultiverseDb(object):
                     unique=False,
                     cursor=cursor)
 
+            # Create products table
+            if not database.checkIfTableExists(
+                    tableName=MultiverseDb._ProductsTableName,
+                    cursor=cursor):
+                sql = """
+                    CREATE TABLE IF NOT EXISTS {productsTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        sector_id TEXT NOT NULL,
+                        publication TEXT,
+                        author TEXT,
+                        publisher TEXT,
+                        reference TEXT,
+                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
+                    );
+                    """.format(
+                        productsTable=MultiverseDb._ProductsTableName,
+                        sectorsTable=MultiverseDb._SectorsTableName)
+                logging.info(f'MultiverseDb creating \'{MultiverseDb._ProductsTableName}\' table')
+                cursor.execute(sql)
+
+                self._writeSchemaVersion(
+                    table=MultiverseDb._ProductsTableName,
+                    version=MultiverseDb._ProductsTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._ProductsTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
+                # Create index on foreign key column as it's used a lot by cascade deletes
+                self._createColumnIndex(
+                    table=MultiverseDb._ProductsTableName,
+                    column='sector_id',
+                    unique=False,
+                    cursor=cursor)
+
             cursor.execute('END;')
         except:
             if cursor:
@@ -2191,23 +2201,6 @@ class MultiverseDb(object):
                     'name': name})
             cursor.executemany(sql, rows)
 
-        if sector.products():
-            sql = """
-                INSERT INTO {table} (sector_id, publication, author,
-                    publisher, reference)
-                VALUES (:sector_id, :publication, :author,
-                    :publisher, :reference);
-                """.format(table=MultiverseDb._ProductsTableName)
-            rows = []
-            for product in sector.products():
-                rows.append({
-                    'sector_id': sector.id(),
-                    'publication': product.publication(),
-                    'author': product.author(),
-                    'publisher': product.publisher(),
-                    'reference': product.reference()})
-            cursor.executemany(sql, rows)
-
         if sector.allegiances():
             sql = """
                 INSERT INTO {table} (id, sector_id, code, name, legacy, base)
@@ -2577,6 +2570,24 @@ class MultiverseDb(object):
                     'value': tag.value()})
             cursor.executemany(sql, rows)
 
+        if sector.products():
+            sql = """
+                INSERT INTO {table} (id, sector_id, publication, author,
+                    publisher, reference)
+                VALUES (:id, :sector_id, :publication, :author,
+                    :publisher, :reference);
+                """.format(table=MultiverseDb._ProductsTableName)
+            rows = []
+            for product in sector.products():
+                rows.append({
+                    'id': product.id(),
+                    'sector_id': product.sectorId(),
+                    'publication': product.publication(),
+                    'author': product.author(),
+                    'publisher': product.publisher(),
+                    'reference': product.reference()})
+            cursor.executemany(sql, rows)
+
     def _internalReadSector(
             self,
             sectorId: str,
@@ -2584,9 +2595,8 @@ class MultiverseDb(object):
             ) -> typing.Optional[multiverse.DbSector]:
         sql = """
             SELECT universe_id, is_custom, milieu, sector_x, sector_y,
-                primary_name, primary_language, abbreviation, sector_label,
-                selected, credits, publication, author, publisher,
-                reference, notes
+                primary_name, primary_language, abbreviation, sector_label, selected,
+                credits, publication, author, publisher, reference, notes
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -2632,21 +2642,6 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         sector.setSubsectorNames(
             [(row[0], row[1]) for row in cursor.fetchall()])
-
-        sql = """
-            SELECT publication, author, publisher, reference
-            FROM {table}
-            WHERE sector_id = :id;
-            """.format(table=MultiverseDb._ProductsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        products = []
-        for row in cursor.fetchall():
-            products.append(multiverse.DbProduct(
-                publication=row[0],
-                author=row[1],
-                publisher=row[2],
-                reference=row[3]))
-        sector.setProducts(products)
 
         sql = """
             SELECT id, code, name, legacy, base
@@ -3042,6 +3037,22 @@ class MultiverseDb(object):
                 id=row[0],
                 value=row[1]))
         sector.setTags(tags)
+
+        sql = """
+            SELECT id, publication, author, publisher, reference
+            FROM {table}
+            WHERE sector_id = :id;
+            """.format(table=MultiverseDb._ProductsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        products = []
+        for row in cursor.fetchall():
+            products.append(multiverse.DbProduct(
+                id=row[0],
+                publication=row[1],
+                author=row[2],
+                publisher=row[3],
+                reference=row[4]))
+        sector.setProducts(products)
 
         return sector
 

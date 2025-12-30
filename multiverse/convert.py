@@ -1115,6 +1115,21 @@ def _createDbTags(
 
     return dbTags
 
+def _createDbProducts(
+        rawMetadata: survey.RawMetadata
+        ) -> typing.List[multiverse.DbProduct]:
+    rawSources = rawMetadata.sources()
+    dbProducts = []
+
+    if rawSources and rawSources.products():
+        for product in rawSources.products():
+            dbProducts.append(multiverse.DbProduct(
+                publication=product.publication(),
+                author=product.author(),
+                publisher=product.publisher(),
+                reference=product.reference()))
+
+    return dbProducts
 
 # TODO: Not sure where this should live
 _T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
@@ -1205,18 +1220,6 @@ def convertRawSectorToDbSector(
                 continue
             dbSubsectorNames.append((ord(code) - ord('A'), name))
 
-    dbProducts = None
-    rawSources = rawMetadata.sources()
-    rawPrimarySource = rawSources.primary() if rawSources else None
-    if rawSources and rawSources.products():
-        dbProducts = []
-        for product in rawSources.products():
-            dbProducts.append(multiverse.DbProduct(
-                publication=product.publication(),
-                author=product.author(),
-                publisher=product.publisher(),
-                reference=product.reference()))
-
     dbAllegianceCodeMap = _createDbAllegiances(
         milieu=milieu,
         rawMetadata=rawMetadata,
@@ -1253,6 +1256,10 @@ def convertRawSectorToDbSector(
 
     dbTags = _createDbTags(rawMetadata=rawMetadata)
 
+    dbProducts = _createDbProducts(rawMetadata=rawMetadata)
+
+    rawSources = rawMetadata.sources()
+    rawPrimarySource = rawSources.primary() if rawSources else None
     return multiverse.DbSector(
         id=sectorId,
         universeId=universeId,
@@ -1267,12 +1274,6 @@ def convertRawSectorToDbSector(
         sectorLabel=rawMetadata.sectorLabel(),
         subsectorNames=dbSubsectorNames,
         selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
-        credits=rawSources.credits() if rawSources else None,
-        publication=rawPrimarySource.publication() if rawPrimarySource else None,
-        author=rawPrimarySource.author() if rawPrimarySource else None,
-        publisher=rawPrimarySource.publisher() if rawPrimarySource else None,
-        reference=rawPrimarySource.reference() if rawPrimarySource else None,
-        products=dbProducts,
         allegiances=set(dbAllegianceCodeMap.values()), # Use unique allegiances
         sophonts=set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())), # Use unique sophonts
         systems=dbSystems,
@@ -1280,4 +1281,10 @@ def convertRawSectorToDbSector(
         borders=dbBorders,
         regions=dbRegions,
         labels=dbLabels,
-        tags=dbTags)
+        tags=dbTags,
+        credits=rawSources.credits() if rawSources else None,
+        publication=rawPrimarySource.publication() if rawPrimarySource else None,
+        author=rawPrimarySource.author() if rawPrimarySource else None,
+        publisher=rawPrimarySource.publisher() if rawPrimarySource else None,
+        reference=rawPrimarySource.reference() if rawPrimarySource else None,
+        products=dbProducts)

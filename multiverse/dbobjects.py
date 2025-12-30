@@ -1213,19 +1213,29 @@ class DbLabel(DbObject):
     def setOffsetY(self, offsetY: typing.Optional[float]) -> None:
         self._offsetY = offsetY
 
-# TODO: This should be a DbObject but it doesn't have an id in the table
-class DbProduct(object):
+class DbProduct(DbObject):
     def __init__(
             self,
             publication: typing.Optional[str] = None,
             author: typing.Optional[str] = None,
             publisher: typing.Optional[str] = None,
-            reference: typing.Optional[str] = None
+            reference: typing.Optional[str] = None,
+            id: typing.Optional[str] = None, # None means allocate an id
+            sectorId: typing.Optional[str] = None
             ) -> None:
+        super().__init__(id=id)
+
+        self.setSectorId(sectorId)
         self.setPublication(publication)
         self.setPublisher(publisher)
         self.setAuthor(author)
         self.setReference(reference)
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
 
     def publication(self) -> typing.Optional[str]:
         return self._publication
@@ -1289,12 +1299,6 @@ class DbSector(DbObject):
             sectorLabel: typing.Optional[str] = None,
             subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]] = None, # Maps subsector index (0-15) to the name of that sector
             selected: bool = False,
-            credits: typing.Optional[str] = None,
-            publication: typing.Optional[str] = None,
-            author: typing.Optional[str] = None,
-            publisher: typing.Optional[str] = None,
-            reference: typing.Optional[str] = None,
-            products: typing.Optional[typing.Collection[DbProduct]] = None,
             allegiances: typing.Optional[typing.Collection[DbAllegiance]] = None,
             sophonts: typing.Optional[typing.Collection[DbSophont]] = None,
             systems: typing.Optional[typing.Collection[DbSystem]] = None,
@@ -1303,6 +1307,12 @@ class DbSector(DbObject):
             regions: typing.Optional[typing.Collection[DbRegion]] = None,
             labels: typing.Optional[typing.Collection[DbLabel]] = None,
             tags: typing.Optional[typing.Collection[DbTag]] = None,
+            credits: typing.Optional[str] = None,
+            publication: typing.Optional[str] = None,
+            author: typing.Optional[str] = None,
+            publisher: typing.Optional[str] = None,
+            reference: typing.Optional[str] = None,
+            products: typing.Optional[typing.Collection[DbProduct]] = None,
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             universeId: typing.Optional[str] = None
@@ -1321,12 +1331,6 @@ class DbSector(DbObject):
         self.setSectorLabel(sectorLabel)
         self.setSubsectorNames(subsectorNames)
         self.setSelected(selected)
-        self.setCredits(credits)
-        self.setPublication(publication)
-        self.setAuthor(author)
-        self.setPublisher(publisher)
-        self.setReference(reference)
-        self.setProducts(products)
         self.setAllegiances(allegiances)
         self.setSophonts(sophonts)
         self.setSystems(systems)
@@ -1335,6 +1339,12 @@ class DbSector(DbObject):
         self.setLabels(labels)
         self.setRegions(regions)
         self.setTags(tags)
+        self.setCredits(credits)
+        self.setPublication(publication)
+        self.setAuthor(author)
+        self.setPublisher(publisher)
+        self.setReference(reference)
+        self.setProducts(products)
         self.setNotes(notes)
 
     def universeId(self) -> typing.Optional[str]:
@@ -1411,42 +1421,6 @@ class DbSector(DbObject):
     def setSelected(self, selected: bool) -> None:
         self._selected = selected
 
-    def credits(self) -> typing.Optional[str]:
-        return self._credits
-
-    def setCredits(self, credits: typing.Optional[str]) -> None:
-        self._credits = credits
-
-    def publication(self) -> typing.Optional[str]:
-        return self._publication
-
-    def setPublication(self, publication: typing.Optional[str]) -> None:
-        self._publication = publication
-
-    def author(self) -> typing.Optional[str]:
-        return self._author
-
-    def setAuthor(self, author: typing.Optional[str]) -> None:
-        self._author = author
-
-    def publisher(self) -> typing.Optional[str]:
-        return self._publisher
-
-    def setPublisher(self, publisher: typing.Optional[str]) -> None:
-        self._publisher = publisher
-
-    def reference(self) -> typing.Optional[str]:
-        return self._reference
-
-    def setReference(self, reference: typing.Optional[str]) -> None:
-        self._reference = reference
-
-    def products(self) -> typing.Optional[typing.Collection[DbProduct]]:
-        return self._products
-
-    def setProducts(self, products: typing.Optional[typing.Collection[DbProduct]]) -> None:
-        self._products = list(products) if products else None
-
     def allegiances(self) -> typing.Optional[typing.Collection[DbAllegiance]]:
         return self._allegiances
 
@@ -1518,6 +1492,46 @@ class DbSector(DbObject):
         if self._tags:
             for tag in self._tags:
                 tag.setSectorId(self._id)
+
+
+    def credits(self) -> typing.Optional[str]:
+        return self._credits
+
+    def setCredits(self, credits: typing.Optional[str]) -> None:
+        self._credits = credits
+
+    def publication(self) -> typing.Optional[str]:
+        return self._publication
+
+    def setPublication(self, publication: typing.Optional[str]) -> None:
+        self._publication = publication
+
+    def author(self) -> typing.Optional[str]:
+        return self._author
+
+    def setAuthor(self, author: typing.Optional[str]) -> None:
+        self._author = author
+
+    def publisher(self) -> typing.Optional[str]:
+        return self._publisher
+
+    def setPublisher(self, publisher: typing.Optional[str]) -> None:
+        self._publisher = publisher
+
+    def reference(self) -> typing.Optional[str]:
+        return self._reference
+
+    def setReference(self, reference: typing.Optional[str]) -> None:
+        self._reference = reference
+
+    def products(self) -> typing.Optional[typing.Collection[DbProduct]]:
+        return self._products
+
+    def setProducts(self, products: typing.Optional[typing.Collection[DbProduct]]) -> None:
+        self._products = list(products) if products else None
+        if self._products:
+            for product in self._products:
+                product.setSectorId(self._id)
 
     def notes(self) -> typing.Optional[str]:
         return self._notes
