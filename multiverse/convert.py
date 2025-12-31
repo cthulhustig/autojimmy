@@ -239,6 +239,41 @@ def _filterStockAllegiances(
 
     return rawFilteredAllegiances
 
+def _createDbAlternateNames(
+        rawMetadata: survey.RawMetadata
+        ) -> typing.List[multiverse.DbAlternateName]:
+    dbAlternateNames = []
+
+    if rawMetadata.alternateNames():
+        for name in rawMetadata.alternateNames():
+            if not name:
+                continue
+            language = rawMetadata.nameLanguage(name)
+            dbAlternateNames.append(multiverse.DbAlternateName(
+                name=name,
+                language=language))
+
+    return dbAlternateNames
+
+def _createDbSubsectorNames(
+        rawMetadata: survey.RawMetadata
+        ) -> typing.List[multiverse.DbSubsectorName]:
+    dbSubsectorNames = []
+
+    if rawMetadata.subsectorNames():
+        for code, name in rawMetadata.subsectorNames().items():
+            if not name:
+                continue
+
+            # Silently fix instances where code is lower case
+            code = code.upper()
+
+            dbSubsectorNames.append(multiverse.DbSubsectorName(
+                code=code,
+                name=name))
+
+    return dbSubsectorNames
+
 # This is intended to mimic the logic of GetStockAllegianceFromCode from the
 # Traveller Map source code (SecondSurvey.cs). That code handles the precedence
 # of the various legacy allegiances by checking different maps in a specific
@@ -1208,17 +1243,11 @@ def convertRawSectorToDbSector(
         rawBorderStyleMap, rawRouteStyleMap = survey.parseSectorStyleSheet(
             content=rawMetadata.styleSheet())
 
-    dbAlternateNames = None
-    if rawMetadata.alternateNames():
-        dbAlternateNames = [(name, rawMetadata.nameLanguage(name)) for name in rawMetadata.alternateNames()]
+    dbAlternateNames = _createDbAlternateNames(
+        rawMetadata=rawMetadata)
 
-    dbSubsectorNames = None
-    if rawMetadata.subsectorNames():
-        dbSubsectorNames = []
-        for code, name in rawMetadata.subsectorNames().items():
-            if not name:
-                continue
-            dbSubsectorNames.append((ord(code) - ord('A'), name))
+    dbSubsectorNames = _createDbSubsectorNames(
+        rawMetadata=rawMetadata)
 
     dbAllegianceCodeMap = _createDbAllegiances(
         milieu=milieu,
@@ -1269,11 +1298,11 @@ def convertRawSectorToDbSector(
         sectorY=rawMetadata.y(),
         primaryName=rawMetadata.canonicalName(),
         primaryLanguage=rawMetadata.nameLanguage(rawMetadata.canonicalName()),
-        alternateNames=dbAlternateNames,
         abbreviation=rawMetadata.abbreviation(),
         sectorLabel=rawMetadata.sectorLabel(),
-        subsectorNames=dbSubsectorNames,
         selected=rawMetadata.selected() if rawMetadata.selected() is not None else False,
+        alternateNames=dbAlternateNames,
+        subsectorNames=dbSubsectorNames,
         allegiances=set(dbAllegianceCodeMap.values()), # Use unique allegiances
         sophonts=set(itertools.chain(dbSophontCodeMap.values(), dbSophontNameMap.values())), # Use unique sophonts
         systems=dbSystems,

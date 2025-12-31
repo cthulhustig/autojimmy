@@ -487,8 +487,8 @@ class WorldManager(object):
         alternateNames = None
         if dbAlternateNames:
             alternateNames = []
-            for name, _ in dbAlternateNames:
-                alternateNames.append(name)
+            for dbAlternateName in dbAlternateNames:
+                alternateNames.append(dbAlternateName.name())
 
         subsectorNameMap: typing.Dict[
             str, # Subsector code (A-P)
@@ -508,12 +508,10 @@ class WorldManager(object):
             subsectorNameMap[subsectorCode] = (f'{sectorName} Subsector {subsectorCode}', True)
             subsectorWorldsMap[subsectorCode] = []
 
-        subsectorNames = dbSector.subsectorNames()
-        if subsectorNames:
-            for subsectorIndex, subsectorName in subsectorNames:
+        if dbSector.subsectorNames():
+            for dbSubsectorName in dbSector.subsectorNames():
                 # NOTE: Unlike most other places, it's intentional that this is upper case
-                subsectorCode = chr(ord('A') + subsectorIndex)
-                subsectorNameMap[subsectorCode] = (subsectorName, False)
+                subsectorNameMap[dbSubsectorName.code()] = (dbSubsectorName.name(), False)
 
         allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
         if dbSector.allegiances():

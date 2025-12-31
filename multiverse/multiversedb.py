@@ -833,6 +833,7 @@ class MultiverseDb(object):
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {namesTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
                         name TEXT NOT NULL,
                         language TEXT,
@@ -850,6 +851,15 @@ class MultiverseDb(object):
                     version=MultiverseDb._AlternateNamesTableSchema,
                     cursor=cursor)
 
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._AlternateNamesTableName,
+                    column='id',
+                    unique=True,
+                    cursor=cursor)
+
                 # Create index on foreign key column as it's used a lot by cascade deletes
                 self._createColumnIndex(
                     table=MultiverseDb._AlternateNamesTableName,
@@ -863,12 +873,13 @@ class MultiverseDb(object):
                     cursor=cursor):
                 sql = """
                     CREATE TABLE IF NOT EXISTS {namesTable} (
+                        id TEXT PRIMARY KEY NOT NULL,
                         sector_id TEXT NOT NULL,
-                        code INTEGER NOT NULL,
+                        code TEXT,
                         name TEXT NOT NULL,
                         FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
                         UNIQUE (sector_id, code),
-                        CHECK (code BETWEEN 0 AND 15)
+                        CHECK (code BETWEEN 'A' AND 'P')
                     );
                     """.format(
                         namesTable=MultiverseDb._SubsectorNamesTableName,
@@ -879,6 +890,15 @@ class MultiverseDb(object):
                 self._writeSchemaVersion(
                     table=MultiverseDb._SubsectorNamesTableName,
                     version=MultiverseDb._SubsectorNamesTableSchema,
+                    cursor=cursor)
+
+                # Create indexes for id column. The id index is needed as, even
+                # though it's the primary key, it's of type TEXT so doesn't
+                # automatically get indexes
+                self._createColumnIndex(
+                    table=MultiverseDb._SubsectorNamesTableName,
+                    column='id',
+                    unique=True,
                     cursor=cursor)
 
                 # Create index on foreign key column as it's used a lot by cascade deletes
@@ -2177,28 +2197,30 @@ class MultiverseDb(object):
 
         if sector.alternateNames():
             sql = """
-                INSERT INTO {table} (sector_id, name, language)
-                VALUES (:sector_id, :name, :language);
+                INSERT INTO {table} (id, sector_id, name, language)
+                VALUES (:id, :sector_id, :name, :language);
                 """.format(table=MultiverseDb._AlternateNamesTableName)
             rows = []
-            for name, language in sector.alternateNames():
+            for alternateName in sector.alternateNames():
                 rows.append({
-                    'sector_id': sector.id(),
-                    'name': name,
-                    'language': language})
+                    'id': alternateName.id(),
+                    'sector_id': alternateName.sectorId(),
+                    'name': alternateName.name(),
+                    'language': alternateName.language()})
             cursor.executemany(sql, rows)
 
         if sector.subsectorNames():
             sql = """
-                INSERT INTO {table} (sector_id, code, name)
-                VALUES (:sector_id, :code, :name);
+                INSERT INTO {table} (id, sector_id, code, name)
+                VALUES (:id, :sector_id, :code, :name);
                 """.format(table=MultiverseDb._SubsectorNamesTableName)
             rows = []
-            for code, name in sector.subsectorNames():
+            for subsectorName in sector.subsectorNames():
                 rows.append({
-                    'sector_id': sector.id(),
-                    'code': code,
-                    'name': name})
+                    'id': subsectorName.id(),
+                    'sector_id': subsectorName.sectorId(),
+                    'code': subsectorName.code(),
+                    'name': subsectorName.name()})
             cursor.executemany(sql, rows)
 
         if sector.allegiances():
@@ -2210,7 +2232,7 @@ class MultiverseDb(object):
             for allegiance in sector.allegiances():
                 rows.append({
                     'id': allegiance.id(),
-                    'sector_id': sector.id(),
+                    'sector_id': allegiance.sectorId(),
                     'code': allegiance.code(),
                     'name': allegiance.name(),
                     'legacy': allegiance.legacy(),
@@ -2626,22 +2648,34 @@ class MultiverseDb(object):
             notes=row[15])
 
         sql = """
-            SELECT name, language
+            SELECT id, name, language
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AlternateNamesTableName)
         cursor.execute(sql, {'id': sectorId})
-        sector.setAlternateNames(
-            [(row[0], row[1]) for row in cursor.fetchall()])
+        idToAlternateNameMap: typing.Dict[str, multiverse.DbAlternateName] = {}
+        for row in cursor.fetchall():
+            alternateName = multiverse.DbAlternateName(
+                id=row[0],
+                name=row[1],
+                language=row[2])
+            idToAlternateNameMap[alternateName.id()] = alternateName
+        sector.setAlternateNames(idToAlternateNameMap.values())
 
         sql = """
-            SELECT code, name
+            SELECT id, code, name
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SubsectorNamesTableName)
         cursor.execute(sql, {'id': sectorId})
-        sector.setSubsectorNames(
-            [(row[0], row[1]) for row in cursor.fetchall()])
+        idToSubsectorNameMap: typing.Dict[str, multiverse.DbSubsectorName] = {}
+        for row in cursor.fetchall():
+            subsectorName = multiverse.DbSubsectorName(
+                id=row[0],
+                code=row[1],
+                name=row[2])
+            idToSubsectorNameMap[subsectorName.id()] = subsectorName
+        sector.setSubsectorNames(idToSubsectorNameMap.values())
 
         sql = """
             SELECT id, code, name, legacy, base

@@ -818,6 +818,70 @@ class DbSystem(DbObject):
     def setNotes(self, notes: typing.Optional[str]) -> None:
         self._notes = notes
 
+class DbAlternateName(DbObject):
+    def __init__(
+            self,
+            name: str,
+            language: typing.Optional[str] = None,
+            id: typing.Optional[str] = None, # None means allocate an id
+            sectorId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSectorId(sectorId)
+        self.setName(name)
+        self.setLanguage(language)
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str) -> None:
+        self._name = name
+
+    def language(self) -> typing.Optional[str]:
+        return self._language
+
+    def setLanguage(self, language: typing.Optional[str]) -> None:
+        self._language = language
+
+class DbSubsectorName(DbObject):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            id: typing.Optional[str] = None, # None means allocate an id
+            sectorId: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id)
+
+        self.setSectorId(sectorId)
+        self.setCode(code)
+        self.setName(name)
+
+    def sectorId(self) -> typing.Optional[str]:
+        return self._sectorId
+
+    def setSectorId(self, sectorId: str) -> None:
+        self._sectorId = sectorId
+
+    def code(self) -> str:
+        return self._code
+
+    def setCode(self, code: str) -> None:
+        self._code = code
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str) -> None:
+        self._name = name
+
 class DbRoute(DbObject):
     def __init__(
             self,
@@ -1294,11 +1358,11 @@ class DbSector(DbObject):
             sectorY: int,
             primaryName: str,
             primaryLanguage: typing.Optional[str] = None,
-            alternateNames: typing.Optional[typing.Collection[typing.Tuple[str, typing.Optional[str]]]] = None, # (Name, Language)
             abbreviation: typing.Optional[str] = None,
             sectorLabel: typing.Optional[str] = None,
-            subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]] = None, # Maps subsector index (0-15) to the name of that sector
             selected: bool = False,
+            alternateNames: typing.Optional[typing.Collection[DbAlternateName]] = None,
+            subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]] = None,
             allegiances: typing.Optional[typing.Collection[DbAllegiance]] = None,
             sophonts: typing.Optional[typing.Collection[DbSophont]] = None,
             systems: typing.Optional[typing.Collection[DbSystem]] = None,
@@ -1326,11 +1390,11 @@ class DbSector(DbObject):
         self.setSectorY(sectorY)
         self.setPrimaryName(primaryName)
         self.setPrimaryLanguage(primaryLanguage)
-        self.setAlternateNames(alternateNames)
         self.setAbbreviation(abbreviation)
         self.setSectorLabel(sectorLabel)
-        self.setSubsectorNames(subsectorNames)
         self.setSelected(selected)
+        self.setAlternateNames(alternateNames)
+        self.setSubsectorNames(subsectorNames)
         self.setAllegiances(allegiances)
         self.setSophonts(sophonts)
         self.setSystems(systems)
@@ -1389,13 +1453,6 @@ class DbSector(DbObject):
     def setPrimaryLanguage(self, primaryLanguage: typing.Optional[str]) -> None:
         self._primaryLanguage = primaryLanguage
 
-    # Maps name to optional language
-    def alternateNames(self) -> typing.Optional[typing.Collection[typing.Tuple[str, typing.Optional[str]]]]:
-        return self._alternateNames
-
-    def setAlternateNames(self, alternateNames: typing.Optional[typing.Collection[typing.Tuple[str, typing.Optional[str]]]]) -> None:
-        self._alternateNames = list(alternateNames) if alternateNames else None
-
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
 
@@ -1408,18 +1465,29 @@ class DbSector(DbObject):
     def setSectorLabel(self, sectorLabel: typing.Optional[str]) -> None:
         self._sectorLabel = sectorLabel
 
-    # Maps subsector int index (0-15) to the name for that subsector
-    def subsectorNames(self) -> typing.Optional[typing.Collection[typing.Tuple[int, str]]]:
-        return self._subsectorNames
-
-    def setSubsectorNames(self, subsectorNames: typing.Optional[typing.Collection[typing.Tuple[int, str]]]) -> None:
-        self._subsectorNames = list(subsectorNames) if subsectorNames else None
-
     def selected(self) -> bool:
         return self._selected
 
     def setSelected(self, selected: bool) -> None:
         self._selected = selected
+
+    def alternateNames(self) -> typing.Optional[typing.Collection[DbAlternateName]]:
+        return self._alternateNames
+
+    def setAlternateNames(self, alternateNames: typing.Optional[typing.Collection[DbAlternateName]]) -> None:
+        self._alternateNames = list(alternateNames) if alternateNames else None
+        if self._alternateNames:
+            for alternateName in self._alternateNames:
+                alternateName.setSectorId(self._id)
+
+    def subsectorNames(self) -> typing.Optional[typing.Collection[DbSubsectorName]]:
+        return self._subsectorNames
+
+    def setSubsectorNames(self, subsectorNames: typing.Optional[typing.Collection[DbSubsectorName]]) -> None:
+        self._subsectorNames = list(subsectorNames) if subsectorNames else None
+        if self._subsectorNames:
+            for subsectorName in self._subsectorNames:
+                subsectorName.setSectorId(self._id)
 
     def allegiances(self) -> typing.Optional[typing.Collection[DbAllegiance]]:
         return self._allegiances
