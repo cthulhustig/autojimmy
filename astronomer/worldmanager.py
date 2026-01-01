@@ -564,8 +564,6 @@ class WorldManager(object):
                         if not allegiance:
                             raise RuntimeError(f'World {worldName} is using an allegiance that is not defined by the system')
 
-                    # TODO: All this checking for null and using an empty string instead
-                    # is ugly as hell
                     zone = astronomer.parseZoneString(
                         dbSystem.zone() if dbSystem.zone() else '')
                     uwp = astronomer.UWP(

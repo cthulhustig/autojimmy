@@ -14,16 +14,6 @@ import typing
 # are preserved on systems/sectors. I could split notes in a separate table
 # but it's probably easiest to just read the existing notes and set the
 # notes on the new object before writing it to the db.
-# TODO: Do I need to add any kind of thread locking to public methods? I'm
-# not sure I do with the current implementation as I believe the sqlite
-# db is thread saf and I'm not maintaining an internal state. If I add
-# connection pooling I suspect I'll need something to protect the pool
-# TODO: I think pretty much every table should use a unique id for rows,
-# possibly with a few exceptions like the array used to store points.
-# It means I can do individual addressing of elements in the future without
-# needing a migration. I think DB objects would need updated to mirror the
-# fact objects in the table have ids but I don't think I'd actually need to
-# make use of it right now.
 # TODO: Long term I suspect I'm going to want to be able to have multiple
 # worlds in a system with different details (UWP, trade codes etc) for each.
 # It will probably be easier to make the split now.
