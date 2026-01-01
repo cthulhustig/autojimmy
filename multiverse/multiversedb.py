@@ -1,6 +1,7 @@
 import common
 import database
 import datetime
+import enum
 import logging
 import multiverse
 import os
@@ -35,6 +36,145 @@ import typing
 # - Stars would need to be for the system rather than for the world
 # TODO: All the objects that take universe/sector/system id, should take the
 # object rather than the id (similar to what happens for system Allegiance)
+
+class ColumnDef(object):
+    class ColumnType(enum.Enum):
+        Text = 0
+        Integer = 1
+        Real = 2
+        Boolean = 3
+
+    class ForeignKeyDeleteOp(enum.Enum):
+        Cascade = 0
+        SetNull = 1
+
+    def __init__(
+            self,
+            columnName: str,
+            columnType: ColumnType,
+            isPrimaryKey: bool = False,
+            isNullable: bool = True, # Match Sqlite default (ignored for primary key)
+            isUnique: bool = False, # Match sqlite default (ignored for primary key)
+            isIndexed: bool = False, # Primary and foreign key columns are always indexed
+            foreignTableName: typing.Optional[str] = None,
+            foreignColumnName: typing.Optional[str] = None,
+            foreignDeleteOp: typing.Optional[ForeignKeyDeleteOp] = None,
+            validRange: typing.Optional[typing.Tuple[
+                typing.Union[str, int, float], # Range min
+                typing.Union[str, int, float] # Range max
+                ]] = None
+            ):
+        if not columnName:
+            raise ValueError('Column name can\'t be empty')
+
+        if isPrimaryKey and (columnType is not ColumnDef.ColumnType.Text and columnType is not ColumnDef.ColumnType.Integer):
+            raise ValueError('Primary key column type must be Text or Integer')
+
+        if foreignTableName and (not foreignColumnName or not foreignDeleteOp):
+            raise ValueError('Foreign key column name and delete operation must be specified if foreign key table name is specified')
+        if foreignColumnName and (not foreignTableName or not foreignDeleteOp):
+            raise ValueError('Foreign key table name and delete operation must be specified if foreign key column name is specified')
+        if foreignDeleteOp and (not foreignTableName or not foreignColumnName):
+            raise ValueError('Foreign key table and column names must be specified if foreign key delete operation is specified')
+
+        if validRange:
+            if columnType is ColumnDef.ColumnType.Text:
+                if not isinstance(validRange[0], str) and not isinstance(validRange[1], str):
+                    raise ValueError('Valid range for Text column must be of type str')
+            elif columnType is ColumnDef.ColumnType.Integer:
+                if not isinstance(validRange[0], int) and not isinstance(validRange[1], int):
+                    raise ValueError('Valid range for Integer column must be of type int')
+            elif columnType is ColumnDef.ColumnType.Real:
+                if not isinstance(validRange[0], [float, int]) and not isinstance(validRange[1], [float, int]):
+                    raise ValueError('Valid range for Float column must be of type float or int')
+            elif columnType is ColumnDef.ColumnType.Boolean:
+                raise ValueError('Valid range for is not allowed for Boolean columns')
+
+        hasForeignKey = foreignTableName and foreignColumnName and foreignDeleteOp
+
+        self._columnName = columnName
+        self._columnType = columnType
+        self._isPrimaryKey = isPrimaryKey
+        self._isNullable = isNullable if not self._isPrimaryKey else False
+        self._isUnique = isUnique if not self._isPrimaryKey  else True
+        self._isIndexed = isIndexed if (not self._isPrimaryKey and not hasForeignKey) else True
+        self._foreignTableName = foreignTableName
+        self._foreignColumnName = foreignColumnName
+        self._foreignDeleteOp = foreignDeleteOp
+        self._validRange = validRange
+
+    def columnName(self) -> str:
+        return self._columnName
+
+    def columnType(self) -> typing.Union[typing.Type[str], typing.Type[int], typing.Type[float], typing.Type[bool]]:
+        return self._columnType
+
+    def isPrimaryKey(self) -> bool:
+        return self._isPrimaryKey
+
+    def isNullable(self) -> bool:
+        return self._isNullable
+
+    def isUnique(self) -> bool:
+        return self._isUnique
+
+    def isIndexed(self) -> bool:
+        return self._isIndexed
+
+    def hasForeignKey(self) -> bool:
+        return self._foreignTableName and self._foreignColumnName and self._foreignDeleteOp
+
+    def foreignTableName(self) -> typing.Optional[str]:
+        return self._foreignTableName
+
+    def foreignColumnName(self) -> typing.Optional[str]:
+        return self._foreignColumnName
+
+    def foreignDeleteOp(self) -> typing.Optional[ForeignKeyDeleteOp]:
+        return self._foreignDeleteOp
+
+    def validRange(self) -> typing.Optional[typing.Tuple[
+            typing.Union[str, int, float], # Range min
+            typing.Union[str, int, float] # Range max
+            ]]:
+        return self._validRange
+
+class UniqueConstraintDef(object):
+    def __init__(
+            self,
+            columnNames: typing.Collection[str]
+            ):
+        if not columnNames:
+            raise ValueError('Unique constraint column names can\'t be empty')
+        for index, name in enumerate(columnNames):
+            if not name:
+                raise ValueError(f'Unique constraint column name {index} can\'t be empty')
+
+        self._columnNames = list(columnNames)
+
+    def columnNames(self) -> typing.Collection[str]:
+        return self._columnNames
+
+class ColumnIndexDef(object):
+    def __init__(
+            self,
+            columnNames: typing.Collection[str],
+            isUnique: bool = False # Match Sqlite default
+            ):
+        if not columnNames:
+            raise ValueError('Column index column names can\'t be empty')
+        for index, name in enumerate(columnNames):
+            if not name:
+                raise ValueError(f'Column index column name {index} can\'t be empty')
+
+        self._columnNames = list(columnNames)
+        self._isUnique = isUnique
+
+    def columnNames(self) -> typing.Collection[str]:
+        return self._columnNames
+
+    def isUnique(self) -> bool:
+        return self._isUnique
 
 class DbUniverseInfo(object):
     def __init__(
@@ -206,14 +346,17 @@ class MultiverseDb(object):
     _AllegiancesTableName = 'allegiances'
     _AllegiancesTableSchema = 1
 
+    _SophontsTableName = 'sophonts'
+    _SophontsTableSchema = 1
+
+    _SystemsTableName = 'systems'
+    _SystemsTableSchema = 1
+
     _NobilitiesTableName = 'nobilities'
     _NobilitiesTableSchema = 1
 
     _TradeCodesTableName = 'trade_codes'
     _TradeCodesTableSchema = 1
-
-    _SophontsTableName = 'sophonts'
-    _SophontsTableSchema = 1
 
     _SophontPopulationsTableName = 'sophont_populations'
     _SophontPopulationsTableSchema = 1
@@ -233,8 +376,11 @@ class MultiverseDb(object):
     _CustomRemarksTableName = 'custom_remarks'
     _CustomRemarksTableSchema = 1
 
-    _ProductsTableName = 'products'
-    _ProductsTableSchema = 1
+    _BasesTableName = 'bases'
+    _BasesTableSchema = 1
+
+    _StarsTableName = 'stars'
+    _StarsTableSchema = 1
 
     _RoutesTableName = 'routes'
     _RoutesTableSchema = 1
@@ -257,14 +403,8 @@ class MultiverseDb(object):
     _SectorTagsTableName = 'sector_tags'
     _SectorTagsTableSchema = 1
 
-    _SystemsTableName = 'systems'
-    _SystemsTableSchema = 1
-
-    _BasesTableName = 'bases'
-    _BasesTableSchema = 1
-
-    _StarsTableName = 'stars'
-    _StarsTableSchema = 1
+    _ProductsTableName = 'products'
+    _ProductsTableSchema = 1
 
     _DefaultUniverseId = 'default'
     _DefaultUniverseAppVersionKey = 'default_universe_app_version'
@@ -727,1095 +867,427 @@ class MultiverseDb(object):
                 logging.info(f'MultiverseDb creating \'{MultiverseDb._MetadataTableName}\' table')
                 cursor.execute(sql)
 
-            # Create universe table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._UniversesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {table} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        name TEXT NOT NULL,
-                        description TEXT,
-                        notes TEXT,
-                        UNIQUE (name)
-                    );
-                    """.format(table=MultiverseDb._UniversesTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._UniversesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._UniversesTableName,
-                    version=MultiverseDb._UniversesTableSchema,
-                    cursor=cursor)
-
-                # Create schema table indexes for id column. The id index is
-                # needed as, even though it's the primary key, it's of type
-                # TEXT so doesn't automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._UniversesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-            # Create sectors table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._SectorsTableName,
-                    cursor=cursor):
-                # TODO: I probably want to store the milieu as the integer year but I'll need
-                # something to support named milieu (e.g. IW for Interstellar War). It probably
-                # means a separate milieu description table that stores per universe year to
-                # name mapping
-                # TODO: The is_custom column is technically redundant as the information can
-                # be implied by the universe id. I should probably remove it but it's currently
-                # making some queries a little easier
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {sectorsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        universe_id TEXT,
-                        is_custom INTEGER NOT NULL,
-                        milieu TEXT NOT NULL,
-                        sector_x INTEGER NOT NULL,
-                        sector_y INTEGER NOT NULL,
-                        primary_name TEXT NOT NULL,
-                        primary_language TEXT,
-                        abbreviation TEXT,
-                        sector_label TEXT,
-                        selected INTEGER NOT NULL,
-                        credits TEXT,
-                        publication TEXT,
-                        author TEXT,
-                        publisher TEXT,
-                        reference TEXT,
-                        notes TEXT,
-                        FOREIGN KEY(universe_id) REFERENCES {universesTable}(id) ON DELETE CASCADE,
-                        UNIQUE (universe_id, milieu, sector_x, sector_y)
-                    );
-                    """.format(
-                        sectorsTable=MultiverseDb._SectorsTableName,
-                        universesTable=MultiverseDb._UniversesTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._SectorsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._SectorsTableName,
-                    version=MultiverseDb._SectorsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._SectorsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._SectorsTableName,
-                    column='universe_id',
-                    unique=False,
-                    cursor=cursor)
-
-                # Create index on universe id and sector position. This is used
-                # to speed up the queries when determining which default sectors
-                # should be used. The index is unique as each universe should
-                # only ever have one sector at a location for a given milieu
-                self._createMultiColumnIndex(
-                    table=MultiverseDb._SectorsTableName,
-                    columns=['universe_id', 'milieu', 'sector_x', 'sector_y'],
-                    unique=True,
-                    cursor=cursor)
-
-            # Create sector alternate names table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._AlternateNamesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {namesTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        language TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                        UNIQUE (sector_id, name)
-                    );
-                    """.format(
-                        namesTable=MultiverseDb._AlternateNamesTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._AlternateNamesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._AlternateNamesTableName,
-                    version=MultiverseDb._AlternateNamesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._AlternateNamesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._AlternateNamesTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create subsector names table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._SubsectorNamesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {namesTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        code TEXT,
-                        name TEXT NOT NULL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (sector_id, code),
-                        CHECK (code BETWEEN 'A' AND 'P')
-                    );
-                    """.format(
-                        namesTable=MultiverseDb._SubsectorNamesTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._SubsectorNamesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._SubsectorNamesTableName,
-                    version=MultiverseDb._SubsectorNamesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._SubsectorNamesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._SubsectorNamesTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create allegiances table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._AllegiancesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {allegiancesTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        code TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        legacy TEXT,
-                        base TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                        UNIQUE (sector_id, code)
-                    );
-                    """.format(
-                        allegiancesTable=MultiverseDb._AllegiancesTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._AllegiancesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._AllegiancesTableName,
-                    version=MultiverseDb._AllegiancesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._AllegiancesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._AllegiancesTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create sophonts table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._SophontsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {sophontsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        code TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        is_major INTEGER NOT NULL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (sector_id, name),
-                        UNIQUE (sector_id, code)
-                    );
-                    """.format(
-                        sophontsTable=MultiverseDb._SophontsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._SophontsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._SophontsTableName,
-                    version=MultiverseDb._SophontsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._SophontsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._SophontsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create systems table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._SystemsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {systemsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        hex_x INTEGER NOT NULL,
-                        hex_y INTEGER NOT NULL,
-                        name TEXT,
-                        starport TEXT,
-                        world_size TEXT,
-                        atmosphere TEXT,
-                        hydrographics TEXT,
-                        population TEXT,
-                        government TEXT,
-                        law_level TEXT,
-                        tech_level TEXT,
-                        resources TEXT,
-                        labour TEXT,
-                        infrastructure TEXT,
-                        efficiency TEXT,
-                        heterogeneity TEXT,
-                        acceptance TEXT,
-                        strangeness TEXT,
-                        symbols TEXT,
-                        population_multiplier TEXT,
-                        planetoid_belts TEXT,
-                        gas_giants TEXT,
-                        zone TEXT,
-                        system_worlds INTEGER,
-                        allegiance_id TEXT,
-                        notes TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
-                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE SET NULL,
-                        UNIQUE (sector_id, hex_x, hex_y)
-                    );
-                    """.format(
-                        systemsTable=MultiverseDb._SystemsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName,
-                        allegiancesTable=MultiverseDb._AllegiancesTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._SystemsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._SystemsTableName,
-                    version=MultiverseDb._SystemsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._SystemsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._SystemsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-                self._createColumnIndex(
-                    table=MultiverseDb._SystemsTableName,
-                    column='allegiance_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create nobilities table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._NobilitiesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {nobilitiesTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        code TEXT NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (system_id, code)
-                    );
-                    """.format(
-                        nobilitiesTable=MultiverseDb._NobilitiesTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._NobilitiesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._NobilitiesTableName,
-                    version=MultiverseDb._NobilitiesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._NobilitiesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._NobilitiesTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create trade codes table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._TradeCodesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {tradeCodeTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        code TEXT NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (system_id, code)
-                    );
-                    """.format(
-                        tradeCodeTable=MultiverseDb._TradeCodesTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._TradeCodesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._TradeCodesTableName,
-                    version=MultiverseDb._TradeCodesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._TradeCodesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._TradeCodesTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create sophont populations table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._SophontPopulationsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {populationsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        sophont_id TEXT NOT NULL,
-                        percentage INTEGER,
-                        is_home_world INTEGER NOT NULL,
-                        is_die_back INTEGER NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
-                        FOREIGN KEY(sophont_id) REFERENCES {sophontsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (system_id, sophont_id)
-                    );
-                    """.format(
-                        populationsTable=MultiverseDb._SophontPopulationsTableName,
-                        sophontsTable=MultiverseDb._SophontsTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._SophontPopulationsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._SophontPopulationsTableName,
-                    version=MultiverseDb._SophontPopulationsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._SophontPopulationsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._SophontPopulationsTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-                self._createColumnIndex(
-                    table=MultiverseDb._SophontPopulationsTableName,
-                    column='sophont_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create ruling allegiances table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._RulingAllegiancesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {rulingTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        allegiance_id TEXT NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
-                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE CASCADE,
-                        UNIQUE (system_id, allegiance_id)
-                    );
-                    """.format(
-                        rulingTable=MultiverseDb._RulingAllegiancesTableName,
-                        systemsTable=MultiverseDb._SystemsTableName,
-                        allegiancesTable=MultiverseDb._AllegiancesTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._RulingAllegiancesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._RulingAllegiancesTableName,
-                    version=MultiverseDb._RulingAllegiancesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._RulingAllegiancesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._RulingAllegiancesTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-                self._createColumnIndex(
-                    table=MultiverseDb._RulingAllegiancesTableName,
-                    column='allegiance_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create owning system table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._OwningSystemsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {ownerTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        hex_x INTEGER NOT NULL,
-                        hex_y INTEGER NOT NULL,
-                        sector_code TEXT,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (system_id, hex_x, hex_y, sector_code)
-                    );
-                    """.format(
-                        ownerTable=MultiverseDb._OwningSystemsTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._OwningSystemsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._OwningSystemsTableName,
-                    version=MultiverseDb._OwningSystemsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._OwningSystemsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._OwningSystemsTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create colony system table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._ColonySystemsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {colonyTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        hex_x INTEGER NOT NULL,
-                        hex_y INTEGER NOT NULL,
-                        sector_code TEXT,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE,
-                        UNIQUE (system_id, hex_x, hex_y, sector_code)
-                    );
-                    """.format(
-                        colonyTable=MultiverseDb._ColonySystemsTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._ColonySystemsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._ColonySystemsTableName,
-                    version=MultiverseDb._ColonySystemsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._ColonySystemsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._ColonySystemsTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create research stations
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._ResearchStationTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {stationsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        code TEXT NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
-                        UNIQUE (system_id, code)
-                    );
-                    """.format(
-                        stationsTable=MultiverseDb._ResearchStationTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._ResearchStationTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._ResearchStationTableName,
-                    version=MultiverseDb._BasesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._ResearchStationTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._ResearchStationTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create custom remarks table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._CustomRemarksTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {remarksTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        remark TEXT NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        remarksTable=MultiverseDb._CustomRemarksTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._CustomRemarksTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._CustomRemarksTableName,
-                    version=MultiverseDb._CustomRemarksTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._CustomRemarksTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._CustomRemarksTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create bases table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._BasesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {basesTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        code TEXT NOT NULL,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
-                        UNIQUE (system_id, code)
-                    );
-                    """.format(
-                        basesTable=MultiverseDb._BasesTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._BasesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._BasesTableName,
-                    version=MultiverseDb._BasesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._BasesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._BasesTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create stars table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._StarsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {starsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        system_id TEXT NOT NULL,
-                        luminosity_class TEXT NOT NULL,
-                        spectral_class TEXT,
-                        spectral_scale TEXT,
-                        FOREIGN KEY(system_id) REFERENCES {systemsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        starsTable=MultiverseDb._StarsTableName,
-                        systemsTable=MultiverseDb._SystemsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._StarsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._StarsTableName,
-                    version=MultiverseDb._StarsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._StarsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._StarsTableName,
-                    column='system_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create routes table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._RoutesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {routesTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        start_hex_x INTEGER NOT NULL,
-                        start_hex_y INTEGER NOT NULL,
-                        end_hex_x INTEGER NOT NULL,
-                        end_hex_y INTEGER NOT NULL,
-                        start_offset_x INTEGER NOT NULL,
-                        start_offset_y INTEGER NOT NULL,
-                        end_offset_x INTEGER NOT NULL,
-                        end_offset_y INTEGER NOT NULL,
-                        type TEXT,
-                        style TEXT,
-                        colour TEXT,
-                        width REAL,
-                        allegiance_id TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
-                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE SET NULL
-                    );
-                    """.format(
-                        routesTable=MultiverseDb._RoutesTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName,
-                        allegiancesTable=MultiverseDb._AllegiancesTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._RoutesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._RoutesTableName,
-                    version=MultiverseDb._RoutesTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._RoutesTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._RoutesTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-                self._createColumnIndex(
-                    table=MultiverseDb._RoutesTableName,
-                    column='allegiance_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create borders table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._BordersTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {bordersTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        label TEXT,
-                        show_label INTEGER NOT NULL,
-                        wrap_label INTEGER NOT NULL,
-                        label_hex_x INTEGER,
-                        label_hex_y INTEGER,
-                        label_offset_x REAL,
-                        label_offset_y REAL,
-                        colour TEXT,
-                        style TEXT,
-                        allegiance_id TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE,
-                        FOREIGN KEY(allegiance_id) REFERENCES {allegiancesTable}(id) ON DELETE SET NULL
-                    );
-                    """.format(
-                        bordersTable=MultiverseDb._BordersTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName,
-                        allegiancesTable=MultiverseDb._AllegiancesTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._BordersTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._BordersTableName,
-                    version=MultiverseDb._BordersTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._BordersTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._BordersTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-                self._createColumnIndex(
-                    table=MultiverseDb._BordersTableName,
-                    column='allegiance_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create border hexes table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._BorderHexesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {hexesTable} (
-                        border_id TEXT NOT NULL,
-                        hex_x INTEGER NOT NULL,
-                        hex_y INTEGER NOT NULL,
-                        FOREIGN KEY(border_id) REFERENCES {bordersTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        hexesTable=MultiverseDb._BorderHexesTableName,
-                        bordersTable=MultiverseDb._BordersTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._BorderHexesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._BorderHexesTableName,
-                    version=MultiverseDb._BorderHexesTableSchema,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._BorderHexesTableName,
-                    column='border_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create regions table
-            # TODO: The only difference between regions and borders seems to be
-            # that borders have a style but regions don't. It feels like there
-            # must be a way to do this that doesn't involve having two tables
-            # and object definitions
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._RegionsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {regionsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        label TEXT,
-                        show_label INTEGER NOT NULL,
-                        wrap_label INTEGER NOT NULL,
-                        label_hex_x INTEGER,
-                        label_hex_y INTEGER,
-                        label_offset_x REAL,
-                        label_offset_y REAL,
-                        colour TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        regionsTable=MultiverseDb._RegionsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._RegionsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._RegionsTableName,
-                    version=MultiverseDb._RegionsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._RegionsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._RegionsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create region hexes table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._RegionHexesTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {hexesTable} (
-                        region_id TEXT NOT NULL,
-                        hex_x INTEGER NOT NULL,
-                        hex_y INTEGER NOT NULL,
-                        FOREIGN KEY(region_id) REFERENCES {regionsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        hexesTable=MultiverseDb._RegionHexesTableName,
-                        regionsTable=MultiverseDb._RegionsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._RegionHexesTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._RegionHexesTableName,
-                    version=MultiverseDb._RegionHexesTableSchema,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._RegionHexesTableName,
-                    column='region_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create labels table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._LabelsTableName,
-                    cursor=cursor):
-                # TODO: Should offset be optional?
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {labelsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        text TEXT NOT NULL,
-                        hex_x INTEGER NOT NULL,
-                        hex_y INTEGER NOT NULL,
-                        wrap INTEGER NOT NULL,
-                        colour TEXT,
-                        size TEXT,
-                        offset_x REAL,
-                        offset_y REAL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        labelsTable=MultiverseDb._LabelsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._LabelsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._LabelsTableName,
-                    version=MultiverseDb._LabelsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._LabelsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._LabelsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create sector tags table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._SectorTagsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {labelsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        value TEXT NOT NULL,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        labelsTable=MultiverseDb._SectorTagsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._SectorTagsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._SectorTagsTableName,
-                    version=MultiverseDb._SectorTagsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._SectorTagsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._SectorTagsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
-
-            # Create products table
-            if not database.checkIfTableExists(
-                    tableName=MultiverseDb._ProductsTableName,
-                    cursor=cursor):
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {productsTable} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        sector_id TEXT NOT NULL,
-                        publication TEXT,
-                        author TEXT,
-                        publisher TEXT,
-                        reference TEXT,
-                        FOREIGN KEY(sector_id) REFERENCES {sectorsTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                        productsTable=MultiverseDb._ProductsTableName,
-                        sectorsTable=MultiverseDb._SectorsTableName)
-                logging.info(f'MultiverseDb creating \'{MultiverseDb._ProductsTableName}\' table')
-                cursor.execute(sql)
-
-                self._writeSchemaVersion(
-                    table=MultiverseDb._ProductsTableName,
-                    version=MultiverseDb._ProductsTableSchema,
-                    cursor=cursor)
-
-                # Create indexes for id column. The id index is needed as, even
-                # though it's the primary key, it's of type TEXT so doesn't
-                # automatically get indexes
-                self._createColumnIndex(
-                    table=MultiverseDb._ProductsTableName,
-                    column='id',
-                    unique=True,
-                    cursor=cursor)
-
-                # Create index on foreign key column as it's used a lot by cascade deletes
-                self._createColumnIndex(
-                    table=MultiverseDb._ProductsTableName,
-                    column='sector_id',
-                    unique=False,
-                    cursor=cursor)
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._UniversesTableName,
+                requiredSchemaVersion=MultiverseDb._UniversesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False, isUnique=True),
+                    ColumnDef(columnName='description', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='notes', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._SectorsTableName,
+                requiredSchemaVersion=MultiverseDb._SectorsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='universe_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._UniversesTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: The is_custom column is technically redundant as the information can
+                    # be implied by the universe id. I should probably remove it but it's currently
+                    # making some queries a little easier
+                    ColumnDef(columnName='is_custom', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    # TODO: I probably want to store the milieu as the integer year but I'll need
+                    # something to support named milieu (e.g. IW for Interstellar War). It probably
+                    # means a separate milieu description table that stores per universe year to
+                    # name mapping
+                    ColumnDef(columnName='milieu', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='sector_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='sector_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='primary_name', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='primary_language', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='abbreviation', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='sector_label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='selected', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='credits', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='publication', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='author', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='publisher', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='reference', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='notes', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['universe_id', 'milieu', 'sector_x', 'sector_y'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._AlternateNamesTableName,
+                requiredSchemaVersion=MultiverseDb._AlternateNamesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='language', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['sector_id', 'name'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._SubsectorNamesTableName,
+                requiredSchemaVersion=MultiverseDb._SubsectorNamesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              validRange=('A', 'P')),
+                    ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._AllegiancesTableName,
+                requiredSchemaVersion=MultiverseDb._AllegiancesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='legacy', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='base', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['sector_id', 'code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._SophontsTableName,
+                requiredSchemaVersion=MultiverseDb._SophontsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='is_major', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['sector_id', 'code']),
+                    UniqueConstraintDef(columnNames=['sector_id', 'name'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._SystemsTableName,
+                requiredSchemaVersion=MultiverseDb._SystemsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='starport', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='world_size', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='atmosphere', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='hydrographics', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='population', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='government', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='law_level', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='tech_level', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='resources', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='labour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='infrastructure', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='efficiency', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='heterogeneity', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='acceptance', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='strangeness', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='symbols', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='population_multiplier', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='planetoid_belts', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='gas_giants', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='zone', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='system_worlds', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
+                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull),
+                    ColumnDef(columnName='notes', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['sector_id', 'hex_x', 'hex_y'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._NobilitiesTableName,
+                requiredSchemaVersion=MultiverseDb._NobilitiesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._TradeCodesTableName,
+                requiredSchemaVersion=MultiverseDb._TradeCodesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._SophontPopulationsTableName,
+                requiredSchemaVersion=MultiverseDb._SophontPopulationsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='sophont_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SophontsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='percentage', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='is_home_world', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='is_die_back', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'sophont_id'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._RulingAllegiancesTableName,
+                requiredSchemaVersion=MultiverseDb._RulingAllegiancesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'allegiance_id'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._OwningSystemsTableName,
+                requiredSchemaVersion=MultiverseDb._OwningSystemsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    # TODO: Should this be sector_abbreviation rather than sector_code
+                    ColumnDef(columnName='sector_code', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'hex_x', 'hex_y', 'sector_code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._ColonySystemsTableName,
+                requiredSchemaVersion=MultiverseDb._ColonySystemsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    # TODO: Should this be sector_abbreviation rather than sector_code
+                    ColumnDef(columnName='sector_code', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'hex_x', 'hex_y', 'sector_code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._ResearchStationTableName,
+                requiredSchemaVersion=MultiverseDb._ResearchStationTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._CustomRemarksTableName,
+                requiredSchemaVersion=MultiverseDb._CustomRemarksTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: Should this be text or value rather than remark
+                    ColumnDef(columnName='remark', columnType=ColumnDef.ColumnType.Text, isNullable=False)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._BasesTableName,
+                requiredSchemaVersion=MultiverseDb._BasesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    # TODO: Should this be text or value rather than remark
+                    ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['system_id', 'code'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._StarsTableName,
+                requiredSchemaVersion=MultiverseDb._StarsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='luminosity_class', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='spectral_class', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='spectral_scale', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._RoutesTableName,
+                requiredSchemaVersion=MultiverseDb._RoutesTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='start_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='start_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='end_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='end_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    # TODO: Do I actually need to store these offsets? Can they not be calculated based on the
+                    # start/end hex
+                    ColumnDef(columnName='start_offset_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='start_offset_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='end_offset_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='end_offset_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='type', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='width', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
+                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._BordersTableName,
+                requiredSchemaVersion=MultiverseDb._BordersTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='show_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='label_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='label_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='label_offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='label_offset_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
+                              foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._BorderHexesTableName,
+                requiredSchemaVersion=MultiverseDb._BorderHexesTableSchema,
+                columns=[
+                    ColumnDef(columnName='border_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._BordersTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._RegionsTableName,
+                requiredSchemaVersion=MultiverseDb._RegionsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='show_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='label_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='label_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
+                    ColumnDef(columnName='label_offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='label_offset_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._RegionHexesTableName,
+                requiredSchemaVersion=MultiverseDb._RegionHexesTableSchema,
+                columns=[
+                    ColumnDef(columnName='region_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._RegionsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._LabelsTableName,
+                requiredSchemaVersion=MultiverseDb._LabelsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='text', columnType=ColumnDef.ColumnType.Text, isNullable=False),
+                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='offset_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='wrap', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='size', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._SectorTagsTableName,
+                requiredSchemaVersion=MultiverseDb._SectorTagsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='value', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                uniqueConstraints=[
+                    UniqueConstraintDef(columnNames=['sector_id', 'value'])])
+
+            self._internalCreateTable(
+                cursor=cursor,
+                tableName=MultiverseDb._ProductsTableName,
+                requiredSchemaVersion=MultiverseDb._ProductsTableSchema,
+                columns=[
+                    ColumnDef(columnName='id', columnType=ColumnDef.ColumnType.Text, isPrimaryKey=True),
+                    ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
+                              foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='publication', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='author', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='publisher', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='reference', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
 
             cursor.execute('END;')
         except:
@@ -1898,6 +1370,143 @@ class MultiverseDb(object):
         cursor.execute(sql, {'key': key})
         rowData = cursor.fetchone()
         return rowData[0] if rowData else None
+
+    def _internalCreateTable(
+            self,
+            cursor: sqlite3.Cursor,
+            tableName: str,
+            columns: typing.Collection[ColumnDef],
+            requiredSchemaVersion: int,
+            # The unique list is a list containing the lists of column names
+            # to create unique constraints for
+            uniqueConstraints: typing.Optional[typing.Collection[UniqueConstraintDef]] = None,
+            # The indexes list is a list containing the lists of column names
+            # to index together (i.e. multi-column indexes)
+            columnIndexes: typing.Optional[typing.Collection[ColumnIndexDef]] = None,
+            ) -> None:
+        tableExists = database.checkIfTableExists(
+            tableName=tableName,
+            cursor=cursor)
+        if tableExists:
+            # TODO: This should check the table schema against what is required
+            # and raise TableVersionException if it doesn't match
+
+            return
+
+        sql = f'CREATE TABLE {tableName} (\n'
+
+        for column in columns:
+            sql += '  '
+            sql += column.columnName()
+
+            if column.columnType() == ColumnDef.ColumnType.Text:
+                sql += ' TEXT'
+            elif column.columnType() == ColumnDef.ColumnType.Integer:
+                sql += ' INTEGER'
+            elif column.columnType() == ColumnDef.ColumnType.Real:
+                sql += ' REAL'
+            elif column.columnType() == ColumnDef.ColumnType.Boolean:
+                sql += ' INTEGER'
+            else:
+                raise RuntimeError('Unsupported column type {type} for column \'{column}\' when creating table \'{table}\''.format(
+                    type=column.columnType(),
+                    column=column.columnName(),
+                    table=tableName))
+
+            if column.isPrimaryKey():
+                sql += ' PRIMARY KEY'
+            else:
+                if not column.isNullable():
+                    sql += ' NOT NULL'
+
+                if column.isUnique():
+                    sql += ' UNIQUE'
+
+            sql += ',\n'
+
+        for column in columns:
+            if column.hasForeignKey():
+                if column.foreignDeleteOp() is ColumnDef.ForeignKeyDeleteOp.Cascade:
+                    deleteOp = 'CASCADE'
+                elif column.foreignDeleteOp() is ColumnDef.ForeignKeyDeleteOp.SetNull:
+                    deleteOp = 'SET NULL'
+                else:
+                    raise RuntimeError('Unsupported foreign key operation {op} for column \'{column}\' when creating table \'{table}\''.format(
+                        type=column.foreignDeleteOp(),
+                        column=column.columnName(),
+                        table=tableName))
+
+                sql += '  FOREIGN KEY({column}) REFERENCES {foreignTable}({foreignColumn}) ON DELETE {deleteOp},\n'.format(
+                    column=column.columnName(),
+                    foreignTable=column.foreignTableName(),
+                    foreignColumn=column.foreignColumnName(),
+                    deleteOp=deleteOp)
+
+        for column in columns:
+            if column.columnType() is ColumnDef.ColumnType.Boolean:
+                # Add constraint that boolean columns can only have value 0 or 1
+                sql += '  CHECK ({column} IN (0, 1)),\n'.format(
+                    column=column.columnName())
+            else:
+                validRange = column.validRange()
+                if validRange:
+                    if column.columnType() is ColumnDef.ColumnType.Text:
+                        sql += '  CHECK ({column} BETWEEN \'{min}\' AND \'{max}\'),\n'.format(
+                            column=column.columnName(),
+                            min=validRange[0],
+                            max=validRange[1])
+                    else:
+                        sql += '  CHECK ({column} BETWEEN {min} AND {max}),\n'.format(
+                            column=column.columnName(),
+                            min=validRange[0],
+                            max=validRange[1])
+
+        # Add any unique constraints
+        if uniqueConstraints:
+            for uniqueConstraint in uniqueConstraints:
+                sql += '  UNIQUE ({columns}),\n'.format(columns=', '.join(uniqueConstraint.columnNames()))
+
+        sql = sql.rstrip(',\n')
+        sql += '\n);'
+
+        logging.info(f'MultiverseDb creating table \'{tableName}\'')
+        cursor.execute(sql)
+
+        # Create index on foreign key columns and columns where an index has explicitly
+        # been requested. Foreign key columns are indexes as cascade delete performance
+        # sucks without them
+        for column in columns:
+            if column.isPrimaryKey():
+                # Sqlite should automatically create an index for the primary key.
+                # If the column type is TEXT then an explicitly index is created.
+                # if the column type is INTEGER then the column is an alias for the
+                # internal Sqlite row index which is automatically indexes.
+                # NOTE: This is different to what I have in other DB code as
+                # previously I had thought it didn't automatically create an index
+                # for TEXT primary keys.
+                continue
+
+            if column.hasForeignKey() or column.isIndexed():
+                self._createColumnIndex(
+                    table=tableName,
+                    column=column.columnName(),
+                    unique=column.isUnique(),
+                    cursor=cursor)
+
+        # Create table specific column indexes
+        if columnIndexes:
+            for index in columnIndexes:
+                self._createMultiColumnIndex(
+                    table=tableName,
+                    columns=index.columnNames(),
+                    unique=index.isUnique(),
+                    cursor=cursor)
+
+        # Write schema version to schema table
+        self._writeSchemaVersion(
+            table=tableName,
+            version=requiredSchemaVersion,
+            cursor=cursor)
 
     # This function returns True if imported or False if nothing was
     # done due to the snapshot being older than the current snapshot.
