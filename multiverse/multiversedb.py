@@ -1292,9 +1292,9 @@ class MultiverseDb(object):
 
     def _writeSchemaVersion(
             self,
+            cursor: sqlite3.Cursor,
             table: str,
-            version: int,
-            cursor: sqlite3.Cursor
+            version: int
             ) -> None:
         logging.info(f'MultiverseDb setting schema for \'{table}\' table to {version}')
         sql = """
@@ -1310,29 +1310,29 @@ class MultiverseDb(object):
 
     def _createColumnIndex(
             self,
+            cursor: sqlite3.Cursor,
             table: str,
             column: str,
-            unique: bool,
-            cursor: sqlite3.Cursor
+            unique: bool
             ) -> None:
         logging.info(f'MultiverseDb creating index for \'{column}\' in table \'{table}\'')
         database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createMultiColumnIndex(
             self,
+            cursor: sqlite3.Cursor,
             table: str,
             columns: typing.Collection[str],
-            unique: bool,
-            cursor: sqlite3.Cursor
+            unique: bool
             ) -> None:
         logging.info(f'MultiverseDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
         database.createMultiColumnIndex(table=table, columns=columns, unique=unique, cursor=cursor)
 
     def _setMetadata(
             self,
+            cursor: sqlite3.Cursor,
             key: str,
-            value: str,
-            cursor: sqlite3.Cursor
+            value: str
             ) -> None:
         logging.debug(f'MultiverseDb setting metadata \'{key}\' to {value}')
         sql = """
@@ -1348,8 +1348,8 @@ class MultiverseDb(object):
 
     def _getMetadata(
             self,
-            key: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            key: str
             ) -> typing.Optional[str]:
         sql = """
             SELECT value
@@ -1507,8 +1507,8 @@ class MultiverseDb(object):
     # should be handled consistently
     def _internalImportDefaultUniverse(
             self,
-            directoryPath: str,
             cursor: sqlite3.Cursor,
+            directoryPath: str,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
         importTimestamp = MultiverseDb._readSnapshotTimestamp(
@@ -1621,8 +1621,8 @@ class MultiverseDb(object):
 
     def _internalInsertUniverse(
             self,
-            universe: multiverse.DbUniverse,
             cursor: sqlite3.Cursor,
+            universe: multiverse.DbUniverse,
             updateDefault: bool = False,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
             ) -> None:
@@ -1664,9 +1664,9 @@ class MultiverseDb(object):
 
     def _internalReadUniverse(
             self,
+            cursor: sqlite3.Cursor,
             universeId: str,
             includeDefaultSectors: bool,
-            cursor: sqlite3.Cursor,
             progressCallback: typing.Optional[typing.Callable[[typing.Optional[str], typing.Optional[str], int, int], typing.Any]] = None
             ) -> typing.Optional[multiverse.DbUniverse]:
         sql = """
@@ -1749,8 +1749,8 @@ class MultiverseDb(object):
 
     def _internalDeleteUniverse(
             self,
-            universeId: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            universeId: str
             ) -> typing.Optional[multiverse.DbUniverse]:
         sql = """
             DELETE FROM {table}
@@ -1761,8 +1761,8 @@ class MultiverseDb(object):
 
     def _internalInsertSector(
             self,
-            sector: multiverse.DbSector,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            sector: multiverse.DbSector
             ) -> None:
         sql = """
             INSERT INTO {table} (id, universe_id, is_custom, milieu,
@@ -2211,8 +2211,8 @@ class MultiverseDb(object):
 
     def _internalReadSector(
             self,
-            sectorId: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            sectorId: str
             ) -> typing.Optional[multiverse.DbSector]:
         sql = """
             SELECT universe_id, is_custom, milieu, sector_x, sector_y,
@@ -2691,8 +2691,8 @@ class MultiverseDb(object):
 
     def _internalDeleteSector(
             self,
-            sectorId: str,
             cursor: sqlite3.Cursor,
+            sectorId: str,
             milieu: typing.Optional[str] = None,
             sectorX: typing.Optional[int] = None,
             sectorY: typing.Optional[int] = None,
@@ -2734,8 +2734,8 @@ class MultiverseDb(object):
 
     def _internalUniverseInfoById(
             self,
-            universeId: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            universeId: str
             ) -> typing.List[DbUniverseInfo]:
         sql = """
             SELECT name
@@ -2756,8 +2756,8 @@ class MultiverseDb(object):
 
     def _internalUniverseInfoByName(
             self,
-            name: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            name: str
             ) -> typing.List[DbUniverseInfo]:
         sql = """
             SELECT id
@@ -2778,10 +2778,10 @@ class MultiverseDb(object):
 
     def _internalListSectorInfo(
             self,
+            cursor: sqlite3.Cursor,
             universeId: str,
             milieu: typing.Optional[str],
-            includeDefaultSectors: bool,
-            cursor: sqlite3.Cursor
+            includeDefaultSectors: bool
             ) -> typing.List[DbSectorInfo]:
         sql = """
             SELECT id, primary_name, sector_x, sector_y, is_custom, abbreviation
@@ -2833,8 +2833,8 @@ class MultiverseDb(object):
 
     def _internalSectorInfoById(
             self,
-            sectorId: str,
-            cursor: sqlite3.Cursor
+            cursor: sqlite3.Cursor,
+            sectorId: str
             ) -> typing.Optional[DbSectorInfo]:
         sql = """
             SELECT primary_name, sector_x, sector_y, is_custom, abbreviation
@@ -2859,11 +2859,11 @@ class MultiverseDb(object):
 
     def _internalSectorInfoByPosition(
             self,
+            cursor: sqlite3.Cursor,
             universeId: str,
             milieu: str,
             sectorX: int,
-            sectorY: int,
-            cursor: sqlite3.Cursor
+            sectorY: int
             ) -> typing.Optional[DbSectorInfo]:
         sql = """
             SELECT id, primary_name, is_custom, abbreviation
