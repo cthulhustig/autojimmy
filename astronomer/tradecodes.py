@@ -1,3 +1,4 @@
+import astronomer
 import enum
 import typing
 
@@ -257,3 +258,209 @@ def tradeCodeDescription(tradeCode: TradeCode) -> str:
 
 def tradeCodeDescriptionMap() -> typing.Mapping[TradeCode, str]:
     return _TradeCodeDescriptionMap
+
+def calculateMongooseTradeCodes(
+        uwp: astronomer.UWP
+        ) -> typing.Set[TradeCode]:
+    size = uwp.numeric(element=astronomer.UWP.Element.WorldSize)
+    atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere)
+    hydrographics = uwp.numeric(element=astronomer.UWP.Element.Hydrographics)
+    population = uwp.numeric(element=astronomer.UWP.Element.Population)
+    government = uwp.numeric(element=astronomer.UWP.Element.Government)
+    lawLevel = uwp.numeric(element=astronomer.UWP.Element.LawLevel)
+    techLevel = uwp.numeric(element=astronomer.UWP.Element.TechLevel)
+    tradeCodes = set()
+
+    if (atmosphere >= 4 and atmosphere <= 9) and \
+        (hydrographics >= 4 and hydrographics <= 8) and \
+        (population >= 5 and population <= 7):
+        tradeCodes.add(TradeCode.AgriculturalWorld)
+
+    if (size == 0) and \
+        (atmosphere == 0) and \
+        (hydrographics == 0):
+        tradeCodes.add(TradeCode.AsteroidBelt)
+
+    if (population == 0) and \
+        (government == 0) and \
+        (lawLevel == 0):
+        tradeCodes.add(TradeCode.BarrenWorld)
+
+    # TODO: Mongoose 1e has this different
+    # TODO: Mongoose 2e has this different
+    if (atmosphere >= 2 and atmosphere <= 9) and \
+        (hydrographics == 0):
+        tradeCodes.add(TradeCode.DesertWorld)
+
+    if (atmosphere >= 10) and \
+        (hydrographics >= 1):
+        tradeCodes.add(TradeCode.FluidWorld)
+
+    # TODO: Mongoose 1e has this different
+    if (size >= 6 and size <= 8) and \
+        (atmosphere in [5,6,8]) and \
+        (hydrographics >= 5 and hydrographics <= 7):
+        tradeCodes.add(TradeCode.GardenWorld)
+
+    if population >= 9:
+        tradeCodes.add(TradeCode.HighPopulationWorld)
+
+    if techLevel >= 12:
+        tradeCodes.add(TradeCode.HighTechWorld)
+
+    if (atmosphere in [0, 1]) and \
+        (hydrographics >= 1):
+        tradeCodes.add(TradeCode.IceCappedWorld)
+
+    # TODO: Mongoose 1e has this different
+    # TODO: Mongoose 2e has this different
+    if (atmosphere in [0, 1, 2, 4, 7, 9, 10, 11, 12]) and \
+        (population >= 9):
+        tradeCodes.add(TradeCode.IndustrialWorld)
+
+    # TODO: Mongoose 2e has this different
+    if population >= 1 and population <= 3:
+        tradeCodes.add(TradeCode.LowPopulationWorld)
+
+    # TODO: Mongoose 1e has this different
+    if (population >= 1) and \
+        (techLevel >= 0 and techLevel <= 5):
+        tradeCodes.add(TradeCode.LowTechWorld)
+
+    if (atmosphere >= 0 and atmosphere <= 3) and \
+        (hydrographics >= 0 and hydrographics <= 3) and \
+        (population >= 6):
+        tradeCodes.add(TradeCode.NonAgriculturalWorld)
+
+    # TODO: Mongoose 2e has this different
+    if population >= 4 and population <= 6:
+        tradeCodes.add(TradeCode.NonIndustrialWorld)
+
+    if (atmosphere >= 2 and atmosphere <= 5) and \
+        (hydrographics >= 0 and hydrographics <= 3):
+        tradeCodes.add(TradeCode.PoorWorld)
+
+    # TODO: Mongoose 1e has this different
+    if (atmosphere in [6, 8]) and \
+        (population >= 6 and population <= 8) and \
+        (government >= 4 and government <= 9):
+        tradeCodes.add(TradeCode.RichWorld)
+
+    if atmosphere == 0:
+        tradeCodes.add(TradeCode.VacuumWorld)
+
+    # TODO: Mongoose 1e has this different
+    # TODO: Mongoose 2e has this different
+    if ((atmosphere >= 3 and atmosphere <= 9) or (atmosphere >= 13)) and \
+        (hydrographics >= 10):
+        tradeCodes.add(TradeCode.WaterWorld)
+
+    return tradeCodes
+
+def calculateT5TradeCodes(uwp: astronomer.UWP) -> typing.Set[TradeCode]:
+    size = uwp.numeric(element=astronomer.UWP.Element.WorldSize)
+    atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere)
+    hydrographics = uwp.numeric(element=astronomer.UWP.Element.Hydrographics)
+    population = uwp.numeric(element=astronomer.UWP.Element.Population)
+    government = uwp.numeric(element=astronomer.UWP.Element.Government)
+    lawLevel = uwp.numeric(element=astronomer.UWP.Element.LawLevel)
+    starport = uwp.code(element=astronomer.UWP.Element.StarPort)
+    tradeCodes = set()
+
+    if (size == 0) and \
+        (atmosphere == 0) and \
+        (hydrographics == 0):
+        tradeCodes.add(TradeCode.AsteroidBelt)
+
+    if (atmosphere >= 2 and atmosphere <= 9) and \
+        (hydrographics == 0):
+        tradeCodes.add(TradeCode.DesertWorld)
+
+    if (atmosphere >= 10) and \
+        (hydrographics >= 1):
+        tradeCodes.add(TradeCode.FluidWorld)
+
+    if (size >= 6 and size <= 8) and \
+        (atmosphere in [5,6,8]) and \
+        (hydrographics >= 5 and hydrographics <= 7):
+        tradeCodes.add(TradeCode.GardenWorld)
+
+    if (size >= 3 and size <= 12) and \
+        (atmosphere in [2, 4, 7, 9, 10, 11, 12]) and \
+        (hydrographics >= 0 and hydrographics <= 2):
+        tradeCodes.add(TradeCode.HellWorld)
+
+    if (atmosphere in [0, 1]) and \
+        (hydrographics >= 1):
+        tradeCodes.add(TradeCode.IceCappedWorld)
+
+    if (size >= 10 and size <= 15) and \
+        (atmosphere >= 3 and atmosphere <= 12) and \
+        (hydrographics == 10):
+        tradeCodes.add(TradeCode.OceanWorld)
+
+    if atmosphere == 0:
+        tradeCodes.add(TradeCode.VacuumWorld)
+
+    # NOTE: This is different from the Mongoose definition
+    if (size >= 3 and size <= 10) and \
+        (size >= 3 and size <= 12) and \
+        (hydrographics >= 10):
+        tradeCodes.add(TradeCode.WaterWorld)
+
+    # NOTE: This is different from the Mongoose definition
+    if (population == 0) and \
+        (government == 0) and \
+        (lawLevel == 0) and \
+        (starport in ['E', 'X']):
+        tradeCodes.add(TradeCode.BarrenWorld)
+
+    if (population >= 1 and population <= 3):
+        tradeCodes.add(TradeCode.LowPopulationWorld)
+
+    if population >= 4 and population <= 6:
+        tradeCodes.add(TradeCode.NonIndustrialWorld)
+
+    if population == 8:
+        tradeCodes.add(TradeCode.PreHighPopulationWorld)
+
+    if population >= 9:
+        tradeCodes.add(TradeCode.HighPopulationWorld)
+
+    if (atmosphere >= 4 and atmosphere <= 9) and \
+        (hydrographics >= 4 and hydrographics <= 8) and \
+        (population in [4, 8]):
+        tradeCodes.add(TradeCode.PreAgriculturalWorld)
+
+    if (atmosphere >= 4 and atmosphere <= 9) and \
+        (hydrographics >= 4 and hydrographics <= 8) and \
+        (population >= 5 and population <= 7):
+        tradeCodes.add(TradeCode.AgriculturalWorld)
+
+    if (atmosphere >= 0 and atmosphere <= 3) and \
+        (hydrographics >= 0 and hydrographics <= 3) and \
+        (population >= 6):
+        tradeCodes.add(TradeCode.NonAgriculturalWorld)
+
+    if (atmosphere in [0, 1, 2, 4, 7, 9]) and \
+        (population in [7, 8]):
+        tradeCodes.add(TradeCode.PreIndustrialWorld)
+
+    if (atmosphere in [0, 1, 2, 4, 7, 9, 10, 11, 12]) and \
+        (population >= 9):
+        tradeCodes.add(TradeCode.IndustrialWorld)
+
+    if (atmosphere >= 2 and atmosphere <= 5) and \
+        (hydrographics >= 0 and hydrographics <= 3):
+        tradeCodes.add(TradeCode.PoorWorld)
+
+    if (atmosphere in [6, 8]) and \
+        (population in [5, 9]):
+        tradeCodes.add(TradeCode.PreRichWorld)
+
+    # NOTE: This is different from the Mongoose definition
+    if (atmosphere in [6, 8]) and \
+        (population >= 6 and population <= 8):
+        tradeCodes.add(TradeCode.RichWorld)
+
+    return tradeCodes
