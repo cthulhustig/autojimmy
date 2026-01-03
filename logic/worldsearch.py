@@ -504,19 +504,17 @@ class RefuellingFilter(WorldFilter):
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
-                match = traveller.worldHasStarPortRefuelling(
+                match = world.hasStarPortRefuelling(
                     includeUnrefined=False,
-                    world=world,
                     rules=rules)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
-                match = traveller.worldHasStarPortRefuelling(
+                match = world.hasStarPortRefuelling(
                     includeRefined=False,
-                    world=world,
                     rules=rules)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
-                match = traveller.worldHasGasGiantRefuelling(world=world)
+                match = world.hasGasGiantRefuelling()
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:
-                match = traveller.worldHasWaterRefuelling(world=world)
+                match = world.hasWaterRefuelling()
             elif refuelling == RefuellingFilter.Type.FuelCacheRefuelling:
                 match = world.isFuelCache()
             elif refuelling == RefuellingFilter.Type.AnomalyRefuelling:
@@ -823,7 +821,7 @@ class TradeCodeFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[astronomer.TradeCode]
+            value: typing.Iterable[traveller.TradeCode]
             ) -> None:
         super().__init__()
         self._operation = operation
@@ -832,7 +830,7 @@ class TradeCodeFilter(WorldFilter):
     def operation(self) -> ListFilterOperation:
         return self._operation
 
-    def value(self) -> typing.Iterable[astronomer.TradeCode]:
+    def value(self) -> typing.Iterable[traveller.TradeCode]:
         return self._value
 
     def description(self) -> str:
@@ -845,7 +843,7 @@ class TradeCodeFilter(WorldFilter):
 
         listString = ''
         for index, tradeCode in enumerate(self._value):
-            typeString = astronomer.tradeCodeName(tradeCode=tradeCode)
+            typeString = traveller.tradeCodeName(tradeCode=tradeCode)
 
             if index == 0:
                 listString = typeString
@@ -864,7 +862,7 @@ class TradeCodeFilter(WorldFilter):
             rules: traveller.Rules,
             tagging: logic.WorldTagging
             ) -> bool:
-        checkList = astronomer.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
+        checkList = traveller.TradeCode if self._operation == ListFilterOperation.ContainsOnly else self._value
         for tradeCode in checkList:
             match = world.hasTradeCode(tradeCode)
             if self._operation == ListFilterOperation.ContainsAny:

@@ -80,7 +80,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
     def setTradeGoods(
             self,
-            tradeGoods: typing.Iterable[traveller.TradeGood]
+            tradeGoods: typing.Iterable[logic.TradeGood]
             ) -> None:
         ruleSystem = self._rules.system()
         tradeGoods = set([tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() is ruleSystem])

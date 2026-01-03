@@ -844,7 +844,7 @@ class WorldTaggingConfigItem(ConfigItem):
         ('LawLevelTagging', str, logic.TaggingProperty.LawLevel),
         ('TechLevelTagging', str, logic.TaggingProperty.TechLevel),
         ('BaseTypeTagging', astronomer.BaseType, logic.TaggingProperty.BaseType),
-        ('TradeCodeTagging', astronomer.TradeCode, logic.TaggingProperty.TradeCode),
+        ('TradeCodeTagging', traveller.TradeCode, logic.TaggingProperty.TradeCode),
         ('ResourcesTagging', str, logic.TaggingProperty.Resources),
         ('LabourTagging', str, logic.TaggingProperty.Labour),
         ('InfrastructureTagging', str, logic.TaggingProperty.Infrastructure),
@@ -1352,14 +1352,14 @@ class Config(QtCore.QObject):
                     logic.TaggingProperty.LawLevel: {
                         '0': logic.TagLevel.Danger},
                     logic.TaggingProperty.TradeCode: {
-                        astronomer.TradeCode.AmberZone: logic.TagLevel.Warning,
-                        astronomer.TradeCode.RedZone: logic.TagLevel.Danger,
-                        astronomer.TradeCode.HellWorld: logic.TagLevel.Danger,
-                        astronomer.TradeCode.PenalColony: logic.TagLevel.Danger,
-                        astronomer.TradeCode.PrisonCamp: logic.TagLevel.Danger,
-                        astronomer.TradeCode.Reserve: logic.TagLevel.Danger,
-                        astronomer.TradeCode.DangerousWorld: logic.TagLevel.Danger,
-                        astronomer.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
+                        traveller.TradeCode.AmberZone: logic.TagLevel.Warning,
+                        traveller.TradeCode.RedZone: logic.TagLevel.Danger,
+                        traveller.TradeCode.HellWorld: logic.TagLevel.Danger,
+                        traveller.TradeCode.PenalColony: logic.TagLevel.Danger,
+                        traveller.TradeCode.PrisonCamp: logic.TagLevel.Danger,
+                        traveller.TradeCode.Reserve: logic.TagLevel.Danger,
+                        traveller.TradeCode.DangerousWorld: logic.TagLevel.Danger,
+                        traveller.TradeCode.ForbiddenWorld: logic.TagLevel.Danger}
                 })))
 
     @typing.overload

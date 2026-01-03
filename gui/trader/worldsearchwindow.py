@@ -54,13 +54,13 @@ class _CustomTradeGoodTable(gui.TradeGoodTable):
 
     def _filterTradeGoods(
             self,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> bool:
         # Don't include exotics in the table as they're not like other trade
         # goods and don't affect the trade score
-        exotics = traveller.tradeGoodFromId(
+        exotics = logic.tradeGoodFromId(
             ruleSystem=self._rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)
+            tradeGoodId=logic.TradeGoodIds.Exotics)
         return tradeGood is not exotics
 
 class _RegionSelectWidget(QtWidgets.QWidget):

@@ -1,6 +1,7 @@
 import astronomer
 import enum
 import logic
+import traveller
 import typing
 
 class TaggingProperty(enum.Enum):
@@ -295,7 +296,7 @@ class WorldTagging(object):
 
     def calculateTradeCodeTagLevel(
             self,
-            tradeCode: astronomer.TradeCode
+            tradeCode: traveller.TradeCode
             ) -> typing.Optional[logic.TagLevel]:
         return self._propertyTagLevel(
             property=TaggingProperty.TradeCode,

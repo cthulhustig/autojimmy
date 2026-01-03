@@ -1,5 +1,6 @@
 import astronomer
 import common
+import logic
 import traveller
 import typing
 
@@ -8,17 +9,17 @@ class TradeScore(object):
             self,
             world: astronomer.World,
             ruleSystem: traveller.RuleSystem,
-            tradeGoods: typing.Optional[typing.Iterable[traveller.TradeGood]] = None
+            tradeGoods: typing.Optional[typing.Iterable[logic.TradeGood]] = None
             ) -> None:
         self._world = world
         self._ruleSystem = ruleSystem
         self._tradeGoods = \
-            traveller.tradeGoodList(ruleSystem=self._ruleSystem) \
+            logic.tradeGoodList(ruleSystem=self._ruleSystem) \
             if tradeGoods is None else \
             [tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() == ruleSystem]
 
-        self._purchaseScores: typing.Dict[traveller.TradeGood, common.ScalarCalculation] = {}
-        self._saleScores: typing.Dict[traveller.TradeGood, common.ScalarCalculation] = {}
+        self._purchaseScores: typing.Dict[logic.TradeGood, common.ScalarCalculation] = {}
+        self._saleScores: typing.Dict[logic.TradeGood, common.ScalarCalculation] = {}
         for tradeGood in self._tradeGoods:
             purchaseScore = self._calculatePurchaseScore(
                 world=world,
@@ -32,7 +33,7 @@ class TradeScore(object):
             if saleScore:
                 self._saleScores[tradeGood] = saleScore
 
-        self._quantityModifiers = traveller.worldCargoQuantityModifiers(
+        self._quantityModifiers = logic.worldCargoQuantityModifiers(
             ruleSystem=self._ruleSystem,
             world=self._world)
 
@@ -50,13 +51,13 @@ class TradeScore(object):
     def ruleSystem(self) -> traveller.RuleSystem:
         return self._ruleSystem
 
-    def tradeGoods(self) -> typing.Iterable[traveller.TradeGood]:
+    def tradeGoods(self) -> typing.Iterable[logic.TradeGood]:
         return self._tradeGoods
 
-    def purchaseScores(self) -> typing.Mapping[traveller.TradeGood, common.ScalarCalculation]:
+    def purchaseScores(self) -> typing.Mapping[logic.TradeGood, common.ScalarCalculation]:
         return self._purchaseScores
 
-    def saleScores(self) -> typing.Mapping[traveller.TradeGood, common.ScalarCalculation]:
+    def saleScores(self) -> typing.Mapping[logic.TradeGood, common.ScalarCalculation]:
         return self._saleScores
 
     def quantityModifiers(self) -> typing.Iterable[common.ScalarCalculation]:
@@ -64,7 +65,7 @@ class TradeScore(object):
 
     def tradeGoodPurchaseScore(
             self,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> typing.Optional[common.ScalarCalculation]:
         if tradeGood in self._purchaseScores:
             return self._purchaseScores[tradeGood]
@@ -72,7 +73,7 @@ class TradeScore(object):
 
     def tradeGoodSaleScore(
             self,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> typing.Optional[common.ScalarCalculation]:
         if tradeGood in self._saleScores:
             return self._saleScores[tradeGood]
@@ -87,7 +88,7 @@ class TradeScore(object):
     @staticmethod
     def _calculatePurchaseScore(
             world: astronomer.World,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> typing.Optional[common.ScalarCalculation]:
         purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
         saleDm = tradeGood.calculateSaleTradeCodeDm(world)
@@ -113,7 +114,7 @@ class TradeScore(object):
     @staticmethod
     def _calculateSaleScore(
             world: astronomer.World,
-            tradeGood: traveller.TradeGood
+            tradeGood: logic.TradeGood
             ) -> common.ScalarCalculation:
         purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
         saleDm = tradeGood.calculateSaleTradeCodeDm(world)

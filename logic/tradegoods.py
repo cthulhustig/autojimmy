@@ -48,9 +48,9 @@ class _TradeGoodData(object):
             id: int,
             name: str,
             basePrice: int,
-            availabilityTradeCodes: typing.Iterable[astronomer.TradeCode],
-            purchaseTradeCodes: typing.Dict[astronomer.TradeCode, int],
-            saleTradeCodes: typing.Dict[astronomer.TradeCode, int],
+            availabilityTradeCodes: typing.Iterable[traveller.TradeCode],
+            purchaseTradeCodes: typing.Dict[traveller.TradeCode, int],
+            saleTradeCodes: typing.Dict[traveller.TradeCode, int],
             illegalLawLevelCode: typing.Optional[str],
             availableTonsD6Count: int,
             availableTonsMultiplier: int
@@ -66,13 +66,13 @@ class _TradeGoodData(object):
         for tradeCode, tradeCodeDm in purchaseTradeCodes.items():
             self._purchaseTradeCodes[tradeCode] = common.ScalarCalculation(
                 value=tradeCodeDm,
-                name=f'{astronomer.tradeCodeName(tradeCode)} Purchase DM')
+                name=f'{traveller.tradeCodeName(tradeCode)} Purchase DM')
 
         self._saleTradeCodes = {}
         for tradeCode, tradeCodeDm in saleTradeCodes.items():
             self._saleTradeCodes[tradeCode] = common.ScalarCalculation(
                 value=tradeCodeDm,
-                name=f'{astronomer.tradeCodeName(tradeCode)} Sale DM')
+                name=f'{traveller.tradeCodeName(tradeCode)} Sale DM')
 
         self._illegalLawLevel = None
         if illegalLawLevelCode:
@@ -97,13 +97,13 @@ class _TradeGoodData(object):
     def basePrice(self) -> common.ScalarCalculation:
         return self._basePrice
 
-    def availabilityTradeCodes(self) -> typing.Iterable[astronomer.TradeCode]:
+    def availabilityTradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
         return self._availabilityTradeCodes
 
-    def purchaseTradeCodes(self) -> typing.Dict[astronomer.TradeCode, common.ScalarCalculation]:
+    def purchaseTradeCodes(self) -> typing.Dict[traveller.TradeCode, common.ScalarCalculation]:
         return self._purchaseTradeCodes
 
-    def saleTradeCodes(self) -> typing.Dict[astronomer.TradeCode, common.ScalarCalculation]:
+    def saleTradeCodes(self) -> typing.Dict[traveller.TradeCode, common.ScalarCalculation]:
         return self._saleTradeCodes
 
     def illegalLawLevel(self) -> typing.Optional[int]:
@@ -413,7 +413,7 @@ class TradeGood(object):
     def _calculateTradeCodeDm(
             self,
             world: astronomer.World,
-            tradeCodeMap: typing.Dict[astronomer.TradeCode, common.ScalarCalculation]
+            tradeCodeMap: typing.Dict[traveller.TradeCode, common.ScalarCalculation]
             ) -> typing.Optional[common.ScalarCalculation]:
         largestDm = None
         for tradeCode in world.tradeCodes():
@@ -639,7 +639,7 @@ def calculateWorldTradeGoodQuantity(
             name=f'{tradeGood.name()} Quantity Roll')
 
     # Note that these are dice modifiers so are applied to the roll before it's multiplied
-    worldModifiers = traveller.worldCargoQuantityModifiers(ruleSystem=ruleSystem, world=world)
+    worldModifiers = worldCargoQuantityModifiers(ruleSystem=ruleSystem, world=world)
     if worldModifiers:
         totalModifier = common.Calculator.sum(
             values=worldModifiers,
@@ -777,14 +777,14 @@ _Mgt2TradeGoodData = [
         20000,
         None, # Available everywhere
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 3,
-            astronomer.TradeCode.RichWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 3,
+            traveller.TradeCode.RichWorld: 1
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 2,
-            astronomer.TradeCode.LowTechWorld: 1,
-            astronomer.TradeCode.PoorWorld: 1
+            traveller.TradeCode.NonIndustrialWorld: 2,
+            traveller.TradeCode.LowTechWorld: 1,
+            traveller.TradeCode.PoorWorld: 1
         },
         None, # Legal everywhere
         2, 10), # 2D x 10
@@ -795,12 +795,12 @@ _Mgt2TradeGoodData = [
         10000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.NonAgriculturalWorld: 2,
-                astronomer.TradeCode.IndustrialWorld: 5
+                traveller.TradeCode.NonAgriculturalWorld: 2,
+                traveller.TradeCode.IndustrialWorld: 5
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 3,
-            astronomer.TradeCode.AgriculturalWorld: 2
+            traveller.TradeCode.NonIndustrialWorld: 3,
+            traveller.TradeCode.AgriculturalWorld: 2
         },
         None, # Legal everywhere
         2, 10), # 2D x 10
@@ -811,12 +811,12 @@ _Mgt2TradeGoodData = [
         20000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.NonAgriculturalWorld: 2,
-                astronomer.TradeCode.IndustrialWorld: 5
+                traveller.TradeCode.NonAgriculturalWorld: 2,
+                traveller.TradeCode.IndustrialWorld: 5
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 3,
-            astronomer.TradeCode.HighPopulationWorld: 2
+            traveller.TradeCode.NonIndustrialWorld: 3,
+            traveller.TradeCode.HighPopulationWorld: 2
         },
         None, # Legal everywhere
         2, 10), # 2D x 10
@@ -827,12 +827,12 @@ _Mgt2TradeGoodData = [
         5000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.AgriculturalWorld: 3,
-                astronomer.TradeCode.GardenWorld: 2
+                traveller.TradeCode.AgriculturalWorld: 3,
+                traveller.TradeCode.GardenWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.PoorWorld: 2
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.PoorWorld: 2
         },
         None, # Legal everywhere
         2, 20), # 2D x 20
@@ -843,16 +843,16 @@ _Mgt2TradeGoodData = [
         500,
         None, # Available everywhere
         {
-                astronomer.TradeCode.AgriculturalWorld: 3,
-                astronomer.TradeCode.WaterWorld: 2,
-                astronomer.TradeCode.GardenWorld: 1,
-                astronomer.TradeCode.AsteroidBelt: -4
+                traveller.TradeCode.AgriculturalWorld: 3,
+                traveller.TradeCode.WaterWorld: 2,
+                traveller.TradeCode.GardenWorld: 1,
+                traveller.TradeCode.AsteroidBelt: -4
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 1,
-            astronomer.TradeCode.FluidWorld: 1,
-            astronomer.TradeCode.IceCappedWorld: 1,
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.AsteroidBelt: 1,
+            traveller.TradeCode.FluidWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 1,
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         None, # Legal everywhere
         2, 20), # 2D x 20
@@ -863,11 +863,11 @@ _Mgt2TradeGoodData = [
         1000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.AsteroidBelt: 4
+                traveller.TradeCode.AsteroidBelt: 4
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         2, 20), # 2D x 20
@@ -877,17 +877,17 @@ _Mgt2TradeGoodData = [
         'Advanced Electronics',
         100000,
         [
-                astronomer.TradeCode.IndustrialWorld,
-                astronomer.TradeCode.HighTechWorld
+                traveller.TradeCode.IndustrialWorld,
+                traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 3
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 3
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 1,
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.AsteroidBelt: 3
+            traveller.TradeCode.NonIndustrialWorld: 1,
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.AsteroidBelt: 3
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -897,16 +897,16 @@ _Mgt2TradeGoodData = [
         'Advanced Machine Parts',
         75000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -916,15 +916,15 @@ _Mgt2TradeGoodData = [
         'Advanced Manufactured Goods',
         100000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 1
         },
         {
-            astronomer.TradeCode.HighPopulationWorld: 1,
-            astronomer.TradeCode.RichWorld: 2
+            traveller.TradeCode.HighPopulationWorld: 1,
+            traveller.TradeCode.RichWorld: 2
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -934,16 +934,16 @@ _Mgt2TradeGoodData = [
         'Advanced Weapons',
         150000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.PoorWorld: 1,
-            astronomer.TradeCode.AmberZone: 2,
-            astronomer.TradeCode.RedZone: 4
+            traveller.TradeCode.PoorWorld: 1,
+            traveller.TradeCode.AmberZone: 2,
+            traveller.TradeCode.RedZone: 4
         },
         # It's not clear if advanced weapons should be world illegal and, if so, at
         # what law level. As it's so unclear I've chosen to not make it world illegal
@@ -955,15 +955,15 @@ _Mgt2TradeGoodData = [
         'Advanced Vehicles',
         180000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.RichWorld: 2
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.RichWorld: 2
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -973,15 +973,15 @@ _Mgt2TradeGoodData = [
         'Biochemicals',
         50000,
         [
-            astronomer.TradeCode.AgriculturalWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 1,
-            astronomer.TradeCode.WaterWorld: 2
+            traveller.TradeCode.AgriculturalWorld: 1,
+            traveller.TradeCode.WaterWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2
+            traveller.TradeCode.IndustrialWorld: 2
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -991,18 +991,18 @@ _Mgt2TradeGoodData = [
         'Crystals & Gems',
         20000,
         [
-            astronomer.TradeCode.AsteroidBelt,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.IceCappedWorld
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.IceCappedWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.DesertWorld: 1,
-            astronomer.TradeCode.IceCappedWorld: 1,
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.DesertWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 1,
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.RichWorld: 2,
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.RichWorld: 2,
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1012,15 +1012,15 @@ _Mgt2TradeGoodData = [
         'Cybernetics',
         250000,
         [
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.HighTechWorld: 1
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 1,
-            astronomer.TradeCode.IceCappedWorld: 1,
-            astronomer.TradeCode.RichWorld: 2
+            traveller.TradeCode.AsteroidBelt: 1,
+            traveller.TradeCode.IceCappedWorld: 1,
+            traveller.TradeCode.RichWorld: 2
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1030,14 +1030,14 @@ _Mgt2TradeGoodData = [
         'Live Animals',
         10000,
         [
-            astronomer.TradeCode.AgriculturalWorld,
-            astronomer.TradeCode.GardenWorld
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.GardenWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2
+            traveller.TradeCode.AgriculturalWorld: 2
         },
         {
-            astronomer.TradeCode.LowPopulationWorld: 3
+            traveller.TradeCode.LowPopulationWorld: 3
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1047,17 +1047,17 @@ _Mgt2TradeGoodData = [
         'Luxury Consumables',
         20000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.GardenWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.GardenWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.WaterWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.HighPopulationWorld: 2
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.HighPopulationWorld: 2
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1067,13 +1067,13 @@ _Mgt2TradeGoodData = [
         'Luxury Goods',
         200000,
         [
-                astronomer.TradeCode.HighPopulationWorld
+                traveller.TradeCode.HighPopulationWorld
         ],
         {
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 4
+            traveller.TradeCode.RichWorld: 4
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1083,16 +1083,16 @@ _Mgt2TradeGoodData = [
         'Medical Supplies',
         50000,
         [
-            astronomer.TradeCode.HighTechWorld,
-            astronomer.TradeCode.HighPopulationWorld
+            traveller.TradeCode.HighTechWorld,
+            traveller.TradeCode.HighPopulationWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.PoorWorld: 1,
-            astronomer.TradeCode.RichWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.PoorWorld: 1,
+            traveller.TradeCode.RichWorld: 1
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1102,18 +1102,18 @@ _Mgt2TradeGoodData = [
         'Petrochemicals',
         10000,
         [
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.FluidWorld,
-            astronomer.TradeCode.IceCappedWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.FluidWorld,
+            traveller.TradeCode.IceCappedWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.DesertWorld: 2
+            traveller.TradeCode.DesertWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.AgriculturalWorld: 1,
-            astronomer.TradeCode.LowTechWorld: 2
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.AgriculturalWorld: 1,
+            traveller.TradeCode.LowTechWorld: 2
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1123,18 +1123,18 @@ _Mgt2TradeGoodData = [
         'Pharmaceuticals',
         100000,
         [
-                astronomer.TradeCode.AsteroidBelt,
-                astronomer.TradeCode.DesertWorld,
-                astronomer.TradeCode.HighPopulationWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.HighPopulationWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.LowTechWorld: 1
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.LowTechWorld: 1
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1144,14 +1144,14 @@ _Mgt2TradeGoodData = [
         'Polymers',
         7000,
         [
-            astronomer.TradeCode.IndustrialWorld
+            traveller.TradeCode.IndustrialWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1161,20 +1161,20 @@ _Mgt2TradeGoodData = [
         'Precious Metals',
         50000,
         [
-                astronomer.TradeCode.AsteroidBelt,
-                astronomer.TradeCode.DesertWorld,
-                astronomer.TradeCode.IceCappedWorld,
-                astronomer.TradeCode.FluidWorld
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.IceCappedWorld,
+                traveller.TradeCode.FluidWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 3,
-            astronomer.TradeCode.DesertWorld: 1,
-            astronomer.TradeCode.IceCappedWorld: 2,
+            traveller.TradeCode.AsteroidBelt: 3,
+            traveller.TradeCode.DesertWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 2,
         },
         {
-            astronomer.TradeCode.RichWorld: 3,
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.RichWorld: 3,
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1184,19 +1184,19 @@ _Mgt2TradeGoodData = [
         'Radioactives',
         1000000,
         [
-            astronomer.TradeCode.AsteroidBelt,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.LowPopulationWorld
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.LowPopulationWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.LowPopulationWorld: 2
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.LowPopulationWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.HighTechWorld: 1,
-            astronomer.TradeCode.NonIndustrialWorld: -2,
-            astronomer.TradeCode.AgriculturalWorld: -3
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.HighTechWorld: 1,
+            traveller.TradeCode.NonIndustrialWorld: -2,
+            traveller.TradeCode.AgriculturalWorld: -3
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1206,14 +1206,14 @@ _Mgt2TradeGoodData = [
         'Robots',
         400000,
         [
-            astronomer.TradeCode.IndustrialWorld
+            traveller.TradeCode.IndustrialWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 1
         },
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1223,17 +1223,17 @@ _Mgt2TradeGoodData = [
         'Spices',
         6000,
         [
-            astronomer.TradeCode.GardenWorld,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.GardenWorld,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.DesertWorld: 2
+            traveller.TradeCode.DesertWorld: 2
         },
         {
-            astronomer.TradeCode.HighPopulationWorld: 2,
-            astronomer.TradeCode.RichWorld: 3,
-            astronomer.TradeCode.PoorWorld: 3
+            traveller.TradeCode.HighPopulationWorld: 2,
+            traveller.TradeCode.RichWorld: 3,
+            traveller.TradeCode.PoorWorld: 3
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1243,15 +1243,15 @@ _Mgt2TradeGoodData = [
         'Textiles',
         3000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.NonIndustrialWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.NonIndustrialWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 7
+            traveller.TradeCode.AgriculturalWorld: 7
         },
         {
-            astronomer.TradeCode.HighPopulationWorld: 3,
-            astronomer.TradeCode.NonAgriculturalWorld: 2
+            traveller.TradeCode.HighPopulationWorld: 3,
+            traveller.TradeCode.NonAgriculturalWorld: 2
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -1261,15 +1261,15 @@ _Mgt2TradeGoodData = [
         'Uncommon Ore',
         5000,
         [
-                astronomer.TradeCode.AsteroidBelt,
-                astronomer.TradeCode.IceCappedWorld
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.IceCappedWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 4
+            traveller.TradeCode.AsteroidBelt: 4
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -1279,17 +1279,17 @@ _Mgt2TradeGoodData = [
         'Uncommon Raw Materials',
         20000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.DesertWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.WaterWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1299,15 +1299,15 @@ _Mgt2TradeGoodData = [
         'Wood',
         1000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.GardenWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.GardenWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 6
+            traveller.TradeCode.AgriculturalWorld: 6
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.IndustrialWorld: 1
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.IndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -1317,16 +1317,16 @@ _Mgt2TradeGoodData = [
         'Vehicles',
         15000,
         [
-                astronomer.TradeCode.IndustrialWorld,
-                astronomer.TradeCode.HighTechWorld
+                traveller.TradeCode.IndustrialWorld,
+                traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 2,
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.NonIndustrialWorld: 2,
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1336,14 +1336,14 @@ _Mgt2TradeGoodData = [
         'Illegal Biochemicals',
         50000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.WaterWorld: 2
+            traveller.TradeCode.WaterWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 6
+            traveller.TradeCode.IndustrialWorld: 6
         },
         '0', # Illegal at all law levels
         1, 5), # 1D x 5
@@ -1353,17 +1353,17 @@ _Mgt2TradeGoodData = [
         'Illegal Cybernetics',
         250000,
         [
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.HighTechWorld: 1
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 4,
-            astronomer.TradeCode.IceCappedWorld: 4,
-            astronomer.TradeCode.RichWorld: 8,
-            astronomer.TradeCode.AmberZone: 6,
-            astronomer.TradeCode.RedZone: 6,
+            traveller.TradeCode.AsteroidBelt: 4,
+            traveller.TradeCode.IceCappedWorld: 4,
+            traveller.TradeCode.RichWorld: 8,
+            traveller.TradeCode.AmberZone: 6,
+            traveller.TradeCode.RedZone: 6,
         },
         '0', # Illegal at all law levels
         1, 1), # 1D (x 1)
@@ -1373,20 +1373,20 @@ _Mgt2TradeGoodData = [
         'Illegal Drugs',
         100000,
         [
-            astronomer.TradeCode.AsteroidBelt,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.HighPopulationWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.HighPopulationWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 1,
-            astronomer.TradeCode.DesertWorld: 1,
-            astronomer.TradeCode.GardenWorld: 1,
-            astronomer.TradeCode.WaterWorld: 1,
+            traveller.TradeCode.AsteroidBelt: 1,
+            traveller.TradeCode.DesertWorld: 1,
+            traveller.TradeCode.GardenWorld: 1,
+            traveller.TradeCode.WaterWorld: 1,
         },
         {
-            astronomer.TradeCode.RichWorld: 6,
-            astronomer.TradeCode.HighPopulationWorld: 6
+            traveller.TradeCode.RichWorld: 6,
+            traveller.TradeCode.HighPopulationWorld: 6
         },
         '0', # Illegal at all law levels
         1, 1), # 1D (x 1)
@@ -1396,17 +1396,17 @@ _Mgt2TradeGoodData = [
         'Illegal Luxuries',
         50000,
         [
-            astronomer.TradeCode.AgriculturalWorld,
-            astronomer.TradeCode.GardenWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.GardenWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.WaterWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 6,
-            astronomer.TradeCode.HighPopulationWorld: 4
+            traveller.TradeCode.RichWorld: 6,
+            traveller.TradeCode.HighPopulationWorld: 4
         },
         '0', # Illegal at all law levels
         1, 1), # 1D (x 1)
@@ -1416,16 +1416,16 @@ _Mgt2TradeGoodData = [
         'Illegal Weapons',
         150000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.PoorWorld: 6,
-            astronomer.TradeCode.AmberZone: 8,
-            astronomer.TradeCode.RedZone: 10
+            traveller.TradeCode.PoorWorld: 6,
+            traveller.TradeCode.AmberZone: 8,
+            traveller.TradeCode.RedZone: 10
         },
         '0', # Illegal at all law levels
         1, 5), # 1D x 5
@@ -1573,14 +1573,14 @@ _MgtTradeGoodData = [
         10000,
         None, # Available everywhere
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 3,
-            astronomer.TradeCode.RichWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 3,
+            traveller.TradeCode.RichWorld: 1
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 2,
-            astronomer.TradeCode.LowTechWorld: 1,
-            astronomer.TradeCode.PoorWorld: 1
+            traveller.TradeCode.NonIndustrialWorld: 2,
+            traveller.TradeCode.LowTechWorld: 1,
+            traveller.TradeCode.PoorWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1591,12 +1591,12 @@ _MgtTradeGoodData = [
         10000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.NonAgriculturalWorld: 2,
-                astronomer.TradeCode.IndustrialWorld: 5
+                traveller.TradeCode.NonAgriculturalWorld: 2,
+                traveller.TradeCode.IndustrialWorld: 5
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 3,
-            astronomer.TradeCode.AgriculturalWorld: 2
+            traveller.TradeCode.NonIndustrialWorld: 3,
+            traveller.TradeCode.AgriculturalWorld: 2
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1607,12 +1607,12 @@ _MgtTradeGoodData = [
         10000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.NonAgriculturalWorld: 2,
-                astronomer.TradeCode.IndustrialWorld: 5
+                traveller.TradeCode.NonAgriculturalWorld: 2,
+                traveller.TradeCode.IndustrialWorld: 5
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 3,
-            astronomer.TradeCode.HighPopulationWorld: 2
+            traveller.TradeCode.NonIndustrialWorld: 3,
+            traveller.TradeCode.HighPopulationWorld: 2
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1623,12 +1623,12 @@ _MgtTradeGoodData = [
         5000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.AgriculturalWorld: 3,
-                astronomer.TradeCode.GardenWorld: 2
+                traveller.TradeCode.AgriculturalWorld: 3,
+                traveller.TradeCode.GardenWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.PoorWorld: 2
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.PoorWorld: 2
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -1639,16 +1639,16 @@ _MgtTradeGoodData = [
         2000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.AgriculturalWorld: 3,
-                astronomer.TradeCode.WaterWorld: 2,
-                astronomer.TradeCode.GardenWorld: 1,
-                astronomer.TradeCode.AsteroidBelt: -4
+                traveller.TradeCode.AgriculturalWorld: 3,
+                traveller.TradeCode.WaterWorld: 2,
+                traveller.TradeCode.GardenWorld: 1,
+                traveller.TradeCode.AsteroidBelt: -4
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 1,
-            astronomer.TradeCode.FluidWorld: 1,
-            astronomer.TradeCode.IceCappedWorld: 1,
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.AsteroidBelt: 1,
+            traveller.TradeCode.FluidWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 1,
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -1659,11 +1659,11 @@ _MgtTradeGoodData = [
         1000,
         None, # Available everywhere
         {
-                astronomer.TradeCode.AsteroidBelt: 4
+                traveller.TradeCode.AsteroidBelt: 4
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -1673,17 +1673,17 @@ _MgtTradeGoodData = [
         'Advanced Electronics',
         100000,
         [
-                astronomer.TradeCode.IndustrialWorld,
-                astronomer.TradeCode.HighTechWorld
+                traveller.TradeCode.IndustrialWorld,
+                traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 3
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 3
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 1,
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.AsteroidBelt: 3
+            traveller.TradeCode.NonIndustrialWorld: 1,
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.AsteroidBelt: 3
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1693,16 +1693,16 @@ _MgtTradeGoodData = [
         'Advanced Machine Parts',
         75000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1712,15 +1712,15 @@ _MgtTradeGoodData = [
         'Advanced Manufactured Goods',
         100000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 1
         },
         {
-            astronomer.TradeCode.HighPopulationWorld: 1,
-            astronomer.TradeCode.RichWorld: 2
+            traveller.TradeCode.HighPopulationWorld: 1,
+            traveller.TradeCode.RichWorld: 2
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1730,16 +1730,16 @@ _MgtTradeGoodData = [
         'Advanced Weapons',
         150000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.PoorWorld: 1,
-            astronomer.TradeCode.AmberZone: 2,
-            astronomer.TradeCode.RedZone: 4
+            traveller.TradeCode.PoorWorld: 1,
+            traveller.TradeCode.AmberZone: 2,
+            traveller.TradeCode.RedZone: 4
         },
         # It's not clear if advanced weapons should be world illegal and, if so, at
         # what law level. As it's so unclear I've chosen to not make it world illegal
@@ -1751,15 +1751,15 @@ _MgtTradeGoodData = [
         'Advanced Vehicles',
         180000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.RichWorld: 2
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.RichWorld: 2
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1769,15 +1769,15 @@ _MgtTradeGoodData = [
         'Biochemicals',
         50000,
         [
-            astronomer.TradeCode.AgriculturalWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 1,
-            astronomer.TradeCode.WaterWorld: 2
+            traveller.TradeCode.AgriculturalWorld: 1,
+            traveller.TradeCode.WaterWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2
+            traveller.TradeCode.IndustrialWorld: 2
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1787,18 +1787,18 @@ _MgtTradeGoodData = [
         'Crystals & Gems',
         20000,
         [
-            astronomer.TradeCode.AsteroidBelt,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.IceCappedWorld
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.IceCappedWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.DesertWorld: 1,
-            astronomer.TradeCode.IceCappedWorld: 1,
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.DesertWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 1,
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.RichWorld: 2,
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.RichWorld: 2,
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1808,13 +1808,13 @@ _MgtTradeGoodData = [
         'Cybernetics',
         250000,
         [
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.HighTechWorld
         ],
         {},
         {
-            astronomer.TradeCode.AsteroidBelt: 1,
-            astronomer.TradeCode.IceCappedWorld: 1,
-            astronomer.TradeCode.RichWorld: 2
+            traveller.TradeCode.AsteroidBelt: 1,
+            traveller.TradeCode.IceCappedWorld: 1,
+            traveller.TradeCode.RichWorld: 2
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1824,14 +1824,14 @@ _MgtTradeGoodData = [
         'Live Animals',
         10000,
         [
-            astronomer.TradeCode.AgriculturalWorld,
-            astronomer.TradeCode.GardenWorld
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.GardenWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2
+            traveller.TradeCode.AgriculturalWorld: 2
         },
         {
-            astronomer.TradeCode.LowPopulationWorld: 3
+            traveller.TradeCode.LowPopulationWorld: 3
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1841,17 +1841,17 @@ _MgtTradeGoodData = [
         'Luxury Consumables',
         20000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.GardenWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.GardenWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.WaterWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.HighPopulationWorld: 2
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.HighPopulationWorld: 2
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1861,11 +1861,11 @@ _MgtTradeGoodData = [
         'Luxury Goods',
         200000,
         [
-                astronomer.TradeCode.HighPopulationWorld
+                traveller.TradeCode.HighPopulationWorld
         ],
         {},
         {
-            astronomer.TradeCode.RichWorld: 4
+            traveller.TradeCode.RichWorld: 4
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1875,16 +1875,16 @@ _MgtTradeGoodData = [
         'Medical Supplies',
         50000,
         [
-            astronomer.TradeCode.HighTechWorld,
-            astronomer.TradeCode.HighPopulationWorld
+            traveller.TradeCode.HighTechWorld,
+            traveller.TradeCode.HighPopulationWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.PoorWorld: 1,
-            astronomer.TradeCode.RichWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.PoorWorld: 1,
+            traveller.TradeCode.RichWorld: 1
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -1894,18 +1894,18 @@ _MgtTradeGoodData = [
         'Petrochemicals',
         10000,
         [
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.FluidWorld,
-            astronomer.TradeCode.IceCappedWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.FluidWorld,
+            traveller.TradeCode.IceCappedWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.DesertWorld: 2
+            traveller.TradeCode.DesertWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.AgriculturalWorld: 1,
-            astronomer.TradeCode.LowTechWorld: 2
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.AgriculturalWorld: 1,
+            traveller.TradeCode.LowTechWorld: 2
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1915,18 +1915,18 @@ _MgtTradeGoodData = [
         'Pharmaceuticals',
         100000,
         [
-                astronomer.TradeCode.AsteroidBelt,
-                astronomer.TradeCode.DesertWorld,
-                astronomer.TradeCode.HighPopulationWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.HighPopulationWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.LowTechWorld: 1
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.LowTechWorld: 1
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1936,12 +1936,12 @@ _MgtTradeGoodData = [
         'Polymers',
         7000,
         [
-            astronomer.TradeCode.IndustrialWorld
+            traveller.TradeCode.IndustrialWorld
         ],
         {},
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -1951,20 +1951,20 @@ _MgtTradeGoodData = [
         'Precious Metals',
         50000,
         [
-                astronomer.TradeCode.AsteroidBelt,
-                astronomer.TradeCode.DesertWorld,
-                astronomer.TradeCode.IceCappedWorld,
-                astronomer.TradeCode.FluidWorld
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.IceCappedWorld,
+                traveller.TradeCode.FluidWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 3,
-            astronomer.TradeCode.DesertWorld: 1,
-            astronomer.TradeCode.IceCappedWorld: 2,
+            traveller.TradeCode.AsteroidBelt: 3,
+            traveller.TradeCode.DesertWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 2,
         },
         {
-            astronomer.TradeCode.RichWorld: 3,
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.RichWorld: 3,
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1974,19 +1974,19 @@ _MgtTradeGoodData = [
         'Radioactives',
         1000000,
         [
-            astronomer.TradeCode.AsteroidBelt,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.LowPopulationWorld
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.LowPopulationWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 2,
-            astronomer.TradeCode.LowPopulationWorld: -4
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.LowPopulationWorld: -4
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.HighTechWorld: 1,
-            astronomer.TradeCode.NonIndustrialWorld: -2,
-            astronomer.TradeCode.AgriculturalWorld: -3
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.HighTechWorld: 1,
+            traveller.TradeCode.NonIndustrialWorld: -2,
+            traveller.TradeCode.AgriculturalWorld: -3
         },
         None, # Legal everywhere
         1, 1), # 1D (x 1)
@@ -1996,13 +1996,13 @@ _MgtTradeGoodData = [
         'Robots',
         400000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {},
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         None, # Legal everywhere
         1, 5), # 1D x 5
@@ -2012,17 +2012,17 @@ _MgtTradeGoodData = [
         'Spices',
         6000,
         [
-            astronomer.TradeCode.GardenWorld,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.GardenWorld,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.DesertWorld: 2
+            traveller.TradeCode.DesertWorld: 2
         },
         {
-            astronomer.TradeCode.HighPopulationWorld: 2,
-            astronomer.TradeCode.RichWorld: 3,
-            astronomer.TradeCode.PoorWorld: 3
+            traveller.TradeCode.HighPopulationWorld: 2,
+            traveller.TradeCode.RichWorld: 3,
+            traveller.TradeCode.PoorWorld: 3
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -2032,15 +2032,15 @@ _MgtTradeGoodData = [
         'Textiles',
         3000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.NonIndustrialWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.NonIndustrialWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 7
+            traveller.TradeCode.AgriculturalWorld: 7
         },
         {
-            astronomer.TradeCode.HighPopulationWorld: 3,
-            astronomer.TradeCode.NonAgriculturalWorld: 2
+            traveller.TradeCode.HighPopulationWorld: 3,
+            traveller.TradeCode.NonAgriculturalWorld: 2
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -2050,15 +2050,15 @@ _MgtTradeGoodData = [
         'Uncommon Ore',
         5000,
         [
-                astronomer.TradeCode.AsteroidBelt,
-                astronomer.TradeCode.IceCappedWorld
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.IceCappedWorld
         ],
         {
-            astronomer.TradeCode.AsteroidBelt: 4
+            traveller.TradeCode.AsteroidBelt: 4
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 3,
-            astronomer.TradeCode.NonIndustrialWorld: 1
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.NonIndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 20), # 1D x 20
@@ -2068,17 +2068,17 @@ _MgtTradeGoodData = [
         'Uncommon Raw Materials',
         20000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.DesertWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.WaterWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -2088,15 +2088,15 @@ _MgtTradeGoodData = [
         'Wood',
         1000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.GardenWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.GardenWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 6
+            traveller.TradeCode.AgriculturalWorld: 6
         },
         {
-            astronomer.TradeCode.RichWorld: 2,
-            astronomer.TradeCode.IndustrialWorld: 1
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.IndustrialWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -2106,16 +2106,16 @@ _MgtTradeGoodData = [
         'Vehicles',
         15000,
         [
-                astronomer.TradeCode.IndustrialWorld,
-                astronomer.TradeCode.HighTechWorld
+                traveller.TradeCode.IndustrialWorld,
+                traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.IndustrialWorld: 2,
-            astronomer.TradeCode.HighTechWorld: 1
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
         },
         {
-            astronomer.TradeCode.NonIndustrialWorld: 2,
-            astronomer.TradeCode.HighPopulationWorld: 1
+            traveller.TradeCode.NonIndustrialWorld: 2,
+            traveller.TradeCode.HighPopulationWorld: 1
         },
         None, # Legal everywhere
         1, 10), # 1D x 10
@@ -2125,14 +2125,14 @@ _MgtTradeGoodData = [
         'Illegal Biochemicals',
         50000,
         [
-                astronomer.TradeCode.AgriculturalWorld,
-                astronomer.TradeCode.WaterWorld
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.WaterWorld: 2
+            traveller.TradeCode.WaterWorld: 2
         },
         {
-            astronomer.TradeCode.IndustrialWorld: 6
+            traveller.TradeCode.IndustrialWorld: 6
         },
         '0', # Illegal at all law levels
         1, 5), # 1D x 5
@@ -2142,15 +2142,15 @@ _MgtTradeGoodData = [
         'Illegal Cybernetics',
         250000,
         [
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.HighTechWorld
         ],
         {},
         {
-            astronomer.TradeCode.AsteroidBelt: 4,
-            astronomer.TradeCode.IceCappedWorld: 4,
-            astronomer.TradeCode.RichWorld: 8,
-            astronomer.TradeCode.AmberZone: 6,
-            astronomer.TradeCode.RedZone: 6,
+            traveller.TradeCode.AsteroidBelt: 4,
+            traveller.TradeCode.IceCappedWorld: 4,
+            traveller.TradeCode.RichWorld: 8,
+            traveller.TradeCode.AmberZone: 6,
+            traveller.TradeCode.RedZone: 6,
         },
         '0', # Illegal at all law levels
         1, 1), # 1D (x 1)
@@ -2160,15 +2160,15 @@ _MgtTradeGoodData = [
         'Illegal Drugs',
         100000,
         [
-            astronomer.TradeCode.AsteroidBelt,
-            astronomer.TradeCode.DesertWorld,
-            astronomer.TradeCode.HighPopulationWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.HighPopulationWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {},
         {
-            astronomer.TradeCode.RichWorld: 6,
-            astronomer.TradeCode.HighPopulationWorld: 6
+            traveller.TradeCode.RichWorld: 6,
+            traveller.TradeCode.HighPopulationWorld: 6
         },
         '0', # Illegal at all law levels
         1, 1), # 1D (x 1)
@@ -2178,17 +2178,17 @@ _MgtTradeGoodData = [
         'Illegal Luxuries',
         50000,
         [
-            astronomer.TradeCode.AgriculturalWorld,
-            astronomer.TradeCode.GardenWorld,
-            astronomer.TradeCode.WaterWorld
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.GardenWorld,
+            traveller.TradeCode.WaterWorld
         ],
         {
-            astronomer.TradeCode.AgriculturalWorld: 2,
-            astronomer.TradeCode.WaterWorld: 1
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
         },
         {
-            astronomer.TradeCode.RichWorld: 6,
-            astronomer.TradeCode.HighPopulationWorld: 4
+            traveller.TradeCode.RichWorld: 6,
+            traveller.TradeCode.HighPopulationWorld: 4
         },
         '0', # Illegal at all law levels
         1, 1), # 1D (x 1)
@@ -2198,16 +2198,16 @@ _MgtTradeGoodData = [
         'Illegal Weapons',
         150000,
         [
-            astronomer.TradeCode.IndustrialWorld,
-            astronomer.TradeCode.HighTechWorld
+            traveller.TradeCode.IndustrialWorld,
+            traveller.TradeCode.HighTechWorld
         ],
         {
-            astronomer.TradeCode.HighTechWorld: 2
+            traveller.TradeCode.HighTechWorld: 2
         },
         {
-            astronomer.TradeCode.PoorWorld: 6,
-            astronomer.TradeCode.AmberZone: 8,
-            astronomer.TradeCode.RedZone: 10
+            traveller.TradeCode.PoorWorld: 6,
+            traveller.TradeCode.AmberZone: 8,
+            traveller.TradeCode.RedZone: 10
         },
         '0', # Illegal at all law levels
         1, 5), # 1D x 5

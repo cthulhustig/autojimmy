@@ -1,6 +1,7 @@
 import astronomer
 import common
 import json
+import logic
 import survey
 import traveller
 import typing
@@ -8,7 +9,7 @@ import typing
 class CargoRecord(object):
     def __init__(
             self,
-            tradeGood: traveller.TradeGood,
+            tradeGood: logic.TradeGood,
             pricePerTon: typing.Union[common.ScalarCalculation, common.RangeCalculation],
             quantity: typing.Union[common.ScalarCalculation, common.RangeCalculation]
             ) -> None:
@@ -19,7 +20,7 @@ class CargoRecord(object):
     def ruleSystem(self) -> traveller.RuleSystem:
         return self._tradeGood.ruleSystem()
 
-    def tradeGood(self) -> traveller.TradeGood:
+    def tradeGood(self) -> logic.TradeGood:
         return self._tradeGood
 
     def pricePerTon(self) -> typing.Union[common.ScalarCalculation, common.RangeCalculation]:
@@ -39,7 +40,7 @@ def generateSpeculativePurchaseCargo(
         maxSellerDm: typing.Union[int, common.ScalarCalculation],
         useLocalBroker: bool = False,
         localBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
-        tradeGoods: typing.Optional[typing.Iterable[traveller.TradeGood]] = None, # If None standard world availability will be used for the trade goods list
+        tradeGoods: typing.Optional[typing.Iterable[logic.TradeGood]] = None, # If None standard world availability will be used for the trade goods list
         includeLegal: bool = True, # Only applies if tradeGoods is None
         includeIllegal: bool = True, # Only applies if tradeGoods is None
         ) -> typing.Iterable[CargoRecord]:
@@ -77,7 +78,7 @@ def generateSpeculativePurchaseCargo(
     if not tradeGoods:
         # An explicit list of trade goods wasn't supplied so get the trade goods available due to
         # the worlds trade codes
-        tradeGoods = traveller.worldTradeGoods(
+        tradeGoods = logic.worldTradeGoods(
             ruleSystem=ruleSystem,
             world=world,
             includeLegal=includeLegal,
@@ -144,7 +145,7 @@ def generateSpeculativePurchaseCargo(
                 rhs=brokerCutPerTon,
                 name='Brokered Purchase Price Per Ton')
 
-        availability = traveller.calculateWorldTradeGoodQuantity(
+        availability = logic.calculateWorldTradeGoodQuantity(
             ruleSystem=ruleSystem,
             world=world,
             tradeGood=tradeGood)
@@ -169,7 +170,7 @@ def generateRandomPurchaseCargo(
             typing.Iterable[CargoRecord],
             bool]: # Is broker an informant. Only used for local black market brokers under the 2002 rules _and_ when rolling dice
     # Get the trade goods always available on the world
-    tradeGoods = traveller.worldTradeGoods(
+    tradeGoods = logic.worldTradeGoods(
         ruleSystem=ruleSystem,
         world=world,
         includeLegal=not blackMarket,
@@ -192,7 +193,7 @@ def generateRandomPurchaseCargo(
         numberOfRandomTradeGoods = diceRoller.makeRoll(
             name='Random Item Count Roll',
             dieCount=1)
-    extraAvailabilityMultipliers: typing.Dict[traveller.TradeGood, int] = {}
+    extraAvailabilityMultipliers: typing.Dict[logic.TradeGood, int] = {}
     for index in range(0, numberOfRandomTradeGoods.value()):
         tradeGood = _rollRandomTradeGood(
             ruleSystem=ruleSystem,
@@ -208,7 +209,7 @@ def generateRandomPurchaseCargo(
         # Exotics are treated as a special case as legal and illegal sellers can have exotic goods.
         # I can't find anything that explicitly says this in the 1e/2e rules but the 2022 rules
         # (p242) do so I think it makes sense for it to apply in all cases.
-        if tradeGood.id() != traveller.TradeGoodIds.Exotics:
+        if tradeGood.id() != logic.TradeGoodIds.Exotics:
             if ruleSystem == traveller.RuleSystem.MGT2022:
                 while tradeGood.isIllegal(world) != blackMarket:
                     tradeGood = _rollRandomTradeGood(
@@ -273,7 +274,7 @@ def generateRandomPurchaseCargo(
                 rhs=brokerCutPerTon,
                 name='Brokered Purchase Price Per Ton')
 
-        availability = traveller.calculateWorldTradeGoodQuantity(
+        availability = logic.calculateWorldTradeGoodQuantity(
             ruleSystem=ruleSystem,
             world=world,
             tradeGood=tradeGood,
@@ -293,7 +294,7 @@ def generateRandomPurchaseCargo(
         # rules). Exotics are treated as a special case as they have special availability and always
         # have a value of 0
         if (availability.value() <= 0) and \
-                (tradeGood.id() != traveller.TradeGoodIds.Exotics):
+                (tradeGood.id() != logic.TradeGoodIds.Exotics):
             continue
 
         cargoRecords.append(CargoRecord(
@@ -341,7 +342,7 @@ def generateRandomSaleCargo(
         # I can't find anything that explicitly says this in the 1e/2e rules but the 2022 rules do
         # so that it applies to sellers so seems logical it would apply to buyers (in game it would
         # probably depend on what the exotics were)
-        if (tradeGood.id() != traveller.TradeGoodIds.Exotics) and \
+        if (tradeGood.id() != logic.TradeGoodIds.Exotics) and \
                 (tradeGood.isIllegal(world) != blackMarket):
             continue
 
@@ -381,7 +382,7 @@ def _rollRandomTradeGood(
         diceRoller: common.DiceRoller,
         rollIndex: int,
         isReRoll: bool
-        ) -> traveller.TradeGood:
+        ) -> logic.TradeGood:
     rollPrefix = f'Random Item {rollIndex + 1} '
     if isReRoll:
         rollPrefix = 'Re-Roll ' + rollPrefix
@@ -402,7 +403,7 @@ def _rollRandomTradeGood(
         name=rollPrefix + 'Minor Digit Roll')
 
     tradeGoodId = int(f'{majorRoll.value()}{minorRoll.value()}')
-    return traveller.tradeGoodFromId(
+    return logic.tradeGoodFromId(
         ruleSystem=ruleSystem,
         tradeGoodId=tradeGoodId)
 
@@ -445,7 +446,7 @@ def deserialiseCargoRecord(data: typing.Mapping[str, typing.Any]) -> CargoRecord
         raise RuntimeError('Cargo record data is missing the pricePerTon property')
 
     return CargoRecord(
-        tradeGood=traveller.tradeGoodFromId(
+        tradeGood=logic.tradeGoodFromId(
             ruleSystem=ruleSystem,
             tradeGoodId=tradeGoodId),
         quantity=common.deserialiseCalculation(quantity),

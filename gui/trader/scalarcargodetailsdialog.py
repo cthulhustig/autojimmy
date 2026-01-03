@@ -2,6 +2,7 @@ import app
 import astronomer
 import common
 import gui
+import logic
 import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
@@ -12,8 +13,8 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
             title: str,
             world: astronomer.World,
             rules: traveller.Rules,
-            selectableTradeGoods: typing.Optional[typing.List[traveller.TradeGood]] = None,
-            editTradeGood: typing.Optional[traveller.TradeGood] = None,
+            selectableTradeGoods: typing.Optional[typing.List[logic.TradeGood]] = None,
+            editTradeGood: typing.Optional[logic.TradeGood] = None,
             editPricePerTon: typing.Optional[common.ScalarCalculation] = None,
             editQuantity: typing.Optional[common.ScalarCalculation] = None,
             lockPrice: bool = False,
@@ -34,7 +35,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
         self._tradeGoodCombo = QtWidgets.QComboBox()
         if not editTradeGood:
             if not selectableTradeGoods:
-                selectableTradeGoods = traveller.tradeGoodList(ruleSystem=self._rules.system())
+                selectableTradeGoods = logic.tradeGoodList(ruleSystem=self._rules.system())
             for tradeGood in selectableTradeGoods:
                 insertIndex = self._tradeGoodCombo.count()
                 self._tradeGoodCombo.addItem(f'{tradeGood.id()}: {tradeGood.name()}')
@@ -111,7 +112,7 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
 
         self._syncControls()
 
-    def tradeGood(self) -> traveller.TradeGood:
+    def tradeGood(self) -> logic.TradeGood:
         return self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
 
     def pricePerTon(self) -> common.ScalarCalculation:
@@ -121,8 +122,8 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
         return self._quantity
 
     def _syncControls(self) -> None:
-        tradeGood: traveller.TradeGood = self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
-        baseAvailability = traveller.calculateWorldTradeGoodQuantity(
+        tradeGood: logic.TradeGood = self._tradeGoodCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        baseAvailability = logic.calculateWorldTradeGoodQuantity(
             ruleSystem=self._rules.system(),
             world=self._world,
             tradeGood=tradeGood)

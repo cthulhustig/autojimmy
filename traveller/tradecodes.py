@@ -1,5 +1,5 @@
-import astronomer
 import enum
+import survey
 import typing
 
 # This covers the trade remarks from the core rules and https://wiki.travellerrpg.com/Trade_classification
@@ -260,15 +260,17 @@ def tradeCodeDescriptionMap() -> typing.Mapping[TradeCode, str]:
     return _TradeCodeDescriptionMap
 
 def calculateMongooseTradeCodes(
-        uwp: astronomer.UWP
+        uwp: str
         ) -> typing.Set[TradeCode]:
-    size = uwp.numeric(element=astronomer.UWP.Element.WorldSize)
-    atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere)
-    hydrographics = uwp.numeric(element=astronomer.UWP.Element.Hydrographics)
-    population = uwp.numeric(element=astronomer.UWP.Element.Population)
-    government = uwp.numeric(element=astronomer.UWP.Element.Government)
-    lawLevel = uwp.numeric(element=astronomer.UWP.Element.LawLevel)
-    techLevel = uwp.numeric(element=astronomer.UWP.Element.TechLevel)
+    _, size, atmosphere, hydrographics, population, government, \
+        lawLevel, techLevel = survey.parseSystemUWPString(uwp)
+    size = survey.ehexToInteger(size)
+    atmosphere = survey.ehexToInteger(atmosphere)
+    hydrographics = survey.ehexToInteger(hydrographics)
+    population = survey.ehexToInteger(population)
+    government = survey.ehexToInteger(government)
+    lawLevel = survey.ehexToInteger(lawLevel)
+    techLevel = survey.ehexToInteger(techLevel)
     tradeCodes = set()
 
     if (atmosphere >= 4 and atmosphere <= 9) and \
@@ -357,14 +359,15 @@ def calculateMongooseTradeCodes(
 
     return tradeCodes
 
-def calculateT5TradeCodes(uwp: astronomer.UWP) -> typing.Set[TradeCode]:
-    size = uwp.numeric(element=astronomer.UWP.Element.WorldSize)
-    atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere)
-    hydrographics = uwp.numeric(element=astronomer.UWP.Element.Hydrographics)
-    population = uwp.numeric(element=astronomer.UWP.Element.Population)
-    government = uwp.numeric(element=astronomer.UWP.Element.Government)
-    lawLevel = uwp.numeric(element=astronomer.UWP.Element.LawLevel)
-    starport = uwp.code(element=astronomer.UWP.Element.StarPort)
+def calculateT5TradeCodes(uwp: str) -> typing.Set[TradeCode]:
+    starport, size, atmosphere, hydrographics, population, government, \
+        lawLevel, _ = survey.parseSystemUWPString(uwp)
+    size = survey.ehexToInteger(size)
+    atmosphere = survey.ehexToInteger(atmosphere)
+    hydrographics = survey.ehexToInteger(hydrographics)
+    population = survey.ehexToInteger(population)
+    government = survey.ehexToInteger(government)
+    lawLevel = survey.ehexToInteger(lawLevel)
     tradeCodes = set()
 
     if (size == 0) and \

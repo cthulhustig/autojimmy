@@ -1694,16 +1694,16 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         # Don't list exotics. We can't generate speculate trade options for them so there's no
         # reason to add them here
-        ignoreTradeGoods = [traveller.tradeGoodFromId(
+        ignoreTradeGoods = [logic.tradeGoodFromId(
             ruleSystem=rules.system(),
-            tradeGoodId=traveller.TradeGoodIds.Exotics)]
+            tradeGoodId=logic.TradeGoodIds.Exotics)]
 
         # Don't list trade goods that have already been added to the list
         for row in range(self._speculativeCargoTable.rowCount()):
             cargoRecord = self._speculativeCargoTable.cargoRecord(row)
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 
@@ -1802,7 +1802,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             ignoreTradeGoods.append(cargoRecord.tradeGood())
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
-        tradeGoods = traveller.tradeGoodList(
+        tradeGoods = logic.tradeGoodList(
             ruleSystem=rules.system(),
             excludeTradeGoods=ignoreTradeGoods)
 

@@ -568,8 +568,8 @@ class ConfigDialog(gui.DialogEx):
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.TradeCode,
             displayName='Trade Code',
-            keyDescriptions={code: f'{astronomer.tradeCodeName(code)} - {astronomer.tradeCodeDescription(code)}' for code in  astronomer.TradeCode},
-            keyAliases={code: astronomer.tradeCodeString(code) for code in  astronomer.TradeCode})
+            keyDescriptions={code: f'{traveller.tradeCodeName(code)} - {traveller.tradeCodeDescription(code)}' for code in  traveller.TradeCode},
+            keyAliases={code: traveller.tradeCodeString(code) for code in  traveller.TradeCode})
 
         self._setupTaggingTab(
             taggingProperty=logic.TaggingProperty.Resources,

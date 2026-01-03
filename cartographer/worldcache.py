@@ -150,7 +150,7 @@ class WorldInfo(object):
                 code=astronomer.Bases.code(bases[2]))
 
         remarks = world.remarks()
-        if remarks.hasTradeCode(astronomer.TradeCode.ResearchStation):
+        if remarks.hasTradeCode(traveller.TradeCode.ResearchStation):
             foundStation = False
             for stationCode in 'ABGDEZHTO':
                 if remarks.hasResearchStation(code=stationCode):
@@ -162,11 +162,11 @@ class WorldInfo(object):
                 # used when the world just has the trade code 'Rs' rather than the
                 # 'RsX' format
                 self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation('G')
-        elif remarks.hasTradeCode(astronomer.TradeCode.Reserve):
+        elif remarks.hasTradeCode(traveller.TradeCode.Reserve):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
-        elif remarks.hasTradeCode(astronomer.TradeCode.PenalColony):
+        elif remarks.hasTradeCode(traveller.TradeCode.PenalColony):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Prison
-        elif remarks.hasTradeCode(astronomer.TradeCode.PrisonCamp):
+        elif remarks.hasTradeCode(traveller.TradeCode.PrisonCamp):
             self.specialFeatureGlyph = cartographer.GlyphDefs.ExileCamp
 
         self.worldSize = uwp.numeric(astronomer.UWP.Element.WorldSize)
@@ -201,11 +201,11 @@ class WorldInfo(object):
 
     @staticmethod
     def _calcHasWater(world: astronomer.World) -> bool:
-        return traveller.worldHasWaterRefuelling(world=world)
+        return world.hasWaterRefuelling()
 
     @staticmethod
     def _calcHasGasGiants(world: astronomer.World) -> bool:
-        return traveller.worldHasGasGiantRefuelling(world=world)
+        return world.hasGasGiantRefuelling()
 
     @staticmethod
     def _calcIsHighPopulation(world: astronomer.World) -> bool:
@@ -266,9 +266,9 @@ class WorldInfo(object):
     @staticmethod
     def _calcIsCapital(world: astronomer.World) -> bool:
         remarks = world.remarks()
-        return remarks.hasTradeCode(astronomer.TradeCode.SectorCapital) or \
-            remarks.hasTradeCode(astronomer.TradeCode.SubsectorCapital) or \
-            remarks.hasTradeCode(astronomer.TradeCode.ImperialCapital) or \
+        return remarks.hasTradeCode(traveller.TradeCode.SectorCapital) or \
+            remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
+            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
             remarks.hasCustomRemark('Capital')
 
     # This is based on code from Traveller Map which I believe is

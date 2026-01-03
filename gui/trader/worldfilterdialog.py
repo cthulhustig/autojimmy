@@ -3,6 +3,7 @@ import astronomer
 import enum
 import gui
 import logic
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -635,9 +636,9 @@ class WorldFilterDialog(gui.DialogEx):
             textMap=_ListFilterOperationTextMap)
 
         self._tradeCodeFilterValuesList = _EnumOptionWidget(
-            type=astronomer.TradeCode,
+            type=traveller.TradeCode,
             columnCount=3,
-            textMap=astronomer.tradeCodeNameMap(),
+            textMap=traveller.tradeCodeNameMap(),
             sortAlphabetically=True)
 
         layout = gui.FormLayoutEx()

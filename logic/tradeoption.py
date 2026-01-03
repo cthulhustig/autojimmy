@@ -1,7 +1,6 @@
 import astronomer
 import common
 import logic
-import traveller
 import typing
 
 class TradeOption(object):
@@ -65,7 +64,7 @@ class TradeOption(object):
     def originalCargoRecord(self) -> logic.CargoRecord:
         return self._cargoRecord
 
-    def tradeGood(self) -> traveller.TradeGood:
+    def tradeGood(self) -> logic.TradeGood:
         return self._cargoRecord.tradeGood()
 
     def purchaseWorld(self) -> astronomer.World:

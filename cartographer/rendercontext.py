@@ -3,6 +3,7 @@ import common
 import enum
 import cartographer
 import math
+import traveller
 import typing
 
 class RenderContext(object):
@@ -1587,7 +1588,7 @@ class RenderContext(object):
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
             remarks = world.remarks()
-            if remarks.hasTradeCode(astronomer.TradeCode.AncientsSiteWorld):
+            if remarks.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,

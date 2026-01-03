@@ -4,7 +4,6 @@ from .sectorhex import *
 from .zone import *
 from .uwp import *
 from .pbg import *
-from .tradecodes import *
 from .bases import *
 from .economics import *
 from .culture import *

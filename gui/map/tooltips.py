@@ -120,12 +120,12 @@ def createHexToolTip(
 
     refuellingTypes = []
     if world:
-        if traveller.worldHasStarPortRefuelling(world=world, rules=rules):
+        if world.hasStarPortRefuelling(rules=rules):
             refuellingTypes.append('Star Port ({code})'.format(
                 code=uwp.code(astronomer.UWP.Element.StarPort)))
-        if traveller.worldHasGasGiantRefuelling(world=world):
+        if world.hasGasGiantRefuelling():
             refuellingTypes.append('Gas Giant(s)')
-        if traveller.worldHasWaterRefuelling(world=world):
+        if world.hasWaterRefuelling():
             refuellingTypes.append('Water')
         if world.isFuelCache():
             refuellingTypes.append('Fuel Cache')
@@ -329,7 +329,7 @@ def createHexToolTip(
                 for tradeCode in tradeCodes:
                     tagLevel = worldTagging.calculateTradeCodeTagLevel(tradeCode) if worldTagging else None
                     style = formatTaggingStyle(level=tagLevel)
-                    toolTip += f'<li><span style="{style}">{html.escape(astronomer.tradeCodeName(tradeCode))} - {html.escape(astronomer.tradeCodeDescription(tradeCode))}</span></li>'
+                    toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
                 toolTip += '</ul>'
 
             sophonts = remarks.sophonts()

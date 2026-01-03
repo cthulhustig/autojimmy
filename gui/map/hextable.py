@@ -734,9 +734,9 @@ class HexTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         text = ''
-                        if traveller.worldHasStarPortRefuelling(world=world, rules=self._rules, includeUnrefined=False):
+                        if world.hasStarPortRefuelling(rules=self._rules, includeUnrefined=False):
                             text += 'refined'
-                        if traveller.worldHasStarPortRefuelling(world=world, rules=self._rules, includeRefined=False):
+                        if world.hasStarPortRefuelling(rules=self._rules, includeRefined=False):
                             if text:
                                 text += ' & '
                             text += 'unrefined'
@@ -746,12 +746,12 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.GasGiantRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        hasRefuelling = traveller.worldHasGasGiantRefuelling(world=world)
+                        hasRefuelling = world.hasGasGiantRefuelling()
                         tableItem.setText('yes' if hasRefuelling else 'no' )
                 elif columnType == self.ColumnType.WaterRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        hasRefuelling = traveller.worldHasWaterRefuelling(world=world)
+                        hasRefuelling = world.hasWaterRefuelling()
                         tableItem.setText('yes' if hasRefuelling else 'no' )
                 elif columnType == self.ColumnType.FuelCache:
                     tableItem = QtWidgets.QTableWidgetItem()
@@ -854,7 +854,7 @@ class HexTable(gui.FrozenColumnListTable):
                     if world:
                         displayText = ''
                         for tradeCode in world.tradeCodes():
-                            tradeCodeString = astronomer.tradeCodeString(tradeCode)
+                            tradeCodeString = traveller.tradeCodeString(tradeCode)
                             displayText += f', {tradeCodeString}' if displayText else tradeCodeString
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
                 elif columnType == self.ColumnType.PopulationCount:
@@ -1152,7 +1152,7 @@ class HexTable(gui.FrozenColumnListTable):
         elif columnType == self.ColumnType.TradeCodes:
             lines = []
             for tradeCode in world.tradeCodes():
-                lines.append(astronomer.tradeCodeName(tradeCode=tradeCode))
+                lines.append(traveller.tradeCodeName(tradeCode=tradeCode))
             if lines:
                 return gui.createListToolTip(
                     title='Trade Codes:',

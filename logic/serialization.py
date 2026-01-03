@@ -5,6 +5,7 @@ import logic
 import json
 import packaging
 import packaging.version
+import traveller
 import typing
 
 def serialiseEnum(
@@ -308,7 +309,7 @@ def deserialiseWorldFilter(
 
         return logic.TradeCodeFilter(
             operation=deserialiseEnum(type=logic.ListFilterOperation, data=operation),
-            value=deserialiseEnumList(type=astronomer.TradeCode, data=value))
+            value=deserialiseEnumList(type=traveller.TradeCode, data=value))
     elif filterType == 'pbg':
         element = data.get('element')
         if not element:

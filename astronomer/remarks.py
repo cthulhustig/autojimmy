@@ -2,6 +2,7 @@ import astronomer
 import common
 import multiverse
 import survey
+import traveller
 import typing
 
 class WorldReference(object):
@@ -72,7 +73,7 @@ class Remarks(object):
             dbCustomRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]]
             ) -> None:
         self._zone = zone
-        self._tradeCodes = common.OrderedSet[astronomer.TradeCode]()
+        self._tradeCodes = common.OrderedSet[traveller.TradeCode]()
         self._rulingAllegiances = list[str]()
         self._owningWorlds = list[WorldReference]()
         self._colonyWorlds = list[WorldReference]()
@@ -98,9 +99,9 @@ class Remarks(object):
         # be presenting them to the user as trade codes as they aren't. It might
         # make sense to do it now so I don't forget
         if self._zone == astronomer.ZoneType.AmberZone:
-            self._tradeCodes.add(astronomer.TradeCode.AmberZone)
+            self._tradeCodes.add(traveller.TradeCode.AmberZone)
         elif self._zone == astronomer.ZoneType.RedZone:
-            self._tradeCodes.add(astronomer.TradeCode.RedZone)
+            self._tradeCodes.add(traveller.TradeCode.RedZone)
 
     def string(self) -> str:
         if self._string is None:
@@ -110,12 +111,12 @@ class Remarks(object):
     def isEmpty(self) -> bool:
         return len(self.string()) == 0
 
-    def tradeCodes(self) -> typing.Collection[astronomer.TradeCode]:
+    def tradeCodes(self) -> typing.Collection[traveller.TradeCode]:
         return self._tradeCodes
 
     def hasTradeCode(
             self,
-            tradeCode: astronomer.TradeCode
+            tradeCode: traveller.TradeCode
             ) -> bool:
         return tradeCode in self._tradeCodes
 
@@ -164,7 +165,7 @@ class Remarks(object):
             return
 
         for dbCode in dbCodes:
-            tradeCode = astronomer.tradeCode(tradeCodeString=dbCode.code())
+            tradeCode = traveller.tradeCode(tradeCodeString=dbCode.code())
             if not tradeCode:
                 # TODO: Should log this
                 continue
@@ -253,7 +254,7 @@ class Remarks(object):
         colonySystems = []
 
         for tradeCode in self._tradeCodes:
-            tradeCodes.append(astronomer.tradeCodeString(tradeCode))
+            tradeCodes.append(traveller.tradeCodeString(tradeCode))
 
         for sophont in self._sophontPopulations:
             # NOTE: Home world and die back checks are intentionally separate so

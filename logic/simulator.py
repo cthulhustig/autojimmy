@@ -533,7 +533,7 @@ class Simulator(object):
             for tradeOption in self._cargoManifest.tradeOptions():
                 tradeGood = tradeOption.tradeGood()
 
-                if tradeGood.id() != traveller.TradeGoodIds.Exotics:
+                if tradeGood.id() != logic.TradeGoodIds.Exotics:
                     # Look for a buyer that matches the legality of the trade good
                     if tradeGood.isIllegal(world=world):
                         lookForBlackMarketTrader = True

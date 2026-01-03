@@ -42,8 +42,8 @@ def _formatRefuellingTypeString(
     elif refuellingType == logic.RefuellingType.Unrefined:
         text = 'Star Port (Unrefined)'
     elif refuellingType == logic.RefuellingType.Wilderness:
-        hasGasGiant = traveller.worldHasGasGiantRefuelling(world=world)
-        hasWater = traveller.worldHasWaterRefuelling(world=world)
+        hasGasGiant = world.hasGasGiantRefuelling()
+        hasWater = world.hasWaterRefuelling()
         text = 'Wilderness'
         if hasGasGiant and hasWater:
             pass # Just leave it as wilderness refuelling

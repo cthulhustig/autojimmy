@@ -4,7 +4,6 @@ import common
 import gui
 import html
 import logic
-import traveller
 import typing
 
 ShipTonnageToolTip = gui.createStringToolTip(
@@ -379,7 +378,7 @@ def createSaleTradeScoreToolTip(tradeScore: logic.TradeScore) -> str:
         totalScore=tradeScore.totalSaleScore())
 
 def _createTradeScoreToolTip(
-        tradeScores: typing.Mapping[traveller.TradeGood, common.ScalarCalculation],
+        tradeScores: typing.Mapping[logic.TradeGood, common.ScalarCalculation],
         quantityModifiers: typing.Iterable[common.ScalarCalculation],
         totalScore: common.ScalarCalculation
         ) -> str:
