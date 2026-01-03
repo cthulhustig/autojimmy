@@ -75,7 +75,7 @@ _EfficiencyDescriptionMap = {
     '-3': 'Poor',
     '-2': 'Fair',
     '-1': 'Average',
-    '0': 'Average',
+    '+0': 'Average',
     '+1': 'Average',
     '+2': 'Good',
     '+3': 'Improved',
@@ -110,12 +110,20 @@ class Economics(object):
         self._string = None
 
         if resources is not None:
+            if resources not in _ResourcesDescriptionMap:
+                raise ValueError(f'Invalid economics resources code "{resources}"')
             self._valueMap[Economics.Element.Resources] = resources
         if labour is not None:
+            if labour not in _LabourDescriptionMap:
+                raise ValueError(f'Invalid economics labour code "{labour}"')
             self._valueMap[Economics.Element.Labour] = labour
         if infrastructure is not None:
+            if infrastructure not in _InfrastructureDescriptionMap:
+                raise ValueError(f'Invalid economics infrastructure code "{infrastructure}"')
             self._valueMap[Economics.Element.Infrastructure] = infrastructure
         if efficiency is not None:
+            if efficiency not in _EfficiencyDescriptionMap:
+                raise ValueError(f'Invalid economics efficiency code "{efficiency}"')
             self._valueMap[Economics.Element.Efficiency] = efficiency
 
     def string(self) -> str:

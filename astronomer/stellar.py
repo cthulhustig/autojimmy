@@ -66,8 +66,17 @@ class Star(object):
             dbStar: multiverse.DbStar
             ) -> None:
         self._luminosityClass = dbStar.luminosityClass()
+        if self._luminosityClass is not None and self._luminosityClass not in _LuminosityDescriptionMap:
+            raise ValueError(f'Invalid stellar luminosity class "{self._luminosityClass}"')
+
         self._spectralClass = dbStar.spectralClass()
+        if self._spectralClass is not None and self._spectralClass not in _SpectralClassDescriptionMap:
+            raise ValueError(f'Invalid stellar spectral class "{self._spectralClass}"')
+
         self._spectralScale = dbStar.spectralScale()
+        if self._spectralScale is not None and self._spectralScale not in _SpectralScaleDescriptionMap:
+            raise ValueError(f'Invalid stellar spectral scale "{self._spectralScale}"')
+
         self._string = None
 
     @typing.overload

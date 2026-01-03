@@ -112,12 +112,20 @@ class Culture(object):
         self._string = None
 
         if heterogeneity is not None:
+            if heterogeneity not in _HeterogeneityDescriptionMap:
+                raise ValueError(f'Invalid culture heterogeneity code "{heterogeneity}"')
             self._valueMap[Culture.Element.Heterogeneity] = heterogeneity
         if acceptance is not None:
+            if acceptance not in _AcceptanceDescriptionMap:
+                raise ValueError(f'Invalid culture acceptance code "{acceptance}"')
             self._valueMap[Culture.Element.Acceptance] = acceptance
         if strangeness is not None:
+            if strangeness not in _StrangenessDescriptionMap:
+                raise ValueError(f'Invalid culture strangeness code "{strangeness}"')
             self._valueMap[Culture.Element.Strangeness] = strangeness
         if symbols is not None:
+            if symbols not in _SymbolsDescriptionMap:
+                raise ValueError(f'Invalid culture symbols code "{symbols}"')
             self._valueMap[Culture.Element.Symbols] = symbols
 
     def string(self) -> str:

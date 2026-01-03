@@ -47,6 +47,8 @@ class PBG(object):
         self._string = None
 
         if populationMultiplier is not None:
+            if populationMultiplier not in _PopulationMultiplierDescriptionMap:
+                raise ValueError(f'Invalid PBG population multiplier "{populationMultiplier}"')
             self._valueMap[PBG.Element.PopulationMultiplier] = populationMultiplier
         if planetoidBelts is not None:
             self._valueMap[PBG.Element.PlanetoidBelts] = planetoidBelts

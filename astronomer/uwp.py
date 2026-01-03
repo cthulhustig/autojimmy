@@ -311,20 +311,36 @@ class UWP(object):
         self._string = None
 
         if starport is not None:
+            if starport not in _StarPortStringMap:
+                raise ValueError(f'Invalid UWP starport code "{starport}"')
             self._valueMap[UWP.Element.StarPort] = starport
         if worldSize is not None:
+            if worldSize not in _WorldSizeStringMap:
+                raise ValueError(f'Invalid UWP world size code "{worldSize}"')
             self._valueMap[UWP.Element.WorldSize] = worldSize
         if atmosphere is not None:
+            if atmosphere not in _AtmosphereStringMap:
+                raise ValueError(f'Invalid UWP atmosphere code "{atmosphere}"')
             self._valueMap[UWP.Element.Atmosphere] = atmosphere
         if hydrographics is not None:
+            if hydrographics not in _HydrographicsStringMap:
+                raise ValueError(f'Invalid UWP hydrographics code "{hydrographics}"')
             self._valueMap[UWP.Element.Hydrographics] = hydrographics
         if population is not None:
+            if population not in _PopulationStringMap:
+                raise ValueError(f'Invalid UWP population code "{population}"')
             self._valueMap[UWP.Element.Population] = population
         if government is not None:
+            if government not in _GovernmentStringMap:
+                raise ValueError(f'Invalid UWP government code "{government}"')
             self._valueMap[UWP.Element.Government] = government
         if lawLevel is not None:
+            if lawLevel not in _LawLevelStringMap:
+                raise ValueError(f'Invalid UWP law level code "{lawLevel}"')
             self._valueMap[UWP.Element.LawLevel] = lawLevel
         if techLevel is not None:
+            if techLevel not in _TechLevelStringMap:
+                raise ValueError(f'Invalid UWP tech level code "{techLevel}"')
             self._valueMap[UWP.Element.TechLevel] = techLevel
 
     def string(self) -> str:
