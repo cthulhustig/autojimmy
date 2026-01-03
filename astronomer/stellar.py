@@ -14,7 +14,8 @@ _SpectralClassDescriptionMap = {
     'F': 'Yellow-White - 6,000-7,500K Kelvin',
     'G': 'Yellow - 5,200-6,000 Kelvin',
     'K': 'Orange - 3,700-5,200 Kelvin',
-    'M': 'Red - 2,000-3,700 Kelvin'
+    'M': 'Red - 2,000-3,700 Kelvin',
+    '?': 'Unknown' # This was added my me
 }
 
 _SpectralScaleDescriptionMap = {
@@ -27,7 +28,8 @@ _SpectralScaleDescriptionMap = {
     '6': '60%',
     '7': '70%',
     '8': '80%',
-    '9': '90%'
+    '9': '90%',
+    '?': 'Unknown' # This was added my me
 }
 
 _LuminosityDescriptionMap = {
@@ -43,7 +45,8 @@ _LuminosityDescriptionMap = {
     'BD': 'Brown Dwarf - Unknown Diameter',
     'BH': 'Black Hole - Unknown Diameter',
     'NS': 'Neutron Star - Unknown Diameter',
-    'PSR': 'Pulsar - Unknown Diameter'
+    'PSR': 'Pulsar - Unknown Diameter',
+    '?': 'Unknown' # This was added my me
 }
 
 class Star(object):
@@ -52,11 +55,11 @@ class Star(object):
         SpectralScale = 1
         LuminosityClass = 2
 
-    _elementDescriptionMaps: typing.List[typing.Mapping[str, str]] = [
-        _SpectralClassDescriptionMap,
-        _SpectralScaleDescriptionMap,
-        _LuminosityDescriptionMap
-    ]
+    _ValueDescriptionsMap: typing.Dict[Element, typing.Mapping[str, str]] = {
+        Element.SpectralClass: _SpectralClassDescriptionMap,
+        Element.SpectralScale: _SpectralScaleDescriptionMap,
+        Element.LuminosityClass: _LuminosityDescriptionMap
+    }
 
     def __init__(
             self,
@@ -83,21 +86,18 @@ class Star(object):
             return self._luminosityClass
         raise ValueError('Invalid star element')
 
-    def description(self, element: Element) -> str:
-        code = self.code(element)
-        if code is None:
-            return 'Unknown'
-        return Star._elementDescriptionMaps[element.value][code]
-
     def string(self) -> str:
         if self._string is None:
             self._string = survey.formatSystemStellarString(
                 stars=[(self._luminosityClass, self._spectralClass, self._spectralScale)])
         return self._string
 
+    def description(self, element: Element) -> str:
+        return Star._ValueDescriptionsMap[element][self.code(element)]
+
     @staticmethod
     def descriptionMap(element: Element) -> typing.Mapping[str, str]:
-        return Star._elementDescriptionMaps[element.value]
+        return Star._ValueDescriptionsMap[element]
 
 class Stellar(object):
     def __init__(
