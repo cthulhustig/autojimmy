@@ -1,19 +1,19 @@
 import app
+import astronomer
 import gui
 import html
 import logging
 import math
-import multiverse
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-def _formatWorldName(world: multiverse.World) -> str:
+def _formatWorldName(world: astronomer.World) -> str:
     return world.name(includeSubsector=True)
 
 def _formatHexName(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition
         ) -> str:
     world = universe.worldByPosition(
         milieu=milieu,
@@ -25,16 +25,16 @@ def _formatHexName(
     subsector = universe.subsectorByPosition(milieu=milieu, hex=hex)
     return f'{sectorHex} ({subsector.name()})' if subsector else sectorHex
 
-def _formatWorldHtml(world: multiverse.World) -> str:
+def _formatWorldHtml(world: astronomer.World) -> str:
     return '{worldName}<br><i>{sectorHex} - {uwp}</i>'.format(
         worldName=html.escape(_formatWorldName(world=world)),
         sectorHex=html.escape(world.sectorHex()),
         uwp=html.escape(world.uwp().string()))
 
 def _formatHexHtml(
-        universe: multiverse.Universe,
-        milieu: multiverse.Milieu,
-        hex: multiverse.HexPosition
+        universe: astronomer.Universe,
+        milieu: astronomer.Milieu,
+        hex: astronomer.HexPosition
         ) -> str:
     world = universe.worldByPosition(milieu=milieu, hex=hex)
     if world:
@@ -46,8 +46,8 @@ def _formatHexHtml(
 class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(parent)
@@ -55,16 +55,16 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         self._milieu = milieu
         self._document = QtGui.QTextDocument(self)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
-    def setUniverse(self, universe: multiverse.Universe) -> None:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
         self._universe = universe
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         self._milieu = milieu
 
     def paint(
@@ -138,8 +138,8 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
-            milieu: multiverse.Milieu,
+            universe: astronomer.Universe,
+            milieu: astronomer.Milieu,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ):
         super().__init__(parent)
@@ -171,10 +171,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
 
-    def universe(self) -> multiverse.Universe:
+    def universe(self) -> astronomer.Universe:
         return self._universe
 
-    def setUniverse(self, universe: multiverse.Universe) -> None:
+    def setUniverse(self, universe: astronomer.Universe) -> None:
         if universe is self._universe:
             return
 
@@ -186,10 +186,10 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         self._handleDataChanged()
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
 
@@ -201,12 +201,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
         self._handleDataChanged()
 
-    def currentHex(self) -> typing.Optional[multiverse.HexPosition]:
+    def currentHex(self) -> typing.Optional[astronomer.HexPosition]:
         return self._selectedHex
 
     def setCurrentHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition],
+            hex: typing.Optional[astronomer.HexPosition],
             updateHistory: bool = True
             ) -> None:
         text = _formatHexName(universe=self._universe, milieu=self._milieu, hex=hex) if hex else ''
@@ -350,7 +350,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             return False
 
         if stream.readBool():
-            hex = multiverse.HexPosition(
+            hex = astronomer.HexPosition(
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32())
             self.setCurrentHex(
@@ -505,7 +505,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _delayedCompleterHandler(
             self,
-            hex: typing.Optional[multiverse.HexPosition]
+            hex: typing.Optional[astronomer.HexPosition]
             ) -> None:
         self._updateSelectedHex(hex=hex)
         self.selectAll()
@@ -523,7 +523,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _updateSelectedHex(
             self,
-            hex: typing.Optional[multiverse.HexPosition],
+            hex: typing.Optional[astronomer.HexPosition],
             updateHistory: bool = True
             ) -> None:
         if hex and updateHistory:
@@ -566,9 +566,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self._completer.setWidget(lineEdit)
             self._completer.complete()
 
-    def _findCompletionMatches(self) -> typing.Collection[multiverse.HexPosition]:
+    def _findCompletionMatches(self) -> typing.Collection[astronomer.HexPosition]:
         searchString = self.currentText().strip()
-        matches: typing.List[multiverse.HexPosition] = []
+        matches: typing.List[astronomer.HexPosition] = []
 
         if searchString:
             # NOTE: For sorting to make sense it's important that the world
