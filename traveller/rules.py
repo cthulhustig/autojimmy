@@ -25,6 +25,7 @@ class Rules(object):
         classCStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
         classDStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
         classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel,
+        useRuleSystemTradeCodes: bool = False
         ) -> None: ...
 
     @typing.overload
@@ -37,6 +38,7 @@ class Rules(object):
                 raise TypeError('The other parameter must be an Rules')
             self._system = other._system
             self._starPortFuelTypes = dict(other._starPortFuelTypes)
+            self._useRuleSystemTradeCodes = other._useRuleSystemTradeCodes
         else:
             self._system = args[0] if len(args) > 0 else kwargs['system']
             self._starPortFuelTypes = {
@@ -45,6 +47,7 @@ class Rules(object):
                 'C': args[3] if len(args) > 3 else kwargs.get('classCStarPortFuelType', StarPortFuelType.UnrefinedOnly),
                 'D': args[4] if len(args) > 4 else kwargs.get('classDStarPortFuelType', StarPortFuelType.UnrefinedOnly),
                 'E': args[5] if len(args) > 5 else kwargs.get('classEStarPortFuelType', StarPortFuelType.NoFuel)}
+            self._useRuleSystemTradeCodes = args[6] if len(args) > 6 else kwargs.get('useRuleSystemTradeCodes', False)
 
     def system(self) -> RuleSystem:
         return self._system
@@ -81,8 +84,12 @@ class Rules(object):
             ) -> typing.Optional[StarPortFuelType]:
         return self._starPortFuelTypes.get(code)
 
+    def useRuleSystemTradeCodes(self) -> bool:
+        return self._useRuleSystemTradeCodes
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Rules):
-            return False
+            return NotImplemented
         return self._system == other._system and \
-            self._starPortFuelTypes == other._starPortFuelTypes
+            self._starPortFuelTypes == other._starPortFuelTypes and \
+            self._useRuleSystemTradeCodes == other._useRuleSystemTradeCodes

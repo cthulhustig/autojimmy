@@ -2352,6 +2352,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpOverlayHandles.add(handle)
 
         if startHex and showWorldTaggingOverlay:
+            rules = app.Config.instance().value(
+                option=app.ConfigOption.Rules)
             milieu = app.Config.instance().value(
                 option=app.ConfigOption.Milieu)
             worldTagging = app.Config.instance().value(
@@ -2377,7 +2379,9 @@ class JumpRouteWindow(gui.WindowWidget):
                 worldHex = world.hex()
                 if (worldHex == startHex) or (worldHex == finishHex):
                     continue # Don't highlight start/finish worlds
-                tagLevel = worldTagging.calculateWorldTagLevel(world=world)
+                tagLevel = worldTagging.calculateWorldTagLevel(
+                    rules=rules,
+                    world=world)
                 if not tagLevel:
                     continue
 

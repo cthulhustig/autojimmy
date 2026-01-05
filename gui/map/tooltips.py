@@ -191,7 +191,7 @@ def createHexToolTip(
                 if ownerWorld:
                     ownerInfo.append((
                         ownerWorld.name(includeSubsector=True),
-                        worldTagging.calculateWorldTagLevel(world=ownerWorld) if worldTagging else None))
+                        worldTagging.calculateWorldTagLevel(rules=rules, world=ownerWorld) if worldTagging else None))
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger
                     ownerString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
@@ -319,10 +319,10 @@ def createHexToolTip(
         #
         # Remarks
         #
-        if not remarks.isEmpty():
-            toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
+        if not remarks.isEmpty(rules=rules):
+            toolTip += f'<li>Remarks: {html.escape(remarks.string(rules=rules))}</li>'
 
-            tradeCodes = remarks.tradeCodes()
+            tradeCodes = remarks.tradeCodes(rules=rules)
             if tradeCodes:
                 toolTip += '<li>Trade Codes:</li>'
                 toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
@@ -436,7 +436,7 @@ def createHexToolTip(
 
                 if colonyWorld:
                     colonyText = colonyWorld.name(includeSubsector=True)
-                    tagLevel = worldTagging.calculateWorldTagLevel(colonyWorld) if worldTagging else None
+                    tagLevel = worldTagging.calculateWorldTagLevel(rules=rules, world=colonyWorld) if worldTagging else None
                 else:
                     # We don't know about this world so just display the sector hex and tag it as danger
                     colonyText = 'Unknown world at {sector} {x:02d}{y:02d}'.format(

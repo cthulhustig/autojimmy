@@ -4,6 +4,7 @@ import common
 import gui
 import html
 import logic
+import traveller
 import typing
 
 ShipTonnageToolTip = gui.createStringToolTip(
@@ -232,6 +233,7 @@ Mgt2022LocalBrokerToolTip = gui.createStringToolTip(
     escape=False)
 
 def createLogisticsToolTip(
+        rules: traveller.Rules,
         routeLogistics: logic.RouteLogistics,
         worldTagging: typing.Optional[logic.WorldTagging] = None,
         taggingColours: typing.Optional[app.TaggingColours] = None
@@ -316,7 +318,7 @@ def createLogisticsToolTip(
 
         tagLevel = logic.TagLevel.Danger # Dead space is tagged as danger
         if world and worldTagging:
-            tagLevel = worldTagging.calculateWorldTagLevel(world)
+            tagLevel = worldTagging.calculateWorldTagLevel(rules=rules, world=world)
         tagColour = taggingColours.colour(level=tagLevel) if tagLevel and taggingColours else None
 
         style = f'background-color:#{tagColour}' if tagColour else ''

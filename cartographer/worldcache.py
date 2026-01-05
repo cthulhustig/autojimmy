@@ -70,6 +70,9 @@ class WorldInfo(object):
         self.isHarshAtmosphere = WorldInfo._calcIsHarshAtmosphere(world)
         self.isAnomaly = WorldInfo._calcIsAnomaly(world)
         self.isAsteroids = WorldInfo._calcIsAsteroid(world)
+        self.isAncientSite = WorldInfo._calcIsAncientSite(world)
+        self.isDroyneWorld = WorldInfo._calcIsDroyneWorld(world)
+        self.isChirperWorld = WorldInfo._calcIsChirperWorld(world)
 
         self.asteroidRectangles = None
         if self.isAsteroids:
@@ -270,6 +273,25 @@ class WorldInfo(object):
             remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
             remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
             remarks.hasCustomRemark('Capital')
+
+    @staticmethod
+    def _calcIsAncientSite(world: astronomer.World) -> bool:
+        return world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld)
+
+    @staticmethod
+    def _calcIsDroyneWorld(world: astronomer.World) -> bool:
+        allegiance = world.allegiance()
+        if allegiance:
+            code = allegiance.code()
+            if code == 'Dr' or code == 'NaDr':
+                return True
+        remarks = world.remarks()
+        return remarks.hasSophont('Droy')
+
+    @staticmethod
+    def _calcIsChirperWorld(world: astronomer.World) -> bool:
+        remarks = world.remarks()
+        return remarks.hasSophont('Chir')
 
     # This is based on code from Traveller Map which I believe is
     # based on the T5.10 rules

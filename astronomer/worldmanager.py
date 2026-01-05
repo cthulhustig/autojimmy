@@ -588,6 +588,7 @@ class WorldManager(object):
                     nobilities = astronomer.Nobilities(dbSystem.nobilities())
                     remarks = astronomer.Remarks(
                         zone=zone,
+                        uwp=uwp,
                         dbTradeCodes=dbSystem.tradeCodes(),
                         dbSophontPopulations=dbSystem.sophontPopulations(),
                         dbRulingAllegiances=dbSystem.rulingAllegiances(),

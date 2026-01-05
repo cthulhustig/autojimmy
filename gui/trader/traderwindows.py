@@ -277,6 +277,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -298,6 +299,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._tradeOptionCalculationModeTabs.currentChanged.connect(self._updateTradeOptionTableColumns)
 
         self._tradeOptionsTable = gui.TradeOptionsTable(
+            rules=rules,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -347,6 +349,7 @@ class _BaseTraderWindow(gui.WindowWidget):
             self._hexTooltipProvider.setRules(rules=newValue)
             self._localPurchaseBrokerWidget.setRules(rules=newValue)
             self._localSaleBrokerWidget.setRules(rules=newValue)
+            self._tradeOptionsTable.setRules(rules=newValue)
 
             # Changing the rules invalidates existing trade options as the
             # trade goods they use are tied to a rule system and the starport
@@ -1513,7 +1516,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         replacements = {}
         for currentCargoRecord in self._speculativeCargoTable.cargoRecords():
             cargoRecords = logic.generateSpeculativePurchaseCargo(
-                ruleSystem=rules.system(),
+                rules=rules,
                 world=world,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1675,7 +1678,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
@@ -1722,7 +1725,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),

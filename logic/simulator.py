@@ -318,7 +318,7 @@ class Simulator(object):
 
         diceRoller = common.DiceRoller(randomGenerator=self._randomGenerator)
         cargoRecords, _ = logic.generateRandomPurchaseCargo(
-            ruleSystem=self._rules.system(),
+            rules=self._rules,
             world=world,
             playerBrokerDm=self._playerBrokerDm,
             sellerDm=sellerDm,
@@ -420,7 +420,7 @@ class Simulator(object):
 
         purchaseCargoRecords = self._cargoManifest.cargoRecords()
         saleCargoRecords, _ = logic.generateRandomSaleCargo(
-            ruleSystem=self._rules.system(),
+            rules=self._rules,
             world=world,
             currentCargo=purchaseCargoRecords,
             playerBrokerDm=self._playerBrokerDm,

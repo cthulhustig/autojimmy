@@ -463,6 +463,7 @@ class RulesConfigItem(ConfigItem):
     _ClassCFuelTypeKey = '/ClassCFuelTypeRule'
     _ClassDFuelTypeKey = '/ClassDFuelTypeRule'
     _ClassEFuelTypeKey = '/ClassEFuelTypeRule'
+    _UseRuleSystemTradeCodes = '/UseRuleSystemTradeCodes'
 
     def __init__(
             self,
@@ -553,13 +554,20 @@ class RulesConfigItem(ConfigItem):
             if classEFuelType in traveller.StarPortFuelType.__members__ else \
             self._default.starPortFuelType(code='E')
 
+        useRuleSystemTradeCodes = self.loadConfigSetting(
+            settings=settings,
+            key=self._section + RulesConfigItem._UseRuleSystemTradeCodes,
+            default=False,
+            type=bool)
+
         self._currentValue = self._futureValue = traveller.Rules(
             system=system,
             classAStarPortFuelType=classAFuelType,
             classBStarPortFuelType=classBFuelType,
             classCStarPortFuelType=classCFuelType,
             classDStarPortFuelType=classDFuelType,
-            classEStarPortFuelType=classEFuelType)
+            classEStarPortFuelType=classEFuelType,
+            useRuleSystemTradeCodes=useRuleSystemTradeCodes)
 
     def write(self, settings: QtCore.QSettings) -> None:
         settings.setValue(
@@ -580,6 +588,9 @@ class RulesConfigItem(ConfigItem):
         settings.setValue(
             self._section + RulesConfigItem._ClassEFuelTypeKey,
             self._futureValue.starPortFuelType(code='E').name)
+        settings.setValue(
+            self._section + RulesConfigItem._UseRuleSystemTradeCodes,
+            self._futureValue.useRuleSystemTradeCodes())
 
 class OutcomeColoursConfigItem(ConfigItem):
     _AverageCaseKey = '/AverageCaseColour'

@@ -386,7 +386,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerSpinBox.isChecked(),

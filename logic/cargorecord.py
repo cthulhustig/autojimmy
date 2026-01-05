@@ -33,7 +33,7 @@ class CargoRecord(object):
         return common.Calculator.multiply(self._quantity, self._pricePerTon)
 
 def generateSpeculativePurchaseCargo(
-        ruleSystem: traveller.RuleSystem,
+        rules: traveller.Rules,
         world: astronomer.World,
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         minSellerDm: typing.Union[int, common.ScalarCalculation],
@@ -79,7 +79,7 @@ def generateSpeculativePurchaseCargo(
         # An explicit list of trade goods wasn't supplied so get the trade goods available due to
         # the worlds trade codes
         tradeGoods = logic.worldTradeGoods(
-            ruleSystem=ruleSystem,
+            rules=rules,
             world=world,
             includeLegal=includeLegal,
             includeIllegal=includeIllegal)
@@ -94,12 +94,12 @@ def generateSpeculativePurchaseCargo(
         # may be required if the list of trade goods was explicitly specified
         legalLocalBrokerDm, legalLocalBrokerCutPercentage, _ = \
             traveller.calculateLocalBrokerDetails(
-                ruleSystem=ruleSystem,
+                ruleSystem=rules.system(),
                 brokerDm=localBrokerDm,
                 blackMarket=False)
         illegalLocalBrokerDm, illegalLocalBrokerCutPercentage, _ = \
             traveller.calculateLocalBrokerDetails(
-                ruleSystem=ruleSystem,
+                ruleSystem=rules.system(),
                 brokerDm=localBrokerDm,
                 blackMarket=True)
 
@@ -124,6 +124,7 @@ def generateSpeculativePurchaseCargo(
                 localBrokerCutPercentage = illegalLocalBrokerCutPercentage
 
         purchasePricePerTon = tradeGood.calculatePurchasePrice(
+            rules=rules,
             world=world,
             brokerDm=finalBrokerDm,
             sellerDm=sellerDm)
@@ -146,7 +147,7 @@ def generateSpeculativePurchaseCargo(
                 name='Brokered Purchase Price Per Ton')
 
         availability = logic.calculateWorldTradeGoodQuantity(
-            ruleSystem=ruleSystem,
+            ruleSystem=rules.system(),
             world=world,
             tradeGood=tradeGood)
 
@@ -158,7 +159,7 @@ def generateSpeculativePurchaseCargo(
     return cargoRecords
 
 def generateRandomPurchaseCargo(
-        ruleSystem: traveller.RuleSystem,
+        rules: traveller.Rules,
         world: astronomer.World,
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
         sellerDm: typing.Union[int, common.ScalarCalculation],
@@ -171,13 +172,13 @@ def generateRandomPurchaseCargo(
             bool]: # Is broker an informant. Only used for local black market brokers under the 2002 rules _and_ when rolling dice
     # Get the trade goods always available on the world
     tradeGoods = logic.worldTradeGoods(
-        ruleSystem=ruleSystem,
+        rules=rules,
         world=world,
         includeLegal=not blackMarket,
         includeIllegal=blackMarket)
 
     # Generate randomly available trade goods
-    if ruleSystem == traveller.RuleSystem.MGT2022:
+    if rules.system() == traveller.RuleSystem.MGT2022:
         # For the 2022 rules the number of randomly available trade goods is
         # determined by the population (see p242)
         population = common.ScalarCalculation(
@@ -196,7 +197,7 @@ def generateRandomPurchaseCargo(
     extraAvailabilityMultipliers: typing.Dict[logic.TradeGood, int] = {}
     for index in range(0, numberOfRandomTradeGoods.value()):
         tradeGood = _rollRandomTradeGood(
-            ruleSystem=ruleSystem,
+            ruleSystem=rules.system(),
             blackMarket=blackMarket,
             diceRoller=diceRoller,
             rollIndex=index,
@@ -210,10 +211,10 @@ def generateRandomPurchaseCargo(
         # I can't find anything that explicitly says this in the 1e/2e rules but the 2022 rules
         # (p242) do so I think it makes sense for it to apply in all cases.
         if tradeGood.id() != logic.TradeGoodIds.Exotics:
-            if ruleSystem == traveller.RuleSystem.MGT2022:
+            if rules.system() == traveller.RuleSystem.MGT2022:
                 while tradeGood.isIllegal(world) != blackMarket:
                     tradeGood = _rollRandomTradeGood(
-                        ruleSystem=ruleSystem,
+                        ruleSystem=rules.system(),
                         blackMarket=blackMarket,
                         diceRoller=diceRoller,
                         rollIndex=index,
@@ -243,7 +244,7 @@ def generateRandomPurchaseCargo(
         # may be required if the list of trade goods was explicitly specified
         localBrokerDm, localBrokerCutPercentage, localBrokerIsInformant = \
             traveller.calculateLocalBrokerDetails(
-                ruleSystem=ruleSystem,
+                ruleSystem=rules.system(),
                 brokerDm=localBrokerDm,
                 blackMarket=blackMarket,
                 diceRoller=diceRoller)
@@ -252,6 +253,7 @@ def generateRandomPurchaseCargo(
     cargoRecords = []
     for tradeGood in tradeGoods:
         purchasePricePerTon = tradeGood.calculatePurchasePrice(
+            rules=rules,
             world=world,
             brokerDm=localBrokerDm if localBrokerDm else playerBrokerDm,
             sellerDm=sellerDm,
@@ -275,7 +277,7 @@ def generateRandomPurchaseCargo(
                 name='Brokered Purchase Price Per Ton')
 
         availability = logic.calculateWorldTradeGoodQuantity(
-            ruleSystem=ruleSystem,
+            ruleSystem=rules.system(),
             world=world,
             tradeGood=tradeGood,
             diceRoller=diceRoller)
@@ -305,7 +307,7 @@ def generateRandomPurchaseCargo(
     return (cargoRecords, localBrokerIsInformant)
 
 def generateRandomSaleCargo(
-        ruleSystem: traveller.RuleSystem,
+        rules: traveller.Rules,
         world: astronomer.World,
         currentCargo: typing.Iterable[CargoRecord],
         playerBrokerDm: typing.Union[int, common.ScalarCalculation],
@@ -327,7 +329,7 @@ def generateRandomSaleCargo(
     if useLocalBroker:
         localBrokerDm, localBrokerCutPercentage, localBrokerIsInformant = \
             traveller.calculateLocalBrokerDetails(
-                ruleSystem=ruleSystem,
+                ruleSystem=rules.system(),
                 brokerDm=localBrokerDm,
                 blackMarket=blackMarket,
                 diceRoller=diceRoller)
@@ -347,6 +349,7 @@ def generateRandomSaleCargo(
             continue
 
         salePricePerTon = tradeGood.calculateSalePrice(
+            rules=rules,
             world=world,
             brokerDm=localBrokerDm if localBrokerDm else playerBrokerDm,
             buyerDm=buyerDm,

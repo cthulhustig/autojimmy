@@ -503,9 +503,24 @@ class ConfigDialog(gui.DialogEx):
         starportFuelGroupBox = QtWidgets.QGroupBox('Starport Fuel Availability')
         starportFuelGroupBox.setLayout(starportFuelLayout)
 
+        # TODO: This needs a tool tip explaining what it does and why
+        # it's needed
+        self._useRuleSystemTradeCodesCheckBox = gui.CheckBoxEx()
+        self._useRuleSystemTradeCodesCheckBox.setChecked(
+            rules.useRuleSystemTradeCodes())
+
+        tradeCodesLayout = QtWidgets.QFormLayout()
+        tradeCodesLayout.addRow(
+            'Use Rule System Trade Codes',
+            self._useRuleSystemTradeCodesCheckBox)
+
+        tradeCodesGroupBox = QtWidgets.QGroupBox('Trade Codes')
+        tradeCodesGroupBox.setLayout(tradeCodesLayout)
+
         tabLayout = QtWidgets.QVBoxLayout()
         tabLayout.setContentsMargins(0, 0, 0, 0)
         tabLayout.addWidget(starportFuelGroupBox)
+        tabLayout.addWidget(tradeCodesGroupBox)
         tabLayout.addStretch()
 
         tab = QtWidgets.QWidget()
@@ -683,7 +698,8 @@ class ConfigDialog(gui.DialogEx):
                     classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
                     classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                     classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
-                    classEStarPortFuelType=self._classEStarPortFuelType.currentEnum()))
+                    classEStarPortFuelType=self._classEStarPortFuelType.currentEnum(),
+                    useRuleSystemTradeCodes=self._useRuleSystemTradeCodesCheckBox.isChecked()))
 
             app.Config.instance().setValue(
                 option=app.ConfigOption.ColourTheme,

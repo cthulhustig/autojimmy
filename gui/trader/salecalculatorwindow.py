@@ -754,7 +754,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
-            ruleSystem=rules.system(),
+            rules=rules,
             world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),

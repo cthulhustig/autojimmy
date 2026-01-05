@@ -181,8 +181,8 @@ class WorldTradeScoreTable(gui.HexTable):
         # columns aren't being displayed. We want them to be available if the get function is called
         if world and (hex not in self._tradeScoreMap):
             self._tradeScoreMap[hex] = logic.TradeScore(
+                rules=self._rules,
                 world=world,
-                ruleSystem=self._rules.system(),
                 tradeGoods=self._tradeGoods)
 
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns

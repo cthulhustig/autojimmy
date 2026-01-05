@@ -7,27 +7,29 @@ import typing
 class TradeScore(object):
     def __init__(
             self,
+            rules: traveller.Rules,
             world: astronomer.World,
-            ruleSystem: traveller.RuleSystem,
             tradeGoods: typing.Optional[typing.Iterable[logic.TradeGood]] = None
             ) -> None:
         self._world = world
-        self._ruleSystem = ruleSystem
+        self._ruleSystem = rules.system()
         self._tradeGoods = \
             logic.tradeGoodList(ruleSystem=self._ruleSystem) \
             if tradeGoods is None else \
-            [tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() == ruleSystem]
+            [tradeGood for tradeGood in tradeGoods if tradeGood.ruleSystem() == self._ruleSystem]
 
         self._purchaseScores: typing.Dict[logic.TradeGood, common.ScalarCalculation] = {}
         self._saleScores: typing.Dict[logic.TradeGood, common.ScalarCalculation] = {}
         for tradeGood in self._tradeGoods:
             purchaseScore = self._calculatePurchaseScore(
+                rules=rules,
                 world=world,
                 tradeGood=tradeGood)
             if purchaseScore:
                 self._purchaseScores[tradeGood] = purchaseScore
 
             saleScore = self._calculateSaleScore(
+                rules=rules,
                 world=world,
                 tradeGood=tradeGood)
             if saleScore:
@@ -87,11 +89,16 @@ class TradeScore(object):
 
     @staticmethod
     def _calculatePurchaseScore(
+            rules: traveller.Rules,
             world: astronomer.World,
             tradeGood: logic.TradeGood
             ) -> typing.Optional[common.ScalarCalculation]:
-        purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
-        saleDm = tradeGood.calculateSaleTradeCodeDm(world)
+        purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(
+            rules=rules,
+            world=world)
+        saleDm = tradeGood.calculateSaleTradeCodeDm(
+            rules=rules,
+            world=world)
         if not purchaseDm and not saleDm:
             return None
 
@@ -113,11 +120,16 @@ class TradeScore(object):
 
     @staticmethod
     def _calculateSaleScore(
+            rules: traveller.Rules,
             world: astronomer.World,
             tradeGood: logic.TradeGood
             ) -> common.ScalarCalculation:
-        purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(world)
-        saleDm = tradeGood.calculateSaleTradeCodeDm(world)
+        purchaseDm = tradeGood.calculatePurchaseTradeCodeDm(
+            rules=rules,
+            world=world)
+        saleDm = tradeGood.calculateSaleTradeCodeDm(
+            rules=rules,
+            world=world)
         if not purchaseDm and not saleDm:
             return None
 

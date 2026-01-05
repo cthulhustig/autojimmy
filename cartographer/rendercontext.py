@@ -1550,15 +1550,10 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            allegiance = world.allegiance()
-            remarks = world.remarks()
-
-            allegianceCode = allegiance.code() if allegiance else None
-            droyne = allegianceCode == 'Dr' or allegianceCode == 'NaDr' or remarks.hasCustomRemark('Droy')
-            chirpers = remarks.hasCustomRemark('Chir')
-
-            if droyne or chirpers:
-                glyph = self._styleSheet.droyneWorlds.content[0 if droyne else 1]
+            worldInfo = self._worldCache.worldInfo(hex=world.hex())
+            if worldInfo.isDroyneWorld or worldInfo.isChirperWorld:
+                index = 0 if worldInfo.isDroyneWorld else 1
+                glyph = self._styleSheet.droyneWorlds.content[index]
                 self._drawOverlayGlyph(
                     glyph=glyph,
                     font=self._styleSheet.droyneWorlds.font,
@@ -1587,8 +1582,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            remarks = world.remarks()
-            if remarks.hasTradeCode(traveller.TradeCode.AncientsSiteWorld):
+            worldInfo = self._worldCache.worldInfo(hex=world.hex())
+            if worldInfo.isAncientSite:
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,

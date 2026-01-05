@@ -106,11 +106,18 @@ class World(object):
     def hasBase(self, baseType: astronomer.BaseType) -> bool:
         return self._bases.hasBase(baseType)
 
-    def tradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
-        return self._remarks.tradeCodes()
+    def tradeCodes(
+            self,
+            rules: typing.Optional[traveller.Rules] = None
+            ) -> typing.Iterable[traveller.TradeCode]:
+        return self._remarks.tradeCodes(rules)
 
-    def hasTradeCode(self, tradeCode: traveller.TradeCode) -> bool:
-        return self._remarks.hasTradeCode(tradeCode)
+    def hasTradeCode(
+            self,
+            tradeCode: traveller.TradeCode,
+            rules: typing.Optional[traveller.Rules] = None
+            ) -> bool:
+        return self._remarks.hasTradeCode(tradeCode, rules)
 
     def hasStarPort(self):
         starPortCode = self._uwp.code(astronomer.UWP.Element.StarPort)
@@ -225,17 +232,16 @@ class World(object):
         return numberOfGasGiants is not None and numberOfGasGiants > 0
 
     # This method of detecting if the system has water is based on Traveller Maps (WaterPresent in
-    # World.cs). I've added the check for the water world trade code as it gives a quick out.
-    # There are a couple of things i'm not entirely convinced by about the Traveller Map algorithm
-    # but i've gone with them anyway for consistency
+    # World.cs).There are a couple of things i'm not entirely convinced by about the Traveller Map
+    # algorithm but i've gone with them anyway for consistency
     # - It counts anything with a hydrographics > 0 as having water. My concern is that this could be
     # as low as 6% water, such a low parentage could cause issues if you're trying to do water refuelling
     # - It includes worlds with atmosphere code 15. This is 'Unusual (Varies)' which doesn't sound like
     # it would guarantee accessible water for refuelling
+    # NOTE: At one point I had added a check for the WaterWorld trade code to give an early out but that
+    # was removed when I added support for rule system trade codes as it would mean every call to
+    # hasWaterRefuelling would need to pass the rule system
     def hasWaterRefuelling(self) -> bool:
-        if self.hasTradeCode(traveller.TradeCode.WaterWorld):
-            return True
-
         try:
             hydrographics = self._uwp.numeric(
                 element=astronomer.UWP.Element.Hydrographics,

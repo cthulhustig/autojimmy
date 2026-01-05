@@ -624,8 +624,12 @@ class HexTable(gui.FrozenColumnListTable):
                 economics = world.economics()
                 culture = world.culture()
                 pbg = world.pbg()
-                worldTagColour = self._taggingColour(
-                    level=self._worldTagging.calculateWorldTagLevel(world) if self._worldTagging else None)
+                worldTagLevel = worldTagColour = None
+                if self._worldTagging:
+                    worldTagLevel = self._worldTagging.calculateWorldTagLevel(
+                        rules=self._rules,
+                        world=world)
+                    worldTagColour = self._taggingColour(worldTagLevel) if worldTagLevel else None
 
             # NOTE: It's important that an item is always created for each of the
             # cells in the row, even if it has no text. If you don't and you use
@@ -853,7 +857,7 @@ class HexTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         displayText = ''
-                        for tradeCode in world.tradeCodes():
+                        for tradeCode in world.tradeCodes(rules=self._rules):
                             tradeCodeString = traveller.tradeCodeString(tradeCode)
                             displayText += f', {tradeCodeString}' if displayText else tradeCodeString
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
@@ -979,7 +983,9 @@ class HexTable(gui.FrozenColumnListTable):
                                         hex=ownerHex)
 
                                 if ownerWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld)
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(
+                                        rules=self._rules,
+                                        world=ownerWorld)
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -1017,7 +1023,9 @@ class HexTable(gui.FrozenColumnListTable):
                                         hex=colonyHex)
 
                                 if colonyWorld:
-                                    tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld)
+                                    tagLevel = self._worldTagging.calculateWorldTagLevel(
+                                        rules=self._rules,
+                                        world=colonyWorld)
                                     if tagLevel and (not highestTagLevel or tagLevel > highestTagLevel):
                                         highestTagLevel = tagLevel
                                 else:
@@ -1033,7 +1041,9 @@ class HexTable(gui.FrozenColumnListTable):
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         remarks = world.remarks()
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, remarks.string())
+                        tableItem.setData(
+                            QtCore.Qt.ItemDataRole.DisplayRole,
+                            remarks.string(rules=self._rules))
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -1151,7 +1161,7 @@ class HexTable(gui.FrozenColumnListTable):
                     strings=lines)
         elif columnType == self.ColumnType.TradeCodes:
             lines = []
-            for tradeCode in world.tradeCodes():
+            for tradeCode in world.tradeCodes(rules=self._rules):
                 lines.append(traveller.tradeCodeName(tradeCode=tradeCode))
             if lines:
                 return gui.createListToolTip(
@@ -1257,9 +1267,12 @@ class HexTable(gui.FrozenColumnListTable):
                     if ownerWorld:
                         ownerString = ownerWorld.name(includeSubsector=True)
                         listStrings.append(ownerString)
-                        tagLevel = self._worldTagging.calculateWorldTagLevel(world=ownerWorld) if self._worldTagging else None
-                        if tagLevel:
-                            listColours[ownerString] = self._taggingColour(level=tagLevel)
+                        if self._worldTagging:
+                            tagLevel = self._worldTagging.calculateWorldTagLevel(
+                                rules=self._rules,
+                                world=ownerWorld)
+                            if tagLevel:
+                                listColours[ownerString] = self._taggingColour(level=tagLevel)
                     else:
                         ownerString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
                             sector=ownerSector.name() if ownerSector else 'Unknown Sector',
@@ -1302,9 +1315,12 @@ class HexTable(gui.FrozenColumnListTable):
                     if colonyWorld:
                         colonyString = colonyWorld.name(includeSubsector=True)
                         listStrings.append(colonyString)
-                        tagLevel = self._worldTagging.calculateWorldTagLevel(world=colonyWorld) if self._worldTagging else None
-                        if tagLevel:
-                            listColours[colonyString] = self._taggingColour(level=tagLevel)
+                        if self._worldTagging:
+                            tagLevel = self._worldTagging.calculateWorldTagLevel(
+                                rules=self._rules,
+                                world=colonyWorld)
+                            if tagLevel:
+                                listColours[colonyString] = self._taggingColour(level=tagLevel)
                     else:
                         colonyString = 'Unknown world at {sector} {x:02d}{y:02d}'.format(
                             sector=colonySector.name() if colonySector else 'Unknown Sector',
@@ -1319,7 +1335,7 @@ class HexTable(gui.FrozenColumnListTable):
                     stringColours=listColours)
         elif columnType == self.ColumnType.Remarks:
             remarks = world.remarks()
-            return gui.createStringToolTip(remarks.string())
+            return gui.createStringToolTip(remarks.string(rules=self._rules))
 
         return None
 

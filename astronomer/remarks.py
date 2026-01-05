@@ -64,6 +64,7 @@ class Remarks(object):
     def __init__(
             self,
             zone: astronomer.ZoneType,
+            uwp: astronomer.UWP,
             dbTradeCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]],
             dbSophontPopulations: typing.Optional[typing.Collection[multiverse.DbSophontPopulation]],
             dbRulingAllegiances: typing.Optional[typing.Collection[multiverse.DbRulingAllegiance]],
@@ -73,14 +74,17 @@ class Remarks(object):
             dbCustomRemarks: typing.Optional[typing.Collection[multiverse.DbCustomRemark]]
             ) -> None:
         self._zone = zone
+        self._uwp = uwp
         self._tradeCodes = common.OrderedSet[traveller.TradeCode]()
         self._rulingAllegiances = list[str]()
         self._owningWorlds = list[WorldReference]()
         self._colonyWorlds = list[WorldReference]()
         self._researchStations = common.OrderedSet[str]()
-        self._sophontPopulations = list[SophontPopulation]()
+        self._sophontPopulationMap = dict[str, SophontPopulation]() # Map Sophont code to sophont
         self._customRemarks = common.OrderedSet[str]()
-        self._string = None
+
+        self._ruleSystemTradeCodesMap: typing.Dict[traveller.RuleSystem, common.OrderedSet[str]] = {}
+        self._remarkStringMap: typing.Dict[typing.Optional[traveller.RuleSystem], str] = {}
 
         self._processTradeCodes(dbCodes=dbTradeCodes)
         self._processSophontPopulations(dbPopulations=dbSophontPopulations)
@@ -103,29 +107,35 @@ class Remarks(object):
         elif self._zone == astronomer.ZoneType.RedZone:
             self._tradeCodes.add(traveller.TradeCode.RedZone)
 
-    def string(self) -> str:
-        if self._string is None:
-            self._string = self._generateRemarksString()
-        return self._string
+    def tradeCodes(
+            self,
+            rules: typing.Optional[traveller.Rules] = None
+            ) -> typing.Collection[traveller.TradeCode]:
+        if rules is not None and rules.useRuleSystemTradeCodes():
+            return self._ruleSystemTradeCodes(rules.system())
 
-    def isEmpty(self) -> bool:
-        return len(self.string()) == 0
-
-    def tradeCodes(self) -> typing.Collection[traveller.TradeCode]:
         return self._tradeCodes
 
     def hasTradeCode(
             self,
-            tradeCode: traveller.TradeCode
+            tradeCode: traveller.TradeCode,
+            rules: typing.Optional[traveller.Rules] = None
             ) -> bool:
+        if rules is not None and rules.useRuleSystemTradeCodes():
+            tradeCodes = self._ruleSystemTradeCodes(rules.system())
+            return tradeCode in tradeCodes
+
         return tradeCode in self._tradeCodes
 
     def sophonts(self) -> typing.Collection[SophontPopulation]:
-        return self._sophontPopulations
+        return self._sophontPopulationMap.values()
+
+    def hasSophont(self, code: str) -> bool:
+        return code in self._sophontPopulationMap
 
     # NOTE: This includes die back sophonts
     def sophontCount(self) -> int:
-        return len(self._sophontPopulations)
+        return len(self._sophontPopulationMap)
 
     def rulingAllegiances(self) -> typing.Optional[str]:
         return self._rulingAllegiances
@@ -157,6 +167,75 @@ class Remarks(object):
     def hasCustomRemark(self, remark: str) -> bool:
         return remark in self._customRemarks
 
+    def string(
+            self,
+            rules: typing.Optional[traveller.Rules] = None
+            ) -> str:
+        ruleSystem = rules.system() if rules and rules.useRuleSystemTradeCodes() else None
+        string = self._remarkStringMap.get(ruleSystem)
+        if string is not None:
+            return string
+
+        tradeCodes = []
+        majorRaceHomeWorlds = []
+        minorRaceHomeWorlds = []
+        sophontPopulations = []
+        dieBackSophonts = []
+        owningSystems = []
+        colonySystems = []
+
+        if ruleSystem is not None:
+            for tradeCode in self._ruleSystemTradeCodes(ruleSystem=ruleSystem):
+                tradeCodes.append(traveller.tradeCodeString(tradeCode))
+        else:
+            for tradeCode in self._tradeCodes:
+                tradeCodes.append(traveller.tradeCodeString(tradeCode))
+        tradeCodes.sort()
+
+        for sophont in self._sophontPopulationMap.values():
+            # NOTE: Home world and die back checks are intentionally separate so
+            # that a sophonts home world can be marked as die back if they user
+            # wants. If it is marked as die back, any population other than None
+            # doesn't really make sense but I'm not doing anything to prevent it.
+            if sophont.isHomeWorld():
+                if sophont.isMajorRace():
+                    majorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
+                else:
+                    minorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
+
+            if sophont.isDieBack():
+                dieBackSophonts.append(sophont.name())
+            elif not sophont.isHomeWorld():
+                # It's not die back and not a home world so just add a standard
+                # population entry
+                sophontPopulations.append((sophont.code(), sophont.percentage()))
+
+        for owner in self._owningWorlds:
+            owningSystems.append((owner.hexX(), owner.hexY(), owner.sectorAbbreviation()))
+
+        for colony in self._colonyWorlds:
+            colonySystems.append((colony.hexX(), colony.hexY(), colony.sectorAbbreviation()))
+
+        string = survey.formatSystemRemarksString(
+            tradeCodes=tradeCodes,
+            majorRaceHomeWorlds=majorRaceHomeWorlds,
+            minorRaceHomeWorlds=minorRaceHomeWorlds,
+            sophontPopulations=sophontPopulations,
+            dieBackSophonts=dieBackSophonts,
+            owningSystems=owningSystems,
+            colonySystems=colonySystems,
+            rulingAllegiances=self._rulingAllegiances,
+            researchStations=self._researchStations,
+            customRemarks=self._customRemarks)
+        self._remarkStringMap[ruleSystem] = string
+        return string
+
+    def isEmpty(
+            self,
+            rules: typing.Optional[traveller.Rules] = None
+            ) -> bool:
+        return len(self.string(rules=rules)) == 0
+
     def _processTradeCodes(
             self,
             dbCodes: typing.Optional[typing.Collection[multiverse.DbTradeCode]]
@@ -180,13 +259,14 @@ class Remarks(object):
 
         for dbPopulation in dbPopulations:
             dbSophont = dbPopulation.sophont()
-            self._sophontPopulations.append(SophontPopulation(
+            sophont = SophontPopulation(
                 code=dbSophont.code(),
                 name=dbSophont.name(),
                 percentage=dbPopulation.percentage(),
                 isMajorRace=dbSophont.isMajor(),
                 isHomeWorld=dbPopulation.isHomeWorld(),
-                isDieBack=dbPopulation.isDieBack()))
+                isDieBack=dbPopulation.isDieBack())
+            self._sophontPopulationMap[sophont.code()] = sophont
 
     def _processRulingAllegiances(
             self,
@@ -244,50 +324,19 @@ class Remarks(object):
         for dbRemark in dbRemarks:
             self._customRemarks.add(dbRemark.remark())
 
-    def _generateRemarksString(self) -> str:
-        tradeCodes = []
-        majorRaceHomeWorlds = []
-        minorRaceHomeWorlds = []
-        sophontPopulations = []
-        dieBackSophonts = []
-        owningSystems = []
-        colonySystems = []
+    def _ruleSystemTradeCodes(
+            self,
+            ruleSystem: traveller.RuleSystem
+            ) -> common.OrderedSet:
+        tradeCodes = self._ruleSystemTradeCodesMap.get(ruleSystem)
+        if tradeCodes is not None:
+            return tradeCodes
 
-        for tradeCode in self._tradeCodes:
-            tradeCodes.append(traveller.tradeCodeString(tradeCode))
-
-        for sophont in self._sophontPopulations:
-            # NOTE: Home world and die back checks are intentionally separate so
-            # that a sophonts home world can be marked as die back if they user
-            # wants. If it is marked as die back, any population other than None
-            # doesn't really make sense but I'm not doing anything to prevent it.
-            if sophont.isHomeWorld():
-                if sophont.isMajorRace():
-                    majorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
-                else:
-                    minorRaceHomeWorlds.append((sophont.name(), sophont.percentage()))
-
-            if sophont.isDieBack():
-                dieBackSophonts.append(sophont.name())
-            elif not sophont.isHomeWorld():
-                # It's not die back and not a home world so just add a standard
-                # population entry
-                sophontPopulations.append((sophont.code(), sophont.percentage()))
-
-        for owner in self._owningWorlds:
-            owningSystems.append((owner.hexX(), owner.hexY(), owner.sectorAbbreviation()))
-
-        for colony in self._colonyWorlds:
-            colonySystems.append((colony.hexX(), colony.hexY(), colony.sectorAbbreviation()))
-
-        return survey.formatSystemRemarksString(
-            tradeCodes=tradeCodes,
-            majorRaceHomeWorlds=majorRaceHomeWorlds,
-            minorRaceHomeWorlds=minorRaceHomeWorlds,
-            sophontPopulations=sophontPopulations,
-            dieBackSophonts=dieBackSophonts,
-            owningSystems=owningSystems,
-            colonySystems=colonySystems,
-            rulingAllegiances=self._rulingAllegiances,
-            researchStations=self._researchStations,
-            customRemarks=self._customRemarks)
+        tradeCodes = traveller.calculateMongooseTradeCodes(
+            uwp=self._uwp.string(),
+            ruleSystem=ruleSystem,
+            # Merge the trade codes stored in the DB so any non-calculated trade
+            # codes (sector capital, penal colony etc) are maintained
+            mergeTradeCodes=self._tradeCodes)
+        self._ruleSystemTradeCodesMap[ruleSystem] = tradeCodes
+        return tradeCodes

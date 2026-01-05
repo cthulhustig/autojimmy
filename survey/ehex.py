@@ -43,6 +43,8 @@ def ehexToInteger(
         value: str,
         default: typing.Optional[typing.Any] = -1
         ) -> typing.Union[int, typing.Any]:
+    if not value:
+        return default
     return _ExtendedHexToIntegerMap.get(value.upper(), default)
 
 def ehexCodeMap() -> typing.Mapping[str, int]:
