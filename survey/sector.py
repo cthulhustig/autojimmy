@@ -332,8 +332,7 @@ def formatT5RowSector(worlds: typing.Collection[survey.RawWorld]) -> str:
             values = []
             for columnAttribute in _T5Row_ColumnNameToAttributeMap.values():
                 value = world.attribute(attribute=columnAttribute)
-                # TODO: This should probably remove any \t characters from the value
-                values.append(value)
+                values.append(value.replace('\t', '\\t'))
             content += '\t'.join(values) + '\n'
 
     return content
