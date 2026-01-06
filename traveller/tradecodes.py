@@ -29,8 +29,10 @@ class TradeCode(enum.Enum):
     VacuumWorld = 16
     WaterWorld = 17
     # Auto-jimmy custom zone trade remarks
-    AmberZone = 18
-    RedZone = 19
+    # These were removed when I added the multiverse DB as I updated how amber/red zones
+    # were handled so this isn't required.
+    # AmberZone = 18
+    # RedZone = 19
     # https://wiki.travellerrpg.com/Trade_classification
     ColdWorld = 20,
     FrozenWorld = 21,
@@ -86,8 +88,8 @@ _StringToTradeCodeMap = {
     'Ri': TradeCode.RichWorld,
     'Va': TradeCode.VacuumWorld,
     'Wa': TradeCode.WaterWorld,
-    'Az': TradeCode.AmberZone, # Note: This was created by me, see comment at top of file
-    'Rz': TradeCode.RedZone, # Note: This was created by me, see comment at top of file
+    #'Az': TradeCode.AmberZone, # Note: This was created by me, see comment at top of file
+    #'Rz': TradeCode.RedZone, # Note: This was created by me, see comment at top of file
     'Co': TradeCode.ColdWorld,
     'Fr': TradeCode.FrozenWorld,
     'Ho': TradeCode.HotWorld,
@@ -144,8 +146,8 @@ _TradeCodeNameMap = {
     TradeCode.RichWorld: 'Rich World',
     TradeCode.VacuumWorld: 'Vacuum World',
     TradeCode.WaterWorld: 'Water World',
-    TradeCode.AmberZone: 'Amber Zone',
-    TradeCode.RedZone: 'Red Zone',
+    #TradeCode.AmberZone: 'Amber Zone',
+    #TradeCode.RedZone: 'Red Zone',
     TradeCode.ColdWorld: 'Cold World',
     TradeCode.FrozenWorld: 'Frozen World',
     TradeCode.HotWorld: 'Hot World',
@@ -200,8 +202,8 @@ _TradeCodeDescriptionMap = {
     TradeCode.RichWorld: 'Rich worlds have high-grade living conditions. They have ideal breathable atmospheres and moderate populations (millions to 100s of millions).',
     TradeCode.VacuumWorld: 'Single worlds with no atmosphere.',
     TradeCode.WaterWorld: ' Water worlds have 90% or more of their surface covered in an ocean of water (H₂O).',
-    TradeCode.AmberZone: 'A world that has been classified as requiring caution by the Travellers\' Aid Society',
-    TradeCode.RedZone: 'A world that has been classified as dangerous by the Travellers\' Aid Society',
+    #TradeCode.AmberZone: 'A world that has been classified as requiring caution by the Travellers\' Aid Society',
+    #TradeCode.RedZone: 'A world that has been classified as dangerous by the Travellers\' Aid Society',
     TradeCode.ColdWorld: 'A world with a climate at the lower end of survivability for most sophonts.',
     TradeCode.FrozenWorld: 'A world with a climate beyond the lower end of survivability.',
     TradeCode.HotWorld: 'A world with a climate at the upper end of survivability for most sophonts.',
@@ -237,24 +239,19 @@ _TradeCodeDescriptionMap = {
     TradeCode.XBoatStation: 'An Imperial facility for rapid message transmission.',
 }
 
-def tradeCode(tradeCodeString: str) -> TradeCode:
-    if tradeCodeString not in _StringToTradeCodeMap:
-        return None
-    return _StringToTradeCodeMap[tradeCodeString]
+def tradeCode(tradeCodeString: str) -> typing.Optional[TradeCode]:
+    return _StringToTradeCodeMap.get(tradeCodeString)
 
 def tradeCodeString(tradeCode: TradeCode) -> str:
-    assert(tradeCode in _TradeCodeStringMap)
     return _TradeCodeStringMap[tradeCode]
 
 def tradeCodeName(tradeCode: TradeCode) -> str:
-    assert(tradeCode in _TradeCodeNameMap)
     return _TradeCodeNameMap[tradeCode]
 
 def tradeCodeNameMap() -> typing.Mapping[TradeCode, str]:
     return _TradeCodeNameMap
 
 def tradeCodeDescription(tradeCode: TradeCode) -> str:
-    assert(tradeCode in _TradeCodeDescriptionMap)
     return _TradeCodeDescriptionMap[tradeCode]
 
 def tradeCodeDescriptionMap() -> typing.Mapping[TradeCode, str]:

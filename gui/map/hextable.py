@@ -856,11 +856,10 @@ class HexTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.TradeCodes:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
-                        displayText = ''
-                        for tradeCode in world.tradeCodes(rules=self._rules):
-                            tradeCodeString = traveller.tradeCodeString(tradeCode)
-                            displayText += f', {tradeCodeString}' if displayText else tradeCodeString
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, displayText)
+                        tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in world.tradeCodes(rules=self._rules)]
+                        tradeCodeStrings.sort()
+                        tableItem.setData(
+                            QtCore.Qt.ItemDataRole.DisplayRole, ', '.join(tradeCodeStrings))
                 elif columnType == self.ColumnType.PopulationCount:
                     if world:
                         count = world.population()
@@ -1162,8 +1161,12 @@ class HexTable(gui.FrozenColumnListTable):
         elif columnType == self.ColumnType.TradeCodes:
             lines = []
             for tradeCode in world.tradeCodes(rules=self._rules):
-                lines.append(traveller.tradeCodeName(tradeCode=tradeCode))
+                lines.append('{code} - {name} - {description}'.format(
+                    code=traveller.tradeCodeString(tradeCode=tradeCode),
+                    name=traveller.tradeCodeName(tradeCode=tradeCode),
+                    description=traveller.tradeCodeDescription(tradeCode=tradeCode)))
             if lines:
+                lines.sort()
                 return gui.createListToolTip(
                     title='Trade Codes:',
                     strings=lines)

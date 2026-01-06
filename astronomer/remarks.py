@@ -94,19 +94,6 @@ class Remarks(object):
         self._processResearchStations(dbStations=dbResearchStations)
         self._processCustomRemarks(dbRemarks=dbCustomRemarks)
 
-        # Add custom trade codes for red/amber zone as it simplifies the
-        # trade calculation logic as it can just deal with trade codes and
-        # doesn't need to understand zones
-        # TODO: I probably want to undo this hack before interactive editing
-        # is added. I don't want the zone to be written to the database in the
-        # remarks as it'd duplication of information. I also don't want to
-        # be presenting them to the user as trade codes as they aren't. It might
-        # make sense to do it now so I don't forget
-        if self._zone == astronomer.ZoneType.AmberZone:
-            self._tradeCodes.add(traveller.TradeCode.AmberZone)
-        elif self._zone == astronomer.ZoneType.RedZone:
-            self._tradeCodes.add(traveller.TradeCode.RedZone)
-
     def tradeCodes(
             self,
             rules: typing.Optional[traveller.Rules] = None

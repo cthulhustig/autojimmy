@@ -2,6 +2,7 @@ import astronomer
 import common
 import enum
 import logic
+import logging
 import json
 import packaging
 import packaging.version
@@ -347,7 +348,13 @@ def deserialiseWorldFiltersList(
 
     worldFilters = []
     for item in items:
-        worldFilters.append(deserialiseWorldFilter(data=item))
+        try:
+            worldFilters.append(deserialiseWorldFilter(data=item))
+        except Exception as ex:
+            # Log and continue on failure. This is done so that the user doesn't
+            # loose all the filters if they have a filter that is using the
+            # deprecated red/amber zone trade codes
+            logging.warning('Failed to load world filter', exc_info=ex)
     return worldFilters
 
 #

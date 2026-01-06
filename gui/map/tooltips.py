@@ -326,10 +326,21 @@ def createHexToolTip(
             if tradeCodes:
                 toolTip += '<li>Trade Codes:</li>'
                 toolTip += f'<ul style="{gui.TooltipIndentListStyle}">'
-                for tradeCode in tradeCodes:
+
+                tradeCodeStrings = [traveller.tradeCodeString(tc) for tc in tradeCodes]
+                tradeCodeStrings.sort()
+
+                for tradeCodeString in tradeCodeStrings:
+                    tradeCode = traveller.tradeCode(tradeCodeString=tradeCodeString)
+                    if not tradeCode:
+                        continue
                     tagLevel = worldTagging.calculateTradeCodeTagLevel(tradeCode) if worldTagging else None
                     style = formatTaggingStyle(level=tagLevel)
-                    toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
+                    toolTip += '<li><span style="{style}">{code} - {name} - {description}</span></li>'.format(
+                        style=style,
+                        code=html.escape(tradeCodeString),
+                        name=html.escape(traveller.tradeCodeName(tradeCode)),
+                        description=html.escape(traveller.tradeCodeDescription(tradeCode)))
                 toolTip += '</ul>'
 
             sophonts = remarks.sophonts()

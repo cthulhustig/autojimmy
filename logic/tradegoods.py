@@ -1,7 +1,6 @@
 import astronomer
 import common
 import enum
-import survey
 import traveller
 import typing
 
@@ -42,43 +41,28 @@ class TradeType(enum.Enum):
 _TradeTypeSerialisationTypeToStr = {e: e.value.lower() for e in TradeType}
 _TradeTypeSerialisationStrToType = {v: k for k, v in _TradeTypeSerialisationTypeToStr.items()}
 
-class _TradeGoodData(object):
+class _TradeGoodDefinition(object):
     def __init__(
             self,
             id: int,
             name: str,
             basePrice: int,
-            availabilityTradeCodes: typing.Iterable[traveller.TradeCode],
-            purchaseTradeCodes: typing.Dict[traveller.TradeCode, int],
-            saleTradeCodes: typing.Dict[traveller.TradeCode, int],
-            illegalLawLevelCode: typing.Optional[str],
             availableTonsD6Count: int,
-            availableTonsMultiplier: int
+            availableTonsMultiplier: int,
+            availabilityTradeCodes: typing.Optional[typing.Iterable[traveller.TradeCode]] = None, # None means available everywhere
+            buyTradeCodeDmMap: typing.Optional[typing.Mapping[traveller.TradeCode, int]] = None,
+            buyAmberZoneDm: typing.Optional[int] = None,
+            buyRedZoneDm: typing.Optional[int] = None,
+            sellTradeCodeDmMap: typing.Optional[typing.Mapping[traveller.TradeCode, int]] = None,
+            sellAmberZoneDm: typing.Optional[int] = None,
+            sellRedZoneDm: typing.Optional[int] = None,
+            illegalLawLevel: typing.Optional[int] = None, # None means legal at all law levels
             ) -> None:
         self._id = id
         self._name = name
         self._basePrice = common.ScalarCalculation(
             value=basePrice,
             name=f'{name} Base Price')
-        self._availabilityTradeCodes = availabilityTradeCodes
-
-        self._purchaseTradeCodes = {}
-        for tradeCode, tradeCodeDm in purchaseTradeCodes.items():
-            self._purchaseTradeCodes[tradeCode] = common.ScalarCalculation(
-                value=tradeCodeDm,
-                name=f'{traveller.tradeCodeName(tradeCode)} Purchase DM')
-
-        self._saleTradeCodes = {}
-        for tradeCode, tradeCodeDm in saleTradeCodes.items():
-            self._saleTradeCodes[tradeCode] = common.ScalarCalculation(
-                value=tradeCodeDm,
-                name=f'{traveller.tradeCodeName(tradeCode)} Sale DM')
-
-        self._illegalLawLevel = None
-        if illegalLawLevelCode:
-            self._illegalLawLevel = survey.ehexToInteger(
-                value=illegalLawLevelCode,
-                default=None)
 
         self._availableTonsD6Count = common.ScalarCalculation(
             value=availableTonsD6Count,
@@ -87,6 +71,48 @@ class _TradeGoodData(object):
         self._availableTonsMultiplier = common.ScalarCalculation(
             value=availableTonsMultiplier,
             name=f'{name} Available Quantity Multiplier')
+
+        self._availabilityTradeCodes = list(availabilityTradeCodes) if availabilityTradeCodes else list()
+
+        self._buyTradeCodeDmMap = {}
+        if buyTradeCodeDmMap is not None:
+            for tradeCode, tradeCodeDm in buyTradeCodeDmMap.items():
+                self._buyTradeCodeDmMap[tradeCode] = common.ScalarCalculation(
+                    value=tradeCodeDm,
+                    name=f'{traveller.tradeCodeName(tradeCode)} Purchase DM')
+
+        self._buyAmberZoneDm = None
+        if buyAmberZoneDm:
+            self._buyAmberZoneDm = common.ScalarCalculation(
+                value=buyAmberZoneDm,
+                name=f'Amber Zone Purchase DM')
+
+        self._buyRedZoneDm = None
+        if buyRedZoneDm is not None:
+            self._buyRedZoneDm = common.ScalarCalculation(
+                value=buyRedZoneDm,
+                name=f'Red Zone Purchase DM')
+
+        self._sellTradeCodes = {}
+        if sellTradeCodeDmMap is not None:
+            for tradeCode, tradeCodeDm in sellTradeCodeDmMap.items():
+                self._sellTradeCodes[tradeCode] = common.ScalarCalculation(
+                    value=tradeCodeDm,
+                    name=f'{traveller.tradeCodeName(tradeCode)} Sale DM')
+
+        self._sellAmberZoneDm = None
+        if sellAmberZoneDm:
+            self._sellAmberZoneDm = common.ScalarCalculation(
+                value=sellAmberZoneDm,
+                name=f'Amber Zone Sale DM')
+
+        self._sellRedZoneDm = None
+        if sellRedZoneDm is not None:
+            self._sellRedZoneDm = common.ScalarCalculation(
+                value=sellRedZoneDm,
+                name=f'Red Zone Sale DM')
+
+        self._illegalLawLevel = illegalLawLevel
 
     def id(self) -> int:
         return self._id
@@ -97,23 +123,35 @@ class _TradeGoodData(object):
     def basePrice(self) -> common.ScalarCalculation:
         return self._basePrice
 
-    def availabilityTradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
-        return self._availabilityTradeCodes
-
-    def purchaseTradeCodes(self) -> typing.Dict[traveller.TradeCode, common.ScalarCalculation]:
-        return self._purchaseTradeCodes
-
-    def saleTradeCodes(self) -> typing.Dict[traveller.TradeCode, common.ScalarCalculation]:
-        return self._saleTradeCodes
-
-    def illegalLawLevel(self) -> typing.Optional[int]:
-        return self._illegalLawLevel
-
     def availableTonsD6Count(self) -> common.ScalarCalculation:
         return self._availableTonsD6Count
 
     def availableTonsMultiplier(self) -> common.ScalarCalculation:
         return self._availableTonsMultiplier
+
+    def availabilityTradeCodes(self) -> typing.Iterable[traveller.TradeCode]:
+        return self._availabilityTradeCodes
+
+    def buyTradeCodeDmMap(self) -> typing.Mapping[traveller.TradeCode, common.ScalarCalculation]:
+        return self._buyTradeCodeDmMap
+
+    def buyAmberZoneDm(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._buyAmberZoneDm
+
+    def buyRedZoneDm(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._buyRedZoneDm
+
+    def sellTradeCodeDmMap(self) -> typing.Mapping[traveller.TradeCode, common.ScalarCalculation]:
+        return self._sellTradeCodes
+
+    def sellAmberZoneDm(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._sellAmberZoneDm
+
+    def sellRedZoneDm(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._sellRedZoneDm
+
+    def illegalLawLevel(self) -> typing.Optional[int]:
+        return self._illegalLawLevel
 
 class TradeGood(object):
     _ValueRangeOf3D6 = common.calculateValueRangeForDice(
@@ -123,7 +161,7 @@ class TradeGood(object):
     def __init__(
             self,
             system: traveller.RuleSystem,
-            data: _TradeGoodData
+            data: _TradeGoodDefinition
             ) -> None:
         self._system = system
         self._data = data
@@ -169,7 +207,7 @@ class TradeGood(object):
             # None (i.e. legal everywhere) and 0 (i.e. it's universally illegal)
             return False
 
-        # Check if the world law level is greater or equal to the law level where the trade goode
+        # Check if the world law level is greater or equal to the law level where the trade good
         # becomes illegal. If the law level is unknown use a default of -1 so that it will never be
         # higher (i.e. trade goods aren't world illegal if the law level is unknown)
         worldLawLevel = world.uwp().numeric(
@@ -207,7 +245,9 @@ class TradeGood(object):
         return self._calculateTradeCodeDm(
             rules=rules,
             world=world,
-            tradeCodeMap=self._data.purchaseTradeCodes())
+            tradeCodeDmMap=self._data.buyTradeCodeDmMap(),
+            amberZoneDm=self._data.buyAmberZoneDm(),
+            redZoneDm=self._data.buyRedZoneDm())
 
     def calculateSaleTradeCodeDm(
             self,
@@ -217,7 +257,9 @@ class TradeGood(object):
         return self._calculateTradeCodeDm(
             rules=rules,
             world=world,
-            tradeCodeMap=self._data.saleTradeCodes())
+            tradeCodeDmMap=self._data.sellTradeCodeDmMap(),
+            amberZoneDm=self._data.sellAmberZoneDm(),
+            redZoneDm=self._data.sellRedZoneDm())
 
     def calculateTotalPurchaseDm(
             self,
@@ -249,7 +291,9 @@ class TradeGood(object):
         tradeCodeDm = self._calculateTradeCodeDm(
             rules=rules,
             world=world,
-            tradeCodeMap=self._data.purchaseTradeCodes())
+            tradeCodeDmMap=self._data.buyTradeCodeDmMap(),
+            amberZoneDm=self._data.buyAmberZoneDm(),
+            redZoneDm=self._data.buyRedZoneDm())
         if tradeCodeDm:
             purchaseDm = common.Calculator.add(
                 lhs=brokerDm,
@@ -260,7 +304,9 @@ class TradeGood(object):
         tradeCodeDm = self._calculateTradeCodeDm(
             rules=rules,
             world=world,
-            tradeCodeMap=self._data.saleTradeCodes())
+            tradeCodeDmMap=self._data.sellTradeCodeDmMap(),
+            amberZoneDm=self._data.sellAmberZoneDm(),
+            redZoneDm=self._data.sellRedZoneDm())
         if tradeCodeDm:
             saleDm = common.Calculator.add(
                 lhs=sellerDm,
@@ -356,7 +402,9 @@ class TradeGood(object):
         tradeCodeDm = self._calculateTradeCodeDm(
             rules=rules,
             world=world,
-            tradeCodeMap=self._data.saleTradeCodes())
+            tradeCodeDmMap=self._data.sellTradeCodeDmMap(),
+            amberZoneDm=self._data.sellAmberZoneDm(),
+            redZoneDm=self._data.sellRedZoneDm())
         if tradeCodeDm:
             saleDm = common.Calculator.add(
                 lhs=brokerDm,
@@ -367,7 +415,9 @@ class TradeGood(object):
         tradeCodeDm = self._calculateTradeCodeDm(
             rules=rules,
             world=world,
-            tradeCodeMap=self._data.purchaseTradeCodes())
+            tradeCodeDmMap=self._data.buyTradeCodeDmMap(),
+            amberZoneDm=self._data.buyAmberZoneDm(),
+            redZoneDm=self._data.buyRedZoneDm())
         if tradeCodeDm:
             purchaseDm = common.Calculator.add(
                 lhs=buyerDm,
@@ -437,28 +487,55 @@ class TradeGood(object):
             self,
             rules: traveller.Rules,
             world: astronomer.World,
-            tradeCodeMap: typing.Dict[traveller.TradeCode, common.ScalarCalculation]
+            tradeCodeDmMap: typing.Mapping[traveller.TradeCode, common.ScalarCalculation],
+            amberZoneDm: typing.Optional[common.ScalarCalculation],
+            redZoneDm: typing.Optional[common.ScalarCalculation]
             ) -> typing.Optional[common.ScalarCalculation]:
         largestDm = None
         for tradeCode in world.tradeCodes(rules=rules):
-            if tradeCode in tradeCodeMap:
-                tradeCodeDm = tradeCodeMap[tradeCode]
+            tradeCodeDm = tradeCodeDmMap.get(tradeCode)
+            if tradeCodeDm is not None:
+                largestDm = self._compareTradeCodeDm(
+                    world=world,
+                    newDm=tradeCodeDm,
+                    largestDm=largestDm)
 
-                if self.isWorldIllegal(world):
-                    # The trade good is illegal on the world due to its law level
-                    tradeCodeDm = self._calculateWorldIllegalDm(
-                        world=world,
-                        baseDm=tradeCodeDm)
-
-                if not largestDm:
-                    largestDm = tradeCodeDm
-                else:
-                    largestDm = common.Calculator.max(
-                        lhs=largestDm,
-                        rhs=tradeCodeDm)
+        zone = world.zone()
+        if zone is astronomer.ZoneType.AmberZone:
+            largestDm = self._compareTradeCodeDm(
+                world=world,
+                newDm=amberZoneDm,
+                largestDm=largestDm)
+        elif zone is astronomer.ZoneType.RedZone:
+            largestDm = self._compareTradeCodeDm(
+                world=world,
+                newDm=redZoneDm,
+                largestDm=largestDm)
 
         # Note that largestModifier will be None if there are no applicable trade codes
         return largestDm
+
+    def _compareTradeCodeDm(
+            self,
+            world: astronomer.World,
+            newDm: typing.Optional[common.ScalarCalculation],
+            largestDm: typing.Optional[common.ScalarCalculation]
+            ) -> typing.Optional[common.ScalarCalculation]:
+        if newDm is None:
+            return largestDm
+
+        if self.isWorldIllegal(world):
+            # The trade good is illegal on the world due to its law level
+            newDm = self._calculateWorldIllegalDm(
+                world=world,
+                baseDm=newDm)
+
+        if largestDm is None:
+            return newDm
+
+        return common.Calculator.max(
+            lhs=largestDm,
+            rhs=newDm)
 
     # The MGT2 rules says, for goods that are illegal because of the world law level, the DM should
     # be the difference between the law level of the world and the law level the trade good becomes
@@ -796,679 +873,676 @@ class TradeGoodIds:
 
 
 _Mgt2TradeGoodData = [
-    _TradeGoodData(
-        TradeGoodIds.CommonElectronics,
-        'Common Electronics',
-        20000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonElectronics,
+        name='Common Electronics',
+        basePrice=20000,
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 3,
             traveller.TradeCode.RichWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 2,
             traveller.TradeCode.LowTechWorld: 1,
             traveller.TradeCode.PoorWorld: 1
         },
-        None, # Legal everywhere
-        2, 10), # 2D x 10
+        availableTonsD6Count=2,
+        availableTonsMultiplier=10), # 2D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.CommonIndustrialGoods,
-        'Common Industrial Goods',
-        10000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonIndustrialGoods,
+        name='Common Industrial Goods',
+        basePrice=10000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.NonAgriculturalWorld: 2,
                 traveller.TradeCode.IndustrialWorld: 5
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 3,
             traveller.TradeCode.AgriculturalWorld: 2
         },
-        None, # Legal everywhere
-        2, 10), # 2D x 10
+        availableTonsD6Count=2,
+        availableTonsMultiplier=10), # 2D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.CommonManufacturedGoods,
-        'Common Manufactured Goods',
-        20000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonManufacturedGoods,
+        name='Common Manufactured Goods',
+        basePrice=20000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.NonAgriculturalWorld: 2,
                 traveller.TradeCode.IndustrialWorld: 5
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 3,
             traveller.TradeCode.HighPopulationWorld: 2
         },
-        None, # Legal everywhere
-        2, 10), # 2D x 10
+        availableTonsD6Count=2,
+        availableTonsMultiplier=10), # 2D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.CommonRawMaterials,
-        'Common Raw Materials',
-        5000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonRawMaterials,
+        name='Common Raw Materials',
+        basePrice=5000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.AgriculturalWorld: 3,
                 traveller.TradeCode.GardenWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.PoorWorld: 2
         },
-        None, # Legal everywhere
-        2, 20), # 2D x 20
+        availableTonsD6Count=2,
+        availableTonsMultiplier=20), # 2D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.CommonConsumables,
-        'Common Consumables',
-        500,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonConsumables,
+        name='Common Consumables',
+        basePrice=500,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.AgriculturalWorld: 3,
                 traveller.TradeCode.WaterWorld: 2,
                 traveller.TradeCode.GardenWorld: 1,
                 traveller.TradeCode.AsteroidBelt: -4
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 1,
             traveller.TradeCode.FluidWorld: 1,
             traveller.TradeCode.IceCappedWorld: 1,
             traveller.TradeCode.HighPopulationWorld: 1
         },
-        None, # Legal everywhere
-        2, 20), # 2D x 20
+        availableTonsD6Count=2,
+        availableTonsMultiplier=20), # 2D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.CommonOre,
-        'Common Ore',
-        1000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonOre,
+        name='Common Ore',
+        basePrice=1000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.AsteroidBelt: 4
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 3,
             traveller.TradeCode.NonIndustrialWorld: 1
         },
-        None, # Legal everywhere
-        2, 20), # 2D x 20
+        availableTonsD6Count=2,
+        availableTonsMultiplier=20), # 2D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedElectronics,
-        'Advanced Electronics',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedElectronics,
+        name='Advanced Electronics',
+        basePrice=100000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.IndustrialWorld,
                 traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 3
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 1,
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.AsteroidBelt: 3
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedMachineParts,
-        'Advanced Machine Parts',
-        75000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedMachineParts,
+        name='Advanced Machine Parts',
+        basePrice=75000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.NonIndustrialWorld: 1
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedManufacturedGoods,
-        'Advanced Manufactured Goods',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedManufacturedGoods,
+        name='Advanced Manufactured Goods',
+        basePrice=100000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.HighPopulationWorld: 1,
             traveller.TradeCode.RichWorld: 2
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedWeapons,
-        'Advanced Weapons',
-        150000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedWeapons,
+        name='Advanced Weapons',
+        basePrice=150000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
-            traveller.TradeCode.PoorWorld: 1,
-            traveller.TradeCode.AmberZone: 2,
-            traveller.TradeCode.RedZone: 4
+        sellTradeCodeDmMap={
+            traveller.TradeCode.PoorWorld: 1
         },
+        sellAmberZoneDm=2,
+        sellRedZoneDm=4,
         # It's not clear if advanced weapons should be world illegal and, if so, at
         # what law level. As it's so unclear I've chosen to not make it world illegal
-        None,
-        1, 5), # 1D x 5
+        illegalLawLevel=None,
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedVehicles,
-        'Advanced Vehicles',
-        180000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedVehicles,
+        name='Advanced Vehicles',
+        basePrice=180000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.RichWorld: 2
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Biochemicals,
-        'Biochemicals',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Biochemicals,
+        name='Biochemicals',
+        basePrice=50000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AgriculturalWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 1,
             traveller.TradeCode.WaterWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.CrystalsAndGems,
-        'Crystals & Gems',
-        20000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CrystalsAndGems,
+        name='Crystals & Gems',
+        basePrice=20000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AsteroidBelt,
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.IceCappedWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.DesertWorld: 1,
             traveller.TradeCode.IceCappedWorld: 1,
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 3,
             traveller.TradeCode.RichWorld: 2,
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Cybernetics,
-        'Cybernetics',
-        250000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Cybernetics,
+        name='Cybernetics',
+        basePrice=250000,
+        availabilityTradeCodes=[
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 1,
             traveller.TradeCode.IceCappedWorld: 1,
             traveller.TradeCode.RichWorld: 2
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.LiveAnimals,
-        'Live Animals',
-        10000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.LiveAnimals,
+        name='Live Animals',
+        basePrice=10000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AgriculturalWorld,
             traveller.TradeCode.GardenWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.LowPopulationWorld: 3
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.LuxuryConsumables,
-        'Luxury Consumables',
-        20000,
-        [
-                traveller.TradeCode.AgriculturalWorld,
-                traveller.TradeCode.GardenWorld,
-                traveller.TradeCode.WaterWorld
+    _TradeGoodDefinition(
+        id=TradeGoodIds.LuxuryConsumables,
+        name='Luxury Consumables',
+        basePrice=20000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.AgriculturalWorld,
+            traveller.TradeCode.GardenWorld,
+            traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2,
             traveller.TradeCode.WaterWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.HighPopulationWorld: 2
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.LuxuryGoods,
-        'Luxury Goods',
-        200000,
-        [
-                traveller.TradeCode.HighPopulationWorld
+    _TradeGoodDefinition(
+        id=TradeGoodIds.LuxuryGoods,
+        name='Luxury Goods',
+        basePrice=200000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.HighPopulationWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighPopulationWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 4
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.MedicalSupplies,
-        'Medical Supplies',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.MedicalSupplies,
+        name='Medical Supplies',
+        basePrice=50000,
+        availabilityTradeCodes=[
             traveller.TradeCode.HighTechWorld,
             traveller.TradeCode.HighPopulationWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.PoorWorld: 1,
             traveller.TradeCode.RichWorld: 1
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Petrochemicals,
-        'Petrochemicals',
-        10000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Petrochemicals,
+        name='Petrochemicals',
+        basePrice=10000,
+        availabilityTradeCodes=[
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.FluidWorld,
             traveller.TradeCode.IceCappedWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.DesertWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.AgriculturalWorld: 1,
             traveller.TradeCode.LowTechWorld: 2
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.Pharmaceuticals,
-        'Pharmaceuticals',
-        100000,
-        [
-                traveller.TradeCode.AsteroidBelt,
-                traveller.TradeCode.DesertWorld,
-                traveller.TradeCode.HighPopulationWorld,
-                traveller.TradeCode.WaterWorld
-        ],
-        {
-            traveller.TradeCode.AsteroidBelt: 2,
-            traveller.TradeCode.HighPopulationWorld: 1
-        },
-        {
-            traveller.TradeCode.RichWorld: 2,
-            traveller.TradeCode.LowTechWorld: 1
-        },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
-
-    _TradeGoodData(
-        TradeGoodIds.Polymers,
-        'Polymers',
-        7000,
-        [
-            traveller.TradeCode.IndustrialWorld
-        ],
-        {
-            traveller.TradeCode.IndustrialWorld: 1
-        },
-        {
-            traveller.TradeCode.RichWorld: 2,
-            traveller.TradeCode.NonIndustrialWorld: 1
-        },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
-
-    _TradeGoodData(
-        TradeGoodIds.PreciousMetals,
-        'Precious Metals',
-        50000,
-        [
-                traveller.TradeCode.AsteroidBelt,
-                traveller.TradeCode.DesertWorld,
-                traveller.TradeCode.IceCappedWorld,
-                traveller.TradeCode.FluidWorld
-        ],
-        {
-            traveller.TradeCode.AsteroidBelt: 3,
-            traveller.TradeCode.DesertWorld: 1,
-            traveller.TradeCode.IceCappedWorld: 2,
-        },
-        {
-            traveller.TradeCode.RichWorld: 3,
-            traveller.TradeCode.IndustrialWorld: 2,
-            traveller.TradeCode.HighTechWorld: 1
-        },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
-
-    _TradeGoodData(
-        TradeGoodIds.Radioactives,
-        'Radioactives',
-        1000000,
-        [
-            traveller.TradeCode.AsteroidBelt,
-            traveller.TradeCode.DesertWorld,
-            traveller.TradeCode.LowPopulationWorld
-        ],
-        {
-            traveller.TradeCode.AsteroidBelt: 2,
-            traveller.TradeCode.LowPopulationWorld: 2
-        },
-        {
-            traveller.TradeCode.IndustrialWorld: 3,
-            traveller.TradeCode.HighTechWorld: 1,
-            traveller.TradeCode.NonIndustrialWorld: -2,
-            traveller.TradeCode.AgriculturalWorld: -3
-        },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
-
-    _TradeGoodData(
-        TradeGoodIds.Robots,
-        'Robots',
-        400000,
-        [
-            traveller.TradeCode.IndustrialWorld
-        ],
-        {
-            traveller.TradeCode.IndustrialWorld: 1
-        },
-        {
-            traveller.TradeCode.AgriculturalWorld: 2,
-            traveller.TradeCode.HighTechWorld: 1
-        },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
-
-    _TradeGoodData(
-        TradeGoodIds.Spices,
-        'Spices',
-        6000,
-        [
-            traveller.TradeCode.GardenWorld,
-            traveller.TradeCode.DesertWorld,
-            traveller.TradeCode.WaterWorld
-        ],
-        {
-            traveller.TradeCode.DesertWorld: 2
-        },
-        {
-            traveller.TradeCode.HighPopulationWorld: 2,
-            traveller.TradeCode.RichWorld: 3,
-            traveller.TradeCode.PoorWorld: 3
-        },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
-
-    _TradeGoodData(
-        TradeGoodIds.Textiles,
-        'Textiles',
-        3000,
-        [
-                traveller.TradeCode.AgriculturalWorld,
-                traveller.TradeCode.NonIndustrialWorld
-        ],
-        {
-            traveller.TradeCode.AgriculturalWorld: 7
-        },
-        {
-            traveller.TradeCode.HighPopulationWorld: 3,
-            traveller.TradeCode.NonAgriculturalWorld: 2
-        },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
-
-    _TradeGoodData(
-        TradeGoodIds.UncommonOre,
-        'Uncommon Ore',
-        5000,
-        [
-                traveller.TradeCode.AsteroidBelt,
-                traveller.TradeCode.IceCappedWorld
-        ],
-        {
-            traveller.TradeCode.AsteroidBelt: 4
-        },
-        {
-            traveller.TradeCode.IndustrialWorld: 3,
-            traveller.TradeCode.NonIndustrialWorld: 1
-        },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
-
-    _TradeGoodData(
-        TradeGoodIds.UncommonRawMaterials,
-        'Uncommon Raw Materials',
-        20000,
-        [
-                traveller.TradeCode.AgriculturalWorld,
-                traveller.TradeCode.DesertWorld,
-                traveller.TradeCode.WaterWorld
-        ],
-        {
-            traveller.TradeCode.AgriculturalWorld: 2,
-            traveller.TradeCode.WaterWorld: 1
-        },
-        {
-            traveller.TradeCode.IndustrialWorld: 2,
-            traveller.TradeCode.HighTechWorld: 1
-        },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
-
-    _TradeGoodData(
-        TradeGoodIds.Wood,
-        'Wood',
-        1000,
-        [
-                traveller.TradeCode.AgriculturalWorld,
-                traveller.TradeCode.GardenWorld
-        ],
-        {
-            traveller.TradeCode.AgriculturalWorld: 6
-        },
-        {
-            traveller.TradeCode.RichWorld: 2,
-            traveller.TradeCode.IndustrialWorld: 1
-        },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
-
-    _TradeGoodData(
-        TradeGoodIds.Vehicles,
-        'Vehicles',
-        15000,
-        [
-                traveller.TradeCode.IndustrialWorld,
-                traveller.TradeCode.HighTechWorld
-        ],
-        {
-            traveller.TradeCode.IndustrialWorld: 2,
-            traveller.TradeCode.HighTechWorld: 1
-        },
-        {
-            traveller.TradeCode.NonIndustrialWorld: 2,
-            traveller.TradeCode.HighPopulationWorld: 1
-        },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
-
-    _TradeGoodData(
-        TradeGoodIds.IllegalBiochemicals,
-        'Illegal Biochemicals',
-        50000,
-        [
-                traveller.TradeCode.AgriculturalWorld,
-                traveller.TradeCode.WaterWorld
-        ],
-        {
-            traveller.TradeCode.WaterWorld: 2
-        },
-        {
-            traveller.TradeCode.IndustrialWorld: 6
-        },
-        '0', # Illegal at all law levels
-        1, 5), # 1D x 5
-
-    _TradeGoodData(
-        TradeGoodIds.IllegalCybernetics,
-        'Illegal Cybernetics',
-        250000,
-        [
-            traveller.TradeCode.HighTechWorld
-        ],
-        {
-            traveller.TradeCode.HighTechWorld: 1
-        },
-        {
-            traveller.TradeCode.AsteroidBelt: 4,
-            traveller.TradeCode.IceCappedWorld: 4,
-            traveller.TradeCode.RichWorld: 8,
-            traveller.TradeCode.AmberZone: 6,
-            traveller.TradeCode.RedZone: 6,
-        },
-        '0', # Illegal at all law levels
-        1, 1), # 1D (x 1)
-
-    _TradeGoodData(
-        TradeGoodIds.IllegalDrugs,
-        'Illegal Drugs',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Pharmaceuticals,
+        name='Pharmaceuticals',
+        basePrice=100000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AsteroidBelt,
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.HighPopulationWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.HighPopulationWorld: 1
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.LowTechWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Polymers,
+        name='Polymers',
+        basePrice=7000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.IndustrialWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 1
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.NonIndustrialWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.PreciousMetals,
+        name='Precious Metals',
+        basePrice=50000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.IceCappedWorld,
+                traveller.TradeCode.FluidWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AsteroidBelt: 3,
+            traveller.TradeCode.DesertWorld: 1,
+            traveller.TradeCode.IceCappedWorld: 2,
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.RichWorld: 3,
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Radioactives,
+        name='Radioactives',
+        basePrice=1000000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.LowPopulationWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AsteroidBelt: 2,
+            traveller.TradeCode.LowPopulationWorld: 2
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.HighTechWorld: 1,
+            traveller.TradeCode.NonIndustrialWorld: -2,
+            traveller.TradeCode.AgriculturalWorld: -3
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Robots,
+        name='Robots',
+        basePrice=400000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.IndustrialWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 1
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Spices,
+        name='Spices',
+        basePrice=6000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.GardenWorld,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.WaterWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.DesertWorld: 2
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.HighPopulationWorld: 2,
+            traveller.TradeCode.RichWorld: 3,
+            traveller.TradeCode.PoorWorld: 3
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Textiles,
+        name='Textiles',
+        basePrice=3000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.NonIndustrialWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AgriculturalWorld: 7
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.HighPopulationWorld: 3,
+            traveller.TradeCode.NonAgriculturalWorld: 2
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.UncommonOre,
+        name='Uncommon Ore',
+        basePrice=5000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.AsteroidBelt,
+                traveller.TradeCode.IceCappedWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AsteroidBelt: 4
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 3,
+            traveller.TradeCode.NonIndustrialWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.UncommonRawMaterials,
+        name='Uncommon Raw Materials',
+        basePrice=20000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.DesertWorld,
+                traveller.TradeCode.WaterWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AgriculturalWorld: 2,
+            traveller.TradeCode.WaterWorld: 1
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Wood,
+        name='Wood',
+        basePrice=1000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.GardenWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.AgriculturalWorld: 6
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.RichWorld: 2,
+            traveller.TradeCode.IndustrialWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Vehicles,
+        name='Vehicles',
+        basePrice=15000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.IndustrialWorld,
+                traveller.TradeCode.HighTechWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 2,
+            traveller.TradeCode.HighTechWorld: 1
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.NonIndustrialWorld: 2,
+            traveller.TradeCode.HighPopulationWorld: 1
+        },
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalBiochemicals,
+        name='Illegal Biochemicals',
+        basePrice=50000,
+        availabilityTradeCodes=[
+                traveller.TradeCode.AgriculturalWorld,
+                traveller.TradeCode.WaterWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.WaterWorld: 2
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.IndustrialWorld: 6
+        },
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalCybernetics,
+        name='Illegal Cybernetics',
+        basePrice=250000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.HighTechWorld
+        ],
+        buyTradeCodeDmMap={
+            traveller.TradeCode.HighTechWorld: 1
+        },
+        sellTradeCodeDmMap={
+            traveller.TradeCode.AsteroidBelt: 4,
+            traveller.TradeCode.IceCappedWorld: 4,
+            traveller.TradeCode.RichWorld: 8
+        },
+        sellAmberZoneDm=6,
+        sellRedZoneDm=6,
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
+
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalDrugs,
+        name='Illegal Drugs',
+        basePrice=100000,
+        availabilityTradeCodes=[
+            traveller.TradeCode.AsteroidBelt,
+            traveller.TradeCode.DesertWorld,
+            traveller.TradeCode.HighPopulationWorld,
+            traveller.TradeCode.WaterWorld
+        ],
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 1,
             traveller.TradeCode.DesertWorld: 1,
             traveller.TradeCode.GardenWorld: 1,
             traveller.TradeCode.WaterWorld: 1,
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 6,
             traveller.TradeCode.HighPopulationWorld: 6
         },
-        '0', # Illegal at all law levels
-        1, 1), # 1D (x 1)
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalLuxuries,
-        'Illegal Luxuries',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalLuxuries,
+        name='Illegal Luxuries',
+        basePrice=50000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AgriculturalWorld,
             traveller.TradeCode.GardenWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2,
             traveller.TradeCode.WaterWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 6,
             traveller.TradeCode.HighPopulationWorld: 4
         },
-        '0', # Illegal at all law levels
-        1, 1), # 1D (x 1)
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalWeapons,
-        'Illegal Weapons',
-        150000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalWeapons,
+        name='Illegal Weapons',
+        basePrice=150000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
-            traveller.TradeCode.PoorWorld: 6,
-            traveller.TradeCode.AmberZone: 8,
-            traveller.TradeCode.RedZone: 10
+        sellTradeCodeDmMap={
+            traveller.TradeCode.PoorWorld: 6
         },
-        '0', # Illegal at all law levels
-        1, 5), # 1D x 5
+        sellAmberZoneDm=8,
+        sellRedZoneDm=10,
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
     # Exotics are a weird case that the rule book says require roll playing,
     # this entry is just here as a place holder to capture the fact they exist
     # Note: The availability is set to an empty list which means no availability
     # based on world TradeCodes, this is different to None which is used elsewhere
     # to indicate availability everywhere
-    _TradeGoodData(
-        TradeGoodIds.Exotics,
-        'Exotics',
-        0,
-        [],
-        {},
-        {},
-        None, # Legal everywhere
-        0, 0)
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Exotics,
+        name='Exotics',
+        basePrice=0,
+        availableTonsD6Count=0,
+        availableTonsMultiplier=0)
 ]
 
 _Mgt2TradeGoods = [TradeGood(system=traveller.RuleSystem.MGT2, data=data) for data in _Mgt2TradeGoodData]
@@ -1592,665 +1666,656 @@ _Mgt2PriceModifierMap = {
 # ░░░░░     ░░░░░   ░░░░░░░░░     ░░░░░       ░░░░░   ░░░░░   ░░░░░░░░   ░░░░░░░░░░░ ░░░░░░░░░░  ░░░░░░░░░
 
 _MgtTradeGoodData = [
-    _TradeGoodData(
-        TradeGoodIds.CommonElectronics,
-        'Basic Electronics',
-        10000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonElectronics,
+        name='Basic Electronics',
+        basePrice=10000,
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 3,
             traveller.TradeCode.RichWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 2,
             traveller.TradeCode.LowTechWorld: 1,
             traveller.TradeCode.PoorWorld: 1
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.CommonIndustrialGoods,
-        'Basic Machine Parts',
-        10000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonIndustrialGoods,
+        name='Basic Machine Parts',
+        basePrice=10000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.NonAgriculturalWorld: 2,
                 traveller.TradeCode.IndustrialWorld: 5
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 3,
             traveller.TradeCode.AgriculturalWorld: 2
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.CommonManufacturedGoods,
-        'Basic Manufactured Goods',
-        10000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonManufacturedGoods,
+        name='Basic Manufactured Goods',
+        basePrice=10000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.NonAgriculturalWorld: 2,
                 traveller.TradeCode.IndustrialWorld: 5
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 3,
             traveller.TradeCode.HighPopulationWorld: 2
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.CommonRawMaterials,
-        'Basic Raw Materials',
-        5000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonRawMaterials,
+        name='Basic Raw Materials',
+        basePrice=5000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.AgriculturalWorld: 3,
                 traveller.TradeCode.GardenWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.PoorWorld: 2
         },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.CommonConsumables,
-        'Basic Consumables',
-        2000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonConsumables,
+        name='Basic Consumables',
+        basePrice=2000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.AgriculturalWorld: 3,
                 traveller.TradeCode.WaterWorld: 2,
                 traveller.TradeCode.GardenWorld: 1,
                 traveller.TradeCode.AsteroidBelt: -4
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 1,
             traveller.TradeCode.FluidWorld: 1,
             traveller.TradeCode.IceCappedWorld: 1,
             traveller.TradeCode.HighPopulationWorld: 1
         },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.CommonOre,
-        'Basic Ore',
-        1000,
-        None, # Available everywhere
-        {
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CommonOre,
+        name='Basic Ore',
+        basePrice=1000,
+        buyTradeCodeDmMap={
                 traveller.TradeCode.AsteroidBelt: 4
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 3,
             traveller.TradeCode.NonIndustrialWorld: 1
         },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedElectronics,
-        'Advanced Electronics',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedElectronics,
+        name='Advanced Electronics',
+        basePrice=100000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.IndustrialWorld,
                 traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 3
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 1,
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.AsteroidBelt: 3
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedMachineParts,
-        'Advanced Machine Parts',
-        75000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedMachineParts,
+        name='Advanced Machine Parts',
+        basePrice=75000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.NonIndustrialWorld: 1
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedManufacturedGoods,
-        'Advanced Manufactured Goods',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedManufacturedGoods,
+        name='Advanced Manufactured Goods',
+        basePrice=100000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.HighPopulationWorld: 1,
             traveller.TradeCode.RichWorld: 2
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedWeapons,
-        'Advanced Weapons',
-        150000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedWeapons,
+        name='Advanced Weapons',
+        basePrice=150000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
-            traveller.TradeCode.PoorWorld: 1,
-            traveller.TradeCode.AmberZone: 2,
-            traveller.TradeCode.RedZone: 4
+        sellTradeCodeDmMap={
+            traveller.TradeCode.PoorWorld: 1
         },
+        sellAmberZoneDm=2,
+        sellRedZoneDm=4,
         # It's not clear if advanced weapons should be world illegal and, if so, at
         # what law level. As it's so unclear I've chosen to not make it world illegal
-        None,
-        1, 5), # 1D x 5
+        illegalLawLevel=None,
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.AdvancedVehicles,
-        'Advanced Vehicles',
-        180000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.AdvancedVehicles,
+        name='Advanced Vehicles',
+        basePrice=180000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.RichWorld: 2
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Biochemicals,
-        'Biochemicals',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Biochemicals,
+        name='Biochemicals',
+        basePrice=50000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AgriculturalWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 1,
             traveller.TradeCode.WaterWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.CrystalsAndGems,
-        'Crystals & Gems',
-        20000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.CrystalsAndGems,
+        name='Crystals & Gems',
+        basePrice=20000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AsteroidBelt,
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.IceCappedWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.DesertWorld: 1,
             traveller.TradeCode.IceCappedWorld: 1,
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 3,
             traveller.TradeCode.RichWorld: 2,
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Cybernetics,
-        'Cybernetics',
-        250000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Cybernetics,
+        name='Cybernetics',
+        basePrice=250000,
+        availabilityTradeCodes=[
             traveller.TradeCode.HighTechWorld
         ],
-        {},
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 1,
             traveller.TradeCode.IceCappedWorld: 1,
             traveller.TradeCode.RichWorld: 2
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.LiveAnimals,
-        'Live Animals',
-        10000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.LiveAnimals,
+        name='Live Animals',
+        basePrice=10000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AgriculturalWorld,
             traveller.TradeCode.GardenWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.LowPopulationWorld: 3
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.LuxuryConsumables,
-        'Luxury Consumables',
-        20000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.LuxuryConsumables,
+        name='Luxury Consumables',
+        basePrice=20000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AgriculturalWorld,
                 traveller.TradeCode.GardenWorld,
                 traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2,
             traveller.TradeCode.WaterWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.HighPopulationWorld: 2
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.LuxuryGoods,
-        'Luxury Goods',
-        200000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.LuxuryGoods,
+        name='Luxury Goods',
+        basePrice=200000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.HighPopulationWorld
         ],
-        {},
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 4
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.MedicalSupplies,
-        'Medical Supplies',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.MedicalSupplies,
+        name='Medical Supplies',
+        basePrice=50000,
+        availabilityTradeCodes=[
             traveller.TradeCode.HighTechWorld,
             traveller.TradeCode.HighPopulationWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.PoorWorld: 1,
             traveller.TradeCode.RichWorld: 1
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Petrochemicals,
-        'Petrochemicals',
-        10000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Petrochemicals,
+        name='Petrochemicals',
+        basePrice=10000,
+        availabilityTradeCodes=[
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.FluidWorld,
             traveller.TradeCode.IceCappedWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.DesertWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.AgriculturalWorld: 1,
             traveller.TradeCode.LowTechWorld: 2
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.Pharmaceuticals,
-        'Pharmaceuticals',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Pharmaceuticals,
+        name='Pharmaceuticals',
+        basePrice=100000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AsteroidBelt,
                 traveller.TradeCode.DesertWorld,
                 traveller.TradeCode.HighPopulationWorld,
                 traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.HighPopulationWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.LowTechWorld: 1
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.Polymers,
-        'Polymers',
-        7000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Polymers,
+        name='Polymers',
+        basePrice=7000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld
         ],
-        {},
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.NonIndustrialWorld: 1
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.PreciousMetals,
-        'Precious Metals',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.PreciousMetals,
+        name='Precious Metals',
+        basePrice=50000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AsteroidBelt,
                 traveller.TradeCode.DesertWorld,
                 traveller.TradeCode.IceCappedWorld,
                 traveller.TradeCode.FluidWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 3,
             traveller.TradeCode.DesertWorld: 1,
             traveller.TradeCode.IceCappedWorld: 2,
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 3,
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 1
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.Radioactives,
-        'Radioactives',
-        1000000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Radioactives,
+        name='Radioactives',
+        basePrice=1000000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AsteroidBelt,
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.LowPopulationWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 2,
             traveller.TradeCode.LowPopulationWorld: -4
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 3,
             traveller.TradeCode.HighTechWorld: 1,
             traveller.TradeCode.NonIndustrialWorld: -2,
             traveller.TradeCode.AgriculturalWorld: -3
         },
-        None, # Legal everywhere
-        1, 1), # 1D (x 1)
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.Robots,
-        'Robots',
-        400000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Robots,
+        name='Robots',
+        basePrice=400000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {},
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2,
             traveller.TradeCode.HighTechWorld: 1
         },
-        None, # Legal everywhere
-        1, 5), # 1D x 5
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.Spices,
-        'Spices',
-        6000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Spices,
+        name='Spices',
+        basePrice=6000,
+        availabilityTradeCodes=[
             traveller.TradeCode.GardenWorld,
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.DesertWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.HighPopulationWorld: 2,
             traveller.TradeCode.RichWorld: 3,
             traveller.TradeCode.PoorWorld: 3
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.Textiles,
-        'Textiles',
-        3000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Textiles,
+        name='Textiles',
+        basePrice=3000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AgriculturalWorld,
                 traveller.TradeCode.NonIndustrialWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 7
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.HighPopulationWorld: 3,
             traveller.TradeCode.NonAgriculturalWorld: 2
         },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.UncommonOre,
-        'Uncommon Ore',
-        5000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.UncommonOre,
+        name='Uncommon Ore',
+        basePrice=5000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AsteroidBelt,
                 traveller.TradeCode.IceCappedWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 4
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 3,
             traveller.TradeCode.NonIndustrialWorld: 1
         },
-        None, # Legal everywhere
-        1, 20), # 1D x 20
+        availableTonsD6Count=1,
+        availableTonsMultiplier=20), # 1D x 20
 
-    _TradeGoodData(
-        TradeGoodIds.UncommonRawMaterials,
-        'Uncommon Raw Materials',
-        20000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.UncommonRawMaterials,
+        name='Uncommon Raw Materials',
+        basePrice=20000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AgriculturalWorld,
                 traveller.TradeCode.DesertWorld,
                 traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2,
             traveller.TradeCode.WaterWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 1
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.Wood,
-        'Wood',
-        1000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Wood,
+        name='Wood',
+        basePrice=1000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AgriculturalWorld,
                 traveller.TradeCode.GardenWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 6
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 2,
             traveller.TradeCode.IndustrialWorld: 1
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.Vehicles,
-        'Vehicles',
-        15000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Vehicles,
+        name='Vehicles',
+        basePrice=15000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.IndustrialWorld,
                 traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 2,
             traveller.TradeCode.HighTechWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.NonIndustrialWorld: 2,
             traveller.TradeCode.HighPopulationWorld: 1
         },
-        None, # Legal everywhere
-        1, 10), # 1D x 10
+        availableTonsD6Count=1,
+        availableTonsMultiplier=10), # 1D x 10
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalBiochemicals,
-        'Illegal Biochemicals',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalBiochemicals,
+        name='Illegal Biochemicals',
+        basePrice=50000,
+        availabilityTradeCodes=[
                 traveller.TradeCode.AgriculturalWorld,
                 traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.WaterWorld: 2
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.IndustrialWorld: 6
         },
-        '0', # Illegal at all law levels
-        1, 5), # 1D x 5
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalCybernetics,
-        'Illegal Cybernetics',
-        250000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalCybernetics,
+        name='Illegal Cybernetics',
+        basePrice=250000,
+        availabilityTradeCodes=[
             traveller.TradeCode.HighTechWorld
         ],
-        {},
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.AsteroidBelt: 4,
             traveller.TradeCode.IceCappedWorld: 4,
-            traveller.TradeCode.RichWorld: 8,
-            traveller.TradeCode.AmberZone: 6,
-            traveller.TradeCode.RedZone: 6,
+            traveller.TradeCode.RichWorld: 8
         },
-        '0', # Illegal at all law levels
-        1, 1), # 1D (x 1)
+        sellAmberZoneDm=6,
+        sellRedZoneDm=6,
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalDrugs,
-        'Illegal Drugs',
-        100000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalDrugs,
+        name='Illegal Drugs',
+        basePrice=100000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AsteroidBelt,
             traveller.TradeCode.DesertWorld,
             traveller.TradeCode.HighPopulationWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {},
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 6,
             traveller.TradeCode.HighPopulationWorld: 6
         },
-        '0', # Illegal at all law levels
-        1, 1), # 1D (x 1)
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalLuxuries,
-        'Illegal Luxuries',
-        50000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalLuxuries,
+        name='Illegal Luxuries',
+        basePrice=50000,
+        availabilityTradeCodes=[
             traveller.TradeCode.AgriculturalWorld,
             traveller.TradeCode.GardenWorld,
             traveller.TradeCode.WaterWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.AgriculturalWorld: 2,
             traveller.TradeCode.WaterWorld: 1
         },
-        {
+        sellTradeCodeDmMap={
             traveller.TradeCode.RichWorld: 6,
             traveller.TradeCode.HighPopulationWorld: 4
         },
-        '0', # Illegal at all law levels
-        1, 1), # 1D (x 1)
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=1), # 1D x 1
 
-    _TradeGoodData(
-        TradeGoodIds.IllegalWeapons,
-        'Illegal Weapons',
-        150000,
-        [
+    _TradeGoodDefinition(
+        id=TradeGoodIds.IllegalWeapons,
+        name='Illegal Weapons',
+        basePrice=150000,
+        availabilityTradeCodes=[
             traveller.TradeCode.IndustrialWorld,
             traveller.TradeCode.HighTechWorld
         ],
-        {
+        buyTradeCodeDmMap={
             traveller.TradeCode.HighTechWorld: 2
         },
-        {
-            traveller.TradeCode.PoorWorld: 6,
-            traveller.TradeCode.AmberZone: 8,
-            traveller.TradeCode.RedZone: 10
+        sellTradeCodeDmMap={
+            traveller.TradeCode.PoorWorld: 6
         },
-        '0', # Illegal at all law levels
-        1, 5), # 1D x 5
+        sellAmberZoneDm=8,
+        sellRedZoneDm=10,
+        illegalLawLevel=0, # Illegal at all law levels
+        availableTonsD6Count=1,
+        availableTonsMultiplier=5), # 1D x 5
 
     # Exotics are a weird case that the rule book says require roll playing,
     # this entry is just here as a place holder to capture the fact they exist
     # Note: The availability is set to an empty list which means no availability
     # based on world TradeCodes, this is different to None which is used elsewhere
     # to indicate availability everywhere
-    _TradeGoodData(
-        TradeGoodIds.Exotics,
-        'Exotics',
-        0,
-        [],
-        {},
-        {},
-        None, # Legal everywhere
-        0, 0)
+    _TradeGoodDefinition(
+        id=TradeGoodIds.Exotics,
+        name='Exotics',
+        basePrice=0,
+        availableTonsD6Count=0,
+        availableTonsMultiplier=0)
 ]
 
 _MgtTradeGoods = [TradeGood(system=traveller.RuleSystem.MGT, data=data) for data in _MgtTradeGoodData]

@@ -1363,8 +1363,6 @@ class Config(QtCore.QObject):
                     logic.TaggingProperty.LawLevel: {
                         '0': logic.TagLevel.Danger},
                     logic.TaggingProperty.TradeCode: {
-                        traveller.TradeCode.AmberZone: logic.TagLevel.Warning,
-                        traveller.TradeCode.RedZone: logic.TagLevel.Danger,
                         traveller.TradeCode.HellWorld: logic.TagLevel.Danger,
                         traveller.TradeCode.PenalColony: logic.TagLevel.Danger,
                         traveller.TradeCode.PrisonCamp: logic.TagLevel.Danger,
