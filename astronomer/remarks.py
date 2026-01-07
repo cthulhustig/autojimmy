@@ -1,5 +1,6 @@
 import astronomer
 import common
+import logging
 import multiverse
 import survey
 import traveller
@@ -233,7 +234,7 @@ class Remarks(object):
         for dbCode in dbCodes:
             tradeCode = traveller.tradeCode(tradeCodeString=dbCode.code())
             if not tradeCode:
-                # TODO: Should log this
+                logging.warning(f'Ignoring unknown Trade Code {dbCode.code()}')
                 continue
             self._tradeCodes.add(tradeCode)
 
