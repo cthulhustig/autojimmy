@@ -29,7 +29,11 @@ import typing
 #     stylesheet info
 
 # TODO: I think it might be possible to move all the processing this is
-# used for to conversion time.
+# used for to conversion time. It probably means allegiances in the DB
+# need to store route/border colour/style info. I suspect I'll also need
+# to have some kind of RouteType that is stored at the sector level in
+# a similar way to allegiances to store the route/border colour/style info
+# for the different route types styles stored in otu.css
 
 class StyleStore(object):
     # Route and border style sheet regexes. Note that the names that follow

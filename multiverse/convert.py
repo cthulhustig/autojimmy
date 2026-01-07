@@ -933,7 +933,9 @@ def _createDbSystems(
             gasGiants=dbGasGiants,
             zone=rawWorld.attribute(survey.WorldAttribute.Zone),
             # TODO: I think the Traveller Map second survey page clarifies that
-            # system worlds is the number of worlds excluding the main world
+            # system worlds is the number of worlds excluding the main world. I
+            # need to check how this matches up with what is in the Mongoose World
+            # Builder rules
             systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
             allegiance=dbAllegiance,
             nobilities=dbNobilities,

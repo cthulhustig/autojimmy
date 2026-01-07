@@ -1683,9 +1683,6 @@ class MultiverseDb(object):
         description = row[1]
         notes = row[2]
 
-        # TODO: This could be made more efficient by loading all the sector
-        # information in a single select then just loading the sector child
-        # data with individual selects.
         sql = """
             SELECT id, primary_name, milieu
             FROM {table}

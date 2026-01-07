@@ -56,5 +56,4 @@ def formatSystemBasesString(
             raise ValueError(f'Invalid base code "{code}"')
         validCodes.add(code)
 
-    # TODO: Need to check that this is always putting bases in alphabetical order
     return ''.join(sorted(validCodes))

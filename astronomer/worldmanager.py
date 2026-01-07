@@ -728,8 +728,11 @@ class WorldManager(object):
 
                     # Default label to allegiance and word wrap now so it doesn't need
                     # to be done every time the border is rendered
-                    # TODO: This is probably bad, should be done in cartographer and border
-                    # should store a label and allegiance if the source data has both
+                    # TODO: This is probably bad, should be done in cartographer. However
+                    # doing that is complicated by the fact I don't want to be running
+                    # regexes for the word wrap at render time but word wrapping needs
+                    # to be done after the logic to replace the label with the allegiance
+                    # so that the allegiance name is word wrapped if it ends up being used.
                     label = dbBorder.label()
                     if not label and allegiance:
                         label = allegiance.name()

@@ -35,5 +35,4 @@ def formatSystemNobilityString(
             raise ValueError(f'Invalid nobility code "{code}"')
         validCodes.add(code)
 
-    # TODO: Need to check that this is always putting nobilities in alphabetical order
     return ''.join(sorted(validCodes))
