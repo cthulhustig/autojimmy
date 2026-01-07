@@ -665,7 +665,7 @@ class WorldManager(object):
 
                     colour = dbRoute.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for border {dbRoute.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     dbAllegiance = dbRoute.allegiance()
@@ -715,7 +715,7 @@ class WorldManager(object):
 
                     colour = dbBorder.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     dbAllegiance = dbBorder.allegiance()
@@ -785,7 +785,7 @@ class WorldManager(object):
 
                     colour = dbRegion.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for region {dbRegion.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for region {dbRegion.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     regions.append(astronomer.Region(
@@ -822,7 +822,7 @@ class WorldManager(object):
 
                     colour = dbLabel.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.debug(f'Ignoring invalid colour for label {dbLabel.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     labels.append(astronomer.Label(

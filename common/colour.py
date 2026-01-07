@@ -148,8 +148,14 @@ class HtmlColours(object):
     Yellow = '#FFFF00'
     YellowGreen = '#9ACD32'
 
+_NameToColourMap = {}
+for name, colour in common.getClassVariables(HtmlColours).items():
+    _NameToColourMap[name.lower()] = colour
 
-_NameToColourMap = {name.lower(): colour for name, colour in common.getClassVariables(HtmlColours).items()}
+    # Add mappings for Grey rather than Gray to allow for proper English
+    replaced = name.replace('Gray', 'Grey')
+    if replaced != name:
+        _NameToColourMap[replaced.lower()] = colour
 
 _ValidDigits = set('0123456789AaBbCcDdEeFf')
 def validateHtmlColour(htmlColour: str) -> bool:
