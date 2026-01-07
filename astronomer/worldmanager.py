@@ -562,7 +562,7 @@ class WorldManager(object):
                     if dbAllegiance:
                         allegiance = allegianceCodeMap.get(dbAllegiance.code())
                         if not allegiance:
-                            raise RuntimeError(f'World {worldName} is using an allegiance that is not defined by the system')
+                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for world {worldName} in sector {sectorName} from {milieu.value}')
 
                     zone = astronomer.parseZoneString(
                         dbSystem.zone() if dbSystem.zone() else '')
@@ -669,11 +669,17 @@ class WorldManager(object):
                         colour = None
 
                     dbAllegiance = dbRoute.allegiance()
+                    allegiance = None
+                    if dbAllegiance:
+                        allegianceCode = dbAllegiance.code()
+                        allegiance = allegianceCodeMap.get(allegianceCode)
+                        if not allegiance:
+                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for route {dbBorder.id()} in sector {sectorName} from {milieu.value}')
 
                     routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
-                        allegiance=dbAllegiance.code() if dbAllegiance else None,
+                        allegiance=allegiance,
                         type=dbRoute.type(),
                         style=WorldManager._mapRouteStyle(dbRoute.style()),
                         colour=colour,
@@ -713,20 +719,26 @@ class WorldManager(object):
                         colour = None
 
                     dbAllegiance = dbBorder.allegiance()
+                    allegiance = None
+                    if dbAllegiance:
+                        allegianceCode = dbAllegiance.code()
+                        allegiance = allegianceCodeMap.get(allegianceCode)
+                        if not allegiance:
+                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
 
                     # Default label to allegiance and word wrap now so it doesn't need
                     # to be done every time the border is rendered
                     # TODO: This is probably bad, should be done in cartographer and border
                     # should store a label and allegiance if the source data has both
                     label = dbBorder.label()
-                    if not label and dbAllegiance:
-                        label = dbAllegiance.name()
+                    if not label and allegiance:
+                        label = allegiance.name()
                     if label and dbBorder.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
-                        allegiance=dbAllegiance.code() if dbAllegiance else None,
+                        allegiance=allegiance,
                         # Show label use the same defaults as the traveller map Border class
                         # TODO: I think I've broken something here as show label can't be null in the
                         # DB. I suspect I need to move this logic to the converter

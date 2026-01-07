@@ -11,7 +11,7 @@ class Border(astronomer.Region):
     def __init__(
             self,
             hexList: typing.Iterable[astronomer.HexPosition],
-            allegiance: typing.Optional[str],
+            allegiance: typing.Optional[astronomer.Allegiance],
             showLabel: bool,
             labelHex: typing.Optional[astronomer.HexPosition],
             labelOffsetX: typing.Optional[float],
@@ -31,7 +31,7 @@ class Border(astronomer.Region):
         self._allegiance = allegiance
         self._style = style
 
-    def allegiance(self) -> typing.Optional[str]:
+    def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance
 
     def style(self) -> typing.Optional[Style]:

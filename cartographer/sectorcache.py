@@ -34,16 +34,12 @@ class SectorLines(object):
             points: typing.Iterable[cartographer.AbstractPointList],
             colour: typing.Optional[str],
             width: typing.Optional[float],
-            style: typing.Optional[cartographer.LineStyle],
-            type: typing.Optional[str],
-            allegiance: typing.Optional[str]
+            style: typing.Optional[cartographer.LineStyle]
             ) -> None:
         self._points = points
         self._colour = colour
         self._width = width
         self._style = style
-        self._type = type
-        self._allegiance = allegiance
 
     def points(self) -> cartographer.AbstractPointList:
         return self._points
@@ -56,12 +52,6 @@ class SectorLines(object):
 
     def style(self) -> typing.Optional[cartographer.LineStyle]:
         return self._style
-
-    def type(self) -> typing.Optional[str]:
-        return self._type
-
-    def allegiance(self) -> typing.Optional[str]:
-        return self._allegiance
 
 class SectorCache(object):
     # This was moved from the style sheet as it never actually changes
@@ -233,7 +223,7 @@ class SectorCache(object):
                 typing.Optional[float], # Width
                 typing.Optional[cartographer.LineStyle], # Line style
                 typing.Optional[str], # Type
-                typing.Optional[str]], # Allegiance
+                typing.Optional[astronomer.Allegiance]], # Allegiance
             typing.List[cartographer.PointF]] = {}
         for route in sector.yieldRoutes():
             # Compute source/target sectors (may be offset)
@@ -285,7 +275,7 @@ class SectorCache(object):
                 # Traveller Map DrawMicroRoutes
                 precedence = []
                 if allegiance:
-                    precedence.append(allegiance)
+                    precedence.append(allegiance.code())
                 elif type:
                     precedence.append(type)
                 else:
@@ -307,9 +297,7 @@ class SectorCache(object):
                 points=self._graphics.createPointList(points=points),
                 colour=colour,
                 width=width,
-                style=style,
-                type=type,
-                allegiance=allegiance))
+                style=style))
         self._routeCache[index] = routes
 
         return routes
@@ -401,7 +389,7 @@ class SectorCache(object):
                 allegiance = source.allegiance()
                 precedence = []
                 if allegiance:
-                    precedence.append(allegiance)
+                    precedence.append(allegiance.code())
                 precedence.append(None)
 
                 for key in precedence:

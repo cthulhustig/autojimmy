@@ -12,7 +12,7 @@ class Route(object):
             self,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
-            allegiance: typing.Optional[str],
+            allegiance: typing.Optional[astronomer.Allegiance],
             type: typing.Optional[str],
             style: typing.Optional[Style],
             colour: typing.Optional[str],
@@ -32,7 +32,7 @@ class Route(object):
     def endHex(self) -> astronomer.HexPosition:
         return self._endHex
 
-    def allegiance(self) -> typing.Optional[str]:
+    def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance
 
     def type(self) -> typing.Optional[str]:
