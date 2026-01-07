@@ -98,7 +98,7 @@ class Remarks(object):
             self,
             rules: typing.Optional[traveller.Rules] = None
             ) -> typing.Collection[traveller.TradeCode]:
-        if rules is not None and rules.useRuleSystemTradeCodes():
+        if rules is not None and rules.regenerateTradeCodes():
             return self._ruleSystemTradeCodes(rules.system())
 
         return self._tradeCodes
@@ -108,7 +108,7 @@ class Remarks(object):
             tradeCode: traveller.TradeCode,
             rules: typing.Optional[traveller.Rules] = None
             ) -> bool:
-        if rules is not None and rules.useRuleSystemTradeCodes():
+        if rules is not None and rules.regenerateTradeCodes():
             tradeCodes = self._ruleSystemTradeCodes(rules.system())
             return tradeCode in tradeCodes
 
@@ -158,7 +158,7 @@ class Remarks(object):
             self,
             rules: typing.Optional[traveller.Rules] = None
             ) -> str:
-        ruleSystem = rules.system() if rules and rules.useRuleSystemTradeCodes() else None
+        ruleSystem = rules.system() if rules and rules.regenerateTradeCodes() else None
         string = self._remarkStringMap.get(ruleSystem)
         if string is not None:
             return string

@@ -61,7 +61,7 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     """,
     escape=False)
 
-_RuleSystemTradeCodesToolTip = gui.createStringToolTip(
+_RegenerateTradeCodesToolTip = gui.createStringToolTip(
     """
     <p>
     When enabled, this option tells {name} to regenerate Trade Codes for worlds
@@ -488,10 +488,10 @@ class ConfigDialog(gui.DialogEx):
             '<p>The Traveller rule system to use</p>',
             escape=False))
 
-        self._useRuleSystemTradeCodesCheckBox = gui.CheckBoxEx()
-        self._useRuleSystemTradeCodesCheckBox.setChecked(
-            rules.useRuleSystemTradeCodes())
-        self._useRuleSystemTradeCodesCheckBox.setToolTip(_RuleSystemTradeCodesToolTip)
+        self._regenerateTradeCodesCheckBox = gui.CheckBoxEx()
+        self._regenerateTradeCodesCheckBox.setChecked(
+            rules.regenerateTradeCodes())
+        self._regenerateTradeCodesCheckBox.setToolTip(_RegenerateTradeCodesToolTip)
 
         ruleSystemLayout = gui.FormLayoutEx()
         ruleSystemLayout.addRow(
@@ -499,7 +499,7 @@ class ConfigDialog(gui.DialogEx):
             self._rulesComboBox)
         ruleSystemLayout.addRow(
             'Regenerate Trade Codes',
-            self._useRuleSystemTradeCodesCheckBox)
+            self._regenerateTradeCodesCheckBox)
 
         ruleSystemGroupBox = QtWidgets.QGroupBox('Rule System')
         ruleSystemGroupBox.setLayout(ruleSystemLayout)
@@ -726,12 +726,12 @@ class ConfigDialog(gui.DialogEx):
                 option=app.ConfigOption.Rules,
                 value=traveller.Rules(
                     system=self._rulesComboBox.currentEnum(),
+                    regenerateTradeCodes=self._regenerateTradeCodesCheckBox.isChecked(),
                     classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
                     classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
                     classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
                     classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
-                    classEStarPortFuelType=self._classEStarPortFuelType.currentEnum(),
-                    useRuleSystemTradeCodes=self._useRuleSystemTradeCodesCheckBox.isChecked()))
+                    classEStarPortFuelType=self._classEStarPortFuelType.currentEnum()))
 
             app.Config.instance().setValue(
                 option=app.ConfigOption.ColourTheme,
