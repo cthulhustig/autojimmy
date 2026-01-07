@@ -58,8 +58,47 @@ _StarPortFuelToolTip = gui.createStringToolTip(
     up by the description of Alell Down Starport in the example adventure
     (p141), where it\'s stated to be a class B starport and to sell refined and
     unrefined fuel.</p>
-    """ + _RestartRequiredParagraph,
+    """,
     escape=False)
+
+_RuleSystemTradeCodesToolTip = gui.createStringToolTip(
+    """
+    <p>
+    When enabled, this option tells {name} to regenerate Trade Codes for worlds
+    based on the selected Rule System and each world’s UWP, instead of using the
+    Trade Codes provided in the Traveller Map sector data.
+    </p>
+    <p>
+    Traveller Map sectors have been created by many different contributors over
+    a long period of time, often using different rule systems and varying levels
+    of accuracy. As a result, the Trade Codes listed in the Traveller Map data
+    for a given world may not match the Trade Codes that would be generated for
+    that same world using the rules applied in your game.
+    </p>
+    <p>
+    {name} will retain any Trade Codes from the Traveller Map data that are not
+    explicitly defined by the selected Rule System. These additional Trade Codes
+    do not affect trade calculations, but they can add useful flavour and
+    context to your game. For example, some worlds include the Penal Colony (Pe)
+    or Ancients Site (An) Trade Codes. While Mongoose Traveller does not define
+    equivalents for these, {name} preserves them as they provide valuable
+    information about the world.
+    </p>
+    """.format(name=app.AppName),
+    escape=False)
+
+"""
+    'Pe': TradeCode.PenalColony,
+    'Px': TradeCode.PrisonCamp,
+    'Re': TradeCode.Reserve,
+    'Ab': TradeCode.DataRepositoryWorld,
+    'An': TradeCode.AncientsSiteWorld,
+    'Ax': TradeCode.ConstructWorld,
+    'Da': TradeCode.DangerousWorld,
+    'Fo': TradeCode.ForbiddenWorld,
+    'Pz': TradeCode.PuzzleWorld,
+    'Rs': TradeCode.ResearchStation,
+"""
 
 class _InPlaceComboBoxWrapper(QtWidgets.QWidget):
     def __init__(self, colours, parent=None, value=None):
@@ -323,30 +362,14 @@ class ConfigDialog(gui.DialogEx):
                 futureValue=True),
             textMap={milieu: astronomer.milieuDescription(milieu) for milieu in  astronomer.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The milieu to use when determining sector and world information</p>' +
-            _RestartRequiredParagraph,
+            '<p>The milieu to use when determining sector and world information</p>',
             escape=False))
         self._milieuComboBox.currentIndexChanged.connect(self._milieuChanged)
-
-        rules = app.Config.instance().value(
-            option=app.ConfigOption.Rules,
-            futureValue=True)
-
-        self._rulesComboBox = gui.EnumComboBox(
-            type=traveller.RuleSystem,
-            value=rules.system())
-        self._rulesComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The rules used for trade calculations</p>' +
-            _RestartRequiredParagraph,
-            escape=False))
 
         travellerLayout = gui.FormLayoutEx()
         travellerLayout.addRow(
             'Milieu:',
             self._milieuComboBox)
-        travellerLayout.addRow(
-            'Rule System:',
-            self._rulesComboBox)
 
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
@@ -403,7 +426,7 @@ class ConfigDialog(gui.DialogEx):
         guiLayout.addRow('Worst Case Highlight Colour:', self._worstCaseColourButton)
         guiLayout.addRow('Best Case Highlight Colour:', self._bestCaseColourButton)
 
-        guiGroupBox = QtWidgets.QGroupBox('GUI')
+        guiGroupBox = QtWidgets.QGroupBox('UI')
         guiGroupBox.setLayout(guiLayout)
 
         # Tagging widgets
@@ -458,6 +481,29 @@ class ConfigDialog(gui.DialogEx):
             option=app.ConfigOption.Rules,
             futureValue=True)
 
+        self._rulesComboBox = gui.EnumComboBox(
+            type=traveller.RuleSystem,
+            value=rules.system())
+        self._rulesComboBox.setToolTip(gui.createStringToolTip(
+            '<p>The Traveller rule system to use</p>',
+            escape=False))
+
+        self._useRuleSystemTradeCodesCheckBox = gui.CheckBoxEx()
+        self._useRuleSystemTradeCodesCheckBox.setChecked(
+            rules.useRuleSystemTradeCodes())
+        self._useRuleSystemTradeCodesCheckBox.setToolTip(_RuleSystemTradeCodesToolTip)
+
+        ruleSystemLayout = gui.FormLayoutEx()
+        ruleSystemLayout.addRow(
+            'Rule System',
+            self._rulesComboBox)
+        ruleSystemLayout.addRow(
+            'Regenerate Trade Codes',
+            self._useRuleSystemTradeCodesCheckBox)
+
+        ruleSystemGroupBox = QtWidgets.QGroupBox('Rule System')
+        ruleSystemGroupBox.setLayout(ruleSystemLayout)
+
         self._classAStarPortFuelType = gui.EnumComboBox(
             type=traveller.StarPortFuelType,
             value=rules.starPortFuelType(code='A'))
@@ -503,24 +549,10 @@ class ConfigDialog(gui.DialogEx):
         starportFuelGroupBox = QtWidgets.QGroupBox('Starport Fuel Availability')
         starportFuelGroupBox.setLayout(starportFuelLayout)
 
-        # TODO: This needs a tool tip explaining what it does and why
-        # it's needed
-        self._useRuleSystemTradeCodesCheckBox = gui.CheckBoxEx()
-        self._useRuleSystemTradeCodesCheckBox.setChecked(
-            rules.useRuleSystemTradeCodes())
-
-        tradeCodesLayout = QtWidgets.QFormLayout()
-        tradeCodesLayout.addRow(
-            'Use Rule System Trade Codes',
-            self._useRuleSystemTradeCodesCheckBox)
-
-        tradeCodesGroupBox = QtWidgets.QGroupBox('Trade Codes')
-        tradeCodesGroupBox.setLayout(tradeCodesLayout)
-
         tabLayout = QtWidgets.QVBoxLayout()
         tabLayout.setContentsMargins(0, 0, 0, 0)
+        tabLayout.addWidget(ruleSystemGroupBox)
         tabLayout.addWidget(starportFuelGroupBox)
-        tabLayout.addWidget(tradeCodesGroupBox)
         tabLayout.addStretch()
 
         tab = QtWidgets.QWidget()
