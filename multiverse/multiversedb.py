@@ -876,10 +876,6 @@ class MultiverseDb(object):
                     ColumnDef(columnName='universe_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._UniversesTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: The is_custom column is technically redundant as the information can
-                    # be implied by the universe id. I should probably remove it but it's currently
-                    # making some queries a little easier
-                    ColumnDef(columnName='is_custom', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
                     # TODO: I probably want to store the milieu as the integer year but I'll need
                     # something to support named milieu (e.g. IW for Interstellar War). It probably
                     # means a separate milieu description table that stores per universe year to
@@ -1688,13 +1684,14 @@ class MultiverseDb(object):
             FROM {table}
             WHERE universe_id = :id
             """.format(table=MultiverseDb._SectorsTableName)
+        parameters = {'id': universeId}
         if includeDefaultSectors:
             sql += """
                 UNION ALL
 
                 SELECT d.id, d.primary_name, d.milieu
                 FROM {table} d
-                WHERE d.universe_id IS "default"
+                WHERE d.universe_id = :default_id
                 AND NOT EXISTS (
                     SELECT 1
                     FROM {table} u
@@ -1704,9 +1701,10 @@ class MultiverseDb(object):
                         AND u.sector_y = d.sector_y
                 )
                 """.format(table=MultiverseDb._SectorsTableName)
+            parameters['default_id'] = MultiverseDb._DefaultUniverseId
         sql += ';'
 
-        cursor.execute(sql, {'id': universeId})
+        cursor.execute(sql, parameters)
         resultData = cursor.fetchall()
         totalSectorCount = len(resultData)
         sectors = []
@@ -1762,11 +1760,11 @@ class MultiverseDb(object):
             sector: multiverse.DbSector
             ) -> None:
         sql = """
-            INSERT INTO {table} (id, universe_id, is_custom, milieu,
+            INSERT INTO {table} (id, universe_id, milieu,
                 sector_x, sector_y, primary_name, primary_language,
                 abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes)
-            VALUES (:id, :universe_id, :is_custom, :milieu,
+            VALUES (:id, :universe_id, :milieu,
                 :sector_x, :sector_y, :primary_name, :primary_language,
                 :abbreviation, :sector_label, :selected,
                 :credits, :publication, :author, :publisher, :reference, :notes);
@@ -1774,7 +1772,6 @@ class MultiverseDb(object):
         rows = {
             'id': sector.id(),
             'universe_id': sector.universeId(),
-            'is_custom': 1 if sector.isCustom() else 0,
             'milieu': sector.milieu(),
             'sector_x': sector.sectorX(),
             'sector_y': sector.sectorY(),
@@ -2212,7 +2209,7 @@ class MultiverseDb(object):
             sectorId: str
             ) -> typing.Optional[multiverse.DbSector]:
         sql = """
-            SELECT universe_id, is_custom, milieu, sector_x, sector_y,
+            SELECT universe_id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
                 credits, publication, author, publisher, reference, notes
             FROM {table}
@@ -2227,21 +2224,21 @@ class MultiverseDb(object):
         sector = multiverse.DbSector(
             id=sectorId,
             universeId=row[0],
-            isCustom=True if row[1] else False,
-            milieu=row[2],
-            sectorX=row[3],
-            sectorY=row[4],
-            primaryName=row[5],
-            primaryLanguage=row[6],
-            abbreviation=row[7],
-            sectorLabel=row[8],
-            selected=True if row[9] else False,
-            credits=row[10],
-            publication=row[11],
-            author=row[12],
-            publisher=row[13],
-            reference=row[14],
-            notes=row[15])
+            isCustom=row[0] != MultiverseDb._DefaultUniverseId,
+            milieu=row[1],
+            sectorX=row[2],
+            sectorY=row[3],
+            primaryName=row[4],
+            primaryLanguage=row[5],
+            abbreviation=row[6],
+            sectorLabel=row[7],
+            selected=True if row[8] else False,
+            credits=row[9],
+            publication=row[10],
+            author=row[11],
+            publisher=row[12],
+            reference=row[13],
+            notes=row[14])
 
         sql = """
             SELECT id, name, language
@@ -2781,23 +2778,24 @@ class MultiverseDb(object):
             includeDefaultSectors: bool
             ) -> typing.List[DbSectorInfo]:
         sql = """
-            SELECT id, primary_name, sector_x, sector_y, is_custom, abbreviation
+            SELECT id, universe_id, primary_name, sector_x, sector_y, abbreviation
             FROM {table}
             WHERE universe_id = :id
             """.format(table=MultiverseDb._SectorsTableName)
-        selectData = {'id': universeId}
+        parameters = {'id': universeId}
 
         if milieu:
             sql += 'AND milieu = :milieu'
-            selectData['milieu'] = milieu
+            parameters['milieu'] = milieu
 
         if includeDefaultSectors:
             sql += """
                 UNION ALL
-                SELECT d.id, d.primary_name, d.sector_x, d.sector_y, is_custom, abbreviation
+                SELECT d.id, d.universe_id, d.primary_name, d.sector_x, d.sector_y, abbreviation
                 FROM {table} d
-                WHERE d.universe_id IS "default"
+                WHERE d.universe_id = :default_id
                 """.format(table=MultiverseDb._SectorsTableName)
+            parameters['default_id'] = MultiverseDb._DefaultUniverseId
 
             if milieu:
                 sql += 'AND milieu = :milieu'
@@ -2815,16 +2813,16 @@ class MultiverseDb(object):
 
         sql += ';'
 
-        cursor.execute(sql, selectData)
+        cursor.execute(sql, parameters)
 
         sectorList = []
         for row in cursor.fetchall():
             sectorList.append(DbSectorInfo(
                 id=row[0],
-                name=row[1],
-                sectorX=row[2],
-                sectorY=row[3],
-                isCustom=True if row[4] else False,
+                isCustom=row[1] != MultiverseDb._DefaultUniverseId,
+                name=row[2],
+                sectorX=row[3],
+                sectorY=row[4],
                 abbreviation=row[5]))
         return sectorList
 
@@ -2834,7 +2832,7 @@ class MultiverseDb(object):
             sectorId: str
             ) -> typing.Optional[DbSectorInfo]:
         sql = """
-            SELECT primary_name, sector_x, sector_y, is_custom, abbreviation
+            SELECT universe_id, primary_name, sector_x, sector_y, abbreviation
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -2848,10 +2846,10 @@ class MultiverseDb(object):
 
         return DbSectorInfo(
             id=sectorId,
-            name=row[0],
-            sectorX=row[1],
-            sectorY=row[2],
-            isCustom=True if row[3] else False,
+            isCustom=row[0] != MultiverseDb._DefaultUniverseId,
+            name=row[1],
+            sectorX=row[2],
+            sectorY=row[3],
             abbreviation=row[4])
 
     def _internalSectorInfoByPosition(
@@ -2861,11 +2859,13 @@ class MultiverseDb(object):
             milieu: str,
             sectorX: int,
             sectorY: int
+            # NOTE: Returned sector may be from default universe rather than the
+            # one specified by universeId
             ) -> typing.Optional[DbSectorInfo]:
         sql = """
-            SELECT id, primary_name, is_custom, abbreviation
+            SELECT id, universe_id, primary_name, abbreviation
             FROM {table}
-            WHERE (universe_id = :id OR universe_id = 'default')
+            WHERE (universe_id = :id OR universe_id = :default_id)
                 AND milieu = :milieu
                 AND sector_x = :sector_x
                 AND sector_y = :sector_y
@@ -2877,7 +2877,8 @@ class MultiverseDb(object):
             'id': universeId,
             'milieu': milieu,
             'sector_x': sectorX,
-            'sector_y': sectorY}
+            'sector_y': sectorY,
+            'default_id': MultiverseDb._DefaultUniverseId}
 
         cursor.execute(sql, selectData)
         row = cursor.fetchone()
@@ -2886,10 +2887,10 @@ class MultiverseDb(object):
 
         return DbSectorInfo(
             id=row[0],
-            name=row[1],
+            isCustom=row[1] != MultiverseDb._DefaultUniverseId,
+            name=row[2],
             sectorX=sectorX,
             sectorY=sectorY,
-            isCustom=True if row[2] else False,
             abbreviation=row[3])
 
     @staticmethod
