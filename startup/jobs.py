@@ -74,6 +74,7 @@ class ImportCustomSectorsJob(app.StartupJob):
             ) -> None:
         multiverse.importLegacyCustomSectors(
             directoryPath=self._directoryPath,
+            appVersion=app.AppVersion,
             progressCallback=progressCallback)
 
 class LoadSectorsJob(app.StartupJob):

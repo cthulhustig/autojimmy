@@ -431,6 +431,9 @@ class MultiverseDb(object):
         MultiverseDb._appVersion = appVersion
         MultiverseDb._databasePath = databasePath
 
+    def databaseExists(self) -> bool:
+        return os.path.exists(MultiverseDb._databasePath)
+
     def createTransaction(self) -> Transaction:
         connection = self._createConnection()
         return MultiverseDb.Transaction(connection=connection)
@@ -1162,8 +1165,6 @@ class MultiverseDb(object):
                     ColumnDef(columnName='start_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='end_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='end_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
-                    # TODO: Do I actually need to store these offsets? Can they not be calculated based on the
-                    # start/end hex
                     ColumnDef(columnName='start_offset_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='start_offset_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='end_offset_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
@@ -1188,6 +1189,15 @@ class MultiverseDb(object):
                     ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='show_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
                     ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    # TODO: I think I can get simplify this by storing absolute world coordinates (ie floats)
+                    # rather than hex & offset. It would basically be a case of doing what is currently done
+                    # when rendering in the cartographer at convert time (including the 0.7 multiplier). The
+                    # code in the cartographer could then be removed and it can just use the precalculated
+                    # world coordinates when rendering the text.
+                    # I think the same is true for the offsets used by Regions AND Labels but NOT the
+                    # offsets stored for Routes as they're sector offsets not world coordinate offsets.
+                    # IMPORTANT: It's important to remember I'd need to do the inverse when I come to
+                    # implement export code.
                     ColumnDef(columnName='label_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
                     ColumnDef(columnName='label_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
                     ColumnDef(columnName='label_offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),

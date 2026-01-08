@@ -57,10 +57,10 @@ def haveCustomSectorsBeenImported(directoryPath: str) -> bool:
 
 def importLegacyCustomSectors(
         directoryPath: str,
+        appVersion: str,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
         ) -> None:
-    flagFilePath = os.path.join(directoryPath, _ImportFlagFileName)
-    if os.path.exists(flagFilePath):
+    if haveCustomSectorsBeenImported(directoryPath):
         raise RuntimeError('Legacy custom sectors have already been imported')
 
     rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
@@ -224,9 +224,7 @@ def importLegacyCustomSectors(
         universe=dbUniverse,
         progressCallback=progressCallback)
 
-    # Create flag file to indicate custom sectors have already been imported
-    # TODO: I should pass a transaction into the saveUniverse call and only
-    # commit it if I also manage to write the flag. If writing fails it should
-    # roll back the commit
+    # Create flag file to indicate custom sectors have already been imported.
+    flagFilePath = os.path.join(directoryPath, _ImportFlagFileName)
     with open(flagFilePath, 'w') as file:
-        file.write(common.utcnow().isoformat())
+        file.write(appVersion)
