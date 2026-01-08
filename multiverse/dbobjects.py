@@ -228,7 +228,7 @@ class DbOwningSystem(DbObject):
             self,
             hexX: int,
             hexY: int,
-            sectorCode: typing.Optional[str], # None means current sector
+            sectorAbbreviation: typing.Optional[str], # None means current sector
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ):
@@ -237,7 +237,7 @@ class DbOwningSystem(DbObject):
         self.setSystemId(systemId)
         self.setHexX(hexX)
         self.setHexY(hexY)
-        self.setSectorCode(sectorCode)
+        self.setSectorAbbreviation(sectorAbbreviation)
 
     def systemId(self) -> typing.Optional[str]:
         return self._systemId
@@ -257,18 +257,21 @@ class DbOwningSystem(DbObject):
     def setHexY(self, hexY: int) -> None:
         self._hexY = hexY
 
-    def sectorCode(self) -> typing.Optional[str]:
-        return self._sectorCode
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
 
-    def setSectorCode(self, sectorCode: typing.Optional[str]) -> None:
-        self._sectorCode = sectorCode
+    def setSectorAbbreviation(
+            self,
+            abbreviation: typing.Optional[str]
+            ) -> None:
+        self._sectorAbbreviation = abbreviation
 
 class DbColonySystem(DbObject):
     def __init__(
             self,
             hexX: int,
             hexY: int,
-            sectorCode: typing.Optional[str], # None means current sector
+            sectorAbbreviation: typing.Optional[str], # None means current sector
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ):
@@ -277,7 +280,7 @@ class DbColonySystem(DbObject):
         self.setSystemId(systemId)
         self.setHexX(hexX)
         self.setHexY(hexY)
-        self.setSectorCode(sectorCode)
+        self.setSectorAbbreviation(sectorAbbreviation)
 
     def systemId(self) -> typing.Optional[str]:
         return self._systemId
@@ -297,11 +300,14 @@ class DbColonySystem(DbObject):
     def setHexY(self, hexY: int) -> None:
         self._hexY = hexY
 
-    def sectorCode(self) -> typing.Optional[str]:
-        return self._sectorCode
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
 
-    def setSectorCode(self, sectorCode: typing.Optional[str]) -> None:
-        self._sectorCode = sectorCode
+    def setSectorAbbreviation(
+            self,
+            abbreviation: typing.Optional[str]
+            ) -> None:
+        self._sectorAbbreviation = abbreviation
 
 class DbCustomRemark(DbObject):
     def __init__(

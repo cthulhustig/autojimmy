@@ -1068,10 +1068,17 @@ class MultiverseDb(object):
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
                     ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
-                    # TODO: Should this be sector_abbreviation rather than sector_code
-                    ColumnDef(columnName='sector_code', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                    # NOTE: This intentionally stores the abbreviation rather
+                    # than the sector id so that the referenced sector doesn't
+                    # need to exist in the DB at the point this sector was
+                    # imported. This avoids the chicken and egg situation where
+                    # it wouldn't be possible to import two sectors that
+                    # reference each other as which ever was imported first
+                    # would need the sector id of a sector that hasn't been
+                    # imported yet.
+                    ColumnDef(columnName='sector_abbreviation', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    UniqueConstraintDef(columnNames=['system_id', 'hex_x', 'hex_y', 'sector_code'])])
+                    UniqueConstraintDef(columnNames=['system_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1084,10 +1091,11 @@ class MultiverseDb(object):
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
                     ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
-                    # TODO: Should this be sector_abbreviation rather than sector_code
-                    ColumnDef(columnName='sector_code', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                    # NOTE: See comment on owning systems as to why this is the
+                    # abbreviation rather than the sector id
+                    ColumnDef(columnName='sector_abbreviation', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
-                    UniqueConstraintDef(columnNames=['system_id', 'hex_x', 'hex_y', 'sector_code'])])
+                    UniqueConstraintDef(columnNames=['system_id', 'hex_x', 'hex_y', 'sector_abbreviation'])])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1929,7 +1937,7 @@ class MultiverseDb(object):
                             'system_id': owningSystem.systemId(),
                             'hex_x': owningSystem.hexX(),
                             'hex_y': owningSystem.hexY(),
-                            'sector_code': owningSystem.sectorCode()})
+                            'sector_abbreviation': owningSystem.sectorAbbreviation()})
 
                 if system.colonySystems():
                     for colonySystem in system.colonySystems():
@@ -1938,7 +1946,7 @@ class MultiverseDb(object):
                             'system_id': colonySystem.systemId(),
                             'hex_x': colonySystem.hexX(),
                             'hex_y': colonySystem.hexY(),
-                            'sector_code': colonySystem.sectorCode()})
+                            'sector_abbreviation': colonySystem.sectorAbbreviation()})
 
                 if system.researchStations():
                     for station in system.researchStations():
@@ -2012,14 +2020,14 @@ class MultiverseDb(object):
                 cursor.executemany(sql, rulingAllegianceRows)
             if owningSystemRows:
                 sql = """
-                    INSERT INTO {table} (id, system_id, hex_x, hex_y, sector_code)
-                    VALUES (:id, :system_id, :hex_x, :hex_y, :sector_code)
+                    INSERT INTO {table} (id, system_id, hex_x, hex_y, sector_abbreviation)
+                    VALUES (:id, :system_id, :hex_x, :hex_y, :sector_abbreviation)
                     """.format(table=MultiverseDb._OwningSystemsTableName)
                 cursor.executemany(sql, owningSystemRows)
             if colonySystemRows:
                 sql = """
-                    INSERT INTO {table} (id, system_id, hex_x, hex_y, sector_code)
-                    VALUES (:id, :system_id, :hex_x, :hex_y, :sector_code)
+                    INSERT INTO {table} (id, system_id, hex_x, hex_y, sector_abbreviation)
+                    VALUES (:id, :system_id, :hex_x, :hex_y, :sector_abbreviation)
                     """.format(table=MultiverseDb._ColonySystemsTableName)
                 cursor.executemany(sql, colonySystemRows)
             if researchStationRows:
@@ -2425,7 +2433,7 @@ class MultiverseDb(object):
                 allegiance=allegiance))
 
         sql = """
-            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_code
+            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_abbreviation
             FROM {ownersTable} AS t
             JOIN {systemsTable} AS s
             ON s.id = t.system_id
@@ -2441,10 +2449,10 @@ class MultiverseDb(object):
                 systemId=system.id(),
                 hexX=row[2],
                 hexY=row[3],
-                sectorCode=row[4]))
+                sectorAbbreviation=row[4]))
 
         sql = """
-            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_code
+            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_abbreviation
             FROM {coloniesTable} AS t
             JOIN {systemsTable} AS s
             ON s.id = t.system_id
@@ -2460,7 +2468,7 @@ class MultiverseDb(object):
                 systemId=system.id(),
                 hexX=row[2],
                 hexY=row[3],
-                sectorCode=row[4]))
+                sectorAbbreviation=row[4]))
 
         sql = """
             SELECT t.id, t.system_id, t.code

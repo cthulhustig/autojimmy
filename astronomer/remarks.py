@@ -277,7 +277,7 @@ class Remarks(object):
             self._owningWorlds.append(WorldReference(
                 hexX=dbSystem.hexX(),
                 hexY=dbSystem.hexY(),
-                sectorAbbreviation=dbSystem.sectorCode()))
+                sectorAbbreviation=dbSystem.sectorAbbreviation()))
 
     def _processColonySystems(
             self,
@@ -290,7 +290,7 @@ class Remarks(object):
             self._colonyWorlds.append(WorldReference(
                 hexX=dbSystem.hexX(),
                 hexY=dbSystem.hexY(),
-                sectorAbbreviation=dbSystem.sectorCode()))
+                sectorAbbreviation=dbSystem.sectorAbbreviation()))
 
     def _processResearchStations(
             self,

@@ -856,25 +856,29 @@ def _createDbSystems(
 
             if rawOwningSystems:
                 dbOwningSystems = []
-                for hexX, hexY, sectorCode in rawOwningSystems:
+                for hexX, hexY, sectorAbbreviation in rawOwningSystems:
+                    if sectorAbbreviation == rawMetadata.abbreviation():
+                        # If the sector abbreviation is the same as the current sector
+                        # abbreviation then it can be omitted
+                        sectorAbbreviation = None
+
                     dbOwningSystems.append(multiverse.DbOwningSystem(
                         hexX=hexX,
                         hexY=hexY,
-                        # If the sector code is the same as the current sector code
-                        # (aka abbreviation) then set a value of None to indicate the
-                        # current sector
-                        sectorCode=sectorCode if sectorCode != rawMetadata.abbreviation() else None))
+                        sectorAbbreviation=sectorAbbreviation))
 
             if rawColonySystems:
                 dbColonySystems = []
-                for hexX, hexY, sectorCode in rawColonySystems:
+                for hexX, hexY, sectorAbbreviation in rawColonySystems:
+                    if sectorAbbreviation == rawMetadata.abbreviation():
+                        # If the sector abbreviation is the same as the current sector
+                        # abbreviation then it can be omitted
+                        sectorAbbreviation = None
+
                     dbColonySystems.append(multiverse.DbColonySystem(
                         hexX=hexX,
                         hexY=hexY,
-                        # If the sector code is the same as the current sector code
-                        # (aka abbreviation) then set a value of None to indicate the
-                        # current sector
-                        sectorCode=sectorCode if sectorCode != rawMetadata.abbreviation() else None))
+                        sectorAbbreviation=sectorAbbreviation))
 
             if rawRulingAllegiances:
                 dbRulingAllegiances = []
