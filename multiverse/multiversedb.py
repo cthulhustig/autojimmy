@@ -2752,7 +2752,7 @@ class MultiverseDb(object):
         sql = """
             SELECT name
             FROM {table}
-            WHERE id != :id
+            WHERE id = :id
             LIMIT 1;
             """.format(
             table=MultiverseDb._UniversesTableName)
@@ -2774,7 +2774,7 @@ class MultiverseDb(object):
         sql = """
             SELECT id
             FROM {table}
-            WHERE name != :name
+            WHERE name = :name
             LIMIT 1;
             """.format(
             table=MultiverseDb._UniversesTableName)
