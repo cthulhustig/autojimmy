@@ -1152,7 +1152,7 @@ def _createDbTags(
     rawTags = rawMetadata.tags()
     if rawTags:
         for tag in rawTags.split():
-            dbTags.append(multiverse.DbTag(value=tag))
+            dbTags.append(multiverse.DbTag(tag=tag))
 
     return dbTags
 

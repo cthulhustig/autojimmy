@@ -19,7 +19,7 @@ class SectorTagging(object):
         self._tags = common.OrderedSet[SectorTagging.Tag]()
         if dbTags:
             for dbTag in dbTags:
-                tag = SectorTagging._TagStringMap.get(dbTag.value().lower())
+                tag = SectorTagging._TagStringMap.get(dbTag.tag().lower())
                 if tag:
                     self._tags.add(tag)
 

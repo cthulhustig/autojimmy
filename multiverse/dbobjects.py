@@ -1334,14 +1334,14 @@ class DbProduct(DbObject):
 class DbTag(DbObject):
     def __init__(
             self,
-            value: str,
+            tag: str,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
         super().__init__(id=id)
 
         self.setSectorId(sectorId)
-        self.setValue(value)
+        self.setTag(tag)
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -1349,10 +1349,10 @@ class DbTag(DbObject):
     def setSectorId(self, sectorId: str) -> None:
         self._sectorId = sectorId
 
-    def value(self) -> str:
+    def tag(self) -> str:
         return self._string
 
-    def setValue(self, tag: str) -> None:
+    def setTag(self, tag: str) -> None:
         self._string = tag
 
 class DbSector(DbObject):

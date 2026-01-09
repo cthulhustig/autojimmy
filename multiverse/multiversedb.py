@@ -1122,7 +1122,6 @@ class MultiverseDb(object):
                     ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: Should this be text or value rather than remark
                     ColumnDef(columnName='remark', columnType=ColumnDef.ColumnType.Text, isNullable=False)])
 
             self._internalCreateTable(
@@ -1134,7 +1133,6 @@ class MultiverseDb(object):
                     ColumnDef(columnName='system_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SystemsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: Should this be text or value rather than remark
                     ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
                     UniqueConstraintDef(columnNames=['system_id', 'code'])])
@@ -1275,9 +1273,9 @@ class MultiverseDb(object):
                     ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    ColumnDef(columnName='value', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
+                    ColumnDef(columnName='tag', columnType=ColumnDef.ColumnType.Text, isNullable=False)],
                 uniqueConstraints=[
-                    UniqueConstraintDef(columnNames=['sector_id', 'value'])])
+                    UniqueConstraintDef(columnNames=['sector_id', 'tag'])])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -2192,15 +2190,15 @@ class MultiverseDb(object):
 
         if sector.tags():
             sql = """
-                INSERT INTO {table} (id, sector_id, value)
-                VALUES (:id, :sector_id, :value);
+                INSERT INTO {table} (id, sector_id, tag)
+                VALUES (:id, :sector_id, :tag);
                 """.format(table=MultiverseDb._SectorTagsTableName)
             rows = []
             for tag in sector.tags():
                 rows.append({
                     'id': tag.id(),
                     'sector_id': tag.sectorId(),
-                    'value': tag.value()})
+                    'tag': tag.tag()})
             cursor.executemany(sql, rows)
 
         if sector.products():
@@ -2671,7 +2669,7 @@ class MultiverseDb(object):
         sector.setLabels(labels)
 
         sql = """
-            SELECT id, value
+            SELECT id, tag
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SectorTagsTableName)
@@ -2680,7 +2678,7 @@ class MultiverseDb(object):
         for row in cursor.fetchall():
             tags.append(multiverse.DbTag(
                 id=row[0],
-                value=row[1]))
+                tag=row[1]))
         sector.setTags(tags)
 
         sql = """
