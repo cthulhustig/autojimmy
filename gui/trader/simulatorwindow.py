@@ -1,4 +1,5 @@
 import app
+import astronomer
 import cartographer
 import common
 import gui
@@ -7,7 +8,6 @@ import logging
 import logic
 import math
 import random
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -584,7 +584,7 @@ class SimulatorWindow(gui.WindowWidget):
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
 
         self._mapWidget = gui.MapWidgetEx(
-            universe=multiverse.WorldManager.instance().universe(),
+            universe=astronomer.WorldManager.instance().universe(),
             milieu=milieu,
             rules=rules,
             style=mapStyle,
@@ -857,7 +857,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: Available funds = Cr{common.formatNumber(availableFunds)}')
         elif event.type() == logic.Simulator.Event.Type.HexUpdate:
             # Data is the new world object
-            currentHex: multiverse.HexPosition = event.data()
+            currentHex: astronomer.HexPosition = event.data()
             if currentHex and self._currentHex != currentHex:
                 if self._currentHex:
                     self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
@@ -898,7 +898,7 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _showOnMap(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> None:
         try:
             self._mapWidget.centerOnHex(hex=hex)

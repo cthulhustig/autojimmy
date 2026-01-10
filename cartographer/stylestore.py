@@ -1,6 +1,7 @@
 import cartographer
-import re
 import multiverse
+import re
+import survey
 import typing
 
 # Useful Test Locations:
@@ -26,6 +27,13 @@ import typing
 # - Sector: Far Home
 #   - Routes in this sector have a custom default colour specified in the metadata
 #     stylesheet info
+
+# TODO: I think it might be possible to move all the processing this is
+# used for to conversion time. It probably means allegiances in the DB
+# need to store route/border colour/style info. I suspect I'll also need
+# to have some kind of RouteType that is stored at the sector level in
+# a similar way to allegiances to store the route/border colour/style info
+# for the different route types styles stored in otu.css
 
 class StyleStore(object):
     # Route and border style sheet regexes. Note that the names that follow
@@ -55,8 +63,8 @@ class StyleStore(object):
                 typing.Optional[float] # Width
             ]] = {}
 
-        content = multiverse.readCssContent(
-            multiverse.DataStore.instance().loadTextResource(
+        content = survey.readCssContent(
+            multiverse.SnapshotManager.instance().loadTextResource(
                 filePath=StyleStore._DefaultStylePath))
         for group, properties in content.items():
             match = StyleStore._BorderPattern.match(group)

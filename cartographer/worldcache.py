@@ -1,7 +1,7 @@
+import astronomer
 import common
 import cartographer
 import math
-import multiverse
 import random
 import traveller
 
@@ -42,7 +42,7 @@ class WorldInfo(object):
 
     def __init__(
             self,
-            world: multiverse.World,
+            world: astronomer.World,
             imageCache: cartographer.ImageStore
             ) -> None:
         self.name = world.name() if not world.isNameGenerated() else ''
@@ -51,8 +51,8 @@ class WorldInfo(object):
         hex = world.hex()
         self.hexString = f'{hex.offsetX():02d}{hex.offsetY():02d}'
         self.ssHexString = '{hexX:02d}{hexY:02d}'.format(
-            hexX=int((hex.offsetX() - 1) % multiverse.SubsectorWidth) + 1,
-            hexY=int((hex.offsetY() - 1) % multiverse.SubsectorHeight) + 1)
+            hexX=int((hex.offsetX() - 1) % astronomer.SubsectorWidth) + 1,
+            hexY=int((hex.offsetY() - 1) % astronomer.SubsectorHeight) + 1)
 
         worldCenterX, worldCenterY = hex.worldCenter()
         self.hexCenter = cartographer.PointF(x=worldCenterX, y=worldCenterY)
@@ -70,6 +70,9 @@ class WorldInfo(object):
         self.isHarshAtmosphere = WorldInfo._calcIsHarshAtmosphere(world)
         self.isAnomaly = WorldInfo._calcIsAnomaly(world)
         self.isAsteroids = WorldInfo._calcIsAsteroid(world)
+        self.isAncientSite = WorldInfo._calcIsAncientSite(world)
+        self.isDroyneWorld = WorldInfo._calcIsDroyneWorld(world)
+        self.isChirperWorld = WorldInfo._calcIsChirperWorld(world)
 
         self.asteroidRectangles = None
         if self.isAsteroids:
@@ -88,16 +91,16 @@ class WorldInfo(object):
         # Unabsorbed/Forbidden are equivalent is base do the Traveller Map
         # implementation is IsAmber/IsRed
         zone = world.zone()
-        self.isAmberZone = zone is multiverse.ZoneType.AmberZone or \
-            zone is multiverse.ZoneType.Unabsorbed
-        self.isRedZone = zone is multiverse.ZoneType.RedZone or \
-            zone is multiverse.ZoneType.Forbidden
+        self.isAmberZone = zone is astronomer.ZoneType.AmberZone or \
+            zone is astronomer.ZoneType.Unabsorbed
+        self.isRedZone = zone is astronomer.ZoneType.RedZone or \
+            zone is astronomer.ZoneType.Forbidden
 
         self.hasWater = WorldInfo._calcHasWater(world)
         self.hasGasGiant = WorldInfo._calcHasGasGiants(world)
 
-        self.starport = uwp.code(multiverse.UWP.Element.StarPort)
-        self.techLevel = uwp.code(multiverse.UWP.Element.TechLevel)
+        self.starport = uwp.code(astronomer.UWP.Element.StarPort)
+        self.techLevel = uwp.code(astronomer.UWP.Element.TechLevel)
 
         allegiance = world.allegiance()
         self.t5Allegiance = allegiance.code() if allegiance else None
@@ -124,11 +127,14 @@ class WorldInfo(object):
         # base glyphs. This is consistent with Traveller Map (although I've no idea
         # why it's done like this)
         if bases.count() >= 1:
-            baseCode = multiverse.Bases.code(bases[0])
+            baseCode = astronomer.Bases.code(bases[0])
 
             # NOTE: This was is done by Traveller Map in RenderContext.DrawWorld
-            # Special case: Show Zho Naval+Military as diamond
-            if baseAllegiance == 'Zh' and bases.string() == 'KM':
+            # Special case: Show Zho Naval+Military as diamond. The Traveller Map
+            # checks for the base code 'KM' which maps to Naval & Military bases
+            if baseAllegiance == 'Zh' and \
+                    bases.hasBase(astronomer.BaseType.NavalBase) and \
+                    bases.hasBase(astronomer.BaseType.MilitaryBase):
                 baseCode = 'Z'
                 ignoreSecondBase = True
 
@@ -139,25 +145,34 @@ class WorldInfo(object):
         if bases.count() >= 2 and not ignoreSecondBase:
             self.secondaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
-                code=multiverse.Bases.code(bases[1]))
+                code=astronomer.Bases.code(bases[1]))
 
         if bases.count() >= 3:
             self.tertiaryBaseGlyph = cartographer.GlyphDefs.fromBaseCode(
                 allegiance=self.legacyAllegiance,
-                code=multiverse.Bases.code(bases[2]))
+                code=astronomer.Bases.code(bases[2]))
 
         remarks = world.remarks()
-        if remarks.hasTradeCode(multiverse.TradeCode.ResearchStation):
-            self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(
-                remarks.researchStation())
-        elif remarks.hasTradeCode(multiverse.TradeCode.Reserve):
+        if remarks.hasTradeCode(traveller.TradeCode.ResearchStation):
+            foundStation = False
+            for stationCode in 'ABGDEZHTO':
+                if remarks.hasResearchStation(code=stationCode):
+                    self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation(stationCode)
+                    foundStation = True
+                    break
+            if not foundStation:
+                # Default to Gamma as per Traveller Map FromResearchCode. This is
+                # used when the world just has the trade code 'Rs' rather than the
+                # 'RsX' format
+                self.specialFeatureGlyph = cartographer.GlyphDefs.fromResearchStation('G')
+        elif remarks.hasTradeCode(traveller.TradeCode.Reserve):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Reserve
-        elif remarks.hasTradeCode(multiverse.TradeCode.PenalColony):
+        elif remarks.hasTradeCode(traveller.TradeCode.PenalColony):
             self.specialFeatureGlyph = cartographer.GlyphDefs.Prison
-        elif remarks.hasTradeCode(multiverse.TradeCode.PrisonCamp):
+        elif remarks.hasTradeCode(traveller.TradeCode.PrisonCamp):
             self.specialFeatureGlyph = cartographer.GlyphDefs.ExileCamp
 
-        self.worldSize = uwp.numeric(multiverse.UWP.Element.WorldSize)
+        self.worldSize = uwp.numeric(astronomer.UWP.Element.WorldSize)
         self.worldImage = WorldInfo._calcWorldImage(
             world=world,
             images=imageCache)
@@ -172,99 +187,124 @@ class WorldInfo(object):
         importance = WorldInfo._calcImportance(world=world)
         self.isImportant = importance >= 4
         self.importanceOverlayRadius = \
-            (importance - 0.5) * multiverse.ParsecScaleX \
+            (importance - 0.5) * astronomer.ParsecScaleX \
             if importance > 0 else \
             0
 
+        self.isMinorHomeWorld = False
+        for sophontPopulation in remarks.sophonts():
+            if sophontPopulation.isHomeWorld() and not sophontPopulation.isMajorRace():
+                self.isMinorHomeWorld = True
+                break
+
     @staticmethod
-    def _calcIsPlaceholder(world: multiverse.World) -> bool:
+    def _calcIsPlaceholder(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        return uwp.sanitised() == '???????-?'
+        return uwp.isUnknown()
 
     @staticmethod
-    def _calcHasWater(world: multiverse.World) -> bool:
-        return traveller.worldHasWaterRefuelling(world=world)
+    def _calcHasWater(world: astronomer.World) -> bool:
+        return world.hasWaterRefuelling()
 
     @staticmethod
-    def _calcHasGasGiants(world: multiverse.World) -> bool:
-        return traveller.worldHasGasGiantRefuelling(world=world)
+    def _calcHasGasGiants(world: astronomer.World) -> bool:
+        return world.hasGasGiantRefuelling()
 
     @staticmethod
-    def _calcIsHighPopulation(world: multiverse.World) -> bool:
+    def _calcIsHighPopulation(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
+        population = uwp.numeric(element=astronomer.UWP.Element.Population, default=-1)
         return population >= WorldInfo._HighPopulation
 
     @staticmethod
-    def _calcIsAgricultural(world: multiverse.World) -> bool:
+    def _calcIsAgricultural(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
-        hydrographics = uwp.numeric(element=multiverse.UWP.Element.Hydrographics, default=-1)
-        population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
+        atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(element=astronomer.UWP.Element.Hydrographics, default=-1)
+        population = uwp.numeric(element=astronomer.UWP.Element.Population, default=-1)
         return atmosphere in WorldInfo._AgriculturalAtmospheres and \
             hydrographics in WorldInfo._AgriculturalHydrographics and \
             population in WorldInfo._AgriculturalPopulations
 
     @staticmethod
-    def _calcIsIndustrial(world: multiverse.World) -> bool:
+    def _calcIsIndustrial(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
-        population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
+        atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=astronomer.UWP.Element.Population, default=-1)
         return atmosphere in WorldInfo._IndustrialAtmospheres and \
             population >= WorldInfo._IndustrialMinPopulation
 
     @staticmethod
-    def _calcIsRich(world: multiverse.World) -> bool:
+    def _calcIsRich(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
-        population = uwp.numeric(element=multiverse.UWP.Element.Population, default=-1)
+        atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere, default=-1)
+        population = uwp.numeric(element=astronomer.UWP.Element.Population, default=-1)
         return atmosphere in WorldInfo._RichAtmospheres and \
             population in WorldInfo._RichPopulations
 
     @staticmethod
-    def _calcIsVacuum(world: multiverse.World) -> bool:
+    def _calcIsVacuum(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
+        atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere, default=-1)
         return atmosphere == 0
 
     @staticmethod
-    def _calcIsHarshAtmosphere(world: multiverse.World) -> bool:
+    def _calcIsHarshAtmosphere(world: astronomer.World) -> bool:
         uwp = world.uwp()
-        atmosphere = uwp.numeric(element=multiverse.UWP.Element.Atmosphere, default=-1)
+        atmosphere = uwp.numeric(element=astronomer.UWP.Element.Atmosphere, default=-1)
         return atmosphere > 10
 
     @staticmethod
-    def _calcIsAnomaly(world: multiverse.World) -> bool:
+    def _calcIsAnomaly(world: astronomer.World) -> bool:
         return world.isAnomaly()
 
     @staticmethod
-    def _calcIsAsteroid(world: multiverse.World) -> bool:
+    def _calcIsAsteroid(world: astronomer.World) -> bool:
         if world.isAnomaly():
             return False
         uwp = world.uwp()
-        worldSize = uwp.numeric(element=multiverse.UWP.Element.WorldSize, default=-1)
+        worldSize = uwp.numeric(element=astronomer.UWP.Element.WorldSize, default=-1)
         return worldSize == 0
 
     @staticmethod
-    def _calcIsCapital(world: multiverse.World) -> bool:
+    def _calcIsCapital(world: astronomer.World) -> bool:
         remarks = world.remarks()
-        return remarks.hasTradeCode(multiverse.TradeCode.SectorCapital) or \
-            remarks.hasTradeCode(multiverse.TradeCode.SubsectorCapital) or \
-            remarks.hasTradeCode(multiverse.TradeCode.ImperialCapital) or \
-            remarks.hasRemark('Capital')
+        return remarks.hasTradeCode(traveller.TradeCode.SectorCapital) or \
+            remarks.hasTradeCode(traveller.TradeCode.SubsectorCapital) or \
+            remarks.hasTradeCode(traveller.TradeCode.ImperialCapital) or \
+            remarks.hasCustomRemark('Capital')
+
+    @staticmethod
+    def _calcIsAncientSite(world: astronomer.World) -> bool:
+        return world.hasTradeCode(traveller.TradeCode.AncientsSiteWorld)
+
+    @staticmethod
+    def _calcIsDroyneWorld(world: astronomer.World) -> bool:
+        allegiance = world.allegiance()
+        if allegiance:
+            code = allegiance.code()
+            if code == 'Dr' or code == 'NaDr':
+                return True
+        remarks = world.remarks()
+        return remarks.hasSophont('Droy')
+
+    @staticmethod
+    def _calcIsChirperWorld(world: astronomer.World) -> bool:
+        remarks = world.remarks()
+        return remarks.hasSophont('Chir')
 
     # This is based on code from Traveller Map which I believe is
     # based on the T5.10 rules
     @staticmethod
-    def _calcImportance(world: multiverse.World) -> int:
+    def _calcImportance(world: astronomer.World) -> int:
         importance = 0
 
         uwp = world.uwp()
-        starportCode = uwp.code(multiverse.UWP.Element.StarPort)
-        techLevel = uwp.numeric(multiverse.UWP.Element.TechLevel, default=0)
-        population = uwp.numeric(multiverse.UWP.Element.Population, default=0)
-        atmosphere = uwp.numeric(multiverse.UWP.Element.Atmosphere, default=-1)
-        hydrographics = uwp.numeric(multiverse.UWP.Element.Hydrographics, default=-1)
+        starportCode = uwp.code(astronomer.UWP.Element.StarPort)
+        techLevel = uwp.numeric(astronomer.UWP.Element.TechLevel, default=0)
+        population = uwp.numeric(astronomer.UWP.Element.Population, default=0)
+        atmosphere = uwp.numeric(astronomer.UWP.Element.Atmosphere, default=-1)
+        hydrographics = uwp.numeric(astronomer.UWP.Element.Hydrographics, default=-1)
 
         if 'AB'.find(starportCode) >= 0:
             importance += 1
@@ -306,16 +346,16 @@ class WorldInfo(object):
         # NOTE: The definition of hasNavalBase intentionally doesn't include
         # things like VargrNavalBase as Traveller Map doesn't
         bases = world.bases()
-        hasNavalBase = bases.hasBase(multiverse.BaseType.ImperialNavalBase) or \
-            bases.hasBase(multiverse.BaseType.NavalBase)
-        hasOtherServiceBase = bases.hasBase(multiverse.BaseType.ImperialScoutBase) or \
-            bases.hasBase(multiverse.BaseType.MilitaryBase) or \
-            bases.hasBase(multiverse.BaseType.ExplorationBase) or \
-            bases.hasBase(multiverse.BaseType.VargrCorsairBase)
-        hasServiceSpecialBase = bases.hasBase(multiverse.BaseType.WayStation) or \
-            bases.hasBase(multiverse.BaseType.NavalDepot)
-        hasAslanAndTlaukhuBase = bases.hasBase(multiverse.BaseType.AslanClanBase) and \
-            bases.hasBase(multiverse.BaseType.AslanTlaukhuBase)
+        hasNavalBase = bases.hasBase(astronomer.BaseType.ImperialNavalBase) or \
+            bases.hasBase(astronomer.BaseType.NavalBase)
+        hasOtherServiceBase = bases.hasBase(astronomer.BaseType.ImperialScoutBase) or \
+            bases.hasBase(astronomer.BaseType.MilitaryBase) or \
+            bases.hasBase(astronomer.BaseType.ExplorationBase) or \
+            bases.hasBase(astronomer.BaseType.VargrCorsairBase)
+        hasServiceSpecialBase = bases.hasBase(astronomer.BaseType.WayStation) or \
+            bases.hasBase(astronomer.BaseType.NavalDepot)
+        hasAslanAndTlaukhuBase = bases.hasBase(astronomer.BaseType.AslanClanBase) and \
+            bases.hasBase(astronomer.BaseType.AslanTlaukhuBase)
         if hasNavalBase and hasOtherServiceBase:
             importance += 1
         if hasServiceSpecialBase:
@@ -327,23 +367,23 @@ class WorldInfo(object):
 
     @staticmethod
     def _calcWorldImage(
-            world: multiverse.World,
+            world: astronomer.World,
             images: cartographer.ImageStore
             ) -> cartographer.AbstractImage:
         uwp = world.uwp()
-        size = uwp.numeric(element=multiverse.UWP.Element.WorldSize, default=-1)
+        size = uwp.numeric(element=astronomer.UWP.Element.WorldSize, default=-1)
         if size <= 0:
             return images.worldImages['Belt']
 
-        hydrographics = uwp.numeric(element=multiverse.UWP.Element.Hydrographics, default=-1)
+        hydrographics = uwp.numeric(element=astronomer.UWP.Element.Hydrographics, default=-1)
         return images.worldImages[
             WorldInfo._HydrographicsImageMap.get(hydrographics, WorldInfo._HydrographicsDefaultImage)]
 
 class WorldCache(object):
     def __init__(
             self,
-            milieu: multiverse.Milieu,
-            universe: multiverse.Universe,
+            milieu: astronomer.Milieu,
+            universe: astronomer.Universe,
             imageStore: cartographer.ImageStore,
             capacity: int
             ) -> None:
@@ -351,10 +391,10 @@ class WorldCache(object):
         self._universe = universe
         self._imageStore = imageStore
         self._infoCache = common.LRUCache[
-            multiverse.HexPosition,
+            astronomer.HexPosition,
             WorldInfo](capacity=capacity)
 
-    def setMilieu(self, milieu: multiverse.Milieu) -> None:
+    def setMilieu(self, milieu: astronomer.Milieu) -> None:
         if milieu is self._milieu:
             return
         self._milieu = milieu
@@ -365,7 +405,7 @@ class WorldCache(object):
 
     def worldInfo(
             self,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> WorldInfo:
         worldInfo = self._infoCache.get(hex)
         if not worldInfo:

@@ -20,11 +20,12 @@ class Rules(object):
     def __init__(
         self,
         system: RuleSystem,
+        regenerateTradeCodes: bool = False,
         classAStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
         classBStarPortFuelType: StarPortFuelType = StarPortFuelType.AllTypes,
         classCStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
         classDStarPortFuelType: StarPortFuelType = StarPortFuelType.UnrefinedOnly,
-        classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel,
+        classEStarPortFuelType: StarPortFuelType = StarPortFuelType.NoFuel
         ) -> None: ...
 
     @typing.overload
@@ -36,9 +37,11 @@ class Rules(object):
             if not isinstance(other, Rules):
                 raise TypeError('The other parameter must be an Rules')
             self._system = other._system
+            self._regenerateTradeCodes = other._regenerateTradeCodes
             self._starPortFuelTypes = dict(other._starPortFuelTypes)
         else:
             self._system = args[0] if len(args) > 0 else kwargs['system']
+            self._regenerateTradeCodes = args[6] if len(args) > 6 else kwargs.get('regenerateTradeCodes', False)
             self._starPortFuelTypes = {
                 'A': args[1] if len(args) > 1 else kwargs.get('classAStarPortFuelType', StarPortFuelType.AllTypes),
                 'B': args[2] if len(args) > 2 else kwargs.get('classBStarPortFuelType', StarPortFuelType.AllTypes),
@@ -48,6 +51,14 @@ class Rules(object):
 
     def system(self) -> RuleSystem:
         return self._system
+
+    # Regenerate the trade codes from the worlds UWP rather than using the
+    # trade codes specified in the remarks. This only regenerates trade codes
+    # explicitly covered in the rule system, other trade codes are kept. For
+    # example Penal Colony will be kept when using Mongoose rules as the
+    # Mongoose rules don't have that trade code
+    def regenerateTradeCodes(self) -> bool:
+        return self._regenerateTradeCodes
 
     # The Mongoose rules as written seem a little strange as they say that class
     # A & B star ports have refined fuel but doesn't mention unrefined fuel,
@@ -83,6 +94,7 @@ class Rules(object):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Rules):
-            return False
+            return NotImplemented
         return self._system == other._system and \
-            self._starPortFuelTypes == other._starPortFuelTypes
+            self._starPortFuelTypes == other._starPortFuelTypes and \
+            self._regenerateTradeCodes == other._regenerateTradeCodes

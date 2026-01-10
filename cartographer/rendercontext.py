@@ -1,8 +1,9 @@
+import astronomer
 import common
 import enum
 import cartographer
 import math
-import multiverse
+import traveller
 import typing
 
 class RenderContext(object):
@@ -61,14 +62,14 @@ class RenderContext(object):
 
     def __init__(
             self,
-            universe: multiverse.Universe,
+            universe: astronomer.Universe,
             graphics: cartographer.AbstractGraphics,
             worldCenterX: float,
             worldCenterY: float,
             scale: float,
             outputPixelX: int,
             outputPixelY: int,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             style: cartographer.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
@@ -120,13 +121,13 @@ class RenderContext(object):
 
         self._hexOutlinePath = self._graphics.createPath(
             points=[
-                cartographer.PointF(-0.5 + multiverse.HexWidthOffset, -0.5),
-                cartographer.PointF( 0.5 - multiverse.HexWidthOffset, -0.5),
-                cartographer.PointF( 0.5 + multiverse.HexWidthOffset, 0),
-                cartographer.PointF( 0.5 - multiverse.HexWidthOffset, 0.5),
-                cartographer.PointF(-0.5 + multiverse.HexWidthOffset, 0.5),
-                cartographer.PointF(-0.5 - multiverse.HexWidthOffset, 0),
-                cartographer.PointF(-0.5 + multiverse.HexWidthOffset, -0.5)],
+                cartographer.PointF(-0.5 + astronomer.HexWidthOffset, -0.5),
+                cartographer.PointF( 0.5 - astronomer.HexWidthOffset, -0.5),
+                cartographer.PointF( 0.5 + astronomer.HexWidthOffset, 0),
+                cartographer.PointF( 0.5 - astronomer.HexWidthOffset, 0.5),
+                cartographer.PointF(-0.5 + astronomer.HexWidthOffset, 0.5),
+                cartographer.PointF(-0.5 - astronomer.HexWidthOffset, 0),
+                cartographer.PointF(-0.5 + astronomer.HexWidthOffset, -0.5)],
             closed=True)
 
         # Chosen to match T5 pp.416
@@ -170,12 +171,12 @@ class RenderContext(object):
         if scaleUpdated:
             self._updateLayerOrder()
 
-    def milieu(self) -> multiverse.Milieu:
+    def milieu(self) -> astronomer.Milieu:
         return self._milieu
 
     def setMilieu(
             self,
-            milieu: multiverse.Milieu
+            milieu: astronomer.Milieu
             ) -> None:
         if milieu is self._milieu:
             return
@@ -275,8 +276,8 @@ class RenderContext(object):
         self._layers.sort(key=lambda l: self._styleSheet.layerOrder.index(l.id))
 
     def _updateView(self):
-        worldOutputWidth = self._outputPixelWidth / (self._scale * multiverse.ParsecScaleX)
-        worldOutputHeight = self._outputPixelHeight / (self._scale * multiverse.ParsecScaleY)
+        worldOutputWidth = self._outputPixelWidth / (self._scale * astronomer.ParsecScaleX)
+        worldOutputHeight = self._outputPixelHeight / (self._scale * astronomer.ParsecScaleY)
         viewAreaChanged = (self._worldOutputRect is None) or \
             (worldOutputWidth != self._worldOutputRect.width()) or \
             (worldOutputHeight != self._worldOutputRect.height())
@@ -289,10 +290,10 @@ class RenderContext(object):
 
         self._worldViewRect = self._worldOutputRect
         if self._outputClipRect:
-            worldClipOffsetX = self._outputClipRect.x() / (self._scale * multiverse.ParsecScaleX)
-            worldClipOffsetY = self._outputClipRect.y() / (self._scale * multiverse.ParsecScaleY)
-            worldClipWidth = self._outputClipRect.width() / (self._scale * multiverse.ParsecScaleX)
-            worldClipHeight = self._outputClipRect.height() / (self._scale * multiverse.ParsecScaleY)
+            worldClipOffsetX = self._outputClipRect.x() / (self._scale * astronomer.ParsecScaleX)
+            worldClipOffsetY = self._outputClipRect.y() / (self._scale * astronomer.ParsecScaleY)
+            worldClipWidth = self._outputClipRect.width() / (self._scale * astronomer.ParsecScaleX)
+            worldClipHeight = self._outputClipRect.height() / (self._scale * astronomer.ParsecScaleY)
             self._worldViewRect = cartographer.RectangleF(
                 x=self._worldOutputRect.x() + worldClipOffsetX,
                 y=self._worldOutputRect.y() + worldClipOffsetY,
@@ -304,8 +305,8 @@ class RenderContext(object):
 
         m = self._graphics.createIdentityMatrix()
         m.scalePrepend(
-            sx=self._scale * multiverse.ParsecScaleX,
-            sy=self._scale * multiverse.ParsecScaleY)
+            sx=self._scale * astronomer.ParsecScaleX,
+            sy=self._scale * astronomer.ParsecScaleY)
         m.translatePrepend(
             dx=-self._worldOutputRect.left(),
             dy=-self._worldOutputRect.top())
@@ -362,8 +363,8 @@ class RenderContext(object):
         nebulaLogScale = int(math.floor(renderLogScale + 0.5))
         nebulaScale = math.pow(2, nebulaLogScale)
 
-        nebulaWidth = RenderContext._NebulaRenderWidth / (nebulaScale * multiverse.ParsecScaleX)
-        nebulaHeight = RenderContext._NebulaRenderHeight / (nebulaScale * multiverse.ParsecScaleY)
+        nebulaWidth = RenderContext._NebulaRenderWidth / (nebulaScale * astronomer.ParsecScaleX)
+        nebulaHeight = RenderContext._NebulaRenderHeight / (nebulaScale * astronomer.ParsecScaleY)
 
         nebulaLeft = (self._worldViewRect.left() // nebulaWidth) * nebulaWidth
         nebulaTop = (self._worldViewRect.top() // nebulaHeight) * nebulaHeight
@@ -488,28 +489,28 @@ class RenderContext(object):
         # sector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
-        left = ((self._worldViewRect.left() // multiverse.SectorWidth) * \
-                multiverse.SectorWidth) - multiverse.ReferenceHexX
+        left = ((self._worldViewRect.left() // astronomer.SectorWidth) * \
+                astronomer.SectorWidth) - astronomer.ReferenceHexX
         right = self._worldViewRect.right()
-        top = ((self._worldViewRect.top() // multiverse.SectorHeight) * \
-               multiverse.SectorHeight) - multiverse.ReferenceHexY
+        top = ((self._worldViewRect.top() // astronomer.SectorHeight) * \
+               astronomer.SectorHeight) - astronomer.ReferenceHexY
         bottom = self._worldViewRect.bottom()
 
-        x = left + multiverse.SectorWidth
+        x = left + astronomer.SectorWidth
         while x <= self._worldViewRect.right():
             self._graphics.drawLine(
                 pt1=cartographer.PointF(x, top),
                 pt2=cartographer.PointF(x, bottom),
                 pen=self._styleSheet.sectorGrid.linePen)
-            x += multiverse.SectorWidth
+            x += astronomer.SectorWidth
 
-        y = top + multiverse.SectorHeight
+        y = top + astronomer.SectorHeight
         while y <= self._worldViewRect.bottom():
             self._graphics.drawLine(
                 pt1=cartographer.PointF(left, y),
                 pt2=cartographer.PointF(right, y),
                 pen=self._styleSheet.sectorGrid.linePen)
-            y += multiverse.SectorHeight
+            y += astronomer.SectorHeight
 
     def _drawSubsectorGrid(self) -> None:
         if not self._styleSheet.subsectorGrid.visible:
@@ -522,33 +523,33 @@ class RenderContext(object):
         # subsector boundary that is off to the left/top of the view area. This is
         # done as a hack so that when the pattern drawn for non-solid lines is
         # always started from a 'constant' point
-        left = ((self._worldViewRect.left() // multiverse.SubsectorWidth) * \
-                multiverse.SubsectorWidth) - multiverse.ReferenceHexX
+        left = ((self._worldViewRect.left() // astronomer.SubsectorWidth) * \
+                astronomer.SubsectorWidth) - astronomer.ReferenceHexX
         right = self._worldViewRect.right()
-        top = ((self._worldViewRect.top() // multiverse.SubsectorHeight) * \
-               multiverse.SubsectorHeight) - multiverse.ReferenceHexY
+        top = ((self._worldViewRect.top() // astronomer.SubsectorHeight) * \
+               astronomer.SubsectorHeight) - astronomer.ReferenceHexY
         bottom = self._worldViewRect.bottom()
 
-        x = left + multiverse.SubsectorWidth
-        lineIndex = int(round(x / multiverse.SubsectorWidth))
+        x = left + astronomer.SubsectorWidth
+        lineIndex = int(round(x / astronomer.SubsectorWidth))
         while x <= self._worldViewRect.right():
             if lineIndex % 4:
                 self._graphics.drawLine(
                     pt1=cartographer.PointF(x, top),
                     pt2=cartographer.PointF(x, bottom),
                     pen=self._styleSheet.subsectorGrid.linePen)
-            x += multiverse.SubsectorWidth
+            x += astronomer.SubsectorWidth
             lineIndex += 1
 
-        y = top + multiverse.SubsectorHeight
-        lineIndex = int(round(y / multiverse.SubsectorHeight))
+        y = top + astronomer.SubsectorHeight
+        lineIndex = int(round(y / astronomer.SubsectorHeight))
         while y <= self._worldViewRect.bottom():
             if lineIndex % 4:
                 self._graphics.drawLine(
                     pt1=cartographer.PointF(left, y),
                     pt2=cartographer.PointF(right, y),
                     pen=self._styleSheet.subsectorGrid.linePen)
-            y += multiverse.SubsectorHeight
+            y += astronomer.SubsectorHeight
             lineIndex += 1
 
     def _drawParsecGrid(self) -> None:
@@ -575,19 +576,19 @@ class RenderContext(object):
             for px in range(hx - RenderContext._ParsecGridSlop, hx + hw + RenderContext._ParsecGridSlop):
                 yOffset = 0 if ((px % 2) != 0) else 0.5
                 for py in range(hy - RenderContext._ParsecGridSlop, hy + hh + RenderContext._ParsecGridSlop):
-                    relativePos = multiverse.absoluteSpaceToRelativeSpace((px + 1, py + 1))
+                    relativePos = astronomer.absoluteSpaceToRelativeSpace((px + 1, py + 1))
                     if self._styleSheet.hexCoordinateStyle == cartographer.HexCoordinateStyle.Subsector:
                         hex = '{hexX:02d}{hexY:02d}'.format(
-                            hexX=int((relativePos[2] - 1) % multiverse.SubsectorWidth) + 1,
-                            hexY=int((relativePos[3] - 1) % multiverse.SubsectorHeight) + 1)
+                            hexX=int((relativePos[2] - 1) % astronomer.SubsectorWidth) + 1,
+                            hexY=int((relativePos[3] - 1) % astronomer.SubsectorHeight) + 1)
                     else:
                         hex = '{hexX:02d}{hexY:02d}'.format(
                             hexX=relativePos[2],
                             hexY=relativePos[3])
 
                     with self._graphics.save():
-                        scaleX = self._styleSheet.hexContentScale / multiverse.ParsecScaleX
-                        scaleY = self._styleSheet.hexContentScale / multiverse.ParsecScaleY
+                        scaleX = self._styleSheet.hexContentScale / astronomer.ParsecScaleX
+                        scaleY = self._styleSheet.hexContentScale / astronomer.ParsecScaleY
                         self._graphics.scaleTransform(
                             scaleX=scaleX,
                             scaleY=scaleY)
@@ -611,11 +612,11 @@ class RenderContext(object):
         maxX = int(math.ceil(self._worldViewRect.right()))
         maxY = int(math.ceil(self._worldViewRect.bottom()))
 
-        for x in range(minX, maxX + multiverse.SubsectorWidth, multiverse.SubsectorWidth):
-            for y in range(minY, maxY + multiverse.SubsectorHeight, multiverse.SubsectorHeight):
+        for x in range(minX, maxX + astronomer.SubsectorWidth, astronomer.SubsectorWidth):
+            for y in range(minY, maxY + astronomer.SubsectorHeight, astronomer.SubsectorHeight):
                 sectorX, sectorY, offsetX, offsetY = \
-                    multiverse.absoluteSpaceToRelativeSpace((x, y))
-                sectorIndex = multiverse.SectorIndex(
+                    astronomer.absoluteSpaceToRelativeSpace((x, y))
+                sectorIndex = astronomer.SectorIndex(
                     sectorX=sectorX,
                     sectorY=sectorY)
                 sector = self._universe.sectorBySectorIndex(
@@ -624,17 +625,17 @@ class RenderContext(object):
                 if not sector:
                     continue
 
-                subsectorIndex = multiverse.SubsectorIndex(
+                subsectorIndex = astronomer.SubsectorIndex(
                     sectorX=sectorX,
                     sectorY=sectorY,
-                    indexX=(offsetX - 1) // multiverse.SubsectorWidth,
-                    indexY=(offsetY - 1) // multiverse.SubsectorHeight)
+                    indexX=(offsetX - 1) // astronomer.SubsectorWidth,
+                    indexY=(offsetY - 1) // astronomer.SubsectorHeight)
                 subsector = sector.subsectorByCode(subsectorIndex.code())
                 if not subsector:
                     continue
 
                 subsectorName = subsector.name()
-                if not subsectorName:
+                if not subsectorName or subsector.isNameGenerated():
                     continue
 
                 ulHex, brHex = subsectorIndex.hexExtent()
@@ -776,9 +777,9 @@ class RenderContext(object):
                     if label.offsetY():
                         labelPos.setY(labelPos.y() - (label.offsetY() * 0.7))
 
-                    if label.size() is multiverse.Label.Size.Small:
+                    if label.size() is astronomer.Label.Size.Small:
                         font = self._styleSheet.microBorders.smallFont
-                    elif label.size() is multiverse.Label.Size.Large:
+                    elif label.size() is astronomer.Label.Size.Large:
                         font = self._styleSheet.microBorders.largeFont
                     else:
                         font = self._styleSheet.microBorders.font
@@ -813,11 +814,11 @@ class RenderContext(object):
                 continue
 
             index = sector.index()
-            centerX, centerY = multiverse.relativeSpaceToAbsoluteSpace((
+            centerX, centerY = astronomer.relativeSpaceToAbsoluteSpace((
                 index.sectorX(),
                 index.sectorY(),
-                int(multiverse.SectorWidth // 2),
-                int(multiverse.SectorHeight // 2)))
+                int(astronomer.SectorWidth // 2),
+                int(astronomer.SectorHeight // 2)))
 
             self._drawLabel(
                 text=sectorLabel if sectorLabel else sector.name(),
@@ -898,14 +899,14 @@ class RenderContext(object):
                     self._styleSheet.macroRoutes.textHighlightBrush
                 with self._graphics.save():
                     self._graphics.scaleTransform(
-                        scaleX=1.0 / multiverse.ParsecScaleX,
-                        scaleY=1.0 / multiverse.ParsecScaleY)
+                        scaleX=1.0 / astronomer.ParsecScaleX,
+                        scaleY=1.0 / astronomer.ParsecScaleY)
                     self._drawMultiLineString(
                         text=label.text,
                         font=font,
                         brush=brush,
-                        x=label.position.x() * multiverse.ParsecScaleX,
-                        y=label.position.y() * multiverse.ParsecScaleY)
+                        x=label.position.x() * astronomer.ParsecScaleX,
+                        y=label.position.y() * astronomer.ParsecScaleY)
 
     def _drawCapitalsAndHomeWorlds(self) -> None:
         if not self._styleSheet.capitals.visible or \
@@ -935,8 +936,8 @@ class RenderContext(object):
                         dx=worldLabel.position.x(),
                         dy=worldLabel.position.y())
                     self._graphics.scaleTransform(
-                        scaleX=1.0 / multiverse.ParsecScaleX,
-                        scaleY=1.0 / multiverse.ParsecScaleY)
+                        scaleX=1.0 / astronomer.ParsecScaleX,
+                        scaleY=1.0 / astronomer.ParsecScaleY)
 
                     self._graphics.drawEllipse(
                         rect=dotRect,
@@ -983,14 +984,14 @@ class RenderContext(object):
             with self._graphics.save():
                 font = self._styleSheet.megaNames.smallFont if label.minor else self._styleSheet.megaNames.font
                 self._graphics.scaleTransform(
-                    scaleX=1.0 / multiverse.ParsecScaleX,
-                    scaleY=1.0 / multiverse.ParsecScaleY)
+                    scaleX=1.0 / astronomer.ParsecScaleX,
+                    scaleY=1.0 / astronomer.ParsecScaleY)
                 self._drawMultiLineString(
                     text=label.text,
                     font=font,
                     brush=self._styleSheet.megaNames.textBrush,
-                    x=label.position.x() * multiverse.ParsecScaleX,
-                    y=label.position.y() * multiverse.ParsecScaleY)
+                    x=label.position.x() * astronomer.ParsecScaleX,
+                    y=label.position.y() * astronomer.ParsecScaleY)
 
     def _drawWorldsBackground(self) -> None:
         if not self._styleSheet.worlds.visible or self._styleSheet.showStellarOverlay \
@@ -1019,8 +1020,8 @@ class RenderContext(object):
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            scaleX = self._styleSheet.hexContentScale / multiverse.ParsecScaleX
-            scaleY = self._styleSheet.hexContentScale / multiverse.ParsecScaleY
+            scaleX = self._styleSheet.hexContentScale / astronomer.ParsecScaleX
+            scaleY = self._styleSheet.hexContentScale / astronomer.ParsecScaleY
             self._graphics.scaleTransform(
                 scaleX=scaleX,
                 scaleY=scaleY)
@@ -1047,8 +1048,8 @@ class RenderContext(object):
                                 if self._styleSheet.showZonesAsPerimeters:
                                     with self._graphics.save():
                                         self._graphics.scaleTransform(
-                                            scaleX=0.95 * multiverse.ParsecScaleX,
-                                            scaleY=0.95 * multiverse.ParsecScaleY)
+                                            scaleX=0.95 * astronomer.ParsecScaleX,
+                                            scaleY=0.95 * astronomer.ParsecScaleY)
                                         self._graphics.drawPath(
                                             path=self._hexOutlinePath,
                                             pen=element.linePen)
@@ -1133,8 +1134,8 @@ class RenderContext(object):
                     if not self._styleSheet.numberAllHexes and renderHex:
                         if renderSubsector:
                             numberText = '{hexX:02d}{hexY:02d}'.format(
-                                hexX=int((placeholderHex.offsetX() - 1) % multiverse.SubsectorWidth) + 1,
-                                hexY=int((placeholderHex.offsetY() - 1) % multiverse.SubsectorHeight) + 1)
+                                hexX=int((placeholderHex.offsetX() - 1) % astronomer.SubsectorWidth) + 1,
+                                hexY=int((placeholderHex.offsetY() - 1) % astronomer.SubsectorHeight) + 1)
                         else:
                             numberText = '{hexX:02d}{hexY:02d}'.format(
                                 hexX=placeholderHex.offsetX(),
@@ -1168,8 +1169,8 @@ class RenderContext(object):
                 # coordinate space (where x & y don't scale the same) then the
                 # point would be drawn as an oval
                 self._graphics.scaleTransform(
-                    scaleX=self._styleSheet.hexContentScale / multiverse.ParsecScaleX,
-                    scaleY=self._styleSheet.hexContentScale / multiverse.ParsecScaleY)
+                    scaleX=self._styleSheet.hexContentScale / astronomer.ParsecScaleX,
+                    scaleY=self._styleSheet.hexContentScale / astronomer.ParsecScaleY)
 
                 pen = self._graphics.createPen(
                     colour=self._styleSheet.worlds.textBrush.colour(),
@@ -1217,8 +1218,8 @@ class RenderContext(object):
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
 
-            scaleX = self._styleSheet.hexContentScale / multiverse.ParsecScaleX
-            scaleY = self._styleSheet.hexContentScale / multiverse.ParsecScaleY
+            scaleX = self._styleSheet.hexContentScale / astronomer.ParsecScaleX
+            scaleY = self._styleSheet.hexContentScale / astronomer.ParsecScaleY
             self._graphics.scaleTransform(scaleX=scaleX, scaleY=scaleY)
 
             for world in worlds:
@@ -1513,8 +1514,8 @@ class RenderContext(object):
                             dx=worldInfo.hexCenter.x(),
                             dy=worldInfo.hexCenter.y())
                         self._graphics.scaleTransform(
-                            scaleX=self._styleSheet.hexContentScale / multiverse.ParsecScaleX,
-                            scaleY=self._styleSheet.hexContentScale / multiverse.ParsecScaleY)
+                            scaleX=self._styleSheet.hexContentScale / astronomer.ParsecScaleX,
+                            scaleY=self._styleSheet.hexContentScale / astronomer.ParsecScaleY)
 
                         if self._styleSheet.populationOverlay.visible and worldInfo.populationOverlayRadius > 0:
                             self._drawOverlay(
@@ -1530,15 +1531,15 @@ class RenderContext(object):
                             if worldInfo.isImportant and worldInfo.isCapital:
                                 self._drawOverlay(
                                     element=self._styleSheet.capitalOverlay,
-                                    radius=2 * multiverse.ParsecScaleX)
+                                    radius=2 * astronomer.ParsecScaleX)
                             elif worldInfo.isImportant:
                                 self._drawOverlay(
                                     element=self._styleSheet.capitalOverlayAltA,
-                                    radius=2 * multiverse.ParsecScaleX)
+                                    radius=2 * astronomer.ParsecScaleX)
                             elif worldInfo.isCapital:
                                 self._drawOverlay(
                                     element=self._styleSheet.capitalOverlayAltB,
-                                    radius=2 * multiverse.ParsecScaleX)
+                                    radius=2 * astronomer.ParsecScaleX)
             finally:
                 self._selector.setWorldSlop(oldSlop)
 
@@ -1549,15 +1550,10 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            allegiance = world.allegiance()
-            remarks = world.remarks()
-
-            allegianceCode = allegiance.code() if allegiance else None
-            droyne = allegianceCode == 'Dr' or allegianceCode == 'NaDr' or remarks.hasRemark('Droy')
-            chirpers = remarks.hasRemark('Chir')
-
-            if droyne or chirpers:
-                glyph = self._styleSheet.droyneWorlds.content[0 if droyne else 1]
+            worldInfo = self._worldCache.worldInfo(hex=world.hex())
+            if worldInfo.isDroyneWorld or worldInfo.isChirperWorld:
+                index = 0 if worldInfo.isDroyneWorld else 1
+                glyph = self._styleSheet.droyneWorlds.content[index]
                 self._drawOverlayGlyph(
                     glyph=glyph,
                     font=self._styleSheet.droyneWorlds.font,
@@ -1571,8 +1567,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            remarks = world.remarks()
-            if remarks.isMinorHomeworld():
+            worldInfo = self._worldCache.worldInfo(hex=world.hex())
+            if worldInfo.isMinorHomeWorld:
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.minorHomeWorlds.content,
                     font=self._styleSheet.minorHomeWorlds.font,
@@ -1586,8 +1582,8 @@ class RenderContext(object):
         self._graphics.setSmoothingMode(
             cartographer.AbstractGraphics.SmoothingMode.HighQuality)
         for world in self._selector.worlds():
-            remarks = world.remarks()
-            if remarks.hasTradeCode(multiverse.TradeCode.AncientsSiteWorld):
+            worldInfo = self._worldCache.worldInfo(hex=world.hex())
+            if worldInfo.isAncientSite:
                 self._drawOverlayGlyph(
                     glyph=self._styleSheet.ancientsWorlds.content,
                     font=self._styleSheet.ancientsWorlds.font,
@@ -1605,9 +1601,9 @@ class RenderContext(object):
                 tagging = sector.tagging()
                 shouldDim = sector.isCustom()
                 if not shouldDim:
-                    shouldDim = not tagging.contains(multiverse.SectorTagging.Tag.Official) and \
-                        not tagging.contains(multiverse.SectorTagging.Tag.Preserve) and \
-                        not tagging.contains(multiverse.SectorTagging.Tag.InReview)
+                    shouldDim = not tagging.contains(astronomer.SectorTagging.Tag.Official) and \
+                        not tagging.contains(astronomer.SectorTagging.Tag.Preserve) and \
+                        not tagging.contains(astronomer.SectorTagging.Tag.InReview)
                 if shouldDim:
                     clipPath = self._sectorCache.clipPath(
                         index=sector.index())
@@ -1619,23 +1615,23 @@ class RenderContext(object):
         if self._styleSheet.colourCodeSectorStatus and self._styleSheet.worlds.visible:
             for sector in self._selector.sectors(tight=True):
                 tagging = sector.tagging()
-                if tagging.contains(multiverse.SectorTagging.Tag.Official):
+                if tagging.contains(astronomer.SectorTagging.Tag.Official):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerRed))
-                elif tagging.contains(multiverse.SectorTagging.Tag.InReview):
+                elif tagging.contains(astronomer.SectorTagging.Tag.InReview):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Orange))
-                elif tagging.contains(multiverse.SectorTagging.Tag.Unreviewed):
+                elif tagging.contains(astronomer.SectorTagging.Tag.Unreviewed):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerAmber))
-                elif tagging.contains(multiverse.SectorTagging.Tag.Apocryphal):
+                elif tagging.contains(astronomer.SectorTagging.Tag.Apocryphal):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.Magenta))
-                elif tagging.contains(multiverse.SectorTagging.Tag.Preserve):
+                elif tagging.contains(astronomer.SectorTagging.Tag.Preserve):
                     brush.setColour(cartographer.makeAlphaColour(
                         alpha=128,
                         colour=common.HtmlColours.TravellerGreen))
@@ -1688,10 +1684,10 @@ class RenderContext(object):
             # Invert the current scaling transforms
             sx = 1.0 / self._styleSheet.hexContentScale
             sy = 1.0 / self._styleSheet.hexContentScale
-            sx *= multiverse.ParsecScaleX
-            sy *= multiverse.ParsecScaleY
-            sx /= self._scale * multiverse.ParsecScaleX
-            sy /= self._scale * multiverse.ParsecScaleY
+            sx *= astronomer.ParsecScaleX
+            sy *= astronomer.ParsecScaleY
+            sx /= self._scale * astronomer.ParsecScaleX
+            sy /= self._scale * astronomer.ParsecScaleY
 
             outlineSize = 2
             outlineSkip = 1
@@ -1720,7 +1716,7 @@ class RenderContext(object):
             y=position.y(),
             format=cartographer.TextAlignment.Centered)
 
-    def _drawStars(self, world: multiverse.World) -> None:
+    def _drawStars(self, world: astronomer.World) -> None:
         with self._graphics.save():
             self._graphics.setSmoothingMode(
                 cartographer.AbstractGraphics.SmoothingMode.AntiAlias)
@@ -1728,8 +1724,8 @@ class RenderContext(object):
 
             self._graphics.translateTransform(dx=center.x(), dy=center.y())
             self._graphics.scaleTransform(
-                scaleX=self._styleSheet.hexContentScale / multiverse.ParsecScaleX,
-                scaleY=self._styleSheet.hexContentScale / multiverse.ParsecScaleY)
+                scaleX=self._styleSheet.hexContentScale / astronomer.ParsecScaleX,
+                scaleY=self._styleSheet.hexContentScale / astronomer.ParsecScaleY)
 
             pen = self._graphics.createPen()
             pen.setStyle(cartographer.LineStyle.Solid)
@@ -1881,8 +1877,8 @@ class RenderContext(object):
                 # the point where incorrect clipping of these internal borders
                 # is that noticeable.
                 sectorClipRect.inflate(
-                    multiverse.ParsecScaleX * 0.1,
-                    multiverse.ParsecScaleY * 0.1)
+                    astronomer.ParsecScaleX * 0.1,
+                    astronomer.ParsecScaleY * 0.1)
             if not self._worldViewRect.intersects(sectorClipRect):
                 continue
 
@@ -2061,8 +2057,8 @@ class RenderContext(object):
                     dx=vectorObject.namePosition.x(),
                     dy=vectorObject.namePosition.y())
                 self._graphics.scaleTransform(
-                    scaleX=1.0 / multiverse.ParsecScaleX,
-                    scaleY=1.0 / multiverse.ParsecScaleY)
+                    scaleX=1.0 / astronomer.ParsecScaleX,
+                    scaleY=1.0 / astronomer.ParsecScaleY)
                 self._graphics.rotateTransform(-labelStyle.rotation)
 
                 self._drawMultiLineString(
@@ -2111,19 +2107,19 @@ class RenderContext(object):
             glyph: str,
             font: cartographer.AbstractFont,
             brush: cartographer.AbstractBrush,
-            position: multiverse.HexPosition
+            position: astronomer.HexPosition
             ) -> None:
         centerX, centerY = position.worldCenter()
         with self._graphics.save():
             self._graphics.scaleTransform(
-                scaleX=1 / multiverse.ParsecScaleX,
-                scaleY=1 / multiverse.ParsecScaleY)
+                scaleX=1 / astronomer.ParsecScaleX,
+                scaleY=1 / astronomer.ParsecScaleY)
             self._graphics.drawString(
                 text=glyph,
                 font=font,
                 brush=brush,
-                x=centerX * multiverse.ParsecScaleX,
-                y=centerY * multiverse.ParsecScaleY,
+                x=centerX * astronomer.ParsecScaleX,
+                y=centerY * astronomer.ParsecScaleY,
                 format=cartographer.TextAlignment.Centered)
 
     def _drawLabel(
@@ -2144,8 +2140,8 @@ class RenderContext(object):
                 dx=center.x(),
                 dy=center.y())
             self._graphics.scaleTransform(
-                scaleX=1.0 / multiverse.ParsecScaleX,
-                scaleY=1.0 / multiverse.ParsecScaleY)
+                scaleX=1.0 / astronomer.ParsecScaleX,
+                scaleY=1.0 / astronomer.ParsecScaleY)
 
             self._graphics.translateTransform(
                 dx=labelStyle.translation.x(),
@@ -2280,7 +2276,7 @@ class RenderContext(object):
         'V': 0}
 
     @staticmethod
-    def _worldStarProps(world: multiverse.World) -> typing.Iterable[typing.Tuple[
+    def _worldStarProps(world: astronomer.World) -> typing.Iterable[typing.Tuple[
             str, # Fill Colour,
             str, # Border Colour
             float]]: # Radius
@@ -2296,10 +2292,10 @@ class RenderContext(object):
                 props.append((common.HtmlColours.Brown, common.HtmlColours.Black, 0.3))
             else:
                 colour, radius = RenderContext._StarPropsMap.get(
-                    star.code(element=multiverse.Star.Element.SpectralClass),
+                    star.code(element=astronomer.Star.Element.SpectralClass),
                     (None, None))
                 if colour:
-                    luminance = star.code(element=multiverse.Star.Element.LuminosityClass)
+                    luminance = star.code(element=astronomer.Star.Element.LuminosityClass)
                     if luminance == 'VII':
                         # The second survey format spec says that some data uses VII to indicate
                         # a white dwarf (i.e. classification D).
@@ -2329,19 +2325,19 @@ class RenderContext(object):
 
     @staticmethod
     def _offsetRouteSegment(startPoint: cartographer.PointF, endPoint: cartographer.PointF, offset: float) -> None:
-        dx = (endPoint.x() - startPoint.x()) * multiverse.ParsecScaleX
-        dy = (endPoint.y() - startPoint.y()) * multiverse.ParsecScaleY
+        dx = (endPoint.x() - startPoint.x()) * astronomer.ParsecScaleX
+        dy = (endPoint.y() - startPoint.y()) * astronomer.ParsecScaleY
         length = math.sqrt(dx * dx + dy * dy)
         if not length:
             return # No offset
-        ddx = (dx * offset / length) / multiverse.ParsecScaleX
-        ddy = (dy * offset / length) / multiverse.ParsecScaleY
+        ddx = (dx * offset / length) / astronomer.ParsecScaleX
+        ddy = (dy * offset / length) / astronomer.ParsecScaleY
         startPoint.setX(startPoint.x() + ddx)
         startPoint.setY(startPoint.y() + ddy)
         endPoint.setX(endPoint.x() - ddx)
         endPoint.setY(endPoint.y() - ddy)
 
     @staticmethod
-    def _hexToCenter(hex: multiverse.HexPosition) -> cartographer.PointF:
+    def _hexToCenter(hex: astronomer.HexPosition) -> cartographer.PointF:
         centerX, centerY = hex.worldCenter()
         return cartographer.PointF(x=centerX, y=centerY)

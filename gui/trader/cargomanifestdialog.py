@@ -1,9 +1,9 @@
 import app
+import astronomer
 import common
 import gui
 import logging
 import logic
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -225,6 +225,7 @@ class CargoManifestDialog(gui.DialogEx):
         self._configurationGroupBox.setLayout(groupLayout)
 
     def _setupManifestControls(self):
+        rules = app.Config.instance().value(option=app.ConfigOption.Rules)
         outcomeColours = app.Config.instance().value(option=app.ConfigOption.OutcomeColours)
         worldTagging = app.Config.instance().value(option=app.ConfigOption.WorldTagging)
         taggingColours = app.Config.instance().value(option=app.ConfigOption.TaggingColours)
@@ -234,6 +235,7 @@ class CargoManifestDialog(gui.DialogEx):
             self._cargoManifestDisplayModeChanged)
 
         self._cargoManifestTable = gui.CargoManifestTable(
+            rules=rules,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -249,6 +251,7 @@ class CargoManifestDialog(gui.DialogEx):
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
         self._cargoBreakdownTable = gui.TradeOptionsTable(
+            rules=rules,
             outcomeColours=outcomeColours,
             worldTagging=worldTagging,
             taggingColours=taggingColours)
@@ -301,6 +304,8 @@ class CargoManifestDialog(gui.DialogEx):
             self._hexTooltipProvider.setMilieu(milieu=newValue)
         elif option is app.ConfigOption.Rules:
             self._hexTooltipProvider.setRules(rules=newValue)
+            self._cargoManifestTable.setRules(rules=newValue)
+            self._cargoBreakdownTable.setRules(rules=newValue)
         elif option is app.ConfigOption.MapStyle:
             self._hexTooltipProvider.setMapStyle(style=newValue)
         elif option is app.ConfigOption.MapOptions:
@@ -319,7 +324,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldDetails(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         detailsWindow = gui.WindowManager.instance().showHexDetailsWindow()
         detailsWindow.addHexes(hexes=[world.hex() for world in worlds])
@@ -401,7 +406,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWorldsOnMap(
             self,
-            worlds: typing.Iterable[multiverse.World]
+            worlds: typing.Iterable[astronomer.World]
             ) -> None:
         hexes = [world.hex() for world in worlds]
         try:
