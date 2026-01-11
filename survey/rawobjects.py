@@ -1,24 +1,5 @@
 
-import enum
 import typing
-
-# TODO: Need to change this method of accessing the world attributes to something
-# more standard
-class WorldAttribute(enum.Enum):
-    Hex = 0
-    Name = 1
-    UWP = 2
-    Remarks = 3
-    Importance = 4
-    Economics = 5
-    Culture = 6
-    Nobility = 7
-    Bases = 8
-    Zone = 9
-    PBG = 10
-    SystemWorlds = 11
-    Allegiance = 12
-    Stellar = 13
 
 # TODO: I don't like the naming of all these RawObjects. It probably
 # makes sense for them to be Fs* (for filesystem) rather than Raw*
@@ -30,27 +11,85 @@ class WorldAttribute(enum.Enum):
 class RawWorld(object):
     def __init__(
             self,
+            hex: typing.Optional[str],
+            name: typing.Optional[str],
+            allegiance: typing.Optional[str],
+            zone: typing.Optional[str],
+            uwp: typing.Optional[str],
+            economics: typing.Optional[str],
+            culture: typing.Optional[str],
+            nobility: typing.Optional[str],
+            bases: typing.Optional[str],
+            remarks: typing.Optional[str],
+            importance: typing.Optional[str],
+            pbg: typing.Optional[str],
+            systemWorlds: typing.Optional[str],
+            stellar: typing.Optional[str],
             lineNumber: int
             ) -> None:
         super().__init__()
+        self._hex = hex
+        self._name = name
+        self._allegiance = allegiance
+        self._zone = zone
+        self._uwp = uwp
+        self._economics = economics
+        self._culture = culture
+        self._nobility = nobility
+        self._bases = bases
+        self._remarks = remarks
+        self._importance = importance
+        self._pbg = pbg
+        self._systemWorlds = systemWorlds
+        self._stellar = stellar
         self._lineNumber = lineNumber
-        self._attributes: typing.Dict[WorldAttribute, str] = {}
 
     def lineNumber(self) -> int:
         return self._lineNumber
 
-    def attribute(
-            self,
-            attribute: WorldAttribute
-            ) -> str:
-        return self._attributes.get(attribute, '')
+    # TODO: This should probably be mandatory
+    def hex(self) -> typing.Optional[str]:
+        return self._hex
 
-    def setAttribute(
-            self,
-            attribute: WorldAttribute,
-            value: str
-            ) -> None:
-        self._attributes[attribute] = value
+    def name(self) -> typing.Optional[str]:
+        return self._name
+
+    def allegiance(self) -> typing.Optional[str]:
+        return self._allegiance
+
+    def zone(self) -> typing.Optional[str]:
+        return self._zone
+
+    def uwp(self) -> typing.Optional[str]:
+        return self._uwp
+
+    def economics(self) -> typing.Optional[str]:
+        return self._economics
+
+    def culture(self) -> typing.Optional[str]:
+        return self._culture
+
+    def nobility(self) -> typing.Optional[str]:
+        return self._nobility
+
+    def bases(self) -> typing.Optional[str]:
+        return self._bases
+
+    def remarks(self) -> typing.Optional[str]:
+        return self._remarks
+
+    def importance(self) -> typing.Optional[str]:
+        return self._importance
+
+    def pbg(self) -> typing.Optional[str]:
+        return self._pbg
+
+    # TODO: This should probably be an int
+    def systemWorlds(self) -> typing.Optional[str]:
+        return self._systemWorlds
+
+    def stellar(self) -> typing.Optional[str]:
+        return self._stellar
 
 class RawAllegiance(object):
     def __init__(

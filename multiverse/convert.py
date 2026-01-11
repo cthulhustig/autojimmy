@@ -176,11 +176,11 @@ def _findUsedAllegianceCodes(
     usedCodes: typing.Set[str] = set()
     if rawSystems:
         for rawWorld in rawSystems:
-            rawAllegianceCode = rawWorld.attribute(survey.WorldAttribute.Allegiance)
+            rawAllegianceCode = rawWorld.allegiance()
             if rawAllegianceCode:
                 usedCodes.add(rawAllegianceCode)
 
-            rawRemarks = rawWorld.attribute(survey.WorldAttribute.Remarks)
+            rawRemarks = rawWorld.remarks()
             if rawRemarks:
                 matches = _MilitaryRuleRemarkPattern.findall(rawRemarks)
                 for match in matches:
@@ -546,7 +546,7 @@ def _createDbSophonts(
     rawMajorSophontNames: typing.Set[str] = set(_StockMajorSophonts)
     if rawSystems:
         for rawWorld in rawSystems:
-            rawRemarks = rawWorld.attribute(survey.WorldAttribute.Remarks)
+            rawRemarks = rawWorld.remarks()
             if not rawRemarks:
                 continue
             matches = _T5SophontPopulationRemarkPattern.findall(rawRemarks)
@@ -677,13 +677,13 @@ def _createDbSystems(
     dbSystems = []
 
     for rawWorld in rawSystems:
-        rawHex = rawWorld.attribute(survey.WorldAttribute.Hex)
+        rawHex = rawWorld.hex()
         if not rawHex:
             assert(False) # TODO: Better error handling
 
-        dbSystemName = rawWorld.attribute(survey.WorldAttribute.Name)
+        dbSystemName = rawWorld.name()
 
-        rawUWP = rawWorld.attribute(survey.WorldAttribute.UWP)
+        rawUWP = rawWorld.uwp()
         dbStarport = dbWorldSize = dbAtmosphere = dbHydrographics = \
             dbPopulation = dbGovernment = dbLawLevel = dbTechLevel = None
         if rawUWP:
@@ -691,34 +691,34 @@ def _createDbSystems(
                 dbPopulation, dbGovernment, dbLawLevel, dbTechLevel = \
                 survey.parseSystemUWPString(uwp=rawUWP)
 
-        rawEconomics = rawWorld.attribute(survey.WorldAttribute.Economics)
+        rawEconomics = rawWorld.economics()
         dbResources = dbLabour = dbInfrastructure = dbEfficiency = None
         if rawEconomics:
             dbResources, dbLabour, dbInfrastructure, dbEfficiency = \
                 survey.parseSystemEconomicsString(economics=rawEconomics)
 
-        rawCulture = rawWorld.attribute(survey.WorldAttribute.Culture)
+        rawCulture = rawWorld.culture()
         dbHeterogeneity = dbAcceptance = dbStrangeness = dbSymbols = None
         if rawCulture:
             dbHeterogeneity, dbAcceptance, dbStrangeness, dbSymbols = \
                 survey.parseSystemCultureString(culture=rawCulture)
 
-        rawPBG = rawWorld.attribute(survey.WorldAttribute.PBG)
+        rawPBG = rawWorld.pbg()
         dbPopulationMultiplier = dbPlanetoidBelts = dbGasGiants = None
         if rawPBG:
             dbPopulationMultiplier, dbPlanetoidBelts, dbGasGiants = \
                 survey.parseSystemPBGString(pbg=rawPBG)
 
-        rawSystemWorlds = rawWorld.attribute(survey.WorldAttribute.SystemWorlds)
+        rawSystemWorlds = rawWorld.systemWorlds()
 
-        rawAllegianceCode = rawWorld.attribute(survey.WorldAttribute.Allegiance)
+        rawAllegianceCode = rawWorld.allegiance()
         dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
         if rawAllegianceCode and not dbAllegiance:
             # TODO: This should probably log and continue with no allegiance,
             # if it's a custom sector it should also warn the user
             raise RuntimeError(f'World at {rawHex} in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
-        rawNobilities = rawWorld.attribute(survey.WorldAttribute.Nobility)
+        rawNobilities = rawWorld.nobility()
         dbNobilities = None
         if rawNobilities:
             dbNobilities = []
@@ -730,7 +730,7 @@ def _createDbSystems(
 
                 dbNobilities.append(multiverse.DbNobility(code=nobilityCode))
 
-        rawBases = rawWorld.attribute(survey.WorldAttribute.Bases)
+        rawBases = rawWorld.bases()
         dbBases = None
         if rawBases:
             dbBases = []
@@ -742,7 +742,7 @@ def _createDbSystems(
 
                 dbBases.append(multiverse.DbBase(code=baseCode))
 
-        rawStellar = rawWorld.attribute(survey.WorldAttribute.Stellar)
+        rawStellar = rawWorld.stellar()
         dbStars = None
         if rawStellar:
             dbStars = []
@@ -752,7 +752,7 @@ def _createDbSystems(
                     spectralClass=spectralClass,
                     spectralScale=spectralScale))
 
-        rawRemarks = rawWorld.attribute(survey.WorldAttribute.Remarks)
+        rawRemarks = rawWorld.remarks()
         dbTradeCodes: typing.Optional[typing.List[multiverse.DbTradeCode]] = None
         dbSophontPopulations: typing.Optional[typing.List[multiverse.DbSophontPopulation]]  = None
         dbRulingAllegiances: typing.Optional[typing.List[survey.RawAllegiance]]  = None
@@ -960,7 +960,7 @@ def _createDbSystems(
             populationMultiplier=dbPopulationMultiplier,
             planetoidBelts=dbPlanetoidBelts,
             gasGiants=dbGasGiants,
-            zone=rawWorld.attribute(survey.WorldAttribute.Zone),
+            zone=rawWorld.zone(),
             # TODO: I think the Traveller Map second survey page clarifies that
             # system worlds is the number of worlds excluding the main world. I
             # need to check how this matches up with what is in the Mongoose World

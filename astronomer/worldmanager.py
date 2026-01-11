@@ -612,16 +612,16 @@ class WorldManager(object):
                         sectorName=sectorName,
                         subsectorName=subsectorName,
                         allegiance=allegiance,
+                        zone=zone,
                         uwp=uwp,
                         economics=economics,
                         culture=culture,
                         nobilities=nobilities,
+                        bases=bases,
                         remarks=remarks,
-                        zone=zone,
-                        stellar=stellar,
-                        pbg=pbg,
                         systemWorlds=systemWorlds,
-                        bases=bases)
+                        pbg=pbg,
+                        stellar=stellar)
 
                     subsectorWorlds = subsectorWorldsMap[subsectorCode]
                     subsectorWorlds.append(world)

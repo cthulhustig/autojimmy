@@ -13,16 +13,16 @@ class World(object):
             sectorName: str,
             subsectorName: str,
             allegiance: typing.Optional[astronomer.Allegiance],
+            zone: typing.Optional[astronomer.ZoneType],
             uwp: astronomer.UWP,
             economics: astronomer.Economics,
             culture: astronomer.Culture,
             nobilities: astronomer.Nobilities,
+            bases: astronomer.Bases,
             remarks: astronomer.Remarks,
-            zone: typing.Optional[astronomer.ZoneType],
-            stellar: astronomer.Stellar,
-            pbg: astronomer.PBG,
             systemWorlds: typing.Optional[int],
-            bases: astronomer.Bases
+            pbg: astronomer.PBG,
+            stellar: astronomer.Stellar
             ) -> None:
         self._milieu = milieu
         self._hex = hex
@@ -31,18 +31,18 @@ class World(object):
         self._sectorName = sectorName
         self._subsectorName = subsectorName
         self._allegiance = allegiance
+        self._zone = zone
         self._uwp = uwp
         self._economics = economics
         self._culture = culture
         self._nobilities = nobilities
-        self._zone = zone
+        self._bases = bases
         self._remarks = remarks
         self._isAnomaly = self._remarks.hasCustomRemark('{Anomaly}')
         self._isFuelCache = self._remarks.hasCustomRemark('{Fuel}')
-        self._stellar = stellar
-        self._pbg = pbg
         self._systemWorlds = systemWorlds
-        self._bases = bases
+        self._pbg = pbg
+        self._stellar = stellar
 
     def milieu(self) -> astronomer.Milieu:
         return self._milieu
@@ -76,6 +76,9 @@ class World(object):
     def allegiance(self) -> typing.Optional[astronomer.Allegiance]:
         return self._allegiance
 
+    def zone(self) -> typing.Optional[astronomer.ZoneType]:
+        return self._zone
+
     def uwp(self) -> astronomer.UWP:
         return self._uwp
 
@@ -90,9 +93,6 @@ class World(object):
 
     def hasRemark(self, remark: str) -> None:
         return self._remarks.hasCustomRemark(remark=remark)
-
-    def zone(self) -> typing.Optional[astronomer.ZoneType]:
-        return self._zone
 
     def nobilities(self) -> astronomer.Nobilities:
         return self._nobilities
