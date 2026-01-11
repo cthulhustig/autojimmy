@@ -702,17 +702,6 @@ class WorldManager(object):
                             offsetX=hexX,
                             offsetY=hexY))
 
-                    labelHexX = dbBorder.labelHexX()
-                    labelHexY = dbBorder.labelHexY()
-                    if labelHexX is not None and labelHexY is not None:
-                        labelHex = astronomer.HexPosition(
-                            sectorX=sectorX,
-                            sectorY=sectorY,
-                            offsetX=labelHexX,
-                            offsetY=labelHexY)
-                    else:
-                        labelHex = None
-
                     colour = dbBorder.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
                         logging.warning(f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
@@ -742,16 +731,15 @@ class WorldManager(object):
                     borders.append(astronomer.Border(
                         hexList=hexes,
                         allegiance=allegiance,
+                        style=WorldManager._mapBorderStyle(dbBorder.style()),
+                        colour=colour,
+                        label=label,
+                        labelWorldX=dbBorder.labelX(),
+                        labelWorldY=dbBorder.labelY(),
                         # Show label use the same defaults as the traveller map Border class
                         # TODO: I think I've broken something here as show label can't be null in the
                         # DB. I suspect I need to move this logic to the converter
-                        showLabel=dbBorder.showLabel() if dbBorder.showLabel() is not None else True,
-                        label=label,
-                        labelHex=labelHex,
-                        labelOffsetX=dbBorder.labelOffsetX(),
-                        labelOffsetY=dbBorder.labelOffsetY(),
-                        style=WorldManager._mapBorderStyle(dbBorder.style()),
-                        colour=colour))
+                        showLabel=dbBorder.showLabel() if dbBorder.showLabel() is not None else True))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process border {dbBorder.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -770,18 +758,7 @@ class WorldManager(object):
                             offsetX=hexX,
                             offsetY=hexY))
 
-                    labelHexX = dbRegion.labelHexX()
-                    labelHexY = dbRegion.labelHexY()
-                    if labelHexX is not None and labelHexY is not None:
-                        labelHex = astronomer.HexPosition(
-                            sectorX=sectorX,
-                            sectorY=sectorY,
-                            offsetX=labelHexX,
-                            offsetY=labelHexY)
-                    else:
-                        labelHex = None
-
-                    # Line wrap now so it doesn't need to be done every time the border is rendered
+                    # Line wrap now so it doesn't need to be done every time the region is rendered
                     label = dbRegion.label()
                     if label and dbRegion.wrapLabel():
                         label = WorldManager._LineWrapPattern.sub('\n', label)
@@ -793,15 +770,14 @@ class WorldManager(object):
 
                     regions.append(astronomer.Region(
                         hexList=hexes,
+                        colour=colour,
+                        label=label,
+                        labelWorldX=dbRegion.labelX(),
+                        labelWorldY=dbRegion.labelY(),
                         # Show label use the same defaults as the Traveller Map Border class
                         # TODO: I think I've broken something here as show label can't be null in the
                         # DB. I suspect I need to move this logic to the converter
-                        showLabel=dbRegion.showLabel() if dbRegion.showLabel() is not None else True,
-                        label=label,
-                        labelHex=labelHex,
-                        labelOffsetX=dbRegion.labelOffsetX(),
-                        labelOffsetY=dbRegion.labelOffsetY(),
-                        colour=colour))
+                        showLabel=dbRegion.showLabel() if dbRegion.showLabel() is not None else True))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process region {dbRegion.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -812,13 +788,7 @@ class WorldManager(object):
         if dbLabels:
             for dbLabel in dbLabels:
                 try:
-                    hexString = astronomer.HexPosition(
-                        sectorX=sectorX,
-                        sectorY=sectorY,
-                        offsetX=dbLabel.hexX(),
-                        offsetY=dbLabel.hexY())
-
-                    # Line wrap now so it doesn't need to be done every time the border is rendered
+                    # Line wrap now so it doesn't need to be done every time the label is rendered
                     text = dbLabel.text()
                     if dbLabel.wrap():
                         text = WorldManager._LineWrapPattern.sub('\n', text)
@@ -830,11 +800,10 @@ class WorldManager(object):
 
                     labels.append(astronomer.Label(
                         text=text,
-                        hex=hexString,
+                        x=dbLabel.x(),
+                        y=dbLabel.y(),
                         colour=colour,
-                        size=WorldManager._mapLabelSize(dbLabel.size()),
-                        offsetX=dbLabel.offsetX(),
-                        offsetY=dbLabel.offsetY()))
+                        size=WorldManager._mapLabelSize(dbLabel.size())))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process label {dbLabel.id()} in metadata for sector {sectorName} from {milieu.value}',

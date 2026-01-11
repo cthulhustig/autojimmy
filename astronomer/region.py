@@ -30,43 +30,38 @@ class Region(object):
     def __init__(
             self,
             hexList: typing.Iterable[astronomer.HexPosition],
-            showLabel: bool,
-            labelHex: typing.Optional[astronomer.HexPosition],
-            labelOffsetX: typing.Optional[float],
-            labelOffsetY: typing.Optional[float],
+            colour: typing.Optional[str],
             label: typing.Optional[str],
-            colour: typing.Optional[str]
+            labelWorldX: typing.Optional[float],
+            labelWorldY: typing.Optional[float],
+            showLabel: bool
             ) -> None:
         self._hexList = list(hexList)
-        self._showLabel = showLabel
-        self._labelHex = labelHex
-        self._labelOffsetX = labelOffsetX
-        self._labelOffsetY = labelOffsetY
-        self._label = label
         self._colour = colour
+        self._label = label
+        self._labelWorldX = labelWorldX
+        self._labelWorldY = labelWorldY
+        self._showLabel = showLabel
         self._outline: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
     def hexList(self) -> typing.Iterable[astronomer.HexPosition]:
         return self._hexList
 
-    def showLabel(self) -> bool:
-        return self._showLabel
-
-    def labelHex(self) -> typing.Optional[astronomer.HexPosition]:
-        return self._labelHex
-
-    # Offset in world coordinates
-    def labelOffsetX(self) -> typing.Optional[float]:
-        return self._labelOffsetX
-
-    def labelOffsetY(self) -> typing.Optional[float]:
-        return self._labelOffsetY
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
 
     def label(self) -> typing.Optional[str]:
         return self._label
 
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
+    # Offset from top left of sector in world coordinates
+    def labelWorldX(self) -> typing.Optional[float]:
+        return self._labelWorldX
+
+    def labelWorldY(self) -> typing.Optional[float]:
+        return self._labelWorldY
+
+    def showLabel(self) -> bool:
+        return self._showLabel
 
     def worldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:

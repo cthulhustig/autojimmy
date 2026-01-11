@@ -1184,27 +1184,20 @@ class MultiverseDb(object):
                     ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='show_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
-                    ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
-                    # TODO: I think I can get simplify this by storing absolute world coordinates (ie floats)
-                    # rather than hex & offset. It would basically be a case of doing what is currently done
-                    # when rendering in the cartographer at convert time (including the 0.7 multiplier). The
-                    # code in the cartographer could then be removed and it can just use the precalculated
-                    # world coordinates when rendering the text.
-                    # I think the same is true for the offsets used by Regions AND Labels but NOT the
-                    # offsets stored for Routes as they're sector offsets not world coordinate offsets.
-                    # IMPORTANT: It's important to remember I'd need to do the inverse when I come to
-                    # implement export code.
-                    ColumnDef(columnName='label_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='label_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='label_offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='label_offset_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='allegiance_id', columnType=ColumnDef.ColumnType.Text, isNullable=True,
                               foreignTableName=MultiverseDb._AllegiancesTableName, foreignColumnName='id',
-                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull)])
+                              foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.SetNull),
+                    ColumnDef(columnName='style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    # NOTE: The label position is stored as an offset in world space from the
+                    # origin of the sector (top, left). An offset is used rather than storing
+                    # world space coordinates to keep sector data relative to the sector. It
+                    # will make it easier if we ever want to move a sector
+                    ColumnDef(columnName='label_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='label_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='show_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1226,14 +1219,13 @@ class MultiverseDb(object):
                     ColumnDef(columnName='sector_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
+                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
                     ColumnDef(columnName='label', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    # NOTE: See note on borders about coordinate space used for world x/y
+                    ColumnDef(columnName='label_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='label_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
                     ColumnDef(columnName='show_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
-                    ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
-                    ColumnDef(columnName='label_hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='label_hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=True),
-                    ColumnDef(columnName='label_offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='label_offset_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
+                    ColumnDef(columnName='wrap_label', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -1256,13 +1248,11 @@ class MultiverseDb(object):
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
                     ColumnDef(columnName='text', columnType=ColumnDef.ColumnType.Text, isNullable=False),
-                    ColumnDef(columnName='hex_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
-                    ColumnDef(columnName='hex_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
-                    ColumnDef(columnName='offset_x', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='offset_y', columnType=ColumnDef.ColumnType.Real, isNullable=True),
-                    ColumnDef(columnName='wrap', columnType=ColumnDef.ColumnType.Boolean, isNullable=False),
+                    ColumnDef(columnName='x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
+                    ColumnDef(columnName='y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='size', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
+                    ColumnDef(columnName='size', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='wrap', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)])
 
             self._internalCreateTable(
                 cursor=cursor,
@@ -2095,12 +2085,10 @@ class MultiverseDb(object):
 
         if sector.borders():
             bordersSql = """
-                INSERT INTO {table} (id, sector_id, show_label, wrap_label,
-                    label_hex_x, label_hex_y, label_offset_x, label_offset_y,
-                    label, colour, style, allegiance_id)
-                VALUES (:id, :sector_id, :show_label, :wrap_label,
-                    :label_hex_x, :label_hex_y, :label_offset_x, :label_offset_y,
-                    :label, :colour, :style, :allegiance_id);
+                INSERT INTO {table} (id, sector_id, allegiance_id, style, colour,
+                    label, label_x, label_y, show_label, wrap_label)
+                VALUES (:id, :sector_id, :allegiance_id, :style, :colour,
+                    :label, :label_x, :label_y, :show_label, :wrap_label);
                 """.format(table=MultiverseDb._BordersTableName)
             hexesSql =  """
                 INSERT INTO {table} (border_id, hex_x, hex_y)
@@ -2113,16 +2101,14 @@ class MultiverseDb(object):
                 borderRows.append({
                     'id': border.id(),
                     'sector_id': border.sectorId(),
-                    'show_label': 1 if border.showLabel() else 0,
-                    'wrap_label': 1 if border.wrapLabel() else 0,
-                    'label_hex_x': border.labelHexX(),
-                    'label_hex_y': border.labelHexY(),
-                    'label_offset_x': border.labelOffsetX(),
-                    'label_offset_y': border.labelOffsetY(),
-                    'label': border.label(),
-                    'colour': border.colour(),
+                    'allegiance_id': allegiance.id() if allegiance else None,
                     'style': border.style(),
-                    'allegiance_id': allegiance.id() if allegiance else None})
+                    'colour': border.colour(),
+                    'label': border.label(),
+                    'label_x': border.labelX(),
+                    'label_y': border.labelY(),
+                    'show_label': 1 if border.showLabel() else 0,
+                    'wrap_label': 1 if border.wrapLabel() else 0})
                 for hexX, hexY in border.hexes():
                     hexRows.append({
                         'border_id': border.id(),
@@ -2133,12 +2119,10 @@ class MultiverseDb(object):
 
         if sector.regions():
             regionsSql = """
-                INSERT INTO {table} (id, sector_id, show_label, wrap_label,
-                    label_hex_x, label_hex_y, label_offset_x, label_offset_y,
-                    label, colour)
-                VALUES (:id, :sector_id, :show_label, :wrap_label,
-                    :label_hex_x, :label_hex_y, :label_offset_x, :label_offset_y,
-                    :label, :colour);
+                INSERT INTO {table} (id, sector_id, colour, label,
+                    label_x, label_y, show_label, wrap_label)
+                VALUES (:id, :sector_id, :colour, :label,
+                    :label_x, :label_y, :show_label, :wrap_label);
                 """.format(table=MultiverseDb._RegionsTableName)
             hexesSql =  """
                 INSERT INTO {table} (region_id, hex_x, hex_y)
@@ -2150,14 +2134,12 @@ class MultiverseDb(object):
                 regionsRows.append({
                     'id': region.id(),
                     'sector_id': region.sectorId(),
-                    'show_label': 1 if region.showLabel() else 0,
-                    'wrap_label': 1 if region.wrapLabel() else 0,
-                    'label_hex_x': region.labelHexX(),
-                    'label_hex_y': region.labelHexY(),
-                    'label_offset_x': region.labelOffsetX(),
-                    'label_offset_y': region.labelOffsetY(),
+                    'colour': region.colour(),
                     'label': region.label(),
-                    'colour': region.colour()})
+                    'label_x': region.labelX(),
+                    'label_y': region.labelY(),
+                    'show_label': 1 if region.showLabel() else 0,
+                    'wrap_label': 1 if region.wrapLabel() else 0})
                 for hexX, hexY in region.hexes():
                     hexRows.append({
                         'region_id': region.id(),
@@ -2168,10 +2150,10 @@ class MultiverseDb(object):
 
         if sector.labels():
             sql = """
-                INSERT INTO {table} (id, sector_id, text, hex_x, hex_y,
-                    wrap, colour, size, offset_x, offset_y)
-                VALUES (:id, :sector_id, :text, :hex_x, :hex_y,
-                    :wrap, :colour, :size, :offset_x, :offset_y);
+                INSERT INTO {table} (id, sector_id, text, x, y,
+                    colour, size, wrap)
+                VALUES (:id, :sector_id, :text, :x, :y,
+                    :colour, :size, :wrap);
                 """.format(table=MultiverseDb._LabelsTableName)
             rows = []
             for label in sector.labels():
@@ -2179,13 +2161,11 @@ class MultiverseDb(object):
                     'id': label.id(),
                     'sector_id': label.sectorId(),
                     'text': label.text(),
-                    'hex_x': label.hexX(),
-                    'hex_y': label.hexY(),
-                    'wrap': 1 if label.wrap() else 0,
+                    'x': label.x(),
+                    'y': label.y(),
                     'colour': label.colour(),
                     'size': label.size(),
-                    'offset_x': label.offsetX(),
-                    'offset_y': label.offsetY()})
+                    'wrap': 1 if label.wrap() else 0})
             cursor.executemany(sql, rows)
 
         if sector.tags():
@@ -2576,9 +2556,8 @@ class MultiverseDb(object):
         sector.setRoutes(routes)
 
         sql = """
-            SELECT id, show_label, wrap_label,
-                label_hex_x, label_hex_y, label_offset_x, label_offset_y,
-                label, colour, style, allegiance_id
+            SELECT id, allegiance_id, style, colour, label,
+                label_x, label_y, show_label, wrap_label
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._BordersTableName)
@@ -2600,22 +2579,18 @@ class MultiverseDb(object):
             borders.append(multiverse.DbBorder(
                 id=borderId,
                 hexes=hexes,
-                showLabel=True if row[1] else False,
-                wrapLabel=True if row[2] else False,
-                labelHexX=row[3],
-                labelHexY=row[4],
-                labelOffsetX=row[5],
-                labelOffsetY=row[6],
-                label=row[7],
-                colour=row[8],
-                style=row[9],
-                allegiance=idToAllegianceMap.get(row[10])))
+                allegiance=idToAllegianceMap.get(row[1]),
+                style=row[2],
+                colour=row[3],
+                label=row[4],
+                labelWorldX=row[5],
+                labelWorldY=row[6],
+                showLabel=True if row[7] else False,
+                wrapLabel=True if row[8] else False))
         sector.setBorders(borders)
 
         sql = """
-            SELECT id, show_label, wrap_label,
-                label_hex_x, label_hex_y, label_offset_x, label_offset_y,
-                label, colour
+            SELECT id, colour, label, label_x, label_y, show_label, wrap_label
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._RegionsTableName)
@@ -2637,19 +2612,16 @@ class MultiverseDb(object):
             regions.append(multiverse.DbRegion(
                 id=regionId,
                 hexes=hexes,
-                showLabel=True if row[1] else False,
-                wrapLabel=True if row[2] else False,
-                labelHexX=row[3],
-                labelHexY=row[4],
-                labelOffsetX=row[5],
-                labelOffsetY=row[6],
-                label=row[7],
-                colour=row[8]))
+                colour=row[1],
+                label=row[2],
+                labelX=row[3],
+                labelY=row[4],
+                showLabel=True if row[5] else False,
+                wrapLabel=True if row[6] else False))
         sector.setRegions(regions)
 
         sql = """
-            SELECT id, text, hex_x, hex_y, wrap, colour, size,
-                offset_x, offset_y
+            SELECT id, text, x, y, colour, size, wrap
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._LabelsTableName)
@@ -2659,13 +2631,11 @@ class MultiverseDb(object):
             labels.append(multiverse.DbLabel(
                 id=row[0],
                 text=row[1],
-                hexX=row[2],
-                hexY=row[3],
-                wrap=True if row[4] else False,
-                colour=row[5],
-                size=row[6],
-                offsetX=row[7],
-                offsetY=row[8]))
+                x=row[2],
+                y=row[3],
+                colour=row[4],
+                size=row[5],
+                wrap=True if row[6] else False))
         sector.setLabels(labels)
 
         sql = """

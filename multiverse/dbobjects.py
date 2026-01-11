@@ -1015,16 +1015,14 @@ class DbBorder(DbObject):
     def __init__(
             self,
             hexes: typing.Iterable[typing.Tuple[int, int]],
-            showLabel: bool, # TODO: This and wrap should be optional
-            wrapLabel: bool,
-            label: typing.Optional[str] = None,
-            labelHexX: typing.Optional[int] = None,
-            labelHexY: typing.Optional[int] = None,
-            labelOffsetX: typing.Optional[float] = None,
-            labelOffsetY: typing.Optional[float] = None,
-            colour: typing.Optional[str] = None,
-            style: typing.Optional[str] = None,
             allegiance: typing.Optional[DbAllegiance] = None,
+            style: typing.Optional[str] = None,
+            colour: typing.Optional[str] = None,
+            label: typing.Optional[str] = None,
+            labelWorldX: typing.Optional[float] = None,
+            labelWorldY: typing.Optional[float] = None,
+            showLabel: bool = True, # TODO: This and wrap should be optional
+            wrapLabel: bool = False,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
@@ -1032,16 +1030,14 @@ class DbBorder(DbObject):
 
         self.setSectorId(sectorId)
         self.setHexes(hexes)
+        self.setAllegiance(allegiance)
+        self.setStyle(style)
+        self.setColour(colour)
         self.setLabel(label)
+        self.setLabelX(labelWorldX)
+        self.setLabelY(labelWorldY)
         self.setShowLabel(showLabel)
         self.setWrapLabel(wrapLabel)
-        self.setLabelHexX(labelHexX)
-        self.setLabelHexY(labelHexY)
-        self.setLabelOffsetX(labelOffsetX)
-        self.setLabelOffsetY(labelOffsetY)
-        self.setColour(colour)
-        self.setStyle(style)
-        self.setAllegiance(allegiance)
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -1054,60 +1050,6 @@ class DbBorder(DbObject):
 
     def setHexes(self, hexes: typing.Iterable[typing.Tuple[int, int]]) -> None:
         self._hexes = list(hexes)
-
-    def showLabel(self) -> bool:
-        return self._showLabel
-
-    def setShowLabel(self, showLabel: bool) -> None:
-        self._showLabel = showLabel
-
-    def wrapLabel(self) -> bool:
-        return self._wrapLabel
-
-    def setWrapLabel(self, wrapLabel: bool) -> None:
-        self._wrapLabel = wrapLabel
-
-    def label(self) -> typing.Optional[str]:
-        return self._label
-
-    def setLabel(self, label: typing.Optional[str]) -> None:
-        self._label = label
-
-    def labelHexX(self) -> typing.Optional[int]:
-        return self._labelHexX
-
-    def setLabelHexX(self, labelHexX: typing.Optional[int]) -> None:
-        self._labelHexX = labelHexX
-
-    def labelHexY(self) -> typing.Optional[int]:
-        return self._labelHexY
-
-    def setLabelHexY(self, labelHexY: typing.Optional[int]) -> None:
-        self._labelHexY = labelHexY
-
-    def labelOffsetX(self) -> typing.Optional[float]:
-        return self._labelOffsetX
-
-    def setLabelOffsetX(self, labelOffsetX: typing.Optional[float]) -> None:
-        self._labelOffsetX = labelOffsetX
-
-    def labelOffsetY(self) -> typing.Optional[float]:
-        return self._labelOffsetY
-
-    def setLabelOffsetY(self, labelOffsetY: typing.Optional[float]) -> None:
-        self._labelOffsetY = labelOffsetY
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def setColour(self, colour: typing.Optional[str]) -> None:
-        self._colour = colour
-
-    def style(self) -> typing.Optional[str]:
-        return self._style
-
-    def setStyle(self, style: typing.Optional[str]) -> None:
-        self._style = style
 
     def allegiance(self) -> typing.Optional[DbAllegiance]:
         return self._allegiance
@@ -1115,18 +1057,58 @@ class DbBorder(DbObject):
     def setAllegiance(self, allegiance: typing.Optional[DbAllegiance]) -> None:
         self._allegiance = allegiance
 
+    def style(self) -> typing.Optional[str]:
+        return self._style
+
+    def setStyle(self, style: typing.Optional[str]) -> None:
+        self._style = style
+
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+    def setColour(self, colour: typing.Optional[str]) -> None:
+        self._colour = colour
+
+    def label(self) -> typing.Optional[str]:
+        return self._label
+
+    def setLabel(self, label: typing.Optional[str]) -> None:
+        self._label = label
+
+    def labelX(self) -> typing.Optional[float]:
+        return self._labelWorldX
+
+    def setLabelX(self, worldX: typing.Optional[float]) -> None:
+        self._labelWorldX = worldX
+
+    def labelY(self) -> typing.Optional[int]:
+        return self._labelWorldY
+
+    def setLabelY(self, labelWorldY: typing.Optional[int]) -> None:
+        self._labelWorldY = labelWorldY
+
+    def showLabel(self) -> bool:
+        return self._showLabel
+
+    def setShowLabel(self, showLabel: bool) -> None:
+        self._showLabel = showLabel
+
+    def wrapLabel(self) -> bool:
+        return self._wrapLabel
+
+    def setWrapLabel(self, wrapLabel: bool) -> None:
+        self._wrapLabel = wrapLabel
+
 class DbRegion(DbObject):
     def __init__(
             self,
             hexes: typing.Iterable[typing.Tuple[int, int]],
-            showLabel: bool, # TODO: This and wrap should be optional (and after the label string)
-            wrapLabel: bool,
-            label: typing.Optional[str] = None,
-            labelHexX: typing.Optional[int] = None,
-            labelHexY: typing.Optional[int] = None,
-            labelOffsetX: typing.Optional[float] = None,
-            labelOffsetY: typing.Optional[float] = None,
             colour: typing.Optional[str] = None,
+            label: typing.Optional[str] = None,
+            labelX: typing.Optional[float] = None,
+            labelY: typing.Optional[float] = None,
+            showLabel: bool = True, # TODO: This and wrap should be optional (and after the label string)
+            wrapLabel: bool = False,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
@@ -1134,14 +1116,12 @@ class DbRegion(DbObject):
 
         self.setSectorId(sectorId)
         self.setHexes(hexes)
+        self.setColour(colour)
         self.setLabel(label)
+        self.setLabelX(labelX)
+        self.setLabelY(labelY)
         self.setShowLabel(showLabel)
         self.setWrapLabel(wrapLabel)
-        self.setLabelHexX(labelHexX)
-        self.setLabelHexY(labelHexY)
-        self.setLabelOffsetX(labelOffsetX)
-        self.setLabelOffsetY(labelOffsetY)
-        self.setColour(colour)
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -1155,11 +1135,11 @@ class DbRegion(DbObject):
     def setHexes(self, hexes: typing.Iterable[typing.Tuple[int, int]]) -> None:
         self._hexes = list(hexes)
 
-    def showLabel(self) -> bool:
-        return self._showLabel
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
 
-    def setShowLabel(self, showLabel: bool) -> None:
-        self._showLabel = showLabel
+    def setColour(self, colour: typing.Optional[str]) -> None:
+        self._colour = colour
 
     def label(self) -> typing.Optional[str]:
         return self._label
@@ -1167,53 +1147,39 @@ class DbRegion(DbObject):
     def setLabel(self, label: typing.Optional[str]) -> None:
         self._label = label
 
+    def labelX(self) -> typing.Optional[float]:
+        return self._labelX
+
+    def setLabelX(self, labelX: typing.Optional[float]) -> None:
+        self._labelX = labelX
+
+    def labelY(self) -> typing.Optional[float]:
+        return self._labelY
+
+    def setLabelY(self, labelY: typing.Optional[float]) -> None:
+        self._labelY = labelY
+
+    def showLabel(self) -> bool:
+        return self._showLabel
+
+    def setShowLabel(self, showLabel: bool) -> None:
+        self._showLabel = showLabel
+
     def wrapLabel(self) -> bool:
         return self._wrapLabel
 
     def setWrapLabel(self, wrapLabel: bool) -> None:
         self._wrapLabel = wrapLabel
 
-    def labelHexX(self) -> typing.Optional[int]:
-        return self._labelHexX
-
-    def setLabelHexX(self, labelHexX: typing.Optional[int]) -> None:
-        self._labelHexX = labelHexX
-
-    def labelHexY(self) -> typing.Optional[int]:
-        return self._labelHexY
-
-    def setLabelHexY(self, labelHexY: typing.Optional[int]) -> None:
-        self._labelHexY = labelHexY
-
-    def labelOffsetX(self) -> typing.Optional[float]:
-        return self._labelOffsetX
-
-    def setLabelOffsetX(self, labelOffsetX: typing.Optional[float]) -> None:
-        self._labelOffsetX = labelOffsetX
-
-    def labelOffsetY(self) -> typing.Optional[float]:
-        return self._labelOffsetY
-
-    def setLabelOffsetY(self, labelOffsetY: typing.Optional[float]) -> None:
-        self._labelOffsetY = labelOffsetY
-
-    def colour(self) -> typing.Optional[str]:
-        return self._colour
-
-    def setColour(self, colour: typing.Optional[str]) -> None:
-        self._colour = colour
-
 class DbLabel(DbObject):
     def __init__(
             self,
             text: str,
-            hexX: int,
-            hexY: int,
-            wrap: bool,
+            x: float,
+            y: float,
             colour: typing.Optional[str] = None,
             size: typing.Optional[str] = None,
-            offsetX: typing.Optional[float] = None,
-            offsetY: typing.Optional[float] = None,
+            wrap: bool = False,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
@@ -1221,13 +1187,11 @@ class DbLabel(DbObject):
 
         self.setSectorId(sectorId)
         self.setText(text)
-        self.setHexX(hexX)
-        self.setHexY(hexY)
-        self.setWrap(wrap)
+        self.setX(x)
+        self.setY(y)
         self.setColour(colour)
         self.setSize(size)
-        self.setOffsetX(offsetX)
-        self.setOffsetY(offsetY)
+        self.setWrap(wrap)
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -1241,23 +1205,17 @@ class DbLabel(DbObject):
     def setText(self, text: str) -> None:
         self._text = text
 
-    def hexX(self) -> int:
-        return self._hexX
+    def x(self) -> float:
+        return self._x
 
-    def setHexX(self, hexX: int) -> None:
-        self._hexX = hexX
+    def setX(self, x: float) -> None:
+        self._x = x
 
-    def hexY(self) -> int:
-        return self._hexY
+    def y(self) -> float:
+        return self._y
 
-    def setHexY(self, hexY: int) -> None:
-        self._hexY = hexY
-
-    def wrap(self) -> bool:
-        return self._wrap
-
-    def setWrap(self, wrap: int) -> None:
-        self._wrap = wrap
+    def setY(self, y: float) -> None:
+        self._y = y
 
     def colour(self) -> typing.Optional[str]:
         return self._colour
@@ -1271,17 +1229,11 @@ class DbLabel(DbObject):
     def setSize(self, size: typing.Optional[str]) -> None:
         self._size = size
 
-    def offsetX(self) -> typing.Optional[float]:
-        return self._offsetX
+    def wrap(self) -> bool:
+        return self._wrap
 
-    def setOffsetX(self, offsetX: typing.Optional[float]) -> None:
-        self._offsetX = offsetX
-
-    def offsetY(self) -> typing.Optional[float]:
-        return self._offsetY
-
-    def setOffsetY(self, offsetY: typing.Optional[float]) -> None:
-        self._offsetY = offsetY
+    def setWrap(self, wrap: int) -> None:
+        self._wrap = wrap
 
 class DbProduct(DbObject):
     def __init__(

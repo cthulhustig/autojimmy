@@ -1,5 +1,6 @@
 import logging
 import itertools
+import math
 import multiverse
 import re
 import survey
@@ -143,6 +144,30 @@ _LegacySophontMap = {
     'X': 'Adda',
     'Z': 'Zhod'
 }
+
+# This is based on the sector world bounds and hex world center code in
+# astrometrics. It uses a coordinate space that has the same scale as
+# world space coordinates but is relative to the upper left corner of
+# the sector.
+_ParsecScaleX = math.cos(math.pi / 6) # = cosine 30° = 0.8660254037844387
+_HexWidthOffset = math.tan(math.pi / 6) / 4 / _ParsecScaleX # = 0.16666666666666666
+def _hexToSectorWorldOffset(
+        hexX: int,
+        hexY: int,
+        worldOffsetX: typing.Optional[float],
+        worldOffsetY: typing.Optional[float]
+        ) -> typing.Tuple[float, float]:
+        worldX = (hexX - 0.5)
+        worldX += _HexWidthOffset # Offset of sector origin
+        if worldOffsetX is not None:
+            worldX += worldOffsetX
+
+        worldY = (hexY - (0.0 if ((hexX % 2) != 0) else -0.5))
+        worldY -= 0.5 # Offset of sector origin
+        if worldOffsetY is not None:
+            worldY += worldOffsetY
+
+        return (worldX, worldY)
 
 def _findUsedAllegianceCodes(
         rawMetadata: survey.RawMetadata,
@@ -1047,11 +1072,6 @@ def _createDbBorders(
             for rawHex in rawBorder.hexList():
                 dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
 
-            rawLabel = rawBorder.label()
-            rawShowLabel = rawBorder.showLabel()
-            rawWrapLabel = rawBorder.wrapLabel()
-            rawLabelHex = rawBorder.labelHex()
-
             rawAllegianceCode = rawBorder.allegiance()
             dbAllegiance = dbAllegianceCodeMap.get(rawAllegianceCode) if rawAllegianceCode else None
             if rawAllegianceCode and not dbAllegiance:
@@ -1061,7 +1081,6 @@ def _createDbBorders(
 
             dbColour = rawBorder.colour()
             dbStyle = rawBorder.style()
-
             if rawStyleMap and (not dbColour or not dbStyle):
                 # This order of precedence matches the order in the Traveller Map
                 # DrawMicroBorders code
@@ -1079,18 +1098,40 @@ def _createDbBorders(
                             dbStyle = defaultStyle
                         break
 
+            rawLabelHex = rawBorder.labelHex()
+            rawLabelOffsetX = rawBorder.labelOffsetX()
+            rawLabelOffsetY = rawBorder.labelOffsetY()
+            dbLabelX = None
+            dbLabelY = None
+            if rawLabelHex:
+                rawLabelHexX = int(rawLabelHex[:2])
+                rawLabelHexY = int(rawLabelHex[-2:])
+                dbLabelX, dbLabelY = _hexToSectorWorldOffset(
+                    hexX=rawLabelHexX,
+                    hexY=rawLabelHexY,
+                    # NOTE: The 0.7 multiplier is to mimic how Traveller Map
+                    # scales the offset in drawMicroLabels
+                    worldOffsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
+                    # NOTE: The coordinate space used for the offsets seems to
+                    # have an inverted Y direction compared to world space
+                    worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
+
+            rawShowLabel = rawBorder.showLabel()
+            dbShowLabel = rawShowLabel if rawShowLabel is not None else True
+
+            rawWrapLabel = rawBorder.wrapLabel()
+            dbWrapLabel = rawWrapLabel if rawWrapLabel is not None else False
+
             dbBorders.append(multiverse.DbBorder(
                 hexes=dbHexes,
-                showLabel=rawShowLabel if rawShowLabel is not None else True,
-                wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
-                label=rawLabel,
-                labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
-                labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
-                labelOffsetX=rawBorder.labelOffsetX(),
-                labelOffsetY=rawBorder.labelOffsetY(),
-                colour=dbColour,
+                allegiance=dbAllegiance,
                 style=dbStyle,
-                allegiance=dbAllegiance))
+                colour=dbColour,
+                label=rawBorder.label(),
+                labelWorldX=dbLabelX,
+                labelWorldY=dbLabelY,
+                showLabel=dbShowLabel,
+                wrapLabel=dbWrapLabel))
 
     return dbBorders
 
@@ -1105,20 +1146,38 @@ def _createDbRegions(
             for rawHex in rawRegion.hexList():
                 dbHexes.append((int(rawHex[:2]), int(rawHex[-2:])))
 
-            rawShowLabel = rawRegion.showLabel()
-            rawWrapLabel = rawRegion.wrapLabel()
             rawLabelHex = rawRegion.labelHex()
+            rawLabelOffsetX = rawRegion.labelOffsetX()
+            rawLabelOffsetY = rawRegion.labelOffsetY()
+            dbLabelX = None
+            dbLabelY = None
+            if rawLabelHex:
+                rawLabelHexX = int(rawLabelHex[:2])
+                rawLabelHexY = int(rawLabelHex[-2:])
+                dbLabelX, dbLabelY = _hexToSectorWorldOffset(
+                    hexX=rawLabelHexX,
+                    hexY=rawLabelHexY,
+                    # NOTE: The 0.7 multiplier is to mimic how Traveller Map
+                    # scales the offset in drawMicroLabels
+                    worldOffsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
+                    # NOTE: The coordinate space used for the offsets seems to
+                    # have an inverted Y direction compared to world space
+                    worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
+
+            rawShowLabel = rawRegion.showLabel()
+            dbShowLabel = rawShowLabel if rawShowLabel is not None else True
+
+            rawWrapLabel = rawRegion.wrapLabel()
+            dbWrapLabel = rawWrapLabel if rawWrapLabel is not None else False
 
             dbRegions.append(multiverse.DbRegion(
                 hexes=dbHexes,
-                showLabel=rawShowLabel if rawShowLabel is not None else True,
-                wrapLabel=rawWrapLabel if rawWrapLabel is not None else False,
+                colour=rawRegion.colour(),
                 label=rawRegion.label(),
-                labelHexX=int(rawLabelHex[:2]) if rawLabelHex is not None else None,
-                labelHexY=int(rawLabelHex[-2:]) if rawLabelHex is not None else None,
-                labelOffsetX=rawRegion.labelOffsetX(),
-                labelOffsetY=rawRegion.labelOffsetY(),
-                colour=rawRegion.colour()))
+                labelX=dbLabelX,
+                labelY=dbLabelY,
+                showLabel=dbShowLabel,
+                wrapLabel=dbWrapLabel))
 
     return dbRegions
 
@@ -1130,17 +1189,28 @@ def _createDbLabels(
     if rawMetadata.labels():
         for rawLabel in rawMetadata.labels():
             rawHex = rawLabel.hex()
+            rawOffsetX = rawLabel.offsetX()
+            rawOffsetY = rawLabel.offsetY()
+            dbX, dbY = _hexToSectorWorldOffset(
+                hexX=int(rawHex[:2]),
+                hexY=int(rawHex[-2:]),
+                # NOTE: The 0.7 multiplier is to mimic how Traveller Map
+                # scales the offset in drawMicroLabels
+                worldOffsetX=(rawOffsetX * 0.7) if rawOffsetX is not None else None,
+                # NOTE: The coordinate space used for the offsets seems to
+                # have an inverted Y direction compared to world space
+                worldOffsetY=(-rawOffsetY * 0.7) if rawOffsetY is not None else None)
+
             rawWrap = rawLabel.wrap()
+            dbWrap = rawWrap if rawWrap is not None else False
 
             dbLabels.append(multiverse.DbLabel(
                 text=rawLabel.text(),
-                hexX=int(rawHex[:2]),
-                hexY=int(rawHex[-2:]),
-                wrap=rawWrap if rawWrap is not None else False,
+                x=dbX,
+                y=dbY,
                 colour=rawLabel.colour(),
                 size=rawLabel.size(),
-                offsetX=rawLabel.offsetX(),
-                offsetY=rawLabel.offsetY()))
+                wrap=dbWrap))
 
     return dbLabels
 

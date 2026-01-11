@@ -12,22 +12,20 @@ class Border(astronomer.Region):
             self,
             hexList: typing.Iterable[astronomer.HexPosition],
             allegiance: typing.Optional[astronomer.Allegiance],
-            showLabel: bool,
-            labelHex: typing.Optional[astronomer.HexPosition],
-            labelOffsetX: typing.Optional[float],
-            labelOffsetY: typing.Optional[float],
-            label: typing.Optional[str],
             style: typing.Optional[Style],
-            colour: typing.Optional[str]
+            colour: typing.Optional[str],
+            label: typing.Optional[str],
+            labelWorldX: typing.Optional[float],
+            labelWorldY: typing.Optional[float],
+            showLabel: bool,
             ) -> None:
         super().__init__(
             hexList=hexList,
-            showLabel=showLabel,
-            labelHex=labelHex,
-            labelOffsetX=labelOffsetX,
-            labelOffsetY=labelOffsetY,
+            colour=colour,
             label=label,
-            colour=colour)
+            labelWorldX=labelWorldX,
+            labelWorldY=labelWorldY,
+            showLabel=showLabel)
         self._allegiance = allegiance
         self._style = style
 

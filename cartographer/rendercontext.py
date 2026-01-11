@@ -724,21 +724,23 @@ class RenderContext(object):
             for sector in self._selector.sectors():
                 brush.copyFrom(self._styleSheet.microBorders.textBrush)
 
+                sectorIndex = sector.index()
+                sectorWorldOriginX, sectorWorldOriginY, _, _ = sectorIndex.worldBounds()
+
                 for border in sector.yieldBorders():
                     if not border.showLabel():
                         continue
 
                     label = border.label()
-                    labelPos = border.labelHex()
-                    if not label or not labelPos:
+                    labelWorldX = border.labelWorldX()
+                    labelWorldY = border.labelWorldY()
+
+                    if not label or labelWorldX is None or labelWorldY is None:
                         continue
 
-                    labelPos = RenderContext._hexToCenter(labelPos)
-                    if border.labelOffsetX():
-                        labelPos.setX(labelPos.x() + (border.labelOffsetX() * 0.7))
-                    if border.labelOffsetY():
-                        labelPos.setY(labelPos.y() - (border.labelOffsetY() * 0.7))
-
+                    labelPos = cartographer.PointF(
+                        sectorWorldOriginX + labelWorldX,
+                        sectorWorldOriginY + labelWorldY)
                     self._drawLabel(
                         text=label,
                         center=labelPos,
@@ -751,15 +753,15 @@ class RenderContext(object):
                         continue
 
                     label = region.label()
-                    labelPos = region.labelHex()
-                    if not label or not labelPos:
+                    labelWorldX = region.labelWorldX()
+                    labelWorldY = region.labelWorldY()
+
+                    if not label or labelWorldX is None or labelWorldY is None:
                         continue
 
-                    labelPos = RenderContext._hexToCenter(labelPos)
-                    if region.labelOffsetX():
-                        labelPos.setX(labelPos.x() + (region.labelOffsetX() * 0.7))
-                    if region.labelOffsetY():
-                        labelPos.setY(labelPos.y() - (region.labelOffsetY() * 0.7))
+                    labelPos = cartographer.PointF(
+                        sectorWorldOriginX + labelWorldX,
+                        sectorWorldOriginY + labelWorldY)
 
                     self._drawLabel(
                         text=label,
@@ -771,11 +773,9 @@ class RenderContext(object):
                 for label in sector.yieldLabels():
                     text = label.text()
 
-                    labelPos = RenderContext._hexToCenter(label.hex())
-                    if label.offsetX():
-                        labelPos.setX(labelPos.x() + (label.offsetX() * 0.7))
-                    if label.offsetY():
-                        labelPos.setY(labelPos.y() - (label.offsetY() * 0.7))
+                    labelPos = cartographer.PointF(
+                        sectorWorldOriginX + label.x(),
+                        sectorWorldOriginY + label.y())
 
                     if label.size() is astronomer.Label.Size.Small:
                         font = self._styleSheet.microBorders.smallFont
