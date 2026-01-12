@@ -3,29 +3,27 @@ import typing
 
 # TODO: I don't like the naming of all these RawObjects. It probably
 # makes sense for them to be Fs* (for filesystem) rather than Raw*
-# TODO: Get rid of the file index, there must be a way to a decent
-# error message without them. The don't really mean much for most
-# of the items as they're read from xml/json. It only really makes
-# any sense for worlds as it's the line number in the source file
 
 class RawWorld(object):
     def __init__(
             self,
-            hex: typing.Optional[str],
-            name: typing.Optional[str],
-            allegiance: typing.Optional[str],
-            zone: typing.Optional[str],
-            uwp: typing.Optional[str],
-            economics: typing.Optional[str],
-            culture: typing.Optional[str],
-            nobility: typing.Optional[str],
-            bases: typing.Optional[str],
-            remarks: typing.Optional[str],
-            importance: typing.Optional[str],
-            pbg: typing.Optional[str],
-            systemWorlds: typing.Optional[str],
-            stellar: typing.Optional[str],
-            lineNumber: int
+            hex: typing.Optional[str] = None,
+            name: typing.Optional[str] = None,
+            allegiance: typing.Optional[str] = None,
+            zone: typing.Optional[str] = None,
+            uwp: typing.Optional[str] = None,
+            economics: typing.Optional[str] = None,
+            culture: typing.Optional[str] = None,
+            nobility: typing.Optional[str] = None,
+            bases: typing.Optional[str] = None,
+            remarks: typing.Optional[str] = None,
+            importance: typing.Optional[str] = None,
+            pbg: typing.Optional[str] = None,
+            systemWorlds: typing.Optional[str] = None,
+            stellar: typing.Optional[str] = None,
+            sectorAbbreviation: typing.Optional[str] = None,
+            subSectorCode: typing.Optional[str] = None,
+            resourceUnits: typing.Optional[str] = None
             ) -> None:
         super().__init__()
         self._hex = hex
@@ -42,12 +40,10 @@ class RawWorld(object):
         self._pbg = pbg
         self._systemWorlds = systemWorlds
         self._stellar = stellar
-        self._lineNumber = lineNumber
+        self._sectorAbbreviation = sectorAbbreviation
+        self._resourceUnits = resourceUnits
+        self._subSectorCode = subSectorCode
 
-    def lineNumber(self) -> int:
-        return self._lineNumber
-
-    # TODO: This should probably be mandatory
     def hex(self) -> typing.Optional[str]:
         return self._hex
 
@@ -84,26 +80,35 @@ class RawWorld(object):
     def pbg(self) -> typing.Optional[str]:
         return self._pbg
 
-    # TODO: This should probably be an int
     def systemWorlds(self) -> typing.Optional[str]:
         return self._systemWorlds
 
+    def subSectorCode(self) -> typing.Optional[str]:
+        return self._subSectorCode
+
     def stellar(self) -> typing.Optional[str]:
         return self._stellar
+
+    def sectorAbbreviation(self) -> typing.Optional[str]:
+        return self._sectorAbbreviation
+
+    def subSectorCode(self) -> typing.Optional[str]:
+        return self._subSectorCode
+
+    def resourceUnits(self) -> typing.Optional[str]:
+        return self._resourceUnits
 
 class RawAllegiance(object):
     def __init__(
             self,
             code: str,
             name: str,
-            base: typing.Optional[str],
-            fileIndex: int
+            base: typing.Optional[str]
             ) -> None:
         super().__init__()
         self._code = code
         self._name = name
         self._base = base
-        self._fileIndex = fileIndex
 
     def code(self) -> str:
         return self._code
@@ -113,9 +118,6 @@ class RawAllegiance(object):
 
     def base(self) -> typing.Optional[str]:
         return self._base
-
-    def fileIndex(self) -> int:
-        return self._fileIndex
 
 class RawRoute(object):
     def __init__(
@@ -130,8 +132,7 @@ class RawRoute(object):
             type: typing.Optional[str],
             style: typing.Optional[str],
             colour: typing.Optional[str],
-            width: typing.Optional[float],
-            fileIndex: int
+            width: typing.Optional[float]
             ) -> None:
         super().__init__()
         self._startHex = startHex
@@ -145,7 +146,6 @@ class RawRoute(object):
         self._style = style
         self._colour = colour
         self._width = width
-        self._fileIndex = fileIndex
 
     def startHex(self) -> str:
         return self._startHex
@@ -180,9 +180,6 @@ class RawRoute(object):
     def width(self) -> typing.Optional[float]:
         return self._width
 
-    def fileIndex(self) -> int:
-        return self._fileIndex
-
 # NOTE: If I'm ever generating borders then there are rules about the "winding" of the hex list
 # https://travellermap.com/doc/metadata#borders
 class RawBorder(object):
@@ -197,8 +194,7 @@ class RawBorder(object):
             labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],
             style: typing.Optional[str],
-            colour: typing.Optional[str],
-            fileIndex: int
+            colour: typing.Optional[str]
             ) -> None:
         super().__init__()
         self._hexList = hexList
@@ -211,7 +207,6 @@ class RawBorder(object):
         self._label = label
         self._style = style
         self._colour = colour
-        self._fileIndex = fileIndex
 
     def hexList(self) -> typing.Collection[str]:
         return self._hexList
@@ -243,9 +238,6 @@ class RawBorder(object):
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
-    def fileIndex(self) -> int:
-        return self._fileIndex
-
 class RawLabel(object):
     def __init__(
             self,
@@ -255,8 +247,7 @@ class RawLabel(object):
             size: typing.Optional[str],
             wrap: typing.Optional[bool],
             offsetX: typing.Optional[float],
-            offsetY: typing.Optional[float],
-            fileIndex: int
+            offsetY: typing.Optional[float]
             ) -> None:
         super().__init__()
         self._text = text
@@ -266,7 +257,6 @@ class RawLabel(object):
         self._wrap = wrap
         self._offsetX = offsetX
         self._offsetY = offsetY
-        self._fileIndex = fileIndex
 
     def text(self) -> str:
         return self._text
@@ -289,9 +279,6 @@ class RawLabel(object):
     def offsetY(self) -> typing.Optional[float]:
         return self._offsetY
 
-    def fileIndex(self) -> int:
-        return self._fileIndex
-
 # NOTE: If I'm ever generating routes then they follow the same "winding" rules for the hex list as borders
 # https://travellermap.com/doc/metadata#borders
 class RawRegion(object):
@@ -304,8 +291,7 @@ class RawRegion(object):
             labelOffsetX: typing.Optional[float],
             labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],
-            colour: typing.Optional[str],
-            fileIndex: int
+            colour: typing.Optional[str]
             ) -> None:
         super().__init__()
         self._hexList = hexList
@@ -316,7 +302,6 @@ class RawRegion(object):
         self._labelOffsetY = labelOffsetY
         self._label = label
         self._colour = colour
-        self._fileIndex = fileIndex
 
     def hexList(self) -> typing.Collection[str]:
         return self._hexList
@@ -341,9 +326,6 @@ class RawRegion(object):
 
     def colour(self) -> typing.Optional[str]:
         return self._colour
-
-    def fileIndex(self) -> int:
-        return self._fileIndex
 
 class RawSource(object):
     def __init__(

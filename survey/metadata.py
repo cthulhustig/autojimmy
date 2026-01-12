@@ -23,7 +23,8 @@ def _isAllDashes(string: str) -> bool:
 def _convertAttributeToBool(
         attributeMap: typing.Mapping[str, typing.Any],
         attributeName: str,
-        elementName: str
+        elementName: str,
+        elementIndex: typing.Optional[int] = None
         ) -> typing.Optional[int]:
     value = attributeMap.get(attributeName)
     if value == None:
@@ -32,12 +33,17 @@ def _convertAttributeToBool(
     try:
         return str(value).lower() == 'true'
     except Exception as ex:
-        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to bool for {elementName} ({str(ex)})')
+        raise RuntimeError('Failed to convert {attribute} attribute "{value}" to bool for {element} ({exception})'.format(
+            attribute=attributeName,
+            value=value,
+            element=elementName if elementIndex is None else f'{elementName} {elementIndex}',
+            exception=str(ex)))
 
 def _convertAttributeToInt(
         attributeMap: typing.Mapping[str, typing.Any],
         attributeName: str,
-        elementName: str
+        elementName: str,
+        elementIndex: typing.Optional[int] = None
         ) -> typing.Optional[int]:
     value = attributeMap.get(attributeName)
     if value == None:
@@ -46,12 +52,17 @@ def _convertAttributeToInt(
     try:
         return int(value)
     except Exception as ex:
-        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to int for {elementName} ({str(ex)})')
+        raise RuntimeError('Failed to convert {attribute} attribute "{value}" to int for {element} ({exception})'.format(
+            attribute=attributeName,
+            value=value,
+            element=elementName if elementIndex is None else f'{elementName} {elementIndex}',
+            exception=str(ex)))
 
 def _convertAttributeToFloat(
         attributeMap: typing.Mapping[str, typing.Any],
         attributeName: str,
-        elementName: str
+        elementName: str,
+        elementIndex: typing.Optional[int] = None
         ) -> typing.Optional[int]:
     value = attributeMap.get(attributeName)
     if value == None:
@@ -60,7 +71,11 @@ def _convertAttributeToFloat(
     try:
         return float(value)
     except Exception as ex:
-        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to float for {elementName} ({str(ex)})')
+        raise RuntimeError('Failed to convert {attribute} attribute "{value}" to float for {element} ({exception})'.format(
+            attribute=attributeName,
+            value=value,
+            element=elementName if elementIndex is None else f'{elementName} {elementIndex}',
+            exception=str(ex)))
 
 def detectMetadataFormat(content: str) -> typing.Optional[MetadataFormat]:
     try:
@@ -133,14 +148,14 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
     subsectorNames = None
     if subsectorElements:
         subsectorNames = {}
-        for element in subsectorElements:
+        for index, element in enumerate(subsectorElements):
             code = element.get('Index')
             if code == None:
-                raise RuntimeError('Failed to find Index attribute for Subsector in metadata')
+                raise RuntimeError(f'Failed to find Index attribute for Subsector {index} in metadata')
 
             upperCode = code.upper()
             if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
-                raise RuntimeError('Invalid Index attribute "{code}" for Subsector in metadata')
+                raise RuntimeError(f'Invalid Index attribute "{code}" for Subsector {index} in metadata')
 
             subsectorNames[code] = element.text
 
@@ -151,15 +166,14 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(allegianceElements):
             code = element.get('Code')
             if code == None:
-                raise RuntimeError('Failed to find Code attribute for Allegiance in metadata')
+                raise RuntimeError(f'Failed to find Code attribute for Allegiance {index} in metadata')
 
             # Ignore allegiances that are just a sequence of '-'
             if code and not _isAllDashes(code):
                 allegiances.append(survey.RawAllegiance(
                     code=code,
                     name=element.text,
-                    base=element.get('Base'),
-                    fileIndex=index))
+                    base=element.get('Base')))
 
     routeElements = sectorElement.findall('./Routes/Route')
     routes = None
@@ -168,17 +182,17 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(routeElements):
             startHex = element.get('Start')
             if not startHex:
-                raise RuntimeError('Failed to find Start attribute for Route in metadata')
+                raise RuntimeError(f'Failed to find Start attribute for Route {index} in metadata')
 
             endHex = element.get('End')
             if not endHex:
-                raise RuntimeError('Failed to find End attribute for Route in metadata')
+                raise RuntimeError(f'Failed to find End attribute for Route {index} in metadata')
 
-            startOffsetX = _convertAttributeToInt(element, 'StartOffsetX', 'Route')
-            startOffsetY = _convertAttributeToInt(element, 'StartOffsetY', 'Route')
-            endOffsetX = _convertAttributeToInt(element, 'EndOffsetX', 'Route')
-            endOffsetY = _convertAttributeToInt(element, 'EndOffsetY', 'Route')
-            width = _convertAttributeToFloat(element, 'Width', 'Route')
+            startOffsetX = _convertAttributeToInt(element, 'StartOffsetX', 'Route', index)
+            startOffsetY = _convertAttributeToInt(element, 'StartOffsetY', 'Route', index)
+            endOffsetX = _convertAttributeToInt(element, 'EndOffsetX', 'Route', index)
+            endOffsetY = _convertAttributeToInt(element, 'EndOffsetY', 'Route', index)
+            width = _convertAttributeToFloat(element, 'Width', 'Route', index)
 
             routes.append(survey.RawRoute(
                 startHex=startHex,
@@ -191,19 +205,21 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
                 type=element.get('Type'),
                 style=element.get('Style'),
                 colour=element.get('Color'),
-                width=width,
-                fileIndex=index))
+                width=width))
 
     borderElements = sectorElement.findall('./Borders/Border')
     borders = None
     if borderElements:
         borders = []
         for index, element in enumerate(borderElements):
+            if not element.text:
+                raise RuntimeError(f'No Path data specified for Border {index} in metadata')
+
             path = element.text.split(' ')
-            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Border')
-            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Border')
-            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Border')
-            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Border')
+            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Border', index)
+            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Border', index)
+            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Border', index)
+            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Border', index)
 
             borders.append(survey.RawBorder(
                 hexList=path,
@@ -215,8 +231,7 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
                 style=element.get('Style'),
-                colour=element.get('Color'),
-                fileIndex=index))
+                colour=element.get('Color')))
 
     labelElements = sectorElement.findall('./Labels/Label')
     labels = None
@@ -225,15 +240,15 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(labelElements):
             hex = element.get('Hex')
             if hex == None:
-                raise RuntimeError('Failed to find Hex element for Label in metadata')
+                raise RuntimeError(f'Failed to find Hex element for Label {index} in metadata')
 
             colour = element.get('Color')
             if colour == None:
-                raise RuntimeError('Failed to find Color element for Label in metadata')
+                raise RuntimeError(f'Failed to find Color element for Label {index} in metadata')
 
-            wrap = _convertAttributeToBool(element, 'Wrap', 'Label')
-            offsetX = _convertAttributeToFloat(element, 'OffsetX', 'Label')
-            offsetY = _convertAttributeToFloat(element, 'OffsetY', 'Label')
+            wrap = _convertAttributeToBool(element, 'Wrap', 'Label', index)
+            offsetX = _convertAttributeToFloat(element, 'OffsetX', 'Label', index)
+            offsetY = _convertAttributeToFloat(element, 'OffsetY', 'Label', index)
 
             labels.append(survey.RawLabel(
                 text=element.text,
@@ -242,19 +257,21 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
                 size=element.get('Size'),
                 wrap=wrap,
                 offsetX=offsetX,
-                offsetY=offsetY,
-                fileIndex=index))
+                offsetY=offsetY))
 
     regionElements = sectorElement.findall('./Regions/Region')
     regions = None
     if regionElements:
         regions = []
         for index, element in enumerate(regionElements):
+            if not element.text:
+                raise RuntimeError(f'No Path data specified for Region {index} in metadata')
+
             path = element.text.split(' ')
-            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Region')
-            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Region')
-            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Region')
-            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Region')
+            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Region', index)
+            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Region', index)
+            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Region', index)
+            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Region', index)
 
             regions.append(survey.RawRegion(
                 hexList=path,
@@ -264,8 +281,7 @@ def parseXMLMetadata(content: str) -> survey.RawMetadata:
                 labelOffsetX=labelOffsetX,
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
-                colour=element.get('Color'),
-                fileIndex=index))
+                colour=element.get('Color')))
 
     creditsElements = sectorElement.find('./Credits')
     primaryElements = sectorElement.find('./DataFile')
@@ -398,8 +414,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
                     allegiances.append(survey.RawAllegiance(
                         code=code,
                         name=name,
-                        base=element.get('Base'),
-                        fileIndex=index))
+                        base=element.get('Base')))
 
     routeElements = sectorElement.get('Routes')
     routes = None
@@ -408,17 +423,17 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(routeElements):
             startHex = element.get('Start')
             if startHex == None:
-                raise RuntimeError('Failed to find Start element for Route in metadata')
+                raise RuntimeError(f'Failed to find Start element for Route {index} in metadata')
 
             endHex = element.get('End')
             if endHex == None:
-                raise RuntimeError('Failed to find End element for Route in metadata')
+                raise RuntimeError(f'Failed to find End element for Route {index} in metadata')
 
-            startOffsetX = _convertAttributeToInt(element, 'StartOffsetX', 'Route')
-            startOffsetY = _convertAttributeToInt(element, 'StartOffsetY', 'Route')
-            endOffsetX = _convertAttributeToInt(element, 'EndOffsetX', 'Route')
-            endOffsetY = _convertAttributeToInt(element, 'EndOffsetY', 'Route')
-            width = _convertAttributeToFloat(element, 'Width', 'Route')
+            startOffsetX = _convertAttributeToInt(element, 'StartOffsetX', 'Route', index)
+            startOffsetY = _convertAttributeToInt(element, 'StartOffsetY', 'Route', index)
+            endOffsetX = _convertAttributeToInt(element, 'EndOffsetX', 'Route', index)
+            endOffsetY = _convertAttributeToInt(element, 'EndOffsetY', 'Route', index)
+            width = _convertAttributeToFloat(element, 'Width', 'Route', index)
 
             routes.append(survey.RawRoute(
                 startHex=startHex,
@@ -431,8 +446,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
                 type=element.get('Type'),
                 style=element.get('Style'),
                 colour=element.get('Color'),
-                width=width,
-                fileIndex=index))
+                width=width))
 
     borderElements = sectorElement.get('Borders')
     borders = None
@@ -441,13 +455,13 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(borderElements):
             path = element.get('Path')
             if path == None:
-                raise RuntimeError('Failed to find Path element for Border in metadata')
+                raise RuntimeError(f'Failed to find Path element for Border {index} in metadata')
             path = path.split(' ')
 
-            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Border')
-            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Border')
-            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Border')
-            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Border')
+            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Border', index)
+            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Border', index)
+            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Border', index)
+            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Border', index)
 
             borders.append(survey.RawBorder(
                 hexList=path,
@@ -459,8 +473,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
                 style=element.get('Style'),
-                colour=element.get('Color'),
-                fileIndex=index))
+                colour=element.get('Color')))
 
     labelElements = sectorElement.get('Labels')
     labels = None
@@ -469,19 +482,19 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(labelElements):
             text = element.get('Text')
             if text == None:
-                raise RuntimeError('Failed to find Text element for Label in metadata')
+                raise RuntimeError(f'Failed to find Text element for Label {index} in metadata')
 
             hex = element.get('Hex')
             if hex == None:
-                raise RuntimeError('Failed to find Hex element for Label in metadata')
+                raise RuntimeError(f'Failed to find Hex element for Label {index} in metadata')
 
             colour = element.get('Color')
             if colour == None:
-                raise RuntimeError('Failed to find Color element for Label in metadata')
+                raise RuntimeError(f'Failed to find Color element for Label {index} in metadata')
 
-            wrap = _convertAttributeToBool(element, 'Wrap', 'Label')
-            offsetX = _convertAttributeToFloat(element, 'OffsetX', 'Label')
-            offsetY = _convertAttributeToFloat(element, 'OffsetY', 'Label')
+            wrap = _convertAttributeToBool(element, 'Wrap', 'Label', index)
+            offsetX = _convertAttributeToFloat(element, 'OffsetX', 'Label', index)
+            offsetY = _convertAttributeToFloat(element, 'OffsetY', 'Label', index)
 
             labels.append(survey.RawLabel(
                 text=text,
@@ -490,8 +503,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
                 size=element.get('Size'),
                 wrap=wrap,
                 offsetX=offsetX,
-                offsetY=offsetY,
-                fileIndex=index))
+                offsetY=offsetY))
 
     regionElements = sectorElement.get('Regions')
     regions = None
@@ -500,13 +512,13 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
         for index, element in enumerate(regionElements):
             path = element.get('Path')
             if path == None:
-                raise RuntimeError('Failed to find Path element for Region in metadata')
+                raise RuntimeError(f'Failed to find Path element for Region {index} in metadata')
             path = path.split(' ')
 
-            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Region')
-            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Region')
-            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Region')
-            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Region')
+            showLabel = _convertAttributeToBool(element, 'ShowLabel', 'Region', index)
+            wrapLabel = _convertAttributeToBool(element, 'WrapLabel', 'Region', index)
+            labelOffsetX = _convertAttributeToFloat(element, 'LabelOffsetX', 'Region', index)
+            labelOffsetY = _convertAttributeToFloat(element, 'LabelOffsetY', 'Region', index)
 
             regions.append(survey.RawRegion(
                 hexList=path,
@@ -516,8 +528,7 @@ def parseJSONMetadata(content: str) -> survey.RawMetadata:
                 labelOffsetX=labelOffsetX,
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
-                colour=element.get('Color'),
-                fileIndex=index))
+                colour=element.get('Color')))
 
     creditsElements = sectorElement.get('Credits')
     primaryElements = sectorElement.get('DataFile')
