@@ -104,8 +104,7 @@ class Sector(object):
             self._subsectorNameMap[subsector.name()] = subsector
             self._subsectorIndexMap[(subsectorIndex.indexX(), subsectorIndex.indexY())] = subsector
             self._subsectorCodeMap[subsectorIndex.code()] = subsector
-            for world in subsector.worlds():
-                self._worlds.append(world)
+            self._worlds.extend(subsector.worlds())
 
         self._allegiances: typing.List[astronomer.Allegiance] = []
         self._allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}

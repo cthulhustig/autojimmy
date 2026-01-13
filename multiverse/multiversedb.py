@@ -197,6 +197,8 @@ class DbSectorInfo(object):
     def __init__(
             self,
             id: str,
+            universeId: str,
+            milieu: str,
             name: str,
             sectorX: int,
             sectorY: int,
@@ -204,6 +206,8 @@ class DbSectorInfo(object):
             abbreviation: typing.Optional[str]
             ) -> None:
         self._id = id
+        self._universeId = universeId
+        self._milieu = milieu
         self._name = name
         self._sectorX = sectorX
         self._sectorY = sectorY
@@ -214,6 +218,12 @@ class DbSectorInfo(object):
 
     def id(self) -> str:
         return self._id
+
+    def universeId(self) -> str:
+        return self._universeId
+
+    def milieu(self) -> str:
+        return self._milieu
 
     def name(self) -> str:
         return self._name
@@ -247,10 +257,14 @@ class MultiverseDb(object):
     class Transaction(object):
         def __init__(
                 self,
-                connection: sqlite3.Connection
+                connection: sqlite3.Connection,
+                onCommitCallback: typing.Optional[typing.Callable[[], None]] = None,
+                onRollbackCallback: typing.Optional[typing.Callable[[], None]] = None
                 ) -> None:
             self._connection = connection
             self._hasBegun = False
+            self._onCommitCallback = onCommitCallback
+            self._onRollbackCallback = onRollbackCallback
 
         def connection(self) -> sqlite3.Connection:
             return self._connection
@@ -273,6 +287,12 @@ class MultiverseDb(object):
             if not self._hasBegun:
                 raise RuntimeError('Invalid state to end transaction')
 
+            if self._onCommitCallback:
+                try:
+                    self._onCommitCallback()
+                except Exception as ex:
+                    logging.error('MultiverseDb transaction commit callback threw exception')
+
             cursor = self._connection.cursor()
             try:
                 cursor.execute('END;')
@@ -282,6 +302,12 @@ class MultiverseDb(object):
         def rollback(self) -> None:
             if not self._hasBegun:
                 raise RuntimeError('Invalid state to roll back transaction')
+
+            if self._onCommitCallback:
+                try:
+                    self._onRollbackCallback()
+                except Exception as ex:
+                    logging.error('MultiverseDb transaction rollback callback threw exception')
 
             cursor = self._connection.cursor()
             try:
@@ -434,9 +460,16 @@ class MultiverseDb(object):
     def databaseExists(self) -> bool:
         return os.path.exists(MultiverseDb._databasePath)
 
-    def createTransaction(self) -> Transaction:
+    def createTransaction(
+            self,
+            onCommitCallback: typing.Optional[typing.Callable[[], None]] = None,
+            onRollbackCallback: typing.Optional[typing.Callable[[], None]] = None
+            ) -> Transaction:
         connection = self._createConnection()
-        return MultiverseDb.Transaction(connection=connection)
+        return MultiverseDb.Transaction(
+            connection=connection,
+            onCommitCallback=onCommitCallback,
+            onRollbackCallback=onRollbackCallback)
 
     def hasDefaultUniverse(self) -> bool:
         try:
@@ -486,7 +519,12 @@ class MultiverseDb(object):
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> None:
         logging.info(f'MultiverseDb importing default universe from "{directoryPath}"')
-        with self.createTransaction() as transaction:
+
+        onCommit = onRollback = None
+        if progressCallback:
+            onCommit = lambda: progressCallback('Saving!', 0, 0)
+            onRollback = lambda: progressCallback('Rolling Back!', 0, 0)
+        with self.createTransaction(onCommitCallback=onCommit, onRollbackCallback=onRollback) as transaction:
             connection = transaction.connection()
             self._internalImportDefaultUniverse(
                 directoryPath=directoryPath,
@@ -2764,7 +2802,7 @@ class MultiverseDb(object):
             includeDefaultSectors: bool
             ) -> typing.List[DbSectorInfo]:
         sql = """
-            SELECT id, universe_id, primary_name, sector_x, sector_y, abbreviation
+            SELECT id, universe_id, milieu, primary_name, sector_x, sector_y, abbreviation
             FROM {table}
             WHERE universe_id = :id
             """.format(table=MultiverseDb._SectorsTableName)
@@ -2777,7 +2815,7 @@ class MultiverseDb(object):
         if includeDefaultSectors:
             sql += """
                 UNION ALL
-                SELECT d.id, d.universe_id, d.primary_name, d.sector_x, d.sector_y, abbreviation
+                SELECT d.id, d.universe_id, d.milieu, d.primary_name, d.sector_x, d.sector_y, abbreviation
                 FROM {table} d
                 WHERE d.universe_id = :default_id
                 """.format(table=MultiverseDb._SectorsTableName)
@@ -2805,11 +2843,13 @@ class MultiverseDb(object):
         for row in cursor.fetchall():
             sectorList.append(DbSectorInfo(
                 id=row[0],
+                universeId=row[1],
                 isCustom=row[1] != MultiverseDb._DefaultUniverseId,
-                name=row[2],
-                sectorX=row[3],
-                sectorY=row[4],
-                abbreviation=row[5]))
+                milieu=row[2],
+                name=row[3],
+                sectorX=row[4],
+                sectorY=row[5],
+                abbreviation=row[6]))
         return sectorList
 
     def _internalSectorInfoById(
@@ -2818,7 +2858,7 @@ class MultiverseDb(object):
             sectorId: str
             ) -> typing.Optional[DbSectorInfo]:
         sql = """
-            SELECT universe_id, primary_name, sector_x, sector_y, abbreviation
+            SELECT universe_id, milieu, primary_name, sector_x, sector_y, abbreviation
             FROM {table}
             WHERE id = :id
             LIMIT 1;
@@ -2832,11 +2872,13 @@ class MultiverseDb(object):
 
         return DbSectorInfo(
             id=sectorId,
+            universeId=row[0],
             isCustom=row[0] != MultiverseDb._DefaultUniverseId,
-            name=row[1],
-            sectorX=row[2],
-            sectorY=row[3],
-            abbreviation=row[4])
+            milieu=row[1],
+            name=row[2],
+            sectorX=row[3],
+            sectorY=row[4],
+            abbreviation=row[5])
 
     def _internalSectorInfoByPosition(
             self,
@@ -2873,7 +2915,10 @@ class MultiverseDb(object):
 
         return DbSectorInfo(
             id=row[0],
+            # NOTE: Use returned row as it may be the default universe rather than universeId
+            universeId=row[1],
             isCustom=row[1] != MultiverseDb._DefaultUniverseId,
+            milieu=milieu,
             name=row[2],
             sectorX=sectorX,
             sectorY=sectorY,

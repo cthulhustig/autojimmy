@@ -56,41 +56,46 @@ class WorldManager(object):
                 # weren't loaded and the point it acquired the mutex.
                 return
 
-            dbUniverse = multiverse.MultiverseDb.instance().loadUniverse(
-                universeId=multiverse.customUniverseId(),
-                # TODO: I probably need to wrap the progress callback so the text that
-                # gets put out makes sense
-                progressCallback=progressCallback)
-            dbSectors = dbUniverse.sectors()
-            totalSectorCount = len(dbSectors)
-
-            maxProgress = totalSectorCount
-            currentProgress = 0
-            sectors = []
-            for dbSector in dbSectors:
-                canonicalName = dbSector.primaryName()
-                milieu = astronomer.Milieu[dbSector.milieu()] # TODO: This is ugly
-
-                logging.debug(f'Processing sector {canonicalName} from {milieu.value}')
-
+            with multiverse.MultiverseDb.instance().createTransaction() as transaction:
                 if progressCallback:
-                    stage = f'Processing: {milieu.value} - {canonicalName}'
-                    currentProgress += 1
-                    progressCallback(stage, currentProgress, maxProgress)
+                    stage = f'Enumerating Sectors'
+                    progressCallback(stage, 0, 0)
 
-                try:
-                    sector = self._processSector(dbSector=dbSector)
-                except Exception as ex:
-                    logging.error(f'Failed to process sector {canonicalName} from {milieu.value}', exc_info=ex)
-                    continue
+                dbSectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
+                    universeId=multiverse.customUniverseId(),
+                    transaction=transaction)
 
-                worldCount = len(dbSector.systems()) if dbSector.systems() else 0
-                logging.debug(f'Loaded {worldCount} worlds for sector {canonicalName} from {milieu.value}')
-                sectors.append(sector)
+                totalSectorCount = len(dbSectorInfos)
+                maxProgress = totalSectorCount
+                currentProgress = 0
+                sectors = []
+                for dbSectorInfo in dbSectorInfos:
+                    canonicalName = dbSectorInfo.name()
+                    milieu = astronomer.Milieu[dbSectorInfo.milieu()] # TODO: This is ugly
 
-            self._universe = astronomer.Universe(
-                sectors=sectors,
-                placeholderMilieu=WorldManager._PlaceholderMilieu)
+                    logging.debug(f'Processing sector {canonicalName} from {milieu.value}')
+
+                    if progressCallback:
+                        stage = f'Loading: {milieu.value} - {canonicalName}'
+                        currentProgress += 1
+                        progressCallback(stage, currentProgress, maxProgress)
+
+                    try:
+                        dbSector = multiverse.MultiverseDb.instance().loadSector(
+                            sectorId=dbSectorInfo.id(),
+                            transaction=transaction)
+                        sector = self._processSector(dbSector=dbSector)
+                    except Exception as ex:
+                        logging.error(f'Failed to process sector {canonicalName} from {milieu.value}', exc_info=ex)
+                        continue
+
+                    worldCount = sector.worldCount()
+                    logging.debug(f'Loaded {worldCount} worlds for sector {canonicalName} from {milieu.value}')
+                    sectors.append(sector)
+
+                self._universe = astronomer.Universe(
+                    sectors=sectors,
+                    placeholderMilieu=WorldManager._PlaceholderMilieu)
 
     # TODO: This function probably shouldn't be dealing with dbSectorIds
     # _or_ the higher level astronomer Sector needs to use the same id
