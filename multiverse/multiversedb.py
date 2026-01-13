@@ -531,11 +531,6 @@ class MultiverseDb(object):
                 cursor=connection.cursor(),
                 progressCallback=progressCallback)
 
-        # Vacuum the database to stop it getting out of control. This MUST be
-        # done outside the transaction
-        # TODO: Do I really want to do this here?
-        self.vacuumDatabase()
-
     def saveUniverse(
             self,
             universe: multiverse.DbUniverse,
