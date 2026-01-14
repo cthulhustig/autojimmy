@@ -71,6 +71,11 @@ class DbAllegiance(DbObject):
             legacy: typing.Optional[str] = None,
             base: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
+            routeColour: typing.Optional[str] = None,
+            routeStyle: typing.Optional[str] = None,
+            routeWidth: typing.Optional[float] = None,
+            borderColour: typing.Optional[str] = None,
+            borderStyle: typing.Optional[str] = None,
             sectorId: typing.Optional[str] = None
             ) -> None:
         super().__init__(id=id)
@@ -80,6 +85,11 @@ class DbAllegiance(DbObject):
         self.setName(name)
         self.setLegacy(legacy)
         self.setBase(base)
+        self.setRouteColour(routeColour)
+        self.setRouteStyle(routeStyle)
+        self.setRouteWidth(routeWidth)
+        self.setBorderColour(borderColour)
+        self.setBorderStyle(borderStyle)
 
     def sectorId(self) -> typing.Optional[str]:
         return self._sectorId
@@ -110,6 +120,36 @@ class DbAllegiance(DbObject):
 
     def setBase(self, base: typing.Optional[str]) -> None:
         self._base = base
+
+    def routeColour(self) -> typing.Optional[str]:
+        return self._routeColour
+
+    def setRouteColour(self, colour: typing.Optional[str]) -> None:
+        self._routeColour = colour
+
+    def routeStyle(self) -> typing.Optional[str]:
+        return self._routeStyle
+
+    def setRouteStyle(self, style: typing.Optional[str]) -> None:
+        self._routeStyle = style
+
+    def routeWidth(self) -> typing.Optional[float]:
+        return self._routeWidth
+
+    def setRouteWidth(self, width: typing.Optional[float]) -> None:
+        self._routeWidth = width
+
+    def borderColour(self) -> typing.Optional[str]:
+        return self._borderColour
+
+    def setBorderColour(self, colour: typing.Optional[str]) -> None:
+        self._borderColour = colour
+
+    def borderStyle(self) -> typing.Optional[str]:
+        return self._borderStyle
+
+    def setBorderStyle(self, style: typing.Optional[str]) -> None:
+        self._borderStyle = style
 
 class DbRulingAllegiance(DbObject):
     def __init__(

@@ -974,7 +974,12 @@ class MultiverseDb(object):
                     ColumnDef(columnName='code', columnType=ColumnDef.ColumnType.Text, isNullable=False),
                     ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False),
                     ColumnDef(columnName='legacy', columnType=ColumnDef.ColumnType.Text, isNullable=True),
-                    ColumnDef(columnName='base', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
+                    ColumnDef(columnName='base', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='route_colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='route_style', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='route_width', columnType=ColumnDef.ColumnType.Real, isNullable=True),
+                    ColumnDef(columnName='border_colour', columnType=ColumnDef.ColumnType.Text, isNullable=True),
+                    ColumnDef(columnName='border_style', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
                 uniqueConstraints=[
                     UniqueConstraintDef(columnNames=['sector_id', 'code'])])
 
@@ -1551,6 +1556,7 @@ class MultiverseDb(object):
 
         rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
         rawStockSophonts = multiverse.readSnapshotStockSophonts()
+        rawStockStyleSheet = multiverse.readSnapshotStyleSheet()
 
         universePath = os.path.join(directoryPath, 'milieu')
         milieuSectors: typing.List[typing.Tuple[
@@ -1624,6 +1630,7 @@ class MultiverseDb(object):
             rawSectors=rawData,
             rawStockAllegiances=rawStockAllegiances,
             rawStockSophonts=rawStockSophonts,
+            rawStockStyleSheet=rawStockStyleSheet,
             progressCallback=progressCallback)
 
         self._internalDeleteUniverse(
@@ -1857,8 +1864,12 @@ class MultiverseDb(object):
 
         if sector.allegiances():
             sql = """
-                INSERT INTO {table} (id, sector_id, code, name, legacy, base)
-                VALUES (:id, :sector_id, :code, :name, :legacy, :base);
+                INSERT INTO {table} (id, sector_id, code, name, legacy, base,
+                    route_colour, route_style, route_width,
+                    border_colour, border_style)
+                VALUES (:id, :sector_id, :code, :name, :legacy, :base,
+                    :route_colour, :route_style, :route_width,
+                    :border_colour, :border_style);
                 """.format(table=MultiverseDb._AllegiancesTableName)
             rows = []
             for allegiance in sector.allegiances():
@@ -1868,7 +1879,12 @@ class MultiverseDb(object):
                     'code': allegiance.code(),
                     'name': allegiance.name(),
                     'legacy': allegiance.legacy(),
-                    'base': allegiance.base()})
+                    'base': allegiance.base(),
+                    'route_colour': allegiance.routeColour(),
+                    'route_style': allegiance.routeStyle(),
+                    'route_width': allegiance.routeWidth(),
+                    'border_colour': allegiance.borderColour(),
+                    'border_style': allegiance.borderStyle()})
             cursor.executemany(sql, rows)
 
         if sector.sophonts():
@@ -2300,7 +2316,9 @@ class MultiverseDb(object):
         sector.setSubsectorNames(idToSubsectorNameMap.values())
 
         sql = """
-            SELECT id, code, name, legacy, base
+            SELECT id, code, name, legacy, base,
+                route_colour, route_style, route_width,
+                border_colour, border_style
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AllegiancesTableName)
@@ -2313,7 +2331,12 @@ class MultiverseDb(object):
                 code=row[1],
                 name=row[2],
                 legacy=row[3],
-                base=row[4])
+                base=row[4],
+                routeColour=row[5],
+                routeStyle=row[6],
+                routeWidth=row[7],
+                borderColour=row[8],
+                borderStyle=row[9])
             idToAllegianceMap[allegiance.id()] = allegiance
         sector.setAllegiances(idToAllegianceMap.values())
 

@@ -71,7 +71,7 @@ class WorldManager(object):
                 sectors = []
                 for dbSectorInfo in dbSectorInfos:
                     canonicalName = dbSectorInfo.name()
-                    milieu = astronomer.Milieu[dbSectorInfo.milieu()] # TODO: This is ugly
+                    milieu = astronomer.Milieu[dbSectorInfo.milieu()] # TODO: This is ugly, should probably do something like I do with WorldManager._mapLineStyle
 
                     logging.debug(f'Processing sector {canonicalName} from {milieu.value}')
 
@@ -525,7 +525,12 @@ class WorldManager(object):
                     code=dbAllegiance.code(),
                     name=dbAllegiance.name(),
                     legacyCode=dbAllegiance.legacy(),
-                    baseCode=dbAllegiance.base())
+                    baseCode=dbAllegiance.base(),
+                    routeColour=dbAllegiance.routeColour(),
+                    routeStyle=WorldManager._mapLineStyle(dbAllegiance.routeStyle()),
+                    routeWidth=dbAllegiance.routeWidth(),
+                    borderColour=dbAllegiance.borderColour(),
+                    borderStyle=WorldManager._mapLineStyle(dbAllegiance.borderStyle()))
 
         dbSophonts = dbSector.sophonts()
         sophontsNameMap: typing.Dict[str, str] = {}
@@ -686,7 +691,7 @@ class WorldManager(object):
                         endHex=endHex,
                         allegiance=allegiance,
                         type=dbRoute.type(),
-                        style=WorldManager._mapRouteStyle(dbRoute.style()),
+                        style=WorldManager._mapLineStyle(dbRoute.style()),
                         colour=colour,
                         width=dbRoute.width()))
                 except Exception as ex:
@@ -736,7 +741,7 @@ class WorldManager(object):
                     borders.append(astronomer.Border(
                         hexList=hexes,
                         allegiance=allegiance,
-                        style=WorldManager._mapBorderStyle(dbBorder.style()),
+                        style=WorldManager._mapLineStyle(dbBorder.style()),
                         colour=colour,
                         label=label,
                         labelWorldX=dbBorder.labelX(),
@@ -865,40 +870,23 @@ class WorldManager(object):
             sources=sources,
             isCustom=dbSector.isCustom())
 
-    _RouteStyleMap = {
-        'solid': astronomer.Route.Style.Solid,
-        'dashed': astronomer.Route.Style.Dashed,
-        'dotted': astronomer.Route.Style.Dotted,
+    _LineStyleMap = {
+        'solid': astronomer.LineStyle.Solid,
+        'dashed': astronomer.LineStyle.Dashed,
+        'dotted': astronomer.LineStyle.Dotted,
     }
 
     @staticmethod
-    def _mapRouteStyle(
+    def _mapLineStyle(
             style: typing.Optional[str]
-            ) -> typing.Optional[astronomer.Route.Style]:
+            ) -> typing.Optional[astronomer.LineStyle]:
         if not style:
             return None
         lowerStyle = style.lower()
-        mappedStyle = WorldManager._RouteStyleMap.get(lowerStyle)
+        mappedStyle = WorldManager._LineStyleMap.get(lowerStyle)
         if not mappedStyle:
-            raise ValueError(f'Invalid route style "{style}"')
-        return mappedStyle
-
-    _BorderStyleMap = {
-        'solid': astronomer.Border.Style.Solid,
-        'dashed': astronomer.Border.Style.Dashed,
-        'dotted': astronomer.Border.Style.Dotted,
-    }
-
-    @staticmethod
-    def _mapBorderStyle(
-            style: typing.Optional[str]
-            ) -> typing.Optional[astronomer.Border.Style]:
-        if not style:
-            return None
-        lowerStyle = style.lower()
-        mappedStyle = WorldManager._BorderStyleMap.get(lowerStyle)
-        if not mappedStyle:
-            raise ValueError(f'Invalid border style "{style}"')
+            # TODO: This should probably be more forgiving and just log and return None
+            raise ValueError(f'Invalid line style "{style}"')
         return mappedStyle
 
     _LabelSizeMap = {
@@ -915,5 +903,6 @@ class WorldManager(object):
         lowerSize = size.lower()
         mappedSize = WorldManager._LabelSizeMap.get(lowerSize)
         if not mappedSize:
+            # TODO: This should probably be more forgiving and just log and return None
             raise ValueError(f'Invalid label size "{size}"')
         return mappedSize

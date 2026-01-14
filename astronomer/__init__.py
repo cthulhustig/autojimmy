@@ -1,6 +1,7 @@
 from .milieu import *
 from .astrometrics import *
 from .sectorhex import *
+from .style import *
 from .zone import *
 from .uwp import *
 from .pbg import *

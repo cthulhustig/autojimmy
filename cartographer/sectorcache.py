@@ -93,13 +93,11 @@ class SectorCache(object):
             self,
             milieu: astronomer.Milieu,
             universe: astronomer.Universe,
-            graphics: cartographer.AbstractGraphics,
-            styleStore: cartographer.StyleStore
+            graphics: cartographer.AbstractGraphics
             ) -> None:
         self._milieu = milieu
         self._universe = universe
         self._graphics = graphics
-        self._styleStore = styleStore
         self._worldsCache: typing.Dict[
             astronomer.SectorIndex,
             cartographer.AbstractPointList
@@ -261,37 +259,22 @@ class SectorCache(object):
 
         routes = []
         for (colour, width, style, type, allegiance), points in routePointsMap.items():
-            if style is astronomer.Route.Style.Solid:
+            if allegiance:
+                if colour is None:
+                    colour = allegiance.routeColour()
+                if style is None:
+                    style = allegiance.routeStyle()
+                if width is None:
+                    width = allegiance.routeWidth()
+
+            if style is astronomer.LineStyle.Solid:
                 style = cartographer.LineStyle.Solid
-            elif style is astronomer.Route.Style.Dashed:
+            elif style is astronomer.LineStyle.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif style is astronomer.Route.Style.Dotted:
+            elif style is astronomer.LineStyle.Dotted:
                 style = cartographer.LineStyle.Dot
             else:
                 style = None
-
-            if not colour or not style or not width:
-                # This code is intended to mimic the behaviour of code from
-                # Traveller Map DrawMicroRoutes
-                precedence = []
-                if allegiance:
-                    precedence.append(allegiance.code())
-                elif type:
-                    precedence.append(type)
-                else:
-                    precedence.append('Im')
-                precedence.append(None)
-
-                for key in precedence:
-                    if self._styleStore.hasRouteStyle(key):
-                        defaultColour, defaultStyle, defaultWidth = self._styleStore.routeStyle(key)
-                        if not colour:
-                            colour = defaultColour
-                        if not style:
-                            style = defaultStyle
-                        if not width:
-                            width = defaultWidth
-                        break
 
             routes.append(SectorLines(
                 points=self._graphics.createPointList(points=points),
@@ -376,30 +359,23 @@ class SectorCache(object):
         style = None
 
         if isinstance(source, astronomer.Border):
-            if source.style() is astronomer.Border.Style.Solid:
+            style = source.style()
+
+            allegiance = source.allegiance()
+            if allegiance:
+                if colour is None:
+                    colour = allegiance.borderColour()
+                if style is None:
+                    style = allegiance.borderStyle()
+
+            if style is astronomer.LineStyle.Solid:
                 style = cartographer.LineStyle.Solid
-            elif source.style() is astronomer.Border.Style.Dashed:
+            elif style is astronomer.LineStyle.Dashed:
                 style = cartographer.LineStyle.Dash
-            elif source.style() is astronomer.Border.Style.Dotted:
+            elif style is astronomer.LineStyle.Dotted:
                 style = cartographer.LineStyle.Dot
-
-            if not colour or not style:
-                # This code is intended to mimic the behaviour of code from
-                # Traveller Map DrawMicroBorders
-                allegiance = source.allegiance()
-                precedence = []
-                if allegiance:
-                    precedence.append(allegiance.code())
-                precedence.append(None)
-
-                for key in precedence:
-                    if self._styleStore.hasBorderStyle(key):
-                        defaultColour, defaultStyle = self._styleStore.borderStyle(key)
-                        if not colour:
-                            colour = defaultColour
-                        if not style:
-                            style = defaultStyle
-                        break
+            else:
+                style = None
 
         outline = source.worldOutline()
         drawPath = []

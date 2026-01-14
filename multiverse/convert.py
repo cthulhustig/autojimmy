@@ -12,6 +12,39 @@ import typing
 # TODO: Need code to allow export from db to file. I deleted the old
 # code that did it as it had bit rotted
 
+# Useful Test Locations:
+# - Sector: Tsebntsiatldlants
+#   - There is a route that runs the length of it (e.g. through Oiansh) that
+#     should be dashed purple. The colour and style come from it using the
+#     "Core Route" type which is the only type defined in the otu css file
+#     that has a space in the name.
+# - Sector: Glimmerdrift Reaches (Judges Guild)
+#   - A lot of the borders in this sector use a dashed salmon pink colour. They get
+#     this from the default border colour in the metadata style sheet info (i.e.
+#     not the otu css file)
+#   - Some of the routes are extra chunky because they use the Special type which
+#     has a custom width defined in the metadata style sheet info (e.g ones
+#     going into Rasma)
+# - Sector: Far Frontiers
+#   - The routes for the worlds around Bestus should be grey, not green. They can
+#     get go wrong if the order the style sheet groups are looked up are messed up.
+#     The reason it gets messed up is it relies on the colour not being taken from
+#     the "Im" allegiance style because the route has a type specified (even though
+#     that type doesn't have a style defined)
+# -  Vanguard Reaches (Don McKinney 2015)
+#   - There is a red route running vertically (e.g. through Cloister) that gets
+#     its colour from the allegiance of Im on the route and the custom colour
+#     specified for Im in the metadata style sheet info
+#   - This is also a very colourful sector with lots of different borders and
+#     regions
+# - Sector: Far Home
+#   - Routes in this sector have a custom default colour specified in the metadata
+#     stylesheet info (such as those going through Iridina)
+# - Sector: The Beyond
+#   - When using Atlas style, the route between Djend and Morphy should be
+#     solid rather than dashed. The special case for grayscale rendering in
+#     my _drawMicroRoutes shouldn't kick in
+
 # These unofficial allegiances are taken from Traveller Map. It has a
 # comment saying they're for M1120 but as far as I can tell it uses
 # them no mater which milieu you have selected. In my implementation
@@ -264,6 +297,83 @@ def _filterStockAllegiances(
 
     return rawFilteredAllegiances
 
+def _mergeRouteStyles(
+        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
+        rawSectorStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
+        ) -> typing.Dict[
+            str, # Style tag
+            typing.Tuple[
+                str, # Colour
+                str, # Style
+                float]]: # Width
+    routeStyleMap: typing.Dict[str, typing.Tuple[str, str, float]] = {}
+
+    if rawSectorStyleSheet:
+        for rawStyle in rawSectorStyleSheet.routeStyles():
+            routeStyleMap[rawStyle.tag()] = (rawStyle.colour(), rawStyle.style(), rawStyle.width())
+
+    if rawStockStyleSheet:
+        for rawStyle in rawStockStyleSheet.routeStyles():
+            colour, style, width = routeStyleMap.get(rawStyle.tag(), (None, None, None))
+            if colour is None:
+                colour = rawStyle.colour()
+            if style is None:
+                style = rawStyle.style()
+            if width is None:
+                width = rawStyle.width()
+            routeStyleMap[rawStyle.tag()] = (colour, style, width)
+
+    # Update all tag mappings with default values
+    if None in routeStyleMap:
+        defaultColour, defaultStyle, defaultWith = routeStyleMap.get(None)
+        for tag in list(routeStyleMap.keys()):
+            colour, style, width = routeStyleMap[tag]
+            if colour is None:
+                colour = defaultColour
+            if style is None:
+                style = defaultStyle
+            if width is None:
+                width = defaultWith
+            routeStyleMap[tag] = (colour, style, width)
+
+    return routeStyleMap
+
+def _mergeBorderStyles(
+        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
+        rawSectorStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
+        ) -> typing.Dict[
+            str, # Style tag
+            typing.Tuple[
+                str, # Colour
+                str]]: # Style
+    borderStyleMap: typing.Dict[str, typing.Tuple[str, str]] = {}
+
+    if rawSectorStyleSheet:
+        for rawStyle in rawSectorStyleSheet.borderStyles():
+            borderStyleMap[rawStyle.tag()] = (rawStyle.colour(), rawStyle.style())
+
+    if rawStockStyleSheet:
+        for rawStyle in rawStockStyleSheet.borderStyles():
+            colour, style = borderStyleMap.get(rawStyle.tag(), (None, None))
+            if colour is None:
+                colour = rawStyle.colour()
+            if style is None:
+                style = rawStyle.style()
+            borderStyleMap[rawStyle.tag()] = (colour, style)
+
+    # Update all tag mappings with default values
+    if None in borderStyleMap:
+        defaultColour, defaultStyle = borderStyleMap.get(None)
+        for tag in list(borderStyleMap.keys()):
+            colour, style = borderStyleMap[tag]
+            if colour is None:
+                colour = defaultColour
+            if style is None:
+                style = defaultStyle
+            borderStyleMap[tag] = (colour, style)
+
+    return borderStyleMap
+
 def _createDbAlternateNames(
         rawMetadata: survey.RawMetadata
         ) -> typing.List[multiverse.DbAlternateName]:
@@ -312,6 +422,19 @@ def _createDbAllegiances(
         rawStockAllegiances: typing.Optional[typing.Collection[
             survey.RawStockAllegiance
             ]] = None,
+        routeStyleMap: typing.Optional[typing.Mapping[
+            str, # Style tag
+            typing.Tuple[
+                str, # Colour
+                str, # Style
+                float # Width
+                ]]] = None,
+        borderStyleMap: typing.Optional[typing.Mapping[
+            str, # Style tag
+            typing.Tuple[
+                str, # Colour
+                str # Style
+                ]]] = None,
         ) -> typing.Dict[str, multiverse.DbAllegiance]: # Returns code to DbAllegiance map
     dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance] = {}
 
@@ -350,11 +473,23 @@ def _createDbAllegiances(
                         baseCode = rawStockAllegiance.base()
                     legacyCode = rawStockAllegiance.legacy()
 
+            routeColour, routeStyle, routeWidth = routeStyleMap.get(
+                rawMetadataAllegiance.code(),
+                (None, None, None))
+            borderColour, borderStyle = borderStyleMap.get(
+                rawMetadataAllegiance.code(),
+                (None, None))
+
             dbAllegianceCodeMap[rawMetadataAllegiance.code()] = multiverse.DbAllegiance(
                 code=rawMetadataAllegiance.code(),
                 name=rawMetadataAllegiance.name(),
                 base=baseCode,
-                legacy=legacyCode)
+                legacy=legacyCode,
+                routeColour=routeColour,
+                routeStyle=routeStyle,
+                routeWidth=routeWidth,
+                borderColour=borderColour,
+                borderStyle=borderStyle)
 
     # Get the allegiance codes used in the sector
     rawUsedAllegianceCodes = _findUsedAllegianceCodes(
@@ -379,11 +514,23 @@ def _createDbAllegiances(
             # The metadata has overridden this allegiance code
             continue
 
+        routeColour, routeStyle, routeWidth = routeStyleMap.get(
+            rawStockAllegiance.code(),
+            (None, None, None))
+        borderColour, borderStyle = borderStyleMap.get(
+            rawStockAllegiance.code(),
+            (None, None))
+
         dbAllegianceCodeMap[rawStockAllegiance.code()] = multiverse.DbAllegiance(
             code=rawStockAllegiance.code(),
             name=rawStockAllegiance.name(),
             legacy=rawStockAllegiance.legacy(),
-            base=rawStockAllegiance.base())
+            base=rawStockAllegiance.base(),
+            routeColour=routeColour,
+            routeStyle=routeStyle,
+            routeWidth=routeWidth,
+            borderColour=borderColour,
+            borderStyle=borderStyle)
 
     # Find any codes that haven't had database allegiance defined. These might be
     # legacy codes or they might be codes that aren't defined anywhere
@@ -431,26 +578,62 @@ def _createDbAllegiances(
                         # the same details as the stock allegiance so it's not appropriate to use
                         # for this code. Create a new database allegiance, as the stock allegiance
                         # code is already in use, use the raw code with the rest of the stock details
+                        routeColour, routeStyle, routeWidth = routeStyleMap.get(
+                            rawCode,
+                            (None, None, None))
+                        borderColour, borderStyle = borderStyleMap.get(
+                            rawCode,
+                            (None, None))
+
                         dbAllegiance = multiverse.DbAllegiance(
                             code=rawCode,
                             name=rawStockAllegiance.name(),
                             legacy=rawStockAllegiance.legacy(),
-                            base=rawStockAllegiance.base())
+                            base=rawStockAllegiance.base(),
+                            routeColour=routeColour,
+                            routeStyle=routeStyle,
+                            routeWidth=routeWidth,
+                            borderColour=borderColour,
+                            borderStyle=borderStyle)
                 else:
                     # There is no existing database allegiance fro this code so create one
+                    routeColour, routeStyle, routeWidth = routeStyleMap.get(
+                        rawStockAllegiance.code(),
+                        (None, None, None))
+                    borderColour, borderStyle = borderStyleMap.get(
+                        rawStockAllegiance.code(),
+                        (None, None))
+
                     dbAllegiance = multiverse.DbAllegiance(
                         code=rawStockAllegiance.code(),
                         name=rawStockAllegiance.name(),
                         legacy=rawStockAllegiance.legacy(),
-                        base=rawStockAllegiance.base())
+                        base=rawStockAllegiance.base(),
+                        routeColour=routeColour,
+                        routeStyle=routeStyle,
+                        routeWidth=routeWidth,
+                        borderColour=borderColour,
+                        borderStyle=borderStyle)
             else:
                 # There is no stock allegiance that has a legacy code matching this missing code.
                 # All we can do is create a database allegiance with information we do have
+                routeColour, routeStyle, routeWidth = routeStyleMap.get(
+                    rawCode,
+                    (None, None, None))
+                borderColour, borderStyle = borderStyleMap.get(
+                    rawCode,
+                    (None, None))
+
                 dbAllegiance = multiverse.DbAllegiance(
                     code=rawCode,
                     name=rawCode,
                     legacy=None, # No legacy code known
-                    base=None) # No base code know
+                    base=None, # No base code know
+                    routeColour=routeColour,
+                    routeStyle=routeStyle,
+                    routeWidth=routeWidth,
+                    borderColour=borderColour,
+                    borderStyle=borderStyle)
 
             dbAllegianceCodeMap[rawCode] = dbAllegiance
 
@@ -984,13 +1167,13 @@ def _createDbRoutes(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
-        rawStyleMap: typing.Optional[typing.Dict[
-            str,
+        styleMap: typing.Optional[typing.Mapping[
+            str, # Style tag
             typing.Tuple[
-                typing.Optional[str], # Colour
-                typing.Optional[str], # Style
-                typing.Optional[float] # Width
-                ]]]
+                str, # Colour
+                str, # Style
+                float # Width
+                ]]] = None
         ) -> typing.List[multiverse.DbRoute]:
     dbRoutes = []
 
@@ -1015,26 +1198,29 @@ def _createDbRoutes(
             dbStyle = rawRoute.style()
             dbWidth = rawRoute.width()
 
-            if rawStyleMap and (not dbColour or not dbStyle or not dbWidth):
-                # This order of precedence matches the order in the Traveller Map
-                # DrawMicroRoutes code
+            # This is replicating code from Traveller Map DrawMicroBorders. The
+            # logic is quite fragile in order to mimic the the behaviour from
+            # that code while allowing routes to inherit their style from their
+            # allegiance.
+            if styleMap and (dbAllegiance is None or dbAllegiance.code() not in styleMap):
                 precedence = []
-                if dbAllegiance:
-                    precedence.append(dbAllegiance.code())
-                elif dbType:
+                if dbType is not None:
                     precedence.append(dbType)
-                precedence.append(None) # Use default if there is one
+                else:
+                    precedence.append('Im')
+                precedence.append(None)
 
                 for tag in precedence:
-                    if tag in rawStyleMap:
-                        defaultColour, defaultStyle, defaultWidth = rawStyleMap[tag]
-                        if not dbColour:
-                            dbColour = defaultColour
-                        if not dbStyle:
-                            dbStyle = defaultStyle
-                        if not dbWidth:
-                            dbWidth = defaultWidth
-                        break
+                    if tag not in styleMap:
+                        continue
+                    defaultColour, defaultStyle, defaultWidth = styleMap.get(tag)
+                    if dbColour is None:
+                        dbColour = defaultColour
+                    if dbStyle is None:
+                        dbStyle = defaultStyle
+                    if dbWidth is None:
+                        dbWidth = defaultWidth
+                    break
 
             dbRoutes.append(multiverse.DbRoute(
                 startHexX=int(rawStartHex[:2]),
@@ -1057,12 +1243,12 @@ def _createDbBorders(
         milieu: str,
         rawMetadata: survey.RawMetadata,
         dbAllegianceCodeMap: typing.Dict[str, multiverse.DbAllegiance],
-        rawStyleMap: typing.Optional[typing.Dict[
-            str,
+        styleMap: typing.Optional[typing.Mapping[
+            str, # Style tag
             typing.Tuple[
-                typing.Optional[str], # Colour
-                typing.Optional[str] # Style
-                ]]]
+                str, # Colour
+                str # Style
+                ]]] = None,
         ) -> typing.List[multiverse.DbBorder]:
     dbBorders = []
 
@@ -1081,22 +1267,17 @@ def _createDbBorders(
 
             dbColour = rawBorder.colour()
             dbStyle = rawBorder.style()
-            if rawStyleMap and (not dbColour or not dbStyle):
-                # This order of precedence matches the order in the Traveller Map
-                # DrawMicroBorders code
-                precedence = []
-                if dbAllegiance:
-                    precedence.append(dbAllegiance.code())
-                precedence.append(None) # Use default if there is one
 
-                for tag in precedence:
-                    if tag in rawStyleMap:
-                        defaultColour, defaultStyle = rawStyleMap[tag]
-                        if not dbColour:
-                            dbColour = defaultColour
-                        if not dbStyle:
-                            dbStyle = defaultStyle
-                        break
+            # This is replicating code from Traveller Map DrawMicroBorders. The
+            # logic is quite fragile in order to mimic the the behaviour from
+            # that code while allowing borders to inherit their style from their
+            # allegiance.
+            if styleMap and (dbAllegiance is None or dbAllegiance.code() not in styleMap):
+                defaultColour, defaultStyle = styleMap.get(None, (None, None))
+                if dbColour is None:
+                    dbColour = defaultColour
+                if dbStyle is None:
+                    dbStyle = defaultStyle
 
             rawLabelHex = rawBorder.labelHex()
             rawLabelOffsetX = rawBorder.labelOffsetX()
@@ -1110,7 +1291,7 @@ def _createDbBorders(
                     hexX=rawLabelHexX,
                     hexY=rawLabelHexY,
                     # NOTE: The 0.7 multiplier is to mimic how Traveller Map
-                    # scales the offset in drawMicroLabels
+                    # scales the offset in DrawMicroLabels
                     worldOffsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
                     # NOTE: The coordinate space used for the offsets seems to
                     # have an inverted Y direction compared to world space
@@ -1158,7 +1339,7 @@ def _createDbRegions(
                     hexX=rawLabelHexX,
                     hexY=rawLabelHexY,
                     # NOTE: The 0.7 multiplier is to mimic how Traveller Map
-                    # scales the offset in drawMicroLabels
+                    # scales the offset in DrawMicroLabels
                     worldOffsetX=(rawLabelOffsetX * 0.7) if rawLabelOffsetX is not None else None,
                     # NOTE: The coordinate space used for the offsets seems to
                     # have an inverted Y direction compared to world space
@@ -1195,7 +1376,7 @@ def _createDbLabels(
                 hexX=int(rawHex[:2]),
                 hexY=int(rawHex[-2:]),
                 # NOTE: The 0.7 multiplier is to mimic how Traveller Map
-                # scales the offset in drawMicroLabels
+                # scales the offset in DrawMicroLabels
                 worldOffsetX=(rawOffsetX * 0.7) if rawOffsetX is not None else None,
                 # NOTE: The coordinate space used for the offsets seems to
                 # have an inverted Y direction compared to world space
@@ -1243,17 +1424,23 @@ def _createDbProducts(
     return dbProducts
 
 # TODO: Not sure where this should live
-_T5OfficialAllegiancesPath = "t5ss/allegiance_codes.tab"
+_T5OfficialAllegiancesPath = 't5ss/allegiance_codes.tab'
 def readSnapshotStockAllegiances() -> typing.List[survey.RawStockAllegiance]:
     return survey.parseTabStockAllegiances(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialAllegiancesPath))
 
-_T5OfficialSophontsPath = "t5ss/sophont_codes.tab"
+_T5OfficialSophontsPath = 't5ss/sophont_codes.tab'
 def readSnapshotStockSophonts() -> typing.List[survey.RawStockSophont]:
     return survey.parseTabStockSophonts(
         content=multiverse.SnapshotManager.instance().loadTextResource(
             filePath=_T5OfficialSophontsPath))
+
+_OTUStyleSheet = 'styles/otu.css'
+def readSnapshotStyleSheet() -> survey.RawStyleSheet:
+    return survey.parseStyleSheet(
+        content=multiverse.SnapshotManager.instance().loadTextResource(
+            filePath=_OTUStyleSheet))
 
 def convertRawUniverseToDbUniverse(
         universeName: str,
@@ -1269,6 +1456,7 @@ def convertRawUniverseToDbUniverse(
         rawStockSophonts: typing.Optional[typing.Collection[
             survey.RawStockSophont
             ]] = None,
+        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
         universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
         ) -> multiverse.DbUniverse:
@@ -1289,6 +1477,7 @@ def convertRawUniverseToDbUniverse(
             rawSystems=rawSystems,
             rawStockAllegiances=rawStockAllegiances,
             rawStockSophonts=rawStockSophonts,
+            rawStockStyleSheet=rawStockStyleSheet,
             isCustom=isCustom))
 
     if progressCallback:
@@ -1311,13 +1500,21 @@ def convertRawSectorToDbSector(
         rawStockSophonts: typing.Optional[typing.Collection[
             survey.RawStockSophont
             ]] = None,
+        rawStockStyleSheet: typing.Optional[survey.RawStyleSheet] = None,
         sectorId: typing.Optional[str] = None,
         universeId: typing.Optional[str] = None,
         ) -> multiverse.DbUniverse:
-    rawBorderStyleMap = rawRouteStyleMap = None
+    rawSectorStyleSheet = None
     if rawMetadata.styleSheet():
-        rawBorderStyleMap, rawRouteStyleMap = survey.parseSectorStyleSheet(
+        rawSectorStyleSheet = survey.parseStyleSheet(
             content=rawMetadata.styleSheet())
+
+    routeStyleMap = _mergeRouteStyles(
+        rawStockStyleSheet=rawStockStyleSheet,
+        rawSectorStyleSheet=rawSectorStyleSheet)
+    borderStyleMap = _mergeBorderStyles(
+        rawStockStyleSheet=rawStockStyleSheet,
+        rawSectorStyleSheet=rawSectorStyleSheet)
 
     dbAlternateNames = _createDbAlternateNames(
         rawMetadata=rawMetadata)
@@ -1329,7 +1526,9 @@ def convertRawSectorToDbSector(
         milieu=milieu,
         rawMetadata=rawMetadata,
         rawSystems=rawSystems,
-        rawStockAllegiances=rawStockAllegiances)
+        rawStockAllegiances=rawStockAllegiances,
+        routeStyleMap=routeStyleMap,
+        borderStyleMap=borderStyleMap)
 
     dbSophontCodeMap, dbSophontNameMap = _createDbSophonts(
         rawSystems=rawSystems,
@@ -1347,13 +1546,13 @@ def convertRawSectorToDbSector(
         milieu=milieu,
         rawMetadata=rawMetadata,
         dbAllegianceCodeMap=dbAllegianceCodeMap,
-        rawStyleMap=rawRouteStyleMap)
+        styleMap=routeStyleMap)
 
     dbBorders = _createDbBorders(
         milieu=milieu,
         rawMetadata=rawMetadata,
         dbAllegianceCodeMap=dbAllegianceCodeMap,
-        rawStyleMap=rawBorderStyleMap)
+        styleMap=borderStyleMap)
 
     dbRegions = _createDbRegions(rawMetadata=rawMetadata)
 

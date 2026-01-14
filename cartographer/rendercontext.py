@@ -73,7 +73,6 @@ class RenderContext(object):
             style: cartographer.MapStyle,
             options: cartographer.RenderOptions,
             imageStore: cartographer.ImageStore,
-            styleStore: cartographer.StyleStore,
             vectorStore: cartographer.VectorStore,
             labelStore: cartographer.LabelStore
             ) -> None:
@@ -93,14 +92,12 @@ class RenderContext(object):
             style=style,
             graphics=self._graphics)
         self._imageStore = imageStore
-        self._styleStore = styleStore
         self._vectorStore = vectorStore
         self._labelStore = labelStore
         self._sectorCache = cartographer.SectorCache(
             milieu=self._milieu,
             universe=self._universe,
-            graphics=self._graphics,
-            styleStore=self._styleStore)
+            graphics=self._graphics)
         self._worldCache = cartographer.WorldCache(
             milieu=self._milieu,
             universe=self._universe,

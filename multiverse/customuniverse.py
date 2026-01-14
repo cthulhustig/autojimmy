@@ -65,6 +65,7 @@ def importLegacyCustomSectors(
 
     rawStockAllegiances = multiverse.readSnapshotStockAllegiances()
     rawStockSophonts = multiverse.readSnapshotStockSophonts()
+    rawStockStyleSheet = multiverse.readSnapshotStyleSheet()
 
     universePath = os.path.join(directoryPath, 'milieu')
     milieuSectors: typing.List[typing.Tuple[
@@ -212,6 +213,7 @@ def importLegacyCustomSectors(
             rawSystems=rawSystems,
             rawStockAllegiances=rawStockAllegiances,
             rawStockSophonts=rawStockSophonts,
+            rawStockStyleSheet=rawStockStyleSheet,
             isCustom=True))
 
     if progressCallback:

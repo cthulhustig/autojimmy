@@ -1,20 +1,14 @@
 import astronomer
-import enum
 import typing
 
 class Route(object):
-    class Style(enum.Enum):
-        Solid = 0
-        Dashed = 1
-        Dotted = 2
-
     def __init__(
             self,
             startHex: astronomer.HexPosition,
             endHex: astronomer.HexPosition,
             allegiance: typing.Optional[astronomer.Allegiance],
             type: typing.Optional[str],
-            style: typing.Optional[Style],
+            style: typing.Optional[astronomer.LineStyle],
             colour: typing.Optional[str],
             width: typing.Optional[float]
             ) -> None:
@@ -38,7 +32,7 @@ class Route(object):
     def type(self) -> typing.Optional[str]:
         return self._type
 
-    def style(self) -> typing.Optional[Style]:
+    def style(self) -> typing.Optional[astronomer.LineStyle]:
         return self._style
 
     def colour(self) -> typing.Optional[str]:

@@ -595,3 +595,66 @@ class RawStockSophont(object):
 
     def location(self) -> str:
         return self._location
+
+class RawRouteStyle(object):
+    def __init__(
+            self,
+            tag: typing.Optional[str], # None means this is a default style
+            colour: typing.Optional[str],
+            style: typing.Optional[str],
+            width: typing.Optional[float],
+            ) -> None:
+        super().__init__()
+        self._tag = tag
+        self._colour = colour
+        self._style = style
+        self._width = width
+
+    def tag(self) -> typing.Optional[str]:
+        return self._tag
+
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+    def style(self) -> typing.Optional[str]:
+        return self._style
+
+    def width(self) -> typing.Optional[float]:
+        return self._width
+
+class RawBorderStyle(object):
+    def __init__(
+            self,
+            tag: typing.Optional[str], # None means this is a default style
+            colour: typing.Optional[str],
+            style: typing.Optional[str]
+            ) -> None:
+        super().__init__()
+        self._tag = tag
+        self._colour = colour
+        self._style = style
+
+    def tag(self) -> typing.Optional[str]:
+        return self._tag
+
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+    def style(self) -> typing.Optional[str]:
+        return self._style
+
+class RawStyleSheet(object):
+    def __init__(
+            self,
+            routeStyles: typing.Collection[RawRouteStyle],
+            borderStyles: typing.Collection[RawBorderStyle],
+            ) -> None:
+        super().__init__()
+        self._routeStyles = routeStyles
+        self._borderStyles = borderStyles
+
+    def routeStyles(self) -> typing.Collection[RawRouteStyle]:
+        return self._routeStyles
+
+    def borderStyles(self) -> typing.Collection[RawBorderStyle]:
+        return self._borderStyles

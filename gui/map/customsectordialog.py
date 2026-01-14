@@ -477,6 +477,17 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         try:
+            rawStyleSheet = multiverse.readSnapshotStyleSheet()
+        except:
+            message = 'Failed to load style sheet.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
             milieu = app.Config.instance().value(option=app.ConfigOption.Milieu)
             dbSector = multiverse.convertRawSectorToDbSector(
                 milieu=milieu.name,
@@ -484,6 +495,7 @@ class _NewSectorDialog(gui.DialogEx):
                 rawSystems=rawWorlds,
                 rawStockAllegiances=rawStockAllegiances,
                 rawStockSophonts=rawStockSophonts,
+                rawStockStyleSheet=rawStyleSheet,
                 isCustom=True,
                 universeId=multiverse.customUniverseId())
             multiverse.MultiverseDb.instance().saveSector(sector=dbSector)

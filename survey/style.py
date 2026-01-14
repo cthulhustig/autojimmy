@@ -7,37 +7,11 @@ import typing
 _BorderStylePattern = re.compile(r'border(?:\.(.+))?')
 _RouteStylePattern = re.compile(r'route(?:\.(.+))?')
 
-def parseSectorStyleSheet(
+def parseStyleSheet(
         content: str
-        ) -> typing.Tuple[
-            # Border Styles
-            typing.Dict[
-                str, # Allegiance/Type
-                typing.Tuple[
-                    typing.Optional[str], # Colour
-                    typing.Optional[str] # Style
-                ]],
-            # Route Styles
-            typing.Dict[
-                str, # Allegiance/Type
-                typing.Tuple[
-                    typing.Optional[str], # Colour
-                    typing.Optional[str], # Style
-                    typing.Optional[float] # Width
-                ]]]:
-    borderStyleMap: typing.Dict[
-        str, # Allegiance/Type
-        typing.Tuple[
-            typing.Optional[str], # Colour
-            typing.Optional[str] # Style
-        ]] = {}
-    routeStyleMap: typing.Dict[
-        str, # Allegiance/Type
-        typing.Tuple[
-            typing.Optional[str], # Colour
-            typing.Optional[str], # Style
-            typing.Optional[float] # Width
-        ]] = {}
+        ) -> survey.RawStyleSheet:
+    routeStyles: typing.List[survey.RawRouteStyle] = []
+    borderStyles: typing.List[survey.RawBorderStyle] = []
     styles = survey.readCssContent(content)
 
     for styleKey, properties in styles.items():
@@ -46,8 +20,11 @@ def parseSectorStyleSheet(
             tag = match.group(1)
             colour = properties.get('color')
             style = properties.get('style')
-            if colour or style:
-                borderStyleMap[tag] = (colour, style)
+            if colour is not None or style is not None:
+                borderStyles.append(survey.RawBorderStyle(
+                    tag=tag,
+                    colour=colour,
+                    style=style))
 
         match = _RouteStylePattern.match(styleKey)
         if match:
@@ -55,9 +32,15 @@ def parseSectorStyleSheet(
             colour = properties.get('color')
             style = properties.get('style')
             width = properties.get('width')
-            if width:
+            if width is not None:
                 width = float(width)
-            if colour or style or width:
-                routeStyleMap[tag] = (colour, style, width)
+            if colour is not None or style is not None or width is not None:
+                routeStyles.append(survey.RawRouteStyle(
+                    tag=tag,
+                    colour=colour,
+                    style=style,
+                    width=width))
 
-    return (borderStyleMap, routeStyleMap)
+    return survey.RawStyleSheet(
+        routeStyles=routeStyles,
+        borderStyles=borderStyles)

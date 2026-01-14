@@ -862,7 +862,6 @@ class MapWidget(QtWidgets.QWidget):
         self._imageStore = cartographer.ImageStore(graphics=self._mapGraphics)
         self._vectorStore = cartographer.VectorStore(graphics=self._mapGraphics)
         self._labelStore = cartographer.LabelStore(universe=self._universe)
-        self._styleStore = cartographer.StyleStore()
         self._renderer = self._newRenderer()
 
         self._worldDragAnchor: typing.Optional[QtCore.QPointF] = None
@@ -1930,7 +1929,6 @@ class MapWidget(QtWidgets.QWidget):
             style=self._style,
             options=gui.mapOptionsToRenderOptions(self._options),
             imageStore=self._imageStore,
-            styleStore=self._styleStore,
             vectorStore=self._vectorStore,
             labelStore=self._labelStore)
 
