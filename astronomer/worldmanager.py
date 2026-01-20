@@ -15,11 +15,6 @@ class WorldManager(object):
     # specified milieu but the position is
     _PlaceholderMilieu = astronomer.Milieu.M1105
 
-    # Pattern used by Traveller Map to replace white space with '\n' to do
-    # word wrapping
-    # Use with `_WrapPattern.sub('\n', label)` to  replace
-    _LineWrapPattern = re.compile(r'\s+(?![a-z])')
-
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _universe: astronomer.Universe = None
@@ -732,28 +727,16 @@ class WorldManager(object):
                         if not allegiance:
                             logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
 
-                    # Default label to allegiance and word wrap now so it doesn't need
-                    # to be done every time the border is rendered
-                    # TODO: This is probably bad, should be done in cartographer. However
-                    # doing that is complicated by the fact I don't want to be running
-                    # regexes for the word wrap at render time but word wrapping needs
-                    # to be done after the logic to replace the label with the allegiance
-                    # so that the allegiance name is word wrapped if it ends up being used.
-                    label = dbBorder.label()
-                    if not label and allegiance:
-                        label = allegiance.name()
-                    if label and dbBorder.wrapLabel():
-                        label = WorldManager._LineWrapPattern.sub('\n', label)
-
                     borders.append(astronomer.Border(
                         hexList=hexes,
                         allegiance=allegiance,
                         style=WorldManager._mapLineStyle(dbBorder.style()),
                         colour=colour,
-                        label=label,
+                        label=dbBorder.label(),
                         labelWorldX=dbBorder.labelX(),
                         labelWorldY=dbBorder.labelY(),
-                        showLabel=dbBorder.showLabel()))
+                        showLabel=dbBorder.showLabel(),
+                        wrapLabel=dbBorder.wrapLabel()))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process border {dbBorder.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -772,11 +755,6 @@ class WorldManager(object):
                             offsetX=hexX,
                             offsetY=hexY))
 
-                    # Line wrap now so it doesn't need to be done every time the region is rendered
-                    label = dbRegion.label()
-                    if label and dbRegion.wrapLabel():
-                        label = WorldManager._LineWrapPattern.sub('\n', label)
-
                     colour = dbRegion.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
                         logging.warning(f'Ignoring invalid colour "{colour}" for region {dbRegion.id()} in sector {sectorName} from {milieu.value}')
@@ -785,10 +763,11 @@ class WorldManager(object):
                     regions.append(astronomer.Region(
                         hexList=hexes,
                         colour=colour,
-                        label=label,
+                        label=dbRegion.label(),
                         labelWorldX=dbRegion.labelX(),
                         labelWorldY=dbRegion.labelY(),
-                        showLabel=dbRegion.showLabel()))
+                        showLabel=dbRegion.showLabel(),
+                        wrapLabel=dbRegion.wrapLabel()))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process region {dbRegion.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -799,22 +778,18 @@ class WorldManager(object):
         if dbLabels:
             for dbLabel in dbLabels:
                 try:
-                    # Line wrap now so it doesn't need to be done every time the label is rendered
-                    text = dbLabel.text()
-                    if dbLabel.wrap():
-                        text = WorldManager._LineWrapPattern.sub('\n', text)
-
                     colour = dbLabel.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
                         logging.warning(f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} from {milieu.value}')
                         colour = None
 
                     labels.append(astronomer.Label(
-                        text=text,
+                        text=dbLabel.text(),
                         x=dbLabel.x(),
                         y=dbLabel.y(),
                         colour=colour,
-                        size=WorldManager._mapLabelSize(dbLabel.size())))
+                        size=WorldManager._mapLabelSize(dbLabel.size()),
+                        wrap=dbLabel.wrap()))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process label {dbLabel.id()} in metadata for sector {sectorName} from {milieu.value}',

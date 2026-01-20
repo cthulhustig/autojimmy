@@ -34,7 +34,8 @@ class Region(object):
             label: typing.Optional[str],
             labelWorldX: typing.Optional[float],
             labelWorldY: typing.Optional[float],
-            showLabel: bool
+            showLabel: bool,
+            wrapLabel: bool
             ) -> None:
         self._hexList = list(hexList)
         self._colour = colour
@@ -42,6 +43,7 @@ class Region(object):
         self._labelWorldX = labelWorldX
         self._labelWorldY = labelWorldY
         self._showLabel = showLabel
+        self._wrapLabel = wrapLabel
         self._outline: typing.Optional[typing.List[typing.Tuple[float, float]]] = None
 
     def hexList(self) -> typing.Iterable[astronomer.HexPosition]:
@@ -62,6 +64,9 @@ class Region(object):
 
     def showLabel(self) -> bool:
         return self._showLabel
+
+    def wrapLabel(self) -> bool:
+        return self._wrapLabel
 
     def worldOutline(self) -> typing.Iterable[typing.Tuple[float, float]]:
         if self._outline is not None:

@@ -1,9 +1,9 @@
 import astronomer
+import cartographer
 import common
 import enum
-import cartographer
+import re
 import math
-import traveller
 import typing
 
 class RenderContext(object):
@@ -729,6 +729,13 @@ class RenderContext(object):
                         continue
 
                     label = border.label()
+                    if not label:
+                        allegiance = border.allegiance()
+                        if allegiance:
+                            label = allegiance.name()
+                    if label and border.wrapLabel():
+                        label = RenderContext._wrapLabelText(label)
+
                     labelWorldX = border.labelWorldX()
                     labelWorldY = border.labelWorldY()
 
@@ -750,6 +757,9 @@ class RenderContext(object):
                         continue
 
                     label = region.label()
+                    if label and region.wrapLabel():
+                        label = RenderContext._wrapLabelText(label)
+
                     labelWorldX = region.labelWorldX()
                     labelWorldY = region.labelWorldY()
 
@@ -769,6 +779,8 @@ class RenderContext(object):
 
                 for label in sector.yieldLabels():
                     text = label.text()
+                    if label.wrap():
+                        text = RenderContext._wrapLabelText(text)
 
                     labelPos = cartographer.PointF(
                         sectorWorldOriginX + label.x(),
@@ -2338,3 +2350,13 @@ class RenderContext(object):
     def _hexToCenter(hex: astronomer.HexPosition) -> cartographer.PointF:
         centerX, centerY = hex.worldCenter()
         return cartographer.PointF(x=centerX, y=centerY)
+
+    # Pattern used by Traveller Map to replace white space with '\n' to do
+    # wrapping of basic labels and the labels used on borders and regions. It
+    # works by putting '\n' between words that start with upper case letters,
+    # e.g. "Hegemony of Lorean" becomes "Hegemony of\nLorean"
+    _TextWrapPattern = re.compile(r'\s+(?![a-z])')
+
+    @staticmethod
+    def _wrapLabelText(text: str) -> str:
+        return RenderContext._TextWrapPattern.sub('\n', text)

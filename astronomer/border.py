@@ -12,6 +12,7 @@ class Border(astronomer.Region):
             labelWorldX: typing.Optional[float],
             labelWorldY: typing.Optional[float],
             showLabel: bool,
+            wrapLabel: bool
             ) -> None:
         super().__init__(
             hexList=hexList,
@@ -19,7 +20,8 @@ class Border(astronomer.Region):
             label=label,
             labelWorldX=labelWorldX,
             labelWorldY=labelWorldY,
-            showLabel=showLabel)
+            showLabel=showLabel,
+            wrapLabel=wrapLabel)
         self._allegiance = allegiance
         self._style = style
 

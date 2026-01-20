@@ -12,13 +12,15 @@ class Label(object):
             x: float,
             y: float,
             colour: typing.Optional[str],
-            size: typing.Optional[Size]
+            size: typing.Optional[Size],
+            wrap: bool
             ) -> None:
         self._text = text
         self._x = x
         self._y = y
         self._colour = colour
         self._size = size
+        self._wrap = wrap
 
     def text(self) -> str:
         return self._text
@@ -34,3 +36,6 @@ class Label(object):
 
     def size(self) -> typing.Optional[Size]:
         return self._size
+
+    def wrap(self) -> bool:
+        return self._wrap
