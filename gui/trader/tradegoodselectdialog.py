@@ -1,4 +1,5 @@
 import gui
+import logic
 import traveller
 import typing
 from PyQt5 import QtWidgets
@@ -7,7 +8,7 @@ class TradeGoodSelectDialog(gui.DialogEx):
     def __init__(
             self,
             rules: traveller.Rules,
-            filterCallback: typing.Optional[typing.Callable[[traveller.TradeGood], bool]] = None,
+            filterCallback: typing.Optional[typing.Callable[[logic.TradeGood], bool]] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(

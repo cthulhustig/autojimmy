@@ -1,7 +1,7 @@
+import astronomer
 import logic
 import time
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtCore
 
@@ -16,8 +16,8 @@ class SimulatorJob(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             rules: traveller.Rules,
-            milieu: multiverse.Milieu,
-            startHex: multiverse.HexPosition,
+            milieu: astronomer.Milieu,
+            startHex: astronomer.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,

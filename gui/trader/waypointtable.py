@@ -1,10 +1,10 @@
 import app
+import astronomer
 import enum
 import gui
 import logging
 import logic
 import traveller
-import multiverse
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -72,7 +72,7 @@ class WaypointTable(gui.HexTable):
 
     def __init__(
             self,
-            milieu: multiverse.Milieu,
+            milieu: astronomer.Milieu,
             rules: traveller.Rules,
             worldTagging: typing.Optional[logic.WorldTagging] = None,
             taggingColours: typing.Optional[app.TaggingColours] = None,
@@ -192,9 +192,9 @@ class WaypointTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            hex: multiverse.HexPosition
+            hex: astronomer.HexPosition
             ) -> int:
-        world = multiverse.WorldManager.instance().worldByPosition(
+        world = astronomer.WorldManager.instance().worldByPosition(
             milieu=self._milieu,
             hex=hex)
 
