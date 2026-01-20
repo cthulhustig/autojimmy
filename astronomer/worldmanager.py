@@ -70,10 +70,17 @@ class WorldManager(object):
                 currentProgress = 0
                 sectors = []
                 for dbSectorInfo in dbSectorInfos:
+                    sectorX = dbSectorInfo.sectorX()
+                    sectorY = dbSectorInfo.sectorY()
                     canonicalName = dbSectorInfo.name()
-                    milieu = astronomer.Milieu[dbSectorInfo.milieu()] # TODO: This is ugly, should probably do something like I do with WorldManager._mapLineStyle
+                    milieu = dbSectorInfo.milieu()
+                    try:
+                        milieu = WorldManager._mapMilieu(milieu)
+                    except Exception as ex:
+                        logging.error(f'Failed to process sector {canonicalName} at ({sectorX}, {sectorY}) with unknown "{milieu}"', exc_info=ex)
+                        continue
 
-                    logging.debug(f'Processing sector {canonicalName} from {milieu.value}')
+                    logging.debug(f'Processing sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     if progressCallback:
                         stage = f'Loading: {milieu.value} - {canonicalName}'
@@ -86,11 +93,11 @@ class WorldManager(object):
                             transaction=transaction)
                         sector = self._processSector(dbSector=dbSector)
                     except Exception as ex:
-                        logging.error(f'Failed to process sector {canonicalName} from {milieu.value}', exc_info=ex)
+                        logging.error(f'Failed to process sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}', exc_info=ex)
                         continue
 
                     worldCount = sector.worldCount()
-                    logging.debug(f'Loaded {worldCount} worlds for sector {canonicalName} from {milieu.value}')
+                    logging.debug(f'Loaded {worldCount} worlds for sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}')
                     sectors.append(sector)
 
                 self._universe = astronomer.Universe(
@@ -484,7 +491,7 @@ class WorldManager(object):
         sectorX = dbSector.sectorX()
         sectorY = dbSector.sectorY()
 
-        milieu = astronomer.Milieu[dbSector.milieu()] # TODO: This is ugly
+        milieu = WorldManager._mapMilieu(dbSector.milieu())
 
         # TODO: I'm currently throwing away the language info for the
         # primary and alternate names
@@ -746,10 +753,7 @@ class WorldManager(object):
                         label=label,
                         labelWorldX=dbBorder.labelX(),
                         labelWorldY=dbBorder.labelY(),
-                        # Show label use the same defaults as the traveller map Border class
-                        # TODO: I think I've broken something here as show label can't be null in the
-                        # DB. I suspect I need to move this logic to the converter
-                        showLabel=dbBorder.showLabel() if dbBorder.showLabel() is not None else True))
+                        showLabel=dbBorder.showLabel()))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process border {dbBorder.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -784,10 +788,7 @@ class WorldManager(object):
                         label=label,
                         labelWorldX=dbRegion.labelX(),
                         labelWorldY=dbRegion.labelY(),
-                        # Show label use the same defaults as the Traveller Map Border class
-                        # TODO: I think I've broken something here as show label can't be null in the
-                        # DB. I suspect I need to move this logic to the converter
-                        showLabel=dbRegion.showLabel() if dbRegion.showLabel() is not None else True))
+                        showLabel=dbRegion.showLabel()))
                 except Exception as ex:
                     logging.warning(
                         f'Failed to process region {dbRegion.id()} in metadata for sector {sectorName} from {milieu.value}',
@@ -869,6 +870,13 @@ class WorldManager(object):
             tags=tags,
             sources=sources,
             isCustom=dbSector.isCustom())
+
+    @staticmethod
+    def _mapMilieu(milieu: str) -> astronomer.Milieu:
+        try:
+            return astronomer.Milieu[milieu]
+        except:
+            raise ValueError(f'Invalid milieu "{milieu}"')
 
     _LineStyleMap = {
         'solid': astronomer.LineStyle.Solid,

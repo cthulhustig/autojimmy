@@ -1297,6 +1297,7 @@ def _createDbBorders(
                     # have an inverted Y direction compared to world space
                     worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
 
+            # Show label use the same defaults as the traveller map Border class
             rawShowLabel = rawBorder.showLabel()
             dbShowLabel = rawShowLabel if rawShowLabel is not None else True
 
@@ -1345,6 +1346,7 @@ def _createDbRegions(
                     # have an inverted Y direction compared to world space
                     worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
 
+            # Show label use the same defaults as the Traveller Map Border class
             rawShowLabel = rawRegion.showLabel()
             dbShowLabel = rawShowLabel if rawShowLabel is not None else True
 
