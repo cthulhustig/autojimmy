@@ -924,10 +924,6 @@ class MultiverseDb(object):
                     ColumnDef(columnName='universe_id', columnType=ColumnDef.ColumnType.Text, isNullable=False,
                               foreignTableName=MultiverseDb._UniversesTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
-                    # TODO: I probably want to store the milieu as the integer year but I'll need
-                    # something to support named milieu (e.g. IW for Interstellar War). It probably
-                    # means a separate milieu description table that stores per universe year to
-                    # name mapping
                     ColumnDef(columnName='milieu', columnType=ColumnDef.ColumnType.Text, isNullable=False),
                     ColumnDef(columnName='sector_x', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
                     ColumnDef(columnName='sector_y', columnType=ColumnDef.ColumnType.Integer, isNullable=False),
@@ -1605,16 +1601,13 @@ class MultiverseDb(object):
 
             sectorNames = []
             for sectorInfo in universeInfo.sectorInfos():
-                try:
-                    nameInfos = sectorInfo.nameInfos()
-                    canonicalName = nameInfos[0].name() if nameInfos else None
-                    if not canonicalName:
-                        raise RuntimeError('Sector has no name')
-                    sectorNames.append(canonicalName)
-                    totalSectorCount += 1
-                except Exception as ex:
-                    # TODO: Log something but continue
+                nameInfos = sectorInfo.nameInfos()
+                canonicalName = nameInfos[0].name() if nameInfos else None
+                if not canonicalName:
+                    logging.warning(f'Default universe import ignoring sector with no name in {universeInfoPath}')
                     continue
+                sectorNames.append(canonicalName)
+                totalSectorCount += 1
 
             milieuSectors.append((milieu, sectorNames))
 
@@ -1627,14 +1620,17 @@ class MultiverseDb(object):
         for milieu, sectorNames in milieuSectors:
             milieuPath = os.path.join(universePath, milieu)
             for sectorName in sectorNames:
-                try:
-                    if progressCallback:
+                if progressCallback:
+                    try:
                         progressCallback(
                             f'Reading: {milieu} - {sectorName}',
                             progressCount,
                             totalSectorCount)
                         progressCount += 1
+                    except Exception as ex:
+                        logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
 
+                try:
                     escapedName = common.encodeFileName(rawFileName=sectorName)
 
                     metadataPath = os.path.join(milieuPath, escapedName + '.xml')
@@ -1646,14 +1642,16 @@ class MultiverseDb(object):
                         rawSystems = survey.parseT5ColumnSector(content=file.read())
                     rawData.append((milieu, rawMetadata, rawSystems))
                 except Exception as ex:
-                    # TODO: Log something but continue
-                    continue
+                    logging.error(f'Default universe import failed to load data for sector {sectorName} from {milieu}', exc_info=ex)
 
         if progressCallback:
-            progressCallback(
-                f'Reading: Complete!',
-                totalSectorCount,
-                totalSectorCount)
+            try:
+                progressCallback(
+                    f'Reading: Complete!',
+                    totalSectorCount,
+                    totalSectorCount)
+            except Exception as ex:
+                logging.warning('Default universe import progress callback threw an exception', exc_info=ex)
 
         dbUniverse = multiverse.convertRawUniverseToDbUniverse(
             universeId=MultiverseDb._DefaultUniverseId,
@@ -1716,11 +1714,14 @@ class MultiverseDb(object):
         if sectors:
             for progressCount, sector in enumerate(sectors):
                 if progressCallback:
-                    progressCallback(
-                        sector.milieu(),
-                        sector.primaryName(),
-                        progressCount,
-                        totalSectorCount)
+                    try:
+                        progressCallback(
+                            sector.milieu(),
+                            sector.primaryName(),
+                            progressCount,
+                            totalSectorCount)
+                    except Exception as ex:
+                        logging.warning('MultiverseDb universe insert progress callback threw an exception', exc_info=ex)
 
                 if not updateDefault and not sector.isCustom():
                     continue # Only write custom sectors
@@ -1730,11 +1731,14 @@ class MultiverseDb(object):
                     cursor=cursor)
 
         if progressCallback:
-            progressCallback(
-                None,
-                None,
-                totalSectorCount,
-                totalSectorCount)
+            try:
+                progressCallback(
+                    None,
+                    None,
+                    totalSectorCount,
+                    totalSectorCount)
+            except Exception as ex:
+                logging.warning('MultiverseDb universe insert progress callback threw an exception', exc_info=ex)
 
     def _internalReadUniverse(
             self,
@@ -1792,11 +1796,14 @@ class MultiverseDb(object):
             sectorMilieu = row[2]
 
             if progressCallback:
-                progressCallback(
-                    sectorMilieu,
-                    sectorName,
-                    progressCount,
-                    totalSectorCount)
+                try:
+                    progressCallback(
+                        sectorMilieu,
+                        sectorName,
+                        progressCount,
+                        totalSectorCount)
+                except Exception as ex:
+                    logging.warning('MultiverseDb universe read progress callback threw an exception', exc_info=ex)
 
             sector = self._internalReadSector(
                 sectorId=sectorId,
@@ -1807,11 +1814,14 @@ class MultiverseDb(object):
             sectors.append(sector)
 
         if progressCallback:
-            progressCallback(
-                None,
-                None,
-                totalSectorCount,
-                totalSectorCount)
+            try:
+                progressCallback(
+                    None,
+                    None,
+                    totalSectorCount,
+                    totalSectorCount)
+            except Exception as ex:
+                logging.warning('MultiverseDb universe read progress callback threw an exception', exc_info=ex)
 
         return multiverse.DbUniverse(
             id=universeId,

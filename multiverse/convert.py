@@ -1468,10 +1468,13 @@ def convertRawUniverseToDbUniverse(
     totalSectorCount = len(rawSectors)
     for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawSectors):
         if progressCallback:
-            progressCallback(
-                f'Converting: {milieu} - {rawMetadata.canonicalName()}',
-                progressCount,
-                totalSectorCount)
+            try:
+                progressCallback(
+                    f'Converting: {milieu} - {rawMetadata.canonicalName()}',
+                    progressCount,
+                    totalSectorCount)
+            except Exception as ex:
+                logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
 
         dbUniverse.addSector(convertRawSectorToDbSector(
             milieu=milieu,
@@ -1483,10 +1486,13 @@ def convertRawUniverseToDbUniverse(
             isCustom=isCustom))
 
     if progressCallback:
-        progressCallback(
-            f'Converting: Complete!',
-            totalSectorCount,
-            totalSectorCount)
+        try:
+            progressCallback(
+                f'Converting: Complete!',
+                totalSectorCount,
+                totalSectorCount)
+        except Exception as ex:
+            logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
 
     return dbUniverse
 

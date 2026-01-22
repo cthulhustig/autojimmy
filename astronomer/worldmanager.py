@@ -53,7 +53,10 @@ class WorldManager(object):
             with multiverse.MultiverseDb.instance().createTransaction() as transaction:
                 if progressCallback:
                     stage = f'Enumerating Sectors'
-                    progressCallback(stage, 0, 0)
+                    try:
+                        progressCallback(stage, 0, 0)
+                    except Exception as ex:
+                        logging.warning(f'Sector loading progress callback threw an exception', exc_info=ex)
 
                 dbSectorInfos = multiverse.MultiverseDb.instance().listSectorInfo(
                     universeId=multiverse.customUniverseId(),
@@ -79,7 +82,10 @@ class WorldManager(object):
                     if progressCallback:
                         stage = f'Loading: {milieu.value} - {canonicalName}'
                         currentProgress += 1
-                        progressCallback(stage, currentProgress, maxProgress)
+                        try:
+                            progressCallback(stage, currentProgress, maxProgress)
+                        except Exception as ex:
+                            logging.warning(f'Sector loading progress callback threw an exception', exc_info=ex)
 
                     try:
                         dbSector = multiverse.MultiverseDb.instance().loadSector(
