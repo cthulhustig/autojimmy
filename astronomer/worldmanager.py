@@ -91,9 +91,9 @@ class WorldManager(object):
                         dbSector = multiverse.MultiverseDb.instance().loadSector(
                             sectorId=dbSectorInfo.id(),
                             transaction=transaction)
-                        sector = self._processSector(dbSector=dbSector)
+                        sector = self._convertDbSector(dbSector=dbSector)
                     except Exception as ex:
-                        logging.error(f'Failed to process sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}', exc_info=ex)
+                        logging.error(f'Failed to load sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}', exc_info=ex)
                         continue
 
                     worldCount = sector.worldCount()
@@ -112,7 +112,7 @@ class WorldManager(object):
             ) -> typing.Tuple[astronomer.Universe, astronomer.Sector]:
         dbSector = multiverse.MultiverseDb.instance().loadSector(
             sectorId=dbSectorId)
-        sector = self._processSector(dbSector=dbSector)
+        sector = self._convertDbSector(dbSector=dbSector)
         return (astronomer.Universe(sectors=[sector]), sector)
 
     def universe(self) -> astronomer.Universe:
@@ -484,7 +484,7 @@ class WorldManager(object):
             maxResults=maxResults)
 
     @staticmethod
-    def _processSector(
+    def _convertDbSector(
             dbSector: multiverse.DbSector
             ) -> astronomer.Sector:
         sectorName = dbSector.primaryName()
