@@ -1,6 +1,5 @@
 import astronomer
 import common
-import re
 import logging
 import multiverse
 import threading
@@ -523,16 +522,19 @@ class WorldManager(object):
         allegianceCodeMap: typing.Dict[str, astronomer.Allegiance] = {}
         if dbSector.allegiances():
             for dbAllegiance in dbSector.allegiances():
-                allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
-                    code=dbAllegiance.code(),
-                    name=dbAllegiance.name(),
-                    legacyCode=dbAllegiance.legacy(),
-                    baseCode=dbAllegiance.base(),
-                    routeColour=dbAllegiance.routeColour(),
-                    routeStyle=WorldManager._mapLineStyle(dbAllegiance.routeStyle()),
-                    routeWidth=dbAllegiance.routeWidth(),
-                    borderColour=dbAllegiance.borderColour(),
-                    borderStyle=WorldManager._mapLineStyle(dbAllegiance.borderStyle()))
+                try:
+                    allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
+                        code=dbAllegiance.code(),
+                        name=dbAllegiance.name(),
+                        legacyCode=dbAllegiance.legacy(),
+                        baseCode=dbAllegiance.base(),
+                        routeColour=dbAllegiance.routeColour(),
+                        routeStyle=WorldManager._mapLineStyle(dbAllegiance.routeStyle()),
+                        routeWidth=dbAllegiance.routeWidth(),
+                        borderColour=dbAllegiance.borderColour(),
+                        borderStyle=WorldManager._mapLineStyle(dbAllegiance.borderStyle()))
+                except Exception as ex:
+                    logging.warning(f'Failed to load allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
         dbSophonts = dbSector.sophonts()
         sophontsNameMap: typing.Dict[str, str] = {}
@@ -574,7 +576,7 @@ class WorldManager(object):
                     if dbAllegiance:
                         allegiance = allegianceCodeMap.get(dbAllegiance.code())
                         if not allegiance:
-                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for world {worldName} in sector {sectorName} from {milieu.value}')
+                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for world {worldName} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     zone = astronomer.parseZoneString(
                         dbSystem.zone() if dbSystem.zone() else '')
@@ -639,9 +641,8 @@ class WorldManager(object):
                     subsectorWorlds.append(world)
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process system {dbSystem.id()} in data for sector {sectorName} from {milieu.value}',
+                        f'Failed to load system {dbSystem.id()} in data for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
                         exc_info=ex)
-                    continue # Continue trying to process the rest of the worlds
 
         subsectors = []
         for subsectorCode in subsectorCodes:
@@ -677,7 +678,7 @@ class WorldManager(object):
 
                     colour = dbRoute.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
                     dbAllegiance = dbRoute.allegiance()
@@ -686,7 +687,7 @@ class WorldManager(object):
                         allegianceCode = dbAllegiance.code()
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for route {dbBorder.id()} in sector {sectorName} from {milieu.value}')
+                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for route {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     routes.append(astronomer.Route(
                         startHex=startHex,
@@ -698,7 +699,7 @@ class WorldManager(object):
                         width=dbRoute.width()))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process route {dbRoute.id()} in metadata for sector {sectorName} from {milieu.value}',
+                        f'Failed to load route {dbRoute.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
                         exc_info=ex)
 
         dbBorders = dbSector.borders()
@@ -716,7 +717,7 @@ class WorldManager(object):
 
                     colour = dbBorder.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
                     dbAllegiance = dbBorder.allegiance()
@@ -725,7 +726,7 @@ class WorldManager(object):
                         allegianceCode = dbAllegiance.code()
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} from {milieu.value}')
+                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
@@ -739,7 +740,7 @@ class WorldManager(object):
                         wrapLabel=dbBorder.wrapLabel()))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process border {dbBorder.id()} in metadata for sector {sectorName} from {milieu.value}',
+                        f'Failed to load border {dbBorder.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
                         exc_info=ex)
 
         dbRegions = dbSector.regions()
@@ -757,7 +758,7 @@ class WorldManager(object):
 
                     colour = dbRegion.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for region {dbRegion.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for region {dbRegion.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
                     regions.append(astronomer.Region(
@@ -770,7 +771,7 @@ class WorldManager(object):
                         wrapLabel=dbRegion.wrapLabel()))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process region {dbRegion.id()} in metadata for sector {sectorName} from {milieu.value}',
+                        f'Failed to load region {dbRegion.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
                         exc_info=ex)
 
         dbLabels = dbSector.labels()
@@ -780,7 +781,7 @@ class WorldManager(object):
                 try:
                     colour = dbLabel.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} from {milieu.value}')
+                        logging.warning(f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
                     labels.append(astronomer.Label(
@@ -792,10 +793,15 @@ class WorldManager(object):
                         wrap=dbLabel.wrap()))
                 except Exception as ex:
                     logging.warning(
-                        f'Failed to process label {dbLabel.id()} in metadata for sector {sectorName} from {milieu.value}',
+                        f'Failed to load label {dbLabel.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
                         exc_info=ex)
 
-        tags = astronomer.SectorTagging(dbTags=dbSector.tags())
+        try:
+            tags = astronomer.SectorTagging(dbTags=dbSector.tags())
+        except Exception as ex:
+            logging.warning(
+                f'Failed to load sector tagging for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                exc_info=ex)
 
         dbPrimaryPublication = dbSector.publication()
         dbPrimaryAuthor = dbSector.author()
@@ -807,25 +813,40 @@ class WorldManager(object):
         if dbPrimaryPublication or dbPrimaryAuthor or dbPrimaryPublisher or dbPrimaryReference or dbCredits or dbProducts:
             primary = None
             if dbPrimaryPublication or dbPrimaryAuthor or dbPrimaryPublisher or dbPrimaryReference:
-                primary = astronomer.SectorSource(
-                    publication=dbPrimaryPublication,
-                    author=dbPrimaryAuthor,
-                    publisher=dbPrimaryPublisher,
-                    reference=dbPrimaryReference)
+                try:
+                    primary = astronomer.SectorSource(
+                        publication=dbPrimaryPublication,
+                        author=dbPrimaryAuthor,
+                        publisher=dbPrimaryPublisher,
+                        reference=dbPrimaryReference)
+                except Exception as ex:
+                    logging.warning(
+                        f'Failed to load primary source for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                        exc_info=ex)
 
             products = []
             if dbProducts:
                 for dbProduct in dbProducts:
-                    products.append(astronomer.SectorSource(
-                        publication=dbProduct.publication(),
-                        author=dbProduct.author(),
-                        publisher=dbProduct.publisher(),
-                        reference=dbProduct.reference()))
+                    try:
+                        products.append(astronomer.SectorSource(
+                            publication=dbProduct.publication(),
+                            author=dbProduct.author(),
+                            publisher=dbProduct.publisher(),
+                            reference=dbProduct.reference()))
+                    except Exception as ex:
+                        logging.warning(
+                            f'Failed to load source {dbProduct.id()} for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                            exc_info=ex)
 
-            sources = astronomer.SectorSources(
-                credits=dbCredits,
-                primary=primary,
-                products=products)
+            try:
+                sources = astronomer.SectorSources(
+                    credits=dbCredits,
+                    primary=primary,
+                    products=products)
+            except Exception as ex:
+                logging.warning(
+                    f'Failed to load sources for sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                    exc_info=ex)
 
         return astronomer.Sector(
             name=sectorName,
