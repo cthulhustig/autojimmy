@@ -219,8 +219,7 @@ def parseT5ColumnSector(content: str) -> typing.Collection[survey.RawWorld]:
                 columnAttributes=columnAttributes,
                 columnWidths=columnWidths))
         except Exception as ex:
-            logging.warning(
-                f'Failed parse world on sector file {lineNumber} ({str(ex)})')
+            logging.warning(f'Failed parse world on sector file {lineNumber}', exc_info=ex)
             continue
     return worlds
 
@@ -307,8 +306,7 @@ def parseT5TabSector(content: str) -> typing.Collection[survey.RawWorld]:
                 line=line,
                 columnAttributes=columnAttributes))
         except Exception as ex:
-            logging.warning(
-                f'Failed parse world on sector file line {lineNumber} ({str(ex)})')
+            logging.warning(f'Failed parse world on sector file line {lineNumber}', exc_info=ex)
             continue
     return worlds
 
@@ -316,12 +314,12 @@ def _parseT5TabWorld(
         line: str,
         columnAttributes: typing.Collection[_WorldAttribute],
         ) -> survey.RawWorld:
-    columnData = line.split('\t')
+    columnValues = line.split('\t')
     valueMap: typing.Dict[_WorldAttribute, typing.Optional[str]] = {}
     for index, attribute in enumerate(columnAttributes):
         if attribute is None:
             continue
-        if index >= len(columnData):
+        if index >= len(columnValues):
             # There are less columns for this world than defined in the header.
             # I think this is technically invalid but we can handle by just
             # treating that data as unspecified (as it would if the column
@@ -329,6 +327,7 @@ def _parseT5TabWorld(
             # pain in the ass and error prone so I can see it being wrong in a
             # lot of files that are otherwise valid.
             break
+        data = columnValues[index]
         if data and _isAllDashes(data):
             data = '' # Replace no data marker with empty string
         valueMap[attribute] = data
