@@ -848,10 +848,6 @@ class MultiverseDb(object):
         #connection.set_trace_callback(print)
         return connection
 
-    # TODO: Need to make sure I want to go with all the unique constraints as
-    # it could cause problems if stock data changes in the future or with
-    # custom sectors. I need to make sure the database classes enforce the
-    # constraints so it shouldn't get to the point of failing a DB write.
     def _initTables(self) -> None:
         connection = None
         cursor = None
@@ -936,9 +932,7 @@ class MultiverseDb(object):
                               foreignTableName=MultiverseDb._SectorsTableName, foreignColumnName='id',
                               foreignDeleteOp=ColumnDef.ForeignKeyDeleteOp.Cascade),
                     ColumnDef(columnName='name', columnType=ColumnDef.ColumnType.Text, isNullable=False),
-                    ColumnDef(columnName='language', columnType=ColumnDef.ColumnType.Text, isNullable=True)],
-                uniqueConstraints=[
-                    UniqueConstraintDef(columnNames=['sector_id', 'name'])])
+                    ColumnDef(columnName='language', columnType=ColumnDef.ColumnType.Text, isNullable=True)])
 
             self._internalCreateTable(
                 cursor=cursor,
