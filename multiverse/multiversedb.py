@@ -570,11 +570,6 @@ class MultiverseDb(object):
                     cursor=connection.cursor(),
                     progressCallback=insertProgressCallback)
 
-    # TODO: I think once I'm finished I should be able to make loading a single stage
-    # for each system (rather than separate loading/processing stages) as each
-    # sector should be completely self contained. To do this I'll need to drop the
-    # whole unique allegiance code thing as I believe getting the list of all allegiances
-    # before processing the systems was the only reason that was done
     def loadUniverse(
             self,
             universeId: str,
@@ -846,8 +841,6 @@ class MultiverseDb(object):
             connection.close()
 
     def _createConnection(self) -> sqlite3.Connection:
-        # TODO: Connection pool like ObjectDb????
-
         connection = sqlite3.connect(self._databasePath)
         logging.debug(f'ObjectDbManager created new connection {connection} to \'{self._databasePath}\'')
         connection.executescript(MultiverseDb._PragmaScript)

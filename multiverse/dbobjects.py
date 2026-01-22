@@ -1061,7 +1061,7 @@ class DbBorder(DbObject):
             label: typing.Optional[str] = None,
             labelWorldX: typing.Optional[float] = None,
             labelWorldY: typing.Optional[float] = None,
-            showLabel: bool = True, # TODO: This and wrap should be optional
+            showLabel: bool = True,
             wrapLabel: bool = False,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
@@ -1147,7 +1147,7 @@ class DbRegion(DbObject):
             label: typing.Optional[str] = None,
             labelX: typing.Optional[float] = None,
             labelY: typing.Optional[float] = None,
-            showLabel: bool = True, # TODO: This and wrap should be optional (and after the label string)
+            showLabel: bool = True,
             wrapLabel: bool = False,
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
