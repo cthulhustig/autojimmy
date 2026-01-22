@@ -1121,8 +1121,6 @@ def _createDbSystems(
         dbSystems.append(multiverse.DbSystem(
             hexX=int(rawHex[:2]),
             hexY=int(rawHex[-2:]),
-            # TODO: Should I make name optional? Some sectors don't have names
-            # (e.g. some of the ones that have a UWP of ???????-?).
             name=dbSystemName,
             starport=dbStarport,
             worldSize=dbWorldSize,
