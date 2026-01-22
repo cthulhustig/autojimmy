@@ -695,7 +695,7 @@ class MultiverseDb(object):
             self,
             sectorId: str,
             transaction: typing.Optional['MultiverseDb.Transaction'] = None
-            ) -> typing.Optional[multiverse.DbSector]:
+            ) -> multiverse.DbSector:
         logging.debug(f'MultiverseDb reading sector {sectorId}')
         if transaction != None:
             connection = transaction.connection()
@@ -1805,13 +1805,14 @@ class MultiverseDb(object):
                 except Exception as ex:
                     logging.warning('MultiverseDb universe read progress callback threw an exception', exc_info=ex)
 
-            sector = self._internalReadSector(
-                sectorId=sectorId,
-                cursor=cursor)
-            if not sector:
-                # TODO: Some kind of logging or error handling?
-                continue
-            sectors.append(sector)
+            try:
+                sector = self._internalReadSector(
+                    sectorId=sectorId,
+                    cursor=cursor)
+                sectors.append(sector)
+            except Exception as ex:
+                # Log error but continue loading
+                logging.error('MultiverseDb failed to read sector {sectorId}', exc_info=ex)
 
         if progressCallback:
             try:
@@ -2294,7 +2295,7 @@ class MultiverseDb(object):
             self,
             cursor: sqlite3.Cursor,
             sectorId: str
-            ) -> typing.Optional[multiverse.DbSector]:
+            ) -> multiverse.DbSector:
         sql = """
             SELECT universe_id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
@@ -2306,7 +2307,7 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         row = cursor.fetchone()
         if not row:
-            return None
+            raise ValueError(f'Unknown sector {sectorId}')
 
         sector = multiverse.DbSector(
             id=sectorId,

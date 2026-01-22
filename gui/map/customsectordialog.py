@@ -910,8 +910,13 @@ class CustomSectorDialog(gui.DialogEx):
             self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))
             return
 
-        universe, sector = astronomer.WorldManager.instance().createSectorUniverse(
-            dbSectorId=sectorInfo.id())
+        try:
+            universe, sector = astronomer.WorldManager.instance().createSectorUniverse(
+                dbSectorId=sectorInfo.id())
+        except Exception as ex:
+            logging.error('Failed to create sector universe for custom sector', exc_info=ex)
+            self._sectorMapWidget.setUniverse(universe=astronomer.Universe(sectors=[]))
+            return
 
         self._sectorMapWidget.setUniverse(universe=universe)
 
