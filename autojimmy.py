@@ -411,7 +411,7 @@ def main() -> None:
             # Continue loading the app with the existing data
 
         multiverseDbPath = multiverseDbPath = os.path.join(appDir, 'multiverse.db')
-        multiverse.MultiverseDb.configure(
+        multiverse.MultiverseDb.instance().initialise(
             appVersion=app.AppVersion,
             databasePath=multiverseDbPath)
 

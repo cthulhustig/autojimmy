@@ -254,6 +254,27 @@ class DbSectorInfo(object):
         return self._hash
 
 class MultiverseDb(object):
+    class TableVersionException(Exception):
+        def __init__(
+                self,
+                table: str,
+                required: int,
+                current: typing.Optional[int]
+                ) -> None:
+            super().__init__(f'MultiverseDb "{table}" table has schema version {current} when version {required} is required')
+            self._table = table
+            self._required = required
+            self._current = current
+
+        def table(self) -> str:
+            return self._table
+
+        def required(self) -> int:
+            return self._required
+
+        def current(self) -> typing.Optional[int]:
+            return self._current
+
     class Transaction(object):
         def __init__(
                 self,
@@ -430,6 +451,7 @@ class MultiverseDb(object):
 
     _lock = threading.RLock() # Recursive lock
     _instance = None # Singleton instance
+    _initialised = False
     _appVersion = None
     _databasePath = None
 
@@ -444,21 +466,22 @@ class MultiverseDb(object):
                 # first check adn the lock
                 if not cls._instance:
                     cls._instance = cls.__new__(cls)
-                    cls._instance._initTables()
         return cls._instance
 
-    @staticmethod
-    def configure(
-        appVersion: str,
-        databasePath: str
-        ) -> None:
-        if MultiverseDb._instance:
-            raise RuntimeError('You can\'t configure MultiverseDb after the singleton has been initialised')
+    def initialise(
+            self,
+            appVersion: str,
+            databasePath: str
+            ) -> None:
+        if self._initialised:
+            raise RuntimeError('The MultiverseDb singleton has already been initialised')
+
         MultiverseDb._appVersion = appVersion
         MultiverseDb._databasePath = databasePath
 
-    def databaseExists(self) -> bool:
-        return os.path.exists(MultiverseDb._databasePath)
+        self._initTables()
+
+        MultiverseDb._initialised = True
 
     def createTransaction(
             self,
@@ -1323,7 +1346,7 @@ class MultiverseDb(object):
             table: str,
             version: int
             ) -> None:
-        logging.info(f'MultiverseDb setting schema for \'{table}\' table to {version}')
+        logging.debug(f'MultiverseDb setting schema for \'{table}\' table to {version}')
         sql = """
             INSERT INTO {table} (name, version)
             VALUES (:name, :version)
@@ -1335,6 +1358,22 @@ class MultiverseDb(object):
             'version': version}
         cursor.execute(sql, rowData)
 
+    def _readSchemaVersion(
+            self,
+            cursor: sqlite3.Cursor,
+            table: str
+            ) -> typing.Optional[int]:
+        logging.debug(f'MultiverseDb reading schema for \'{table}\' table')
+        sql = """
+            SELECT version
+            FROM {table}
+            WHERE name = :name
+            LIMIT 1;
+            """.format(table=MultiverseDb._TableSchemaTableName)
+        cursor.execute(sql, {'name': table})
+        rowData = cursor.fetchone()
+        return rowData[0] if rowData else None
+
     def _createColumnIndex(
             self,
             cursor: sqlite3.Cursor,
@@ -1342,7 +1381,7 @@ class MultiverseDb(object):
             column: str,
             unique: bool
             ) -> None:
-        logging.info(f'MultiverseDb creating index for \'{column}\' in table \'{table}\'')
+        logging.debug(f'MultiverseDb creating index for \'{column}\' in table \'{table}\'')
         database.createColumnIndex(table=table, column=column, unique=unique, cursor=cursor)
 
     def _createMultiColumnIndex(
@@ -1352,7 +1391,7 @@ class MultiverseDb(object):
             columns: typing.Collection[str],
             unique: bool
             ) -> None:
-        logging.info(f'MultiverseDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
+        logging.debug(f'MultiverseDb creating index for \'{','.join(columns)}\' in table \'{table}\'')
         database.createMultiColumnIndex(table=table, columns=columns, unique=unique, cursor=cursor)
 
     def _setMetadata(
@@ -1405,10 +1444,16 @@ class MultiverseDb(object):
             tableName=tableName,
             cursor=cursor)
         if tableExists:
-            # TODO: This should check the table schema against what is required
-            # and raise TableVersionException if it doesn't match
+            currentSchemaVersion = self._readSchemaVersion(
+                table=tableName,
+                cursor=cursor)
+            if currentSchemaVersion is None or currentSchemaVersion != requiredSchemaVersion:
+                raise MultiverseDb.TableVersionException(
+                    table=tableName,
+                    required=requiredSchemaVersion,
+                    current=currentSchemaVersion)
 
-            return
+            return # Table exists with correct version
 
         sql = f'CREATE TABLE {tableName} (\n'
 
