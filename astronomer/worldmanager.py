@@ -70,14 +70,14 @@ class WorldManager(object):
                     sectorX = dbSectorInfo.sectorX()
                     sectorY = dbSectorInfo.sectorY()
                     canonicalName = dbSectorInfo.name()
-                    milieu = dbSectorInfo.milieu()
-                    try:
-                        milieu = WorldManager._mapMilieu(milieu)
-                    except Exception as ex:
-                        logging.error(f'Failed to process sector {canonicalName} at ({sectorX}, {sectorY}) with unknown "{milieu}"', exc_info=ex)
+                    milieu = WorldManager._mapMilieu(dbSectorInfo.milieu())
+
+                    if not milieu:
+                        logging.warning(
+                            f'Ignoring sector with unknown milieu "{dbSectorInfo.milieu()}" at ({sectorX}, {sectorY})')
                         continue
 
-                    logging.debug(f'Processing sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                    logging.debug(f'Loading sector {canonicalName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     if progressCallback:
                         stage = f'Loading: {milieu.value} - {canonicalName}'
@@ -492,6 +492,8 @@ class WorldManager(object):
         sectorY = dbSector.sectorY()
 
         milieu = WorldManager._mapMilieu(dbSector.milieu())
+        if not milieu:
+            raise ValueError(f'Sector has unknown milieu "{dbSector.milieu()}"')
 
         # TODO: I'm currently throwing away the language info for the
         # primary and alternate names
@@ -529,18 +531,34 @@ class WorldManager(object):
         if dbSector.allegiances():
             for dbAllegiance in dbSector.allegiances():
                 try:
+                    routeStyle = dbAllegiance.routeStyle()
+                    if routeStyle:
+                        routeStyle = WorldManager._mapLineStyle(routeStyle)
+                        if not routeStyle:
+                            logging.warning(
+                                f'Ignoring invalid route style "{dbAllegiance.routeStyle()}" for allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+
+                    borderStyle = dbAllegiance.borderStyle()
+                    if borderStyle:
+                        borderStyle = WorldManager._mapLineStyle(borderStyle)
+                        if not borderStyle:
+                            logging.warning(
+                                f'Ignoring invalid border style "{dbAllegiance.borderStyle()}" for allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+
                     allegianceCodeMap[dbAllegiance.code()] = astronomer.Allegiance(
                         code=dbAllegiance.code(),
                         name=dbAllegiance.name(),
                         legacyCode=dbAllegiance.legacy(),
                         baseCode=dbAllegiance.base(),
                         routeColour=dbAllegiance.routeColour(),
-                        routeStyle=WorldManager._mapLineStyle(dbAllegiance.routeStyle()),
+                        routeStyle=routeStyle,
                         routeWidth=dbAllegiance.routeWidth(),
                         borderColour=dbAllegiance.borderColour(),
-                        borderStyle=WorldManager._mapLineStyle(dbAllegiance.borderStyle()))
+                        borderStyle=borderStyle)
                 except Exception as ex:
-                    logging.warning(f'Failed to load allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                    logging.warning(
+                        f'Failed to load allegiance {dbAllegiance.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}',
+                        exc_info=ex)
 
         dbSophonts = dbSector.sophonts()
         sophontsNameMap: typing.Dict[str, str] = {}
@@ -577,10 +595,10 @@ class WorldManager(object):
                     subsectorCode = subsectorIndex.code()
                     subsectorName, _ = subsectorNameMap[subsectorCode]
 
-                    dbAllegiance = dbSystem.allegiance()
-                    allegiance = None
-                    if dbAllegiance:
-                        allegiance = allegianceCodeMap.get(dbAllegiance.code())
+                    allegiance = dbSystem.allegiance()
+                    if allegiance:
+                        allegianceCode = allegiance.code()
+                        allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
                             logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for world {worldName} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
@@ -684,23 +702,31 @@ class WorldManager(object):
 
                     colour = dbRoute.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning(
+                            f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
-                    dbAllegiance = dbRoute.allegiance()
-                    allegiance = None
-                    if dbAllegiance:
-                        allegianceCode = dbAllegiance.code()
+                    allegiance = dbRoute.allegiance()
+                    if allegiance:
+                        allegianceCode = allegiance.code()
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for route {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning(
+                                f'Ignoring unknown allegiance "{allegianceCode}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+
+                    style = dbRoute.style()
+                    if style:
+                        style = WorldManager._mapLineStyle(style)
+                        if not style:
+                            logging.warning(
+                                f'Ignoring invalid style "{dbRoute.style()}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     routes.append(astronomer.Route(
                         startHex=startHex,
                         endHex=endHex,
                         allegiance=allegiance,
                         type=dbRoute.type(),
-                        style=WorldManager._mapLineStyle(dbRoute.style()),
+                        style=style,
                         colour=colour,
                         width=dbRoute.width()))
                 except Exception as ex:
@@ -723,21 +749,29 @@ class WorldManager(object):
 
                     colour = dbBorder.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning(
+                            f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
-                    dbAllegiance = dbBorder.allegiance()
-                    allegiance = None
-                    if dbAllegiance:
-                        allegianceCode = dbAllegiance.code()
+                    allegiance = dbBorder.allegiance()
+                    if allegiance:
+                        allegianceCode = allegiance.code()
                         allegiance = allegianceCodeMap.get(allegianceCode)
                         if not allegiance:
-                            logging.warning(f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                            logging.warning(
+                                f'Ignoring unknown allegiance "{allegianceCode}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+
+                    style = dbBorder.style()
+                    if style:
+                        style = WorldManager._mapLineStyle(style)
+                        if not style:
+                            logging.warning(
+                                f'Ignoring invalid style "{dbBorder.style()}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     borders.append(astronomer.Border(
                         hexList=hexes,
                         allegiance=allegiance,
-                        style=WorldManager._mapLineStyle(dbBorder.style()),
+                        style=style,
                         colour=colour,
                         label=dbBorder.label(),
                         labelWorldX=dbBorder.labelX(),
@@ -787,15 +821,23 @@ class WorldManager(object):
                 try:
                     colour = dbLabel.colour()
                     if colour and not common.validateHtmlColour(htmlColour=colour):
-                        logging.warning(f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
+                        logging.warning(
+                            f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
+
+                    size = dbLabel.size()
+                    if size:
+                        size = WorldManager._mapLabelSize(size)
+                        if not size:
+                            logging.warning(
+                                f'Ignoring invalid size "{dbLabel.size()}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
 
                     labels.append(astronomer.Label(
                         text=dbLabel.text(),
                         x=dbLabel.x(),
                         y=dbLabel.y(),
                         colour=colour,
-                        size=WorldManager._mapLabelSize(dbLabel.size()),
+                        size=size,
                         wrap=dbLabel.wrap()))
                 except Exception as ex:
                     logging.warning(
@@ -874,11 +916,10 @@ class WorldManager(object):
             isCustom=dbSector.isCustom())
 
     @staticmethod
-    def _mapMilieu(milieu: str) -> astronomer.Milieu:
-        try:
-            return astronomer.Milieu[milieu]
-        except:
-            raise ValueError(f'Invalid milieu "{milieu}"')
+    def _mapMilieu(milieu: str) -> typing.Optional[astronomer.Milieu]:
+        if milieu not in astronomer.Milieu:
+            return None
+        return astronomer.Milieu[milieu]
 
     _LineStyleMap = {
         'solid': astronomer.LineStyle.Solid,
@@ -895,8 +936,7 @@ class WorldManager(object):
         lowerStyle = style.lower()
         mappedStyle = WorldManager._LineStyleMap.get(lowerStyle)
         if not mappedStyle:
-            # TODO: This should probably be more forgiving and just log and return None
-            raise ValueError(f'Invalid line style "{style}"')
+            return None
         return mappedStyle
 
     _LabelSizeMap = {
@@ -913,6 +953,5 @@ class WorldManager(object):
         lowerSize = size.lower()
         mappedSize = WorldManager._LabelSizeMap.get(lowerSize)
         if not mappedSize:
-            # TODO: This should probably be more forgiving and just log and return None
-            raise ValueError(f'Invalid label size "{size}"')
+            None
         return mappedSize
