@@ -675,7 +675,10 @@ def _createDbAllegiances(
 # This code generates a code for a sophont name following the rules defined on
 # the Traveller Wiki (at least as best as I can understand them)
 # https://wiki.travellerrpg.com/Sophont_Code
-def _generateSophontCode(name: str, existingCodes: typing.Collection[str]) -> str:
+def _generateSophontCode(
+        name: str,
+        existingCodes: typing.Collection[str]
+        ) -> str:
     length = len(name)
     code = ''
     for i in range(4):
@@ -703,6 +706,15 @@ def _generateSophontCode(name: str, existingCodes: typing.Collection[str]) -> st
                 return code
 
     raise RuntimeError(f'Unable to generate unused code for sophont {name}')
+
+def _generateSophontName(
+        code: str,
+        existingNames: typing.Collection[str]
+        ) -> str:
+    name = code
+    while name in existingNames:
+        name += 'X'
+    return name
 
 def _createDbSophonts(
         rawSystems: typing.Collection[survey.RawWorld],
@@ -755,10 +767,11 @@ def _createDbSophonts(
 
     dbSophontCodeMap: typing.Dict[str, multiverse.DbSophont] = {}
     dbSophontNameMap: typing.Dict[str, multiverse.DbSophont] = {}
-    if rawUsedSophontCodes or rawUsedSophontNames:
-        # IMPORTANT: Names MUST be processed before codes as we need codes for
-        # names that don't match a stock sophont to have been generated first
-        # so the DbSophont for that code is used when processing the used codes.
+
+    if rawUsedSophontNames or rawUsedSophontCodes:
+        uniqueCodes = set(rawStockSophontCodeMap.keys())
+        uniqueNames = set(rawStockSophontNameMap.keys())
+
         for rawSophontName in rawUsedSophontNames:
             if rawSophontName in dbSophontNameMap:
                 continue
@@ -782,7 +795,9 @@ def _createDbSophonts(
                 # one instead
                 dbSophontCode = _generateSophontCode(
                     name=rawSophontName,
-                    existingCodes=dbSophontCodeMap.keys())
+                    existingCodes=uniqueCodes)
+                uniqueCodes.add(dbSophontCode)
+
                 dbSophont = multiverse.DbSophont(
                     code=dbSophontCode,
                     name=rawSophontName,
@@ -805,10 +820,7 @@ def _createDbSophonts(
 
             if rawStockSophont:
                 # There is a stock sophont that matches the code. If there is no
-                # DbSophont for that code then one needs to be created. If there
-                # is an existing entry then it is used, it still needs to have a
-                # mapping added to the code map for the original raw sophont code
-                # as that is the code it's referenced by in the sector data.
+                # DbSophont for that code then one needs to be created.
                 dbSophont = dbSophontCodeMap.get(rawStockSophont.code())
                 if not dbSophont:
                     dbSophont = multiverse.DbSophont(
@@ -826,12 +838,19 @@ def _createDbSophonts(
                 # should to define any sophonts that are used in the sector that aren't
                 # covered by the stock sophonts
 
-                # TODO: This should generate a name to make sure it is unique
+                dbSophontName = _generateSophontName(
+                    code=rawSophontCode,
+                    existingNames=uniqueNames)
+                uniqueNames.add(dbSophontName)
+
                 dbSophont = multiverse.DbSophont(
                     code=rawSophontCode,
-                    name=rawSophontCode,
+                    name=dbSophontName,
                     isMajor=False)
 
+            # NOTE: It's important that the rawSophontCode is used as the key here as,
+            # in the case that the code was overridden, we still need a mapping for
+            # the raw code as that's what other raw data will be using
             dbSophontCodeMap[rawSophontCode] = dbSophont
 
             # If the sophont code was overridden, add an mapping for the real code if it's
