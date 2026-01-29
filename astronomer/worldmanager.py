@@ -701,7 +701,7 @@ class WorldManager(object):
                         offsetY=dbRoute.endHexY())
 
                     colour = dbRoute.colour()
-                    if colour and not common.validateHtmlColour(htmlColour=colour):
+                    if colour and not common.isValidHtmlColour(htmlColour=colour):
                         logging.warning(
                             f'Ignoring invalid colour "{colour}" for route {dbRoute.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
@@ -748,7 +748,7 @@ class WorldManager(object):
                             offsetY=hexY))
 
                     colour = dbBorder.colour()
-                    if colour and not common.validateHtmlColour(htmlColour=colour):
+                    if colour and not common.isValidHtmlColour(htmlColour=colour):
                         logging.warning(
                             f'Ignoring invalid colour "{colour}" for border {dbBorder.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
@@ -774,8 +774,8 @@ class WorldManager(object):
                         style=style,
                         colour=colour,
                         label=dbBorder.label(),
-                        labelWorldX=dbBorder.labelX(),
-                        labelWorldY=dbBorder.labelY(),
+                        labelWorldX=dbBorder.labelWorldX(),
+                        labelWorldY=dbBorder.labelWorldY(),
                         showLabel=dbBorder.showLabel(),
                         wrapLabel=dbBorder.wrapLabel()))
                 except Exception as ex:
@@ -797,7 +797,7 @@ class WorldManager(object):
                             offsetY=hexY))
 
                     colour = dbRegion.colour()
-                    if colour and not common.validateHtmlColour(htmlColour=colour):
+                    if colour and not common.isValidHtmlColour(htmlColour=colour):
                         logging.warning(f'Ignoring invalid colour "{colour}" for region {dbRegion.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
 
@@ -805,8 +805,8 @@ class WorldManager(object):
                         hexList=hexes,
                         colour=colour,
                         label=dbRegion.label(),
-                        labelWorldX=dbRegion.labelX(),
-                        labelWorldY=dbRegion.labelY(),
+                        labelWorldX=dbRegion.labelWorldX(),
+                        labelWorldY=dbRegion.labelWorldY(),
                         showLabel=dbRegion.showLabel(),
                         wrapLabel=dbRegion.wrapLabel()))
                 except Exception as ex:
@@ -820,7 +820,7 @@ class WorldManager(object):
             for dbLabel in dbLabels:
                 try:
                     colour = dbLabel.colour()
-                    if colour and not common.validateHtmlColour(htmlColour=colour):
+                    if colour and not common.isValidHtmlColour(htmlColour=colour):
                         logging.warning(
                             f'Ignoring invalid colour "{colour}" for label {dbLabel.id()} in sector {sectorName} at ({sectorX}, {sectorY}) from {milieu.value}')
                         colour = None
@@ -834,8 +834,8 @@ class WorldManager(object):
 
                     labels.append(astronomer.Label(
                         text=dbLabel.text(),
-                        x=dbLabel.x(),
-                        y=dbLabel.y(),
+                        worldX=dbLabel.worldX(),
+                        worldY=dbLabel.worldY(),
                         colour=colour,
                         size=size,
                         wrap=dbLabel.wrap()))

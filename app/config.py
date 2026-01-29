@@ -382,7 +382,7 @@ class ColourConfigItem(StringConfigItem):
             key=key,
             default=default,
             restart=restart,
-            validateCb=common.validateHtmlColour)
+            validateCb=common.isValidHtmlColour)
 
 class MapOptionsConfigItem(ConfigItem):
     _MapOptionToSettingsKey = {

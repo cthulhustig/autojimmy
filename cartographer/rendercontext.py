@@ -783,8 +783,8 @@ class RenderContext(object):
                         text = RenderContext._wrapLabelText(text)
 
                     labelPos = cartographer.PointF(
-                        sectorWorldOriginX + label.x(),
-                        sectorWorldOriginY + label.y())
+                        sectorWorldOriginX + label.worldX(),
+                        sectorWorldOriginY + label.worldY())
 
                     if label.size() is astronomer.Label.Size.Small:
                         font = self._styleSheet.microBorders.smallFont

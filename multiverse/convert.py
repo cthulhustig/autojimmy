@@ -1,3 +1,4 @@
+import common
 import logging
 import itertools
 import math
@@ -178,6 +179,9 @@ _LegacySophontMap = {
     'Z': 'Zhod'
 }
 
+_ValidLineStyles = set(['solid', 'dashed', 'dotted'])
+_ValidLabelSizes = set(['small', 'large'])
+
 # This is based on the sector world bounds and hex world center code in
 # astrometrics. It uses a coordinate space that has the same scale as
 # world space coordinates but is relative to the upper left corner of
@@ -310,18 +314,47 @@ def _mergeRouteStyles(
 
     if rawSectorStyleSheet:
         for rawStyle in rawSectorStyleSheet.routeStyles():
-            routeStyleMap[rawStyle.tag()] = (rawStyle.colour(), rawStyle.style(), rawStyle.width())
+            tag = rawStyle.tag()
+            colour = rawStyle.colour()
+            style = rawStyle.style()
+            width = rawStyle.width()
+
+            if colour is not None and not common.isValidHtmlColour(colour):
+                # TODO: This log message should say which sector it is
+                logging.warning(f'Converter ignoring invalid colour "{colour}" for route style {tag} from sector style sheet')
+                colour = None
+            if style is not None:
+                if style.lower() in _ValidLineStyles:
+                    style = style.lower()
+                else:
+                    logging.warning(f'Converter ignoring invalid line style "{style}" for route style {tag} from sector style sheet')
+                    style = None
+
+            routeStyleMap[tag] = (colour, style, width)
 
     if rawStockStyleSheet:
         for rawStyle in rawStockStyleSheet.routeStyles():
-            colour, style, width = routeStyleMap.get(rawStyle.tag(), (None, None, None))
+            tag = rawStyle.tag()
+            colour, style, width = routeStyleMap.get(tag, (None, None, None))
             if colour is None:
                 colour = rawStyle.colour()
             if style is None:
                 style = rawStyle.style()
             if width is None:
                 width = rawStyle.width()
-            routeStyleMap[rawStyle.tag()] = (colour, style, width)
+
+            if colour is not None and not common.isValidHtmlColour(colour):
+                # TODO: This log message should say which sector it is
+                logging.warning(f'Converter ignoring invalid colour "{colour}" for route style {tag} from stock style sheet')
+                colour = None
+            if style is not None:
+                if style.lower() in _ValidLineStyles:
+                    style = style.lower()
+                else:
+                    logging.warning(f'Converter ignoring invalid line style "{style}" for route style {tag} from stock style sheet')
+                    style = None
+
+            routeStyleMap[tag] = (colour, style, width)
 
     # Update all tag mappings with default values
     if None in routeStyleMap:
@@ -350,16 +383,44 @@ def _mergeBorderStyles(
 
     if rawSectorStyleSheet:
         for rawStyle in rawSectorStyleSheet.borderStyles():
-            borderStyleMap[rawStyle.tag()] = (rawStyle.colour(), rawStyle.style())
+            tag = rawStyle.tag()
+            colour = rawStyle.colour()
+            style = rawStyle.style()
+
+            if colour is not None and not common.isValidHtmlColour(colour):
+                # TODO: This log message should say which sector it is
+                logging.warning(f'Converter ignoring invalid colour "{colour}" for border style {tag} from sector style sheet')
+                colour = None
+            if style is not None:
+                if style.lower() in _ValidLineStyles:
+                    style = style.lower()
+                else:
+                    logging.warning(f'Converter ignoring invalid line style "{style}" for border style {tag} from sector style sheet')
+                    style = None
+
+            borderStyleMap[tag] = (colour, style)
 
     if rawStockStyleSheet:
         for rawStyle in rawStockStyleSheet.borderStyles():
-            colour, style = borderStyleMap.get(rawStyle.tag(), (None, None))
+            tag = rawStyle.tag()
+            colour, style = borderStyleMap.get(tag, (None, None))
             if colour is None:
                 colour = rawStyle.colour()
             if style is None:
                 style = rawStyle.style()
-            borderStyleMap[rawStyle.tag()] = (colour, style)
+
+            if colour is not None and not common.isValidHtmlColour(colour):
+                # TODO: This log message should say which sector it is
+                logging.warning(f'Converter ignoring invalid colour "{colour}" for border style {tag} from sector style sheet')
+                colour = None
+            if style is not None:
+                if style.lower() in _ValidLineStyles:
+                    style = style.lower()
+                else:
+                    logging.warning(f'Converter ignoring invalid line style "{style}" for border style {tag} from sector style sheet')
+                    style = None
+
+            borderStyleMap[tag] = (colour, style)
 
     # Update all tag mappings with default values
     if None in borderStyleMap:
@@ -1161,10 +1222,6 @@ def _createDbSystems(
             planetoidBelts=dbPlanetoidBelts,
             gasGiants=dbGasGiants,
             zone=rawWorld.zone(),
-            # TODO: I think the Traveller Map second survey page clarifies that
-            # system worlds is the number of worlds excluding the main world. I
-            # need to check how this matches up with what is in the Mongoose World
-            # Builder rules
             systemWorlds=int(rawSystemWorlds) if rawSystemWorlds else None,
             allegiance=dbAllegiance,
             nobilities=dbNobilities,
@@ -1211,9 +1268,20 @@ def _createDbRoutes(
                 raise RuntimeError(f'Route in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
             dbType = rawRoute.type()
-            dbColour = rawRoute.colour()
-            dbStyle = rawRoute.style()
             dbWidth = rawRoute.width()
+
+            dbColour = rawRoute.colour()
+            if dbColour is not None and not common.isValidHtmlColour(dbColour):
+                logging.warning(f'Ignoring invalid colour {dbColour} in route definition for {rawMetadata.canonicalName()} at {milieu}')
+                dbColour = None
+
+            dbStyle = rawRoute.style()
+            if dbStyle is not None:
+                if dbStyle.lower() in _ValidLineStyles:
+                    dbStyle = dbStyle.lower()
+                else:
+                    logging.warning(f'Ignoring invalid colour {dbStyle} in route definition for {rawMetadata.canonicalName()} at {milieu}')
+                    dbStyle = None
 
             # This is replicating code from Traveller Map DrawMicroBorders. The
             # logic is quite fragile in order to mimic the the behaviour from
@@ -1283,7 +1351,17 @@ def _createDbBorders(
                 raise RuntimeError(f'Border in {rawMetadata.canonicalName()} at {milieu} uses undefined allegiance code {rawAllegianceCode}')
 
             dbColour = rawBorder.colour()
+            if dbColour is not None and not common.isValidHtmlColour(dbColour):
+                logging.warning(f'Ignoring invalid colour {dbColour} in border definition for {rawMetadata.canonicalName()} at {milieu}')
+                dbColour = None
+
             dbStyle = rawBorder.style()
+            if dbStyle is not None:
+                if dbStyle.lower() in _ValidLineStyles:
+                    dbStyle = dbStyle.lower()
+                else:
+                    logging.warning(f'Ignoring invalid colour {dbStyle} in border definition for {rawMetadata.canonicalName()} at {milieu}')
+                    dbStyle = None
 
             # This is replicating code from Traveller Map DrawMicroBorders. The
             # logic is quite fragile in order to mimic the the behaviour from
@@ -1335,6 +1413,7 @@ def _createDbBorders(
     return dbBorders
 
 def _createDbRegions(
+        milieu: str,
         rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbBorder]:
     dbRegions = []
@@ -1363,6 +1442,11 @@ def _createDbRegions(
                     # have an inverted Y direction compared to world space
                     worldOffsetY=(-rawLabelOffsetY * 0.7) if rawLabelOffsetY is not None else None)
 
+            dbColour = rawRegion.colour()
+            if dbColour is not None and not common.isValidHtmlColour(dbColour):
+                logging.warning(f'Ignoring invalid colour {dbColour} in region definition for {rawMetadata.canonicalName()} at {milieu}')
+                dbColour = None
+
             # Show label use the same defaults as the Traveller Map Border class
             rawShowLabel = rawRegion.showLabel()
             dbShowLabel = rawShowLabel if rawShowLabel is not None else True
@@ -1372,16 +1456,17 @@ def _createDbRegions(
 
             dbRegions.append(multiverse.DbRegion(
                 hexes=dbHexes,
-                colour=rawRegion.colour(),
+                colour=dbColour,
                 label=rawRegion.label(),
-                labelX=dbLabelX,
-                labelY=dbLabelY,
+                labelWorldX=dbLabelX,
+                labelWorldY=dbLabelY,
                 showLabel=dbShowLabel,
                 wrapLabel=dbWrapLabel))
 
     return dbRegions
 
 def _createDbLabels(
+        milieu: str,
         rawMetadata: survey.RawMetadata,
         ) -> typing.List[multiverse.DbLabel]:
     dbLabels = []
@@ -1401,15 +1486,28 @@ def _createDbLabels(
                 # have an inverted Y direction compared to world space
                 worldOffsetY=(-rawOffsetY * 0.7) if rawOffsetY is not None else None)
 
+            dbColour = rawLabel.colour()
+            if dbColour is not None and not common.isValidHtmlColour(dbColour):
+                logging.warning(f'Ignoring invalid colour {dbColour} in label definition for {rawMetadata.canonicalName()} at {milieu}')
+                dbColour = None
+
+            dbSize = rawLabel.size()
+            if dbSize is not None:
+                if dbSize.lower() in _ValidLabelSizes:
+                    dbSize = dbSize.lower()
+                else:
+                    logging.warning(f'Ignoring invalid size {dbSize} in label definition for {rawMetadata.canonicalName()} at {milieu}')
+                    dbSize = None
+
             rawWrap = rawLabel.wrap()
             dbWrap = rawWrap if rawWrap is not None else False
 
             dbLabels.append(multiverse.DbLabel(
                 text=rawLabel.text(),
-                x=dbX,
-                y=dbY,
-                colour=rawLabel.colour(),
-                size=rawLabel.size(),
+                worldX=dbX,
+                worldY=dbY,
+                colour=dbColour,
+                size=dbSize,
                 wrap=dbWrap))
 
     return dbLabels
@@ -1479,10 +1577,8 @@ def convertRawUniverseToDbUniverse(
         universeId: typing.Optional[str] = None,
         progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
         ) -> multiverse.DbUniverse:
-    dbUniverse = multiverse.DbUniverse(
-        id=universeId,
-        name=universeName)
     totalSectorCount = len(rawSectors)
+    dbSectors = []
     for progressCount, (milieu, rawMetadata, rawSystems) in enumerate(rawSectors):
         if progressCallback:
             try:
@@ -1493,7 +1589,7 @@ def convertRawUniverseToDbUniverse(
             except Exception as ex:
                 logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
 
-        dbUniverse.addSector(convertRawSectorToDbSector(
+        dbSectors.append(convertRawSectorToDbSector(
             milieu=milieu,
             rawMetadata=rawMetadata,
             rawSystems=rawSystems,
@@ -1511,7 +1607,10 @@ def convertRawUniverseToDbUniverse(
         except Exception as ex:
             logging.warning('Raw to database universe conversion progress callback threw an exception', exc_info=ex)
 
-    return dbUniverse
+    return multiverse.DbUniverse(
+        id=universeId,
+        name=universeName,
+        sectors=dbSectors)
 
 # TODO: This should do some basic sanity tests on the passed on data (e.g. doesn't have multiple worlds with the same hex)
 def convertRawSectorToDbSector(
@@ -1579,9 +1678,13 @@ def convertRawSectorToDbSector(
         dbAllegianceCodeMap=dbAllegianceCodeMap,
         styleMap=borderStyleMap)
 
-    dbRegions = _createDbRegions(rawMetadata=rawMetadata)
+    dbRegions = _createDbRegions(
+        milieu=milieu,
+        rawMetadata=rawMetadata)
 
-    dbLabels = _createDbLabels(rawMetadata=rawMetadata)
+    dbLabels = _createDbLabels(
+        milieu=milieu,
+        rawMetadata=rawMetadata)
 
     dbTags = _createDbTags(rawMetadata=rawMetadata)
 

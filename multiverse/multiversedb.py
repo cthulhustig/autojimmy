@@ -1828,8 +1828,8 @@ class MultiverseDb(object):
             id=universeId,
             name=name,
             description=description,
-            notes=notes,
-            sectors=sectors)
+            sectors=sectors,
+            notes=notes)
 
     def _internalDeleteUniverse(
             self,
@@ -2197,8 +2197,8 @@ class MultiverseDb(object):
                     'style': border.style(),
                     'colour': border.colour(),
                     'label': border.label(),
-                    'label_x': border.labelX(),
-                    'label_y': border.labelY(),
+                    'label_x': border.labelWorldX(),
+                    'label_y': border.labelWorldY(),
                     'show_label': 1 if border.showLabel() else 0,
                     'wrap_label': 1 if border.wrapLabel() else 0})
                 for hexX, hexY in border.hexes():
@@ -2228,8 +2228,8 @@ class MultiverseDb(object):
                     'sector_id': region.sectorId(),
                     'colour': region.colour(),
                     'label': region.label(),
-                    'label_x': region.labelX(),
-                    'label_y': region.labelY(),
+                    'label_x': region.labelWorldX(),
+                    'label_y': region.labelWorldY(),
                     'show_label': 1 if region.showLabel() else 0,
                     'wrap_label': 1 if region.wrapLabel() else 0})
                 for hexX, hexY in region.hexes():
@@ -2253,8 +2253,8 @@ class MultiverseDb(object):
                     'id': label.id(),
                     'sector_id': label.sectorId(),
                     'text': label.text(),
-                    'x': label.x(),
-                    'y': label.y(),
+                    'x': label.worldX(),
+                    'y': label.worldY(),
                     'colour': label.colour(),
                     'size': label.size(),
                     'wrap': 1 if label.wrap() else 0})
@@ -2296,6 +2296,45 @@ class MultiverseDb(object):
             cursor: sqlite3.Cursor,
             sectorId: str
             ) -> multiverse.DbSector:
+        alternateNames = self._internalReadSectorAlternateNames(
+            cursor=cursor,
+            sectorId=sectorId)
+        subsectorNames = self._internalReadSectorSubsectorNames(
+            cursor=cursor,
+            sectorId=sectorId)
+        allegiances = self._internalReadSectorAllegiances(
+            cursor=cursor,
+            sectorId=sectorId)
+        sophonts = self._internalReadSectorSophonts(
+            cursor=cursor,
+            sectorId=sectorId)
+        systems = self._internalReadSectorSystems(
+            cursor=cursor,
+            sectorId=sectorId,
+            allegiances=allegiances,
+            sophonts=sophonts)
+        routes = self._internalReadSectorRoutes(
+            cursor=cursor,
+            sectorId=sectorId,
+            allegiances=allegiances)
+        borders = self._internalReadSectorBorders(
+            cursor=cursor,
+            sectorId=sectorId,
+            allegiances=allegiances)
+        regions = self._internalReadSectorRegions(
+            cursor=cursor,
+            sectorId=sectorId)
+        labels = self._internalReadSectorLabels(
+            cursor=cursor,
+            sectorId=sectorId)
+        tags = self._internalReadSectorTags(
+            cursor=cursor,
+            sectorId=sectorId)
+        products = self._internalReadSectorProducts(
+            cursor=cursor,
+            sectorId=sectorId)
+
+
         sql = """
             SELECT universe_id, milieu, sector_x, sector_y,
                 primary_name, primary_language, abbreviation, sector_label, selected,
@@ -2309,7 +2348,7 @@ class MultiverseDb(object):
         if not row:
             raise ValueError(f'Unknown sector {sectorId}')
 
-        sector = multiverse.DbSector(
+        return multiverse.DbSector(
             id=sectorId,
             universeId=row[0],
             isCustom=row[0] != MultiverseDb._DefaultUniverseId,
@@ -2326,38 +2365,72 @@ class MultiverseDb(object):
             author=row[11],
             publisher=row[12],
             reference=row[13],
-            notes=row[14])
+            notes=row[14],
+            alternateNames=alternateNames,
+            subsectorNames=subsectorNames,
+            allegiances=allegiances,
+            sophonts=sophonts,
+            systems=systems,
+            routes=routes,
+            borders=borders,
+            regions=regions,
+            labels=labels,
+            tags=tags,
+            products=products)
 
+    def _internalReadSectorAlternateNames(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbAlternateName]:
         sql = """
             SELECT id, name, language
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AlternateNamesTableName)
         cursor.execute(sql, {'id': sectorId})
-        idToAlternateNameMap: typing.Dict[str, multiverse.DbAlternateName] = {}
+        names = []
         for row in cursor.fetchall():
-            alternateName = multiverse.DbAlternateName(
-                id=row[0],
-                name=row[1],
-                language=row[2])
-            idToAlternateNameMap[alternateName.id()] = alternateName
-        sector.setAlternateNames(idToAlternateNameMap.values())
+            nameId = row[0]
+            try:
+                names.append(multiverse.DbAlternateName(
+                    id=nameId,
+                    name=row[1],
+                    language=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct alternate name {nameId}', exc_info=ex)
 
+        return names
+
+    def _internalReadSectorSubsectorNames(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbSubsectorName]:
         sql = """
             SELECT id, code, name
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SubsectorNamesTableName)
         cursor.execute(sql, {'id': sectorId})
-        idToSubsectorNameMap: typing.Dict[str, multiverse.DbSubsectorName] = {}
+        names = []
         for row in cursor.fetchall():
-            subsectorName = multiverse.DbSubsectorName(
-                id=row[0],
-                code=row[1],
-                name=row[2])
-            idToSubsectorNameMap[subsectorName.id()] = subsectorName
-        sector.setSubsectorNames(idToSubsectorNameMap.values())
+            nameId = row[0]
+            try:
+                names.append(multiverse.DbSubsectorName(
+                    id=nameId,
+                    code=row[1],
+                    name=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct subsector name {nameId}', exc_info=ex)
 
+        return names
+
+    def _internalReadSectorAllegiances(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbAllegiance]:
         sql = """
             SELECT id, code, name, legacy, base,
                 route_colour, route_style, route_width,
@@ -2366,39 +2439,331 @@ class MultiverseDb(object):
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._AllegiancesTableName)
         cursor.execute(sql, {'id': sectorId})
-        idToAllegianceMap: typing.Dict[str, multiverse.DbAllegiance] = {}
+        allegiances = []
         for row in cursor.fetchall():
-            allegiance = multiverse.DbAllegiance(
-                id=row[0],
-                sectorId=sectorId,
-                code=row[1],
-                name=row[2],
-                legacy=row[3],
-                base=row[4],
-                routeColour=row[5],
-                routeStyle=row[6],
-                routeWidth=row[7],
-                borderColour=row[8],
-                borderStyle=row[9])
-            idToAllegianceMap[allegiance.id()] = allegiance
-        sector.setAllegiances(idToAllegianceMap.values())
+            allegianceId = row[0]
+            try:
+                allegiances.append(multiverse.DbAllegiance(
+                    id=allegianceId,
+                    sectorId=sectorId,
+                    code=row[1],
+                    name=row[2],
+                    legacy=row[3],
+                    base=row[4],
+                    routeColour=row[5],
+                    routeStyle=row[6],
+                    routeWidth=row[7],
+                    borderColour=row[8],
+                    borderStyle=row[9]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct allegiance {allegianceId}', exc_info=ex)
 
+        return allegiances
+
+    def _internalReadSectorSophonts(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbSophont]:
         sql = """
             SELECT id, code, name, is_major
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._SophontsTableName)
         cursor.execute(sql, {'id': sectorId})
-        idToSophontMap: typing.Dict[str, multiverse.DbSophont] = {}
+        sophonts = []
         for row in cursor.fetchall():
-            sophont = multiverse.DbSophont(
-                id=row[0],
-                sectorId=sectorId,
-                code=row[1],
-                name=row[2],
-                isMajor=True if row[3] else False)
-            idToSophontMap[sophont.id()] = sophont
-        sector.setSophonts(idToSophontMap.values())
+            sophontId = row[0]
+            try:
+                sophonts.append(multiverse.DbSophont(
+                    id=sophontId,
+                    sectorId=sectorId,
+                    code=row[1],
+                    name=row[2],
+                    isMajor=True if row[3] else False))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct sophont {sophontId}', exc_info=ex)
+
+        return sophonts
+
+    def _internalReadSectorSystems(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str,
+            allegiances: typing.Iterable[multiverse.DbAllegiance],
+            sophonts: typing.Iterable[multiverse.DbSophont]
+            ) -> typing.List[multiverse.DbSystem]:
+        idToAllegianceMap = {allegiance.id(): allegiance for allegiance in allegiances}
+        idToSophontMap = {sophont.id(): sophont for sophont in sophonts}
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {nobilitiesTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                nobilitiesTable=MultiverseDb._NobilitiesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemNobilitiesMap: typing.Dict[str, typing.List[multiverse.DbNobility]] = {}
+        for row in cursor.fetchall():
+            nobilityId = row[0]
+            systemId = row[1]
+            nobilities = systemNobilitiesMap.get(systemId)
+            if not nobilities:
+                nobilities = []
+                systemNobilitiesMap[systemId] = nobilities
+
+            try:
+                nobilities.append(multiverse.DbNobility(
+                    id=nobilityId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct nobility {nobilityId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {tradeTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                tradeTable=MultiverseDb._TradeCodesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemTradeCodesMap: typing.Dict[str, typing.List[multiverse.DbTradeCode]] = {}
+        for row in cursor.fetchall():
+            tradeCodeId = row[0]
+            systemId = row[1]
+            tradeCodes = systemTradeCodesMap.get(systemId)
+            if not tradeCodes:
+                tradeCodes = []
+                systemTradeCodesMap[systemId] = tradeCodes
+
+            try:
+                tradeCodes.append(multiverse.DbTradeCode(
+                    id=tradeCodeId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct trade code {tradeCodeId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
+            FROM {populationsTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                populationsTable=MultiverseDb._SophontPopulationsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemPopulationsMap: typing.Dict[str, typing.List[multiverse.DbSophontPopulation]] = {}
+        for row in cursor.fetchall():
+            populationId = row[0]
+            systemId = row[1]
+            populations = systemPopulationsMap.get(systemId)
+            if not populations:
+                populations = []
+                systemPopulationsMap[systemId] = populations
+
+            try:
+                populations.append(multiverse.DbSophontPopulation(
+                    id=populationId,
+                    sophont=idToSophontMap[row[2]],
+                    percentage=row[3],
+                    isHomeWorld=True if row[4] else False,
+                    isDieBack=True if row[5] else False))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct sophont population {populationId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.allegiance_id
+            FROM {rulingTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                rulingTable=MultiverseDb._RulingAllegiancesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemRulingAllegianceMap: typing.Dict[str, typing.List[multiverse.DbRulingAllegiance]] = {}
+        for row in cursor.fetchall():
+            rulerId = row[0]
+            systemId = row[1]
+            rulers = systemRulingAllegianceMap.get(systemId)
+            if not rulers:
+                rulers = []
+                systemRulingAllegianceMap[systemId] = rulers
+
+            try:
+                rulers.append(multiverse.DbRulingAllegiance(
+                    id=rulerId,
+                    allegiance=idToAllegianceMap[row[2]]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct ruling allegiance {rulerId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_abbreviation
+            FROM {ownersTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                ownersTable=MultiverseDb._OwningSystemsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemOwnersMap: typing.Dict[str, typing.List[multiverse.DbOwningSystem]] = {}
+        for row in cursor.fetchall():
+            ownerId = row[0]
+            systemId = row[1]
+            owners = systemOwnersMap.get(systemId)
+            if not owners:
+                owners = []
+                systemOwnersMap[systemId] = owners
+
+            try:
+                owners.append(multiverse.DbOwningSystem(
+                    id=ownerId,
+                    hexX=row[2],
+                    hexY=row[3],
+                    sectorAbbreviation=row[4]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct owning system {ownerId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_abbreviation
+            FROM {coloniesTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                coloniesTable=MultiverseDb._ColonySystemsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemColoniesMap: typing.Dict[str, typing.List[multiverse.DbColonySystem]] = {}
+        for row in cursor.fetchall():
+            colonyId = row[0]
+            systemId = row[1]
+            colonies = systemColoniesMap.get(systemId)
+            if not colonies:
+                colonies = []
+                systemColoniesMap[systemId] = colonies
+
+            try:
+                colonies.append(multiverse.DbColonySystem(
+                    id=colonyId,
+                    hexX=row[2],
+                    hexY=row[3],
+                    sectorAbbreviation=row[4]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct colony system {colonyId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {stationsTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                stationsTable=MultiverseDb._ResearchStationTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemResearchStationsMap: typing.Dict[str, typing.List[multiverse.DbResearchStation]] = {}
+        for row in cursor.fetchall():
+            stationId = row[0]
+            systemId = row[1]
+            stations = systemResearchStationsMap.get(systemId)
+            if not stations:
+                stations = []
+                systemResearchStationsMap[systemId] = stations
+
+            try:
+                stations.append(multiverse.DbResearchStation(
+                    id=stationId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct research station {stationId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.remark
+            FROM {remarksTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                remarksTable=MultiverseDb._CustomRemarksTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemRemarksMap: typing.Dict[str, typing.List[multiverse.DbCustomRemark]] = {}
+        for row in cursor.fetchall():
+            remarkId = row[0]
+            systemId = row[1]
+            remarks = systemRemarksMap.get(systemId)
+            if not remarks:
+                remarks = []
+                systemRemarksMap[systemId] = remarks
+
+            try:
+                remarks.append(multiverse.DbCustomRemark(
+                    id=remarkId,
+                    remark=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct custom remark {remarkId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.code
+            FROM {basesTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                basesTable=MultiverseDb._BasesTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemBasesMap: typing.Dict[str, typing.List[multiverse.DbBase]] = {}
+        for row in cursor.fetchall():
+            baseId = row[0]
+            systemId = row[1]
+            bases = systemBasesMap.get(systemId)
+            if not bases:
+                bases = []
+                systemBasesMap[systemId] = bases
+
+            try:
+                bases.append(multiverse.DbBase(
+                    id=baseId,
+                    code=row[2]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct base {baseId}', exc_info=ex)
+
+        sql = """
+            SELECT t.id, t.system_id, t.luminosity_class, t.spectral_class, t.spectral_scale
+            FROM {starsTable} AS t
+            JOIN {systemsTable} AS s
+            ON s.id = t.system_id
+            WHERE s.sector_id = :id;
+            """.format(
+                starsTable=MultiverseDb._StarsTableName,
+                systemsTable=MultiverseDb._SystemsTableName)
+        cursor.execute(sql, {'id': sectorId})
+        systemStarsMap: typing.Dict[str, typing.List[multiverse.DbStar]] = {}
+        for row in cursor.fetchall():
+            starId = row[0]
+            systemId = row[1]
+            stars = systemStarsMap.get(systemId)
+            if not stars:
+                stars = []
+                systemStarsMap[systemId] = stars
+
+            try:
+                stars.append(multiverse.DbStar(
+                    id=starId,
+                    luminosityClass=row[2],
+                    spectralClass=row[3],
+                    spectralScale=row[4]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct star {starId}', exc_info=ex)
 
         sql = """
             SELECT id, hex_x, hex_y, name,
@@ -2412,220 +2777,59 @@ class MultiverseDb(object):
             """.format(table=MultiverseDb._SystemsTableName)
         cursor.execute(sql, {'id': sectorId})
         systems = []
-        idToSystemMap: typing.Dict[str, multiverse.DbSystem] = {}
         for row in cursor.fetchall():
-            system = multiverse.DbSystem(
-                id=row[0],
-                hexX=row[1],
-                hexY=row[2],
-                name=row[3],
-                starport=row[4],
-                worldSize=row[5],
-                atmosphere=row[6],
-                hydrographics=row[7],
-                population=row[8],
-                government=row[9],
-                lawLevel=row[10],
-                techLevel=row[11],
-                resources=row[12],
-                labour=row[13],
-                infrastructure=row[14],
-                efficiency=row[15],
-                heterogeneity=row[16],
-                acceptance=row[17],
-                strangeness=row[18],
-                symbols=row[19],
-                populationMultiplier=row[20],
-                planetoidBelts=row[21],
-                gasGiants=row[22],
-                zone=row[23],
-                systemWorlds=row[24],
-                allegiance=idToAllegianceMap.get(row[25]),
-                notes=row[26])
-            systems.append(system)
-            idToSystemMap[system.id()] = system
-        sector.setSystems(systems)
+            systemId = row[0]
+            try:
+                systems.append(multiverse.DbSystem(
+                    id=systemId,
+                    hexX=row[1],
+                    hexY=row[2],
+                    name=row[3],
+                    starport=row[4],
+                    worldSize=row[5],
+                    atmosphere=row[6],
+                    hydrographics=row[7],
+                    population=row[8],
+                    government=row[9],
+                    lawLevel=row[10],
+                    techLevel=row[11],
+                    resources=row[12],
+                    labour=row[13],
+                    infrastructure=row[14],
+                    efficiency=row[15],
+                    heterogeneity=row[16],
+                    acceptance=row[17],
+                    strangeness=row[18],
+                    symbols=row[19],
+                    populationMultiplier=row[20],
+                    planetoidBelts=row[21],
+                    gasGiants=row[22],
+                    zone=row[23],
+                    systemWorlds=row[24],
+                    allegiance=idToAllegianceMap.get(row[25]),
+                    notes=row[26],
+                    nobilities=systemNobilitiesMap.get(systemId),
+                    tradeCodes=systemTradeCodesMap.get(systemId),
+                    sophontPopulations=systemPopulationsMap.get(systemId),
+                    rulingAllegiances=systemRulingAllegianceMap.get(systemId),
+                    owningSystems=systemOwnersMap.get(systemId),
+                    colonySystems=systemColoniesMap.get(systemId),
+                    researchStations=systemResearchStationsMap.get(systemId),
+                    customRemarks=systemRemarksMap.get(systemId),
+                    bases=systemBasesMap.get(systemId),
+                    stars=systemStarsMap.get(systemId)))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct system {systemId}', exc_info=ex)
 
-        sql = """
-            SELECT t.id, t.system_id, t.code
-            FROM {nobilitiesTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                nobilitiesTable=MultiverseDb._NobilitiesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addNobility(multiverse.DbNobility(
-                id=row[0],
-                systemId=system.id(),
-                code=row[2]))
+        return systems
 
-        sql = """
-            SELECT t.id, t.system_id, t.code
-            FROM {tradeTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                tradeTable=MultiverseDb._TradeCodesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addTradeCode(multiverse.DbTradeCode(
-                id=row[0],
-                systemId=system.id(),
-                code=row[2]))
-
-        sql = """
-            SELECT t.id, t.system_id, t.sophont_id, t.percentage, t.is_home_world, t.is_die_back
-            FROM {populationsTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                populationsTable=MultiverseDb._SophontPopulationsTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            sophont = idToSophontMap[row[2]]
-            system.addSophontPopulation(multiverse.DbSophontPopulation(
-                id=row[0],
-                systemId=system.id(),
-                sophont=sophont,
-                percentage=row[3],
-                isHomeWorld=True if row[4] else False,
-                isDieBack=True if row[5] else False))
-
-        sql = """
-            SELECT t.id, t.system_id, t.allegiance_id
-            FROM {rulingTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                rulingTable=MultiverseDb._RulingAllegiancesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            allegiance = idToAllegianceMap[row[2]]
-            system.addRulingAllegiance(multiverse.DbRulingAllegiance(
-                id=row[0],
-                systemId=system.id(),
-                allegiance=allegiance))
-
-        sql = """
-            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_abbreviation
-            FROM {ownersTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                ownersTable=MultiverseDb._OwningSystemsTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addOwningSystem(multiverse.DbOwningSystem(
-                id=row[0],
-                systemId=system.id(),
-                hexX=row[2],
-                hexY=row[3],
-                sectorAbbreviation=row[4]))
-
-        sql = """
-            SELECT t.id, t.system_id, t.hex_x, t.hex_y, t.sector_abbreviation
-            FROM {coloniesTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                coloniesTable=MultiverseDb._ColonySystemsTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addColonySystem(multiverse.DbColonySystem(
-                id=row[0],
-                systemId=system.id(),
-                hexX=row[2],
-                hexY=row[3],
-                sectorAbbreviation=row[4]))
-
-        sql = """
-            SELECT t.id, t.system_id, t.code
-            FROM {stationsTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                stationsTable=MultiverseDb._ResearchStationTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addResearchStation(multiverse.DbResearchStation(
-                id=row[0],
-                systemId=system.id(),
-                code=row[2]))
-
-        sql = """
-            SELECT t.id, t.system_id, t.remark
-            FROM {remarksTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                remarksTable=MultiverseDb._CustomRemarksTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addCustomRemark(multiverse.DbCustomRemark(
-                id=row[0],
-                systemId=system.id(),
-                remark=row[2]))
-
-        sql = """
-            SELECT t.id, t.system_id, t.code
-            FROM {basesTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                basesTable=MultiverseDb._BasesTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addBase(multiverse.DbBase(
-                id=row[0],
-                systemId=system.id(),
-                code=row[2]))
-
-        sql = """
-            SELECT t.id, t.system_id, t.luminosity_class, t.spectral_class, t.spectral_scale
-            FROM {starsTable} AS t
-            JOIN {systemsTable} AS s
-            ON s.id = t.system_id
-            WHERE s.sector_id = :id;
-            """.format(
-                starsTable=MultiverseDb._StarsTableName,
-                systemsTable=MultiverseDb._SystemsTableName)
-        cursor.execute(sql, {'id': sectorId})
-        for row in cursor.fetchall():
-            system = idToSystemMap[row[1]]
-            system.addStar(multiverse.DbStar(
-                id=row[0],
-                systemId=system.id(),
-                luminosityClass=row[2],
-                spectralClass=row[3],
-                spectralScale=row[4]))
+    def _internalReadSectorRoutes(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str,
+            allegiances: typing.Iterable[multiverse.DbAllegiance],
+            ) -> typing.List[multiverse.DbRoute]:
+        idToAllegianceMap = {allegiance.id(): allegiance for allegiance in allegiances}
 
         sql = """
             SELECT id, start_hex_x, start_hex_y, end_hex_x, end_hex_y,
@@ -2637,88 +2841,117 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         routes = []
         for row in cursor.fetchall():
-            routes.append(multiverse.DbRoute(
-                id=row[0],
-                startHexX=row[1],
-                startHexY=row[2],
-                endHexX=row[3],
-                endHexY=row[4],
-                startOffsetX=row[5],
-                startOffsetY=row[6],
-                endOffsetX=row[7],
-                endOffsetY=row[8],
-                type=row[9],
-                style=row[10],
-                colour=row[11],
-                width=row[12],
-                allegiance=idToAllegianceMap.get(row[13])))
-        sector.setRoutes(routes)
+            routeId = row[0]
+            try:
+                routes.append(multiverse.DbRoute(
+                    id=routeId,
+                    startHexX=row[1],
+                    startHexY=row[2],
+                    endHexX=row[3],
+                    endHexY=row[4],
+                    startOffsetX=row[5],
+                    startOffsetY=row[6],
+                    endOffsetX=row[7],
+                    endOffsetY=row[8],
+                    type=row[9],
+                    style=row[10],
+                    colour=row[11],
+                    width=row[12],
+                    allegiance=idToAllegianceMap.get(row[13])))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct route {routeId}', exc_info=ex)
 
-        sql = """
+        return routes
+
+    def _internalReadSectorBorders(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str,
+            allegiances: typing.Iterable[multiverse.DbAllegiance],
+            ) -> typing.List[multiverse.DbBorder]:
+        idToAllegianceMap = {allegiance.id(): allegiance for allegiance in allegiances}
+
+        bordersSql = """
             SELECT id, allegiance_id, style, colour, label,
                 label_x, label_y, show_label, wrap_label
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._BordersTableName)
-        cursor.execute(sql, {'id': sectorId})
+        hexesSql = """
+            SELECT hex_x, hex_y
+            FROM {table}
+            WHERE border_id = :id;
+            """.format(table=MultiverseDb._BorderHexesTableName)
+        cursor.execute(bordersSql, {'id': sectorId})
         borders = []
         for row in cursor.fetchall():
             borderId = row[0]
-
-            hexesSql = """
-                SELECT hex_x, hex_y
-                FROM {table}
-                WHERE border_id = :id;
-                """.format(table=MultiverseDb._BorderHexesTableName)
             cursor.execute(hexesSql, {'id': borderId})
             hexes = []
             for hexRow in cursor.fetchall():
                 hexes.append((hexRow[0], hexRow[1]))
 
-            borders.append(multiverse.DbBorder(
-                id=borderId,
-                hexes=hexes,
-                allegiance=idToAllegianceMap.get(row[1]),
-                style=row[2],
-                colour=row[3],
-                label=row[4],
-                labelWorldX=row[5],
-                labelWorldY=row[6],
-                showLabel=True if row[7] else False,
-                wrapLabel=True if row[8] else False))
-        sector.setBorders(borders)
+            try:
+                borders.append(multiverse.DbBorder(
+                    id=borderId,
+                    hexes=hexes,
+                    allegiance=idToAllegianceMap.get(row[1]),
+                    style=row[2],
+                    colour=row[3],
+                    label=row[4],
+                    labelWorldX=row[5],
+                    labelWorldY=row[6],
+                    showLabel=True if row[7] else False,
+                    wrapLabel=True if row[8] else False))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct border {borderId}', exc_info=ex)
 
-        sql = """
+        return borders
+
+    def _internalReadSectorRegions(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbRegion]:
+        regionsSql = """
             SELECT id, colour, label, label_x, label_y, show_label, wrap_label
             FROM {table}
             WHERE sector_id = :id;
             """.format(table=MultiverseDb._RegionsTableName)
-        cursor.execute(sql, {'id': sectorId})
+        hexesSql = """
+            SELECT hex_x, hex_y
+            FROM {table}
+            WHERE region_id = :id;
+            """.format(table=MultiverseDb._RegionHexesTableName)
+        cursor.execute(regionsSql, {'id': sectorId})
         regions = []
         for row in cursor.fetchall():
             regionId = row[0]
-
-            hexesSql = """
-                SELECT hex_x, hex_y
-                FROM {table}
-                WHERE region_id = :id;
-                """.format(table=MultiverseDb._RegionHexesTableName)
             cursor.execute(hexesSql, {'id': regionId})
             hexes = []
             for hexRow in cursor.fetchall():
                 hexes.append((hexRow[0], hexRow[1]))
 
-            regions.append(multiverse.DbRegion(
-                id=regionId,
-                hexes=hexes,
-                colour=row[1],
-                label=row[2],
-                labelX=row[3],
-                labelY=row[4],
-                showLabel=True if row[5] else False,
-                wrapLabel=True if row[6] else False))
-        sector.setRegions(regions)
+            try:
+                regions.append(multiverse.DbRegion(
+                    id=regionId,
+                    hexes=hexes,
+                    colour=row[1],
+                    label=row[2],
+                    labelWorldX=row[3],
+                    labelWorldY=row[4],
+                    showLabel=True if row[5] else False,
+                    wrapLabel=True if row[6] else False))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct region {regionId}', exc_info=ex)
 
+        return regions
+
+    def _internalReadSectorLabels(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbLabel]:
         sql = """
             SELECT id, text, x, y, colour, size, wrap
             FROM {table}
@@ -2727,16 +2960,26 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         labels = []
         for row in cursor.fetchall():
-            labels.append(multiverse.DbLabel(
-                id=row[0],
-                text=row[1],
-                x=row[2],
-                y=row[3],
-                colour=row[4],
-                size=row[5],
-                wrap=True if row[6] else False))
-        sector.setLabels(labels)
+            labelId = row[0]
+            try:
+                labels.append(multiverse.DbLabel(
+                    id=labelId,
+                    text=row[1],
+                    worldX=row[2],
+                    worldY=row[3],
+                    colour=row[4],
+                    size=row[5],
+                    wrap=True if row[6] else False))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct label {labelId}', exc_info=ex)
 
+        return labels
+
+    def _internalReadSectorTags(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbTag]:
         sql = """
             SELECT id, tag
             FROM {table}
@@ -2745,11 +2988,21 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         tags = []
         for row in cursor.fetchall():
-            tags.append(multiverse.DbTag(
-                id=row[0],
-                tag=row[1]))
-        sector.setTags(tags)
+            tagId = row[0]
+            try:
+                tags.append(multiverse.DbTag(
+                    id=tagId,
+                    tag=row[1]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct tag {tagId}', exc_info=ex)
 
+        return tags
+
+    def _internalReadSectorProducts(
+            self,
+            cursor: sqlite3.Cursor,
+            sectorId: str
+            ) -> typing.List[multiverse.DbTag]:
         sql = """
             SELECT id, publication, author, publisher, reference
             FROM {table}
@@ -2758,15 +3011,18 @@ class MultiverseDb(object):
         cursor.execute(sql, {'id': sectorId})
         products = []
         for row in cursor.fetchall():
-            products.append(multiverse.DbProduct(
-                id=row[0],
-                publication=row[1],
-                author=row[2],
-                publisher=row[3],
-                reference=row[4]))
-        sector.setProducts(products)
+            productId = row[0]
+            try:
+                products.append(multiverse.DbProduct(
+                    id=productId,
+                    publication=row[1],
+                    author=row[2],
+                    publisher=row[3],
+                    reference=row[4]))
+            except Exception as ex:
+                logging.error(f'MultiverseDb failed to construct product {productId}', exc_info=ex)
 
-        return sector
+        return products
 
     def _internalDeleteSector(
             self,

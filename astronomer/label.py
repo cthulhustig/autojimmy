@@ -9,15 +9,15 @@ class Label(object):
     def __init__(
             self,
             text: str,
-            x: float,
-            y: float,
+            worldX: float,
+            worldY: float,
             colour: typing.Optional[str],
             size: typing.Optional[Size],
             wrap: bool
             ) -> None:
         self._text = text
-        self._x = x
-        self._y = y
+        self._worldX = worldX
+        self._worldY = worldY
         self._colour = colour
         self._size = size
         self._wrap = wrap
@@ -25,11 +25,12 @@ class Label(object):
     def text(self) -> str:
         return self._text
 
-    def x(self) -> float:
-        return self._x
+    # Offset from top left of sector in world coordinates
+    def worldX(self) -> float:
+        return self._worldX
 
-    def y(self) -> float:
-        return self._y
+    def worldY(self) -> float:
+        return self._worldY
 
     def colour(self) -> typing.Optional[str]:
         return self._colour
