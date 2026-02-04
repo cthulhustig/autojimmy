@@ -1,3 +1,4 @@
+import common
 import re
 import typing
 
@@ -23,7 +24,6 @@ def _processParsedCode(
     if code == '?':
         return None
 
-    code = code.upper()
     if code in allowed:
         # TODO: This should log something and probably inform the user for custom sectors
         return code
@@ -75,7 +75,6 @@ def _processFormatCode(
         ) -> str:
     if code is None:
         return '?'
-    code = code.upper()
     if code not in allowed:
         raise ValueError(f'Invalid UWP {name} code "{code}"')
     return code
@@ -99,3 +98,181 @@ def formatSystemUWPString(
         government=_processFormatCode(code=government, allowed=_ValidGovernmentCodes, name='Government'),
         lawLevel=_processFormatCode(code=lawLevel, allowed=_ValidLawLevelCodes, name='Law Level'),
         techLevel=_processFormatCode(code=techLevel, allowed=_ValidTechLevelCodes, name='Tech Level'))
+
+def _mandatoryUWPElementValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str],
+        ) -> None:
+    if value not in allowed:
+        raise ValueError(f'{name} must be a valid UWP {element} code')
+
+def _optionalUWPElementValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str],
+        ) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(f'{name} must be a valid UWP {element} code or None')
+
+def validateMandatoryStarport(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Starport',
+            allowed=_ValidStarportCodes))
+
+def validateOptionalStarport(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Starport',
+            allowed=_ValidStarportCodes))
+
+def validateMandatoryWorldSize(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='World Size',
+            allowed=_ValidWorldSizeCodes))
+
+def validateOptionalWorldSize(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='World Size',
+            allowed=_ValidWorldSizeCodes))
+
+def validateMandatoryAtmosphere(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Atmosphere',
+            allowed=_ValidAtmosphereCodes))
+
+def validateOptionalAtmosphere(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Atmosphere',
+            allowed=_ValidAtmosphereCodes))
+
+def validateMandatoryHydrographics(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Hydrographics',
+            allowed=_ValidHydrographicsCodes))
+
+def validateOptionalHydrographics(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Hydrographics',
+            allowed=_ValidHydrographicsCodes))
+
+def validateMandatoryPopulation(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Population',
+            allowed=_ValidPopulationCodes))
+
+def validateOptionalPopulation(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Population',
+            allowed=_ValidPopulationCodes))
+
+def validateMandatoryGovernment(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Government',
+            allowed=_ValidGovernmentCodes))
+
+def validateOptionalGovernment(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Government',
+            allowed=_ValidGovernmentCodes))
+
+def validateMandatoryLawLevel(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Law Level',
+            allowed=_ValidLawLevelCodes))
+
+def validateOptionalLawLevel(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Law Level',
+            allowed=_ValidLawLevelCodes))
+
+def validateMandatoryTechLevel(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryUWPElementValidator(
+            name=name,
+            value=value,
+            element='Tech Level',
+            allowed=_ValidTechLevelCodes))
+
+def validateOptionalTechLevel(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalUWPElementValidator(
+            name=name,
+            value=value,
+            element='Tech Level',
+            allowed=_ValidTechLevelCodes))

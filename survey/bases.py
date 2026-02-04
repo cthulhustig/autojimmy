@@ -1,3 +1,4 @@
+import common
 import typing
 
 # There are two sets of base codes, an older set from before Traveller 5th
@@ -57,3 +58,33 @@ def formatSystemBasesString(
         validCodes.add(code)
 
     return ''.join(sorted(validCodes))
+
+def _mandatoryBaseValidator(
+        name: str,
+        value: str
+        ) -> None:
+    if value not in _ValidBaseCodes:
+        raise ValueError(f'{name} must be a valid base code')
+
+def _optionalBaseValidator(
+        name: str,
+        value: str
+        ) -> None:
+    if value is not None and value not in _ValidBaseCodes:
+        raise ValueError(f'{name} must be a valid base code or None')
+
+def validateMandatoryBase(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryBaseValidator(
+            name=name,
+            value=value))
+
+def validateOptionalBase(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalBaseValidator(
+            name=name,
+            value=value))

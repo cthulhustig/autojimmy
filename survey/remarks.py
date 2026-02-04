@@ -1,3 +1,4 @@
+import common
 import re
 import typing
 
@@ -6,6 +7,14 @@ import typing
 
 # All Trade codes
 _TradeCodePattern = re.compile(r'^(Ag|As|Ba|De|Fl|Ga|Hi|Ht|Ic|In|Lo|Lt|Na|Ni|Po|Ri|Va|Wa|Az|Rz|Co|Fr|Ho|Tr|Tu|Pa|Pi|Pr|He|Lk|Oc|Tz|Cp|Cs|Cx|Cy|Di|Ph|Fa|Mi|Mr|Pe|Px|Re|Ab|An|Ax|Da|Fo|Pz|Rs|Sa|Xb)$') # Argument gives trade code
+_ValidTradeCodes = set([
+    'Ag', 'As', 'Ba', 'De', 'Fl', 'Ga', 'Hi', 'Ht', 'Ic', 'In',
+    'Lo', 'Lt', 'Na', 'Ni', 'Po', 'Ri', 'Va', 'Wa', 'Az', 'Rz',
+    'Co', 'Fr', 'Ho', 'Tr', 'Tu', 'Pa', 'Pi', 'Pr', 'He', 'Lk',
+    'Oc', 'Tz', 'Cp', 'Cs', 'Cx', 'Cy', 'Di', 'Ph', 'Fa', 'Mi',
+    'Mr', 'Pe', 'Px', 'Re', 'Ab', 'An', 'Ax', 'Da', 'Fo', 'Pz',
+    'Rs', 'Sa', 'Xb'
+])
 
 # Military Rule - "Mr(XXXX)" where XXXX is controlling allegiance short code
 _MilitaryRulePattern = re.compile(r'^Mr\(\s*(\S{4})\s*\)$')
@@ -29,6 +38,7 @@ _MilitaryRulePattern = re.compile(r'^Mr\(\s*(\S{4})\s*\)$')
 # 'T' == Theta
 # 'O' == Omicron
 _ResearchStationPattern = re.compile(r'^Rs([ABGDEZHTO]?)$')
+_ValidResearchStations = set(['A', 'B', 'G', 'D', 'E', 'Z', 'H', 'T', 'O'])
 
 # Owning System: "O:####" or "O:XXXX-####" where XXXX is the system abbreviation
 # or current system if not specified and #### is the hex in sector coordinates.
@@ -489,3 +499,61 @@ def formatSystemRemarksString(
         remarks.extend(customRemarks)
 
     return ' '.join(remarks)
+
+def _mandatoryPatternValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str]
+        ) -> None:
+    if value not in allowed:
+        raise ValueError(f'{name} must be a valid {element}')
+
+def _optionalPatternValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str]
+        ) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(f'{name} must be a valid {element} or None')
+
+def validateMandatoryTradeCode(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryPatternValidator(
+            name=name,
+            value=value,
+            element='Trade Code',
+            allowed=_ValidTradeCodes))
+
+def validateOptionalTradeCode(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalPatternValidator(
+            name=name,
+            value=value,
+            element='Trade Code',
+            allowed=_ValidTradeCodes))
+
+def validateMandatoryResearchStation(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryPatternValidator(
+            name=name,
+            value=value,
+            element='Research Station',
+            allowed=_ValidResearchStations))
+
+def validateOptionalResearchStation(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalPatternValidator(
+            name=name,
+            value=value,
+            element='Research Station',
+            allowed=_ValidResearchStations))

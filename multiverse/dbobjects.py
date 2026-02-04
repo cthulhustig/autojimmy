@@ -1,14 +1,10 @@
 import common
+import survey
 import typing
 import uuid
 
-# TODO: There are some of the uses of string validation that set allow empty to false but
-# really it could happen (e.g. if an attribute is specified in the metadata but the value
-# is empty). The converter should probably force empty strings to be None for consistency.
-# It might also make sense if the survey parsing code replaced empty strings with none
-# when generating the raw objects (metadata, sectors and stock sophonts & allegiances)
-
-# TODO: There is a duplicate of each of these in the converter code, the should be shared
+_ValidMilieu = set(['IW', 'M0', 'M990', 'M1105', 'M1120', 'M1201', 'M1248', 'M1900'])
+_ValidSubsectorCodes = set(map(chr, range(ord('A'), ord('P') + 1)))
 _ValidLineStyles = set(['solid', 'dashed', 'dotted'])
 _ValidLabelSizes = set(['small', 'large'])
 
@@ -86,8 +82,7 @@ class DbNobility(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
-        # TODO: Should this check it's a valid nobility string
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
+        survey.validateMandatoryNobility(name='code', value=code)
 
         super().__init__(id=id, systemId=systemId)
         self._code = code
@@ -102,8 +97,7 @@ class DbTradeCode(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
-        # TODO: Should this check it's a valid trade code string
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
+        survey.validateMandatoryTradeCode(name='code', value=code)
 
         super().__init__(id=id, systemId=systemId)
         self._code = code
@@ -128,12 +122,11 @@ class DbAllegiance(DbSectorObject):
             ) -> None:
         common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
-        # TODO: Legacy and base should probably disallow empty but currently it will cause it to barf at convert/load
-        common.validateOptionalStr(name='legacy', value=legacy)
-        common.validateOptionalStr(name='base', value=base)
+        common.validateOptionalStr(name='legacy', value=legacy, allowEmpty=False)
+        common.validateOptionalStr(name='base', value=base, allowEmpty=False)
         common.validateOptionalHtmlColour(name='routeColour', value=routeColour)
         common.validateOptionalStr(name='routeStyle', value=routeStyle, allowed=_ValidLineStyles)
-        common.validateOptionalFloat(name='routeWidth', value=routeWidth) # TODO: Should this enforce a min of 0
+        common.validateOptionalFloat(name='routeWidth', value=routeWidth, min=0)
         common.validateOptionalHtmlColour(name='borderColour', value=borderColour)
         common.validateOptionalStr(name='borderStyle', value=borderStyle, allowed=_ValidLineStyles)
 
@@ -230,7 +223,7 @@ class DbSophontPopulation(DbSystemObject):
             systemId: typing.Optional[str] = None
             ) -> None:
         common.validateMandatoryObject(name='sophont', value=sophont, type=DbSophont)
-        common.validateOptionalInt(name='percentage', value=percentage) # TODO: Should this enforce min/max values
+        common.validateOptionalInt(name='percentage', value=percentage, min=0, max=100)
         common.validateMandatoryBool(name='isHomeWorld', value=isHomeWorld)
         common.validateMandatoryBool(name='isDieBack', value=isDieBack)
 
@@ -264,7 +257,7 @@ class DbOwningSystem(DbSystemObject):
             ):
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
-        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation) # TODO: Should this disallow empty
+        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
 
         super().__init__(id=id, systemId=systemId)
 
@@ -292,7 +285,7 @@ class DbColonySystem(DbSystemObject):
             ):
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
-        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation) # TODO: Should this disallow empty
+        common.validateOptionalStr(name='sectorAbbreviation', value=sectorAbbreviation, allowEmpty=False)
 
         super().__init__(id=id, systemId=systemId)
 
@@ -331,8 +324,7 @@ class DbBase(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
-        # TODO: This could check that it's a valid base code
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
+        survey.validateMandatoryBase(name='code', value=code)
 
         super().__init__(id=id, systemId=systemId)
         self._code = code
@@ -347,8 +339,7 @@ class DbResearchStation(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
-         # TODO: This could check that it's a valid research station code
-        common.validateMandatoryStr(name='code', value=code)
+        survey.validateMandatoryResearchStation(name='code', value=code)
 
         super().__init__(id=id, systemId=systemId)
         self._code = code
@@ -365,10 +356,9 @@ class DbStar(DbSystemObject):
             id: typing.Optional[str] = None, # None means allocate an id
             systemId: typing.Optional[str] = None
             ) -> None:
-         # TODO: This could check that it's a classes/scale
-        common.validateMandatoryStr(name='luminosityClass', value=luminosityClass, allowEmpty=False)
-        common.validateOptionalStr(name='spectralClass', value=spectralClass, allowEmpty=False)
-        common.validateOptionalStr(name='spectralScale', value=spectralScale, allowEmpty=False)
+        survey.validateMandatoryLuminosityClass(name='luminosityClass', value=luminosityClass)
+        survey.validateOptionalSpectralClass(name='spectralClass', value=spectralClass)
+        survey.validateOptionalSpectralScale(name='spectralScale', value=spectralScale)
 
         super().__init__(id=id, systemId=systemId)
 
@@ -438,41 +428,39 @@ class DbSystem(DbSectorObject):
             ) -> None:
         common.validateMandatoryInt(name='hexX', value=hexX)
         common.validateMandatoryInt(name='hexY', value=hexY)
-        # TODO: Ideally the name probably shouldn't allow empty but it currently blows up if you enable it
-        common.validateOptionalStr(name='name', value=name)
-        # TODO: Should this validate the UWP/PBG/etc codes are valid codes?
-        common.validateOptionalStr(name='starport', value=starport)
-        common.validateOptionalStr(name='worldSize', value=worldSize)
-        common.validateOptionalStr(name='atmosphere', value=atmosphere)
-        common.validateOptionalStr(name='hydrographics', value=hydrographics)
-        common.validateOptionalStr(name='population', value=population)
-        common.validateOptionalStr(name='government', value=government)
-        common.validateOptionalStr(name='lawLevel', value=lawLevel)
-        common.validateOptionalStr(name='techLevel', value=techLevel)
-        common.validateOptionalStr(name='resources', value=resources)
-        common.validateOptionalStr(name='labour', value=labour)
-        common.validateOptionalStr(name='infrastructure', value=infrastructure)
-        common.validateOptionalStr(name='efficiency', value=efficiency)
-        common.validateOptionalStr(name='heterogeneity', value=heterogeneity)
-        common.validateOptionalStr(name='acceptance', value=acceptance)
-        common.validateOptionalStr(name='strangeness', value=strangeness)
-        common.validateOptionalStr(name='symbols', value=symbols)
-        common.validateOptionalStr(name='populationMultiplier', value=populationMultiplier)
-        common.validateOptionalStr(name='planetoidBelts', value=planetoidBelts)
-        common.validateOptionalStr(name='gasGiants', value=gasGiants)
-        common.validateOptionalStr(name='zone', value=zone)
+        common.validateOptionalStr(name='name', value=name, allowEmpty=False)
+        survey.validateOptionalStarport(name='starport', value=starport)
+        survey.validateOptionalWorldSize(name='worldSize', value=worldSize)
+        survey.validateOptionalAtmosphere(name='atmosphere', value=atmosphere)
+        survey.validateOptionalHydrographics(name='hydrographics', value=hydrographics)
+        survey.validateOptionalPopulation(name='population', value=population)
+        survey.validateOptionalGovernment(name='government', value=government)
+        survey.validateOptionalLawLevel(name='lawLevel', value=lawLevel)
+        survey.validateOptionalTechLevel(name='techLevel', value=techLevel)
+        survey.validateOptionalEconomicsResources(name='resources', value=resources)
+        survey.validateOptionalEconomicsLabour(name='labour', value=labour)
+        survey.validateOptionalEconomicsInfrastructure(name='infrastructure', value=infrastructure)
+        survey.validateOptionalEconomicsEfficiency(name='efficiency', value=efficiency)
+        survey.validateOptionalHeterogeneity(name='heterogeneity', value=heterogeneity)
+        survey.validateOptionalAcceptance(name='acceptance', value=acceptance)
+        survey.validateOptionalStrangeness(name='strangeness', value=strangeness)
+        survey.validateOptionalSymbols(name='symbols', value=symbols)
+        survey.validateOptionalPopulationMultiplier(name='populationMultiplier', value=populationMultiplier)
+        survey.validateOptionalPlanetoidBelts(name='planetoidBelts', value=planetoidBelts)
+        survey.validateOptionalGasGiants(name='gasGiants', value=gasGiants)
+        survey.validateOptionalZone(name='zone', value=zone)
         common.validateOptionalInt(name='systemWorlds', value=systemWorlds, min=0)
         common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
-        common.validateOptionalCollection(name='nobilities', value=nobilities, type=DbNobility)
-        common.validateOptionalCollection(name='tradeCodes', value=tradeCodes, type=DbTradeCode)
-        common.validateOptionalCollection(name='sophontPopulations', value=sophontPopulations, type=DbSophontPopulation)
-        common.validateOptionalCollection(name='rulingAllegiances', value=rulingAllegiances, type=DbRulingAllegiance)
-        common.validateOptionalCollection(name='owningSystems', value=owningSystems, type=DbOwningSystem)
-        common.validateOptionalCollection(name='colonySystems', value=colonySystems, type=DbColonySystem)
-        common.validateOptionalCollection(name='researchStations', value=researchStations, type=DbResearchStation)
-        common.validateOptionalCollection(name='customRemarks', value=customRemarks, type=DbCustomRemark)
-        common.validateOptionalCollection(name='bases', value=bases, type=DbBase)
+        DbSystem._validateNobilities(name='nobilities', value=nobilities)
+        DbSystem._validateTradeCodes(name='tradeCodes', value=tradeCodes)
+        DbSystem._validateSophontPopulations(name='sophontPopulations', value=sophontPopulations)
+        DbSystem._validateRulingAllegiances(name='rulingAllegiances', value=rulingAllegiances)
+        DbSystem._validateOwningSystems(name='owningSystems', value=owningSystems)
+        DbSystem._validateColonySystems(name='colonySystems', value=colonySystems)
+        DbSystem._validateResearchStations(name='researchStations', value=researchStations)
+        DbSystem._validateBases(name='bases', value=bases)
         common.validateOptionalCollection(name='stars', value=stars, type=DbStar)
+        common.validateOptionalCollection(name='customRemarks', value=customRemarks, type=DbCustomRemark)
         common.validateOptionalStr(name='notes', value=notes)
 
         super().__init__(id=id, sectorId=sectorId)
@@ -642,6 +630,158 @@ class DbSystem(DbSectorObject):
         for obj in objects:
             obj.setSystemId(systemId=self._id)
 
+    @staticmethod
+    def _validateNobilities(
+            name: str,
+            value: typing.Optional[typing.Collection[DbNobility]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbNobility)
+        if not value:
+            return
+
+        seen = set()
+        for nobility in value:
+            code = nobility.code()
+            if code in seen:
+                raise ValueError('{name} contains multiple instances of the same nobility')
+            seen.add(code)
+
+    @staticmethod
+    def _validateTradeCodes(
+            name: str,
+            value: typing.Optional[typing.Collection[DbTradeCode]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbTradeCode)
+        if not value:
+            return
+
+        seen = set()
+        for tradeCode in value:
+            code = tradeCode.code()
+            if code in seen:
+                raise ValueError('{name} contains multiple instances of the same trade code')
+            seen.add(code)
+
+    @staticmethod
+    def _validateSophontPopulations(
+            name: str,
+            value: typing.Optional[typing.Collection[DbSophontPopulation]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbSophontPopulation)
+        if not value:
+            return
+
+        seen = set()
+        for population in value:
+            sophont = population.sophont()
+            if sophont in seen:
+                raise ValueError('{name} contains multiple populations for the same sophont')
+            seen.add(sophont)
+
+    @staticmethod
+    def _validateRulingAllegiances(
+            name: str,
+            value: typing.Optional[typing.Collection[DbRulingAllegiance]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbRulingAllegiance)
+        if not value:
+            return
+
+        seen = set()
+        for ruler in value:
+            allegiance = ruler.allegiance()
+            if allegiance in seen:
+                raise ValueError('{name} contains multiple ruling allegiances for the same allegiance')
+            seen.add(allegiance)
+
+    @staticmethod
+    def _validateOwningSystems(
+            name: str,
+            value: typing.Optional[typing.Collection[DbOwningSystem]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbOwningSystem)
+        if not value:
+            return
+
+        seen = set()
+        for owner in value:
+            key = (owner.hexX(), owner.hexY(), owner.sectorAbbreviation())
+            if key in seen:
+                raise ValueError('{name} contains multiple instances of the same owning system')
+            seen.add(key)
+
+    @staticmethod
+    def _validateColonySystems(
+            name: str,
+            value: typing.Optional[typing.Collection[DbColonySystem]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbColonySystem)
+        if not value:
+            return
+
+        seen = set()
+        for colony in value:
+            key = (colony.hexX(), colony.hexY(), colony.sectorAbbreviation())
+            if key in seen:
+                raise ValueError('{name} contains multiple instances of the same colony system')
+            seen.add(key)
+
+    @staticmethod
+    def _validateResearchStations(
+            name: str,
+            value: typing.Optional[typing.Collection[DbResearchStation]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbResearchStation)
+        if not value:
+            return
+
+        seen = set()
+        for station in value:
+            code = station.code()
+            if code in seen:
+                raise ValueError('{name} contains multiple instances of the same research station')
+            seen.add(code)
+
+    @staticmethod
+    def _validateBases(
+            name: str,
+            value: typing.Optional[typing.Collection[DbBase]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbBase)
+        if not value:
+            return
+
+        seen = set()
+        for base in value:
+            code = base.code()
+            if code in seen:
+                raise ValueError('{name} contains multiple instances of the same base code')
+            seen.add(code)
+
 class DbAlternateName(DbSectorObject):
     def __init__(
             self,
@@ -672,8 +812,7 @@ class DbSubsectorName(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        # TODO: Should this check its a valid code?
-        common.validateMandatoryStr(name='code', value=code, allowEmpty=False)
+        common.validateMandatoryStr(name='code', value=code, allowed=_ValidSubsectorCodes)
         common.validateMandatoryStr(name='name', value=name, allowEmpty=False)
 
         super().__init__(id=id, sectorId=sectorId)
@@ -717,7 +856,7 @@ class DbRoute(DbSectorObject):
         common.validateOptionalInt(name='startOffsetY', value=startOffsetY)
         common.validateOptionalInt(name='endOffsetX', value=endOffsetX)
         common.validateOptionalInt(name='endOffsetY', value=endOffsetY)
-        common.validateOptionalStr(name='type', value=type)
+        common.validateOptionalStr(name='type', value=type, allowEmpty=False)
         common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
         common.validateOptionalHtmlColour(name='colour', value=colour)
         common.validateOptionalFloat(name='width', value=width, min=0)
@@ -793,11 +932,11 @@ class DbBorder(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        common.validateMandatoryCollection(name='hexes', value=hexes, validationFn=DbBorder._hexTupleValidator)
+        common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
         common.validateOptionalObject(name='allegiance', value=allegiance, type=DbAllegiance)
         common.validateOptionalStr(name='style', value=style, allowed=_ValidLineStyles)
         common.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalStr(name='label', value=label)
+        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
         common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
         common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
         common.validateMandatoryBool(name='showLabel', value=showLabel)
@@ -863,9 +1002,9 @@ class DbRegion(DbSectorObject):
             id: typing.Optional[str] = None, # None means allocate an id
             sectorId: typing.Optional[str] = None
             ) -> None:
-        common.validateMandatoryCollection(name='hexes', value=hexes, validationFn=DbBorder._hexTupleValidator)
+        common.validateMandatoryCollection(name='hexes', value=hexes, allowEmpty=False, validationFn=DbBorder._hexTupleValidator)
         common.validateOptionalHtmlColour(name='colour', value=colour)
-        common.validateOptionalStr(name='label', value=label)
+        common.validateOptionalStr(name='label', value=label, allowEmpty=False)
         common.validateOptionalFloat(name='labelWorldX', value=labelWorldX)
         common.validateOptionalFloat(name='labelWorldY', value=labelWorldY)
         common.validateMandatoryBool(name='showLabel', value=showLabel)
@@ -1036,9 +1175,8 @@ class DbSector(DbUniverseObject):
             id: typing.Optional[str] = None, # None means allocate an id
             universeId: typing.Optional[str] = None
             ) -> None:
-        # TODO: Verify that there aren't 2 worlds with the same location
         common.validateMandatoryBool(name='isCustom', value=isCustom)
-        common.validateMandatoryStr(name='milieu', value=milieu) # TODO: Validate that this is an expected value
+        common.validateMandatoryStr(name='milieu', value=milieu, allowed=_ValidMilieu)
         common.validateMandatoryInt(name='sectorX', value=sectorX)
         common.validateMandatoryInt(name='sectorY', value=sectorY)
         common.validateMandatoryStr(name='primaryName', value=primaryName, allowEmpty=False)
@@ -1047,10 +1185,10 @@ class DbSector(DbUniverseObject):
         common.validateOptionalStr(name='sectorLabel', value=sectorLabel, allowEmpty=False)
         common.validateMandatoryBool(name='selected', value=selected)
         common.validateOptionalCollection(name='alternateNames', value=alternateNames, type=DbAlternateName)
-        common.validateOptionalCollection(name='subsectorNames', value=subsectorNames, type=DbSubsectorName)
-        common.validateOptionalCollection(name='allegiances', value=allegiances, type=DbAllegiance)
-        common.validateOptionalCollection(name='sophonts', value=sophonts, type=DbSophont)
-        common.validateOptionalCollection(name='systems', value=systems, type=DbSystem)
+        DbSector._validateSubsectorNames(name='subsectorNames', value=subsectorNames)
+        DbSector._validateAllegiances(name='allegiances', value=allegiances)
+        DbSector._validateSophonts(name='sophonts', value=sophonts)
+        DbSector._validateSystems(name='systems', value=systems)
         common.validateOptionalCollection(name='routes', value=routes, type=DbRoute)
         common.validateOptionalCollection(name='borders', value=borders, type=DbBorder)
         common.validateOptionalCollection(name='regions', value=regions, type=DbRegion)
@@ -1192,6 +1330,80 @@ class DbSector(DbUniverseObject):
         for obj in objects:
             obj.setSectorId(sectorId=self._id)
 
+    @staticmethod
+    def _validateSubsectorNames(
+            name: str,
+            value: typing.Optional[typing.Collection[DbSubsectorName]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbSubsectorName)
+
+        seen = set()
+        for subsectorName in value:
+            code = subsectorName.code()
+            if code in seen:
+                raise ValueError('{name} contains multiple names for the same subsector')
+            seen.add(code)
+
+    @staticmethod
+    def _validateAllegiances(
+            name: str,
+            value: typing.Optional[typing.Collection[DbAllegiance]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbAllegiance)
+
+        seen = set()
+        for allegiance in value:
+            code = allegiance.code()
+            if code in seen:
+                raise ValueError('{name} contains multiple allegiances with the same code')
+            seen.add(code)
+
+    @staticmethod
+    def _validateSophonts(
+            name: str,
+            value: typing.Optional[typing.Collection[DbSophont]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbSophont)
+
+        seenCodes = set()
+        seenNames = set()
+        for sophont in value:
+            code = sophont.code()
+            if code in seenCodes:
+                raise ValueError('{name} contains multiple sophonts with the same code')
+            seenCodes.add(code)
+
+            name = sophont.code()
+            if name in seenNames:
+                raise ValueError('{name} contains multiple sophonts with the same name')
+            seenNames.add(name)
+
+    @staticmethod
+    def _validateSystems(
+            name: str,
+            value: typing.Optional[typing.Collection[DbSystem]]
+            ) -> None:
+        if value is None:
+            return
+
+        common.validateOptionalCollection(name=name, value=value, type=DbSystem)
+
+        seen = set()
+        for system in value:
+            key = (system.hexX(), system.hexY())
+            if key in seen:
+                raise ValueError('{name} contains multiple systems with the same location')
+            seen.add(key)
+
 # TODO: This needs updated to be immutable like the other db objects
 class DbUniverse(DbObject):
     def __init__(
@@ -1202,9 +1414,10 @@ class DbUniverse(DbObject):
             notes: typing.Optional[str] = None,
             id: typing.Optional[str] = None, # None means allocate an id
             ) -> None:
-        # TODO: Verify that there aren't 2 sectors at the same location
         common.validateMandatoryStr(name='name', value=name)
         common.validateOptionalStr(name='description', value=description)
+        # TODO: Check there aren't multiple selectors at the same position/milieu
+        # TODO: Check sector names are unique?? Depends on if they're unique in the DB
         common.validateOptionalCollection(name='sectors', value=sectors, type=DbSector)
         common.validateOptionalStr(name='notes', value=notes)
 

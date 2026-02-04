@@ -265,7 +265,7 @@ def validateMandatoryHtmlColour(
         name: str,
         value: str,
         validationFn: typing.Optional[typing.Callable[[str, typing.Any], typing.Any]] = None
-        ) -> None:
+        ) -> str:
     common.validateMandatoryStr(name=name, value=value, allowEmpty=False)
     if not isValidHtmlColour(value):
         raise ValueError(f'{name} must be a valid HTML colour')
@@ -273,14 +273,18 @@ def validateMandatoryHtmlColour(
     if validationFn is not None:
         validationFn(name, value)
 
+    return value
+
 def validateOptionalHtmlColour(
         name: str,
         value: typing.Optional[str],
         validationFn: typing.Optional[typing.Callable[[str, typing.Any], typing.Any]] = None
-        ) -> None:
+        ) -> typing.Optional[str]:
     common.validateOptionalStr(name=name, value=value, allowEmpty=False)
     if value is not None and not isValidHtmlColour(value):
         raise ValueError(f'{name} must be a valid HTML colour or None')
 
     if validationFn is not None:
         validationFn(name, value)
+
+    return value

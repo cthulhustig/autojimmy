@@ -1003,6 +1003,10 @@ class MultiverseDb(object):
                     ColumnDef(columnName='is_major', columnType=ColumnDef.ColumnType.Boolean, isNullable=False)],
                 uniqueConstraints=[
                     UniqueConstraintDef(columnNames=['sector_id', 'code']),
+                    # NOTE: Unlike most entities (e.g. allegiances) the sophont name must be unique
+                    # for a given sector. This is because remarks such as major/minor race and dieback
+                    # refer to the sophont by name rather than code so it needs to be unique to prevent
+                    # ambiguity
                     UniqueConstraintDef(columnNames=['sector_id', 'name'])])
 
             self._internalCreateTable(

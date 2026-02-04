@@ -1,3 +1,4 @@
+import common
 import re
 import typing
 
@@ -16,7 +17,6 @@ def _processParsedCode(
     if code == '?':
         return None
 
-    code = code.upper()
     if code in allowed:
         return code
 
@@ -53,11 +53,8 @@ def _processFormatCode(
         ) -> str:
     if code is None:
         return '?'
-
-    code = code.upper()
     if code not in allowed:
         raise ValueError(f'Invalid Economics {name} code "{code}"')
-
     return code
 
 def formatSystemEconomicsString(
@@ -71,3 +68,102 @@ def formatSystemEconomicsString(
         labour=_processFormatCode(code=labour, allowed=_ValidLabourCodes, name='Labour'),
         infrastructure=_processFormatCode(code=infrastructure, allowed=_ValidInfrastructureCodes, name='Infrastructure'),
         efficiency=_processFormatCode(code=efficiency, allowed=_ValidEfficiencyCodes, name='Efficiency'))
+
+
+def _mandatoryEconomicsElementValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str],
+        ) -> None:
+    if value not in allowed:
+        raise ValueError(f'{name} must be a valid economics {element} code')
+
+def _optionalEconomicsElementValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str],
+        ) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(f'{name} must be a valid economics {element} code or None')
+
+def validateMandatoryEconomicsResources(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Resources',
+            allowed=_ValidResourcesCodes))
+
+def validateOptionalEconomicsResources(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Resources',
+            allowed=_ValidResourcesCodes))
+
+def validateMandatoryEconomicsLabour(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Labour',
+            allowed=_ValidLabourCodes))
+
+def validateOptionalEconomicsLabour(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Labour',
+            allowed=_ValidLabourCodes))
+
+def validateMandatoryEconomicsInfrastructure(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Infrastructure',
+            allowed=_ValidInfrastructureCodes))
+
+def validateOptionalEconomicsInfrastructure(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Infrastructure',
+            allowed=_ValidInfrastructureCodes))
+
+def validateMandatoryEconomicsEfficiency(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Efficiency',
+            allowed=_ValidEfficiencyCodes))
+
+def validateOptionalEconomicsEfficiency(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalEconomicsElementValidator(
+            name=name,
+            value=value,
+            element='Efficiency',
+            allowed=_ValidEfficiencyCodes))

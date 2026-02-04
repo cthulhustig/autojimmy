@@ -1,3 +1,4 @@
+import common
 import re
 import typing
 
@@ -6,9 +7,9 @@ import typing
 
 _PBGPattern = re.compile(r'([0-9A-Za-z?])([0-9A-Za-z?])([0-9A-Za-z?])')
 _ValidPopulationMultiplierCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
-_ValidPlanetoidBeltCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+_ValidPlanetoidBeltsCodes = set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
                                 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']) # Any valid ehex
-_ValidGasGiantCodes = _ValidPlanetoidBeltCodes
+_ValidGasGiantsCodes = _ValidPlanetoidBeltsCodes
 
 def _processParsedCode(
         code: str,
@@ -19,7 +20,6 @@ def _processParsedCode(
     if code == '?':
         return None
 
-    code = code.upper()
     if code in allowed:
         return code
 
@@ -37,7 +37,7 @@ def parseSystemPBGString(
             typing.Optional[str], # Acceptance
             typing.Optional[str], # Strangeness
             typing.Optional[str]]: # Symbols
-    # Handle a uwp of XXX as a special case to indicate none of the fields are known
+    # Handle a PBG of XXX as a special case to indicate none of the fields are known
     # (equivalent of ???). This format is used by a number of the Traveller Map
     # sectors. It's important to treat it as a special case rather than treating 'X' as
     # unknown for individual fields as 'X' is a valid value for planetoid belt and gas
@@ -53,8 +53,8 @@ def parseSystemPBGString(
 
     return (
         _processParsedCode(code=result[1], allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier', strict=strict),
-        _processParsedCode(code=result[2], allowed=_ValidPlanetoidBeltCodes, name='Planetoid Belts', strict=strict),
-        _processParsedCode(code=result[3], allowed=_ValidGasGiantCodes, name='Gas Giants', strict=strict))
+        _processParsedCode(code=result[2], allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts', strict=strict),
+        _processParsedCode(code=result[3], allowed=_ValidGasGiantsCodes, name='Gas Giants', strict=strict))
 
 def _processFormatCode(
         code: typing.Optional[str],
@@ -63,7 +63,6 @@ def _processFormatCode(
         ) -> str:
     if code is None:
         return '?'
-    code = code.upper()
     if code not in allowed:
         raise ValueError(f'Invalid PBG {name} code "{code}"')
     return code
@@ -75,5 +74,83 @@ def formatSystemPBGString(
         ) -> str:
     return '{multiplier}{belts}{giants}'.format(
         multiplier=_processFormatCode(code=populationMultiplier, allowed=_ValidPopulationMultiplierCodes, name='Population Multiplier'),
-        belts=_processFormatCode(code=planetoidBelts, allowed=_ValidPlanetoidBeltCodes, name='Planetoid Belts'),
-        giants=_processFormatCode(code=gasGiants, allowed=_ValidGasGiantCodes, name='Gas Giants'))
+        belts=_processFormatCode(code=planetoidBelts, allowed=_ValidPlanetoidBeltsCodes, name='Planetoid Belts'),
+        giants=_processFormatCode(code=gasGiants, allowed=_ValidGasGiantsCodes, name='Gas Giants'))
+
+def _mandatoryPBGElementValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str],
+        ) -> None:
+    if value not in allowed:
+        raise ValueError(f'{name} must be a valid PBG {element} code')
+
+def _optionalPBGElementValidator(
+        name: str,
+        value: str,
+        element: str,
+        allowed: typing.Collection[str],
+        ) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(f'{name} must be a valid PBG {element} code or None')
+
+def validateMandatoryPopulationMultiplier(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryPBGElementValidator(
+            name=name,
+            value=value,
+            element='PopulationMultiplier',
+            allowed=_ValidPopulationMultiplierCodes))
+
+def validateOptionalPopulationMultiplier(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalPBGElementValidator(
+            name=name,
+            value=value,
+            element='PopulationMultiplier',
+            allowed=_ValidPopulationMultiplierCodes))
+
+def validateMandatoryPlanetoidBelts(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryPBGElementValidator(
+            name=name,
+            value=value,
+            element='Planetoid Belts',
+            allowed=_ValidPlanetoidBeltsCodes))
+
+def validateOptionalPlanetoidBelts(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalPBGElementValidator(
+            name=name,
+            value=value,
+            element='Planetoid Belts',
+            allowed=_ValidPlanetoidBeltsCodes))
+
+def validateMandatoryGasGiants(name: str, value: str) -> str:
+    return common.validateMandatoryStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _mandatoryPBGElementValidator(
+            name=name,
+            value=value,
+            element='Gas Giants',
+            allowed=_ValidGasGiantsCodes))
+
+def validateOptionalGasGiants(name: str, value: typing.Optional[str]) -> typing.Optional[str]:
+    return common.validateOptionalStr(
+        name=name,
+        value=value,
+        validationFn=lambda name, value: _optionalPBGElementValidator(
+            name=name,
+            value=value,
+            element='Gas Giants',
+            allowed=_ValidGasGiantsCodes))
