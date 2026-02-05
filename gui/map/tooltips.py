@@ -151,11 +151,8 @@ def createHexToolTip(
         style = formatTaggingStyle(level=tagLevel)
         toolTip += f'<li><span style="{style}">Allegiance: {html.escape(allegianceString)}</span><li>'
 
-        for rulingAllegianceCode in remarks.rulingAllegiances():
-            # TODO: I shouldn't have to do a lookup here. There remark structure should
-            # return instances of astronomer.Allegiance rather than the code
-            rulingAllegiance = sector.allegianceByCode(rulingAllegianceCode)
-            allegianceString = _formatAllegianceString(allegiance=rulingAllegiance) if rulingAllegiance else rulingAllegianceCode
+        for rulingAllegiance in remarks.rulingAllegiances():
+            allegianceString = _formatAllegianceString(allegiance=rulingAllegiance)
             tagLevel = worldTagging.calculateAllegianceTagLevel(allegiance=rulingAllegiance) if rulingAllegiance and worldTagging else None
             style = formatTaggingStyle(level=tagLevel)
             toolTip += f'<li><span style="{style}">Military Rule Allegiance: {html.escape(allegianceString)}</span><li>'
